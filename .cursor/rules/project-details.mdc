@@ -1,0 +1,17 @@
+---
+description: Project specifications and technical overview for Patrivio
+globs: 
+---
+# Patrivio - MVP Requirements
+
+## 1. Project Overview
+I am building a **minimalist net worth tracking web app** to replace my current Google Sheet system. This app should automate manual processes, improve usability, and provide simple visualizations. 
+
+Unlike apps like Mint or Getquin, **this app will not require bank or broker integrations** for the moment. Instead, it will provide an intuitive interface for manually entering and updating financial data. It needs to feel safe, solid and trustworthy.
+
+This project is built for myself as the primary user, with the potential for future expansion if there is market interest.
+
+
+
+
+
