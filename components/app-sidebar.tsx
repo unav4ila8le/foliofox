@@ -3,13 +3,17 @@ import { Calendar, Home, Inbox, Search, Settings } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
+  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { Logo } from "@/components/ui/logo";
+import { Avatar } from "@/components/ui/avatar";
 
 // Placeholder menu items.
 const items = [
@@ -43,6 +47,9 @@ const items = [
 export function AppSidebar() {
   return (
     <Sidebar>
+      <SidebarHeader className="flex items-center">
+        <Avatar />
+      </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Application</SidebarGroupLabel>
@@ -62,6 +69,9 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter>
+        <Logo height={24} />
+      </SidebarFooter>
     </Sidebar>
   );
 }
