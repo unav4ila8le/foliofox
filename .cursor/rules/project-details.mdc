@@ -11,6 +11,15 @@ Unlike apps like Mint or Getquin, **this app will not require bank or broker int
 
 This project is built for myself as the primary user, with the potential for future expansion if there is market interest.
 
+## 2. Competitors
+I have drafted a short list of other products that are doing something very similar to what I am trying to do. You should use them as reference for best practice for handling the data, data structure, user experience and interface.
+
+- https://github.com/maybe-finance/maybe (open source, you can actually look at the code) (best for user experience and interface)
+- https://www.getquin.com/ (good for user experience and interface)
+- https://www.kubera.com/
+- https://www.fireleap.com/
+- https://www.portfolio-performance.info/
+
 
 
 

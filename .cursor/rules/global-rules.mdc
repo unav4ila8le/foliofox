@@ -38,7 +38,7 @@ Think of me as your product manager, but also as a "UX Engineer" or "Frontend De
 - Use declarative JSX.
 
 ## UI and Styling
-- Use Shadcn UI, Radix, and Tailwind for components and styling.
+- Use Shadcn UI, Radix (only for primitives, usually restyled by Shadcn), and Tailwind for components and styling.
 - Prioritize function over styling.
 - You should only provide a basic, barebones layout with functional plain Shadcn components (e.g., you build a fully functional form with error validation from zod and I only take care of the layout, styling, labels, placeholders, content etc. ).
 - Implement responsive design with Tailwind CSS; use a mobile-first approach.
