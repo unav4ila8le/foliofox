@@ -5,7 +5,7 @@ globs:
 # Patrivio - MVP Requirements
 
 ## 1. Project Overview
-I am building a **minimalist net worth tracking web app** to replace my current Google Sheet system. This app should automate manual processes, improve usability, and provide simple visualizations. 
+I am building a **net worth tracking web app** to replace my current Google Sheet system. This app should automate manual processes, improve usability, and provide clear visualizations. 
 
 Unlike apps like Mint or Getquin, **this app will not require bank or broker integrations** for the moment. Instead, it will provide an intuitive interface for manually entering and updating financial data. It needs to feel safe, solid and trustworthy.
 
@@ -20,7 +20,172 @@ I have drafted a short list of other products that are doing something very simi
 - https://www.fireleap.com/
 - https://www.portfolio-performance.info/
 
+## 3. Tech Stack
+- Framework: Next.js 15 (App Router)
+- Styling: Tailwind CSS 4, shadcn
+- Language: TypeScript
+- Database: Supabase
+- Hosting: Vercel
+- Codebase management: GitHub
+- Financial Data API: TBD
 
+## 4. Core Features (MVP Scope)
+### Transactions-Based Net Worth Tracking
+Users log financial activities through transactions instead of only manually updating assets.
+Transaction types:
+- Income (Salary, dividends, refunds, etc.)
+- Expense (Rent, groceries, subscriptions, etc.)
+- Investment Purchase (Buying stocks, real estate, crypto, etc.)
+- Investment Sale (Selling stocks, withdrawing funds, crypto, etc.)
+- Asset Transfer (Moving money between accounts). Each transaction updates the related asset/liability category and maintains historical accuracy. Users can view transaction history to see how their net worth evolved.
 
+Support for editing and deleting past transactions with proper adjustments to calculations.
+Transfer transactions should link outgoing and incoming entries to prevent double-counting.
+Well structured category system for both assets and expenses to enable better analysis
 
+### Data Input & Asset Selection
+Users can quickly add transactions via a structured flow:
+1. Select transaction type → Purchase, Sell, or Transfer
+2. Choose category → Stock, Crypto, Real Estate, Credit Card, Cash, Metal, Luxury, etc.
+3. Enter amount and quantity for investment assets
+4. If selling, specify source of funds. Users selecting stocks or crypto should be able to search for the specific asset and link a logo (similar to brokerage apps). The app dynamically calculates net worth based on transactions instead of static snapshots.
+
+(For later) Support for bulk import of historical data from CSV/Excel (Google Sheets export).
+
+### Automated Historical Data Storage
+- The system fetches closing prices for assets once per day
+- Historical asset prices are snapshotted daily and stored in the database, ensuring that past data can be retrieved without frequent API calls
+- Users can view historical performance over time using stored data rather than making repeated API requests
+- Fallback mechanism for manual price updates when API fails or for non-standard assets
+- Caching strategy to prioritize critical assets when approaching API limits
+
+### Simple Currency Conversion
+- A currency switch dropdown on the homepage allows users to view their final net worth in different currencies
+- Only the aggregated net worth total is converted to the selected currency
+- Individual assets and transactions remain in their original currency
+- The system uses daily exchange rates to perform the conversion
+
+## **5. Database Schema (Supabase)**
+### **5.1 Transactions Table (`transactions`)**
+| Column        | Type      | Description |
+|--------------|----------|-------------|
+| `id`         | UUID     | Unique identifier |
+| `user_id`    | UUID     | Links to a user |
+| `date`       | DATE     | Transaction date |
+| `type`       | TEXT     | "Income", "Expense", "Investment Purchase", etc. |
+| `amount`     | FLOAT    | Transaction amount |
+| `currency`   | TEXT     | EUR, USD, etc. |
+| `category`   | TEXT     | Stocks, Crypto, Cash, Rent, etc. |
+| `subcategory`| TEXT     | More specific categorization (e.g., "Groceries" under "Expense") |
+| `linked_asset_id` | UUID | Optional: Links to an asset in `holdings` |
+| `quantity`   | FLOAT    | For investment assets, the quantity purchased/sold |
+| `source`     | TEXT     | Source of funds (e.g., "Bank Account", "Cash") |
+| `notes`      | TEXT     | (Optional) User notes on the transaction |
+| `linked_transfer_id` | UUID | For transfers, links to the corresponding transaction |
+| `recurring_id` | UUID  | Links to recurring transaction template if auto-generated |
+| `is_deleted` | BOOLEAN  | Soft delete flag |
+
+### **5.2 Assets & Liabilities Table (`holdings`)**
+| Column      | Type      | Description |
+|------------|----------|-------------|
+| `id`       | UUID     | Unique identifier |
+| `user_id`  | UUID     | Links to a user |
+| `name`     | TEXT     | Asset/liability name |
+| `category` | TEXT     | Category (Stocks, Crypto, Cash, Debt, etc.) |
+| `currency` | TEXT     | EUR, USD, etc. |
+| `logo_url` | TEXT     | URL to asset logo for better visualization |
+| `symbol`   | TEXT     | Ticker symbol for financial assets |
+| `isin`     | TEXT     | International Securities Identification Number |
+| `current_quantity` | FLOAT | Current quantity owned (calculated from transactions) |
+| `price_update_method` | TEXT | "API", "Manual", etc. |
+| `created_at` | TIMESTAMP | Asset added date |
+
+### **5.3 Asset Price History Table (`asset_prices`)**
+| Column       | Type      | Description |
+|-------------|----------|-------------|
+| `id`        | UUID     | Unique identifier |
+| `asset_id`  | UUID     | Links to an asset in `holdings` |
+| `date`      | DATE     | The date of the snapshot |
+| `closing_price` | FLOAT | Closing price of the asset on that date |
+| `currency`  | TEXT     | Currency of the price |
+| `source`    | TEXT     | "API", "Manual", etc. |
+
+### **5.4 User Preferences Table (`preferences`)**
+| Column       | Type      | Description |
+|-------------|----------|-------------|
+| `user_id`   | UUID     | Links to a user |
+| `currency`  | TEXT     | Default currency |
+| `dashboard_widgets` | JSON | Configuration of dashboard widgets |
+| `default_categories` | JSON | Quick-access categories for transactions |
+
+### **5.5 Currency Rates Table (`currency_rates`)**
+| Column       | Type      | Description |
+|-------------|----------|-------------|
+| `id`        | UUID     | Unique identifier |
+| `base_currency` | TEXT | Base currency code |
+| `target_currency` | TEXT | Target currency code |
+| `rate`      | FLOAT    | Conversion rate |
+| `date`      | DATE     | Date of rate snapshot |
+
+## **6. API Endpoints**
+✅ `GET /api/net-worth` → Returns total net worth calculated from transactions  
+✅ `GET /api/net-worth/history` → Returns historical net worth points for charts  
+✅ `POST /api/transactions` → Adds a new transaction  
+✅ `GET /api/transactions` → Retrieves all transactions with filtering options  
+✅ `PUT /api/transactions/:id` → Updates an existing transaction  
+✅ `DELETE /api/transactions/:id` → Soft-deletes a transaction  
+✅ `POST /api/transactions/bulk` → Imports multiple transactions (for historical data)  
+✅ `GET /api/assets` → Retrieves all tracked assets & liabilities  
+✅ `POST /api/assets` → Adds a new asset or liability  
+✅ `PUT /api/assets/:id` → Updates an asset  
+✅ `DELETE /api/assets/:id` → Removes an asset  
+✅ `GET /api/assets/search` → Search for assets (stocks, crypto) with logos  
+✅ `POST /api/assets/prices` → Stores a daily closing price snapshot for assets  
+✅ `GET /api/assets/prices?date=YYYY-MM-DD` → Fetches historical asset prices from the database  
+✅ `POST /api/recurring` → Creates a new recurring transaction template  
+✅ `GET /api/recurring` → Lists all recurring transaction templates  
+✅ `PUT /api/recurring/:id` → Updates a recurring transaction template  
+✅ `DELETE /api/recurring/:id` → Deletes a recurring transaction template  
+✅ `POST /api/import` → Imports data from CSV/Excel (Google Sheets)  
+✅ `GET /api/categories` → Retrieves available transaction categories  
+
+## 7. Core Pages and Components
+
+### Dashboard Header
+- "New transaction" button
+
+### Dashboard Sidebar
+- User details
+- Menu links to other pages
+- Minimal summary by asset class
+
+### Dashboard Home Page
+- - Currency switch dropdown at the top of the dashboard that converts only the final net worth total (not individual assets)
+- Precisely calculate total net worth in the user preferred currency
+- Line chart to visualize net worth over time
+- Pie chart to visualize asset allocation
+- Portfolio Trends and insights
+- Recent transactions
+
+### Dashboard Assets Page
+- Detailed assets list
+- Assets are grouped by asset class
+- Quick edit mode for changing values manually
+
+## 8. General Instructions
+Do NOT focus on UI styling. Keep layouts minimal, modular and easily scalable. I will handle the design. **In most cases I have already built the layout for you with placeholder/mock data**, please always check if that's the case and build logic and code to fit the UI.
+
+The following are some general instructions. Please find detailed rules [global-rules.mdc](mdc:.cursor/rules/global-rules.mdc)
+
+- Build a prototype database first to validate the transaction model and calculations.
+- Ensure clean and modular code. Split into reusable components.
+- Use Next.js API routes to interact with Supabase.
+- Transactions should update net worth dynamically instead of using static snapshots.
+- Implement a clear caching strategy for API calls to financial data services.
+- Charts should reflect transactions over time rather than just static numbers.
+- Store daily closing prices for assets instead of fetching real-time historical data frequently.
+- Create a data validation layer to prevent illogical transactions (negative balances, etc.).
+- For transfers between accounts, link transactions to prevent double-counting in net worth.
+- Implement materialized views or caching for performance as transaction history grows.
+- Follow best practices for performance and scalability.
 

@@ -1,4 +1,5 @@
-import { Calendar, Home, Inbox, Search, Settings } from "lucide-react";
+import Link from "next/link";
+import { Home, TrendingUp, CreditCard } from "lucide-react";
 
 import {
   Sidebar,
@@ -19,28 +20,18 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 const items = [
   {
     title: "Home",
-    url: "#",
+    url: "/dashboard",
     icon: Home,
   },
   {
-    title: "Inbox",
-    url: "#",
-    icon: Inbox,
+    title: "Assets",
+    url: "/dashboard/assets",
+    icon: TrendingUp,
   },
   {
-    title: "Calendar",
-    url: "#",
-    icon: Calendar,
-  },
-  {
-    title: "Search",
-    url: "#",
-    icon: Search,
-  },
-  {
-    title: "Settings",
-    url: "#",
-    icon: Settings,
+    title: "Liabilities",
+    url: "/dashboard/liabilities",
+    icon: CreditCard,
   },
 ];
 
@@ -67,10 +58,10 @@ export function AppSidebar() {
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <a href={item.url}>
+                    <Link href={item.url}>
                       <item.icon />
                       <span>{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}

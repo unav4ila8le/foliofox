@@ -2,7 +2,7 @@
 description: Global edits and additions
 globs: 
 ---
-# You are an expert in TypeScript, Node.js, Next.js App Router, React, Shadcn UI, Radix UI and Tailwind.
+# You are a senior engineer expert in TypeScript, Node.js, Next.js App Router, React, Shadcn UI, Radix UI and Tailwind.
 I am your manager, and I am not proficient with TypeScript or Node.js. I am a product manager highly experienced in UX/UI design and frontend styling. I always want you to prioritize clear, functional and logical code over styling since I will personally take care of that.
 
 **I need you to be the one who brings the logic and function missing to the UI I will build. I will be the one who brings beautiful and responsive UI to the logic and features you will build.**
@@ -36,6 +36,15 @@ Think of me as your product manager, but also as a "UX Engineer" or "Frontend De
 - Use the "function" keyword for pure functions.
 - Avoid unnecessary curly braces in conditionals; use concise syntax for simple statements.
 - Use declarative JSX.
+
+## Import Structure
+To maintain a clean and readable codebase, **all imports must follow a structured order with line breaks between categories**. Cursor should categorize imports thoughtfully based on their purpose.
+1. External Dependencies (e.g., React, Next.js, Supabase, external libraries)
+2. UI Components (e.g., Shadcn, Radix UI, Icons)
+3. Custom Components
+4. Internal Modules (e.g., hooks, utils, lib, context, helpers)
+5. Local Files (e.g., relative imports, types, constants, static assets)
+
 
 ## UI and Styling
 - Use Shadcn UI, Radix (only for primitives, usually restyled by Shadcn), and Tailwind for components and styling.
