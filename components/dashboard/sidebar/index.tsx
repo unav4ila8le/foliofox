@@ -41,7 +41,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <UISidebar>
+    <UISidebar collapsible="icon">
       <SidebarHeader>
         <Profile
           avatarUrl="https://github.com/shadcn.png"
@@ -60,7 +60,7 @@ export function Sidebar() {
                     asChild
                     className={
                       pathname === item.url
-                        ? "bg-background text-primary shadow"
+                        ? "bg-background hover:bg-background text-primary shadow"
                         : "text-muted-foreground"
                     }
                   >
