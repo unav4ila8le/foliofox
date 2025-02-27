@@ -1,8 +1,10 @@
-import Link from "next/link";
-import { Home, TrendingUp, CreditCard } from "lucide-react";
+"use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Home, TrendingUp, CreditCard } from "lucide-react";
 import {
-  Sidebar,
+  Sidebar as UISidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
@@ -13,8 +15,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { Logo } from "@/components/ui/logo";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Profile } from "./profile";
+import { Branding } from "./branding";
 
 // Placeholder menu items
 const items = [
@@ -35,20 +37,17 @@ const items = [
   },
 ];
 
-export function AppSidebar() {
+export function Sidebar() {
+  const pathname = usePathname();
+
   return (
-    <Sidebar>
+    <UISidebar>
       <SidebarHeader>
-        <div className="flex items-center gap-2">
-          <Avatar className="size-10">
-            <AvatarImage src="https://github.com/shadcn.png" alt="john doe" />
-            <AvatarFallback>JD</AvatarFallback>
-          </Avatar>
-          <div className="flex flex-col">
-            <p className="text font-semibold">John Doe</p>
-            <span className="text-muted-foreground text-sm">1,000,000 EUR</span>
-          </div>
-        </div>
+        <Profile
+          avatarUrl="https://github.com/shadcn.png"
+          name="John Doe"
+          balance="1,000,000 EUR"
+        />
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
@@ -57,7 +56,14 @@ export function AppSidebar() {
             <SidebarMenu>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton
+                    asChild
+                    className={
+                      pathname === item.url
+                        ? "bg-background text-primary shadow"
+                        : "text-muted-foreground"
+                    }
+                  >
                     <Link href={item.url}>
                       <item.icon />
                       <span>{item.title}</span>
@@ -70,11 +76,8 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <Logo height={24} />
-        <p className="text-muted-foreground text-center text-xs">
-          Copyright © {new Date().getFullYear()}. All rights reserved.
-        </p>
+        <Branding />
       </SidebarFooter>
-    </Sidebar>
+    </UISidebar>
   );
 }

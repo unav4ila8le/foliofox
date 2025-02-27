@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { Urbanist } from "next/font/google";
+import { Inter } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
-const urbanistSans = Urbanist({
-  variable: "--font-urbanist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
@@ -21,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${urbanistSans.variable} antialiased transition-all`}>
+      <body className={`${inter.variable} antialiased transition-all`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}
         </ThemeProvider>

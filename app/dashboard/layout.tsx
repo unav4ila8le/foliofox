@@ -1,8 +1,8 @@
 import { cookies } from "next/headers";
 
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/app-sidebar";
-import { AppHeader } from "@/components/app-header";
+import { Sidebar } from "@/components/dashboard/sidebar";
+import { Header } from "@/components/dashboard/header";
 export default async function Layout({
   children,
 }: {
@@ -13,9 +13,9 @@ export default async function Layout({
 
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
-      <AppSidebar />
+      <Sidebar />
       <main className="flex w-full flex-col">
-        <AppHeader />
+        <Header />
         <div className="flex-1 p-4">{children}</div>
       </main>
     </SidebarProvider>
