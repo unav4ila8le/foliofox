@@ -38,6 +38,7 @@ Think of me as your product manager, but also as a "UX Engineer" or "Frontend De
 - Use the "function" keyword for pure functions.
 - Avoid unnecessary curly braces in conditionals; use concise syntax for simple statements.
 - Use declarative JSX.
+- Never use symbols for currencies, only use the ISO currency standard, unless explicitly asked.
 
 ## Import Structure
 To maintain a clean and readable codebase, **all imports must follow a structured order with line breaks between categories**. Cursor should categorize imports thoughtfully based on their purpose.
