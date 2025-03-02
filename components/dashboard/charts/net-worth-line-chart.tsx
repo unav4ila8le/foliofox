@@ -1,6 +1,6 @@
 "use client";
 
-import { CartesianGrid, Line, LineChart, XAxis } from "recharts";
+import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 
 import {
   Card,
@@ -20,15 +20,15 @@ import { formatCurrency } from "@/lib/number";
 const chartData = [
   { date: "2023-01-01", netWorth: 986500 },
   { date: "2023-02-01", netWorth: 998200 },
-  { date: "2023-03-01", netWorth: 1012400 },
-  { date: "2023-04-01", netWorth: 1024800 },
-  { date: "2023-05-01", netWorth: 1038500 },
+  { date: "2023-03-01", netWorth: 992400 },
+  { date: "2023-04-01", netWorth: 1015600 },
+  { date: "2023-05-01", netWorth: 1008900 },
   { date: "2023-06-01", netWorth: 1052000 },
-  { date: "2023-07-01", netWorth: 1067800 },
-  { date: "2023-08-01", netWorth: 1075400 },
-  { date: "2023-09-01", netWorth: 1084200 },
-  { date: "2023-10-01", netWorth: 1092600 },
-  { date: "2023-11-01", netWorth: 1101500 },
+  { date: "2023-07-01", netWorth: 1048500 },
+  { date: "2023-08-01", netWorth: 1035400 },
+  { date: "2023-09-01", netWorth: 1064200 },
+  { date: "2023-10-01", netWorth: 1052600 },
+  { date: "2023-11-01", netWorth: 1081500 },
   { date: "2023-12-01", netWorth: 1110000 },
 ];
 
@@ -40,6 +40,11 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export function NetWorthLineChart() {
+  // Calculate the domain with a 10% padding
+  const minValue = Math.min(...chartData.map((d) => d.netWorth));
+  const maxValue = Math.max(...chartData.map((d) => d.netWorth));
+  const padding = (maxValue - minValue) * 0.1;
+
   return (
     <Card>
       <CardHeader>
@@ -59,6 +64,7 @@ export function NetWorthLineChart() {
             }}
           >
             <CartesianGrid vertical={false} />
+            <YAxis domain={[minValue - padding, maxValue + padding]} hide />
             <XAxis
               dataKey="date"
               tickLine={false}

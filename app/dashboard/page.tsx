@@ -14,7 +14,12 @@ export default function Page() {
         </div>
         <CurrencySelector />
       </div>
-      <NetWorthLineChart />
+      <div className="grid grid-cols-6 gap-4">
+        <div className="col-span-4">
+          <NetWorthLineChart />
+        </div>
+        <div className="col-span-2">Asset allocation chart goes here</div>
+      </div>
     </div>
   );
 }

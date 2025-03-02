@@ -46,7 +46,7 @@ export function Sidebar() {
         <Profile
           avatarUrl="https://github.com/shadcn.png"
           name="John Doe"
-          balance="1,000,000 EUR"
+          netWorth={1000000}
         />
       </SidebarHeader>
       <SidebarContent>
