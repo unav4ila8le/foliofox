@@ -15,6 +15,8 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 
+import { formatCurrency } from "@/lib/number";
+
 const chartData = [
   { date: "2023-01-01", netWorth: 986500 },
   { date: "2023-02-01", netWorth: 998200 },
@@ -43,12 +45,7 @@ export function NetWorthLineChart() {
       <CardHeader>
         <CardDescription>Net Worth</CardDescription>
         <h2 className="text-xl font-semibold">
-          {new Intl.NumberFormat("en-US", {
-            style: "decimal",
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          }).format(chartData[chartData.length - 1].netWorth)}{" "}
-          EUR
+          {formatCurrency(chartData[chartData.length - 1].netWorth, "EUR")}
         </h2>
       </CardHeader>
       <CardContent>
@@ -78,11 +75,7 @@ export function NetWorthLineChart() {
                 <ChartTooltipContent
                   formatter={(value) =>
                     typeof value === "number"
-                      ? `${new Intl.NumberFormat("en-US", {
-                          style: "decimal",
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        }).format(value)} EUR`
+                      ? formatCurrency(value, "EUR")
                       : value
                   }
                 />
