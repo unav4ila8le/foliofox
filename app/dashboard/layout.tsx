@@ -12,7 +12,13 @@ export default async function Layout({
   const defaultOpen = cookieStore.get("sidebar_state")?.value === "true";
 
   return (
-    <SidebarProvider defaultOpen={defaultOpen}>
+    <SidebarProvider
+      defaultOpen={defaultOpen}
+      style={{
+        "--sidebar-width": "max(16rem, 20vw)",
+        "--sidebar-width-mobile": "max(18rem, 80vw)",
+      }}
+    >
       <Sidebar />
       <main className="flex w-full flex-col">
         <Header />
