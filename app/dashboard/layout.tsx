@@ -1,8 +1,10 @@
+import React from "react";
 import { cookies } from "next/headers";
 
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { Header } from "@/components/dashboard/header";
+
 export default async function Layout({
   children,
 }: {
@@ -14,10 +16,12 @@ export default async function Layout({
   return (
     <SidebarProvider
       defaultOpen={defaultOpen}
-      style={{
-        "--sidebar-width": "max(16rem, 20vw)",
-        "--sidebar-width-mobile": "max(18rem, 80vw)",
-      }}
+      style={
+        {
+          "--sidebar-width": "max(16rem, 20vw)",
+          "--sidebar-width-mobile": "max(18rem, 80vw)",
+        } as React.CSSProperties
+      }
     >
       <Sidebar />
       <main className="flex w-full flex-col">
