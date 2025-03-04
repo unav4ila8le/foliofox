@@ -25,107 +25,7 @@ import {
 
 import { formatCurrency } from "@/lib/number";
 import { TimePeriod, filterDataByTimePeriod } from "@/lib/filters/time-period";
-
-// Define the data type for chart entries
-type ChartDataEntry = {
-  date: string;
-  netWorth: number;
-};
-
-// Extended mock data to include 2024
-const allChartData: ChartDataEntry[] = [
-  // January 2024
-  { date: "2024-01-01", netWorth: 1125000 },
-  { date: "2024-01-08", netWorth: 1128400 },
-  { date: "2024-01-15", netWorth: 1122900 },
-  { date: "2024-01-22", netWorth: 1127600 },
-  { date: "2024-01-29", netWorth: 1131200 },
-
-  // February 2024
-  { date: "2024-02-05", netWorth: 1128900 },
-  { date: "2024-02-12", netWorth: 1134500 },
-  { date: "2024-02-19", netWorth: 1139200 },
-  { date: "2024-02-26", netWorth: 1142300 },
-
-  // March 2024
-  { date: "2024-03-04", netWorth: 1145800 },
-  { date: "2024-03-11", netWorth: 1149200 },
-  { date: "2024-03-18", netWorth: 1147600 },
-  { date: "2024-03-25", netWorth: 1152300 },
-
-  // April 2024
-  { date: "2024-04-01", netWorth: 1156800 },
-  { date: "2024-04-08", netWorth: 1159300 },
-  { date: "2024-04-15", netWorth: 1164500 },
-  { date: "2024-04-22", netWorth: 1168900 },
-  { date: "2024-04-29", netWorth: 1172400 },
-
-  // May 2024
-  { date: "2024-05-06", netWorth: 1176800 },
-  { date: "2024-05-13", netWorth: 1181200 },
-  { date: "2024-05-20", netWorth: 1185600 },
-  { date: "2024-05-27", netWorth: 1189200 },
-
-  // June 2024
-  { date: "2024-06-03", netWorth: 1184500 },
-  { date: "2024-06-10", netWorth: 1179800 },
-  { date: "2024-06-17", netWorth: 1173500 },
-  { date: "2024-06-24", netWorth: 1167500 },
-
-  // July 2024
-  { date: "2024-07-01", netWorth: 1172300 },
-  { date: "2024-07-08", netWorth: 1176800 },
-  { date: "2024-07-15", netWorth: 1181400 },
-  { date: "2024-07-22", netWorth: 1185900 },
-  { date: "2024-07-29", netWorth: 1189500 },
-
-  // August 2024
-  { date: "2024-08-05", netWorth: 1192800 },
-  { date: "2024-08-12", netWorth: 1195600 },
-  { date: "2024-08-19", netWorth: 1193400 },
-  { date: "2024-08-26", netWorth: 1196800 },
-
-  // September 2024
-  { date: "2024-09-02", netWorth: 1192400 },
-  { date: "2024-09-09", netWorth: 1187400 },
-  { date: "2024-09-16", netWorth: 1191800 },
-  { date: "2024-09-23", netWorth: 1195200 },
-  { date: "2024-09-30", netWorth: 1198600 },
-
-  // October 2024
-  { date: "2024-10-07", netWorth: 1203200 },
-  { date: "2024-10-14", netWorth: 1207800 },
-  { date: "2024-10-21", netWorth: 1210800 },
-  { date: "2024-10-28", netWorth: 1215400 },
-
-  // November 2024
-  { date: "2024-11-04", netWorth: 1221900 },
-  { date: "2024-11-11", netWorth: 1228400 },
-  { date: "2024-11-18", netWorth: 1235900 },
-  { date: "2024-11-25", netWorth: 1245900 },
-
-  // December 2024
-  { date: "2024-12-02", netWorth: 1242400 },
-  { date: "2024-12-09", netWorth: 1238400 },
-  { date: "2024-12-16", netWorth: 1241800 },
-  { date: "2024-12-23", netWorth: 1245200 },
-  { date: "2024-12-30", netWorth: 1248600 },
-
-  // January 2025
-  { date: "2025-01-06", netWorth: 1252100 },
-  { date: "2025-01-13", netWorth: 1256700 },
-  { date: "2025-01-20", netWorth: 1253200 },
-  { date: "2025-01-27", netWorth: 1249800 },
-
-  // February 2025
-  { date: "2025-02-03", netWorth: 1245400 },
-  { date: "2025-02-10", netWorth: 1239800 },
-  { date: "2025-02-17", netWorth: 1234500 },
-  { date: "2025-02-24", netWorth: 1241900 },
-
-  // March 2025
-  { date: "2025-03-03", netWorth: 1248400 },
-];
+import { WeeklyNetWorth, weeklyNetWorth } from "@/mocks/financial/net-worth";
 
 const chartConfig = {
   netWorth: {
@@ -165,17 +65,17 @@ const formatTick = (date: string, period: TimePeriod) => {
 // Helper function to filter data points based on time period
 // For longer periods, we don't need to show every weekly data point
 const filterDataPointsByPeriod = (
-  data: ChartDataEntry[],
+  data: WeeklyNetWorth[],
   period: TimePeriod,
-): ChartDataEntry[] => {
+): WeeklyNetWorth[] => {
   if (shouldUseWeeklyTicks(period)) {
     // For weekly views, show all data points
     return data;
   } else if (period === "5-years") {
     // For 5-year view, show only the last data point of each month
-    const monthlyData: ChartDataEntry[] = [];
+    const monthlyData: WeeklyNetWorth[] = [];
     let currentMonth = -1;
-    let lastEntryOfMonth: ChartDataEntry | null = null;
+    let lastEntryOfMonth: WeeklyNetWorth | null = null;
 
     // Group by month and keep only the last entry of each month
     data.forEach((entry) => {
@@ -199,7 +99,7 @@ const filterDataPointsByPeriod = (
     return monthlyData;
   } else {
     // For 6-month and 1-year views, show only the first data point of each month
-    const monthlyData: ChartDataEntry[] = [];
+    const monthlyData: WeeklyNetWorth[] = [];
     let currentMonth = -1;
 
     // Group by month and keep only the first entry of each month
@@ -218,14 +118,14 @@ const filterDataPointsByPeriod = (
 };
 
 export function NetWorthLineChart() {
-  // State for the selected time period, default to 3 months
-  const [timePeriod, setTimePeriod] = useState<TimePeriod>("3-months");
+  // State for the selected time period, default to 6 months
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>("6-months");
   // State for the filtered data
-  const [chartData, setChartData] = useState<ChartDataEntry[]>([]);
+  const [chartData, setChartData] = useState<WeeklyNetWorth[]>([]);
 
   // Filter data based on selected time period
   useEffect(() => {
-    const filteredByTime = filterDataByTimePeriod(allChartData, timePeriod);
+    const filteredByTime = filterDataByTimePeriod(weeklyNetWorth, timePeriod);
     const filteredByDataPoints = filterDataPointsByPeriod(
       filteredByTime,
       timePeriod,
@@ -282,7 +182,10 @@ export function NetWorthLineChart() {
               right: 12,
             }}
           >
-            <CartesianGrid vertical={false} />
+            <CartesianGrid
+              vertical={false}
+              horizontalPoints={[0, 0.25, 0.5, 0.75, 1]}
+            />
             <YAxis domain={[minValue - padding, maxValue + padding]} hide />
             <XAxis
               dataKey="date"
