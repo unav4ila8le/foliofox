@@ -1,5 +1,11 @@
 // Define the time period type
-export type TimePeriod = "1-month" | "3-months" | "6-months" | "ytd" | "1-year";
+export type TimePeriod =
+  | "1-month"
+  | "3-months"
+  | "6-months"
+  | "ytd"
+  | "1-year"
+  | "5-years";
 
 // Generic type for data entries that have a date field
 export type DateEntry = {
@@ -53,6 +59,13 @@ export function filterDataByTimePeriod<T extends DateEntry>(
       const oneYearAgo = new Date();
       oneYearAgo.setFullYear(currentDate.getFullYear() - 1);
       return sortedData.filter((item) => new Date(item.date) >= oneYearAgo);
+    }
+
+    case "5-years": {
+      // Get data from the last 5 years
+      const fiveYearsAgo = new Date();
+      fiveYearsAgo.setFullYear(currentDate.getFullYear() - 5);
+      return sortedData.filter((item) => new Date(item.date) >= fiveYearsAgo);
     }
 
     default:
