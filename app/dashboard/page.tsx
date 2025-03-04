@@ -5,7 +5,7 @@ import { NetWorthLineChart } from "@/components/dashboard/charts/net-worth-line-
 export default function Page() {
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex justify-between gap-4">
+      <div className="flex items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">
             {getTimeBasedGreeting()}, John
@@ -15,10 +15,12 @@ export default function Page() {
         <CurrencySelector />
       </div>
       <div className="grid grid-cols-6 gap-4">
-        <div className="col-span-4">
+        <div className="col-span-6 md:col-span-4">
           <NetWorthLineChart />
         </div>
-        <div className="col-span-2">Asset allocation chart goes here</div>
+        <div className="col-span-6 md:col-span-2">
+          Asset allocation chart goes here
+        </div>
       </div>
     </div>
   );
