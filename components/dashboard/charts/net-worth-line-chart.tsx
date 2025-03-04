@@ -24,15 +24,13 @@ import {
 } from "@/components/ui/chart";
 
 import { formatCurrency } from "@/lib/number";
+import { TimePeriod, filterDataByTimePeriod } from "@/lib/filters/time-period";
 
 // Define the data type for chart entries
 type ChartDataEntry = {
   date: string;
   netWorth: number;
 };
-
-// Define the time period type
-type TimePeriod = "1-month" | "3-months" | "6-months" | "ytd" | "1-year";
 
 // Extended mock data to include 2024
 const allChartData: ChartDataEntry[] = [
@@ -63,60 +61,6 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-// Helper function to filter data based on time period
-function filterDataByTimePeriod(
-  data: ChartDataEntry[],
-  timePeriod: TimePeriod,
-): ChartDataEntry[] {
-  // Get current date for calculations
-  const currentDate = new Date();
-
-  // Sort data by date to ensure chronological order
-  const sortedData = [...data].sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-  );
-
-  switch (timePeriod) {
-    case "1-month": {
-      // Get data from the last month
-      const oneMonthAgo = new Date();
-      oneMonthAgo.setMonth(currentDate.getMonth() - 1);
-      return sortedData.filter((item) => new Date(item.date) >= oneMonthAgo);
-    }
-
-    case "3-months": {
-      // Get data from the last 3 months
-      const threeMonthsAgo = new Date();
-      threeMonthsAgo.setMonth(currentDate.getMonth() - 3);
-      return sortedData.filter((item) => new Date(item.date) >= threeMonthsAgo);
-    }
-
-    case "6-months": {
-      // Get data from the last 6 months
-      const sixMonthsAgo = new Date();
-      sixMonthsAgo.setMonth(currentDate.getMonth() - 6);
-      return sortedData.filter((item) => new Date(item.date) >= sixMonthsAgo);
-    }
-
-    case "ytd": {
-      // Get data from the start of the current year
-      const startOfYear = new Date(currentDate.getFullYear(), 0, 1);
-      return sortedData.filter((item) => new Date(item.date) >= startOfYear);
-    }
-
-    case "1-year": {
-      // Get data from the last year
-      const oneYearAgo = new Date();
-      oneYearAgo.setFullYear(currentDate.getFullYear() - 1);
-      return sortedData.filter((item) => new Date(item.date) >= oneYearAgo);
-    }
-
-    default:
-      // Default to showing all data
-      return sortedData;
-  }
-}
-
 export function NetWorthLineChart() {
   // State for the selected time period, default to 3 months
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("3-months");
@@ -143,7 +87,7 @@ export function NetWorthLineChart() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex justify-between gap-4">
           <div>
             <CardDescription>Net Worth</CardDescription>
             <h2 className="text-xl font-semibold">
