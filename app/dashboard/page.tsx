@@ -1,6 +1,7 @@
 import { CurrencySelector } from "@/components/dashboard/currency-selector";
 import { getTimeBasedGreeting } from "@/lib/date";
 import { NetWorthLineChart } from "@/components/dashboard/charts/net-worth-line-chart";
+import { AssetAllocationChart } from "@/components/dashboard/charts/asset-allocation-chart";
 
 export default function Page() {
   return (
@@ -19,7 +20,7 @@ export default function Page() {
           <NetWorthLineChart />
         </div>
         <div className="col-span-6 md:col-span-2">
-          Asset allocation chart goes here
+          <AssetAllocationChart />
         </div>
       </div>
     </div>
