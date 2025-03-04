@@ -133,7 +133,7 @@ export function NetWorthLineChart() {
     setChartData(filteredByDataPoints);
   }, [timePeriod]);
 
-  // Calculate the domain with a 10% padding
+  // Calculate the Y axis domain with a 10% padding
   const minValue =
     chartData.length > 0 ? Math.min(...chartData.map((d) => d.netWorth)) : 0;
   const maxValue =
@@ -182,10 +182,7 @@ export function NetWorthLineChart() {
               right: 12,
             }}
           >
-            <CartesianGrid
-              vertical={false}
-              horizontalPoints={[0, 0.25, 0.5, 0.75, 1]}
-            />
+            <CartesianGrid vertical={false} />
             <YAxis domain={[minValue - padding, maxValue + padding]} hide />
             <XAxis
               dataKey="date"
