@@ -10,6 +10,8 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 
+import { formatCurrency } from "@/lib/number/format";
+
 // Mock data representing asset allocation based on the project schema
 const chartData = [
   { category: "stocks", value: 42500, fill: "var(--color-stocks)" },
@@ -64,6 +66,9 @@ export function AssetAllocationChart() {
                   hideLabel
                   indicator="line"
                   className="min-w-auto"
+                  valueFormatter={(value) =>
+                    formatCurrency(Number(value), "USD")
+                  }
                 />
               }
             />
