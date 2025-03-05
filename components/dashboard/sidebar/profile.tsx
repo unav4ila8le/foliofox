@@ -28,7 +28,7 @@ export function Profile({ avatarUrl, name, netWorth }: ProfileProps) {
       <div className={cn("flex flex-col", isCollapsed && "hidden")}>
         <p className="text truncate font-semibold">{name}</p>
         <span className="text-muted-foreground truncate text-xs">
-          {formatCurrency(netWorth, "EUR")}
+          {formatCurrency(netWorth, "USD")}
         </span>
       </div>
     </div>

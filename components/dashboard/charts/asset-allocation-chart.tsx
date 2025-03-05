@@ -8,8 +8,6 @@ import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-  ChartLegend,
-  ChartLegendContent,
 } from "@/components/ui/chart";
 
 // Mock data representing asset allocation based on the project schema
@@ -30,7 +28,7 @@ const chartConfig = {
     color: "var(--chart-0)",
   },
   crypto: {
-    label: "Cryptocurrency",
+    label: "Crypto",
     color: "var(--chart-1)",
   },
   cash: {
@@ -56,23 +54,40 @@ export function AssetAllocationChart() {
       <CardContent>
         <ChartContainer
           config={chartConfig}
-          className="mx-auto aspect-square max-h-48 w-full"
+          className="mx-auto aspect-square max-h-64 w-full"
         >
           <PieChart>
             <ChartTooltip
               cursor={false}
-              content={<ChartTooltipContent hideLabel />}
+              content={
+                <ChartTooltipContent
+                  hideLabel
+                  indicator="line"
+                  className="min-w-auto"
+                />
+              }
             />
             <Pie
               data={chartData}
               dataKey="value"
               nameKey="category"
-              innerRadius={30}
-              paddingAngle={2}
-            />
-            <ChartLegend
-              content={<ChartLegendContent nameKey="category" />}
-              className="flex-wrap gap-x-4 gap-y-2 pt-0"
+              innerRadius={40}
+              label={({ payload, ...props }) => {
+                return (
+                  <text
+                    cx={props.cx}
+                    cy={props.cy}
+                    x={props.x}
+                    y={props.y}
+                    textAnchor={props.textAnchor}
+                    dominantBaseline={props.dominantBaseline}
+                    fill="var(--foreground)"
+                  >
+                    {payload.category}
+                  </text>
+                );
+              }}
+              labelLine={false}
             />
           </PieChart>
         </ChartContainer>

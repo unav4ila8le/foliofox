@@ -151,7 +151,7 @@ export function NetWorthLineChart() {
           <div>
             <CardDescription>Net Worth</CardDescription>
             <h2 className="text-xl font-semibold">
-              {formatCurrency(currentNetWorth, "EUR")}
+              {formatCurrency(currentNetWorth, "USD")}
             </h2>
           </div>
           <Select
@@ -173,7 +173,7 @@ export function NetWorthLineChart() {
         </div>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="h-40 w-full">
+        <ChartContainer config={chartConfig} className="h-48 w-full">
           <LineChart
             accessibilityLayer
             data={chartData}
@@ -198,7 +198,7 @@ export function NetWorthLineChart() {
                 <ChartTooltipContent
                   formatter={(value) =>
                     typeof value === "number"
-                      ? formatCurrency(value, "EUR")
+                      ? formatCurrency(value, "USD")
                       : value
                   }
                 />
