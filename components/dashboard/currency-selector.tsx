@@ -46,6 +46,10 @@ const currencies = [
     value: "hkd",
     label: "HKD",
   },
+  {
+    value: "krw",
+    label: "KRW",
+  },
 ];
 
 export function CurrencySelector() {

@@ -77,7 +77,7 @@ export function AssetAllocationChart() {
       <CardContent>
         <ChartContainer
           config={chartConfig}
-          className="mx-auto aspect-square max-h-64 w-full"
+          className="mx-auto aspect-square h-56 w-full"
         >
           <PieChart>
             <ChartTooltip
@@ -97,8 +97,13 @@ export function AssetAllocationChart() {
               data={chartData}
               dataKey="value"
               nameKey="category"
-              innerRadius={40}
+              innerRadius={"65%"}
+              outerRadius={"80%"}
+              paddingAngle={2}
+              cornerRadius={99}
               labelLine={false}
+              startAngle={90}
+              endAngle={-270}
               label={({ payload, ...props }) => {
                 // Calculate percentage for this slice
                 const percentage = (payload.value / totalValue) * 100;

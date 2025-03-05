@@ -19,7 +19,7 @@ export default function Page() {
         <div className="col-span-6 lg:col-span-4">
           <NetWorthLineChart />
         </div>
-        <div className="col-span-6 lg:col-span-2">
+        <div className="col-span-6 md:col-span-3 lg:col-span-2">
           <AssetAllocationChart />
         </div>
       </div>
