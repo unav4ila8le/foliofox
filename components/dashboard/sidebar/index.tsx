@@ -41,7 +41,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <UISidebar collapsible="icon">
+    <UISidebar>
       <SidebarHeader>
         <Profile
           avatarUrl="https://github.com/shadcn.png"

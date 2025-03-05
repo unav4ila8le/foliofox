@@ -1,8 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useSidebar } from "@/components/ui/sidebar";
 
 import { formatCurrency } from "@/lib/number";
-import { cn } from "@/lib/utils";
 
 interface ProfileProps {
   avatarUrl: string;
@@ -11,12 +9,9 @@ interface ProfileProps {
 }
 
 export function Profile({ avatarUrl, name, netWorth }: ProfileProps) {
-  const { state } = useSidebar();
-  const isCollapsed = state === "collapsed";
-
   return (
     <div className="flex items-center gap-2">
-      <Avatar className={isCollapsed ? "size-8" : "size-10"}>
+      <Avatar className={"size-10"}>
         <AvatarImage src={avatarUrl} alt={name.toLowerCase()} />
         <AvatarFallback>
           {name
@@ -25,7 +20,7 @@ export function Profile({ avatarUrl, name, netWorth }: ProfileProps) {
             .join("")}
         </AvatarFallback>
       </Avatar>
-      <div className={cn("flex flex-col", isCollapsed && "hidden")}>
+      <div className="flex flex-col">
         <p className="text truncate font-semibold">{name}</p>
         <span className="text-muted-foreground truncate text-xs">
           {formatCurrency(netWorth, "USD")}

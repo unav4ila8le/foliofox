@@ -12,15 +12,18 @@ import {
 
 export function Header() {
   return (
-    <div className="flex items-center justify-between px-4 pt-2 pb-0">
-      <TooltipProvider>
-        <Tooltip delayDuration={700}>
-          <TooltipTrigger asChild>
-            <SidebarTrigger className="-ml-2" />
-          </TooltipTrigger>
-          <TooltipContent>Toggle sidebar</TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+    <header className="bg-background sticky top-0 z-10 flex items-center justify-between px-4 py-2">
+      <div className="flex items-center gap-2">
+        <TooltipProvider>
+          <Tooltip delayDuration={700}>
+            <TooltipTrigger asChild>
+              <SidebarTrigger className="-ml-2 md:hidden" />
+            </TooltipTrigger>
+            <TooltipContent>Toggle sidebar</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <div className="hidden md:block">breadcrumb goes here</div>
+      </div>
       <div className="flex items-center gap-2">
         <Button>
           <Plus />
@@ -28,6 +31,6 @@ export function Header() {
         </Button>
         <ThemeToggle />
       </div>
-    </div>
+    </header>
   );
 }
