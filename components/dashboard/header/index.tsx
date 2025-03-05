@@ -17,7 +17,7 @@ export function Header() {
         <TooltipProvider>
           <Tooltip delayDuration={700}>
             <TooltipTrigger asChild>
-              <SidebarTrigger className="-ml-2 md:hidden" />
+              <SidebarTrigger className="-ml-2 lg:hidden" />
             </TooltipTrigger>
             <TooltipContent>Toggle sidebar</TooltipContent>
           </Tooltip>

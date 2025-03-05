@@ -1,3 +1,5 @@
+import { cookies } from "next/headers";
+
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { Header } from "@/components/dashboard/header";
@@ -7,8 +9,12 @@ export default async function Layout({
 }: {
   children: React.ReactNode;
 }) {
+  const cookieStore = await cookies();
+  const defaultOpen = cookieStore.get("sidebar_state")?.value === "true";
+
   return (
     <SidebarProvider
+      defaultOpen={defaultOpen}
       style={
         {
           "--sidebar-width": "max(16rem, 20vw)",

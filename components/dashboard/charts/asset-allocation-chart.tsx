@@ -16,7 +16,7 @@ import { formatCurrency, formatPercentage } from "@/lib/number/format";
 // Mock data representing asset allocation based on the project schema
 const chartData = [
   { category: "stocks", value: 42500, fill: "var(--color-stocks)" },
-  { category: "crypto", value: 15000, fill: "var(--color-crypto)" },
+  { category: "crypto", value: 5000, fill: "var(--color-crypto)" },
   { category: "cash", value: 8500, fill: "var(--color-cash)" },
   { category: "real_estate", value: 90000, fill: "var(--color-real_estate)" },
   {
