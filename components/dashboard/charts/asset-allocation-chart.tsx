@@ -1,6 +1,7 @@
 "use client";
 
 import { Pie, PieChart } from "recharts";
+import React from "react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -10,7 +11,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 
-import { formatCurrency } from "@/lib/number/format";
+import { formatCurrency, formatPercentage } from "@/lib/number/format";
 
 // Mock data representing asset allocation based on the project schema
 const chartData = [
@@ -18,7 +19,11 @@ const chartData = [
   { category: "crypto", value: 15000, fill: "var(--color-crypto)" },
   { category: "cash", value: 8500, fill: "var(--color-cash)" },
   { category: "real_estate", value: 90000, fill: "var(--color-real_estate)" },
-  { category: "other_assets", value: 19500, fill: "var(--color-other_assets)" },
+  {
+    category: "other_assets",
+    value: 19500,
+    fill: "var(--color-other_assets)",
+  },
 ];
 
 const chartConfig = {
@@ -48,6 +53,11 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export function AssetAllocationChart() {
+  // Calculate total value for percentage calculation
+  const totalValue = React.useMemo(() => {
+    return chartData.reduce((sum, item) => sum + item.value, 0);
+  }, []);
+
   return (
     <Card>
       <CardHeader>
@@ -78,6 +88,9 @@ export function AssetAllocationChart() {
               nameKey="category"
               innerRadius={40}
               label={({ payload, ...props }) => {
+                // Calculate percentage for this slice
+                const percentage = (payload.value / totalValue) * 100;
+
                 return (
                   <text
                     cx={props.cx}
@@ -86,9 +99,23 @@ export function AssetAllocationChart() {
                     y={props.y}
                     textAnchor={props.textAnchor}
                     dominantBaseline={props.dominantBaseline}
-                    fill="var(--foreground)"
                   >
-                    {payload.category}
+                    <tspan
+                      x={props.x}
+                      dy="0"
+                      fill="var(--foreground)"
+                      fontSize={14}
+                    >
+                      {payload.category}
+                    </tspan>
+                    <tspan
+                      x={props.x}
+                      dy="1.2em"
+                      fill="var(--muted-foreground)"
+                      fontSize={12}
+                    >
+                      {formatPercentage(percentage / 100, 1)}
+                    </tspan>
                   </text>
                 );
               }}
