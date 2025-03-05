@@ -47,7 +47,7 @@ const chartConfig = {
     color: "var(--chart-3)",
   },
   other_assets: {
-    label: "Other Assets",
+    label: "Other",
     color: "var(--chart-4)",
   },
 } satisfies ChartConfig;
@@ -57,6 +57,17 @@ export function AssetAllocationChart() {
   const totalValue = React.useMemo(() => {
     return chartData.reduce((sum, item) => sum + item.value, 0);
   }, []);
+
+  // Function to get the human-readable label from chartConfig
+  const getCategoryLabel = (category: string) => {
+    // Use type assertion to tell TypeScript that category is a valid key
+    if (category in chartConfig) {
+      return (
+        chartConfig[category as keyof typeof chartConfig]?.label || category
+      );
+    }
+    return category;
+  };
 
   return (
     <Card>
@@ -87,6 +98,7 @@ export function AssetAllocationChart() {
               dataKey="value"
               nameKey="category"
               innerRadius={40}
+              labelLine={false}
               label={({ payload, ...props }) => {
                 // Calculate percentage for this slice
                 const percentage = (payload.value / totalValue) * 100;
@@ -104,9 +116,9 @@ export function AssetAllocationChart() {
                       x={props.x}
                       dy="0"
                       fill="var(--foreground)"
-                      fontSize={14}
+                      fontSize={13}
                     >
-                      {payload.category}
+                      {getCategoryLabel(payload.category)}
                     </tspan>
                     <tspan
                       x={props.x}
@@ -119,7 +131,6 @@ export function AssetAllocationChart() {
                   </text>
                 );
               }}
-              labelLine={false}
             />
           </PieChart>
         </ChartContainer>

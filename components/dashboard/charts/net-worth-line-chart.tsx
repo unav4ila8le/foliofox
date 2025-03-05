@@ -194,8 +194,12 @@ export function NetWorthLineChart() {
             />
             <ChartTooltip
               cursor={false}
+              labelClassName="text-xs text-muted-foreground"
               content={
                 <ChartTooltipContent
+                  labelFormatter={(value) =>
+                    new Date(value).toLocaleDateString()
+                  }
                   formatter={(value) =>
                     typeof value === "number"
                       ? formatCurrency(value, "USD")
