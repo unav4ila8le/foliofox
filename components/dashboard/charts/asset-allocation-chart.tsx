@@ -1,7 +1,7 @@
 "use client";
 
+import { useMemo } from "react";
 import { Pie, PieChart, Label } from "recharts";
-import React from "react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -48,7 +48,7 @@ const chartConfig = {
 
 export function AssetAllocationChart() {
   // Calculate total value for percentage calculation
-  const totalValue = React.useMemo(() => {
+  const totalValue = useMemo(() => {
     return assetAllocation.reduce((sum, item) => sum + item.value, 0);
   }, []);
 
