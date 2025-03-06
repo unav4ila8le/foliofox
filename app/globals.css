@@ -178,7 +178,3 @@ body {
 /*
   ---break---
 */
-
-.recharts-wrapper svg {
-  overflow: inherit;
-}

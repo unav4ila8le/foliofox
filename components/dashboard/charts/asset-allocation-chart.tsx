@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ChartConfig,
   ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
@@ -96,40 +98,7 @@ export function AssetAllocationChart() {
               labelLine={false}
               startAngle={90}
               endAngle={-270}
-              label={({ payload, ...props }) => {
-                // Calculate percentage for this slice
-                const percentage = (payload.value / totalValue) * 100;
-
-                return (
-                  <text
-                    cx={props.cx}
-                    cy={props.cy}
-                    x={props.x}
-                    y={props.y}
-                    textAnchor={props.textAnchor}
-                    dominantBaseline={props.dominantBaseline}
-                  >
-                    <tspan
-                      x={props.x}
-                      dy="0"
-                      fill="var(--foreground)"
-                      fontSize={13}
-                    >
-                      {getCategoryLabel(payload.category)}
-                    </tspan>
-                    <tspan
-                      x={props.x}
-                      dy="1.2em"
-                      fill="var(--muted-foreground)"
-                      fontSize={12}
-                    >
-                      {formatPercentage(percentage / 100, 1)}
-                    </tspan>
-                  </text>
-                );
-              }}
             >
-              {/* Center label showing total net worth */}
               <Label
                 content={({ viewBox }) => {
                   if (viewBox && "cx" in viewBox && "cy" in viewBox) {
@@ -144,7 +113,7 @@ export function AssetAllocationChart() {
                           x={viewBox.cx}
                           y={viewBox.cy}
                           fill="var(--foreground)"
-                          fontSize={14}
+                          fontSize={16}
                           fontWeight="bolder"
                         >
                           {formatCompactCurrency(totalValue, "USD")}
@@ -165,6 +134,24 @@ export function AssetAllocationChart() {
                 position="center"
               />
             </Pie>
+            <ChartLegend
+              align="right"
+              layout="vertical"
+              verticalAlign="middle"
+              wrapperStyle={{ width: "40%" }}
+              className="flex max-h-56 flex-col items-start gap-2 overflow-hidden p-0"
+              content={
+                <ChartLegendContent
+                  nameKey="category"
+                  labelFormatter={(label) => getCategoryLabel(String(label))}
+                  valueFormatter={(value) => {
+                    const percentage = (Number(value) / totalValue) * 100;
+                    return formatPercentage(percentage / 100, 1);
+                  }}
+                  valueClassName="text-muted-foreground"
+                />
+              }
+            />
           </PieChart>
         </ChartContainer>
       </CardContent>

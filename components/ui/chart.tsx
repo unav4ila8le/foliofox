@@ -261,10 +261,18 @@ function ChartLegendContent({
   payload,
   verticalAlign = "bottom",
   nameKey,
+  valueFormatter,
+  labelFormatter,
+  valueClassName,
+  labelClassName,
 }: React.ComponentProps<"div"> &
   Pick<RechartsPrimitive.LegendProps, "payload" | "verticalAlign"> & {
     hideIcon?: boolean;
     nameKey?: string;
+    valueFormatter?: (value: ValueType) => string;
+    labelFormatter?: (label: React.ReactNode) => React.ReactNode;
+    valueClassName?: string;
+    labelClassName?: string;
   }) {
   const { config } = useChart();
 
@@ -283,6 +291,9 @@ function ChartLegendContent({
       {payload.map((item) => {
         const key = `${nameKey || item.dataKey || "value"}`;
         const itemConfig = getPayloadConfigFromPayload(config, item, key);
+        const label = labelFormatter
+          ? labelFormatter(itemConfig?.label || item.value)
+          : itemConfig?.label;
 
         return (
           <div
@@ -301,7 +312,14 @@ function ChartLegendContent({
                 }}
               />
             )}
-            {itemConfig?.label}
+            <span className={labelClassName}>
+              {label}{" "}
+              {valueFormatter && (
+                <span className={cn("tabular-nums", valueClassName)}>
+                  {valueFormatter(item.payload?.value)}
+                </span>
+              )}
+            </span>
           </div>
         );
       })}
