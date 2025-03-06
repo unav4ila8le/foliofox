@@ -88,3 +88,14 @@ export function formatCompactNumber(value: number): string {
   });
   return formatter.format(value);
 }
+
+/**
+ * Formats a monetary value in compact notation with currency code
+ * @param value The monetary value to format
+ * @param currency The ISO 4217 currency code
+ * @returns Formatted compact currency string (e.g., "$1.2M USD")
+ */
+export function formatCompactCurrency(value: number, currency: string): string {
+  const compactValue = formatCompactNumber(value);
+  return `${compactValue} ${currency}`;
+}

@@ -3,6 +3,12 @@ export type WeeklyNetWorth = {
   netWorth: number;
 };
 
+export type AssetAllocation = {
+  category: string;
+  value: number;
+  fill?: string;
+};
+
 export const weeklyNetWorth: WeeklyNetWorth[] = [
   // January 2024
   { date: "2024-01-01", netWorth: 1125000 },
@@ -95,4 +101,14 @@ export const weeklyNetWorth: WeeklyNetWorth[] = [
 
   // March 2025
   { date: "2025-03-03", netWorth: 1248400 },
+];
+
+// Asset allocation data - total should match the most recent net worth value
+// Current total: 1248400 (as of 2025-03-03)
+export const assetAllocation: AssetAllocation[] = [
+  { category: "stocks", value: 499360, fill: "var(--color-stocks)" },
+  { category: "crypto", value: 62420, fill: "var(--color-crypto)" },
+  { category: "cash", value: 99872, fill: "var(--color-cash)" },
+  { category: "real_estate", value: 499360, fill: "var(--color-real_estate)" },
+  { category: "other_assets", value: 87388, fill: "var(--color-other_assets)" },
 ];

@@ -1,6 +1,6 @@
 "use client";
 
-import { Pie, PieChart } from "recharts";
+import { Pie, PieChart, Label } from "recharts";
 import React from "react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,20 +11,12 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 
-import { formatCurrency, formatPercentage } from "@/lib/number/format";
-
-// Mock data representing asset allocation based on the project schema
-const chartData = [
-  { category: "stocks", value: 42500, fill: "var(--color-stocks)" },
-  { category: "crypto", value: 5000, fill: "var(--color-crypto)" },
-  { category: "cash", value: 8500, fill: "var(--color-cash)" },
-  { category: "real_estate", value: 90000, fill: "var(--color-real_estate)" },
-  {
-    category: "other_assets",
-    value: 19500,
-    fill: "var(--color-other_assets)",
-  },
-];
+import {
+  formatCurrency,
+  formatPercentage,
+  formatCompactCurrency,
+} from "@/lib/number/format";
+import { assetAllocation } from "@/mocks/financial/net-worth";
 
 const chartConfig = {
   value: {
@@ -55,7 +47,7 @@ const chartConfig = {
 export function AssetAllocationChart() {
   // Calculate total value for percentage calculation
   const totalValue = React.useMemo(() => {
-    return chartData.reduce((sum, item) => sum + item.value, 0);
+    return assetAllocation.reduce((sum, item) => sum + item.value, 0);
   }, []);
 
   // Function to get the human-readable label from chartConfig
@@ -94,7 +86,7 @@ export function AssetAllocationChart() {
               }
             />
             <Pie
-              data={chartData}
+              data={assetAllocation}
               dataKey="value"
               nameKey="category"
               innerRadius={"65%"}
@@ -136,7 +128,43 @@ export function AssetAllocationChart() {
                   </text>
                 );
               }}
-            />
+            >
+              {/* Center label showing total net worth */}
+              <Label
+                content={({ viewBox }) => {
+                  if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                    return (
+                      <text
+                        x={viewBox.cx}
+                        y={viewBox.cy}
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                      >
+                        <tspan
+                          x={viewBox.cx}
+                          y={viewBox.cy}
+                          fill="var(--foreground)"
+                          fontSize={14}
+                          fontWeight="bolder"
+                        >
+                          {formatCompactCurrency(totalValue, "USD")}
+                        </tspan>
+                        <tspan
+                          x={viewBox.cx}
+                          y={(viewBox.cy || 0) + 20}
+                          fill="var(--muted-foreground)"
+                          fontSize={12}
+                        >
+                          Net Worth
+                        </tspan>
+                      </text>
+                    );
+                  }
+                  return null;
+                }}
+                position="center"
+              />
+            </Pie>
           </PieChart>
         </ChartContainer>
       </CardContent>
