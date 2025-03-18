@@ -1,8 +1,6 @@
-import { Plus } from "lucide-react";
-
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Button } from "@/components/ui/button";
+import { NewTransaction } from "@/components/dashboard/new-transaction";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
   Tooltip,
   TooltipContent,
@@ -25,10 +23,7 @@ export function Header() {
         <div className="hidden md:block">breadcrumb goes here</div>
       </div>
       <div className="flex items-center gap-2">
-        <Button>
-          <Plus />
-          New Transaction
-        </Button>
+        <NewTransaction />
         <ThemeToggle />
       </div>
     </header>
