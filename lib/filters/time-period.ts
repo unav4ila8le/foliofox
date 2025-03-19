@@ -1,3 +1,5 @@
+import { subMonths, subYears, startOfYear, isAfter, parseISO } from "date-fns";
+
 // Define the time period type
 export type TimePeriod =
   | "1-month"
@@ -23,53 +25,53 @@ export function filterDataByTimePeriod<T extends DateEntry>(
 
   // Sort data by date to ensure chronological order
   const sortedData = [...data].sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+    (a, b) => parseISO(a.date).getTime() - parseISO(b.date).getTime(),
   );
 
   switch (timePeriod) {
     case "1-month": {
-      // Get data from the last month
-      const oneMonthAgo = new Date();
-      oneMonthAgo.setMonth(currentDate.getMonth() - 1);
-      return sortedData.filter((item) => new Date(item.date) >= oneMonthAgo);
+      const oneMonthAgo = subMonths(currentDate, 1);
+      return sortedData.filter((item) =>
+        isAfter(parseISO(item.date), oneMonthAgo),
+      );
     }
 
     case "3-months": {
-      // Get data from the last 3 months
-      const threeMonthsAgo = new Date();
-      threeMonthsAgo.setMonth(currentDate.getMonth() - 3);
-      return sortedData.filter((item) => new Date(item.date) >= threeMonthsAgo);
+      const threeMonthsAgo = subMonths(currentDate, 3);
+      return sortedData.filter((item) =>
+        isAfter(parseISO(item.date), threeMonthsAgo),
+      );
     }
 
     case "6-months": {
-      // Get data from the last 6 months
-      const sixMonthsAgo = new Date();
-      sixMonthsAgo.setMonth(currentDate.getMonth() - 6);
-      return sortedData.filter((item) => new Date(item.date) >= sixMonthsAgo);
+      const sixMonthsAgo = subMonths(currentDate, 6);
+      return sortedData.filter((item) =>
+        isAfter(parseISO(item.date), sixMonthsAgo),
+      );
     }
 
     case "ytd": {
-      // Get data from the start of the current year
-      const startOfYear = new Date(currentDate.getFullYear(), 0, 1);
-      return sortedData.filter((item) => new Date(item.date) >= startOfYear);
+      const startOfCurrentYear = startOfYear(currentDate);
+      return sortedData.filter((item) =>
+        isAfter(parseISO(item.date), startOfCurrentYear),
+      );
     }
 
     case "1-year": {
-      // Get data from the last year
-      const oneYearAgo = new Date();
-      oneYearAgo.setFullYear(currentDate.getFullYear() - 1);
-      return sortedData.filter((item) => new Date(item.date) >= oneYearAgo);
+      const oneYearAgo = subYears(currentDate, 1);
+      return sortedData.filter((item) =>
+        isAfter(parseISO(item.date), oneYearAgo),
+      );
     }
 
     case "5-years": {
-      // Get data from the last 5 years
-      const fiveYearsAgo = new Date();
-      fiveYearsAgo.setFullYear(currentDate.getFullYear() - 5);
-      return sortedData.filter((item) => new Date(item.date) >= fiveYearsAgo);
+      const fiveYearsAgo = subYears(currentDate, 5);
+      return sortedData.filter((item) =>
+        isAfter(parseISO(item.date), fiveYearsAgo),
+      );
     }
 
     default:
-      // Default to showing all data
       return sortedData;
   }
 }
