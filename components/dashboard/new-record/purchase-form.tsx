@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { formatNumber } from "@/lib/number/format";
 import {
   Form,
   FormControl,
@@ -39,16 +40,8 @@ const formSchema = z.object({
     required_error: "Please select an asset type.",
   }),
   asset_name: z.string().min(1, "Please enter the asset name."),
-  quantity: z.string().transform((val) => {
-    const num = parseFloat(val);
-    if (isNaN(num)) throw new Error("Invalid number");
-    return num;
-  }),
-  price_per_unit: z.string().transform((val) => {
-    const num = parseFloat(val);
-    if (isNaN(num)) throw new Error("Invalid number");
-    return num;
-  }),
+  quantity: z.string(),
+  price_per_unit: z.string(),
   currency: z.string({
     required_error: "Please select a currency.",
   }),
@@ -59,19 +52,28 @@ const formSchema = z.object({
     .or(z.literal("")),
 });
 
+type FormValues = z.infer<typeof formSchema>;
+
 export function PurchaseForm() {
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       date: new Date(),
       currency: "EUR",
       description: "",
+      quantity: "",
+      price_per_unit: "",
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    // Will be implemented to save to the database
-    console.log(values);
+  function onSubmit(values: FormValues) {
+    // Transform strings to numbers only when submitting
+    const submitData = {
+      ...values,
+      quantity: parseFloat(values.quantity.replace(/,/g, "")) || 0,
+      price_per_unit: parseFloat(values.price_per_unit.replace(/,/g, "")) || 0,
+    };
+    console.log(submitData);
   }
 
   return (
@@ -172,10 +174,13 @@ export function PurchaseForm() {
                 <FormLabel>Quantity</FormLabel>
                 <FormControl>
                   <Input
-                    type="number"
-                    step="any"
                     placeholder="Enter quantity"
                     {...field}
+                    onBlur={(e) => {
+                      const formatted = formatNumber(e.target.value);
+                      field.onChange(formatted);
+                      field.onBlur();
+                    }}
                   />
                 </FormControl>
                 <FormMessage />
@@ -191,10 +196,20 @@ export function PurchaseForm() {
                 <FormLabel>Price per Unit</FormLabel>
                 <FormControl>
                   <Input
-                    type="number"
-                    step="0.01"
                     placeholder="Enter price"
                     {...field}
+                    onBlur={(e) => {
+                      const formatted = formatNumber(
+                        e.target.value,
+                        undefined,
+                        {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 6,
+                        },
+                      );
+                      field.onChange(formatted);
+                      field.onBlur();
+                    }}
                   />
                 </FormControl>
                 <FormMessage />

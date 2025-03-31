@@ -1,17 +1,10 @@
 type FormatNumberOptions = {
   /**
-   * The currency code to use (ISO 4217)
-   * @example "EUR", "USD", "GBP"
-   */
-  currency?: string;
-  /**
    * Minimum number of decimal places
-   * @default 2 for currency, 0 for regular numbers
    */
   minimumFractionDigits?: number;
   /**
    * Maximum number of decimal places
-   * @default 2 for currency, 0 for regular numbers
    */
   maximumFractionDigits?: number;
   /**
@@ -25,42 +18,71 @@ type FormatNumberOptions = {
  * Default options for number formatting
  */
 const defaultOptions: FormatNumberOptions = {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
   useGrouping: true,
 };
 
 /**
  * Formats a number according to the specified options
- * @param value The number to format
- * @param options Formatting options
+ * @param value The number or string to format
+ * @param decimals Shorthand for setting both min and max fraction digits
+ * @param options Additional formatting options
  * @returns Formatted number string
  */
 export function formatNumber(
-  value: number,
+  value: number | string,
+  decimals?: number,
   options?: FormatNumberOptions,
 ): string {
-  const opts = { ...defaultOptions, ...options };
+  // Handle string input
+  const num =
+    typeof value === "string" ? parseFloat(value.replace(/,/g, "")) : value;
+  if (isNaN(num)) return "";
+
+  // If decimals is provided, use it for both min and max
+  const decimalOptions =
+    decimals !== undefined
+      ? {
+          minimumFractionDigits: decimals,
+          maximumFractionDigits: decimals,
+        }
+      : {};
+
+  const opts = { ...defaultOptions, ...decimalOptions, ...options };
 
   const formatter = new Intl.NumberFormat("en-US", {
-    style: opts.currency ? "decimal" : "decimal",
+    style: "decimal",
     minimumFractionDigits: opts.minimumFractionDigits,
     maximumFractionDigits: opts.maximumFractionDigits,
     useGrouping: opts.useGrouping,
   });
 
-  const formattedValue = formatter.format(value);
-  return opts.currency ? `${formattedValue} ${opts.currency}` : formattedValue;
+  return formatter.format(num);
 }
 
 /**
  * Formats a monetary value with the specified currency
  * @param value The monetary value to format
  * @param currency The ISO 4217 currency code
- * @returns Formatted currency string
+ * @returns Formatted currency string with proper currency symbol
  */
-export function formatCurrency(value: number, currency: string): string {
-  return formatNumber(value, { currency });
+export function formatCurrency(
+  value: number | string,
+  currency: string,
+): string {
+  const num =
+    typeof value === "string" ? parseFloat(value.replace(/,/g, "")) : value;
+  if (isNaN(num)) return "";
+
+  const formatter = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+  return formatter.format(num);
 }
 
 /**
@@ -69,11 +91,15 @@ export function formatCurrency(value: number, currency: string): string {
  * @param decimals Number of decimal places (default: 2)
  * @returns Formatted percentage string
  */
-export function formatPercentage(value: number, decimals: number = 2): string {
-  return `${formatNumber(value * 100, {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  })}%`;
+export function formatPercentage(
+  value: number | string,
+  decimals: number = 2,
+): string {
+  const num =
+    typeof value === "string" ? parseFloat(value.replace(/,/g, "")) : value;
+  if (isNaN(num)) return "";
+
+  return `${formatNumber(num * 100, decimals)}%`;
 }
 
 /**
@@ -81,21 +107,28 @@ export function formatPercentage(value: number, decimals: number = 2): string {
  * @param value The number to format
  * @returns Formatted string with K, M, B suffix
  */
-export function formatCompactNumber(value: number): string {
+export function formatCompactNumber(value: number | string): string {
+  const num =
+    typeof value === "string" ? parseFloat(value.replace(/,/g, "")) : value;
+  if (isNaN(num)) return "";
+
   const formatter = new Intl.NumberFormat("en-US", {
     notation: "compact",
     maximumFractionDigits: 1,
   });
-  return formatter.format(value);
+  return formatter.format(num);
 }
 
 /**
  * Formats a monetary value in compact notation with currency code
  * @param value The monetary value to format
  * @param currency The ISO 4217 currency code
- * @returns Formatted compact currency string (e.g., "$1.2M USD")
+ * @returns Formatted compact currency string (e.g., "1.2M USD")
  */
-export function formatCompactCurrency(value: number, currency: string): string {
+export function formatCompactCurrency(
+  value: number | string,
+  currency: string,
+): string {
   const compactValue = formatCompactNumber(value);
   return `${compactValue} ${currency}`;
 }
