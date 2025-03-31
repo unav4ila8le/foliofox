@@ -18,6 +18,32 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load Google fonts.
 
+## Utility Functions
+
+### Number Formatting
+
+The project includes several utility functions for number formatting. Here's a quick cheatsheet:
+
+```typescript
+// Basic number formatting
+formatNumber(1234.5678); // "1,235"
+formatNumber(1234.5678, 2); // "1,234.57"
+
+// Currency formatting
+formatCurrency(1234.56, "USD"); // "$1,234.56"
+formatCurrency(1234.56, "EUR"); // "€1,234.56"
+
+// Percentage formatting
+formatPercentage(0.1234); // "12.34%"
+formatPercentage(0.1234, 1); // "12.3%"
+
+// Compact number formatting
+formatCompactNumber(1234567); // "1.2M"
+formatCompactCurrency(1234567, "USD"); // "1.2M USD"
+```
+
+All formatting functions accept both numbers and strings as input. For more details, check the implementation in `lib/number/format.ts`.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

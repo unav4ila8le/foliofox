@@ -40,8 +40,8 @@ const formSchema = z.object({
     required_error: "Please select an asset type.",
   }),
   asset_name: z.string().min(1, "Please enter the asset name."),
-  quantity: z.string(),
-  price_per_unit: z.string(),
+  quantity: z.string().min(1, "Please enter the quantity."),
+  price_per_unit: z.string().min(1, "Please enter the price per unit."),
   currency: z.string({
     required_error: "Please select a currency.",
   }),
@@ -59,10 +59,10 @@ export function PurchaseForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       date: new Date(),
-      currency: "EUR",
-      description: "",
+      asset_name: "",
       quantity: "",
       price_per_unit: "",
+      description: "",
     },
   });
 
