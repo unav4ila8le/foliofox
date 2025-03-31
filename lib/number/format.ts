@@ -15,6 +15,19 @@ type FormatNumberOptions = {
 };
 
 /**
+ * Options for currency formatting
+ */
+type CurrencyFormatOptions = {
+  /**
+   * How to display the currency
+   * - 'code': Shows the ISO currency code (e.g., "1,234.56 USD")
+   * - 'symbol': Shows the currency symbol (e.g., "$1,234.56")
+   * @default 'code'
+   */
+  display?: "code" | "symbol";
+};
+
+/**
  * Default options for number formatting
  */
 const defaultOptions: FormatNumberOptions = {
@@ -65,24 +78,31 @@ export function formatNumber(
  * Formats a monetary value with the specified currency
  * @param value The monetary value to format
  * @param currency The ISO 4217 currency code
- * @returns Formatted currency string with proper currency symbol
+ * @param options Currency formatting options
+ * @returns Formatted currency string
  */
 export function formatCurrency(
   value: number | string,
   currency: string,
+  options: CurrencyFormatOptions = { display: "code" },
 ): string {
   const num =
     typeof value === "string" ? parseFloat(value.replace(/,/g, "")) : value;
   if (isNaN(num)) return "";
 
-  const formatter = new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  if (options.display === "symbol") {
+    const formatter = new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      currencyDisplay: "symbol",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    return formatter.format(num);
+  }
 
-  return formatter.format(num);
+  // Code display (default)
+  return `${formatNumber(num, 2)} ${currency}`;
 }
 
 /**

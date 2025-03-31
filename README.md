@@ -30,8 +30,10 @@ formatNumber(1234.5678); // "1,235"
 formatNumber(1234.5678, 2); // "1,234.57"
 
 // Currency formatting
-formatCurrency(1234.56, "USD"); // "$1,234.56"
-formatCurrency(1234.56, "EUR"); // "€1,234.56"
+formatCurrency(1234.56, "USD"); // "1,234.56 USD"
+formatCurrency(1234.56, "EUR"); // "1,234.56 EUR"
+formatCurrency(1234.56, "USD", { display: "code" }); // "1,234.56 USD"
+formatCurrency(1234.56, "USD", { display: "symbol" }); // "$1,234.56"
 
 // Percentage formatting
 formatPercentage(0.1234); // "12.34%"
