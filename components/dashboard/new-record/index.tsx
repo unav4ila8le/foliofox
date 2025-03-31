@@ -10,8 +10,10 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { PurchaseForm } from "./purchase-form";
 import { SaleForm } from "./sale-form";
+import { TransferForm } from "./transfer-form";
 import { UpdateForm } from "./update-form";
 
 export function NewRecord() {
@@ -51,7 +53,9 @@ export function NewRecord() {
           <TabsContent value="sale">
             <SaleForm />
           </TabsContent>
-          <TabsContent value="transfer">Transfer</TabsContent>
+          <TabsContent value="transfer">
+            <TransferForm />
+          </TabsContent>
           <TabsContent value="update">
             <UpdateForm />
           </TabsContent>

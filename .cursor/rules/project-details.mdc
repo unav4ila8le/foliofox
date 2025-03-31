@@ -53,7 +53,7 @@ Well structured category system for both assets and expenses to enable better an
 
 ### Data Input & Asset Selection
 Users can quickly add transactions via a structured flow:
-1. Select transaction type → Purchase, Sell, or Transfer
+1. Select transaction type → Purchase, Sale, or Transfer
 2. Choose category → Stock, Crypto, Real Estate, Credit Card, Cash, Metal, Luxury, etc.
 3. Enter the transaction date
 4. Specify source of funds. Users selecting stocks or crypto should be able to search for the specific asset and link a logo (similar to brokerage apps). The app dynamically calculates net worth based on transactions instead of static snapshots
