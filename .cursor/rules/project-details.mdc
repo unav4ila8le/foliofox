@@ -32,13 +32,20 @@ I have drafted a short list of other products that are doing something very simi
 
 ## 4. Core Features (MVP Scope)
 ### Transactions-Based Net Worth Tracking
-Users log financial activities through transactions instead of only manually updating assets.
-Transaction types:
-- Income (Salary, dividends, refunds, etc.)
-- Expense (Rent, groceries, subscriptions, etc.)
+The app uses a hybrid approach to track net worth:
+
+1. **Balance-Based Tracking (for Cash/Bank Accounts)**
+- Users update account balances periodically (weekly/monthly)
+- No need to track individual expenses
+- Historical balance snapshots are stored
+- Changes between periods are automatically calculated
+
+2. **Transaction-Based Tracking (for Investments)**
+Users log investment activities through transactions:
 - Investment Purchase (Buying stocks, real estate, crypto, etc.)
 - Investment Sale (Selling stocks, withdrawing funds, crypto, etc.)
-- Asset Transfer (Moving money between accounts). Each transaction updates the related asset/liability category and maintains historical accuracy. Users can view transaction history to see how their net worth evolved.
+- Asset Transfer (Moving money between investment accounts)
+Each transaction updates the related investment category and maintains historical accuracy.
 
 Support for editing and deleting past transactions with proper adjustments to calculations.
 Transfer transactions should link outgoing and incoming entries to prevent double-counting.

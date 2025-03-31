@@ -12,39 +12,48 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Purchase } from "./purchase";
+import { PurchaseForm } from "./purchase-form";
+import { UpdateForm } from "./update-form";
 
-export function NewTransaction() {
+export function NewRecord() {
   return (
     <Dialog>
       <DialogTrigger asChild>
         <Button>
           <Plus />
-          New Transaction
+          New Record
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>New Transaction</DialogTitle>
-          <DialogDescription>Add a new transaction here.</DialogDescription>
+          <DialogTitle>New Record</DialogTitle>
+          <DialogDescription>
+            Add a new transaction, balance or value update.
+          </DialogDescription>
         </DialogHeader>
-        <Tabs defaultValue="purchase">
+        <Tabs defaultValue="balance">
           <TabsList className="w-full">
             <TabsTrigger value="purchase" className="cursor-pointer">
               Purchase
             </TabsTrigger>
             <TabsTrigger value="sell" className="cursor-pointer">
-              Sell
+              Sale
             </TabsTrigger>
             <TabsTrigger value="transfer" className="cursor-pointer">
               Transfer
             </TabsTrigger>
+            <TabsTrigger value="update" className="cursor-pointer">
+              Update
+            </TabsTrigger>
           </TabsList>
           <TabsContent value="purchase">
-            <Purchase />
+            <PurchaseForm />
           </TabsContent>
           <TabsContent value="sell">Sell</TabsContent>
           <TabsContent value="transfer">Transfer</TabsContent>
+          <TabsContent value="update">
+            <UpdateForm />
+          </TabsContent>
         </Tabs>
         <DialogFooter>
           <DialogClose asChild>
@@ -52,7 +61,7 @@ export function NewTransaction() {
               Cancel
             </Button>
           </DialogClose>
-          <Button type="submit" form="new-transaction-form">
+          <Button type="submit" form="new-entry-form">
             Save changes
           </Button>
         </DialogFooter>

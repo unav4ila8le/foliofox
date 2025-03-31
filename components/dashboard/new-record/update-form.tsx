@@ -23,33 +23,44 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const formSchema = z.object({
-  date_of_transaction: z.date({
-    required_error: "A date of transaction is required.",
+  date: z.date({
+    required_error: "A date is required.",
   }),
-  description: z
+  account: z.string({
+    required_error: "Please select an account.",
+  }),
+  balance: z.string().transform((val) => {
+    const num = parseFloat(val);
+    if (isNaN(num)) throw new Error("Invalid number");
+    return num;
+  }),
+  notes: z
     .string()
-    .min(3, { message: "Description must be at least 3 characters." })
-    .max(256, { message: "Description must not exceed 256 characters." })
+    .max(256, { message: "Notes must not exceed 256 characters." })
     .optional()
     .or(z.literal("")),
 });
 
-export function Purchase() {
-  // 1. Define your form.
+export function UpdateForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      date_of_transaction: new Date(),
-      description: "",
+      date: new Date(),
+      notes: "",
     },
   });
 
-  // 2. Define a submit handler.
   function onSubmit(values: z.infer<typeof formSchema>) {
-    // Do something with the form values.
-    // This will be type-safe and validated.
+    // Will be implemented to save to the database
     console.log(values);
   }
 
@@ -57,15 +68,15 @@ export function Purchase() {
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        id="new-transaction-form"
+        id="new-entry-form"
         className="grid gap-4 py-4"
       >
         <FormField
           control={form.control}
-          name="date_of_transaction"
+          name="date"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Date of transaction</FormLabel>
+              <FormLabel>Date</FormLabel>
               <Popover>
                 <PopoverTrigger asChild>
                   <FormControl>
@@ -101,14 +112,60 @@ export function Purchase() {
             </FormItem>
           )}
         />
+
         <FormField
           control={form.control}
-          name="description"
+          name="account"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Description (optional)</FormLabel>
+              <FormLabel>Account</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select an account" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="checking">Checking Account</SelectItem>
+                  <SelectItem value="savings">Savings Account</SelectItem>
+                  <SelectItem value="cash">Cash</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="balance"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Current Balance</FormLabel>
               <FormControl>
-                <Input placeholder="Enter a short description" {...field} />
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="Enter current balance"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="notes"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Notes (optional)</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="Add any notes about this update"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
