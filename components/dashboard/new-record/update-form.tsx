@@ -6,6 +6,7 @@ import { z } from "zod";
 import { format } from "date-fns";
 import { CalendarIcon, LoaderCircle } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/number/format";
@@ -52,11 +53,7 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-interface UpdateFormProps {
-  onSuccess?: () => void;
-}
-
-export function UpdateForm({ onSuccess }: UpdateFormProps) {
+export function UpdateForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -82,9 +79,13 @@ export function UpdateForm({ onSuccess }: UpdateFormProps) {
       // TODO: Replace with actual API call
       console.log(submitData);
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      onSuccess?.();
+
+      // Show success toast and reset form
+      toast.success("Value update added successfully");
+      form.reset();
     } catch (error) {
       console.error(error);
+      toast.error("Failed to add value update. Please try again.");
     } finally {
       setIsSubmitting(false);
     }

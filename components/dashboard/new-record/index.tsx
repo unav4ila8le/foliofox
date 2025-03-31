@@ -16,10 +16,6 @@ import { PurchaseForm } from "./purchase-form";
 import { UpdateForm } from "./update-form";
 
 export function NewRecord() {
-  const handleSuccess = () => {
-    // TODO: Handle successful submission (e.g., close dialog, show toast)
-  };
-
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -51,12 +47,12 @@ export function NewRecord() {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="purchase">
-            <PurchaseForm onSuccess={handleSuccess} />
+            <PurchaseForm />
           </TabsContent>
           <TabsContent value="sell">Sell</TabsContent>
           <TabsContent value="transfer">Transfer</TabsContent>
           <TabsContent value="update">
-            <UpdateForm onSuccess={handleSuccess} />
+            <UpdateForm />
           </TabsContent>
         </Tabs>
       </DialogContent>
