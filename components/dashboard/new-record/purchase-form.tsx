@@ -36,6 +36,9 @@ const formSchema = z.object({
   date: z.date({
     required_error: "A date of transaction is required.",
   }),
+  source_of_funds: z.string({
+    required_error: "Please select the source of funds.",
+  }),
   asset_type: z.string({
     required_error: "Please select an asset type.",
   }),
@@ -120,6 +123,38 @@ export function PurchaseForm() {
                   />
                 </PopoverContent>
               </Popover>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="source_of_funds"
+          render={({ field }) => (
+            <FormItem className="sm:w-1/2 sm:pr-1">
+              <FormLabel>Source of Funds</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select source of funds" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="bank_account">Bank Account</SelectItem>
+                  <SelectItem value="investment_account">
+                    Investment Account
+                  </SelectItem>
+                  <SelectItem value="savings_account">
+                    Savings Account
+                  </SelectItem>
+                  <SelectItem value="cash_wallet">Cash/Wallet</SelectItem>
+                  <SelectItem value="credit_line">Credit Line</SelectItem>
+                  <SelectItem value="external_transfer">
+                    External Transfer
+                  </SelectItem>
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}

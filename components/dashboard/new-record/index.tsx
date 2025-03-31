@@ -61,9 +61,7 @@ export function NewRecord() {
               Cancel
             </Button>
           </DialogClose>
-          <Button type="submit" form="new-entry-form">
-            Save changes
-          </Button>
+          <Button type="submit">Save changes</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
