@@ -152,7 +152,7 @@ export function PurchaseForm() {
           name="source_of_funds"
           render={({ field }) => (
             <FormItem className="sm:w-1/2 sm:pr-1">
-              <FormLabel>Source of Funds</FormLabel>
+              <FormLabel>Source of funds</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger className="w-full">
@@ -184,7 +184,7 @@ export function PurchaseForm() {
           name="asset_type"
           render={({ field }) => (
             <FormItem className="sm:w-1/2 sm:pr-1">
-              <FormLabel>Asset Type</FormLabel>
+              <FormLabel>Asset type</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger className="w-full">
@@ -210,7 +210,7 @@ export function PurchaseForm() {
           name="asset_name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Asset Name/Symbol</FormLabel>
+              <FormLabel>Asset name/symbol</FormLabel>
               <FormControl>
                 <Input placeholder="e.g., AAPL, BTC, VWCE" {...field} />
               </FormControl>
@@ -247,7 +247,7 @@ export function PurchaseForm() {
             name="price_per_unit"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Price per Unit</FormLabel>
+                <FormLabel>Price per unit</FormLabel>
                 <FormControl>
                   <Input
                     placeholder="Enter price"
