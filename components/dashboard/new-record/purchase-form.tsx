@@ -80,14 +80,14 @@ export function PurchaseForm() {
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        id="new-entry-form"
-        className="grid gap-4 py-4"
+        id="purchase-form"
+        className="grid gap-x-2 gap-y-4 py-4"
       >
         <FormField
           control={form.control}
           name="date"
           render={({ field }) => (
-            <FormItem>
+            <FormItem className="sm:w-1/2 sm:pr-1">
               <FormLabel>Date of transaction</FormLabel>
               <Popover>
                 <PopoverTrigger asChild>
@@ -95,7 +95,7 @@ export function PurchaseForm() {
                     <Button
                       variant="outline"
                       className={cn(
-                        "w-full text-left font-normal sm:max-w-56",
+                        "text-left font-normal",
                         !field.value && "text-muted-foreground",
                       )}
                     >
@@ -129,11 +129,11 @@ export function PurchaseForm() {
           control={form.control}
           name="asset_type"
           render={({ field }) => (
-            <FormItem>
+            <FormItem className="sm:w-1/2 sm:pr-1">
               <FormLabel>Asset Type</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select asset type" />
                   </SelectTrigger>
                 </FormControl>
@@ -165,7 +165,7 @@ export function PurchaseForm() {
           )}
         />
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid gap-x-2 gap-y-4 sm:grid-cols-2">
           <FormField
             control={form.control}
             name="quantity"
@@ -222,11 +222,11 @@ export function PurchaseForm() {
           control={form.control}
           name="currency"
           render={({ field }) => (
-            <FormItem>
+            <FormItem className="sm:w-1/2 sm:pr-1">
               <FormLabel>Currency</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select currency" />
                   </SelectTrigger>
                 </FormControl>

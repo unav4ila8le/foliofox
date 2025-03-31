@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { formatNumber } from "@/lib/number/format";
 import {
   Form,
   FormControl,
@@ -35,47 +36,53 @@ const formSchema = z.object({
   date: z.date({
     required_error: "A date is required.",
   }),
-  account: z.string({
-    required_error: "Please select an account.",
+  item: z.string({
+    required_error: "Please select an item.",
   }),
-  balance: z.string().transform((val) => {
-    const num = parseFloat(val);
-    if (isNaN(num)) throw new Error("Invalid number");
-    return num;
-  }),
-  notes: z
+  amount: z.string().min(1, "Please enter the amount."),
+  value: z.string().min(1, "Please enter the value."),
+  description: z
     .string()
-    .max(256, { message: "Notes must not exceed 256 characters." })
+    .max(256, { message: "Description must not exceed 256 characters." })
     .optional()
     .or(z.literal("")),
 });
 
+type FormValues = z.infer<typeof formSchema>;
+
 export function UpdateForm() {
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       date: new Date(),
-      notes: "",
+      amount: "",
+      value: "",
+      description: "",
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    // Will be implemented to save to the database
-    console.log(values);
+  function onSubmit(values: FormValues) {
+    // Transform strings to numbers when submitting
+    const submitData = {
+      ...values,
+      amount: parseFloat(values.amount.replace(/,/g, "")) || 0,
+      value: parseFloat(values.value.replace(/,/g, "")) || 0,
+    };
+    console.log(submitData);
   }
 
   return (
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        id="new-entry-form"
-        className="grid gap-4 py-4"
+        id="update-form"
+        className="grid gap-x-2 gap-y-4 py-4"
       >
         <FormField
           control={form.control}
           name="date"
           render={({ field }) => (
-            <FormItem>
+            <FormItem className="sm:w-1/2 sm:pr-1">
               <FormLabel>Date</FormLabel>
               <Popover>
                 <PopoverTrigger asChild>
@@ -83,7 +90,7 @@ export function UpdateForm() {
                     <Button
                       variant="outline"
                       className={cn(
-                        "w-full text-left font-normal sm:max-w-56",
+                        "text-left font-normal",
                         !field.value && "text-muted-foreground",
                       )}
                     >
@@ -115,20 +122,25 @@ export function UpdateForm() {
 
         <FormField
           control={form.control}
-          name="account"
+          name="item"
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Account</FormLabel>
+            <FormItem className="sm:w-1/2 sm:pr-1">
+              <FormLabel>Item</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select an account" />
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select an item" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="checking">Checking Account</SelectItem>
-                  <SelectItem value="savings">Savings Account</SelectItem>
-                  <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="checking_account">
+                    Checking Account
+                  </SelectItem>
+                  <SelectItem value="btc">BTC</SelectItem>
+                  <SelectItem value="eth">ETH</SelectItem>
+                  <SelectItem value="usd_cash">USD Cash</SelectItem>
+                  <SelectItem value="eur_cash">EUR Cash</SelectItem>
+                  <SelectItem value="house_in_rome">House in Rome</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -136,31 +148,65 @@ export function UpdateForm() {
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="balance"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Current Balance</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  step="0.01"
-                  placeholder="Enter current balance"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid gap-x-2 gap-y-4 sm:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="amount"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Amount</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Enter amount"
+                    {...field}
+                    onBlur={(e) => {
+                      const formatted = formatNumber(e.target.value);
+                      field.onChange(formatted);
+                      field.onBlur();
+                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="value"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Value</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Enter value"
+                    {...field}
+                    onBlur={(e) => {
+                      const formatted = formatNumber(
+                        e.target.value,
+                        undefined,
+                        {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 6,
+                        },
+                      );
+                      field.onChange(formatted);
+                      field.onBlur();
+                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <FormField
           control={form.control}
-          name="notes"
+          name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Notes (optional)</FormLabel>
+              <FormLabel>Description (optional)</FormLabel>
               <FormControl>
                 <Input
                   placeholder="Add any notes about this update"
