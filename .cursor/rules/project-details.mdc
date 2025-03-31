@@ -75,6 +75,65 @@ Users can quickly add transactions via a structured flow:
 - Individual assets and transactions remain in their original currency
 - The system uses daily exchange rates to perform the conversion
 
+### Asset Categories and Currency Handling
+
+The system organizes assets into distinct categories, each with specific currency and valuation requirements:
+
+1. **Cash & Bank Accounts**
+   - Always requires specific currency (EUR, USD, etc.)
+   - Types: Checking Accounts, Savings Accounts, Cash/Wallet, Credit Lines
+   - Balance-based tracking with periodic updates
+   - Direct currency conversion possible
+
+2. **Investment Securities**
+   - Usually traded in a specific market currency
+   - Types: Stocks, ETFs, Bonds, Investment Funds
+   - Transaction-based tracking
+   - Requires price history in trading currency
+
+3. **Cryptocurrencies**
+   - Has native denomination (BTC, ETH, etc.)
+   - Valued in user's preferred fiat currency
+   - Transaction-based tracking
+   - Requires price history in multiple fiat currencies
+
+4. **Real Estate**
+   - Valued in local currency where property is located
+   - Types: Residential, Commercial, Land
+   - Manual value updates with optional transaction history
+   - May require currency conversion for total net worth
+
+5. **Precious Metals**
+   - Measured in weight (g, oz, kg)
+   - Typically valued in USD (international standard)
+   - Transaction-based tracking with weight and price
+   - Requires spot price history
+
+6. **Luxury Assets**
+   - Valued in purchase/market currency
+   - Types: Art, Collectibles, Watches, Other Valuables
+   - Manual value updates with optional transaction history
+   - May require periodic revaluation
+
+### Currency Handling Rules
+1. Each asset category has specific currency requirements:
+   - Cash accounts: Must specify currency
+   - Investment securities: Track in trading currency
+   - Crypto: Track quantity in native units, value in fiat
+   - Real estate: Track in local currency
+   - Precious metals: Track weight and USD value
+   - Luxury items: Track in purchase currency
+
+2. Net Worth Calculation:
+   - All assets are converted to user's preferred currency for total net worth
+   - Use daily exchange rates for currency conversion
+   - Store historical exchange rates for accurate point-in-time valuation
+
+3. Transaction Requirements:
+   - Purchase/Sale: Requires asset currency and transaction currency
+   - Transfers: Must be in same currency or specify exchange rate
+   - Updates: Must specify currency for value updates
+
 ## **5. Database Schema (Supabase)**
 ### **5.1 Account Balances Table (`account_balances`)**
 | Column        | Type      | Description |
