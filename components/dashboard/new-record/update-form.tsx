@@ -4,7 +4,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, LoaderCircle } from "lucide-react";
+import { useState } from "react";
 
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/number/format";
@@ -24,6 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
+import { DialogClose } from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -50,7 +52,12 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export function UpdateForm() {
+interface UpdateFormProps {
+  onSuccess?: () => void;
+}
+
+export function UpdateForm({ onSuccess }: UpdateFormProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -61,22 +68,33 @@ export function UpdateForm() {
     },
   });
 
-  function onSubmit(values: FormValues) {
-    // Transform strings to numbers when submitting
-    const submitData = {
-      ...values,
-      amount: parseFloat(values.amount.replace(/,/g, "")) || 0,
-      value: parseFloat(values.value.replace(/,/g, "")) || 0,
-    };
-    console.log(submitData);
+  async function onSubmit(values: FormValues) {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+
+    try {
+      const submitData = {
+        ...values,
+        amount: parseFloat(values.amount.replace(/,/g, "")) || 0,
+        value: parseFloat(values.value.replace(/,/g, "")) || 0,
+      };
+
+      // TODO: Replace with actual API call
+      console.log(submitData);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      onSuccess?.();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        id="update-form"
-        className="grid gap-x-2 gap-y-4 py-4"
+        className="grid gap-x-2 gap-y-4"
       >
         <FormField
           control={form.control}
@@ -217,6 +235,27 @@ export function UpdateForm() {
             </FormItem>
           )}
         />
+
+        {/* Footer */}
+        <div className="flex justify-end gap-2">
+          <DialogClose asChild>
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-1/2 sm:w-auto"
+            >
+              Cancel
+            </Button>
+          </DialogClose>
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-1/2 sm:w-auto"
+          >
+            {isSubmitting && <LoaderCircle className="mr-2 animate-spin" />}
+            Save changes
+          </Button>
+        </div>
       </form>
     </Form>
   );

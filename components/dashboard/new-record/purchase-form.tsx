@@ -4,10 +4,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
-
-import { cn } from "@/lib/utils";
-import { formatNumber } from "@/lib/number/format";
+import { CalendarIcon, LoaderCircle } from "lucide-react";
+import { useState } from "react";
+import { DialogClose } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Form,
   FormControl,
@@ -21,9 +22,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Calendar } from "@/components/ui/calendar";
 import {
   Select,
   SelectContent,
@@ -31,6 +30,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import { formatNumber } from "@/lib/number/format";
 
 const formSchema = z.object({
   date: z.date({
@@ -57,7 +58,12 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export function PurchaseForm() {
+interface PurchaseFormProps {
+  onSuccess?: () => void;
+}
+
+export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -69,22 +75,34 @@ export function PurchaseForm() {
     },
   });
 
-  function onSubmit(values: FormValues) {
-    // Transform strings to numbers only when submitting
-    const submitData = {
-      ...values,
-      quantity: parseFloat(values.quantity.replace(/,/g, "")) || 0,
-      price_per_unit: parseFloat(values.price_per_unit.replace(/,/g, "")) || 0,
-    };
-    console.log(submitData);
+  async function onSubmit(values: FormValues) {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+
+    try {
+      const submitData = {
+        ...values,
+        quantity: parseFloat(values.quantity.replace(/,/g, "")) || 0,
+        price_per_unit:
+          parseFloat(values.price_per_unit.replace(/,/g, "")) || 0,
+      };
+
+      // TODO: Replace with actual API call
+      console.log(submitData);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      onSuccess?.();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        id="purchase-form"
-        className="grid gap-x-2 gap-y-4 py-4"
+        className="grid gap-x-2 gap-y-4"
       >
         <FormField
           control={form.control}
@@ -293,6 +311,27 @@ export function PurchaseForm() {
             </FormItem>
           )}
         />
+
+        {/* Footer */}
+        <div className="flex justify-end gap-2">
+          <DialogClose asChild>
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-1/2 sm:w-auto"
+            >
+              Cancel
+            </Button>
+          </DialogClose>
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-1/2 sm:w-auto"
+          >
+            {isSubmitting && <LoaderCircle className="mr-2 animate-spin" />}
+            Save changes
+          </Button>
+        </div>
       </form>
     </Form>
   );

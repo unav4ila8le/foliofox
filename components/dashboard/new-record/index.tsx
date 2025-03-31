@@ -1,3 +1,5 @@
+"use client";
+
 import { Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -5,17 +7,19 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogClose,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PurchaseForm } from "./purchase-form";
 import { UpdateForm } from "./update-form";
 
 export function NewRecord() {
+  const handleSuccess = () => {
+    // TODO: Handle successful submission (e.g., close dialog, show toast)
+  };
+
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -31,8 +35,8 @@ export function NewRecord() {
             Add a new transaction, balance or value update.
           </DialogDescription>
         </DialogHeader>
-        <Tabs defaultValue="balance">
-          <TabsList className="w-full">
+        <Tabs defaultValue="purchase">
+          <TabsList className="mb-2 w-full">
             <TabsTrigger value="purchase" className="cursor-pointer">
               Purchase
             </TabsTrigger>
@@ -47,22 +51,14 @@ export function NewRecord() {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="purchase">
-            <PurchaseForm />
+            <PurchaseForm onSuccess={handleSuccess} />
           </TabsContent>
           <TabsContent value="sell">Sell</TabsContent>
           <TabsContent value="transfer">Transfer</TabsContent>
           <TabsContent value="update">
-            <UpdateForm />
+            <UpdateForm onSuccess={handleSuccess} />
           </TabsContent>
         </Tabs>
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button type="button" variant="secondary">
-              Cancel
-            </Button>
-          </DialogClose>
-          <Button type="submit">Save changes</Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
