@@ -47,7 +47,7 @@ Users log investment activities through transactions:
 - Asset Transfer (Moving money between investment accounts)
 Each transaction updates the related investment category and maintains historical accuracy.
 
-Support for editing and deleting past transactions with proper adjustments to calculations.
+Support for editing and deleting past transactions/balances with proper adjustments to calculations.
 Transfer transactions should link outgoing and incoming entries to prevent double-counting.
 Well structured category system for both assets and expenses to enable better analysis
 
@@ -76,7 +76,19 @@ Users can quickly add transactions via a structured flow:
 - The system uses daily exchange rates to perform the conversion
 
 ## **5. Database Schema (Supabase)**
-### **5.1 Transactions Table (`transactions`)**
+### **5.1 Account Balances Table (`account_balances`)**
+| Column        | Type      | Description |
+|-----|----|----|
+| `id`         | UUID     | Unique identifier |
+| `user_id`    | UUID     | Links to a user |
+| `account_id` | UUID     | Links to an account in `holdings` |
+| `balance`    | FLOAT    | Account balance |
+| `date`       | DATE     | Balance snapshot date |
+| `currency`   | TEXT     | EUR, USD, etc. |
+| `notes`      | TEXT     | Optional notes about the balance update |
+| `created_at` | TIMESTAMP| When this balance was recorded |
+
+### **5.2 Transactions Table (`transactions`)**
 | Column        | Type      | Description |
 |--------------|----------|-------------|
 | `id`         | UUID     | Unique identifier |
@@ -97,16 +109,17 @@ Users can quickly add transactions via a structured flow:
 
 ### **5.2 Assets & Liabilities Table (`holdings`)**
 | Column      | Type      | Description |
-|------------|----------|-------------|
+|---|----|----|
 | `id`       | UUID     | Unique identifier |
 | `user_id`  | UUID     | Links to a user |
 | `name`     | TEXT     | Asset/liability name |
 | `category` | TEXT     | Category (Stocks, Crypto, Cash, Debt, etc.) |
+| `tracking_method` | TEXT | "TRANSACTION" or "BALANCE" |
 | `currency` | TEXT     | EUR, USD, etc. |
 | `logo_url` | TEXT     | URL to asset logo for better visualization |
 | `symbol`   | TEXT     | Ticker symbol for financial assets |
 | `isin`     | TEXT     | International Securities Identification Number |
-| `current_quantity` | FLOAT | Current quantity owned (calculated from transactions) |
+| `current_quantity` | FLOAT | Current quantity owned (for transaction-based assets) |
 | `price_update_method` | TEXT | "API", "Manual", etc. |
 | `created_at` | TIMESTAMP | Asset added date |
 
@@ -138,13 +151,16 @@ Users can quickly add transactions via a structured flow:
 | `date`      | DATE     | Date of rate snapshot |
 
 ## **6. API Endpoints**
-✅ `GET /api/net-worth` → Returns total net worth calculated from transactions  
+✅ `GET /api/net-worth` → Returns total net worth calculated from both transactions and balances  
 ✅ `GET /api/net-worth/history` → Returns historical net worth points for charts  
 ✅ `POST /api/transactions` → Adds a new transaction  
 ✅ `GET /api/transactions` → Retrieves all transactions with filtering options  
 ✅ `PUT /api/transactions/:id` → Updates an existing transaction  
 ✅ `DELETE /api/transactions/:id` → Soft-deletes a transaction  
-✅ `POST /api/transactions/bulk` → Imports multiple transactions (for historical data)  
+✅ `POST /api/balances` → Records a new balance snapshot  
+✅ `GET /api/balances` → Retrieves balance history for accounts  
+✅ `PUT /api/balances/:id` → Updates a balance snapshot  
+✅ `DELETE /api/balances/:id` → Removes a balance snapshot  
 ✅ `GET /api/assets` → Retrieves all tracked assets & liabilities  
 ✅ `POST /api/assets` → Adds a new asset or liability  
 ✅ `PUT /api/assets/:id` → Updates an asset  
