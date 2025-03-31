@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { CalendarIcon, LoaderCircle } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+
 import { DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -65,9 +66,12 @@ export function PurchaseForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       date: new Date(),
+      source_of_funds: "",
+      asset_type: "",
       asset_name: "",
       quantity: "",
       price_per_unit: "",
+      currency: "",
       description: "",
     },
   });
@@ -153,7 +157,7 @@ export function PurchaseForm() {
           render={({ field }) => (
             <FormItem className="sm:w-1/2 sm:pr-1">
               <FormLabel>Source of funds</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select source of funds" />
@@ -185,7 +189,7 @@ export function PurchaseForm() {
           render={({ field }) => (
             <FormItem className="sm:w-1/2 sm:pr-1">
               <FormLabel>Asset type</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select asset type" />
@@ -278,7 +282,7 @@ export function PurchaseForm() {
           render={({ field }) => (
             <FormItem className="sm:w-1/2 sm:pr-1">
               <FormLabel>Currency</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select currency" />

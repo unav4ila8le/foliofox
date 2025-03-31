@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PurchaseForm } from "./purchase-form";
+import { SaleForm } from "./sale-form";
 import { UpdateForm } from "./update-form";
 
 export function NewRecord() {
@@ -34,7 +35,7 @@ export function NewRecord() {
             <TabsTrigger value="purchase" className="cursor-pointer">
               Purchase
             </TabsTrigger>
-            <TabsTrigger value="sell" className="cursor-pointer">
+            <TabsTrigger value="sale" className="cursor-pointer">
               Sale
             </TabsTrigger>
             <TabsTrigger value="transfer" className="cursor-pointer">
@@ -47,7 +48,9 @@ export function NewRecord() {
           <TabsContent value="purchase">
             <PurchaseForm />
           </TabsContent>
-          <TabsContent value="sell">Sell</TabsContent>
+          <TabsContent value="sale">
+            <SaleForm />
+          </TabsContent>
           <TabsContent value="transfer">Transfer</TabsContent>
           <TabsContent value="update">
             <UpdateForm />
