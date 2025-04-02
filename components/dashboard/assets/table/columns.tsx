@@ -2,34 +2,52 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 
-import { formatCurrency } from "@/lib/number/format";
+import { formatNumber } from "@/lib/number/format";
 
 // This type is used to define the shape of our data.
 // You can use a Zod schema here if you want.
-export type Payment = {
+export type Asset = {
   id: string;
-  amount: number;
-  status: "pending" | "processing" | "success" | "failed";
-  email: string;
+  asset_name: string;
+  currency: string;
+  value: number;
+  quantity: number;
+  total_value: number;
 };
 
-export const columns: ColumnDef<Payment>[] = [
+export const columns: ColumnDef<Asset>[] = [
   {
-    accessorKey: "status",
-    header: "Status",
+    accessorKey: "asset_name",
+    header: "Asset Name",
   },
   {
-    accessorKey: "email",
-    header: "Email",
+    accessorKey: "currency",
+    header: "Currency",
   },
   {
-    accessorKey: "amount",
-    header: () => <div className="text-right">Amount</div>,
+    accessorKey: "value",
+    header: "Value",
     cell: ({ row }) => {
-      const amount = row.getValue("amount") as number;
-      const formatted = formatCurrency(amount, "USD", { display: "symbol" });
+      const value = row.getValue<number>("value");
 
-      return <div className="text-right font-medium">{formatted}</div>;
+      return <div className="tabular-nums">{formatNumber(value, 2)}</div>;
+    },
+  },
+  {
+    accessorKey: "quantity",
+    header: "Quantity",
+  },
+  {
+    accessorKey: "total_value",
+    header: () => <div className="text-right">Total Value</div>,
+    cell: ({ row }) => {
+      const total_value = row.getValue<number>("total_value");
+
+      return (
+        <div className="text-right tabular-nums">
+          {formatNumber(total_value, 2)}
+        </div>
+      );
     },
   },
 ];

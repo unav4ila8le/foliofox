@@ -1,14 +1,24 @@
-import { Payment, columns } from "@/components/dashboard/assets/table/columns";
+import { Asset, columns } from "@/components/dashboard/assets/table/columns";
 import { DataTable } from "@/components/dashboard/assets/table/data-table";
 
-async function getData(): Promise<Payment[]> {
+async function getData(): Promise<Asset[]> {
   // Fetch data from your API here.
   return [
     {
       id: "728ed52f",
-      amount: 100,
-      status: "pending",
-      email: "m@example.com",
+      asset_name: "WISE Account",
+      currency: "USD",
+      value: 51056.04,
+      quantity: 1,
+      total_value: 51056.04,
+    },
+    {
+      id: "728ed52f",
+      asset_name: "CSR Account",
+      currency: "EUR",
+      value: 63991.89,
+      quantity: 1,
+      total_value: 63991.89,
     },
     // ...
   ];
