@@ -13,12 +13,20 @@ async function getData(): Promise<Asset[]> {
       total_value: 51056.04,
     },
     {
-      id: "728ed52f",
+      id: "728ed53f",
       asset_name: "CSR Account",
       currency: "EUR",
       value: 63991.89,
       quantity: 1,
       total_value: 63991.89,
+    },
+    {
+      id: "728ed54f",
+      asset_name: "IBKR Account",
+      currency: "EUR",
+      value: 1733.2,
+      quantity: 1,
+      total_value: 1733.2,
     },
     // ...
   ];
