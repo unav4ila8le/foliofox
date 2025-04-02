@@ -35,7 +35,7 @@ export default async function Assets() {
           Here&apos;s a list of all your assets
         </p>
       </div>
-      <DataTable columns={columns} data={data} />
+      <DataTable columns={columns} data={data} title="Cash" count={2} />
     </div>
   );
 }
