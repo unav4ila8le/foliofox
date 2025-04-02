@@ -54,5 +54,12 @@
     "prettier-plugin-tailwindcss": "^0.6.11",
     "tailwindcss": "^4.0.8",
     "typescript": "^5"
+  },
+  "overrides": {
+    "react-day-picker": {
+      "react": "^19.0.0",
+      "react-dom": "^19.0.0"
+    },
+    "react-is": "^19.1.0"
   }
 }
