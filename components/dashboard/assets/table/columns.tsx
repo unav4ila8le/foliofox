@@ -2,6 +2,8 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 
+import { Badge } from "@/components/ui/badge";
+
 import { formatNumber } from "@/lib/number/format";
 
 // This type is used to define the shape of our data.
@@ -23,6 +25,11 @@ export const columns: ColumnDef<Asset>[] = [
   {
     accessorKey: "currency",
     header: "Currency",
+    cell: ({ row }) => {
+      const currency = row.getValue<string>("currency");
+
+      return <Badge variant="secondary">{currency}</Badge>;
+    },
   },
   {
     accessorKey: "value",
