@@ -95,14 +95,17 @@ export function formatCurrency(
       style: "currency",
       currency,
       currencyDisplay: "symbol",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
     });
     return formatter.format(num);
   }
 
-  // Code display (default)
-  return `${formatNumber(num, 2)} ${currency}`;
+  // For code display, we'll also use Intl.NumberFormat but with code display
+  const formatter = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+    currencyDisplay: "code",
+  });
+  return formatter.format(num);
 }
 
 /**

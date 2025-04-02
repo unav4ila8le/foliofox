@@ -60,11 +60,12 @@ The project includes several utility functions for number formatting. Here's a q
 formatNumber(1234.5678); // "1,235"
 formatNumber(1234.5678, 2); // "1,234.57"
 
-// Currency formatting
-formatCurrency(1234.56, "USD"); // "1,234.56 USD"
-formatCurrency(1234.56, "EUR"); // "1,234.56 EUR"
-formatCurrency(1234.56, "USD", { display: "code" }); // "1,234.56 USD"
+// Currency formatting (uses currency-specific decimal places)
+formatCurrency(1234.56, "USD"); // "USD 1,234.56"  // 2 decimals for USD
+formatCurrency(1234.56, "JPY"); // "JPY 1,235"     // 0 decimals for JPY
+formatCurrency(1234.56, "BHD"); // "BHD 1,234.560" // 3 decimals for BHD
 formatCurrency(1234.56, "USD", { display: "symbol" }); // "$1,234.56"
+formatCurrency(1234.56, "JPY", { display: "symbol" }); // "¥1,235"
 
 // Percentage formatting
 formatPercentage(0.1234); // "12.34%"
@@ -75,7 +76,7 @@ formatCompactNumber(1234567); // "1.2M"
 formatCompactCurrency(1234567, "USD"); // "1.2M USD"
 ```
 
-All formatting functions accept both numbers and strings as input. For more details, check the implementation in `lib/number/format.ts`.
+All formatting functions accept both numbers and strings as input. Currency formatting automatically uses the appropriate number of decimal places based on the currency code. For more details, check the implementation in `lib/number/format.ts`.
 
 ## Learn More
 

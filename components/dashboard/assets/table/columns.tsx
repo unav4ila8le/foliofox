@@ -2,6 +2,8 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 
+import { formatCurrency } from "@/lib/number/format";
+
 // This type is used to define the shape of our data.
 // You can use a Zod schema here if you want.
 export type Payment = {
@@ -22,6 +24,12 @@ export const columns: ColumnDef<Payment>[] = [
   },
   {
     accessorKey: "amount",
-    header: "Amount",
+    header: () => <div className="text-right">Amount</div>,
+    cell: ({ row }) => {
+      const amount = row.getValue("amount") as number;
+      const formatted = formatCurrency(amount, "USD", { display: "symbol" });
+
+      return <div className="text-right font-medium">{formatted}</div>;
+    },
   },
 ];
