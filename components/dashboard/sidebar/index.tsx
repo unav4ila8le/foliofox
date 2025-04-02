@@ -14,6 +14,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Profile } from "./profile";
 import { Branding } from "./branding";
@@ -39,6 +40,7 @@ const items = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { setOpenMobile } = useSidebar();
 
   return (
     <UISidebar>
@@ -64,7 +66,7 @@ export function Sidebar() {
                         : "text-muted-foreground"
                     }
                   >
-                    <Link href={item.url}>
+                    <Link href={item.url} onClick={() => setOpenMobile(false)}>
                       <item.icon />
                       <span>{item.title}</span>
                     </Link>
