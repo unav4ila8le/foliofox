@@ -18,6 +18,38 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load Google fonts.
 
+## Package Dependencies Notes
+
+### Current Overrides
+
+The project currently uses package overrides in `package.json` to handle React 19 compatibility. These are temporary solutions until the packages are officially updated:
+
+```json
+{
+  "overrides": {
+    "react-day-picker": {
+      "react": "^19.0.0",
+      "react-dom": "^19.0.0"
+    }
+  }
+}
+```
+
+#### Why these overrides?
+
+- **react-day-picker**: We're using shadcn/ui's calendar component which depends on react-day-picker v8. This version doesn't officially support React 19, so we use an override until shadcn updates to react-day-picker v9.
+
+#### Future Updates
+
+- When shadcn/ui updates their calendar component to use react-day-picker v9:
+  1. Remove the react-day-picker override
+  2. Update react-day-picker to v9
+  3. Update date-fns to v4 (currently locked to v3.6.0 for compatibility)
+
+#### Other Dependencies to Watch
+
+- `@hookform/resolvers` is currently at v4 and should not be updated to v5 until we upgrade react-hook-form to v8
+
 ## Utility Functions
 
 ### Number Formatting
