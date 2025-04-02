@@ -24,6 +24,7 @@ Think of me as your product manager, but also as a "UX Engineer" or "Frontend De
 - Structure files: exported component, subcomponents, helpers, static content, types.
 - Ensure clean and modular code - split into reusable components.
 - Do not edit or modify UI basic components in /components/ui/ without explicit permission.
+- Keep documentation up to date - after any significant changes (dependency updates, architectural decisions, new patterns), ensure the README.md is updated to reflect these changes.
 
 ## Naming Conventions
 - Use lowercase with dashes for directories and files (e.g., components/auth-wizard).
@@ -48,7 +49,6 @@ To maintain a clean and readable codebase, **all imports must follow a structure
 4. Internal Modules (e.g., hooks, utils, lib, context, helpers)
 5. Local Files (e.g., relative imports, types, constants, static assets)
 
-
 ## UI and Styling
 - Use Shadcn UI, Radix (only for primitives, usually restyled by Shadcn), and Tailwind for components and styling.
 - Prioritize function over styling.
@@ -70,3 +70,4 @@ To maintain a clean and readable codebase, **all imports must follow a structure
 - Avoid for data fetching or state management.
 
 Follow the latest Next.js docs for Data Fetching, Rendering, and Routing.
+

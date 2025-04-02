@@ -28,8 +28,7 @@ The project currently uses package overrides in `package.json` to handle React 1
 {
   "overrides": {
     "react-day-picker": {
-      "react": "^19.0.0",
-      "react-dom": "^19.0.0"
+      "react": "^19.0.0"
     }
   }
 }
