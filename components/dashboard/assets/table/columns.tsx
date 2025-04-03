@@ -12,6 +12,7 @@ import { formatNumber } from "@/lib/number/format";
 export type Asset = {
   id: string;
   asset_name: string;
+  asset_type: string;
   currency: string;
   value: number;
   quantity: number;

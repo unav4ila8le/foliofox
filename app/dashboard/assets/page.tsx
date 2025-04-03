@@ -7,6 +7,7 @@ async function getData(): Promise<Asset[]> {
     {
       id: "728ed52f",
       asset_name: "WISE Account",
+      asset_type: "Cash",
       currency: "USD",
       value: 51056.04,
       quantity: 1,
@@ -15,6 +16,7 @@ async function getData(): Promise<Asset[]> {
     {
       id: "728ed53f",
       asset_name: "CSR Account",
+      asset_type: "Cash",
       currency: "EUR",
       value: 63991.89,
       quantity: 1,
@@ -23,10 +25,20 @@ async function getData(): Promise<Asset[]> {
     {
       id: "728ed54f",
       asset_name: "IBKR Account",
+      asset_type: "Stocks",
       currency: "EUR",
       value: 1733.2,
       quantity: 1,
       total_value: 1733.2,
+    },
+    {
+      id: "728ed55f",
+      asset_name: "Bitcoin",
+      asset_type: "Crypto",
+      currency: "USD",
+      value: 45000,
+      quantity: 0.5,
+      total_value: 22500,
     },
     // ...
   ];
