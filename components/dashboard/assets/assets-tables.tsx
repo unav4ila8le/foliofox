@@ -1,12 +1,18 @@
+"use client";
+
+import { useState } from "react";
 import { Asset, columns } from "@/components/dashboard/assets/table/columns";
 import { DataTable } from "@/components/dashboard/assets/table/data-table";
+import { Input } from "@/components/ui/input";
 
 interface AssetsTablesProps {
   data: Asset[];
 }
 
 export function AssetsTables({ data }: AssetsTablesProps) {
-  // Group assets by type
+  const [filterValue, setFilterValue] = useState("");
+
+  // Group assets by type without filtering (TanStack will handle filtering)
   const groupedAssets = data.reduce(
     (acc, asset) => {
       const { asset_type } = asset;
@@ -20,16 +26,22 @@ export function AssetsTables({ data }: AssetsTablesProps) {
   );
 
   return (
-    <>
+    <div className="flex flex-col gap-4">
+      <Input
+        placeholder="Filter assets..."
+        value={filterValue}
+        onChange={(e) => setFilterValue(e.target.value)}
+        className="max-w-sm"
+      />
       {Object.entries(groupedAssets).map(([assetType, assets]) => (
         <DataTable
           key={assetType}
           columns={columns}
           data={assets}
           title={assetType}
-          count={assets.length}
+          filterValue={filterValue}
         />
       ))}
-    </>
+    </div>
   );
 }
