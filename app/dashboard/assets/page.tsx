@@ -47,6 +47,19 @@ async function getData(): Promise<Asset[]> {
 export default async function Assets() {
   const data = await getData();
 
+  // Group assets by type
+  const groupedAssets = data.reduce(
+    (acc, asset) => {
+      const { asset_type } = asset;
+      if (!acc[asset_type]) {
+        acc[asset_type] = [];
+      }
+      acc[asset_type].push(asset);
+      return acc;
+    },
+    {} as Record<string, Asset[]>,
+  );
+
   return (
     <div className="flex flex-col gap-4">
       <div>
@@ -55,7 +68,15 @@ export default async function Assets() {
           Here&apos;s a list of all your assets
         </p>
       </div>
-      <DataTable columns={columns} data={data} title="Cash" count={2} />
+      {Object.entries(groupedAssets).map(([assetType, assets]) => (
+        <DataTable
+          key={assetType}
+          columns={columns}
+          data={assets}
+          title={assetType}
+          count={assets.length}
+        />
+      ))}
     </div>
   );
 }
