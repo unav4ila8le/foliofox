@@ -115,7 +115,6 @@ function CurrencyList({
                 setValue(currency.value);
                 setOpen(false);
               }}
-              className="cursor-pointer"
             >
               {currency.label}
               <Check
