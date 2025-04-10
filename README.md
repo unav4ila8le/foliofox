@@ -92,3 +92,51 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Supabase Setup Checklist (MVP)
+
+This checklist outlines the steps to set up the Supabase backend for the Patrivio MVP based on the refined schema and API plan.
+
+**1. Supabase Project Setup:**
+
+- [ ] Create a new project on the [Supabase Dashboard](https://supabase.com/dashboard).
+- [ ] Note down your Project URL and `anon` key from the API settings.
+- [ ] Store these securely (e.g., in environment variables, **do not commit them directly to Git**).
+
+**2. Database Schema Creation:**
+
+- [ ] Navigate to the SQL Editor in your Supabase project dashboard.
+- [ ] Create the `holdings` table with the refined MVP columns: `id`, `user_id`, `name`, `category`, `tracking_method`, `currency`, `logo_url`, `current_quantity`, `created_at`. Ensure `user_id` references `auth.users`.
+- [ ] Create the `transactions` table with the refined MVP columns: `id`, `user_id`, `holding_id`, `date`, `type`, `amount`, `currency`, `quantity`, `category`, `notes`, `linked_transfer_id`, `created_at`. Ensure foreign keys link correctly.
+- [ ] Create the `account_balances` table with the refined MVP columns: `id`, `user_id`, `holding_id`, `date`, `balance`, `currency`, `notes`, `created_at`. Ensure foreign keys link correctly.
+- [ ] Create the `asset_prices` table with the refined MVP columns: `id`, `holding_id`, `date`, `price`, `currency`, `source`, `created_at`. Ensure foreign keys link correctly.
+- [ ] Create the `currency_rates` table with the refined MVP columns: `id`, `date`, `base_currency`, `target_currency`, `rate`, `created_at`.
+- [ ] Create the `preferences` table with the refined MVP columns: `user_id`, `display_currency`, `updated_at`. Ensure `user_id` is the primary key and references `auth.users`.
+- [ ] (Optional but Recommended) Set up Row Level Security (RLS) policies on all tables to ensure users can only access their own data. Start with simple policies (e.g., `user_id = auth.uid()`).
+
+**3. Next.js Project Integration:**
+
+- [ ] Install necessary Supabase packages:
+  ```bash
+  npm install @supabase/supabase-js @supabase/ssr @supabase/auth-helpers-nextjs
+  # or yarn or pnpm
+  ```
+- [ ] Create a `.env.local` file (if it doesn't exist) in the project root.
+- [ ] Add your Supabase Project URL and Anon Key to `.env.local`:
+  ```
+  NEXT_PUBLIC_SUPABASE_URL=YOUR_SUPABASE_URL
+  NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
+  ```
+- [ ] Configure Supabase client creation using `@supabase/ssr` package for use in Server Components, Client Components, and API Routes (follow Supabase Next.js docs/examples). This typically involves creating utility functions to get Supabase clients for different contexts (server, client, route handler).
+- [ ] Implement Supabase Auth UI or build custom login/signup components using `supabase.auth` methods.
+- [ ] Wrap the application layout with an Auth provider/context if needed to manage session state.
+
+**4. Build Initial API Routes:**
+
+- [ ] Create the essential API route handlers identified in the refined plan (e.g., `/api/holdings`, `/api/transactions`, `/api/net-worth/summary`, etc.) using Next.js App Router Route Handlers.
+- [ ] Implement data fetching and mutations within these handlers using the configured Supabase client. Ensure user authentication/authorization is checked in each handler (e.g., using RLS or checking `auth.uid()`).
+
+**5. Connect Frontend Components:**
+
+- [ ] Update frontend components (Dashboard pages, Sidebar, etc.) to fetch data from the new API routes instead of using mock data.
+- [ ] Implement forms and actions to call the `POST`/`PUT` API routes for adding/updating data (e.g., "New transaction" button).
