@@ -163,7 +163,23 @@ The system organizes assets into distinct categories, each with specific currenc
 | `current_quantity` | FLOAT | (Nullable) Current quantity owned (for `TRANSACTION` tracked assets) |
 | `created_at` | TIMESTAMPZ | Asset added date |
 
-### **5.3 Asset Price History Table (`asset_prices`)**
+### **5.3 Transactions Table (`transactions`)**
+| Column        | Type      | Description |
+|---------------|-----------|-------------|
+| `id`              | UUID     | Unique identifier |
+| `user_id`         | UUID     | Links to `auth.users` |
+| `holding_id`      | UUID     | (Nullable) Links to a specific holding in `holdings` |
+| `date`            | DATE     | Transaction date |
+| `type`            | TEXT     | Type (e.g., "PURCHASE", "SALE", "TRANSFER_IN", "TRANSFER_OUT", "INCOME", "EXPENSE") |
+| `amount`          | FLOAT    | Monetary value of the transaction |
+| `currency`        | TEXT     | Currency of the amount (e.g., EUR, USD) |
+| `quantity`        | FLOAT    | (Nullable) Quantity of units (e.g., shares, coins) for `TRANSACTION` holdings |
+| `category`        | TEXT     | Transaction category (e.g., "Stock", "Crypto", "Salary", "Groceries") |
+| `notes`           | TEXT     | (Nullable) Optional user notes |
+| `linked_transfer_id`| UUID     | (Nullable) Links corresponding TRANSFER_IN/TRANSFER_OUT transactions |
+| `created_at`      | TIMESTAMPZ| Transaction record creation date |
+
+### **5.4 Asset Price History Table (`asset_prices`)**
 | Column       | Type      | Description |
 |----|----|----|
 | `id`        | UUID     | Unique identifier |
@@ -174,14 +190,14 @@ The system organizes assets into distinct categories, each with specific currenc
 | `source`    | TEXT     | (Nullable) Source of price ("API", "MANUAL") |
 | `created_at` | TIMESTAMPZ | Price record creation date |
 
-### **5.4 User Preferences Table (`preferences`)**
+### **5.5 User Preferences Table (`preferences`)**
 | Column       | Type      | Description |
 |----|----|----|
 | `user_id`   | UUID     | Primary Key, Links to `auth.users` |
 | `display_currency`  | TEXT     | Default currency for displaying net worth (e.g., "EUR", "USD") |
 | `updated_at` | TIMESTAMPZ | Last updated timestamp |
 
-### **5.5 Currency Rates Table (`currency_rates`)**
+### **5.6 Currency Rates Table (`currency_rates`)**
 | Column       | Type      | Description |
 |----|----|----|
 | `id`        | UUID     | Unique identifier |
