@@ -3,7 +3,7 @@ import { getTimeBasedGreeting } from "@/lib/date";
 import { NetWorthLineChart } from "@/components/dashboard/charts/net-worth-line-chart";
 import { AssetAllocationChart } from "@/components/dashboard/charts/asset-allocation-chart";
 
-export default function Dashboard() {
+export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-end justify-between gap-4">

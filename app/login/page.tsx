@@ -1,24 +1,17 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/utils/supabase/server";
-import { login, signup } from "@/lib/auth/actions";
+import Link from "next/link";
+
+import { Logo } from "@/components/ui/logo";
+import { LoginForm } from "@/components/auth/login-form";
 
 export default async function LoginPage() {
-  // Check if user is already logged in and redirect to dashboard
-  const supabase = await createClient();
-
-  const { data, error } = await supabase.auth.getUser();
-  if (data?.user && !error) {
-    redirect("/dashboard");
-  }
-
   return (
-    <form>
-      <label htmlFor="email">Email:</label>
-      <input id="email" name="email" type="email" required />
-      <label htmlFor="password">Password:</label>
-      <input id="password" name="password" type="password" required />
-      <button formAction={login}>Log in</button>
-      <button formAction={signup}>Sign up</button>
-    </form>
+    <div className="bg-muted flex min-h-svh flex-col items-center justify-center p-4">
+      <div className="flex w-full max-w-sm flex-col gap-6">
+        <Link href="/" className="self-center">
+          <Logo />
+        </Link>
+        <LoginForm />
+      </div>
+    </div>
   );
 }

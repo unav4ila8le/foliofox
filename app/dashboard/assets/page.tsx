@@ -44,7 +44,7 @@ async function getData(): Promise<Asset[]> {
   ];
 }
 
-export default async function Assets() {
+export default async function AssetsPage() {
   const data = await getData();
 
   return (
