@@ -97,13 +97,41 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 This checklist outlines the steps to set up the Supabase backend for the Patrivio MVP based on the refined schema and API plan.
 
+> **Note on Development Order**: It's recommended to complete the Supabase setup first (steps 1-3), then integrate with your local Next.js app (step 4), develop the API routes and frontend components (steps 5-6), and finally deploy to Vercel.
+
 **1. Supabase Project Setup:**
 
 - [ ] Create a new project on the [Supabase Dashboard](https://supabase.com/dashboard).
 - [ ] Note down your Project URL and `anon` key from the API settings.
 - [ ] Store these securely (e.g., in environment variables, **do not commit them directly to Git**).
 
-**2. Database Schema Creation:**
+**2. Supabase MCP Setup (For Development Assistance):**
+
+- [ ] Go to the [Supabase Dashboard](https://supabase.com/dashboard) and navigate to your account settings
+- [ ] Create a new personal access token with a descriptive name (e.g., "Patrivio MCP")
+- [ ] Copy the generated token and store it securely (you won't be able to view it again)
+- [ ] Create a `.cursor` directory in your project root if it doesn't exist already
+- [ ] Create a `.cursor/mcp.json` file with the following configuration:
+  ```json
+  {
+    "mcpServers": {
+      "supabase": {
+        "command": "npx",
+        "args": [
+          "-y",
+          "@supabase/mcp-server-supabase@latest",
+          "--access-token",
+          "YOUR_PERSONAL_ACCESS_TOKEN"
+        ]
+      }
+    }
+  }
+  ```
+- [ ] Replace `YOUR_PERSONAL_ACCESS_TOKEN` with your actual token
+- [ ] Add `.cursor/mcp.json` to your `.gitignore` file to avoid committing the token
+- [ ] Open Cursor and navigate to Settings/MCP to verify the Supabase MCP server shows an active status
+
+**3. Database Schema Creation:**
 
 - [ ] Navigate to the SQL Editor in your Supabase project dashboard.
 - [ ] Create the `holdings` table with the refined MVP columns: `id`, `user_id`, `name`, `category`, `tracking_method`, `currency`, `logo_url`, `current_quantity`, `created_at`, `api_symbol` (nullable), `isin` (nullable), `exchange` (nullable). Ensure `user_id` references `auth.users`.
@@ -114,7 +142,7 @@ This checklist outlines the steps to set up the Supabase backend for the Patrivi
 - [ ] Create the `preferences` table with the refined MVP columns: `user_id`, `display_currency`, `updated_at`. Ensure `user_id` is the primary key and references `auth.users`.
 - [ ] (Optional but Recommended) Set up Row Level Security (RLS) policies on all tables to ensure users can only access their own data. Start with simple policies (e.g., `user_id = auth.uid()`).
 
-**3. Next.js Project Integration:**
+**4. Next.js Project Integration:**
 
 - [ ] Install necessary Supabase packages:
   ```bash
@@ -131,12 +159,12 @@ This checklist outlines the steps to set up the Supabase backend for the Patrivi
 - [ ] Implement Supabase Auth UI or build custom login/signup components using `supabase.auth` methods.
 - [ ] Wrap the application layout with an Auth provider/context if needed to manage session state.
 
-**4. Build Initial API Routes:**
+**5. Build Initial API Routes:**
 
 - [ ] Create the essential API route handlers identified in the refined plan (e.g., `/api/holdings`, `/api/transactions`, `/api/net-worth/summary`, etc.) using Next.js App Router Route Handlers.
 - [ ] Implement data fetching and mutations within these handlers using the configured Supabase client. Ensure user authentication/authorization is checked in each handler (e.g., using RLS or checking `auth.uid()`).
 
-**5. Connect Frontend Components:**
+**6. Connect Frontend Components:**
 
 - [ ] Update frontend components (Dashboard pages, Sidebar, etc.) to fetch data from the new API routes instead of using mock data.
 - [ ] Implement forms and actions to call the `POST`/`PUT` API routes for adding/updating data (e.g., "New transaction" button).
