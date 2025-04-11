@@ -131,18 +131,7 @@ This checklist outlines the steps to set up the Supabase backend for the Patrivi
 - [x] Add `.cursor/mcp.json` to your `.gitignore` file to avoid committing the token
 - [x] Open Cursor and navigate to Settings/MCP to verify the Supabase MCP server shows an active status
 
-**3. Database Schema Creation:**
-
-- [ ] Navigate to the SQL Editor in your Supabase project dashboard.
-- [ ] Create the `holdings` table with the refined MVP columns: `id`, `user_id`, `name`, `category`, `tracking_method`, `currency`, `logo_url`, `current_quantity`, `created_at`, `api_symbol` (nullable), `isin` (nullable), `exchange` (nullable). Ensure `user_id` references `auth.users`.
-- [ ] Create the `transactions` table with the refined MVP columns: `id`, `user_id`, `holding_id` (nullable), `date`, `type`, `amount`, `currency`, `quantity` (nullable), `category`, `notes` (nullable), `linked_transfer_id` (nullable), `created_at`. Ensure foreign keys link correctly.
-- [ ] Create the `account_balances` table with the refined MVP columns: `id`, `user_id`, `holding_id`, `date`, `balance`, `currency`, `notes`, `created_at`. Ensure foreign keys link correctly.
-- [ ] Create the `asset_prices` table with the refined MVP columns: `id`, `holding_id`, `date`, `price`, `currency`, `source`, `created_at`. Ensure foreign keys link correctly.
-- [ ] Create the `currency_rates` table with the refined MVP columns: `id`, `date`, `base_currency`, `target_currency`, `rate`, `created_at`.
-- [ ] Create the `preferences` table with the refined MVP columns: `user_id`, `display_currency`, `updated_at`. Ensure `user_id` is the primary key and references `auth.users`.
-- [ ] (Optional but Recommended) Set up Row Level Security (RLS) policies on all tables to ensure users can only access their own data. Start with simple policies (e.g., `user_id = auth.uid()`).
-
-**4. Next.js Project Integration:**
+**3. Next.js Project Integration:**
 
 - [ ] Install necessary Supabase packages:
   ```bash
@@ -158,6 +147,17 @@ This checklist outlines the steps to set up the Supabase backend for the Patrivi
 - [ ] Configure Supabase client creation using `@supabase/ssr` package for use in Server Components, Client Components, and API Routes (follow Supabase Next.js docs/examples). This typically involves creating utility functions to get Supabase clients for different contexts (server, client, route handler).
 - [ ] Implement Supabase Auth UI or build custom login/signup components using `supabase.auth` methods.
 - [ ] Wrap the application layout with an Auth provider/context if needed to manage session state.
+
+**4. Database Schema Creation:**
+
+- [ ] Navigate to the SQL Editor in your Supabase project dashboard.
+- [ ] Create the `holdings` table with the refined MVP columns: `id`, `user_id`, `name`, `category`, `tracking_method`, `currency`, `logo_url`, `current_quantity`, `created_at`, `api_symbol` (nullable), `isin` (nullable), `exchange` (nullable). Ensure `user_id` references `auth.users`.
+- [ ] Create the `transactions` table with the refined MVP columns: `id`, `user_id`, `holding_id` (nullable), `date`, `type`, `amount`, `currency`, `quantity` (nullable), `category`, `notes` (nullable), `linked_transfer_id` (nullable), `created_at`. Ensure foreign keys link correctly.
+- [ ] Create the `account_balances` table with the refined MVP columns: `id`, `user_id`, `holding_id`, `date`, `balance`, `currency`, `notes`, `created_at`. Ensure foreign keys link correctly.
+- [ ] Create the `asset_prices` table with the refined MVP columns: `id`, `holding_id`, `date`, `price`, `currency`, `source`, `created_at`. Ensure foreign keys link correctly.
+- [ ] Create the `currency_rates` table with the refined MVP columns: `id`, `date`, `base_currency`, `target_currency`, `rate`, `created_at`.
+- [ ] Create the `preferences` table with the refined MVP columns: `user_id`, `display_currency`, `updated_at`. Ensure `user_id` is the primary key and references `auth.users`.
+- [ ] (Optional but Recommended) Set up Row Level Security (RLS) policies on all tables to ensure users can only access their own data. Start with simple policies (e.g., `user_id = auth.uid()`).
 
 **5. Build Initial API Routes:**
 
