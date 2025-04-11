@@ -1,5 +1,7 @@
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
+import { createClient } from "@/utils/supabase/server";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { Header } from "@/components/dashboard/header";
@@ -10,8 +12,16 @@ export default async function Layout({
   children: React.ReactNode;
 }) {
   const cookieStore = await cookies();
+
+  // Check if user is logged in
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data?.user) {
+    redirect("/login");
+  }
+
+  // Sidebar state
   const sidebarStateCookie = cookieStore.get("sidebar_state")?.value;
-  // Default to true unless the cookie is explicitly "false"
   const defaultOpen = sidebarStateCookie !== "false";
 
   return (
