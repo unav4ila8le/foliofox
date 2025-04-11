@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
-import { login, signup } from "./actions";
+import { login, signup } from "@/lib/auth/actions";
 
 export default async function LoginPage() {
   // Check if user is already logged in and redirect to dashboard

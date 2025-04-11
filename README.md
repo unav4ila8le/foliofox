@@ -133,20 +133,20 @@ This checklist outlines the steps to set up the Supabase backend for the Patrivi
 
 **3. Next.js Project Integration:**
 
-- [ ] Install necessary Supabase packages:
+- [x] Install necessary Supabase packages:
   ```bash
-  npm install @supabase/supabase-js @supabase/ssr @supabase/auth-helpers-nextjs
+  npm install @supabase/supabase-js @supabase/ssr
   # or yarn or pnpm
   ```
-- [ ] Create a `.env.local` file (if it doesn't exist) in the project root.
-- [ ] Add your Supabase Project URL and Anon Key to `.env.local`:
+- [x] Create a `.env.local` file (if it doesn't exist) in the project root.
+- [x] Add your Supabase Project URL and Anon Key to `.env.local`:
   ```
   NEXT_PUBLIC_SUPABASE_URL=YOUR_SUPABASE_URL
   NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
   ```
-- [ ] Configure Supabase client creation using `@supabase/ssr` package for use in Server Components, Client Components, and API Routes (follow Supabase Next.js docs/examples). This typically involves creating utility functions to get Supabase clients for different contexts (server, client, route handler).
-- [ ] Implement Supabase Auth UI or build custom login/signup components using `supabase.auth` methods.
-- [ ] Wrap the application layout with an Auth provider/context if needed to manage session state.
+- [x] Configure Supabase client creation using `@supabase/ssr` package for use in Server Components, Client Components, and API Routes (follow Supabase Next.js docs/examples). This typically involves creating utility functions to get Supabase clients for different contexts (server, client, route handler).
+- [x] Implement Supabase Auth UI or build custom login/signup components using `supabase.auth` methods.
+- [x] Wrap the application layout with an Auth provider/context if needed to manage session state.
 
 **4. Database Schema Creation:**
 

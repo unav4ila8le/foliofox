@@ -16,7 +16,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { Profile } from "./profile";
+import { User } from "./user";
 import { Branding } from "./branding";
 
 // Placeholder menu items
@@ -45,11 +45,15 @@ export function Sidebar() {
   return (
     <UISidebar>
       <SidebarHeader>
-        <Profile
-          avatarUrl="https://github.com/shadcn.png"
-          name="John Doe"
-          netWorth={1000000}
-        />
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <User
+              avatarUrl="https://github.com/shadcn.png"
+              name="John Doe"
+              netWorth={1000000}
+            />
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
