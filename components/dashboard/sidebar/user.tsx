@@ -28,7 +28,7 @@ export function User({ avatarUrl, name, netWorth }: UserProps) {
   const handleSignOut = async () => {
     try {
       setIsLoading(true);
-      await signout();
+      await signout("local");
     } catch (error) {
       console.error("Sign out error:", error);
     } finally {

@@ -45,9 +45,11 @@ export async function signup(formData: FormData) {
   redirect("/");
 }
 
-export async function signout() {
+export type SignOutScope = "global" | "local" | "others";
+
+export async function signout(scope: SignOutScope = "global") {
   const supabase = await createClient();
-  const { error } = await supabase.auth.signOut();
+  const { error } = await supabase.auth.signOut({ scope });
 
   if (error) {
     redirect("/error");
