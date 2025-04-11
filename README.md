@@ -107,11 +107,11 @@ This checklist outlines the steps to set up the Supabase backend for the Patrivi
 
 **2. Supabase MCP Setup (For Development Assistance):**
 
-- [ ] Go to the [Supabase Dashboard](https://supabase.com/dashboard) and navigate to your account settings
-- [ ] Create a new personal access token with a descriptive name (e.g., "Patrivio MCP")
-- [ ] Copy the generated token and store it securely (you won't be able to view it again)
-- [ ] Create a `.cursor` directory in your project root if it doesn't exist already
-- [ ] Create a `.cursor/mcp.json` file with the following configuration:
+- [x] Go to the [Supabase Dashboard](https://supabase.com/dashboard) and navigate to your account settings
+- [x] Create a new personal access token with a descriptive name (e.g., "Patrivio MCP")
+- [x] Copy the generated token and store it securely (you won't be able to view it again)
+- [x] Create a `.cursor` directory in your project root if it doesn't exist already
+- [x] Create a `.cursor/mcp.json` file with the following configuration:
   ```json
   {
     "mcpServers": {
@@ -127,9 +127,9 @@ This checklist outlines the steps to set up the Supabase backend for the Patrivi
     }
   }
   ```
-- [ ] Replace `YOUR_PERSONAL_ACCESS_TOKEN` with your actual token
-- [ ] Add `.cursor/mcp.json` to your `.gitignore` file to avoid committing the token
-- [ ] Open Cursor and navigate to Settings/MCP to verify the Supabase MCP server shows an active status
+- [x] Replace `YOUR_PERSONAL_ACCESS_TOKEN` with your actual token
+- [x] Add `.cursor/mcp.json` to your `.gitignore` file to avoid committing the token
+- [x] Open Cursor and navigate to Settings/MCP to verify the Supabase MCP server shows an active status
 
 **3. Database Schema Creation:**
 
