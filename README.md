@@ -101,9 +101,9 @@ This checklist outlines the steps to set up the Supabase backend for the Patrivi
 
 **1. Supabase Project Setup:**
 
-- [ ] Create a new project on the [Supabase Dashboard](https://supabase.com/dashboard).
-- [ ] Note down your Project URL and `anon` key from the API settings.
-- [ ] Store these securely (e.g., in environment variables, **do not commit them directly to Git**).
+- [x] Create a new project on the [Supabase Dashboard](https://supabase.com/dashboard).
+- [x] Note down your Project URL and `anon` key from the API settings.
+- [x] Store these securely (e.g., in environment variables, **do not commit them directly to Git**).
 
 **2. Supabase MCP Setup (For Development Assistance):**
 
