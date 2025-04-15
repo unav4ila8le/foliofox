@@ -35,14 +35,19 @@ export async function signup(formData: FormData) {
     password: formData.get("password") as string,
   };
 
-  const { error } = await supabase.auth.signUp(data);
+  const { data: signUpData, error } = await supabase.auth.signUp(data);
 
   if (error) {
     redirect("/error");
   }
 
+  // Check if user already exists
+  if (signUpData.user && signUpData.user.identities?.length === 0) {
+    redirect("/auth/login?message=user-already-exists");
+  }
+
   revalidatePath("/", "layout");
-  redirect("/");
+  redirect("/auth/login?message=success");
 }
 
 export type SignOutScope = "global" | "local" | "others";
