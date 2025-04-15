@@ -15,9 +15,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-import { login } from "@/lib/auth/actions";
+import { signup } from "@/lib/auth/actions";
 
-export function LoginForm() {
+export function SignupForm() {
   const [isLoading, setIsLoading] = useState(false);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -26,9 +26,9 @@ export function LoginForm() {
 
     try {
       setIsLoading(true);
-      await login(formData);
+      await signup(formData);
     } catch (error) {
-      console.error("Login failed:", error);
+      console.error("Signup failed:", error);
     } finally {
       setIsLoading(false);
     }
@@ -37,8 +37,8 @@ export function LoginForm() {
   return (
     <Card>
       <CardHeader className="text-center">
-        <CardTitle className="text-xl">Welcome back</CardTitle>
-        <CardDescription>Log in here to continue</CardDescription>
+        <CardTitle className="text-xl">Sign up here</CardTitle>
+        <CardDescription>Create a new account to continue</CardDescription>
       </CardHeader>
       <CardContent>
         <form className="grid gap-4" onSubmit={handleSubmit}>
@@ -60,16 +60,16 @@ export function LoginForm() {
             {isLoading ? (
               <>
                 <Loader2 className="animate-spin" />
-                Logging in...
+                Signing up...
               </>
             ) : (
-              "Log in"
+              "Sign up"
             )}
           </Button>
           <div className="mt-4 text-center text-sm">
-            Don&apos;t have an account?{" "}
-            <Link href="/auth/signup" className="underline underline-offset-4">
-              Sign up here
+            Already have an account?{" "}
+            <Link href="/auth/login" className="underline underline-offset-4">
+              Log in here
             </Link>
           </div>
         </form>

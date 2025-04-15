@@ -56,5 +56,5 @@ export async function signout(scope: SignOutScope = "global") {
   }
 
   revalidatePath("/", "layout");
-  redirect("/login");
+  redirect("/auth/login");
 }
