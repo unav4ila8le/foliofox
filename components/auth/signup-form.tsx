@@ -6,6 +6,7 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { toast } from "sonner";
 
 import {
   Card,
@@ -62,7 +63,12 @@ export function SignupForm() {
 
       await signup(formData);
     } catch (error) {
-      console.error("Signup failed:", error);
+      toast.error("Signup failed", {
+        description:
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred. If the problem persists, please contact support.",
+      });
     } finally {
       setIsLoading(false);
     }

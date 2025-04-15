@@ -18,7 +18,7 @@ export async function login(formData: FormData) {
   const { error } = await supabase.auth.signInWithPassword(data);
 
   if (error) {
-    redirect("/error");
+    throw new Error(error.message);
   }
 
   revalidatePath("/", "layout");
@@ -38,7 +38,7 @@ export async function signup(formData: FormData) {
   const { data: signUpData, error } = await supabase.auth.signUp(data);
 
   if (error) {
-    redirect("/error");
+    throw new Error(error.message);
   }
 
   // Check if user already exists
@@ -57,7 +57,7 @@ export async function signout(scope: SignOutScope = "global") {
   const { error } = await supabase.auth.signOut({ scope });
 
   if (error) {
-    redirect("/error");
+    throw new Error(error.message);
   }
 
   revalidatePath("/", "layout");

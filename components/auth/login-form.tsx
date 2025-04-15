@@ -6,6 +6,7 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { toast } from "sonner";
 
 import {
   Card,
@@ -52,7 +53,12 @@ export function LoginForm() {
 
       await login(formData);
     } catch (error) {
-      console.error("Login failed:", error);
+      toast.error("Login failed", {
+        description:
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred. If the problem persists, please contact support.",
+      });
     } finally {
       setIsLoading(false);
     }
