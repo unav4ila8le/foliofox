@@ -51,31 +51,35 @@ export function LoginForm() {
       formData.append("email", values.email);
       formData.append("password", values.password);
 
-      await login(formData);
+      const result = await login(formData);
+
+      // Handle error response from server action
+      if (result && !result.success) {
+        if (result.error === "Invalid login credentials") {
+          form.setError("password", {
+            type: "manual",
+            message: "Invalid email or password",
+          });
+        } else {
+          toast.error("Login failed", {
+            description: result.error || "An unexpected error occurred",
+          });
+        }
+        return;
+      }
     } catch (error) {
       // Let Next.js handle redirection errors
       if (error instanceof Error && error.message.includes("NEXT_REDIRECT")) {
         throw error;
       }
 
-      // Check for invalid credentials message from Supabase
-      if (
-        error instanceof Error &&
-        error.message === "Invalid login credentials"
-      ) {
-        form.setError("password", {
-          type: "manual",
-          message: "Invalid email or password",
-        });
-      } else {
-        // Show toast for technical errors
-        toast.error("Login failed", {
-          description:
-            error instanceof Error
-              ? error.message
-              : "An unexpected error occurred. If the problem persists, please contact support.",
-        });
-      }
+      // Show toast for technical errors
+      toast.error("Login failed", {
+        description:
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred. If the problem persists, please contact support.",
+      });
     } finally {
       setIsLoading(false);
     }

@@ -16,9 +16,9 @@ export async function login(formData: FormData) {
 
   const { error } = await supabase.auth.signInWithPassword(data);
 
-  // Catch any error from Supabase
+  // Return Supabase errors instead of throwing
   if (error) {
-    throw new Error(error.message);
+    return { success: false, error: error.message };
   }
 
   revalidatePath("/", "layout");
@@ -37,13 +37,13 @@ export async function signup(formData: FormData) {
   const { data: signUpData, error } = await supabase.auth.signUp(data);
 
   // Check if user already exists
-  if (signUpData.user && signUpData.user.identities?.length === 0) {
+  if (signUpData?.user && signUpData.user.identities?.length === 0) {
     redirect("/auth/login?message=user-already-exists");
   }
 
-  // Catch any other error from Supabase
+  // Return Supabase errors instead of throwing
   if (error) {
-    throw new Error(error.message);
+    return { success: false, error: error.message };
   }
 
   revalidatePath("/", "layout");

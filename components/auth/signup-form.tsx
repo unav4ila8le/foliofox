@@ -61,7 +61,15 @@ export function SignupForm() {
       formData.append("email", values.email);
       formData.append("password", values.password);
 
-      await signup(formData);
+      const result = await signup(formData);
+
+      // Handle error response from server action
+      if (result && !result.success) {
+        toast.error("Signup failed", {
+          description: result.error || "An unexpected error occurred",
+        });
+        return;
+      }
     } catch (error) {
       // Let Next.js handle redirection errors
       if (error instanceof Error && error.message.includes("NEXT_REDIRECT")) {

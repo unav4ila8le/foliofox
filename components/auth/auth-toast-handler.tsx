@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { useSearchParams } from "next/navigation";
+import { MailCheck } from "lucide-react";
 
 export function AuthToastHandler() {
   const searchParams = useSearchParams();
@@ -15,6 +16,8 @@ export function AuthToastHandler() {
         description:
           "Click the confirmation link in the email to complete signup.",
         position: "top-center",
+        duration: 8000,
+        icon: <MailCheck />,
       });
     } else if (message === "signout-success") {
       toast.success("You have been logged out successfully", {
