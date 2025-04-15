@@ -63,9 +63,9 @@ export function SignupForm() {
 
       await signup(formData);
     } catch (error) {
-      // Ignore Next.js redirect errors (these happen on successful login)
+      // Let Next.js handle redirection errors
       if (error instanceof Error && error.message.includes("NEXT_REDIRECT")) {
-        return;
+        throw error;
       }
 
       // Show toast for technical errors

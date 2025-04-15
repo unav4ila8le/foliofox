@@ -56,6 +56,7 @@ export async function signout(scope: SignOutScope = "global") {
   const supabase = await createClient();
   const { error } = await supabase.auth.signOut({ scope });
 
+  // Catch any error from Supabase
   if (error) {
     throw new Error(error.message);
   }

@@ -53,9 +53,9 @@ export function LoginForm() {
 
       await login(formData);
     } catch (error) {
-      // Ignore Next.js redirect errors (these happen on successful login)
+      // Let Next.js handle redirection errors
       if (error instanceof Error && error.message.includes("NEXT_REDIRECT")) {
-        return;
+        throw error;
       }
 
       // Check for invalid credentials message from Supabase
