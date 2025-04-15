@@ -63,6 +63,12 @@ export function SignupForm() {
 
       await signup(formData);
     } catch (error) {
+      // Ignore Next.js redirect errors (these happen on successful login)
+      if (error instanceof Error && error.message.includes("NEXT_REDIRECT")) {
+        return;
+      }
+
+      // Show toast for technical errors
       toast.error("Signup failed", {
         description:
           error instanceof Error

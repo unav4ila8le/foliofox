@@ -53,12 +53,29 @@ export function LoginForm() {
 
       await login(formData);
     } catch (error) {
-      toast.error("Login failed", {
-        description:
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred. If the problem persists, please contact support.",
-      });
+      // Ignore Next.js redirect errors (these happen on successful login)
+      if (error instanceof Error && error.message.includes("NEXT_REDIRECT")) {
+        return;
+      }
+
+      // Check for invalid credentials message from Supabase
+      if (
+        error instanceof Error &&
+        error.message === "Invalid login credentials"
+      ) {
+        form.setError("password", {
+          type: "manual",
+          message: "Invalid email or password",
+        });
+      } else {
+        // Show toast for technical errors
+        toast.error("Login failed", {
+          description:
+            error instanceof Error
+              ? error.message
+              : "An unexpected error occurred. If the problem persists, please contact support.",
+        });
+      }
     } finally {
       setIsLoading(false);
     }

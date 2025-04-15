@@ -8,8 +8,7 @@ import { createClient } from "@/utils/supabase/server";
 export async function login(formData: FormData) {
   const supabase = await createClient();
 
-  // type-casting here for convenience
-  // in practice, you should validate your inputs
+  // Data is already validated in the form component
   const data = {
     email: formData.get("email") as string,
     password: formData.get("password") as string,
@@ -17,19 +16,19 @@ export async function login(formData: FormData) {
 
   const { error } = await supabase.auth.signInWithPassword(data);
 
+  // Catch any error from Supabase
   if (error) {
     throw new Error(error.message);
   }
 
   revalidatePath("/", "layout");
-  redirect("/");
+  redirect("/dashboard");
 }
 
 export async function signup(formData: FormData) {
   const supabase = await createClient();
 
-  // type-casting here for convenience
-  // in practice, you should validate your inputs
+  // Data is already validated in the form component
   const data = {
     email: formData.get("email") as string,
     password: formData.get("password") as string,
@@ -37,17 +36,18 @@ export async function signup(formData: FormData) {
 
   const { data: signUpData, error } = await supabase.auth.signUp(data);
 
-  if (error) {
-    throw new Error(error.message);
-  }
-
   // Check if user already exists
   if (signUpData.user && signUpData.user.identities?.length === 0) {
     redirect("/auth/login?message=user-already-exists");
   }
 
+  // Catch any other error from Supabase
+  if (error) {
+    throw new Error(error.message);
+  }
+
   revalidatePath("/", "layout");
-  redirect("/auth/login?message=success");
+  redirect("/auth/login?message=signup-success");
 }
 
 export type SignOutScope = "global" | "local" | "others";
@@ -61,5 +61,5 @@ export async function signout(scope: SignOutScope = "global") {
   }
 
   revalidatePath("/", "layout");
-  redirect("/auth/login");
+  redirect("/auth/login?message=signout-success");
 }

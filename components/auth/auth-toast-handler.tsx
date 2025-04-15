@@ -9,12 +9,16 @@ export function AuthToastHandler() {
   const message = searchParams.get("message");
 
   useEffect(() => {
-    if (message === "success") {
+    if (message === "signup-success") {
       toast.success("Please check your email to confirm your account", {
-        id: "auth-success-toast",
+        id: "auth-signupsuccess-toast",
         description:
           "Click the confirmation link in the email to complete signup.",
         position: "top-center",
+      });
+    } else if (message === "signout-success") {
+      toast.success("You have been logged out successfully", {
+        id: "auth-signout-success-toast",
       });
     } else if (message === "user-already-exists") {
       toast.error("Account already exists", {
