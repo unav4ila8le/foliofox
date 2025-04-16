@@ -10,19 +10,22 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get("type") as EmailOtpType | null;
   const next = searchParams.get("next") ?? "/dashboard";
 
-  if (token_hash && type) {
-    const supabase = await createClient();
+  if (!token_hash || !type) {
+    redirect(
+      "/auth/login?message=confirm-error&error=Invalid confirmation link",
+    );
+  }
+  const supabase = await createClient();
 
-    const { error } = await supabase.auth.verifyOtp({
-      type,
-      token_hash,
-    });
-    if (!error) {
-      // redirect user to specified redirect URL or root of app
-      redirect(next);
-    }
+  const { error } = await supabase.auth.verifyOtp({
+    type,
+    token_hash,
+  });
+  if (!error) {
+    // redirect user to specified redirect URL or root of app
+    redirect(next);
   }
 
-  // redirect the user to an error page with some instructions
-  redirect("/error");
+  // redirect the user to login page with error message
+  redirect(`/auth/login?message=confirm-error&error=${error.message}`);
 }
