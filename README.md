@@ -145,7 +145,7 @@ This checklist outlines the steps to set up the Supabase backend for the Patrivi
   NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
   ```
 - [x] Configure Supabase client creation using `@supabase/ssr` package for use in Server Components, Client Components, and API Routes (follow Supabase Next.js docs/examples). This typically involves creating utility functions to get Supabase clients for different contexts (server, client, route handler).
-- [x] Implement Supabase Auth UI or build custom login/signup components using `supabase.auth` methods.
+- [x] Build custom login/signup components using `supabase.auth` methods.
 - [x] Wrap the application layout with an Auth provider/context if needed to manage session state.
 
 **4. Database Schema Creation:**
