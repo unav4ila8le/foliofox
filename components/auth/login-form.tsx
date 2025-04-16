@@ -55,14 +55,17 @@ export function LoginForm() {
 
       // Handle error response from server action
       if (result && !result.success) {
-        if (result.error === "Invalid login credentials") {
+        if (result.code === "invalid_credentials") {
+          form.setError("email", {
+            type: "manual",
+          });
           form.setError("password", {
             type: "manual",
-            message: "Invalid email or password",
+            message: result.message,
           });
         } else {
           toast.error("Login failed", {
-            description: result.error || "An unexpected error occurred",
+            description: result.message || "An unexpected error occurred",
           });
         }
         return;

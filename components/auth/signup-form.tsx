@@ -65,9 +65,16 @@ export function SignupForm() {
 
       // Handle error response from server action
       if (result && !result.success) {
-        toast.error("Signup failed", {
-          description: result.error || "An unexpected error occurred",
-        });
+        if (result.code === "user_already_exists") {
+          form.setError("email", {
+            type: "manual",
+            message: result.message,
+          });
+        } else {
+          toast.error("Signup failed", {
+            description: result.message || "An unexpected error occurred",
+          });
+        }
         return;
       }
     } catch (error) {
