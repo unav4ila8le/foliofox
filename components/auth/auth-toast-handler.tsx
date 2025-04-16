@@ -11,7 +11,7 @@ export function AuthToastHandler() {
 
   useEffect(() => {
     if (message === "signup-success") {
-      toast.success("Please check your email to confirm your account", {
+      toast.success("Check your inbox to confirm your account", {
         id: "auth-signup-success-toast",
         description:
           "Click the confirmation link in the email to complete signup.",
@@ -19,14 +19,15 @@ export function AuthToastHandler() {
         duration: 8000,
       });
     } else if (message === "signout-success") {
-      toast.success("You have been logged out successfully", {
+      toast.success("You have been signed out successfully", {
         id: "auth-signout-success-toast",
       });
     } else if (message === "confirm-error") {
       toast.error("Email confirmation failed", {
         id: "auth-confirm-error-toast",
         description:
-          error || "Please try again or request a new confirmation link",
+          error || "Please try again or request a new confirmation link.",
+        position: "top-center",
         duration: 8000,
       });
     }

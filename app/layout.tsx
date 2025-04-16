@@ -24,8 +24,8 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} antialiased transition-all`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          {children}
           <Toaster />
+          {children}
         </ThemeProvider>
       </body>
     </html>
