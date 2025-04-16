@@ -30,7 +30,13 @@ import { signup } from "@/lib/auth/actions";
 
 const formSchema = z
   .object({
-    email: z.string().email("Please enter a valid email address"),
+    email: z.string().trim().email("Please enter a valid email address"),
+    username: z
+      .string()
+      .trim()
+      .min(3, "Username must be at least 3 characters")
+      .max(16, "Username must not exceed 16 characters")
+      .regex(/^[a-zA-Z0-9]+$/, "Username can only contain letters and numbers"),
     password: z
       .string()
       .min(6, "Password must be at least 6 characters")
@@ -49,6 +55,7 @@ export function SignupForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",
+      username: "",
       password: "",
       repeatPassword: "",
     },
@@ -59,6 +66,7 @@ export function SignupForm() {
       setIsLoading(true);
       const formData = new FormData();
       formData.append("email", values.email);
+      formData.append("username", values.username);
       formData.append("password", values.password);
 
       const result = await signup(formData);
@@ -112,6 +120,19 @@ export function SignupForm() {
                   <FormLabel>Email</FormLabel>
                   <FormControl>
                     <Input placeholder="mail@example.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="username"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Username</FormLabel>
+                  <FormControl>
+                    <Input placeholder="username" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

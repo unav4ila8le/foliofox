@@ -150,13 +150,29 @@ This checklist outlines the steps to set up the Supabase backend for the Patrivi
 
 **4. Database Schema Creation:**
 
-- [ ] Navigate to the SQL Editor in your Supabase project dashboard.
+- [x] Create the `profiles` table with the refined MVP columns:
+      `id` uuid references auth.users on delete cascade primary key,
+      `username` text unique not null,
+      `display_currency` text not null default 'USD',
+      `avatar_url` text,
+      `created_at` timestamptz not null default now(),
+      `updated_at` timestamptz not null default now(),
+
+      Constraint to ensure valid ISO currency codes:
+      constraint valid_currency check (display_currency ~ '^[A-Z]{3}$')
+
+  Ensure `user_id` is the primary key and references `auth.users`.
+
 - [ ] Create the `holdings` table with the refined MVP columns: `id`, `user_id`, `name`, `category`, `tracking_method`, `currency`, `logo_url`, `current_quantity`, `created_at`, `api_symbol` (nullable), `isin` (nullable), `exchange` (nullable). Ensure `user_id` references `auth.users`.
+
 - [ ] Create the `transactions` table with the refined MVP columns: `id`, `user_id`, `holding_id` (nullable), `date`, `type`, `amount`, `currency`, `quantity` (nullable), `category`, `notes` (nullable), `linked_transfer_id` (nullable), `created_at`. Ensure foreign keys link correctly.
+
 - [ ] Create the `account_balances` table with the refined MVP columns: `id`, `user_id`, `holding_id`, `date`, `balance`, `currency`, `notes`, `created_at`. Ensure foreign keys link correctly.
+
 - [ ] Create the `asset_prices` table with the refined MVP columns: `id`, `holding_id`, `date`, `price`, `currency`, `source`, `created_at`. Ensure foreign keys link correctly.
+
 - [ ] Create the `currency_rates` table with the refined MVP columns: `id`, `date`, `base_currency`, `target_currency`, `rate`, `created_at`.
-- [ ] Create the `preferences` table with the refined MVP columns: `user_id`, `display_currency`, `updated_at`. Ensure `user_id` is the primary key and references `auth.users`.
+
 - [ ] (Optional but Recommended) Set up Row Level Security (RLS) policies on all tables to ensure users can only access their own data. Start with simple policies (e.g., `user_id = auth.uid()`).
 
 **5. Build Initial API Routes:**
