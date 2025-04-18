@@ -38,7 +38,7 @@ const items = [
   },
 ];
 
-export function Sidebar() {
+export function Sidebar({ profile }: { profile: any }) {
   const pathname = usePathname();
   const { setOpenMobile } = useSidebar();
 
@@ -48,8 +48,8 @@ export function Sidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <User
-              avatar_url="https://github.com/shadcn.png"
-              username="unav4ila8le"
+              avatar_url={profile.avatar_url}
+              username={profile.username}
               net_worth={1000000}
             />
           </SidebarMenuItem>

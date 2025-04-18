@@ -13,16 +13,30 @@ export default async function Layout({
 }) {
   const cookieStore = await cookies();
 
-  // Check if user is logged in
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.getUser();
-  if (error || !data?.user) {
-    redirect("/auth/login");
-  }
-
   // Sidebar state
   const sidebarStateCookie = cookieStore.get("sidebar_state")?.value;
   const defaultOpen = sidebarStateCookie !== "false";
+
+  // Supabase client
+  const supabase = await createClient();
+
+  // Get user
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  // If user is not logged in, redirect to login page
+  if (error || !user) {
+    redirect("/auth/login");
+  }
+
+  // Get profile data
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("username, avatar_url, display_currency")
+    .eq("id", user.id)
+    .single();
 
   return (
     <SidebarProvider
@@ -34,7 +48,7 @@ export default async function Layout({
         } as React.CSSProperties
       }
     >
-      <Sidebar />
+      <Sidebar profile={profile} />
       <SidebarInset>
         <Header />
         <div className="p-4 pt-2">{children}</div>
