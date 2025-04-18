@@ -48,9 +48,9 @@ export function Sidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <User
-              avatarUrl="https://github.com/shadcn.png"
-              name="John Doe"
-              netWorth={1000000}
+              avatar_url="https://github.com/shadcn.png"
+              username="unav4ila8le"
+              net_worth={1000000}
             />
           </SidebarMenuItem>
         </SidebarMenu>

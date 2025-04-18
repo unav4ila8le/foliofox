@@ -29,7 +29,7 @@ import { Button } from "@/components/ui/button";
 import { login } from "@/lib/auth/actions";
 
 const formSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
+  email: z.string().trim().email("Please enter a valid email address."),
   password: z.string(),
 });
 

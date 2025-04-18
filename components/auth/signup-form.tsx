@@ -34,17 +34,20 @@ const formSchema = z
     username: z
       .string()
       .trim()
-      .min(3, "Username must be at least 3 characters")
-      .max(16, "Username must not exceed 16 characters")
-      .regex(/^[a-zA-Z0-9]+$/, "Username can only contain letters and numbers"),
+      .min(3, "Username must be at least 3 characters.")
+      .max(16, "Username must not exceed 16 characters.")
+      .regex(
+        /^[a-zA-Z0-9]+$/,
+        "Username can only contain letters and numbers.",
+      ),
     password: z
       .string()
-      .min(6, "Password must be at least 6 characters")
-      .max(20, "Password must not exceed 20 characters"),
+      .min(6, "Password must be at least 6 characters.")
+      .max(20, "Password must not exceed 20 characters."),
     repeatPassword: z.string(),
   })
   .refine((data) => data.password === data.repeatPassword, {
-    message: "Passwords do not match",
+    message: "Passwords do not match.",
     path: ["repeatPassword"],
   });
 
