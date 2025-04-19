@@ -34,9 +34,14 @@ export default async function Layout({
   // Get profile data
   const { data: profile } = await supabase
     .from("profiles")
-    .select("username, avatar_url, display_currency")
+    .select("*")
     .eq("id", user.id)
     .single();
+
+  // Handle the edge case where profile might not exist
+  if (!profile) {
+    throw new Error("Profile not found");
+  }
 
   return (
     <SidebarProvider

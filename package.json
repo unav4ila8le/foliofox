@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "types:supabase": "npx supabase gen types typescript --project-id icnvjrvkdjtbnldhootf > types/database.types.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^4.1.3",

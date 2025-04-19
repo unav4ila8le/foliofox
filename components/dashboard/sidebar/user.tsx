@@ -24,13 +24,11 @@ import { SettingsForm } from "@/components/dashboard/sidebar/settings-form";
 import { signout } from "@/lib/auth/actions";
 import { formatCurrency } from "@/lib/number";
 
-interface UserProps {
-  avatar_url: string;
-  username: string;
-  net_worth: number;
-}
+import { Database } from "@/types/database.types";
 
-export function User({ avatar_url, username, net_worth }: UserProps) {
+type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+
+export function User({ profile }: { profile: Profile }) {
   const [isLoading, setIsLoading] = useState(false);
   const { isMobile } = useSidebar();
 
@@ -54,18 +52,21 @@ export function User({ avatar_url, username, net_worth }: UserProps) {
             className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground flex items-center gap-2"
           >
             <Avatar className="size-10">
-              <AvatarImage src={avatar_url} alt={username.toLowerCase()} />
+              <AvatarImage
+                src={profile.avatar_url || undefined}
+                alt={profile.username.toLowerCase()}
+              />
               <AvatarFallback>
-                {username
+                {profile.username
                   .split(" ")
-                  .map((n) => n[0])
+                  .map((n) => n[0]?.toUpperCase())
                   .join("")}
               </AvatarFallback>
             </Avatar>
             <div className="flex flex-col">
-              <p className="text truncate font-semibold">{username}</p>
+              <p className="text truncate font-semibold">{profile.username}</p>
               <span className="text-muted-foreground truncate text-xs">
-                {formatCurrency(net_worth, "USD")}
+                {formatCurrency(1000000, "USD")}
               </span>
             </div>
             <MoreVertical className="ml-auto size-4" />

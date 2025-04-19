@@ -19,6 +19,10 @@ import {
 import { User } from "./user";
 import { Branding } from "./branding";
 
+import { Database } from "@/types/database.types";
+
+type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+
 // Placeholder menu items
 const items = [
   {
@@ -38,7 +42,7 @@ const items = [
   },
 ];
 
-export function Sidebar({ profile }: { profile: any }) {
+export function Sidebar({ profile }: { profile: Profile }) {
   const pathname = usePathname();
   const { setOpenMobile } = useSidebar();
 
@@ -47,11 +51,7 @@ export function Sidebar({ profile }: { profile: any }) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <User
-              avatar_url={profile.avatar_url}
-              username={profile.username}
-              net_worth={1000000}
-            />
+            <User profile={profile} />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
