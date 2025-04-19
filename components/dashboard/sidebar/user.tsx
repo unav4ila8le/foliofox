@@ -90,14 +90,14 @@ export function User({ profile }: { profile: Profile }) {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <DialogContent>
+      <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>Settings</DialogTitle>
           <DialogDescription>
             Change here your profile information
           </DialogDescription>
         </DialogHeader>
-        <SettingsForm />
+        <SettingsForm profile={profile} />
       </DialogContent>
     </Dialog>
   );

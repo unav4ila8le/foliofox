@@ -24,6 +24,10 @@ import {
 import { DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
+import { Database } from "@/types/database.types";
+
+type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+
 const formSchema = z.object({
   username: z
     .string()
@@ -36,16 +40,16 @@ const formSchema = z.object({
   }),
 });
 
-export function SettingsForm() {
-  // 1. Define your form.
+export function SettingsForm({ profile }: { profile: Profile }) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      username: "",
+      username: profile.username,
+      display_currency: profile.display_currency,
     },
   });
 
-  // 2. Define a submit handler.
+  // Submit handler
   function onSubmit(values: z.infer<typeof formSchema>) {
     // Do something with the form values.
     // ✅ This will be type-safe and validated.
