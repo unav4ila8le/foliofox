@@ -61,6 +61,9 @@ export function SettingsForm({ profile, onSuccess }: SettingsFormProps) {
     },
   });
 
+  // Get isDirty state from formState
+  const { isDirty } = form.formState;
+
   // Submit handler
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
@@ -145,6 +148,7 @@ export function SettingsForm({ profile, onSuccess }: SettingsFormProps) {
         <div className="flex justify-end gap-2">
           <DialogClose asChild>
             <Button
+              disabled={isLoading}
               type="button"
               variant="secondary"
               className="w-1/2 sm:w-auto"
@@ -152,7 +156,7 @@ export function SettingsForm({ profile, onSuccess }: SettingsFormProps) {
               Cancel
             </Button>
           </DialogClose>
-          <Button disabled={isLoading} type="submit">
+          <Button disabled={isLoading || !isDirty} type="submit">
             {isLoading ? (
               <>
                 <Loader2 className="animate-spin" />
