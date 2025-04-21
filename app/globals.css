@@ -1,11 +1,15 @@
 @import "tailwindcss";
+
 /*
   ---break---
 */
+
 @import "tw-animate-css";
+
 /*
   ---break---
 */
+
 @custom-variant dark (&:is(.dark *));
 
 @theme {
@@ -21,6 +25,7 @@
   If we ever want to remove these styles, we need to add an explicit border
   color utility to any element that depends on these defaults.
 */
+
 @layer base {
   *,
   ::after,
@@ -172,6 +177,46 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/*
+  Accordion/Collapsible animation
+*/
+
+@keyframes content-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(
+      --radix-collapsible-content-height,
+      var(--radix-accordion-content-height)
+    );
+  }
+}
+
+@keyframes content-up {
+  from {
+    height: var(
+      --radix-collapsible-content-height,
+      var(--radix-accordion-content-height)
+    );
+  }
+  to {
+    height: 0;
+  }
+}
+
+@layer utilities {
+  .animate-accordion-down,
+  .animate-collapsible-down {
+    animation: content-down 0.2s ease-out;
+  }
+
+  .animate-accordion-up,
+  .animate-collapsible-up {
+    animation: content-up 0.2s ease-out;
   }
 }
 

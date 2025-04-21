@@ -82,7 +82,7 @@ export function DataTable<TData, TValue>({
         </Badge>
         <ChevronDownIcon className="text-muted-foreground ml-auto size-4 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180" />
       </CollapsibleTrigger>
-      <CollapsibleContent>
+      <CollapsibleContent className="data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down overflow-hidden">
         <Table>
           <TableHeader className="bg-muted/50 border-t">
             {table.getHeaderGroups().map((headerGroup) => (
