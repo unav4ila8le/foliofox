@@ -1,5 +1,8 @@
 "use client";
 
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
+import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -24,9 +27,16 @@ import {
 import { DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
+import { updateProfile } from "@/lib/profile/actions";
+
 import { Database } from "@/types/database.types";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+
+interface SettingsFormProps {
+  profile: Profile;
+  onSuccess?: () => void;
+}
 
 const formSchema = z.object({
   username: z
@@ -40,7 +50,9 @@ const formSchema = z.object({
   }),
 });
 
-export function SettingsForm({ profile }: { profile: Profile }) {
+export function SettingsForm({ profile, onSuccess }: SettingsFormProps) {
+  const [isLoading, setIsLoading] = useState(false);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -50,10 +62,31 @@ export function SettingsForm({ profile }: { profile: Profile }) {
   });
 
   // Submit handler
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    // Do something with the form values.
-    // ✅ This will be type-safe and validated.
-    console.log(values);
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append("username", values.username);
+      formData.append("display_currency", values.display_currency);
+
+      const result = await updateProfile(formData);
+
+      // Handle error response from server action
+      if (!result.success) {
+        throw new Error(result.message);
+      }
+
+      toast.success("Profile updated successfully");
+
+      // Close the dialog
+      onSuccess?.();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update profile",
+      );
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -119,7 +152,16 @@ export function SettingsForm({ profile }: { profile: Profile }) {
               Cancel
             </Button>
           </DialogClose>
-          <Button type="submit">Save changes</Button>
+          <Button disabled={isLoading} type="submit">
+            {isLoading ? (
+              <>
+                <Loader2 className="animate-spin" />
+                Saving...
+              </>
+            ) : (
+              "Save changes"
+            )}
+          </Button>
         </div>
       </form>
     </Form>

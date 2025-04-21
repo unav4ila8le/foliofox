@@ -44,9 +44,10 @@ export function LoginForm() {
     },
   });
 
+  // Submit handler
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
       const formData = new FormData();
       formData.append("email", values.email);
       formData.append("password", values.password);

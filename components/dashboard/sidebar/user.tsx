@@ -30,6 +30,7 @@ type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
 export function User({ profile }: { profile: Profile }) {
   const [isLoading, setIsLoading] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const { isMobile } = useSidebar();
 
   const handleSignOut = async () => {
@@ -44,7 +45,7 @@ export function User({ profile }: { profile: Profile }) {
   };
 
   return (
-    <Dialog>
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <SidebarMenuButton
@@ -97,7 +98,10 @@ export function User({ profile }: { profile: Profile }) {
             Change here your profile information
           </DialogDescription>
         </DialogHeader>
-        <SettingsForm profile={profile} />
+        <SettingsForm
+          profile={profile}
+          onSuccess={() => setDialogOpen(false)}
+        />
       </DialogContent>
     </Dialog>
   );
