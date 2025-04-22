@@ -24,9 +24,7 @@ import { SettingsForm } from "@/components/dashboard/sidebar/settings-form";
 import { signout } from "@/lib/auth/actions";
 import { formatCurrency } from "@/lib/number";
 
-import { Database } from "@/types/database.types";
-
-type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+import type { Profile } from "@/types/global.types";
 
 export function User({ profile }: { profile: Profile }) {
   const [isLoading, setIsLoading] = useState(false);

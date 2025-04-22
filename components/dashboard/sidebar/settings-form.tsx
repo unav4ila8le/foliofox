@@ -29,9 +29,7 @@ import { Button } from "@/components/ui/button";
 
 import { updateProfile } from "@/lib/profile/actions";
 
-import { Database } from "@/types/database.types";
-
-type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+import type { Profile } from "@/types/global.types";
 
 interface SettingsFormProps {
   profile: Profile;

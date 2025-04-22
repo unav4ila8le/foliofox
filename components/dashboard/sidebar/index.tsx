@@ -19,9 +19,7 @@ import {
 import { User } from "./user";
 import { Branding } from "./branding";
 
-import { Database } from "@/types/database.types";
-
-type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+import type { Profile } from "@/types/global.types";
 
 // Placeholder menu items
 const items = [
