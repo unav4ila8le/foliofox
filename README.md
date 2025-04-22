@@ -158,10 +158,23 @@ This checklist outlines the steps to set up the Supabase backend for the Patrivi
       `created_at` timestamptz not null default now(),
       `updated_at` timestamptz not null default now(),
 
-      Constraint to ensure valid ISO currency codes:
-      constraint valid_currency check (display_currency ~ '^[A-Z]{3}$')
+      Enable RLS and create policy “User can update own profile”,
+      create policy “User can view own profile”,
 
-  Ensure `user_id` is the primary key and references `auth.users`.
+  Ensure `id` is the primary key and references `auth.users`.
+
+  - [x] Create the `currencies` lookup table with ISO‑4217 columns and constraints:
+        `alphabetic_code` text PRIMARY KEY NOT NULL,
+        `currency text` NOT NULL,
+        `numeric_code` smallint NOT NULL,
+        `minor_unit` smallint NOT NULL,
+
+    CONSTRAINT chk_alpha_len CHECK (char_length(alphabetic_code) = 3),
+    CONSTRAINT chk_numeric_range CHECK (numeric_code BETWEEN 1 AND 999),
+
+    Add FK on `profiles.display_currency` REFERENCES `currencies(alphabetic_code)`,
+
+    Enable RLS and create policy “Allow public read” (SELECT for anon & authenticated USING (true)).
 
 - [ ] Create the `holdings` table with the refined MVP columns: `id`, `user_id`, `name`, `category`, `tracking_method`, `currency`, `logo_url`, `current_quantity`, `created_at`, `api_symbol` (nullable), `isin` (nullable), `exchange` (nullable). Ensure `user_id` references `auth.users`.
 
