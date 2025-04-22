@@ -1,15 +1,28 @@
 import { CurrencySelector } from "@/components/dashboard/currency-selector";
-import { getTimeBasedGreeting } from "@/lib/date";
 import { NetWorthLineChart } from "@/components/dashboard/charts/net-worth-line-chart";
 import { AssetAllocationChart } from "@/components/dashboard/charts/asset-allocation-chart";
 
-export default function DashboardPage() {
+import { getTimeBasedGreeting } from "@/lib/date";
+import { createClient } from "@/utils/supabase/server";
+
+export default async function DashboardPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("username")
+    .eq("id", user!.id)
+    .single();
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">
-            {getTimeBasedGreeting()}, John
+            {getTimeBasedGreeting()}, {profile?.username}
           </h1>
           <p className="text-muted-foreground">Here&apos;s your summary</p>
         </div>
