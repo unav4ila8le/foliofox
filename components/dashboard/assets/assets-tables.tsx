@@ -28,7 +28,7 @@ export function AssetsTables({ data }: AssetsTablesProps) {
   return (
     <div className="flex flex-col gap-4">
       <Input
-        placeholder="Filter assets..."
+        placeholder="Search assets..."
         value={filterValue}
         onChange={(e) => setFilterValue(e.target.value)}
         className="max-w-sm"
