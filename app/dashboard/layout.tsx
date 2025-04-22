@@ -27,7 +27,7 @@ export default async function Layout({
   } = await supabase.auth.getUser();
 
   // If user is not logged in, redirect to login page
-  if (error || !user) {
+  if (error || !user || !user.email) {
     redirect("/auth/login");
   }
 
@@ -53,7 +53,7 @@ export default async function Layout({
         } as React.CSSProperties
       }
     >
-      <Sidebar profile={profile} />
+      <Sidebar profile={profile} email={user.email} />
       <SidebarInset>
         <Header />
         <div className="p-4 pt-2">{children}</div>

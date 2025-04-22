@@ -26,7 +26,7 @@ import { formatCurrency } from "@/lib/number";
 
 import type { Profile } from "@/types/global.types";
 
-export function User({ profile }: { profile: Profile }) {
+export function User({ profile, email }: { profile: Profile; email: string }) {
   const [isLoading, setIsLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const { isMobile } = useSidebar();
@@ -98,6 +98,7 @@ export function User({ profile }: { profile: Profile }) {
         </DialogHeader>
         <SettingsForm
           profile={profile}
+          email={email}
           onSuccess={() => setDialogOpen(false)}
         />
       </DialogContent>

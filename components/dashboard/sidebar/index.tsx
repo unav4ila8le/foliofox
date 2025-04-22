@@ -40,7 +40,13 @@ const items = [
   },
 ];
 
-export function Sidebar({ profile }: { profile: Profile }) {
+export function Sidebar({
+  profile,
+  email,
+}: {
+  profile: Profile;
+  email: string;
+}) {
   const pathname = usePathname();
   const { setOpenMobile } = useSidebar();
 
@@ -49,7 +55,7 @@ export function Sidebar({ profile }: { profile: Profile }) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <User profile={profile} />
+            <User profile={profile} email={email} />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>

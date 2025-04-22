@@ -33,6 +33,7 @@ import type { Profile } from "@/types/global.types";
 
 interface SettingsFormProps {
   profile: Profile;
+  email: string;
   onSuccess?: () => void;
 }
 
@@ -48,7 +49,7 @@ const formSchema = z.object({
   }),
 });
 
-export function SettingsForm({ profile, onSuccess }: SettingsFormProps) {
+export function SettingsForm({ profile, onSuccess, email }: SettingsFormProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -135,7 +136,7 @@ export function SettingsForm({ profile, onSuccess }: SettingsFormProps) {
         <FormItem>
           <FormLabel>Email</FormLabel>
           <FormControl>
-            <Input placeholder="email@example.com" disabled />
+            <Input value={email} disabled />
           </FormControl>
           <FormDescription>
             If you need to change your email, please contact support.
