@@ -9,6 +9,27 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      currencies: {
+        Row: {
+          alphabetic_code: string;
+          currency: string;
+          minor_unit: number;
+          numeric_code: number;
+        };
+        Insert: {
+          alphabetic_code: string;
+          currency: string;
+          minor_unit: number;
+          numeric_code: number;
+        };
+        Update: {
+          alphabetic_code?: string;
+          currency?: string;
+          minor_unit?: number;
+          numeric_code?: number;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
           avatar_url: string | null;
@@ -34,7 +55,15 @@ export type Database = {
           updated_at?: string;
           username?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "profiles_display_currency_fkey";
+            columns: ["display_currency"];
+            isOneToOne: false;
+            referencedRelation: "currencies";
+            referencedColumns: ["alphabetic_code"];
+          },
+        ];
       };
     };
     Views: {
