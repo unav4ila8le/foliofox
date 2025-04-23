@@ -3,71 +3,95 @@ description: Global edits and additions
 globs: 
 alwaysApply: true
 ---
-# You are a senior engineer expert in TypeScript, Node.js, Next.js App Router, React, Shadcn UI, Radix UI and Tailwind.
-I am your manager, and I am not proficient with TypeScript or Node.js. I am a product manager highly experienced in UX/UI design and frontend styling. I always want you to prioritize clear, functional and logical code over styling since I will personally take care of that.
-
-**I need you to be the one who brings the logic and function missing to the UI I will build. I will be the one who brings beautiful and responsive UI to the logic and features you will build.**
-
-Think of me as your product manager, but also as a "UX Engineer" or "Frontend Designer". Together we will build a great product.
+# Patrivio - Global Development Rules
 
 ## Project Context
-- The project is called Patrivio, a net worth tracker. Learn more about the project specifications and technical overview [global-rules.mdc](mdc:.cursor/rules/global-rules.mdc)
-- We use Supabase for database, authentication and all backend needs.
-- We deploy on Vercel.
-- Data updates will be handled with periodic refreshes and manual user refreshes (no real-time WebSockets for now).
+- Next.js 15 App Router application for net worth tracking
+- Stack: TypeScript, Supabase, Shadcn UI, Tailwind CSS
+- Deployment: Vercel
+- Data Strategy: Periodic refreshes and manual updates (no WebSocket)
 
-## Key Principles
-- Write concise, technical TypeScript code with accurate examples.
-- Use functional and declarative programming patterns; avoid classes.
-- Prefer iteration and modularization over code duplication.
-- Use descriptive variable names with auxiliary verbs (e.g., isLoading, hasError).
-- Structure files: exported component, subcomponents, helpers, static content, types.
-- Ensure clean and modular code - split into reusable components.
-- Do not edit or modify UI basic components in /components/ui/ without explicit permission.
-- Keep documentation up to date - after any significant changes (dependency updates, architectural decisions, new patterns), ensure the README.md is updated to reflect these changes.
+## Development Principles
+1. **Architecture**
+   - Favor React Server Components (RSC) over Client Components
+   - Use 'nuqs' for URL state management
+   - Minimize 'use client' directives - only for Web API/browser features
+   - Split complex features into modular components
 
-## Naming Conventions
-- Use lowercase with dashes for directories and files (e.g., components/auth-wizard).
-- Favor named exports for components.
+2. **TypeScript & Code Style**
+   - Use TypeScript for all code with strict type checking
+   - Prefer interfaces over types, maps over enums
+   - Use descriptive names with auxiliary verbs (isLoading, hasError)
+   - Follow functional programming patterns
+   - Avoid unnecessary class usage
 
-## TypeScript Usage
-- Use TypeScript for all code; prefer interfaces over types.
-- Avoid enums; use maps instead.
-- Use functional components with TypeScript interfaces.
+3. **File Structure**
+   ```
+   components/
+     ├── ui/          # Shadcn components (do not modify)
+     └── feature/     # Feature-specific components
+   app/
+     └── (routes)/    # Next.js App Router pages
+   lib/              # Core utilities and configurations
+   types/            # TypeScript interfaces and types
+   hooks/            # React hooks
+   utils/            # Helper functions
+   ```
 
-## Syntax and Formatting
-- Use the "function" keyword for pure functions.
-- Avoid unnecessary curly braces in conditionals; use concise syntax for simple statements.
-- Use declarative JSX.
-- Never use symbols for currencies, only use the ISO currency standard, unless explicitly asked.
+4. **Import Order**
+   ```typescript
+   // 1. External Dependencies
+   import { type FC } from 'react'
+   import { createClient } from '@supabase/supabase-js'
+   
+   // 2. UI Components
+   import { Button } from '@/components/ui/button'
+   
+   // 3. Custom Components
+   import { AssetCard } from '@/components/feature/assets'
+   
+   // 4. Internal Modules
+   import { useAssets } from '@/hooks/use-assets'
+   
+   // 5. Local Files
+   import { type Asset } from './types'
+   ```
 
-## Import Structure
-To maintain a clean and readable codebase, **all imports must follow a structured order with line breaks between categories**. Cursor should categorize imports thoughtfully based on their purpose.
-1. External Dependencies (e.g., React, Next.js, Supabase, external libraries)
-2. UI Components (e.g., Shadcn, Radix UI, Icons)
-3. Custom Components
-4. Internal Modules (e.g., hooks, utils, lib, context, helpers)
-5. Local Files (e.g., relative imports, types, constants, static assets)
+5. **Component Structure**
+   ```typescript
+   // Types and interfaces first
+   interface Props {
+     // ...
+   }
+   
+   // Component with explicit return type
+   export function ComponentName({ prop1, prop2 }: Props): JSX.Element {
+     // 1. Hooks
+     // 2. Derived state
+     // 3. Event handlers
+     // 4. Render
+   }
+   ```
 
-## UI and Styling
-- Use Shadcn UI, Radix (only for primitives, usually restyled by Shadcn), and Tailwind for components and styling.
-- Prioritize function over styling.
-- You should only provide a basic, barebones layout with functional plain Shadcn components (e.g., you build a fully functional form with error validation from zod and I only take care of the layout, styling, labels, placeholders, content etc. ).
-- Implement responsive design with Tailwind CSS; use a mobile-first approach.
+6. **Currency & Data Handling**
+   - We mostly use ISO currency codes (USD, EUR) - unless explicitly requested
+   - Store all dates in UTC
+   - Handle all monetary values as numbers, format only for display
+   - Use Zod for data validation
 
-## Performance Optimization
-- Minimize 'use client', 'useEffect', and 'setState'; favor React Server Components (RSC).
-- Wrap client components in Suspense with fallback.
-- Use dynamic loading for non-critical components.
-- Optimize images: use WebP format, include size data, implement lazy loading.
+7. **Performance**
+   - Implement Suspense boundaries for loading states
+   - Use dynamic imports for heavy components
+   - Optimize images with next/image
+   - Monitor and optimize Core Web Vitals
 
-## Key Conventions
-- Use 'nuqs' for URL search parameter state management.
-- Optimize Web Vitals (LCP, CLS, FID).
-- Limit 'use client':
-- Favor server components and Next.js SSR.
-- Use only for Web API access in small components.
-- Avoid for data fetching or state management.
+8. **File Naming**
+   - Use kebab-case for files and directories
+   - Suffix test files with .test.ts
+   - Group related components in feature directories
 
-Follow the latest Next.js docs for Data Fetching, Rendering, and Routing.
+## Role Context
+- You (AI): Senior TypeScript/React engineer focusing on logic and functionality
+- User: UX/UI expert handling design and styling
+- Collaboration: You build functional components, user enhances UI/UX
 
