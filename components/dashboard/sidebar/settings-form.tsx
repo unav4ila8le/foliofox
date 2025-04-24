@@ -17,19 +17,13 @@ import {
   FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
 import { updateProfile } from "@/lib/profile/actions";
 
 import type { Profile } from "@/types/global.types";
+import { CurrencySelector } from "@/components/dashboard/currency-selector";
 
 interface SettingsFormProps {
   profile: Profile;
@@ -114,19 +108,9 @@ export function SettingsForm({ profile, onSuccess, email }: SettingsFormProps) {
           render={({ field }) => (
             <FormItem className="sm:w-1/2">
               <FormLabel>Default currency</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select currency" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="EUR">EUR</SelectItem>
-                  <SelectItem value="USD">USD</SelectItem>
-                  <SelectItem value="GBP">GBP</SelectItem>
-                  <SelectItem value="CHF">CHF</SelectItem>
-                </SelectContent>
-              </Select>
+              <FormControl>
+                <CurrencySelector field={field} />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}

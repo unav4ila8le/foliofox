@@ -28,42 +28,40 @@ import {
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-// Data placeholder
+// Currency options matching the form schema
 const currencies = [
-  {
-    value: "usd",
-    label: "USD",
-  },
-  {
-    value: "eur",
-    label: "EUR",
-  },
-  {
-    value: "gbp",
-    label: "GBP",
-  },
-  {
-    value: "hkd",
-    label: "HKD",
-  },
-  {
-    value: "krw",
-    label: "KRW",
-  },
+  { value: "EUR", label: "EUR" },
+  { value: "USD", label: "USD" },
+  { value: "GBP", label: "GBP" },
+  { value: "CHF", label: "CHF" },
 ];
 
-export function CurrencySelector() {
+// Props interface for react-hook-form integration
+interface CurrencySelectorProps {
+  field: {
+    value: string;
+    onChange: (value: string) => void;
+  };
+}
+
+export function CurrencySelector({ field }: CurrencySelectorProps) {
   const [open, setOpen] = useState(false);
-  const [value, setValue] = useState("usd");
   const isMobile = useIsMobile();
 
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={setOpen}>
         <DrawerTrigger asChild>
-          <Button variant="ghost" role="combobox" aria-expanded={open}>
-            {currencies.find((currency) => currency.value === value)?.label ||
-              "USD"}
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="justify-between"
+          >
+            {
+              currencies.find((currency) => currency.value === field.value)
+                ?.label
+            }
             <ChevronsUpDown className="text-muted-foreground" />
           </Button>
         </DrawerTrigger>
@@ -71,7 +69,11 @@ export function CurrencySelector() {
           <DrawerHeader>
             <DrawerTitle>Currency</DrawerTitle>
           </DrawerHeader>
-          <CurrencyList setOpen={setOpen} value={value} setValue={setValue} />
+          <CurrencyList
+            setOpen={setOpen}
+            value={field.value}
+            onChange={field.onChange}
+          />
         </DrawerContent>
       </Drawer>
     );
@@ -80,28 +82,34 @@ export function CurrencySelector() {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" role="combobox" aria-expanded={open}>
-          {currencies.find((currency) => currency.value === value)?.label ||
-            "USD"}
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="justify-between"
+        >
+          {currencies.find((currency) => currency.value === field.value)?.label}
           <ChevronsUpDown className="text-muted-foreground" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-40 p-0" align="end">
-        <CurrencyList setOpen={setOpen} value={value} setValue={setValue} />
+      <PopoverContent className="w-full p-0">
+        <CurrencyList
+          setOpen={setOpen}
+          value={field.value}
+          onChange={field.onChange}
+        />
       </PopoverContent>
     </Popover>
   );
 }
 
-function CurrencyList({
-  setOpen,
-  value,
-  setValue,
-}: {
+interface CurrencyListProps {
   setOpen: (open: boolean) => void;
   value: string;
-  setValue: (value: string) => void;
-}) {
+  onChange: (value: string) => void;
+}
+
+function CurrencyList({ setOpen, value, onChange }: CurrencyListProps) {
   return (
     <Command>
       <CommandInput placeholder="Search currency..." className="h-9" />
@@ -112,9 +120,10 @@ function CurrencyList({
             <CommandItem
               key={currency.value}
               onSelect={() => {
-                setValue(currency.value);
+                onChange(currency.value);
                 setOpen(false);
               }}
+              value={currency.value}
             >
               {currency.label}
               <Check
