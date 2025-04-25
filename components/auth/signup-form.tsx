@@ -26,7 +26,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-import { signup } from "@/lib/auth/actions";
+import { signup } from "@/server/auth/actions";
 
 const formSchema = z
   .object({

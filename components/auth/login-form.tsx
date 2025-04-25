@@ -26,7 +26,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-import { login } from "@/lib/auth/actions";
+import { login } from "@/server/auth/actions";
 
 const formSchema = z.object({
   email: z.string().trim().email("Please enter a valid email address."),

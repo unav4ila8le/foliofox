@@ -1,26 +1,18 @@
 import { NetWorthLineChart } from "@/components/dashboard/charts/net-worth-line-chart";
 import { AssetAllocationChart } from "@/components/dashboard/charts/asset-allocation-chart";
 
+import { fetchProfile } from "@/server/profile/actions";
+
 import { getTimeBasedGreeting } from "@/lib/date";
-import { createClient } from "@/utils/supabase/server";
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("username")
-    .eq("id", user!.id)
-    .single();
+  const { profile } = await fetchProfile();
 
   return (
     <div className="flex flex-col gap-4">
       <div>
         <h1 className="text-2xl font-semibold">
-          {getTimeBasedGreeting()}, {profile?.username}
+          {getTimeBasedGreeting()}, {profile.username}
         </h1>
         <p className="text-muted-foreground">Here&apos;s your summary</p>
       </div>

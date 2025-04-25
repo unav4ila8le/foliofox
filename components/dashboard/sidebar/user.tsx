@@ -21,7 +21,7 @@ import {
 import { SidebarMenuButton, useSidebar } from "@/components/ui/sidebar";
 import { SettingsForm } from "@/components/dashboard/sidebar/settings-form";
 
-import { signout } from "@/lib/auth/actions";
+import { signout } from "@/server/auth/actions";
 import { formatCurrency } from "@/lib/number";
 
 import type { Profile } from "@/types/global.types";
