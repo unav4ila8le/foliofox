@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Check, ChevronsUpDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -28,13 +28,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-// Currency options matching the form schema
-const currencies = [
-  { value: "EUR", label: "EUR" },
-  { value: "USD", label: "USD" },
-  { value: "GBP", label: "GBP" },
-  { value: "CHF", label: "CHF" },
-];
+import type { Currency } from "@/types/global.types";
 
 // Props interface for react-hook-form integration
 interface CurrencySelectorProps {
@@ -46,7 +40,21 @@ interface CurrencySelectorProps {
 
 export function CurrencySelector({ field }: CurrencySelectorProps) {
   const [open, setOpen] = useState(false);
+  const [currencies, setCurrencies] = useState<Currency[]>([]);
+  const [loading, setLoading] = useState(true);
   const isMobile = useIsMobile();
+
+  // Get currencies
+  useEffect(() => {
+    async function fetchCurrencies() {
+      setLoading(true);
+      const res = await fetch("/api/currencies");
+      const data = await res.json();
+      setCurrencies(data);
+      setLoading(false);
+    }
+    fetchCurrencies();
+  }, []);
 
   if (isMobile) {
     return (
@@ -70,6 +78,8 @@ export function CurrencySelector({ field }: CurrencySelectorProps) {
             setOpen={setOpen}
             value={field.value}
             onChange={field.onChange}
+            currencies={currencies}
+            loading={loading}
           />
         </DrawerContent>
       </Drawer>
@@ -94,6 +104,8 @@ export function CurrencySelector({ field }: CurrencySelectorProps) {
           setOpen={setOpen}
           value={field.value}
           onChange={field.onChange}
+          currencies={currencies}
+          loading={loading}
         />
       </PopoverContent>
     </Popover>
@@ -104,29 +116,41 @@ interface CurrencyListProps {
   setOpen: (open: boolean) => void;
   value: string;
   onChange: (value: string) => void;
+  currencies: Currency[];
+  loading: boolean;
 }
 
-function CurrencyList({ setOpen, value, onChange }: CurrencyListProps) {
+function CurrencyList({
+  setOpen,
+  value,
+  onChange,
+  currencies,
+  loading,
+}: CurrencyListProps) {
   return (
     <Command>
       <CommandInput placeholder="Search currency..." className="h-9" />
       <CommandList>
-        <CommandEmpty>No currency found.</CommandEmpty>
+        <CommandEmpty>
+          {loading ? "Loading currencies..." : "No currency found."}
+        </CommandEmpty>
         <CommandGroup>
           {currencies.map((currency) => (
             <CommandItem
-              key={currency.value}
+              key={currency.alphabetic_code}
               onSelect={() => {
-                onChange(currency.value);
+                onChange(currency.alphabetic_code);
                 setOpen(false);
               }}
-              value={currency.value}
+              value={currency.alphabetic_code}
             >
-              {currency.label}
+              {currency.alphabetic_code}
               <Check
                 className={cn(
                   "ml-auto",
-                  value === currency.value ? "opacity-100" : "opacity-0",
+                  value === currency.alphabetic_code
+                    ? "opacity-100"
+                    : "opacity-0",
                 )}
               />
             </CommandItem>

@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 
 import { createClient } from "@/utils/supabase/server";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { Sidebar } from "@/components/dashboard/sidebar";
+import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { Header } from "@/components/dashboard/header";
 
 export default async function Layout({
@@ -53,7 +53,7 @@ export default async function Layout({
         } as React.CSSProperties
       }
     >
-      <Sidebar profile={profile} email={user.email} />
+      <DashboardSidebar profile={profile} email={user.email} />
       <SidebarInset>
         <Header />
         <div className="p-4 pt-2">{children}</div>
