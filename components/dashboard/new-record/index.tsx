@@ -34,18 +34,10 @@ export function NewRecord() {
         </DialogHeader>
         <Tabs defaultValue="purchase">
           <TabsList className="mb-2 w-full">
-            <TabsTrigger value="purchase" className="cursor-pointer">
-              Purchase
-            </TabsTrigger>
-            <TabsTrigger value="sale" className="cursor-pointer">
-              Sale
-            </TabsTrigger>
-            <TabsTrigger value="transfer" className="cursor-pointer">
-              Transfer
-            </TabsTrigger>
-            <TabsTrigger value="update" className="cursor-pointer">
-              Update
-            </TabsTrigger>
+            <TabsTrigger value="purchase">Purchase</TabsTrigger>
+            <TabsTrigger value="sale">Sale</TabsTrigger>
+            <TabsTrigger value="transfer">Transfer</TabsTrigger>
+            <TabsTrigger value="update">Update</TabsTrigger>
           </TabsList>
           <TabsContent value="purchase">
             <PurchaseForm />
