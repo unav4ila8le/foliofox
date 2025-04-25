@@ -52,18 +52,7 @@ export function CurrencySelector({ field }: CurrencySelectorProps) {
     return (
       <Drawer open={open} onOpenChange={setOpen}>
         <DrawerTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className="justify-between"
-          >
-            {
-              currencies.find((currency) => currency.value === field.value)
-                ?.label
-            }
-            <ChevronsUpDown className="text-muted-foreground" />
-          </Button>
+          <CurrencyButton open={open} value={field.value} />
         </DrawerTrigger>
         <DrawerContent>
           <DrawerHeader>
@@ -82,15 +71,7 @@ export function CurrencySelector({ field }: CurrencySelectorProps) {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="justify-between"
-        >
-          {currencies.find((currency) => currency.value === field.value)?.label}
-          <ChevronsUpDown className="text-muted-foreground" />
-        </Button>
+        <CurrencyButton open={open} value={field.value} />
       </PopoverTrigger>
       <PopoverContent className="w-full p-0">
         <CurrencyList
@@ -100,6 +81,25 @@ export function CurrencySelector({ field }: CurrencySelectorProps) {
         />
       </PopoverContent>
     </Popover>
+  );
+}
+
+interface CurrencyButtonProps {
+  open: boolean;
+  value: string;
+}
+
+function CurrencyButton({ open, value }: CurrencyButtonProps) {
+  return (
+    <Button
+      variant="outline"
+      role="combobox"
+      aria-expanded={open}
+      className="justify-between"
+    >
+      {value}
+      <ChevronsUpDown className="text-muted-foreground" />
+    </Button>
   );
 }
 
