@@ -1,7 +1,7 @@
 "use client";
 
-import { Check, ChevronsUpDown } from "lucide-react";
 import { useState } from "react";
+import { Check, ChevronsUpDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -52,7 +52,15 @@ export function CurrencySelector({ field }: CurrencySelectorProps) {
     return (
       <Drawer open={open} onOpenChange={setOpen}>
         <DrawerTrigger asChild>
-          <CurrencyButton open={open} value={field.value} />
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="justify-between"
+          >
+            {field.value}
+            <ChevronsUpDown className="text-muted-foreground" />
+          </Button>
         </DrawerTrigger>
         <DrawerContent>
           <DrawerHeader>
@@ -71,7 +79,15 @@ export function CurrencySelector({ field }: CurrencySelectorProps) {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <CurrencyButton open={open} value={field.value} />
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="justify-between"
+        >
+          {field.value}
+          <ChevronsUpDown className="text-muted-foreground" />
+        </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0">
         <CurrencyList
@@ -81,25 +97,6 @@ export function CurrencySelector({ field }: CurrencySelectorProps) {
         />
       </PopoverContent>
     </Popover>
-  );
-}
-
-interface CurrencyButtonProps {
-  open: boolean;
-  value: string;
-}
-
-function CurrencyButton({ open, value }: CurrencyButtonProps) {
-  return (
-    <Button
-      variant="outline"
-      role="combobox"
-      aria-expanded={open}
-      className="justify-between"
-    >
-      {value}
-      <ChevronsUpDown className="text-muted-foreground" />
-    </Button>
   );
 }
 

@@ -1,14 +1,17 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/utils/supabase/server";
+
+import type { Profile } from "@/types/global.types";
 
 export async function updateProfile(formData: FormData) {
   const supabase = await createClient();
 
   // Data is already validated in the form component
-  const data = {
+  const data: Pick<Profile, "username" | "display_currency"> = {
     username: formData.get("username") as string,
     display_currency: formData.get("display_currency") as string,
   };
@@ -18,13 +21,9 @@ export async function updateProfile(formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Return error if no user
+  // Redirect to login if no user
   if (!user) {
-    return {
-      success: false,
-      code: "not_authenticated",
-      message: "You must be logged in to update your profile",
-    };
+    redirect("/auth/login");
   }
 
   // Update profile
