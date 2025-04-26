@@ -12,6 +12,7 @@ import {
 import { User } from "./user";
 import { Branding } from "./branding";
 import { Menu } from "./menu";
+
 import type { Profile } from "@/types/global.types";
 
 export function DashboardSidebar({

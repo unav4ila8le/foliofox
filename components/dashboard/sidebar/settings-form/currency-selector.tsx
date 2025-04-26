@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Check, ChevronsUpDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useCurrencies } from "@/hooks/use-currencies";
 
 import type { Currency } from "@/types/global.types";
 
@@ -40,21 +41,10 @@ interface CurrencySelectorProps {
 
 export function CurrencySelector({ field }: CurrencySelectorProps) {
   const [open, setOpen] = useState(false);
-  const [currencies, setCurrencies] = useState<Currency[]>([]);
-  const [loading, setLoading] = useState(true);
   const isMobile = useIsMobile();
 
   // Get currencies
-  useEffect(() => {
-    async function fetchCurrencies() {
-      setLoading(true);
-      const res = await fetch("/api/currencies");
-      const data = await res.json();
-      setCurrencies(data);
-      setLoading(false);
-    }
-    fetchCurrencies();
-  }, []);
+  const { currencies, loading } = useCurrencies();
 
   if (isMobile) {
     return (
