@@ -16,6 +16,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SidebarMenuButton, useSidebar } from "@/components/ui/sidebar";
@@ -29,6 +31,7 @@ import type { Profile } from "@/types/global.types";
 export function User({ profile, email }: { profile: Profile; email: string }) {
   const [isLoading, setIsLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+
   const { isMobile } = useSidebar();
 
   const handleSignOut = async () => {
@@ -77,6 +80,8 @@ export function User({ profile, email }: { profile: Profile; email: string }) {
           align="end"
           sideOffset={4}
         >
+          <DropdownMenuItem disabled>{email}</DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DialogTrigger asChild>
             <DropdownMenuItem>
               <Settings className="size-4" />
@@ -86,6 +91,7 @@ export function User({ profile, email }: { profile: Profile; email: string }) {
           <DropdownMenuItem onSelect={handleSignOut} disabled={isLoading}>
             <LogOut className="size-4" />
             {isLoading ? "Signing out..." : "Log out"}
+            <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
