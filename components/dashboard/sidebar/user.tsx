@@ -24,26 +24,17 @@ import { SidebarMenuButton, useSidebar } from "@/components/ui/sidebar";
 import { SettingsForm } from "@/components/dashboard/sidebar/settings-form";
 
 import { formatCurrency } from "@/lib/number";
-import { signout } from "@/server/auth/actions";
+
+import { useSignout } from "@/hooks/use-signout";
 
 import type { Profile } from "@/types/global.types";
 
 export function User({ profile, email }: { profile: Profile; email: string }) {
-  const [isLoading, setIsLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const { isMobile } = useSidebar();
 
-  const handleSignOut = async () => {
-    try {
-      setIsLoading(true);
-      await signout("local");
-    } catch (error) {
-      console.error("Sign out error:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { handleSignOut, isLoading } = useSignout();
 
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -88,7 +79,10 @@ export function User({ profile, email }: { profile: Profile; email: string }) {
               Settings
             </DropdownMenuItem>
           </DialogTrigger>
-          <DropdownMenuItem onSelect={handleSignOut} disabled={isLoading}>
+          <DropdownMenuItem
+            onSelect={() => handleSignOut("local")}
+            disabled={isLoading}
+          >
             <LogOut className="size-4" />
             {isLoading ? "Signing out..." : "Log out"}
             <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
