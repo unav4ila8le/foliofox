@@ -46,7 +46,7 @@ const formSchema = z.object({
 export function SettingsForm({ profile, onSuccess, email }: SettingsFormProps) {
   const [isLoading, setIsLoading] = useState(false);
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       username: profile.username,

@@ -58,11 +58,9 @@ const formSchema = z.object({
     .or(z.literal("")),
 });
 
-type FormValues = z.infer<typeof formSchema>;
-
 export function SaleForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const form = useForm<FormValues>({
+  const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       date: new Date(),
@@ -76,7 +74,7 @@ export function SaleForm() {
     },
   });
 
-  async function onSubmit(values: FormValues) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     if (isSubmitting) return;
     setIsSubmitting(true);
 

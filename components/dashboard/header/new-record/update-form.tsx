@@ -8,9 +8,8 @@ import { CalendarIcon, LoaderCircle } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { DialogClose } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import { formatNumber } from "@/lib/number/format";
 import {
   Form,
   FormControl,
@@ -24,7 +23,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Calendar } from "@/components/ui/calendar";
+import { DialogClose } from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -32,25 +34,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
-import { formatNumber } from "@/lib/number/format";
 
 const formSchema = z.object({
   date: z.date({
-    required_error: "A date of transaction is required.",
+    required_error: "A date is required.",
   }),
-  source_of_funds: z.string({
-    required_error: "Please select the source of funds.",
+  item: z.string({
+    required_error: "Please select an item.",
   }),
-  asset_type: z.string({
-    required_error: "Please select an asset type.",
-  }),
-  asset_name: z.string().min(1, "Please enter the asset name."),
-  quantity: z.string().min(1, "Please enter the quantity."),
-  price_per_unit: z.string().min(1, "Please enter the price per unit."),
-  currency: z.string({
-    required_error: "Please select a currency.",
-  }),
+  amount: z.string().min(1, "Please enter the amount."),
+  value: z.string().min(1, "Please enter the value."),
   description: z
     .string()
     .max(256, { message: "Description must not exceed 256 characters." })
@@ -58,34 +51,28 @@ const formSchema = z.object({
     .or(z.literal("")),
 });
 
-type FormValues = z.infer<typeof formSchema>;
-
-export function PurchaseForm() {
+export function UpdateForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const form = useForm<FormValues>({
+  const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       date: new Date(),
-      source_of_funds: "",
-      asset_type: "",
-      asset_name: "",
-      quantity: "",
-      price_per_unit: "",
-      currency: "",
+      item: "",
+      amount: "",
+      value: "",
       description: "",
     },
   });
 
-  async function onSubmit(values: FormValues) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     if (isSubmitting) return;
     setIsSubmitting(true);
 
     try {
       const submitData = {
         ...values,
-        quantity: parseFloat(values.quantity.replace(/,/g, "")) || 0,
-        price_per_unit:
-          parseFloat(values.price_per_unit.replace(/,/g, "")) || 0,
+        amount: parseFloat(values.amount.replace(/,/g, "")) || 0,
+        value: parseFloat(values.value.replace(/,/g, "")) || 0,
       };
 
       // TODO: Replace with actual API call
@@ -93,11 +80,11 @@ export function PurchaseForm() {
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Show success toast and reset form
-      toast.success("Purchase record added successfully");
+      toast.success("Value update added successfully");
       form.reset();
     } catch (error) {
       console.error(error);
-      toast.error("Failed to add purchase record. Please try again.");
+      toast.error("Failed to add value update. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -114,7 +101,7 @@ export function PurchaseForm() {
           name="date"
           render={({ field }) => (
             <FormItem className="sm:w-1/2 sm:pr-1">
-              <FormLabel>Date of transaction</FormLabel>
+              <FormLabel>Date</FormLabel>
               <Popover>
                 <PopoverTrigger asChild>
                   <FormControl>
@@ -153,71 +140,27 @@ export function PurchaseForm() {
 
         <FormField
           control={form.control}
-          name="source_of_funds"
+          name="item"
           render={({ field }) => (
             <FormItem className="sm:w-1/2 sm:pr-1">
-              <FormLabel>Source of funds</FormLabel>
+              <FormLabel>Item</FormLabel>
               <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select source of funds" />
+                    <SelectValue placeholder="Select an item" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="bank_account">Bank Account</SelectItem>
-                  <SelectItem value="investment_account">
-                    Investment Account
+                  <SelectItem value="checking_account">
+                    Checking Account
                   </SelectItem>
-                  <SelectItem value="savings_account">
-                    Savings Account
-                  </SelectItem>
-                  <SelectItem value="cash_wallet">Cash/Wallet</SelectItem>
-                  <SelectItem value="credit_line">Credit Line</SelectItem>
-                  <SelectItem value="external_transfer">
-                    External Transfer
-                  </SelectItem>
+                  <SelectItem value="btc">BTC</SelectItem>
+                  <SelectItem value="eth">ETH</SelectItem>
+                  <SelectItem value="usd_cash">USD Cash</SelectItem>
+                  <SelectItem value="eur_cash">EUR Cash</SelectItem>
+                  <SelectItem value="house_in_rome">House in Rome</SelectItem>
                 </SelectContent>
               </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="asset_type"
-          render={({ field }) => (
-            <FormItem className="sm:w-1/2 sm:pr-1">
-              <FormLabel>Asset type</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select asset type" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="stock">Stock</SelectItem>
-                  <SelectItem value="crypto">Cryptocurrency</SelectItem>
-                  <SelectItem value="etf">ETF</SelectItem>
-                  <SelectItem value="real_estate">Real Estate</SelectItem>
-                  <SelectItem value="precious_metal">Precious Metal</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="asset_name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Asset name/symbol</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g., AAPL, BTC, VWCE" {...field} />
-              </FormControl>
               <FormMessage />
             </FormItem>
           )}
@@ -226,13 +169,13 @@ export function PurchaseForm() {
         <div className="grid gap-x-2 gap-y-4 sm:grid-cols-2">
           <FormField
             control={form.control}
-            name="quantity"
+            name="amount"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Quantity</FormLabel>
+                <FormLabel>Amount</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="Enter quantity"
+                    placeholder="Enter amount"
                     {...field}
                     onBlur={(e) => {
                       const formatted = formatNumber(e.target.value);
@@ -248,13 +191,13 @@ export function PurchaseForm() {
 
           <FormField
             control={form.control}
-            name="price_per_unit"
+            name="value"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Price per unit</FormLabel>
+                <FormLabel>Value</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="Enter price"
+                    placeholder="Enter value"
                     {...field}
                     onBlur={(e) => {
                       const formatted = formatNumber(
@@ -278,37 +221,13 @@ export function PurchaseForm() {
 
         <FormField
           control={form.control}
-          name="currency"
-          render={({ field }) => (
-            <FormItem className="sm:w-1/2 sm:pr-1">
-              <FormLabel>Currency</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select currency" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="EUR">EUR</SelectItem>
-                  <SelectItem value="USD">USD</SelectItem>
-                  <SelectItem value="GBP">GBP</SelectItem>
-                  <SelectItem value="CHF">CHF</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
           name="description"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Description (optional)</FormLabel>
               <FormControl>
                 <Input
-                  placeholder="Add any notes about this purchase"
+                  placeholder="Add any notes about this update"
                   {...field}
                 />
               </FormControl>

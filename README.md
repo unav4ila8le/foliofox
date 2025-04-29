@@ -45,10 +45,6 @@ The project currently uses package overrides in `package.json` to handle React 1
   2. Update react-day-picker to v9
   3. Update date-fns to v4 (currently locked to v3.6.0 for compatibility)
 
-#### Other Dependencies to Watch
-
-- `@hookform/resolvers` is currently at v4 and should not be updated to v5 until we upgrade react-hook-form to v8
-
 ## Utility Functions
 
 ### Number Formatting

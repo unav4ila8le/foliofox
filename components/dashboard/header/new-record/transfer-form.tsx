@@ -58,8 +58,6 @@ const formSchema = z
     path: ["to_account"],
   });
 
-type FormValues = z.infer<typeof formSchema>;
-
 const ACCOUNTS = [
   { id: "checking_usd", name: "Checking Account (USD)", currency: "USD" },
   { id: "savings_usd", name: "Savings Account (USD)", currency: "USD" },
@@ -71,7 +69,7 @@ export function TransferForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedCurrency, setSelectedCurrency] = useState<string>("");
 
-  const form = useForm<FormValues>({
+  const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       date: new Date(),
@@ -107,7 +105,7 @@ export function TransferForm() {
     }
   };
 
-  async function onSubmit(values: FormValues) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     if (isSubmitting) return;
     setIsSubmitting(true);
 

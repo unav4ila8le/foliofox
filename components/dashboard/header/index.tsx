@@ -1,5 +1,5 @@
 import { ThemeToggle } from "@/components/theme-toggle";
-import { NewRecord } from "@/components/dashboard/new-record";
+import { NewRecord } from "@/components/dashboard/header/new-record";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
   Tooltip,
