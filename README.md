@@ -74,12 +74,6 @@ formatCompactCurrency(1234567, "USD"); // "1.2M USD"
 
 All formatting functions accept both numbers and strings as input. Currency formatting automatically uses the appropriate number of decimal places based on the currency code. For more details, check the implementation in `lib/number/format.ts`.
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
 ## Supabase Setup Checklist (MVP)
 
 This checklist outlines the steps to set up the Supabase backend for the Patrivio MVP based on the refined schema and API plan.
