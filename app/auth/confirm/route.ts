@@ -22,10 +22,10 @@ export async function GET(request: NextRequest) {
     token_hash,
   });
   if (!error) {
-    // redirect user to specified redirect URL or root of app
+    // Redirect user to specified redirect URL or root of app
     redirect(next);
   }
 
-  // redirect the user to login page with error message
+  // Redirect the user to login page with error message
   redirect(`/auth/login?message=confirm-error&error=${error.message}`);
 }

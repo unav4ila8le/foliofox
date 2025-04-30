@@ -96,6 +96,7 @@ export function SignupForm() {
         position: "top-center",
         duration: 8000,
       });
+      form.reset();
     } catch (error) {
       // Handle unexpected errors
       toast.error("Signup failed", {
