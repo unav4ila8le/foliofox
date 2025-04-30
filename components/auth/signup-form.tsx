@@ -75,8 +75,8 @@ export function SignupForm() {
 
       const result = await signup(formData);
 
-      // Handle error response from server action
-      if (result && !result.success) {
+      // Handle expected auth errors
+      if (result.success === false) {
         if (result.code === "user_already_exists") {
           form.setError("email", {
             type: "manual",
@@ -84,18 +84,20 @@ export function SignupForm() {
           });
         } else {
           toast.error("Signup failed", {
-            description: result.message || "An unexpected error occurred",
+            description: result.message,
           });
         }
         return;
       }
-    } catch (error) {
-      // Let Next.js handle redirection errors
-      if (error instanceof Error && error.message.includes("NEXT_REDIRECT")) {
-        throw error;
-      }
 
-      // Show toast for technical errors
+      toast.success("Check your inbox to confirm your account", {
+        description:
+          "Click the confirmation link in the email to complete signup.",
+        position: "top-center",
+        duration: 8000,
+      });
+    } catch (error) {
+      // Handle unexpected errors
       toast.error("Signup failed", {
         description:
           error instanceof Error

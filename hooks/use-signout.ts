@@ -11,16 +11,25 @@ export function useSignout() {
   const handleSignOut = async (scope: SignOutScope = "global") => {
     setIsLoading(true);
     try {
-      await signout(scope);
+      const result = await signout(scope);
+
+      // Handle expected auth errors
+      if (result.success === false) {
+        toast.error("Failed to log out", {
+          description: result.message,
+        });
+        return;
+      }
+
       router.push("/auth/login");
       toast.success("You have been signed out successfully");
     } catch (error) {
-      // Show error message to user
+      // Handle unexpected errors
       toast.error("Failed to log out", {
         description:
           error instanceof Error
             ? error.message
-            : "Please refresh the page and try again.",
+            : "An unexpected error occurred. If the problem persists, please contact support.",
       });
     } finally {
       setIsLoading(false);

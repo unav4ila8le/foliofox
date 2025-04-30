@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 
 import { createClient } from "@/utils/supabase/server";
 
@@ -17,13 +16,13 @@ export async function login(formData: FormData) {
 
   const { error } = await supabase.auth.signInWithPassword(data);
 
-  // Return Supabase errors instead of throwing
+  // Return Supabase errors
   if (error) {
     return { success: false, code: error.code, message: error.message };
   }
 
   revalidatePath("/", "layout");
-  redirect("/dashboard");
+  return { success: true };
 }
 
 // Signup
@@ -52,13 +51,13 @@ export async function signup(formData: FormData) {
     };
   }
 
-  // Return Supabase errors instead of throwing
+  // Return Supabase errors
   if (error) {
     return { success: false, code: error.code, message: error.message };
   }
 
   revalidatePath("/", "layout");
-  redirect("/auth/login?message=signup-success");
+  return { success: true };
 }
 
 // Signout
@@ -68,10 +67,11 @@ export async function signout(scope: SignOutScope = "global") {
   const supabase = await createClient();
   const { error } = await supabase.auth.signOut({ scope });
 
-  // Catch any error from Supabase
+  // Return Supabase errors
   if (error) {
-    throw new Error(error.message);
+    return { success: false, code: error.code, message: error.message };
   }
 
   revalidatePath("/", "layout");
+  return { success: true };
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
@@ -35,6 +36,7 @@ const formSchema = z.object({
 
 export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -54,8 +56,8 @@ export function LoginForm() {
 
       const result = await login(formData);
 
-      // Handle error response from server action
-      if (result && !result.success) {
+      // Handle expected auth errors
+      if (result.success === false) {
         if (result.code === "invalid_credentials") {
           form.setError("email", {
             type: "manual",
@@ -66,18 +68,15 @@ export function LoginForm() {
           });
         } else {
           toast.error("Login failed", {
-            description: result.message || "An unexpected error occurred",
+            description: result.message,
           });
         }
         return;
       }
-    } catch (error) {
-      // Let Next.js handle redirection errors
-      if (error instanceof Error && error.message.includes("NEXT_REDIRECT")) {
-        throw error;
-      }
 
-      // Show toast for technical errors
+      router.push("/dashboard");
+    } catch (error) {
+      // Handle unexpected errors
       toast.error("Login failed", {
         description:
           error instanceof Error
