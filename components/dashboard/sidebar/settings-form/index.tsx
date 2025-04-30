@@ -37,7 +37,10 @@ const formSchema = z.object({
     .trim()
     .min(3, "Username must be at least 3 characters.")
     .max(16, "Username must not exceed 16 characters.")
-    .regex(/^[a-zA-Z0-9]+$/, "Username can only contain letters and numbers."),
+    .regex(
+      /^[a-zA-Z0-9]+$/,
+      "Username can only contain letters and numbers, without spaces.",
+    ),
   display_currency: z.string({
     required_error: "Please select a currency.",
   }),

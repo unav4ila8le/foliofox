@@ -38,7 +38,7 @@ const formSchema = z
       .max(16, "Username must not exceed 16 characters.")
       .regex(
         /^[a-zA-Z0-9]+$/,
-        "Username can only contain letters and numbers.",
+        "Username can only contain letters and numbers, without spaces.",
       ),
     password: z
       .string()
