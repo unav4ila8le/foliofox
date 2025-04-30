@@ -37,9 +37,10 @@ interface CurrencySelectorProps {
     value: string;
     onChange: (value: string) => void;
   };
+  id?: string;
 }
 
-export function CurrencySelector({ field }: CurrencySelectorProps) {
+export function CurrencySelector({ field, id }: CurrencySelectorProps) {
   const [open, setOpen] = useState(false);
   const isMobile = useIsMobile();
 
@@ -51,6 +52,7 @@ export function CurrencySelector({ field }: CurrencySelectorProps) {
       <Drawer open={open} onOpenChange={setOpen}>
         <DrawerTrigger asChild>
           <Button
+            id={id}
             variant="outline"
             role="combobox"
             aria-expanded={open}
@@ -80,6 +82,7 @@ export function CurrencySelector({ field }: CurrencySelectorProps) {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          id={id}
           variant="outline"
           role="combobox"
           aria-expanded={open}
