@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { LogOut, MoreVertical, Settings } from "lucide-react";
+import { LoaderCircle, LogOut, MoreVertical, Settings } from "lucide-react";
 
 import {
   Dialog,
@@ -80,10 +80,17 @@ export function User({ profile, email }: { profile: Profile; email: string }) {
             </DropdownMenuItem>
           </DialogTrigger>
           <DropdownMenuItem
-            onSelect={() => handleSignOut("local")}
+            onSelect={(event) => {
+              event.preventDefault(); // This keeps the dropdown open
+              handleSignOut("local");
+            }}
             disabled={isLoading}
           >
-            <LogOut className="size-4" />
+            {isLoading ? (
+              <LoaderCircle className="size-4 animate-spin" />
+            ) : (
+              <LogOut className="size-4" />
+            )}
             {isLoading ? "Signing out..." : "Log out"}
             <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
           </DropdownMenuItem>

@@ -74,5 +74,4 @@ export async function signout(scope: SignOutScope = "global") {
   }
 
   revalidatePath("/", "layout");
-  redirect("/auth/login?message=signout-success");
 }
