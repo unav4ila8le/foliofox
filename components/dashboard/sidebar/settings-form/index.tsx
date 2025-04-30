@@ -142,7 +142,11 @@ export function SettingsForm({ profile, onSuccess, email }: SettingsFormProps) {
               Cancel
             </Button>
           </DialogClose>
-          <Button disabled={isLoading || !isDirty} type="submit">
+          <Button
+            disabled={isLoading || !isDirty}
+            type="submit"
+            className="w-1/2 sm:w-auto"
+          >
             {isLoading ? (
               <>
                 <Loader2 className="animate-spin" />
