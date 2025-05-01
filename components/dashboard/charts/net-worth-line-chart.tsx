@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/chart";
 
 import { formatCurrency } from "@/lib/number";
-import { TimePeriod, filterDataByTimePeriod } from "@/lib/filters/time-period";
+import { TimePeriod, filterDataByTimePeriod } from "@/lib/filters";
 import { WeeklyNetWorth, weeklyNetWorth } from "@/mocks/financial/net-worth";
 
 const chartConfig = {

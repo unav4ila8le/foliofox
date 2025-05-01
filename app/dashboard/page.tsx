@@ -3,7 +3,7 @@ import { AssetAllocationChart } from "@/components/dashboard/charts/asset-alloca
 
 import { fetchProfile } from "@/server/profile/actions";
 
-import { getTimeBasedGreeting } from "@/lib/date";
+import { Greetings } from "@/components/dashboard/greetings";
 
 export default async function DashboardPage() {
   const { profile } = await fetchProfile();
@@ -11,9 +11,7 @@ export default async function DashboardPage() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-2xl font-semibold">
-          {getTimeBasedGreeting()}, {profile.username}
-        </h1>
+        <Greetings username={profile.username} />
         <p className="text-muted-foreground">Here&apos;s your summary</p>
       </div>
 
