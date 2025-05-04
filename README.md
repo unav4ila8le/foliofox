@@ -146,14 +146,23 @@ This checklist outlines the steps to set up the Supabase backend for the Patrivi
 
   - [x] Create the `currencies` lookup table with ISO‑4217 columns and constraints:
         `alphabetic_code` text PRIMARY KEY NOT NULL,
-        `currency text` NOT NULL,
-        `numeric_code` smallint NOT NULL,
-        `minor_unit` smallint NOT NULL,
+        `currency` text NOT NULL,
+        `numeric_code` int2 NOT NULL,
+        `minor_unit` int2 NOT NULL,
 
     CONSTRAINT chk_alpha_len CHECK (char_length(alphabetic_code) = 3),
     CONSTRAINT chk_numeric_range CHECK (numeric_code BETWEEN 1 AND 999),
 
-    Add FK on `profiles.display_currency` REFERENCES `currencies(alphabetic_code)`,
+    Add FK on `profiles.display_currency` REFERENCES `currencies(alphabetic_code)`.
+
+  Enable RLS and create policy “Allow public read” (SELECT for anon & authenticated USING (true)).
+
+  - [x] Create the `asset_categories` lookup table:
+        `id` uuid PRIMARY KEY NOT NULL,
+        `code` text unique NOT NULL,
+        `name` text NOT NULL,
+        `display_order` int2 unique NOT NULL,
+        `description` text,
 
     Enable RLS and create policy “Allow public read” (SELECT for anon & authenticated USING (true)).
 
