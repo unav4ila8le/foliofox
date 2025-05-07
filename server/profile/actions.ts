@@ -31,7 +31,7 @@ export async function fetchProfile() {
   const { data: profile, error } = await supabase
     .from("profiles")
     .select("username, display_currency, avatar_url")
-    .eq("id", user.id)
+    .eq("user_id", user.id)
     .single();
 
   if (error || !profile) {
@@ -62,7 +62,7 @@ export async function updateProfile(formData: FormData) {
   const { error } = await supabase
     .from("profiles")
     .update(data)
-    .eq("id", user.id);
+    .eq("user_id", user.id);
 
   // Return Supabase errors instead of throwing
   if (error) {
