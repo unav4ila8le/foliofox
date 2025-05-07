@@ -6,3 +6,8 @@ export type Profile = Pick<
 >;
 
 export type Currency = Pick<Tables<"currencies">, "alphabetic_code">;
+
+export type Holding = Pick<
+  Tables<"holdings">,
+  "name" | "category_code" | "currency" | "current_value" | "description"
+>;

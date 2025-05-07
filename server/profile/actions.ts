@@ -1,28 +1,10 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
-import { createClient } from "@/utils/supabase/server";
+import { getCurrentUser } from "@/server/auth/actions";
 
 import type { Profile } from "@/types/global.types";
-
-// Get current user
-async function getCurrentUser() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  // Redirect to login if no user
-  if (!user) {
-    redirect("/auth/login");
-  }
-
-  // Return supabase client and user
-  return { supabase, user };
-}
 
 // Fetch profile
 export async function fetchProfile() {
@@ -40,10 +22,7 @@ export async function fetchProfile() {
 
   // Return both profile and email
   return {
-    profile: profile as Pick<
-      Profile,
-      "username" | "display_currency" | "avatar_url"
-    >,
+    profile: profile as Profile,
     email: user.email as string,
   };
 }
