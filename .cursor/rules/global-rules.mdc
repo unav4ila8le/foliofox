@@ -51,10 +51,10 @@ alwaysApply: true
    import { AssetCard } from '@/components/feature/assets'
    
    // 4. Internal Modules
-   import { useAssets } from '@/hooks/use-assets'
+   import { useSignout } from '@/hooks/use-signout'
    
-   // 5. Local Files
-   import { type Asset } from './types'
+   // 5. Local Files and Types
+   import type { Holding } from "@/types/global.types";
    ```
 
 5. **Component Structure**

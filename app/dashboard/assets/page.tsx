@@ -1,47 +1,26 @@
 import { Asset } from "@/components/dashboard/assets/table/columns";
 import { AssetsTables } from "@/components/dashboard/assets/assets-tables";
 
+import { fetchHoldings } from "@/server/holdings/actions";
+
 async function getData(): Promise<Asset[]> {
-  // Fetch data from your API here.
-  return [
-    {
-      id: "728ed52f",
-      asset_name: "WISE Account",
-      asset_type: "Cash",
-      currency: "USD",
-      value: 51056.04,
-      quantity: 1,
-      total_value: 51056.04,
-    },
-    {
-      id: "728ed53f",
-      asset_name: "CSR Account",
-      asset_type: "Cash",
-      currency: "EUR",
-      value: 63991.89,
-      quantity: 1,
-      total_value: 63991.89,
-    },
-    {
-      id: "728ed54f",
-      asset_name: "IBKR Account",
-      asset_type: "Stocks",
-      currency: "EUR",
-      value: 1733.2,
-      quantity: 1,
-      total_value: 1733.2,
-    },
-    {
-      id: "728ed55f",
-      asset_name: "Bitcoin",
-      asset_type: "Crypto",
-      currency: "USD",
-      value: 45000,
-      quantity: 0.5,
-      total_value: 22500,
-    },
-    // ...
-  ];
+  try {
+    const holdings = await fetchHoldings();
+
+    // Transform holdings data to match Asset type
+    return holdings.map((holding) => ({
+      id: holding.id,
+      asset_name: holding.name,
+      asset_type: holding.asset_categories.name,
+      currency: holding.currency,
+      quantity: holding.quantity,
+      value: holding.current_value,
+      total_value: holding.current_value * holding.quantity,
+    }));
+  } catch (error) {
+    console.error("Error fetching holdings:", error);
+    return []; // Return empty array in case of error
+  }
 }
 
 export default async function AssetsPage() {

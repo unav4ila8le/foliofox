@@ -9,5 +9,13 @@ export type Currency = Pick<Tables<"currencies">, "alphabetic_code">;
 
 export type Holding = Pick<
   Tables<"holdings">,
-  "name" | "category_code" | "currency" | "current_value" | "description"
+  | "id"
+  | "name"
+  | "category_code"
+  | "currency"
+  | "quantity"
+  | "current_value"
+  | "description"
 >;
+
+export type AssetCategory = Tables<"asset_categories">;
