@@ -13,19 +13,19 @@ export type Database = {
         Row: {
           code: string;
           description: string | null;
-          display_order: number | null;
+          display_order: number;
           name: string;
         };
         Insert: {
           code: string;
           description?: string | null;
-          display_order?: number | null;
+          display_order: number;
           name: string;
         };
         Update: {
           code?: string;
           description?: string | null;
-          display_order?: number | null;
+          display_order?: number;
           name?: string;
         };
         Relationships: [];

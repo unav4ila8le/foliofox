@@ -20,11 +20,13 @@ export async function fetchHoldings() {
         current_value,
         description,
         asset_categories (
-          name
+          name,
+          display_order
         )
       `,
     )
-    .eq("user_id", user.id);
+    .eq("user_id", user.id)
+    .order("asset_categories(display_order)", { ascending: true });
 
   if (error) {
     throw new Error(error.message);

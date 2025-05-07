@@ -26,7 +26,7 @@ export default async function AssetsPage() {
       <div>
         <h1 className="text-2xl font-semibold">Asset Portfolio</h1>
         <p className="text-muted-foreground">
-          Here&apos;s a list of all your assets
+          Here&apos;s a list of all your holdings
         </p>
       </div>
       <HoldingsTables data={data} />

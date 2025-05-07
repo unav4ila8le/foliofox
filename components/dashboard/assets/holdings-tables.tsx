@@ -38,17 +38,15 @@ export function HoldingsTables({ data }: { data: Holding[] }) {
         onChange={(e) => setFilterValue(e.target.value)}
         className="max-w-sm"
       />
-      {Object.entries(groupedHoldings).map(
-        ([categoryCode, { name, holdings }]) => (
-          <DataTable
-            key={categoryCode}
-            columns={columns}
-            data={holdings}
-            title={name}
-            filterValue={filterValue}
-          />
-        ),
-      )}
+      {Object.entries(groupedHoldings).map(([code, { name, holdings }]) => (
+        <DataTable
+          key={code}
+          columns={columns}
+          data={holdings}
+          title={name}
+          filterValue={filterValue}
+        />
+      ))}
     </div>
   );
 }

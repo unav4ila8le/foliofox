@@ -20,8 +20,11 @@ export type Holding = Pick<
   | "current_value"
   | "description"
 > & {
-  asset_categories: Pick<Tables<"asset_categories">, "name">;
+  asset_categories: Pick<Tables<"asset_categories">, "name" | "display_order">;
 };
 
 //Asset Category
-export type AssetCategory = Pick<Tables<"asset_categories">, "name">;
+export type AssetCategory = Pick<
+  Tables<"asset_categories">,
+  "name" | "display_order"
+>;
