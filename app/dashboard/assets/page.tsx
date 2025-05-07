@@ -1,25 +1,20 @@
-import { Asset } from "@/components/dashboard/assets/table/columns";
-import { AssetsTables } from "@/components/dashboard/assets/assets-tables";
+import { HoldingsTables } from "@/components/dashboard/assets/holdings-tables";
 
 import { fetchHoldings } from "@/server/holdings/actions";
 
-async function getData(): Promise<Asset[]> {
+import type { Holding } from "@/types/global.types";
+
+async function getData(): Promise<Holding[]> {
   try {
     const holdings = await fetchHoldings();
-
-    // Transform holdings data to match Asset type
     return holdings.map((holding) => ({
-      id: holding.id,
-      asset_name: holding.name,
+      ...holding,
       asset_type: holding.asset_categories.name,
-      currency: holding.currency,
-      quantity: holding.quantity,
-      value: holding.current_value,
       total_value: holding.current_value * holding.quantity,
     }));
   } catch (error) {
     console.error("Error fetching holdings:", error);
-    return []; // Return empty array in case of error
+    return [];
   }
 }
 
@@ -34,7 +29,7 @@ export default async function AssetsPage() {
           Here&apos;s a list of all your assets
         </p>
       </div>
-      <AssetsTables data={data} />
+      <HoldingsTables data={data} />
     </div>
   );
 }

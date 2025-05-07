@@ -7,21 +7,11 @@ import { Badge } from "@/components/ui/badge";
 
 import { formatNumber } from "@/lib/number/format";
 
-// This type is used to define the shape of our data.
-// You can use a Zod schema here if you want.
-export type Asset = {
-  id: string;
-  asset_name: string;
-  asset_type: string;
-  currency: string;
-  value: number;
-  quantity: number;
-  total_value: number;
-};
+import type { Holding } from "@/types/global.types";
 
-export const columns: ColumnDef<Asset>[] = [
+export const columns: ColumnDef<Holding>[] = [
   {
-    accessorKey: "asset_name",
+    accessorKey: "name",
     header: ({ column }) => {
       return (
         <div
@@ -44,10 +34,10 @@ export const columns: ColumnDef<Asset>[] = [
     },
   },
   {
-    accessorKey: "value",
+    accessorKey: "current_value",
     header: "Value",
     cell: ({ row }) => {
-      const value = row.getValue<number>("value");
+      const value = row.getValue<number>("current_value");
 
       return <div className="tabular-nums">{formatNumber(value, 2)}</div>;
     },

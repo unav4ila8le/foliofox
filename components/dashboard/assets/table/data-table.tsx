@@ -44,7 +44,7 @@ export function DataTable<TData, TValue>({
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([
     {
-      id: "asset_name",
+      id: "name",
       value: filterValue,
     },
   ]);
@@ -67,7 +67,7 @@ export function DataTable<TData, TValue>({
   useEffect(() => {
     setColumnFilters([
       {
-        id: "asset_name",
+        id: "name",
         value: filterValue,
       },
     ]);
