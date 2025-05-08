@@ -51,6 +51,51 @@ export type Database = {
         };
         Relationships: [];
       };
+      holding_valuations: {
+        Row: {
+          created_at: string;
+          currency: string;
+          date: string;
+          description: string | null;
+          holding_id: string;
+          id: string;
+          value: number;
+        };
+        Insert: {
+          created_at?: string;
+          currency: string;
+          date: string;
+          description?: string | null;
+          holding_id?: string;
+          id?: string;
+          value: number;
+        };
+        Update: {
+          created_at?: string;
+          currency?: string;
+          date?: string;
+          description?: string | null;
+          holding_id?: string;
+          id?: string;
+          value?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "holding_valuations_currency_fkey";
+            columns: ["currency"];
+            isOneToOne: false;
+            referencedRelation: "currencies";
+            referencedColumns: ["alphabetic_code"];
+          },
+          {
+            foreignKeyName: "holding_valuations_holding_id_fkey";
+            columns: ["holding_id"];
+            isOneToOne: false;
+            referencedRelation: "holdings";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       holdings: {
         Row: {
           category_code: string;
