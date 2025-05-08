@@ -16,7 +16,7 @@ export async function fetchHoldings() {
         name,
         category_code,
         currency,
-        quantity,
+        current_quantity,
         current_value,
         description,
         asset_categories (

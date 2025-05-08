@@ -10,7 +10,7 @@ async function getData(): Promise<Holding[]> {
     return holdings.map((holding) => ({
       ...holding,
       asset_type: holding.asset_categories.name,
-      total_value: holding.current_value * holding.quantity,
+      total_value: holding.current_value * holding.current_quantity,
     }));
   } catch (error) {
     console.error("Error fetching holdings:", error);

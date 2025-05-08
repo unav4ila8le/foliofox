@@ -16,7 +16,7 @@ export type Holding = Pick<
   | "name"
   | "category_code"
   | "currency"
-  | "quantity"
+  | "current_quantity"
   | "current_value"
   | "description"
 > & {

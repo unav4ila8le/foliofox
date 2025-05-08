@@ -34,6 +34,10 @@ export const columns: ColumnDef<Holding>[] = [
     },
   },
   {
+    accessorKey: "current_quantity",
+    header: "Quantity",
+  },
+  {
     accessorKey: "current_value",
     header: "Value",
     cell: ({ row }) => {
@@ -41,10 +45,6 @@ export const columns: ColumnDef<Holding>[] = [
 
       return <div className="tabular-nums">{formatNumber(value, 2)}</div>;
     },
-  },
-  {
-    accessorKey: "quantity",
-    header: "Quantity",
   },
   {
     accessorKey: "total_value",

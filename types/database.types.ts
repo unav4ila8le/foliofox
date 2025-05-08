@@ -51,10 +51,44 @@ export type Database = {
         };
         Relationships: [];
       };
+      holding_quantities: {
+        Row: {
+          created_at: string;
+          date: string;
+          description: string | null;
+          holding_id: string;
+          id: string;
+          quantity: number;
+        };
+        Insert: {
+          created_at?: string;
+          date: string;
+          description?: string | null;
+          holding_id?: string;
+          id?: string;
+          quantity: number;
+        };
+        Update: {
+          created_at?: string;
+          date?: string;
+          description?: string | null;
+          holding_id?: string;
+          id?: string;
+          quantity?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "holding_quantities_holding_id_fkey";
+            columns: ["holding_id"];
+            isOneToOne: false;
+            referencedRelation: "holdings";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       holding_valuations: {
         Row: {
           created_at: string;
-          currency: string;
           date: string;
           description: string | null;
           holding_id: string;
@@ -63,7 +97,6 @@ export type Database = {
         };
         Insert: {
           created_at?: string;
-          currency: string;
           date: string;
           description?: string | null;
           holding_id?: string;
@@ -72,7 +105,6 @@ export type Database = {
         };
         Update: {
           created_at?: string;
-          currency?: string;
           date?: string;
           description?: string | null;
           holding_id?: string;
@@ -80,13 +112,6 @@ export type Database = {
           value?: number;
         };
         Relationships: [
-          {
-            foreignKeyName: "holding_valuations_currency_fkey";
-            columns: ["currency"];
-            isOneToOne: false;
-            referencedRelation: "currencies";
-            referencedColumns: ["alphabetic_code"];
-          },
           {
             foreignKeyName: "holding_valuations_holding_id_fkey";
             columns: ["holding_id"];
@@ -101,11 +126,11 @@ export type Database = {
           category_code: string;
           created_at: string;
           currency: string;
+          current_quantity: number;
           current_value: number;
           description: string | null;
           id: string;
           name: string;
-          quantity: number;
           updated_at: string;
           user_id: string;
         };
@@ -113,11 +138,11 @@ export type Database = {
           category_code?: string;
           created_at?: string;
           currency: string;
+          current_quantity?: number;
           current_value?: number;
           description?: string | null;
           id?: string;
           name: string;
-          quantity?: number;
           updated_at?: string;
           user_id?: string;
         };
@@ -125,11 +150,11 @@ export type Database = {
           category_code?: string;
           created_at?: string;
           currency?: string;
+          current_quantity?: number;
           current_value?: number;
           description?: string | null;
           id?: string;
           name?: string;
-          quantity?: number;
           updated_at?: string;
           user_id?: string;
         };
