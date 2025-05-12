@@ -1,6 +1,6 @@
 import { HoldingsTables } from "@/components/dashboard/assets/holdings-tables";
 
-import { fetchHoldings } from "@/server/holdings/actions";
+import { fetchHoldings } from "@/server/holdings/fetch";
 
 import type { Holding } from "@/types/global.types";
 

@@ -25,7 +25,7 @@ export function NewRecord() {
           New Record
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[calc(100vh-1rem)] overflow-y-auto">
+      <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>New Record</DialogTitle>
           <DialogDescription>
