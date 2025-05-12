@@ -1,12 +1,13 @@
 "use client";
 
-import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { ActionsCell } from "./actions-cell";
 
 import { formatNumber } from "@/lib/number/format";
 
+import type { ColumnDef } from "@tanstack/react-table";
 import type { Holding } from "@/types/global.types";
 
 export const columns: ColumnDef<Holding>[] = [
@@ -57,6 +58,13 @@ export const columns: ColumnDef<Holding>[] = [
           {formatNumber(total_value, 2)}
         </div>
       );
+    },
+  },
+  {
+    id: "actions",
+    cell: ({ row }) => {
+      const holding = row.original;
+      return <ActionsCell holding={holding} />;
     },
   },
 ];
