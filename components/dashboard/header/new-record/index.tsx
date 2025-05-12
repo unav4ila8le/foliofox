@@ -22,7 +22,7 @@ export function NewRecord() {
       <DialogTrigger asChild>
         <Button>
           <Plus />
-          New Record
+          Add Record
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto">

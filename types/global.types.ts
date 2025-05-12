@@ -24,7 +24,4 @@ export type Holding = Pick<
 };
 
 //Asset Category
-export type AssetCategory = Pick<
-  Tables<"asset_categories">,
-  "name" | "display_order"
->;
+export type AssetCategory = Tables<"asset_categories">;

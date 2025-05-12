@@ -19,7 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { CurrencySelector } from "@/components/dashboard/sidebar/settings-form/currency-selector";
+import { CurrencySelector } from "@/components/dashboard/currency-selector";
 
 import { updateProfile } from "@/server/profile/actions";
 

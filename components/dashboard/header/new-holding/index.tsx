@@ -10,11 +10,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
+import { NewHoldingForm } from "./form";
+
 export function NewHolding() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button>
+        <Button variant="outline">
           <Plus />
           New Holding
         </Button>
@@ -24,7 +26,7 @@ export function NewHolding() {
           <DialogTitle>New Holding</DialogTitle>
           <DialogDescription>Add a new holding.</DialogDescription>
         </DialogHeader>
-        Hello
+        <NewHoldingForm />
       </DialogContent>
     </Dialog>
   );

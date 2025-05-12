@@ -1,5 +1,6 @@
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NewRecord } from "@/components/dashboard/header/new-record";
+import { NewHolding } from "@/components/dashboard/header/new-holding";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
   Tooltip,
@@ -23,6 +24,7 @@ export function Header() {
         <div className="hidden md:block">breadcrumb goes here</div>
       </div>
       <div className="flex items-center gap-2">
+        <NewHolding />
         <NewRecord />
         <ThemeToggle />
       </div>

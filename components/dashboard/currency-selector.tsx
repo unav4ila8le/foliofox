@@ -56,7 +56,10 @@ export function CurrencySelector({ field, id }: CurrencySelectorProps) {
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="justify-between"
+            className={cn(
+              "justify-between font-normal",
+              !field.value && "text-muted-foreground",
+            )}
           >
             {field.value}
             <ChevronsUpDown className="text-muted-foreground" />
@@ -86,13 +89,16 @@ export function CurrencySelector({ field, id }: CurrencySelectorProps) {
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="justify-between"
+          className={cn(
+            "justify-between font-normal",
+            !field.value && "text-muted-foreground",
+          )}
         >
           {field.value}
           <ChevronsUpDown className="text-muted-foreground" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0">
+      <PopoverContent className="w-(--radix-popover-trigger-width) p-0">
         <CurrencyList
           setOpen={setOpen}
           value={field.value}
