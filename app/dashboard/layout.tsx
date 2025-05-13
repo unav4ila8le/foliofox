@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { Header } from "@/components/dashboard/header";
+import { NewHoldingDialogProvider } from "@/components/dashboard/header/new-holding";
 
 import { fetchProfile } from "@/server/profile/actions";
 
@@ -29,11 +30,13 @@ export default async function Layout({
         } as React.CSSProperties
       }
     >
-      <DashboardSidebar profile={profile} email={email} />
-      <SidebarInset>
-        <Header />
-        <div className="p-4 pt-2">{children}</div>
-      </SidebarInset>
+      <NewHoldingDialogProvider>
+        <DashboardSidebar profile={profile} email={email} />
+        <SidebarInset>
+          <Header />
+          <div className="p-4 pt-2">{children}</div>
+        </SidebarInset>
+      </NewHoldingDialogProvider>
     </SidebarProvider>
   );
 }
