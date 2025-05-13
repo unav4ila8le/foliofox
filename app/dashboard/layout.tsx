@@ -34,7 +34,7 @@ export default async function Layout({
       <NewHoldingDialogProvider profile={profile}>
         <NewRecordDialogProvider>
           <DashboardSidebar profile={profile} email={email} />
-          <SidebarInset>
+          <SidebarInset className="min-w-0">
             <Header />
             <div className="p-4 pt-2">{children}</div>
           </SidebarInset>
