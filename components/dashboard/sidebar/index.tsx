@@ -23,7 +23,7 @@ export function DashboardSidebar({
   email: string;
 }) {
   return (
-    <Sidebar>
+    <Sidebar variant="inset">
       <SidebarHeader>
         <UISidebarMenu>
           <SidebarMenuItem>

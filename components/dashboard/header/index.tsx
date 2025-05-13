@@ -11,7 +11,7 @@ import {
 
 export function Header() {
   return (
-    <header className="bg-background sticky top-0 z-10 flex items-center justify-between px-4 py-2">
+    <header className="flex items-center justify-between px-4 py-2">
       <div className="flex items-center gap-2">
         <TooltipProvider>
           <Tooltip delayDuration={700}>
