@@ -4,7 +4,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { Header } from "@/components/dashboard/header";
 import { NewHoldingDialogProvider } from "@/components/dashboard/new-holding";
-import { NewRecordDialogProvider } from "@/components/dashboard/header/new-record";
+import { NewRecordDialogProvider } from "@/components/dashboard/new-record";
 
 import { fetchProfile } from "@/server/profile/actions";
 

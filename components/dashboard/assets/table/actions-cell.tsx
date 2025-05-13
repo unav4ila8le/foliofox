@@ -23,14 +23,24 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+import { useNewRecordDialog } from "@/components/dashboard/new-record";
+
 import { deleteHolding } from "@/server/holdings/delete";
 
 import type { Holding } from "@/types/global.types";
 
 export function ActionsCell({ holding }: { holding: Holding }) {
+  const { setOpen, setActiveTab } = useNewRecordDialog();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Update holding
+  const handleUpdate = () => {
+    setActiveTab("update");
+    setOpen(true);
+  };
+
+  // Delete holding
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
@@ -61,7 +71,7 @@ export function ActionsCell({ holding }: { holding: Holding }) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem>
+          <DropdownMenuItem onSelect={handleUpdate}>
             <SquarePen className="size-4" /> Update
           </DropdownMenuItem>
           <DropdownMenuSeparator />

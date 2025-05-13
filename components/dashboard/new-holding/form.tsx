@@ -21,6 +21,8 @@ import { Button } from "@/components/ui/button";
 import { CurrencySelector } from "@/components/dashboard/currency-selector";
 import { AssetCategorySelector } from "@/components/dashboard/asset-category-selector";
 
+import { useNewHoldingDialog } from "./index";
+
 import { createHolding } from "@/server/holdings/create";
 
 const formSchema = z.object({
@@ -36,6 +38,7 @@ const formSchema = z.object({
 });
 
 export function NewHoldingForm() {
+  const { setOpen } = useNewHoldingDialog();
   const [isLoading, setIsLoading] = useState(false);
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -73,6 +76,7 @@ export function NewHoldingForm() {
 
       toast.success("Holding created successfully");
       form.reset();
+      setOpen(false);
     } catch (error) {
       toast.error(
         error instanceof Error

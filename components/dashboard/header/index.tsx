@@ -1,6 +1,3 @@
-import { ThemeToggle } from "@/components/theme-toggle";
-import { NewRecordButton } from "@/components/dashboard/header/new-record";
-import { NewHoldingButton } from "@/components/dashboard/new-holding";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
   Tooltip,
@@ -8,6 +5,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { NewRecordButton } from "@/components/dashboard/new-record";
+import { NewHoldingButton } from "@/components/dashboard/new-holding";
 
 export function Header() {
   return (
