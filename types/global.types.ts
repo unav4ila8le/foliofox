@@ -25,3 +25,9 @@ export type Holding = Pick<
 
 //Asset Category
 export type AssetCategory = Tables<"asset_categories">;
+
+//Holding Quantity
+export type HoldingQuantity = Tables<"holding_quantities">;
+
+//Holding Valuation
+export type HoldingValuation = Tables<"holding_valuations">;
