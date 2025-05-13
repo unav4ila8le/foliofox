@@ -63,16 +63,12 @@ export const columns: ColumnDef<Holding>[] = [
   {
     id: "actions",
     meta: {
-      headerClassName: "w-fit",
-      cellClassName: "w-fit",
+      headerClassName: "text-right",
+      cellClassName: "text-right",
     },
     cell: ({ row }) => {
       const holding = row.original;
-      return (
-        <div className="text-right">
-          <ActionsCell holding={holding} />
-        </div>
-      );
+      return <ActionsCell holding={holding} />;
     },
   },
 ];
