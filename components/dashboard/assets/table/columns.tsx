@@ -64,7 +64,11 @@ export const columns: ColumnDef<Holding>[] = [
     id: "actions",
     cell: ({ row }) => {
       const holding = row.original;
-      return <ActionsCell holding={holding} />;
+      return (
+        <div className="text-right">
+          <ActionsCell holding={holding} />
+        </div>
+      );
     },
   },
 ];
