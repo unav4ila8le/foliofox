@@ -31,7 +31,7 @@ export default async function Layout({
         } as React.CSSProperties
       }
     >
-      <NewHoldingDialogProvider>
+      <NewHoldingDialogProvider profile={profile}>
         <NewRecordDialogProvider>
           <DashboardSidebar profile={profile} email={email} />
           <SidebarInset>

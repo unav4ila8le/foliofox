@@ -16,7 +16,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { CurrencySelector } from "@/components/dashboard/currency-selector";
 import { AssetCategorySelector } from "@/components/dashboard/asset-category-selector";
@@ -38,14 +37,14 @@ const formSchema = z.object({
 });
 
 export function NewHoldingForm() {
-  const { setOpen } = useNewHoldingDialog();
+  const { setOpen, profile } = useNewHoldingDialog();
   const [isLoading, setIsLoading] = useState(false);
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
       category_code: "",
-      currency: "USD",
+      currency: profile.display_currency,
       current_value: undefined,
       current_quantity: undefined,
       description: "",
@@ -188,16 +187,15 @@ export function NewHoldingForm() {
         />
 
         <div className="flex justify-end gap-2">
-          <DialogClose asChild>
-            <Button
-              disabled={isLoading}
-              type="button"
-              variant="secondary"
-              className="w-1/2 sm:w-auto"
-            >
-              Cancel
-            </Button>
-          </DialogClose>
+          <Button
+            onClick={() => setOpen(false)}
+            disabled={isLoading}
+            type="button"
+            variant="secondary"
+            className="w-1/2 sm:w-auto"
+          >
+            Cancel
+          </Button>
           <Button
             disabled={isLoading || !isDirty}
             type="submit"

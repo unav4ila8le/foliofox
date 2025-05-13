@@ -14,9 +14,12 @@ import {
 
 import { NewHoldingForm } from "./form";
 
+import type { Profile } from "@/types/global.types";
+
 type NewHoldingDialogContextType = {
   open: boolean;
   setOpen: (open: boolean) => void;
+  profile: Profile;
 };
 
 const NewHoldingDialogContext = createContext<
@@ -25,13 +28,15 @@ const NewHoldingDialogContext = createContext<
 
 export function NewHoldingDialogProvider({
   children,
+  profile,
 }: {
   children: React.ReactNode;
+  profile: Profile;
 }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <NewHoldingDialogContext.Provider value={{ open, setOpen }}>
+    <NewHoldingDialogContext.Provider value={{ open, setOpen, profile }}>
       {children}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto">
