@@ -1,6 +1,6 @@
 import { ThemeToggle } from "@/components/theme-toggle";
-import { NewRecord } from "@/components/dashboard/header/new-record";
-import { NewHoldingButton } from "@/components/dashboard/header/new-holding";
+import { NewRecordButton } from "@/components/dashboard/header/new-record";
+import { NewHoldingButton } from "@/components/dashboard/new-holding";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
   Tooltip,
@@ -25,7 +25,7 @@ export function Header() {
       </div>
       <div className="flex items-center gap-2">
         <NewHoldingButton />
-        <NewRecord />
+        <NewRecordButton />
         <ThemeToggle />
       </div>
     </header>

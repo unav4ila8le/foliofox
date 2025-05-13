@@ -3,7 +3,8 @@ import { cookies } from "next/headers";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { Header } from "@/components/dashboard/header";
-import { NewHoldingDialogProvider } from "@/components/dashboard/header/new-holding";
+import { NewHoldingDialogProvider } from "@/components/dashboard/new-holding";
+import { NewRecordDialogProvider } from "@/components/dashboard/header/new-record";
 
 import { fetchProfile } from "@/server/profile/actions";
 
@@ -31,11 +32,13 @@ export default async function Layout({
       }
     >
       <NewHoldingDialogProvider>
-        <DashboardSidebar profile={profile} email={email} />
-        <SidebarInset>
-          <Header />
-          <div className="p-4 pt-2">{children}</div>
-        </SidebarInset>
+        <NewRecordDialogProvider>
+          <DashboardSidebar profile={profile} email={email} />
+          <SidebarInset>
+            <Header />
+            <div className="p-4 pt-2">{children}</div>
+          </SidebarInset>
+        </NewRecordDialogProvider>
       </NewHoldingDialogProvider>
     </SidebarProvider>
   );
