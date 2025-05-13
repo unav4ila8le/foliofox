@@ -62,6 +62,10 @@ export const columns: ColumnDef<Holding>[] = [
   },
   {
     id: "actions",
+    meta: {
+      headerClassName: "w-fit",
+      cellClassName: "w-fit",
+    },
     cell: ({ row }) => {
       const holding = row.original;
       return (
