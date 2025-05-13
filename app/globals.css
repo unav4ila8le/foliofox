@@ -215,5 +215,14 @@ body {
 }
 
 /*
+  Override RadixUI scroll-locked behavior
+*/
+
+html body[data-scroll-locked] {
+  overflow: visible !important;
+  margin-right: 0 !important;
+}
+
+/*
   ---break---
 */
