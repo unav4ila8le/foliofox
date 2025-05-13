@@ -49,15 +49,11 @@ export const columns: ColumnDef<Holding>[] = [
   },
   {
     accessorKey: "total_value",
-    header: () => <div className="text-right">Total Value</div>,
+    header: "Total Value",
     cell: ({ row }) => {
       const total_value = row.getValue<number>("total_value");
 
-      return (
-        <div className="text-right tabular-nums">
-          {formatNumber(total_value, 2)}
-        </div>
-      );
+      return <div className="tabular-nums">{formatNumber(total_value, 2)}</div>;
     },
   },
   {
