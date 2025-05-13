@@ -59,7 +59,7 @@ export function User({ profile, email }: { profile: Profile; email: string }) {
             <div className="flex flex-col">
               <p className="text truncate font-semibold">{profile.username}</p>
               <span className="text-muted-foreground truncate text-xs">
-                {formatCurrency(1000000, "USD")}
+                {formatCurrency(1000000, profile.display_currency)}
               </span>
             </div>
             <MoreVertical className="ml-auto size-4" />
