@@ -4,7 +4,7 @@ import { fetchHoldings } from "@/server/holdings/fetch";
 
 import type { Holding } from "@/types/global.types";
 
-async function getData(): Promise<Holding[]> {
+async function getHoldings(): Promise<Holding[]> {
   try {
     const holdings = await fetchHoldings();
     return holdings.map((holding) => ({
@@ -19,7 +19,7 @@ async function getData(): Promise<Holding[]> {
 }
 
 export default async function AssetsPage() {
-  const data = await getData();
+  const holdings = await getHoldings();
 
   return (
     <div className="flex flex-col gap-4">
@@ -29,7 +29,7 @@ export default async function AssetsPage() {
           Here&apos;s a list of all your holdings
         </p>
       </div>
-      <HoldingsTables data={data} />
+      <HoldingsTables data={holdings} />
     </div>
   );
 }

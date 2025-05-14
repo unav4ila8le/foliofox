@@ -8,8 +8,6 @@ import { CalendarIcon, LoaderCircle } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { cn } from "@/lib/utils";
-import { formatNumber } from "@/lib/number/format";
 import {
   Form,
   FormControl,
@@ -26,15 +24,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
+import { HoldingSelector } from "./holding-selector";
 
 import { useNewRecordDialog } from "./index";
+import { cn } from "@/lib/utils";
 
 import { updateHolding } from "@/server/holdings/update";
 
@@ -83,10 +77,7 @@ export function UpdateForm() {
       formData.append("value", values.value.replace(/,/g, ""));
       formData.append("description", values.description || "");
 
-      // TODO: Replace with actual API call
       const result = await updateHolding(formData);
-
-      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       if (!result.success) {
         throw new Error(result.message);
@@ -155,48 +146,31 @@ export function UpdateForm() {
 
         <FormField
           control={form.control}
-          name="item"
+          name="holding_id"
           render={({ field }) => (
             <FormItem className="sm:w-1/2 sm:pr-1">
-              <FormLabel>Item</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select an item" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="checking_account">
-                    Checking Account
-                  </SelectItem>
-                  <SelectItem value="btc">BTC</SelectItem>
-                  <SelectItem value="eth">ETH</SelectItem>
-                  <SelectItem value="usd_cash">USD Cash</SelectItem>
-                  <SelectItem value="eur_cash">EUR Cash</SelectItem>
-                  <SelectItem value="house_in_rome">House in Rome</SelectItem>
-                </SelectContent>
-              </Select>
+              <FormLabel>Holding</FormLabel>
+              <FormControl>
+                <HoldingSelector field={field} />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <div className="grid gap-x-2 gap-y-4 sm:grid-cols-2">
+        <div className="grid items-start gap-x-2 gap-y-4 sm:grid-cols-2">
           <FormField
             control={form.control}
-            name="amount"
+            name="value"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Amount</FormLabel>
+                <FormLabel>Value</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="Enter amount"
+                    placeholder="E.g., 420.69"
+                    type="number"
                     {...field}
-                    onBlur={(e) => {
-                      const formatted = formatNumber(e.target.value);
-                      field.onChange(formatted);
-                      field.onBlur();
-                    }}
+                    value={field.value ?? ""}
                   />
                 </FormControl>
                 <FormMessage />
@@ -206,26 +180,16 @@ export function UpdateForm() {
 
           <FormField
             control={form.control}
-            name="value"
+            name="quantity"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Value</FormLabel>
+                <FormLabel>Quantity</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="Enter value"
+                    placeholder="E.g., 10"
+                    type="number"
                     {...field}
-                    onBlur={(e) => {
-                      const formatted = formatNumber(
-                        e.target.value,
-                        undefined,
-                        {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 6,
-                        },
-                      );
-                      field.onChange(formatted);
-                      field.onBlur();
-                    }}
+                    value={field.value ?? ""}
                   />
                 </FormControl>
                 <FormMessage />
