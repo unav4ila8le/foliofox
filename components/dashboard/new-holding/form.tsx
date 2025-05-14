@@ -4,7 +4,7 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Loader2 } from "lucide-react";
+import { LoaderCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -74,7 +74,6 @@ export function NewHoldingForm() {
       }
 
       toast.success("Holding created successfully");
-      form.reset();
       setOpen(false);
     } catch (error) {
       toast.error(
@@ -186,6 +185,7 @@ export function NewHoldingForm() {
           )}
         />
 
+        {/* Footer */}
         <div className="flex justify-end gap-2">
           <Button
             onClick={() => setOpen(false)}
@@ -203,7 +203,7 @@ export function NewHoldingForm() {
           >
             {isLoading ? (
               <>
-                <Loader2 className="animate-spin" />
+                <LoaderCircle className="animate-spin" />
                 Saving...
               </>
             ) : (

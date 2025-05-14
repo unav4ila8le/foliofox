@@ -26,7 +26,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
-import { DialogClose } from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -35,14 +34,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import { useNewRecordDialog } from "./index";
+
+import { updateHolding } from "@/server/holdings/update";
+
 const formSchema = z.object({
   date: z.date({
     required_error: "A date is required.",
   }),
-  item: z.string({
-    required_error: "Please select an item.",
+  holding_id: z.string({
+    required_error: "Please select a holding.",
   }),
-  amount: z.string().min(1, "Please enter the amount."),
+  quantity: z.string().min(1, "Please enter the quantity."),
   value: z.string().min(1, "Please enter the value."),
   description: z
     .string()
@@ -52,41 +55,53 @@ const formSchema = z.object({
 });
 
 export function UpdateForm() {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { setOpen } = useNewRecordDialog();
+  const [isLoading, setIsLoading] = useState(false);
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       date: new Date(),
-      item: "",
-      amount: "",
-      value: "",
+      holding_id: "",
+      quantity: undefined,
+      value: undefined,
       description: "",
     },
   });
 
+  // Get isDirty state from formState
+  const { isDirty } = form.formState;
+
+  // Submit handler
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (isSubmitting) return;
-    setIsSubmitting(true);
+    setIsLoading(true);
 
     try {
-      const submitData = {
-        ...values,
-        amount: parseFloat(values.amount.replace(/,/g, "")) || 0,
-        value: parseFloat(values.value.replace(/,/g, "")) || 0,
-      };
+      const formData = new FormData();
+      formData.append("holding_id", values.holding_id);
+      formData.append("date", values.date.toISOString());
+      formData.append("quantity", values.quantity.replace(/,/g, ""));
+      formData.append("value", values.value.replace(/,/g, ""));
+      formData.append("description", values.description || "");
 
       // TODO: Replace with actual API call
-      console.log(submitData);
+      const result = await updateHolding(formData);
+
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      // Show success toast and reset form
-      toast.success("Value update added successfully");
+      if (!result.success) {
+        throw new Error(result.message);
+      }
+
+      toast.success("Holding updated successfully");
       form.reset();
     } catch (error) {
-      console.error(error);
-      toast.error("Failed to add value update. Please try again.");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to update holding. Please try again.",
+      );
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   }
 
@@ -238,22 +253,28 @@ export function UpdateForm() {
 
         {/* Footer */}
         <div className="flex justify-end gap-2">
-          <DialogClose asChild>
-            <Button
-              type="button"
-              variant="secondary"
-              className="w-1/2 sm:w-auto"
-            >
-              Cancel
-            </Button>
-          </DialogClose>
           <Button
-            type="submit"
-            disabled={isSubmitting}
+            onClick={() => setOpen(false)}
+            disabled={isLoading}
+            type="button"
+            variant="secondary"
             className="w-1/2 sm:w-auto"
           >
-            {isSubmitting && <LoaderCircle className="mr-2 animate-spin" />}
-            Save changes
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            disabled={isLoading || !isDirty}
+            className="w-1/2 sm:w-auto"
+          >
+            {isLoading ? (
+              <>
+                <LoaderCircle className="mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              "Save changes"
+            )}
           </Button>
         </div>
       </form>

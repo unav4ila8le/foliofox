@@ -12,9 +12,9 @@ export async function updateHolding(formData: FormData) {
 
   // Extract and validate data from formData
   const data = {
-    holding_id: formData.get("item") as string,
+    holding_id: formData.get("holding_id") as string,
     date: new Date(formData.get("date") as string),
-    amount: Number(formData.get("amount")),
+    quantity: Number(formData.get("quantity")),
     value: Number(formData.get("value")),
     description: formData.get("description") as string | null,
   };
@@ -23,7 +23,7 @@ export async function updateHolding(formData: FormData) {
   const quantityData: Omit<HoldingQuantity, "id" | "created_at"> = {
     holding_id: data.holding_id,
     date: data.date.toISOString(),
-    quantity: data.amount,
+    quantity: data.quantity,
     description: data.description,
   };
 
