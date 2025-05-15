@@ -1,5 +1,5 @@
-import { NetWorthLineChart } from "@/components/dashboard/charts/net-worth-line-chart";
-import { AssetAllocationChart } from "@/components/dashboard/charts/asset-allocation-chart";
+import { NetWorthLineChart } from "@/components/dashboard/charts/net-worth-line";
+import { AssetAllocationChart } from "@/components/dashboard/charts/asset-allocation";
 
 import { fetchProfile } from "@/server/profile/actions";
 
