@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { fetchCurrencies } from "@/server/currencies/actions";
+import { fetchCurrencies } from "@/server/currencies/fetch";
 
 export async function GET() {
   try {
