@@ -39,9 +39,14 @@ interface HoldingSelectorProps {
     onChange: (value: string) => void;
   };
   id?: string;
+  preselectedHolding?: Holding | null;
 }
 
-export function HoldingSelector({ field, id }: HoldingSelectorProps) {
+export function HoldingSelector({
+  field,
+  id,
+  preselectedHolding,
+}: HoldingSelectorProps) {
   const [open, setOpen] = useState(false);
   const [holdings, setHoldings] = useState<Holding[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,7 +65,11 @@ export function HoldingSelector({ field, id }: HoldingSelectorProps) {
   };
 
   // Find the selected holding name
-  const selectedHolding = holdings.find((h) => h.id === field.value);
+  // If a preselected holding is provided, use it if it matches the field value
+  const selectedHolding =
+    preselectedHolding && preselectedHolding.id === field.value
+      ? preselectedHolding
+      : holdings.find((h) => h.id === field.value);
   const holdingName = selectedHolding ? selectedHolding.name : field.value;
 
   if (isMobile) {

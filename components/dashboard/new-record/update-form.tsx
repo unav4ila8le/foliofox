@@ -49,13 +49,13 @@ const formSchema = z.object({
 });
 
 export function UpdateForm() {
-  const { setOpen } = useNewRecordDialog();
+  const { setOpen, preselectedHolding } = useNewRecordDialog();
   const [isLoading, setIsLoading] = useState(false);
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       date: new Date(),
-      holding_id: "",
+      holding_id: preselectedHolding?.id || "",
       quantity: undefined,
       value: undefined,
       description: "",
@@ -151,7 +151,10 @@ export function UpdateForm() {
             <FormItem className="sm:w-1/2 sm:pr-1">
               <FormLabel>Holding</FormLabel>
               <FormControl>
-                <HoldingSelector field={field} />
+                <HoldingSelector
+                  field={field}
+                  preselectedHolding={preselectedHolding}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

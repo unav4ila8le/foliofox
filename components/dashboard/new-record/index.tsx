@@ -18,11 +18,15 @@ import { SaleForm } from "./sale-form";
 import { TransferForm } from "./transfer-form";
 import { UpdateForm } from "./update-form";
 
+import type { Holding } from "@/types/global.types";
+
 type NewRecordDialogContextType = {
   open: boolean;
   setOpen: (open: boolean) => void;
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  preselectedHolding: Holding | null;
+  setPreselectedHolding: (holding: Holding | null) => void;
 };
 
 const NewRecordDialogContext = createContext<
@@ -36,10 +40,20 @@ export function NewRecordDialogProvider({
 }) {
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("purchase");
+  const [preselectedHolding, setPreselectedHolding] = useState<Holding | null>(
+    null,
+  );
 
   return (
     <NewRecordDialogContext.Provider
-      value={{ open, setOpen, activeTab, setActiveTab }}
+      value={{
+        open,
+        setOpen,
+        activeTab,
+        setActiveTab,
+        preselectedHolding,
+        setPreselectedHolding,
+      }}
     >
       {children}
       <Dialog open={open} onOpenChange={setOpen}>
