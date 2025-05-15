@@ -26,6 +26,8 @@ function PopoverContent({
   return (
     <PopoverPrimitive.Portal>
       <PopoverPrimitive.Content
+        onWheel={(e) => e.stopPropagation()}
+        onTouchMove={(e) => e.stopPropagation()}
         data-slot="popover-content"
         align={align}
         sideOffset={sideOffset}

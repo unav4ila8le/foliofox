@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+
+import { SearchInput } from "@/components/ui/search-input";
 import { columns } from "@/components/dashboard/assets/table/columns";
 import { DataTable } from "@/components/dashboard/assets/table/data-table";
-import { Input } from "@/components/ui/input";
 
 import type { Holding } from "@/types/global.types";
 
@@ -32,11 +33,10 @@ export function HoldingsTables({ data }: { data: Holding[] }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <Input
+      <SearchInput
         placeholder="Search assets..."
         value={filterValue}
         onChange={(e) => setFilterValue(e.target.value)}
-        className="max-w-sm"
       />
       {Object.entries(groupedHoldings).map(([code, { name, holdings }]) => (
         <DataTable
