@@ -84,7 +84,7 @@ export function UpdateForm() {
       }
 
       toast.success("Holding updated successfully");
-      form.reset();
+      setOpen(false);
     } catch (error) {
       toast.error(
         error instanceof Error
