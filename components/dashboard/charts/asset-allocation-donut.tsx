@@ -50,7 +50,13 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-export function AssetAllocationDonutChart() {
+export function AssetAllocationDonutChart({
+  netWorth,
+  currency,
+}: {
+  netWorth: number;
+  currency: string;
+}) {
   // Calculate total value for percentage calculation
   const totalValue = useMemo(() => {
     return assetAllocation.reduce((sum, item) => sum + item.value, 0);
@@ -120,7 +126,7 @@ export function AssetAllocationDonutChart() {
                           fontSize={16}
                           fontWeight="bolder"
                         >
-                          {formatCompactCurrency(totalValue, "USD")}
+                          {formatCompactCurrency(netWorth, currency)}
                         </tspan>
                         <tspan
                           x={viewBox.cx}
