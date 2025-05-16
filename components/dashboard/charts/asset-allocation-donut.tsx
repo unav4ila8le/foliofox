@@ -92,7 +92,7 @@ export function AssetAllocationDonutChart({
                   indicator="line"
                   className="min-w-auto"
                   valueFormatter={(value) =>
-                    formatCurrency(Number(value), "USD")
+                    formatCurrency(Number(value), currency)
                   }
                 />
               }
