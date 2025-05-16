@@ -29,7 +29,15 @@ import { useSignout } from "@/hooks/use-signout";
 
 import type { Profile } from "@/types/global.types";
 
-export function User({ profile, email }: { profile: Profile; email: string }) {
+export function User({
+  profile,
+  email,
+  netWorth,
+}: {
+  profile: Profile;
+  email: string;
+  netWorth: number;
+}) {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const { isMobile } = useSidebar();
@@ -59,7 +67,7 @@ export function User({ profile, email }: { profile: Profile; email: string }) {
             <div className="flex flex-col">
               <p className="text truncate font-semibold">{profile.username}</p>
               <span className="text-muted-foreground truncate text-xs">
-                {formatCurrency(1000000, profile.display_currency)}
+                {formatCurrency(netWorth, profile.display_currency)}
               </span>
             </div>
             <MoreVertical className="ml-auto size-4" />

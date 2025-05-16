@@ -18,16 +18,18 @@ import type { Profile } from "@/types/global.types";
 export function DashboardSidebar({
   profile,
   email,
+  netWorth,
 }: {
   profile: Profile;
   email: string;
+  netWorth: number;
 }) {
   return (
     <Sidebar variant="inset">
       <SidebarHeader>
         <UISidebarMenu>
           <SidebarMenuItem>
-            <User profile={profile} email={email} />
+            <User profile={profile} email={email} netWorth={netWorth} />
           </SidebarMenuItem>
         </UISidebarMenu>
       </SidebarHeader>
