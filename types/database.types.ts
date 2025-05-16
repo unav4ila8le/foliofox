@@ -51,6 +51,48 @@ export type Database = {
         };
         Relationships: [];
       };
+      exchange_rates: {
+        Row: {
+          base_currency: string;
+          created_at: string;
+          date: string;
+          id: string;
+          rate: number;
+          target_currency: string;
+        };
+        Insert: {
+          base_currency: string;
+          created_at?: string;
+          date?: string;
+          id?: string;
+          rate: number;
+          target_currency: string;
+        };
+        Update: {
+          base_currency?: string;
+          created_at?: string;
+          date?: string;
+          id?: string;
+          rate?: number;
+          target_currency?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "exchange_rates_base_currency_fkey";
+            columns: ["base_currency"];
+            isOneToOne: false;
+            referencedRelation: "currencies";
+            referencedColumns: ["alphabetic_code"];
+          },
+          {
+            foreignKeyName: "exchange_rates_target_currency_fkey";
+            columns: ["target_currency"];
+            isOneToOne: false;
+            referencedRelation: "currencies";
+            referencedColumns: ["alphabetic_code"];
+          },
+        ];
+      };
       holding_quantities: {
         Row: {
           created_at: string;
