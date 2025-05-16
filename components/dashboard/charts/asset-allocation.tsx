@@ -24,25 +24,29 @@ const chartConfig = {
   value: {
     label: "Value",
   },
-  stocks: {
-    label: "Stocks",
-    color: "var(--chart-0)",
-  },
-  crypto: {
-    label: "Crypto",
-    color: "var(--chart-1)",
-  },
   cash: {
     label: "Cash",
+    color: "var(--chart-0)",
+  },
+  equity: {
+    label: "Equity",
+    color: "var(--chart-1)",
+  },
+  fixed_income: {
+    label: "Fixed Income",
     color: "var(--chart-2)",
   },
   real_estate: {
     label: "Real Estate",
     color: "var(--chart-3)",
   },
-  other_assets: {
-    label: "Other",
+  cryptocurrency: {
+    label: "Crypto",
     color: "var(--chart-4)",
+  },
+  other: {
+    label: "Other",
+    color: "var(--chart-5)",
   },
 } satisfies ChartConfig;
 

@@ -106,9 +106,18 @@ export const weeklyNetWorth: WeeklyNetWorth[] = [
 // Asset allocation data - total should match the most recent net worth value
 // Current total: 1248400 (as of 2025-03-03)
 export const assetAllocation: AssetAllocation[] = [
-  { category: "stocks", value: 499360, fill: "var(--color-stocks)" },
-  { category: "crypto", value: 62420, fill: "var(--color-crypto)" },
   { category: "cash", value: 99872, fill: "var(--color-cash)" },
+  { category: "equity", value: 499360, fill: "var(--color-equity)" },
+  {
+    category: "fixed_income",
+    value: 499360,
+    fill: "var(--color-fixed_income)",
+  },
   { category: "real_estate", value: 499360, fill: "var(--color-real_estate)" },
-  { category: "other_assets", value: 87388, fill: "var(--color-other_assets)" },
+  {
+    category: "cryptocurrency",
+    value: 62420,
+    fill: "var(--color-cryptocurrency)",
+  },
+  { category: "other", value: 87388, fill: "var(--color-other)" },
 ];
