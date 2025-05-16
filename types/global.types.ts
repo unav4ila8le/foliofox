@@ -31,3 +31,6 @@ export type HoldingQuantity = Tables<"holding_quantities">;
 
 //Holding Valuation
 export type HoldingValuation = Tables<"holding_valuations">;
+
+//Exchange Rate
+export type ExchangeRate = Tables<"exchange_rates">;

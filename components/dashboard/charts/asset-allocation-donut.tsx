@@ -50,7 +50,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-export function AssetAllocationChart() {
+export function AssetAllocationDonutChart() {
   // Calculate total value for percentage calculation
   const totalValue = useMemo(() => {
     return assetAllocation.reduce((sum, item) => sum + item.value, 0);
