@@ -12,7 +12,7 @@ export async function calculateNetWorth(targetCurrency: string) {
     holdings.map(async (holding) => {
       const value = holding.current_quantity * holding.current_value;
       const rate = await fetchExchangeRate(holding.currency);
-      return value * rate;
+      return value / rate;
     }),
   );
 
