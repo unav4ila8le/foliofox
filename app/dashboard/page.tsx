@@ -1,14 +1,18 @@
 import { NetWorthLineChart } from "@/components/dashboard/charts/net-worth-line";
-import { AssetAllocationDonutChart } from "@/components/dashboard/charts/asset-allocation-donut";
+import { AssetAllocationDonutRecharts } from "@/components/dashboard/charts/asset-allocation-donut-recharts";
 
 import { fetchProfile } from "@/server/profile/actions";
 
 import { Greetings } from "@/components/dashboard/greetings";
 import { calculateNetWorth } from "@/server/analysis/net-worth";
+import { calculateAssetAllocation } from "@/server/analysis/asset-allocation";
 
 export default async function DashboardPage() {
   const { profile } = await fetchProfile();
   const netWorth = await calculateNetWorth(profile.display_currency);
+  const assetAllocation = await calculateAssetAllocation(
+    profile.display_currency,
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -22,9 +26,10 @@ export default async function DashboardPage() {
           <NetWorthLineChart />
         </div>
         <div className="col-span-6 lg:col-span-3 xl:col-span-2">
-          <AssetAllocationDonutChart
+          <AssetAllocationDonutRecharts
             netWorth={netWorth}
             currency={profile.display_currency}
+            assetAllocation={assetAllocation}
           />
         </div>
       </div>
