@@ -4,8 +4,8 @@ export type WeeklyNetWorth = {
 };
 
 export type AssetAllocation = {
-  category: string;
-  value: number;
+  category_code: string;
+  total_value: number;
   fill?: string;
 };
 
@@ -106,18 +106,22 @@ export const weeklyNetWorth: WeeklyNetWorth[] = [
 // Asset allocation data - total should match the most recent net worth value
 // Current total: 1248400 (as of 2025-03-03)
 export const assetAllocation: AssetAllocation[] = [
-  { category: "cash", value: 99872, fill: "var(--color-cash)" },
-  { category: "equity", value: 499360, fill: "var(--color-equity)" },
+  { category_code: "cash", total_value: 99872, fill: "var(--color-cash)" },
+  { category_code: "equity", total_value: 499360, fill: "var(--color-equity)" },
   {
-    category: "fixed_income",
-    value: 499360,
+    category_code: "fixed_income",
+    total_value: 499360,
     fill: "var(--color-fixed_income)",
   },
-  { category: "real_estate", value: 499360, fill: "var(--color-real_estate)" },
   {
-    category: "cryptocurrency",
-    value: 62420,
+    category_code: "real_estate",
+    total_value: 499360,
+    fill: "var(--color-real_estate)",
+  },
+  {
+    category_code: "cryptocurrency",
+    total_value: 62420,
     fill: "var(--color-cryptocurrency)",
   },
-  { category: "other", value: 87388, fill: "var(--color-other)" },
+  { category_code: "other", total_value: 87388, fill: "var(--color-other)" },
 ];

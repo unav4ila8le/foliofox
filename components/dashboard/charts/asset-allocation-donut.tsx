@@ -59,7 +59,7 @@ export function AssetAllocationDonutChart({
 }) {
   // Calculate total value for percentage calculation
   const totalValue = useMemo(() => {
-    return assetAllocation.reduce((sum, item) => sum + item.value, 0);
+    return assetAllocation.reduce((sum, item) => sum + item.total_value, 0);
   }, []);
 
   // Function to get the human-readable label from chartConfig
@@ -99,8 +99,8 @@ export function AssetAllocationDonutChart({
             />
             <Pie
               data={assetAllocation}
-              dataKey="value"
-              nameKey="category"
+              dataKey="total_value"
+              nameKey="category_code"
               innerRadius={"65%"}
               outerRadius={"80%"}
               paddingAngle={2}
@@ -152,7 +152,7 @@ export function AssetAllocationDonutChart({
               className="flex max-h-56 flex-col items-start gap-2 overflow-hidden p-0"
               content={
                 <ChartLegendContent
-                  nameKey="category"
+                  nameKey="category_code"
                   labelFormatter={(label) => getCategoryLabel(String(label))}
                   valueFormatter={(value) => {
                     const percentage = (Number(value) / totalValue) * 100;
