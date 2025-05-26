@@ -28,7 +28,7 @@ const COLORS = [
   "var(--chart-5)",
 ];
 
-export function AssetAllocationDonutRecharts({
+export function AssetAllocationDonut({
   netWorth,
   currency,
   assetAllocation,

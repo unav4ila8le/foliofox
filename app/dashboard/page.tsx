@@ -1,5 +1,5 @@
 import { NetWorthLineChart } from "@/components/dashboard/charts/net-worth-line";
-import { AssetAllocationDonutRecharts } from "@/components/dashboard/charts/asset-allocation-donut-recharts";
+import { AssetAllocationDonut } from "@/components/dashboard/charts/asset-allocation-donut";
 
 import { fetchProfile } from "@/server/profile/actions";
 
@@ -26,7 +26,7 @@ export default async function DashboardPage() {
           <NetWorthLineChart />
         </div>
         <div className="col-span-6 lg:col-span-3 xl:col-span-2">
-          <AssetAllocationDonutRecharts
+          <AssetAllocationDonut
             netWorth={netWorth}
             currency={profile.display_currency}
             assetAllocation={assetAllocation}
