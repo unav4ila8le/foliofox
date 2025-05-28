@@ -11,7 +11,7 @@ export async function fetchCurrencies(): Promise<Currency[]> {
   // Get currencies
   const { data: currencies, error } = await supabase
     .from("currencies")
-    .select("alphabetic_code")
+    .select("alphabetic_code, name")
     .order("alphabetic_code", { ascending: true });
 
   // Throw error

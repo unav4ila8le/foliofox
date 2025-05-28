@@ -33,20 +33,20 @@ export type Database = {
       currencies: {
         Row: {
           alphabetic_code: string;
-          currency: string;
           minor_unit: number;
+          name: string;
           numeric_code: number;
         };
         Insert: {
           alphabetic_code: string;
-          currency: string;
           minor_unit: number;
+          name: string;
           numeric_code: number;
         };
         Update: {
           alphabetic_code?: string;
-          currency?: string;
           minor_unit?: number;
+          name?: string;
           numeric_code?: number;
         };
         Relationships: [];

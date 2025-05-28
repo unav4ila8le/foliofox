@@ -143,7 +143,7 @@ function CurrencyList({
               }}
               value={currency.alphabetic_code}
             >
-              {currency.alphabetic_code}
+              {currency.alphabetic_code} - {currency.name}
               <Check
                 className={cn(
                   "ml-auto",

@@ -7,7 +7,7 @@ export type Profile = Pick<
 >;
 
 //Currency
-export type Currency = Pick<Tables<"currencies">, "alphabetic_code">;
+export type Currency = Pick<Tables<"currencies">, "alphabetic_code" | "name">;
 
 //Holding
 export type Holding = Pick<
