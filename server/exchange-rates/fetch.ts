@@ -40,14 +40,11 @@ export async function fetchExchangeRate(
   }
 
   // If date is provided, get the rate for that specific date
-  // Format date to YYYY-MM-DD
-  const formattedDate = date.toISOString().split("T")[0];
-
   // Get specific exchange rate
   const { data: rate, error } = await supabase
     .from("exchange_rates")
     .select("rate")
-    .eq("date", formattedDate)
+    .eq("date", date.toISOString())
     .eq("base_currency", "USD")
     .eq("target_currency", targetCurrency)
     .single();
@@ -55,7 +52,7 @@ export async function fetchExchangeRate(
   // Throw error
   if (error) {
     throw new Error(
-      `Failed to fetch exchange rate for ${targetCurrency} on ${formattedDate}: ${error.message}`,
+      `Failed to fetch exchange rate for ${targetCurrency} on ${date}: ${error.message}`,
     );
   }
 
