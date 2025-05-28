@@ -174,16 +174,6 @@ This checklist outlines the steps to set up the Supabase backend for the Patrivi
 
 - [ ] Create the `asset_prices` table with the refined MVP columns: `id`, `holding_id`, `date`, `price`, `currency`, `source`, `created_at`. Ensure foreign keys link correctly.
 
-- [ ] Create the `currency_rates` table with the refined MVP columns: `id`, `date`, `base_currency`, `target_currency`, `rate`, `created_at`.
+- [ ] Create the `exchange_rates` table with the refined MVP columns: `id`, `date`, `base_currency`, `target_currency`, `rate`, `created_at`.
 
 - [ ] (Optional but Recommended) Set up Row Level Security (RLS) policies on all tables to ensure users can only access their own data. Start with simple policies (e.g., `user_id = auth.uid()`).
-
-**5. Build Initial API Routes:**
-
-- [ ] Create the essential API route handlers identified in the refined plan (e.g., `/api/holdings`, `/api/transactions`, `/api/net-worth/summary`, etc.) using Next.js App Router Route Handlers.
-- [ ] Implement data fetching and mutations within these handlers using the configured Supabase client. Ensure user authentication/authorization is checked in each handler (e.g., using RLS or checking `auth.uid()`).
-
-**6. Connect Frontend Components:**
-
-- [ ] Update frontend components (Dashboard pages, Sidebar, etc.) to fetch data from the new API routes instead of using mock data.
-- [ ] Implement forms and actions to call the `POST`/`PUT` API routes for adding/updating data (e.g., "New transaction" button).
