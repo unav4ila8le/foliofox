@@ -217,30 +217,6 @@ export type Database = {
           },
         ];
       };
-      net_worth_snapshots: {
-        Row: {
-          created_at: string;
-          date: string;
-          id: string;
-          user_id: string;
-          value: number;
-        };
-        Insert: {
-          created_at?: string;
-          date: string;
-          id?: string;
-          user_id: string;
-          value: number;
-        };
-        Update: {
-          created_at?: string;
-          date?: string;
-          id?: string;
-          user_id?: string;
-          value?: number;
-        };
-        Relationships: [];
-      };
       profiles: {
         Row: {
           avatar_url: string | null;
