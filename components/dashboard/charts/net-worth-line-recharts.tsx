@@ -7,6 +7,7 @@ import {
   YAxis,
   CartesianGrid,
   ResponsiveContainer,
+  Tooltip,
 } from "recharts";
 import {
   Card,
@@ -97,7 +98,6 @@ export function NetWorthLineChartRecharts({
             <YAxis
               dataKey="value"
               tickFormatter={formatYAxisValue}
-              width={40}
               axisLine={false}
               tickLine={false}
               tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
@@ -113,12 +113,37 @@ export function NetWorthLineChartRecharts({
               tickLine={false}
               tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
             />
+            <Tooltip
+              content={({ active, payload }) => {
+                if (!active || !payload?.length) return null;
+
+                const data = payload[0];
+                return (
+                  <div className="bg-background border-border flex flex-col gap-1 rounded-md border px-2.5 py-1.5">
+                    <span className="text-muted-foreground text-xs">
+                      {new Date(data.payload.date).toLocaleDateString()}
+                    </span>
+                    <span className="text-sm">
+                      {formatCurrency(Number(data.value), currency)}
+                    </span>
+                  </div>
+                );
+              }}
+              cursorStyle={{
+                stroke: "var(--border)",
+                strokeWidth: 1,
+              }}
+            />
             <Line
-              type="monotone"
               dataKey="value"
               stroke="var(--chart-0)"
               strokeWidth={2}
               dot={false}
+              activeDot={{
+                r: 4.5,
+                strokeWidth: 2.5,
+                filter: "drop-shadow(0px 1px 3px rgba(0, 0, 0, 0.3))",
+              }}
             />
           </LineChart>
         </ResponsiveContainer>

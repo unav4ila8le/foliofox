@@ -112,12 +112,6 @@ export function AssetAllocationDonut({
               />
             </Pie>
             <Tooltip
-              contentStyle={{
-                backgroundColor: "var(--background)",
-                padding: "0 8px",
-                borderColor: "var(--border)",
-                borderRadius: "var(--radius)",
-              }}
               content={({ active, payload }) => {
                 if (!active || !payload?.length) return null;
 

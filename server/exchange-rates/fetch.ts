@@ -8,7 +8,7 @@ import { createClient } from "@/utils/supabase/server";
  */
 export async function fetchExchangeRate(
   targetCurrency: string,
-  date?: Date,
+  date: Date = new Date(),
 ): Promise<number> {
   // Check if target currency is USD
   if (targetCurrency === "USD") {
@@ -17,43 +17,54 @@ export async function fetchExchangeRate(
 
   // Supabase client
   const supabase = await createClient();
+  const dateString = date.toISOString().slice(0, 10);
 
-  // If no date is provided, get the most recent rate
-  if (!date) {
-    const { data: latestRate, error: latestError } = await supabase
+  // 1. Try to get the exchange rate for the exact date
+  const { data: rate, error } = await supabase
+    .from("exchange_rates")
+    .select("rate")
+    .eq("base_currency", "USD")
+    .eq("target_currency", targetCurrency)
+    .eq("date", dateString)
+    .single();
+
+  if (error || !rate) {
+    // 2. Call the edge function to fetch and insert the missing rate
+    const edgeUrl = `https://icnvjrvkdjtbnldhootf.supabase.co/functions/v1/fetch-exchange-rates?date=${dateString}`;
+    const jwt = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    const edgeResponse = await fetch(edgeUrl, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${jwt}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!edgeResponse.ok) {
+      throw new Error(
+        `Edge function failed: ${edgeResponse.status} ${edgeResponse.statusText}`,
+      );
+    }
+
+    // 3. Query the database again for the exact date
+    const { data: retryRate, error: retryError } = await supabase
       .from("exchange_rates")
       .select("rate")
       .eq("base_currency", "USD")
       .eq("target_currency", targetCurrency)
+      .lte("date", dateString)
       .order("date", { ascending: false })
       .limit(1)
       .single();
 
-    // Throw error
-    if (latestError) {
+    if (!retryRate || retryError) {
       throw new Error(
-        `Failed to fetch latest exchange rate for ${targetCurrency}: ${latestError.message}`,
+        `No exchange rate found for ${targetCurrency} on ${dateString} after edge function call`,
       );
     }
 
-    return latestRate.rate;
-  }
-
-  // If date is provided, get the rate for that specific date
-  // Get specific exchange rate
-  const { data: rate, error } = await supabase
-    .from("exchange_rates")
-    .select("rate")
-    .eq("date", date.toISOString())
-    .eq("base_currency", "USD")
-    .eq("target_currency", targetCurrency)
-    .single();
-
-  // Throw error
-  if (error) {
-    throw new Error(
-      `Failed to fetch exchange rate for ${targetCurrency} on ${date}: ${error.message}`,
-    );
+    return retryRate.rate;
   }
 
   return rate.rate;
