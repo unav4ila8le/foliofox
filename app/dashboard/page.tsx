@@ -1,4 +1,3 @@
-import { NetWorthLineChart } from "@/components/dashboard/charts/net-worth-line";
 import { AssetAllocationDonut } from "@/components/dashboard/charts/asset-allocation-donut";
 import { NetWorthLineChartRecharts } from "@/components/dashboard/charts/net-worth-line-recharts";
 import { Greetings } from "@/components/dashboard/greetings";
@@ -27,20 +26,17 @@ export default async function DashboardPage() {
 
       <div className="grid grid-cols-6 gap-4">
         <div className="col-span-6 xl:col-span-4">
-          <NetWorthLineChart />
+          <NetWorthLineChartRecharts
+            currency={profile.display_currency}
+            netWorth={netWorth}
+            history={netWorthHistory}
+          />
         </div>
         <div className="col-span-6 lg:col-span-3 xl:col-span-2">
           <AssetAllocationDonut
             currency={profile.display_currency}
             netWorth={netWorth}
             assetAllocation={assetAllocation}
-          />
-        </div>
-        <div className="col-span-6 xl:col-span-4">
-          <NetWorthLineChartRecharts
-            currency={profile.display_currency}
-            netWorth={netWorth}
-            history={netWorthHistory}
           />
         </div>
       </div>
