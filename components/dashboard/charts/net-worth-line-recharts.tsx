@@ -22,41 +22,47 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 
-import { formatCurrency } from "@/lib/number/format";
+import { formatCompactNumber, formatCurrency } from "@/lib/number/format";
 
 // Sample data structure for our weekly net worth data
 interface NetWorthData {
-  date: string; // ISO date string like "2024-01-01"
-  value: number; // Net worth value
+  date: Date;
+  value: number;
 }
 
-// Mock data for now - we'll replace this with real data later
-const mockData: NetWorthData[] = [
-  { date: "2024-01-01", value: 150000 },
-  { date: "2024-01-08", value: 152000 },
-  { date: "2024-01-15", value: 148000 },
-  { date: "2024-01-22", value: 155000 },
-  { date: "2024-01-29", value: 158000 },
-  { date: "2024-02-05", value: 160000 },
-  { date: "2024-02-12", value: 157000 },
-  { date: "2024-02-19", value: 162000 },
-  { date: "2024-02-26", value: 165000 },
-];
+// // Mock data for now - we'll replace this with real data later
+// const mockData: NetWorthData[] = [
+//   { date: "2024-01-01", value: 150000 },
+//   { date: "2024-01-08", value: 152000 },
+//   { date: "2024-01-15", value: 148000 },
+//   { date: "2024-01-22", value: 155000 },
+//   { date: "2024-01-29", value: 158000 },
+//   { date: "2024-02-05", value: 160000 },
+//   { date: "2024-02-12", value: 157000 },
+//   { date: "2024-02-19", value: 162000 },
+//   { date: "2024-02-26", value: 165000 },
+// ];
 
 export function NetWorthLineChartRecharts({
-  netWorth,
   currency,
+  netWorth,
+  history,
 }: {
-  netWorth: number;
   currency: string;
+  netWorth: number;
+  history: NetWorthData[];
 }) {
   // Format date for display on X-axis
-  const formatXAxisDate = (dateString: string) => {
-    const date = new Date(dateString);
+  const formatXAxisDate = (date: Date) => {
     return date.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
     });
+  };
+
+  // Format value for display on Y-axis
+  const formatYAxisValue = (value: number) => {
+    return formatCompactNumber(value);
   };
 
   return (
@@ -86,16 +92,12 @@ export function NetWorthLineChartRecharts({
       </CardHeader>
       <CardContent className="h-56">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={mockData}>
+          <LineChart data={history}>
             <CartesianGrid stroke="var(--border)" vertical={false} />
-            <XAxis
-              dataKey="date"
-              tickFormatter={formatXAxisDate}
-              axisLine={false}
-              tickLine={false}
-              tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
-            />
             <YAxis
+              dataKey="value"
+              tickFormatter={formatYAxisValue}
+              width={40}
               axisLine={false}
               tickLine={false}
               tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
@@ -103,6 +105,13 @@ export function NetWorthLineChartRecharts({
                 (dataMin: number) => dataMin * 0.95,
                 (dataMax: number) => dataMax * 1.05,
               ]}
+            />
+            <XAxis
+              dataKey="date"
+              tickFormatter={formatXAxisDate}
+              axisLine={false}
+              tickLine={false}
+              tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
             />
             <Line
               type="monotone"
