@@ -62,17 +62,14 @@ export function NetWorthLineChart({
               {formatCurrency(netWorth, currency)}
             </h2>
           </div>
-          <Select>
+          <Select defaultValue="24">
             <SelectTrigger>
               <SelectValue placeholder="6 Months" />
             </SelectTrigger>
             <SelectContent align="end">
-              <SelectItem value="1-month">1 Month</SelectItem>
-              <SelectItem value="3-months">3 Months</SelectItem>
-              <SelectItem value="6-months">6 Months</SelectItem>
-              <SelectItem value="ytd">YTD</SelectItem>
-              <SelectItem value="1-year">1 Year</SelectItem>
-              <SelectItem value="5-years">5 Years</SelectItem>
+              <SelectItem value="4">1 Month</SelectItem>
+              <SelectItem value="12">3 Months</SelectItem>
+              <SelectItem value="24">6 Months</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -88,6 +85,7 @@ export function NetWorthLineChart({
               tickLine={false}
               tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
               domain={["auto", "auto"]}
+              width={40}
             />
             <XAxis
               dataKey="date"
