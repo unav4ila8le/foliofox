@@ -33,7 +33,7 @@ interface NetWorthData {
   value: number;
 }
 
-export function NetWorthLineChartRecharts({
+export function NetWorthLineChart({
   currency,
   netWorth,
   history,
