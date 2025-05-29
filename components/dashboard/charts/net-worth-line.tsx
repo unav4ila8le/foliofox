@@ -1,6 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { format } from "date-fns";
+
+import { fetchNetWorthHistory } from "@/server/analysis/net-worth-history";
 
 import {
   LineChart,
@@ -26,6 +29,7 @@ import {
 } from "@/components/ui/select";
 
 import { formatCompactNumber, formatCurrency } from "@/lib/number/format";
+import { cn } from "@/lib/utils";
 
 // Sample data structure for our weekly net worth data
 interface NetWorthData {
@@ -36,12 +40,28 @@ interface NetWorthData {
 export function NetWorthLineChart({
   currency,
   netWorth,
-  history,
+  history: initialHistory,
 }: {
   currency: string;
   netWorth: number;
   history: NetWorthData[];
 }) {
+  const [history, setHistory] = useState(initialHistory);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleWeeksChange = async (weeks: string) => {
+    setIsLoading(true);
+    try {
+      const newHistory = await fetchNetWorthHistory({
+        targetCurrency: currency,
+        weeksBack: Number(weeks),
+      });
+      setHistory(newHistory);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Format date for display on X-axis
   const formatXAxisDate = (date: Date) => {
     return format(date, "MMM d");
@@ -62,7 +82,11 @@ export function NetWorthLineChart({
               {formatCurrency(netWorth, currency)}
             </h2>
           </div>
-          <Select defaultValue="24">
+          <Select
+            defaultValue="24"
+            onValueChange={handleWeeksChange}
+            disabled={isLoading}
+          >
             <SelectTrigger>
               <SelectValue placeholder="6 Months" />
             </SelectTrigger>
@@ -74,7 +98,9 @@ export function NetWorthLineChart({
           </Select>
         </div>
       </CardHeader>
-      <CardContent className="flex-1">
+      <CardContent
+        className={cn("flex-1 transition-opacity", isLoading && "opacity-50")}
+      >
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={history}>
             <CartesianGrid stroke="var(--border)" vertical={false} />
@@ -93,6 +119,7 @@ export function NetWorthLineChart({
               axisLine={false}
               tickLine={false}
               tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
+              dy={5}
             />
             <Tooltip
               content={({ active, payload }) => {
