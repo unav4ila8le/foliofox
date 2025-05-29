@@ -47,11 +47,11 @@ export function AssetAllocationDonut({
   }, [assetAllocation]);
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="flex h-64 flex-col md:h-80">
+      <CardHeader className="flex-none">
         <CardTitle>Asset Allocation</CardTitle>
       </CardHeader>
-      <CardContent className="h-56">
+      <CardContent className="flex-1">
         <ResponsiveContainer
           width="100%"
           height="100%"

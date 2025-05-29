@@ -53,8 +53,8 @@ export function NetWorthLineChartRecharts({
   };
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="flex h-80 flex-col">
+      <CardHeader className="flex-none">
         <div className="flex justify-between gap-4">
           <div>
             <CardDescription>Net Worth</CardDescription>
@@ -77,7 +77,7 @@ export function NetWorthLineChartRecharts({
           </Select>
         </div>
       </CardHeader>
-      <CardContent className="h-56">
+      <CardContent className="flex-1">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={history}>
             <CartesianGrid stroke="var(--border)" vertical={false} />
