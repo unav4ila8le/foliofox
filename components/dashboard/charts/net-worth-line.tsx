@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { format } from "date-fns";
+import { differenceInWeeks, startOfYear, format } from "date-fns";
 
 import { fetchNetWorthHistory } from "@/server/analysis/net-worth-history";
 
@@ -54,7 +54,10 @@ export function NetWorthLineChart({
     try {
       const newHistory = await fetchNetWorthHistory({
         targetCurrency: currency,
-        weeksBack: Number(weeks),
+        weeksBack:
+          weeks === "ytd"
+            ? Math.ceil(differenceInWeeks(new Date(), startOfYear(new Date())))
+            : Number(weeks),
       });
       setHistory(newHistory);
     } finally {
@@ -94,6 +97,7 @@ export function NetWorthLineChart({
               <SelectItem value="4">1 Month</SelectItem>
               <SelectItem value="12">3 Months</SelectItem>
               <SelectItem value="24">6 Months</SelectItem>
+              <SelectItem value="ytd">YTD</SelectItem>
             </SelectContent>
           </Select>
         </div>
