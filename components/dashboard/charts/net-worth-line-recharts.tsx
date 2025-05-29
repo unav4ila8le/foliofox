@@ -87,10 +87,7 @@ export function NetWorthLineChartRecharts({
               axisLine={false}
               tickLine={false}
               tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
-              domain={[
-                (dataMin: number) => dataMin * 0.95,
-                (dataMax: number) => dataMax * 1.05,
-              ]}
+              domain={["auto", "auto"]}
             />
             <XAxis
               dataKey="date"
