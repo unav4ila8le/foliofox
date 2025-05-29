@@ -1,5 +1,7 @@
 "use client";
 
+import { format } from "date-fns";
+
 import {
   LineChart,
   Line,
@@ -31,19 +33,6 @@ interface NetWorthData {
   value: number;
 }
 
-// // Mock data for now - we'll replace this with real data later
-// const mockData: NetWorthData[] = [
-//   { date: "2024-01-01", value: 150000 },
-//   { date: "2024-01-08", value: 152000 },
-//   { date: "2024-01-15", value: 148000 },
-//   { date: "2024-01-22", value: 155000 },
-//   { date: "2024-01-29", value: 158000 },
-//   { date: "2024-02-05", value: 160000 },
-//   { date: "2024-02-12", value: 157000 },
-//   { date: "2024-02-19", value: 162000 },
-//   { date: "2024-02-26", value: 165000 },
-// ];
-
 export function NetWorthLineChartRecharts({
   currency,
   netWorth,
@@ -55,10 +44,7 @@ export function NetWorthLineChartRecharts({
 }) {
   // Format date for display on X-axis
   const formatXAxisDate = (date: Date) => {
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    });
+    return format(date, "MMM d");
   };
 
   // Format value for display on Y-axis
@@ -121,7 +107,7 @@ export function NetWorthLineChartRecharts({
                 return (
                   <div className="bg-background border-border flex flex-col gap-1 rounded-md border px-2.5 py-1.5">
                     <span className="text-muted-foreground text-xs">
-                      {new Date(data.payload.date).toLocaleDateString()}
+                      {format(data.payload.date, "PPP")}
                     </span>
                     <span className="text-sm">
                       {formatCurrency(Number(data.value), currency)}
