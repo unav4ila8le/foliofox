@@ -1,3 +1,7 @@
+import { Suspense } from "react";
+
+import { Skeleton } from "@/components/ui/skeleton";
+
 import { AssetAllocationDonut } from "@/components/dashboard/charts/asset-allocation-donut";
 import { NetWorthLineChart } from "@/components/dashboard/charts/net-worth-line";
 import { Greetings } from "@/components/dashboard/greetings";
@@ -7,15 +11,48 @@ import { calculateNetWorth } from "@/server/analysis/net-worth";
 import { fetchNetWorthHistory } from "@/server/analysis/net-worth-history";
 import { calculateAssetAllocation } from "@/server/analysis/asset-allocation";
 
+// Separate components for data fetching with suspense
+async function NetWorthChartWrapper({
+  displayCurrency,
+  netWorth,
+}: {
+  displayCurrency: string;
+  netWorth: number;
+}) {
+  const netWorthHistory = await fetchNetWorthHistory({
+    targetCurrency: displayCurrency,
+  });
+
+  return (
+    <NetWorthLineChart
+      currency={displayCurrency}
+      netWorth={netWorth}
+      history={netWorthHistory}
+    />
+  );
+}
+
+async function AssetAllocationChartWrapper({
+  displayCurrency,
+  netWorth,
+}: {
+  displayCurrency: string;
+  netWorth: number;
+}) {
+  const assetAllocation = await calculateAssetAllocation(displayCurrency);
+
+  return (
+    <AssetAllocationDonut
+      currency={displayCurrency}
+      netWorth={netWorth}
+      assetAllocation={assetAllocation}
+    />
+  );
+}
+
 export default async function DashboardPage() {
   const { profile } = await fetchProfile();
   const netWorth = await calculateNetWorth(profile.display_currency);
-  const assetAllocation = await calculateAssetAllocation(
-    profile.display_currency,
-  );
-  const netWorthHistory = await fetchNetWorthHistory({
-    targetCurrency: profile.display_currency,
-  });
 
   return (
     <div className="flex flex-col gap-4">
@@ -26,18 +63,20 @@ export default async function DashboardPage() {
 
       <div className="grid grid-cols-6 gap-4">
         <div className="col-span-6 xl:col-span-4">
-          <NetWorthLineChart
-            currency={profile.display_currency}
-            netWorth={netWorth}
-            history={netWorthHistory}
-          />
+          <Suspense fallback={<Skeleton className="h-80 rounded-xl" />}>
+            <NetWorthChartWrapper
+              displayCurrency={profile.display_currency}
+              netWorth={netWorth}
+            />
+          </Suspense>
         </div>
         <div className="col-span-6 lg:col-span-3 xl:col-span-2">
-          <AssetAllocationDonut
-            currency={profile.display_currency}
-            netWorth={netWorth}
-            assetAllocation={assetAllocation}
-          />
+          <Suspense fallback={<Skeleton className="h-80 rounded-xl" />}>
+            <AssetAllocationChartWrapper
+              displayCurrency={profile.display_currency}
+              netWorth={netWorth}
+            />
+          </Suspense>
         </div>
       </div>
     </div>
