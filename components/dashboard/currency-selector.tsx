@@ -27,7 +27,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useCurrencies } from "@/hooks/use-currencies";
+import { useCurrencies } from "@/hooks/client/use-currencies";
 
 import type { Currency } from "@/types/global.types";
 
@@ -45,7 +45,7 @@ export function CurrencySelector({ field, id }: CurrencySelectorProps) {
   const isMobile = useIsMobile();
 
   // Get currencies
-  const { currencies, loading } = useCurrencies();
+  const { currencies, isLoading } = useCurrencies();
 
   if (isMobile) {
     return (
@@ -74,7 +74,7 @@ export function CurrencySelector({ field, id }: CurrencySelectorProps) {
             value={field.value}
             onChange={field.onChange}
             currencies={currencies}
-            loading={loading}
+            isLoading={isLoading}
           />
         </DrawerContent>
       </Drawer>
@@ -104,7 +104,7 @@ export function CurrencySelector({ field, id }: CurrencySelectorProps) {
           value={field.value}
           onChange={field.onChange}
           currencies={currencies}
-          loading={loading}
+          isLoading={isLoading}
         />
       </PopoverContent>
     </Popover>
@@ -116,7 +116,7 @@ interface CurrencyListProps {
   value: string;
   onChange: (value: string) => void;
   currencies: Currency[];
-  loading: boolean;
+  isLoading: boolean;
 }
 
 function CurrencyList({
@@ -124,14 +124,14 @@ function CurrencyList({
   value,
   onChange,
   currencies,
-  loading,
+  isLoading,
 }: CurrencyListProps) {
   return (
     <Command>
       <CommandInput placeholder="Search currency..." className="h-9" />
       <CommandList>
         <CommandEmpty>
-          {loading ? "Loading currencies..." : "No currency found."}
+          {isLoading ? "Loading currencies..." : "No currency found."}
         </CommandEmpty>
         <CommandGroup>
           {currencies.map((currency) => (

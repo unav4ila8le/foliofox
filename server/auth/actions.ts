@@ -77,19 +77,3 @@ export async function signup(formData: FormData) {
   revalidatePath("/", "layout");
   return { success: true };
 }
-
-// Signout
-export type SignOutScope = "global" | "local" | "others";
-
-export async function signout(scope: SignOutScope = "global") {
-  const supabase = await createClient();
-  const { error } = await supabase.auth.signOut({ scope });
-
-  // Return Supabase errors
-  if (error) {
-    return { success: false, code: error.code, message: error.message };
-  }
-
-  revalidatePath("/", "layout");
-  return { success: true };
-}

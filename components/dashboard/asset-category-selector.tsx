@@ -27,7 +27,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useAssetCategories } from "@/hooks/use-asset-categories";
+import { useAssetCategories } from "@/hooks/client/use-asset-categories";
 
 import type { AssetCategory } from "@/types/global.types";
 
@@ -45,7 +45,7 @@ export function AssetCategorySelector({ field, id }: CategorySelectorProps) {
   const isMobile = useIsMobile();
 
   // Get asset categories
-  const { categories, loading } = useAssetCategories();
+  const { categories, isLoading } = useAssetCategories();
 
   // Find the selected category name
   const selectedCategory = categories.find((cat) => cat.code === field.value);
@@ -78,7 +78,7 @@ export function AssetCategorySelector({ field, id }: CategorySelectorProps) {
             value={field.value}
             onChange={field.onChange}
             categories={categories}
-            loading={loading}
+            isLoading={isLoading}
           />
         </DrawerContent>
       </Drawer>
@@ -111,7 +111,7 @@ export function AssetCategorySelector({ field, id }: CategorySelectorProps) {
           value={field.value}
           onChange={field.onChange}
           categories={categories}
-          loading={loading}
+          isLoading={isLoading}
         />
       </PopoverContent>
     </Popover>
@@ -123,7 +123,7 @@ interface CategoryListProps {
   value: string;
   onChange: (value: string) => void;
   categories: AssetCategory[];
-  loading: boolean;
+  isLoading: boolean;
 }
 
 function AssetCategoryList({
@@ -131,14 +131,14 @@ function AssetCategoryList({
   value,
   onChange,
   categories,
-  loading,
+  isLoading,
 }: CategoryListProps) {
   return (
     <Command>
       <CommandInput placeholder="Search category..." className="h-9" />
       <CommandList>
         <CommandEmpty>
-          {loading ? "Loading categories..." : "No categories found."}
+          {isLoading ? "Loading categories..." : "No categories found."}
         </CommandEmpty>
         <CommandGroup>
           {categories.map((category) => (

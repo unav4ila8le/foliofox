@@ -25,7 +25,7 @@ import { SettingsForm } from "@/components/dashboard/sidebar/settings-form";
 
 import { formatCurrency } from "@/lib/number";
 
-import { useSignout } from "@/hooks/use-signout";
+import { useSignout } from "@/hooks/client/use-signout";
 
 import type { Profile } from "@/types/global.types";
 

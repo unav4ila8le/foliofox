@@ -49,7 +49,7 @@ export function HoldingSelector({
 }: HoldingSelectorProps) {
   const [open, setOpen] = useState(false);
   const [holdings, setHoldings] = useState<Holding[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const isMobile = useIsMobile();
 
   // Load holdings when the selector opens
@@ -60,7 +60,7 @@ export function HoldingSelector({
     } catch (error) {
       console.error("Error loading holdings:", error);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -87,7 +87,7 @@ export function HoldingSelector({
             )}
             onClick={() => {
               if (open) return;
-              setLoading(true);
+              setIsLoading(true);
               getHoldings();
             }}
           >
@@ -104,7 +104,7 @@ export function HoldingSelector({
             value={field.value}
             onChange={field.onChange}
             holdings={holdings}
-            loading={loading}
+            isLoading={isLoading}
           />
         </DrawerContent>
       </Drawer>
@@ -125,7 +125,7 @@ export function HoldingSelector({
           )}
           onClick={() => {
             if (open) return;
-            setLoading(true);
+            setIsLoading(true);
             getHoldings();
           }}
         >
@@ -142,7 +142,7 @@ export function HoldingSelector({
           value={field.value}
           onChange={field.onChange}
           holdings={holdings}
-          loading={loading}
+          isLoading={isLoading}
         />
       </PopoverContent>
     </Popover>
@@ -154,7 +154,7 @@ interface HoldingListProps {
   value: string;
   onChange: (value: string) => void;
   holdings: Holding[];
-  loading: boolean;
+  isLoading: boolean;
 }
 
 function HoldingList({
@@ -162,14 +162,14 @@ function HoldingList({
   value,
   onChange,
   holdings,
-  loading,
+  isLoading,
 }: HoldingListProps) {
   return (
     <Command>
       <CommandInput placeholder="Search holding..." className="h-9" />
       <CommandList>
         <CommandEmpty>
-          {loading ? "Loading holdings..." : "No holdings found."}
+          {isLoading ? "Loading holdings..." : "No holdings found."}
         </CommandEmpty>
         <CommandGroup>
           {holdings.map((holding) => (

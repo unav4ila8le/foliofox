@@ -1,8 +1,12 @@
+"use client";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-import { signout, type SignOutScope } from "@/server/auth/actions";
+import { createClient } from "@/utils/supabase/client";
+
+export type SignOutScope = "global" | "local" | "others";
 
 export function useSignout() {
   const [isLoading, setIsLoading] = useState(false);
@@ -11,16 +15,21 @@ export function useSignout() {
   const handleSignOut = async (scope: SignOutScope = "global") => {
     setIsLoading(true);
     try {
-      const result = await signout(scope);
+      // Supabase client
+      const supabase = createClient();
 
-      // Handle expected auth errors
-      if (result.success === false) {
+      // Sign out
+      const { error } = await supabase.auth.signOut({ scope });
+
+      // Throw error
+      if (error) {
         toast.error("Failed to log out", {
-          description: result.message,
+          description: error.message,
         });
         return;
       }
 
+      // Redirect to login page
       router.push("/auth/login");
       toast.success("You have been signed out successfully");
     } catch (error) {
