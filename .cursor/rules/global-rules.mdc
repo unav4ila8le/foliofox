@@ -20,10 +20,12 @@ alwaysApply: true
 
 2. **TypeScript & Code Style**
    - Use TypeScript for all code with strict type checking
-   - Prefer interfaces over types, maps over enums
+   - Prefer interfaces for component props and public APIs
+   - Use types for utility, mapped, or database types (e.g., generated types, unions)
    - Use descriptive names with auxiliary verbs (isLoading, hasError)
    - Follow functional programming patterns
    - Avoid unnecessary class usage
+   - Prefer maps or objects over enums
 
 3. **File Structure**
    ```
@@ -72,6 +74,7 @@ alwaysApply: true
      // 4. Render
    }
    ```
+   - Use named exports for components, except for Next.js route files, which require default exports.
 
 6. **Currency & Data Handling**
    - We mostly use ISO currency codes (USD, EUR) - unless explicitly requested

@@ -3,272 +3,49 @@ description: Project specifications and technical overview for Patrivio
 globs: 
 alwaysApply: false
 ---
-# Patrivio - MVP Requirements
+# Patrivio - Project Details
 
-## 1. Project Overview
-I am building a **net worth tracking web app** to replace my current Google Sheet system. This app should automate manual processes, improve usability, and provide clear visualizations. 
+## Overview
+Patrivio is a privacy-focused net worth tracking app. Users manually track assets, liabilities, and net worth over time, with multi-currency support and clear visualizations. The app is designed for personal use, with future extensibility in mind.
 
-Unlike apps like Mint or Getquin, **this app will not require bank or broker integrations** for the moment. Instead, it will provide an intuitive interface for manually entering and updating financial data. It needs to feel safe, solid and trustworthy.
+## Tech Stack
+- **Framework:** Next.js 15 (App Router)
+- **Language:** TypeScript (strict mode)
+- **Database:** Supabase (Postgres, Auth)
+- **Styling:** Tailwind CSS
+- **Deployment:** Vercel
 
-This project is built for myself as the primary user, with the potential for future expansion if there is market interest.
+## Core Principles
+- **Privacy:** No third-party data sharing or scraping.
+- **Simplicity:** Minimal, modular UI. Logic and calculations are prioritized over design.
+- **Extensible:** Codebase and data model are designed for future features and scaling.
 
-## 2. Competitors
-I have drafted a short list of other products that are doing something very similar to what I am trying to do. You should use them as reference for best practice for handling the data, data structure, user experience and interface.
+## Key Features
+- Track net worth over time with interactive charts
+- Multi-currency support with daily exchange rates
+- Manual entry and editing of assets, balances, and transactions
+- Asset categories: Cash, Investments, Crypto, Real Estate, Metals, Luxury, etc.
+- Secure authentication and user profiles
+- Modular, type-safe codebase
 
-- https://github.com/maybe-finance/maybe (open source, you can actually look at the code) (best for user experience and interface)
-- https://www.getquin.com/ (good for user experience and interface)
-- https://www.kubera.com/
-- https://www.fireleap.com/
-- https://www.portfolio-performance.info/
+## Data Model (Simplified)
+- **Holdings:** Assets and liabilities, grouped by category and currency
+- **Transactions:** Purchases, sales, transfers, and manual value updates
+- **Valuations:** Historical price/quantity snapshots for accurate net worth history
+- **Exchange Rates:** Daily rates for currency conversion
 
-## 3. Tech Stack
-- Framework: Next.js 15 (App Router)
-- Styling: Tailwind CSS 4, shadcn
-- Language: TypeScript
-- Database: Supabase
-- Hosting: Vercel
-- Codebase management: GitHub
-- Financial Data API: TBD
+## Development Guidelines
+- Follow `global-rules.mdc` for architecture, code style, and file structure.
+- Prioritize server components and functional programming patterns.
+- Use Zod for data validation.
+- Store all dates in UTC and all monetary values as numbers (format only for display).
+- Use ISO currency codes (USD, EUR, etc.) throughout.
 
-## 4. Core Features (MVP Scope)
-### Transactions-Based Net Worth Tracking
-The app uses a hybrid approach to track net worth:
+## Not in Scope (MVP)
+- No automatic bank or brokerage integrations
+- No expense tracking or budgeting features
+- No real-time data feeds (periodic refreshes only)
 
-1. **Balance-Based Tracking (for Cash/Bank Accounts)**
-- Users update account balances periodically (weekly/monthly)
-- No need to track individual expenses
-- Historical balance snapshots are stored
-- Changes between periods are automatically calculated
-
-2. **Transaction-Based Tracking (for Investments)**
-Users log investment activities through transactions:
-- Investment Purchase (Buying stocks, real estate, crypto, etc.)
-- Investment Sale (Selling stocks, withdrawing funds, crypto, etc.)
-- Asset Transfer (Moving money between investment accounts)
-Each transaction updates the related investment category and maintains historical accuracy.
-
-Support for editing and deleting past transactions/balances with proper adjustments to calculations.
-Transfer transactions should link outgoing and incoming entries to prevent double-counting.
-Well structured category system for both assets and expenses to enable better analysis
-
-### Data Input & Asset Selection
-Users can quickly add transactions via a structured flow:
-1. Select transaction type → Purchase, Sale, or Transfer
-2. Choose category → Stock, Crypto, Real Estate, Credit Card, Cash, Metal, Luxury, etc.
-3. Enter the transaction date
-4. Specify source of funds. Users selecting stocks or crypto should be able to search for the specific asset and link a logo (similar to brokerage apps). The app dynamically calculates net worth based on transactions instead of static snapshots
-5. Enter amount and quantity for investment assets
-6. Add a short description (optional)
-
-(For later) Support for bulk import of historical data from CSV/Excel (Google Sheets export).
-
-### Automated Historical Data Storage
-- The system fetches closing prices for assets once per day
-- Historical asset prices are snapshotted daily and stored in the database, ensuring that past data can be retrieved without frequent API calls
-- Users can view historical performance over time using stored data rather than making repeated API requests
-- Fallback mechanism for manual price updates when API fails or for non-standard assets
-- Caching strategy to prioritize critical assets when approaching API limits
-
-### Simple Currency Conversion
-- A currency switch dropdown on the homepage allows users to view their final net worth in different currencies
-- Only the aggregated net worth total is converted to the selected currency
-- Individual assets and transactions remain in their original currency
-- The system uses daily exchange rates to perform the conversion
-
-### Asset Categories and Currency Handling
-
-The system organizes assets into distinct categories, each with specific currency and valuation requirements:
-
-1. **Cash & Bank Accounts**
-   - Always requires specific currency (EUR, USD, etc.)
-   - Types: Checking Accounts, Savings Accounts, Cash/Wallet, Credit Lines
-   - Balance-based tracking with periodic updates
-   - Direct currency conversion possible
-
-2. **Investment Securities**
-   - Usually traded in a specific market currency
-   - Types: Stocks, ETFs, Bonds, Investment Funds
-   - Transaction-based tracking
-   - Requires price history in trading currency
-
-3. **Cryptocurrencies**
-   - Has native denomination (BTC, ETH, etc.)
-   - Valued in user's preferred fiat currency
-   - Transaction-based tracking
-   - Requires price history in multiple fiat currencies
-
-4. **Real Estate**
-   - Valued in local currency where property is located
-   - Types: Residential, Commercial, Land
-   - Manual value updates with optional transaction history
-   - May require currency conversion for total net worth
-
-5. **Precious Metals**
-   - Measured in weight (g, oz, kg)
-   - Typically valued in USD (international standard)
-   - Transaction-based tracking with weight and price
-   - Requires spot price history
-
-6. **Luxury Assets**
-   - Valued in purchase/market currency
-   - Types: Art, Collectibles, Watches, Other Valuables
-   - Manual value updates with optional transaction history
-   - May require periodic revaluation
-
-### Currency Handling Rules
-1. Each asset category has specific currency requirements:
-   - Cash accounts: Must specify currency
-   - Investment securities: Track in trading currency
-   - Crypto: Track quantity in native units, value in fiat
-   - Real estate: Track in local currency
-   - Precious metals: Track weight and USD value
-   - Luxury items: Track in purchase currency
-
-2. Net Worth Calculation:
-   - All assets are converted to user's preferred currency for total net worth
-   - Use daily exchange rates for currency conversion
-   - Store historical exchange rates for accurate point-in-time valuation
-
-3. Transaction Requirements:
-   - Purchase/Sale: Requires asset currency and transaction currency
-   - Transfers: Must be in same currency or specify exchange rate
-   - Updates: Must specify currency for value updates
-
-## **5. Database Schema (Supabase)**
-### **5.1 Account Balances Table (`account_balances`)**
-| Column        | Type      | Description |
-|-----|----|----|
-| `id`         | UUID     | Unique identifier |
-| `user_id`    | UUID     | Links to a user |
-| `account_id` | UUID     | Links to an account in `holdings` |
-| `balance`    | FLOAT    | Account balance |
-| `date`       | DATE     | Balance snapshot date |
-| `currency`   | TEXT     | EUR, USD, etc. |
-| `notes`      | TEXT     | Optional notes about the balance update |
-| `created_at` | TIMESTAMP| When this balance was recorded |
-
-### **5.2 Assets & Liabilities Table (`holdings`)**
-| Column      | Type      | Description |
-|---|----|----|
-| `id`       | UUID     | Unique identifier |
-| `user_id`  | UUID     | Links to `auth.users` |
-| `name`     | TEXT     | Asset/liability name |
-| `category` | TEXT     | Category (Stocks, Crypto, Cash, Debt, Metal, Real Estate, etc.) |
-| `tracking_method` | TEXT | "TRANSACTION" or "BALANCE" |
-| `currency` | TEXT     | Primary currency/unit (e.g., EUR, USD, BTC, XAU) |
-| `logo_url` | TEXT     | (Nullable) URL to asset logo |
-| `api_symbol`   | TEXT     | (Nullable) Symbol used by financial data API for price lookup |
-| `isin`     | TEXT     | (Nullable) International Securities Identification Number |
-| `exchange` | TEXT     | (Nullable) Exchange symbol (e.g., LSE, XETRA) |
-| `current_quantity` | FLOAT | (Nullable) Current quantity owned (for `TRANSACTION` tracked assets) |
-| `created_at` | TIMESTAMPZ | Asset added date |
-
-### **5.3 Transactions Table (`transactions`)**
-| Column        | Type      | Description |
-|---------------|-----------|-------------|
-| `id`              | UUID     | Unique identifier |
-| `user_id`         | UUID     | Links to `auth.users` |
-| `holding_id`      | UUID     | (Nullable) Links to a specific holding in `holdings` |
-| `date`            | DATE     | Transaction date |
-| `type`            | TEXT     | Type (e.g., "PURCHASE", "SALE", "TRANSFER_IN", "TRANSFER_OUT", "INCOME", "EXPENSE") |
-| `amount`          | FLOAT    | Monetary value of the transaction |
-| `currency`        | TEXT     | Currency of the amount (e.g., EUR, USD) |
-| `quantity`        | FLOAT    | (Nullable) Quantity of units (e.g., shares, coins) for `TRANSACTION` holdings |
-| `category`        | TEXT     | Transaction category (e.g., "Stock", "Crypto", "Salary", "Groceries") |
-| `notes`           | TEXT     | (Nullable) Optional user notes |
-| `linked_transfer_id`| UUID     | (Nullable) Links corresponding TRANSFER_IN/TRANSFER_OUT transactions |
-| `created_at`      | TIMESTAMPZ| Transaction record creation date |
-
-### **5.4 Asset Price History Table (`asset_prices`)**
-| Column       | Type      | Description |
-|----|----|----|
-| `id`        | UUID     | Unique identifier |
-| `holding_id`  | UUID     | Links to an asset in `holdings` |
-| `date`      | DATE     | The date of the price snapshot |
-| `price` | FLOAT | Price per unit of the asset on that date |
-| `currency`  | TEXT     | Currency of the price |
-| `source`    | TEXT     | (Nullable) Source of price ("API", "MANUAL") |
-| `created_at` | TIMESTAMPZ | Price record creation date |
-
-### **5.5 User Preferences Table (`preferences`)**
-| Column       | Type      | Description |
-|----|----|----|
-| `user_id`   | UUID     | Primary Key, Links to `auth.users` |
-| `display_currency`  | TEXT     | Default currency for displaying net worth (e.g., "EUR", "USD") |
-| `updated_at` | TIMESTAMPZ | Last updated timestamp |
-
-### **5.6 Currency Rates Table (`currency_rates`)**
-| Column       | Type      | Description |
-|----|----|----|
-| `id`        | UUID     | Unique identifier |
-| `date`      | DATE     | Date of rate snapshot |
-| `base_currency` | TEXT | Base currency code |
-| `target_currency` | TEXT | Target currency code |
-| `rate`      | FLOAT    | Conversion rate (1 base = X target) |
-| `created_at` | TIMESTAMPZ | Rate record creation date |
-
-## **6. API Endpoints**
-✅ `GET /api/net-worth` → Returns total net worth calculated from both transactions and balances  
-✅ `GET /api/net-worth/history` → Returns historical net worth points for charts  
-✅ `POST /api/transactions` → Adds a new transaction  
-✅ `GET /api/transactions` → Retrieves all transactions with filtering options  
-✅ `PUT /api/transactions/:id` → Updates an existing transaction  
-✅ `DELETE /api/transactions/:id` → Soft-deletes a transaction  
-✅ `POST /api/balances` → Records a new balance snapshot  
-✅ `GET /api/balances` → Retrieves balance history for accounts  
-✅ `PUT /api/balances/:id` → Updates a balance snapshot  
-✅ `DELETE /api/balances/:id` → Removes a balance snapshot  
-✅ `GET /api/assets` → Retrieves all tracked assets & liabilities  
-✅ `POST /api/assets` → Adds a new asset or liability  
-✅ `PUT /api/assets/:id` → Updates an asset  
-✅ `DELETE /api/assets/:id` → Removes an asset  
-✅ `GET /api/assets/search` → Search for assets (stocks, crypto) with logos  
-✅ `POST /api/assets/prices` → Stores a daily closing price snapshot for assets  
-✅ `GET /api/assets/prices?date=YYYY-MM-DD` → Fetches historical asset prices from the database  
-✅ `POST /api/recurring` → Creates a new recurring transaction template  
-✅ `GET /api/recurring` → Lists all recurring transaction templates  
-✅ `PUT /api/recurring/:id` → Updates a recurring transaction template  
-✅ `DELETE /api/recurring/:id` → Deletes a recurring transaction template  
-✅ `POST /api/import` → Imports data from CSV/Excel (Google Sheets)  
-✅ `GET /api/categories` → Retrieves available transaction categories  
-
-## 7. Core Pages and Components
-
-### Dashboard Header
-- "New transaction" button
-
-### Dashboard Sidebar
-- User details
-- Menu links to other pages
-- Minimal summary by asset class
-
-### Dashboard Home Page
-- - Currency switch dropdown at the top of the dashboard that converts only the final net worth total (not individual assets)
-- Precisely calculate total net worth in the user preferred currency
-- Line chart to visualize net worth over time
-- Pie chart to visualize asset allocation
-- Portfolio Trends and insights
-- Recent transactions
-
-### Dashboard Assets Page
-- Detailed assets list
-- Assets are grouped by asset class
-- Quick edit mode for changing values manually
-
-## 8. General Instructions
-Do NOT focus on UI styling. Keep layouts minimal, modular and easily scalable. I will handle the design. **In most cases I have already built the layout for you with placeholder/mock data**, please always check if that's the case and build logic and code to fit the UI.
-
-The following are some general instructions. Please find detailed rules [global-rules.mdc](mdc:.cursor/rules/global-rules.mdc)
-
-- Build a prototype database first to validate the transaction model and calculations.
-- Ensure clean and modular code. Split into reusable components.
-- Use Next.js API routes to interact with Supabase.
-- Transactions should update net worth dynamically instead of using static snapshots.
-- Implement a clear caching strategy for API calls to financial data services.
-- Charts should reflect transactions over time rather than just static numbers.
-- Store daily closing prices for assets instead of fetching real-time historical data frequently.
-- Create a data validation layer to prevent illogical transactions (negative balances, etc.).
-- For transfers between accounts, link transactions to prevent double-counting in net worth.
-- Implement materialized views or caching for performance as transaction history grows.
-- Follow best practices for performance and scalability.
-
+## For More Details
+- See `README.md` for setup and utility function cheatsheets.
+- See `global-rules.mdc` for code conventions and architecture.
