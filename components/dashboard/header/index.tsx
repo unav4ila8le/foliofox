@@ -7,7 +7,6 @@ import {
 } from "@/components/ui/tooltip";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NewRecordButton } from "@/components/dashboard/new-record";
-import { NewHoldingButton } from "@/components/dashboard/new-holding";
 
 export function Header() {
   return (
@@ -21,9 +20,6 @@ export function Header() {
         </Tooltip>
       </TooltipProvider>
       <div className="flex items-center gap-2">
-        <div className="hidden sm:block">
-          <NewHoldingButton />
-        </div>
         <NewRecordButton />
         <ThemeToggle />
       </div>

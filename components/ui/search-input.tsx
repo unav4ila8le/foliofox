@@ -11,7 +11,7 @@ function SearchInput({
   ...props
 }: React.ComponentProps<typeof Input>) {
   return (
-    <div className="relative">
+    <div className="relative w-full">
       <Search
         className={cn(
           "absolute top-1/2 left-3 size-4 -translate-y-1/2 opacity-50",
@@ -21,7 +21,7 @@ function SearchInput({
       <Input
         type={type}
         disabled={disabled}
-        className={cn("max-w-sm pl-9", className)}
+        className={cn("pl-9", className)}
         {...props}
       />
     </div>
