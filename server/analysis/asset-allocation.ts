@@ -10,11 +10,10 @@ export async function calculateAssetAllocation(targetCurrency: string) {
   // Convert all holdings to USD and calculate their values
   const holdingsInUSD = await Promise.all(
     holdings.map(async (holding) => {
-      const value = holding.current_quantity * holding.current_value;
       const rate = await fetchExchangeRate(holding.currency);
       return {
         ...holding,
-        total_value_usd: value / rate,
+        total_value_usd: holding.total_value / rate,
       };
     }),
   );

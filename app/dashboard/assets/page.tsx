@@ -2,24 +2,8 @@ import { HoldingsTables } from "@/components/dashboard/assets/holdings-tables";
 
 import { fetchHoldings } from "@/server/holdings/fetch";
 
-import type { Holding } from "@/types/global.types";
-
-async function getHoldings(): Promise<Holding[]> {
-  try {
-    const holdings = await fetchHoldings();
-    return holdings.map((holding) => ({
-      ...holding,
-      asset_type: holding.asset_categories.name,
-      total_value: holding.current_value * holding.current_quantity,
-    }));
-  } catch (error) {
-    console.error("Error fetching holdings:", error);
-    return [];
-  }
-}
-
 export default async function AssetsPage() {
-  const holdings = await getHoldings();
+  const holdings = await fetchHoldings();
 
   return (
     <div className="flex flex-col gap-4">

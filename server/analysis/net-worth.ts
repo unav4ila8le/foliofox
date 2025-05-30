@@ -4,15 +4,16 @@ import { fetchHoldings } from "@/server/holdings/fetch";
 import { fetchExchangeRate } from "@/server/exchange-rates/fetch";
 
 // Calculate total net worth in specified target currency
-export async function calculateNetWorth(targetCurrency: string) {
+export async function calculateNetWorth(
+  targetCurrency: string,
+): Promise<number> {
   const holdings = await fetchHoldings();
 
   // Convert each holding to USD
   const holdingsInUSD = await Promise.all(
     holdings.map(async (holding) => {
-      const value = holding.current_quantity * holding.current_value;
       const rate = await fetchExchangeRate(holding.currency);
-      return value / rate;
+      return holding.total_value / rate;
     }),
   );
 
