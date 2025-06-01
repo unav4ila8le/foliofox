@@ -26,7 +26,7 @@ export async function fetchNetWorthHistory({
   const supabase = await createClient();
 
   // Get all holdings
-  const holdings = await fetchHoldings();
+  const holdings = await fetchHoldings({ includeArchived: true });
 
   // Generate weekly date points
   const weeklyDates = generateWeeklyDates(weeksBack);
