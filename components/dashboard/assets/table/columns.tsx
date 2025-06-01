@@ -3,7 +3,7 @@
 import { ArrowUpDown } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { ActionsCell } from "./actions-cell";
+import { ActionsCell } from "./actions/actions-cell";
 
 import { formatNumber } from "@/lib/number/format";
 

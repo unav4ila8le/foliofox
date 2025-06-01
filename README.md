@@ -85,5 +85,7 @@ All formatting functions accept both numbers and strings as input. Currency form
 
 ## To Do List
 
+- Add percentages increase over the different time periods selected
+- Add disclaimer about the fact that exchange rates are not updated in real-time but rather updated daily (6PM UTC)
 - **Implement Caching for Expensive Operations**: The net worth line chart calculation is resource intensive. In the future, implement server-side caching (e.g., using Next.js `use cache` or `unstable_cache` when stable) to avoid redundant calculations and improve performance, especially when users switch between time periods or currencies.
 - [Add any other planned features or improvements here]

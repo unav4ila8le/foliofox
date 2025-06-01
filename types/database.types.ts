@@ -165,6 +165,7 @@ export type Database = {
       };
       holdings: {
         Row: {
+          archived_at: string | null;
           category_code: string;
           created_at: string;
           currency: string;
@@ -172,11 +173,13 @@ export type Database = {
           current_value: number;
           description: string | null;
           id: string;
+          is_archived: boolean;
           name: string;
           updated_at: string;
           user_id: string;
         };
         Insert: {
+          archived_at?: string | null;
           category_code?: string;
           created_at?: string;
           currency: string;
@@ -184,11 +187,13 @@ export type Database = {
           current_value?: number;
           description?: string | null;
           id?: string;
+          is_archived?: boolean;
           name: string;
           updated_at?: string;
           user_id?: string;
         };
         Update: {
+          archived_at?: string | null;
           category_code?: string;
           created_at?: string;
           currency?: string;
@@ -196,6 +201,7 @@ export type Database = {
           current_value?: number;
           description?: string | null;
           id?: string;
+          is_archived?: boolean;
           name?: string;
           updated_at?: string;
           user_id?: string;
@@ -249,6 +255,38 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "currencies";
             referencedColumns: ["alphabetic_code"];
+          },
+        ];
+      };
+      transactions: {
+        Row: {
+          created_at: string;
+          date: string;
+          holding_id: string;
+          id: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          date?: string;
+          holding_id: string;
+          id?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          date?: string;
+          holding_id?: string;
+          id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "transactions_holding_id_fkey";
+            columns: ["holding_id"];
+            isOneToOne: false;
+            referencedRelation: "holdings";
+            referencedColumns: ["id"];
           },
         ];
       };
