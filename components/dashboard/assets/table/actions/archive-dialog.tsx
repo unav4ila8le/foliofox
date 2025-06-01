@@ -58,8 +58,7 @@ export function ArchiveDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Archive holding?</AlertDialogTitle>
           <AlertDialogDescription>
-            You are about to archive &quot;{holding.name}&quot;. This will hide
-            it from your main portfolio view.
+            You are about to archive &quot;{holding.name}&quot;.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="space-y-2">
