@@ -5,7 +5,7 @@ import { useState } from "react";
 import { SearchInput } from "@/components/ui/search-input";
 import { NewHoldingButton } from "@/components/dashboard/new-holding";
 import { columns } from "@/components/dashboard/assets/table/columns";
-import { DataTable } from "@/components/dashboard/assets/table/data-table";
+import { CollapsibleTable } from "./table/collapsible/collapsible-table";
 import { TableActionsDropdown } from "@/components/dashboard/assets/table-actions";
 
 import type { Holding } from "@/types/global.types";
@@ -46,7 +46,7 @@ export function HoldingsTables({ data }: { data: Holding[] }) {
         <TableActionsDropdown />
       </div>
       {Object.entries(groupedHoldings).map(([code, { name, holdings }]) => (
-        <DataTable
+        <CollapsibleTable
           key={code}
           columns={columns}
           data={holdings}

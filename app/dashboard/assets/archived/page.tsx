@@ -1,20 +1,20 @@
 import { Suspense } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { HoldingsTables } from "@/components/dashboard/assets/holdings-tables";
+import { ArchivedTable } from "@/components/dashboard/assets/archived/archived-table";
 
 import { fetchHoldings } from "@/server/holdings/fetch";
 
 // Separate components for data fetching with suspense
-async function HoldingsTablesWrapper() {
+async function ArchivedTableWrapper() {
   const holdings = await fetchHoldings({ onlyArchived: true });
-  return <HoldingsTables data={holdings} />;
+  return <ArchivedTable data={holdings} />;
 }
 
 export default async function ArchivedAssetsPage() {
   return (
-    <Suspense fallback={<Skeleton count={4} className="h-40" />}>
-      <HoldingsTablesWrapper />
+    <Suspense fallback={<Skeleton className="h-80" />}>
+      <ArchivedTableWrapper />
     </Suspense>
   );
 }
