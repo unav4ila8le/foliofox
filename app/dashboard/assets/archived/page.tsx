@@ -13,16 +13,8 @@ async function HoldingsTablesWrapper() {
 
 export default async function ArchivedAssetsPage() {
   return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-2xl font-semibold">Archived Assets</h1>
-        <p className="text-muted-foreground">
-          Here&apos;s a list of all your archived holdings
-        </p>
-      </div>
-      <Suspense fallback={<Skeleton count={4} className="h-40" />}>
-        <HoldingsTablesWrapper />
-      </Suspense>
-    </div>
+    <Suspense fallback={<Skeleton count={4} className="h-40" />}>
+      <HoldingsTablesWrapper />
+    </Suspense>
   );
 }
