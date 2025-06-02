@@ -19,6 +19,7 @@ export type Holding = Pick<
   | "current_quantity"
   | "current_value"
   | "description"
+  | "is_archived"
 > & {
   asset_categories: Pick<Tables<"asset_categories">, "name" | "display_order">;
 };

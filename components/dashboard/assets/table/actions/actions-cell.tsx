@@ -34,16 +34,25 @@ export function ActionsCell({ holding }: { holding: Holding }) {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="size-8 p-0">
+          <Button
+            variant="ghost"
+            className="size-8 p-0 opacity-0 group-hover/row:opacity-100 data-[state=open]:opacity-100"
+          >
             <span className="sr-only">Open menu</span>
             <MoreHorizontal className="size-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={handleUpdate}>
+          <DropdownMenuItem
+            onSelect={handleUpdate}
+            disabled={holding.is_archived}
+          >
             <SquarePen className="size-4" /> Update
           </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => setShowArchiveDialog(true)}>
+          <DropdownMenuItem
+            onSelect={() => setShowArchiveDialog(true)}
+            disabled={holding.is_archived}
+          >
             <Archive className="size-4" /> Archive
           </DropdownMenuItem>
           <DropdownMenuSeparator />

@@ -1,10 +1,12 @@
 "use server";
 
 import { getCurrentUser } from "@/server/auth/actions";
+
 import type { Holding } from "@/types/global.types";
 
 interface FetchHoldingsOptions {
   includeArchived?: boolean;
+  onlyArchived?: boolean;
 }
 
 type TransformedHolding = Holding & {
@@ -16,7 +18,7 @@ type TransformedHolding = Holding & {
 export async function fetchHoldings(
   options: FetchHoldingsOptions = {},
 ): Promise<TransformedHolding[]> {
-  const { includeArchived = false } = options;
+  const { includeArchived = false, onlyArchived = false } = options;
 
   const { supabase, user } = await getCurrentUser();
 
@@ -31,6 +33,7 @@ export async function fetchHoldings(
       current_quantity,
       current_value,
       description,
+      is_archived,
       asset_categories (
         name,
         display_order
@@ -39,8 +42,10 @@ export async function fetchHoldings(
     )
     .eq("user_id", user.id);
 
-  // Include archived holdings if needed
-  if (!includeArchived) {
+  // Handle archived holdings filtering
+  if (onlyArchived) {
+    query.eq("is_archived", true);
+  } else if (!includeArchived) {
     query.eq("is_archived", false);
   }
 

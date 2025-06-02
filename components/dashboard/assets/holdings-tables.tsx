@@ -6,6 +6,7 @@ import { SearchInput } from "@/components/ui/search-input";
 import { NewHoldingButton } from "@/components/dashboard/new-holding";
 import { columns } from "@/components/dashboard/assets/table/columns";
 import { DataTable } from "@/components/dashboard/assets/table/data-table";
+import { TableActionsDropdown } from "@/components/dashboard/assets/dropdown-menu";
 
 import type { Holding } from "@/types/global.types";
 
@@ -42,6 +43,7 @@ export function HoldingsTables({ data }: { data: Holding[] }) {
           onChange={(e) => setFilterValue(e.target.value)}
         />
         <NewHoldingButton />
+        <TableActionsDropdown />
       </div>
       {Object.entries(groupedHoldings).map(([code, { name, holdings }]) => (
         <DataTable
