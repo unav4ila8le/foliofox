@@ -5,20 +5,24 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { Breadcrumb } from "@/components/dashboard/header/breadcrumb";
 import { NewRecordButton } from "@/components/dashboard/new-record";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export function Header() {
   return (
-    <header className="flex items-center justify-between px-4 py-2 lg:justify-end">
-      <TooltipProvider>
-        <Tooltip delayDuration={700}>
-          <TooltipTrigger asChild>
-            <SidebarTrigger className="-ml-2 lg:hidden" />
-          </TooltipTrigger>
-          <TooltipContent>Toggle sidebar</TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+    <header className="flex items-center justify-between px-4 py-2">
+      <div className="flex items-center gap-2">
+        <TooltipProvider>
+          <Tooltip delayDuration={700}>
+            <TooltipTrigger asChild>
+              <SidebarTrigger className="-ml-2 lg:hidden" />
+            </TooltipTrigger>
+            <TooltipContent>Toggle sidebar</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <Breadcrumb />
+      </div>
       <div className="flex items-center gap-2">
         <NewRecordButton />
         <ThemeToggle />
