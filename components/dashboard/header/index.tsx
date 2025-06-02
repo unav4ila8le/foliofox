@@ -21,7 +21,11 @@ export function Header() {
             <TooltipContent>Toggle sidebar</TooltipContent>
           </Tooltip>
         </TooltipProvider>
-        <Breadcrumb />
+
+        {/* Desktop breadcrumb */}
+        <div className="hidden md:block">
+          <Breadcrumb />
+        </div>
       </div>
       <div className="flex items-center gap-2">
         <NewRecordButton />
