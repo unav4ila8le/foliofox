@@ -34,6 +34,7 @@ export async function fetchHoldings(
       current_value,
       description,
       is_archived,
+      archived_at,
       asset_categories (
         name,
         display_order

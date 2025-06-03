@@ -1,9 +1,10 @@
 "use client";
 
 import { ArrowUpDown } from "lucide-react";
+import { format } from "date-fns";
 
 import { Badge } from "@/components/ui/badge";
-import { ActionsCell } from "./row-actions/actions-cell";
+import { ActionsCell } from "@/components/dashboard/assets/table/row-actions/actions-cell";
 
 import { formatNumber } from "@/lib/number/format";
 
@@ -54,6 +55,25 @@ export const columns: ColumnDef<Holding>[] = [
       const total_value = row.getValue<number>("total_value");
 
       return <div className="tabular-nums">{formatNumber(total_value, 2)}</div>;
+    },
+  },
+  {
+    accessorKey: "archived_at",
+    header: ({ column }) => {
+      return (
+        <div
+          className="hover:text-primary flex cursor-pointer items-center gap-2 transition-colors"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Archived on
+          <ArrowUpDown className="size-4" />
+        </div>
+      );
+    },
+    cell: ({ row }) => {
+      const archived_at = row.getValue<Date>("archived_at");
+
+      return <div>{format(archived_at, "PPP")}</div>;
     },
   },
   {

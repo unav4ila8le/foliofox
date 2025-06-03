@@ -3,8 +3,8 @@
 import { useState } from "react";
 
 import { SearchInput } from "@/components/ui/search-input";
-import { DataTable } from "../table/base/data-table";
-import { columns } from "../table/columns";
+import { DataTable } from "../base/data-table";
+import { columns } from "./columns";
 
 import type { Holding } from "@/types/global.types";
 

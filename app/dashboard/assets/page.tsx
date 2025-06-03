@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { HoldingsTables } from "@/components/dashboard/assets/holdings-tables";
+import { HoldingsTables } from "@/components/dashboard/assets/table/holdings/holdings-tables";
 
 import { fetchHoldings } from "@/server/holdings/fetch";
 

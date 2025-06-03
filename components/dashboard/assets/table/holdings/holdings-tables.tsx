@@ -4,8 +4,8 @@ import { useState } from "react";
 
 import { SearchInput } from "@/components/ui/search-input";
 import { NewHoldingButton } from "@/components/dashboard/new-holding";
-import { columns } from "@/components/dashboard/assets/table/columns";
-import { CollapsibleTable } from "./table/collapsible/collapsible-table";
+import { columns } from "@/components/dashboard/assets/table/holdings/columns";
+import { CollapsibleTable } from "../collapsible/collapsible-table";
 import { TableActionsDropdown } from "@/components/dashboard/assets/table-actions";
 
 import type { Holding } from "@/types/global.types";
