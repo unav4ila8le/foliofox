@@ -1,7 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { MoreHorizontal, SquarePen, Trash2, Archive } from "lucide-react";
+import { toast } from "sonner";
+import {
+  MoreHorizontal,
+  SquarePen,
+  Trash2,
+  Archive,
+  ArchiveRestore,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { useNewRecordDialog } from "@/components/dashboard/new-record";
+import { restoreHolding } from "@/server/holdings/restore";
 import { ArchiveDialog } from "./archive-dialog";
 import { DeleteDialog } from "./delete-dialog";
 
@@ -28,6 +36,22 @@ export function ActionsCell({ holding }: { holding: Holding }) {
     setPreselectedHolding(holding);
     setActiveTab("update");
     setOpen(true);
+  };
+
+  // Restore holding
+  const handleRestore = async () => {
+    try {
+      const result = await restoreHolding(holding.id);
+      if (result.success) {
+        toast.success("Holding restored successfully");
+      } else {
+        throw new Error(result.message || "Failed to restore holding");
+      }
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to restore holding",
+      );
+    }
   };
 
   return (
@@ -49,12 +73,15 @@ export function ActionsCell({ holding }: { holding: Holding }) {
           >
             <SquarePen className="size-4" /> Update
           </DropdownMenuItem>
-          <DropdownMenuItem
-            onSelect={() => setShowArchiveDialog(true)}
-            disabled={holding.is_archived}
-          >
-            <Archive className="size-4" /> Archive
-          </DropdownMenuItem>
+          {holding.is_archived ? (
+            <DropdownMenuItem onSelect={handleRestore}>
+              <ArchiveRestore className="size-4" /> Restore
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem onSelect={() => setShowArchiveDialog(true)}>
+              <Archive className="size-4" /> Archive
+            </DropdownMenuItem>
+          )}
           <DropdownMenuSeparator />
           <DropdownMenuItem onSelect={() => setShowDeleteDialog(true)}>
             <Trash2 className="text-destructive size-4" /> Delete
