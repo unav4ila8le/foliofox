@@ -261,29 +261,64 @@ export type Database = {
       transactions: {
         Row: {
           created_at: string;
+          currency: string | null;
           date: string;
-          holding_id: string;
+          description: string | null;
+          destination_holding_id: string | null;
           id: string;
+          quantity: number;
+          source_holding_id: string | null;
+          type: Database["public"]["Enums"]["transaction_type"];
+          updated_at: string;
           user_id: string;
+          value: number | null;
         };
         Insert: {
           created_at?: string;
+          currency?: string | null;
           date?: string;
-          holding_id: string;
+          description?: string | null;
+          destination_holding_id?: string | null;
           id?: string;
+          quantity: number;
+          source_holding_id?: string | null;
+          type: Database["public"]["Enums"]["transaction_type"];
+          updated_at?: string;
           user_id: string;
+          value?: number | null;
         };
         Update: {
           created_at?: string;
+          currency?: string | null;
           date?: string;
-          holding_id?: string;
+          description?: string | null;
+          destination_holding_id?: string | null;
           id?: string;
+          quantity?: number;
+          source_holding_id?: string | null;
+          type?: Database["public"]["Enums"]["transaction_type"];
+          updated_at?: string;
           user_id?: string;
+          value?: number | null;
         };
         Relationships: [
           {
-            foreignKeyName: "transactions_holding_id_fkey";
-            columns: ["holding_id"];
+            foreignKeyName: "transactions_currency_fkey";
+            columns: ["currency"];
+            isOneToOne: false;
+            referencedRelation: "currencies";
+            referencedColumns: ["alphabetic_code"];
+          },
+          {
+            foreignKeyName: "transactions_destination_holding_id_fkey";
+            columns: ["destination_holding_id"];
+            isOneToOne: false;
+            referencedRelation: "holdings";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "transactions_source_holding_id_fkey";
+            columns: ["source_holding_id"];
             isOneToOne: false;
             referencedRelation: "holdings";
             referencedColumns: ["id"];
@@ -298,7 +333,7 @@ export type Database = {
       [_ in never]: never;
     };
     Enums: {
-      [_ in never]: never;
+      transaction_type: "purchase" | "sale" | "transfer" | "update";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -413,6 +448,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      transaction_type: ["purchase", "sale", "transfer", "update"],
+    },
   },
 } as const;
