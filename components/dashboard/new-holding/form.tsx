@@ -183,7 +183,10 @@ export function NewHoldingForm() {
             <FormItem>
               <FormLabel>Description (optional)</FormLabel>
               <FormControl>
-                <Input placeholder="A description of this holding" {...field} />
+                <Input
+                  placeholder="Add a description of this holding"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
