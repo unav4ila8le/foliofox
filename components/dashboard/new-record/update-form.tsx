@@ -41,13 +41,14 @@ const formSchema = z.object({
   holding_id: z.string({
     required_error: "Please select a holding.",
   }),
-  quantity: z.string().min(1, "Please enter the quantity."),
-  value: z.string().min(1, "Please enter the value."),
+  quantity: z.coerce.number().gt(0, "Quantity must be greater than 0"),
+  value: z.coerce.number().gt(0, "Value must be greater than 0"),
   description: z
     .string()
-    .max(256, { message: "Description must not exceed 256 characters." })
-    .optional()
-    .or(z.literal("")),
+    .max(256, {
+      message: "Description must not exceed 256 characters.",
+    })
+    .optional(),
 });
 
 export function UpdateForm() {
@@ -62,8 +63,8 @@ export function UpdateForm() {
     defaultValues: {
       date: new Date(),
       holding_id: preselectedHolding?.id || "",
-      quantity: undefined,
-      value: undefined,
+      quantity: 0,
+      value: 0,
       description: "",
     },
   });
@@ -74,11 +75,8 @@ export function UpdateForm() {
       // Only update if fields are empty or if it's a different holding
       const currentHoldingId = form.getValues("holding_id");
       if (currentHoldingId === selectedHolding.id) {
-        form.setValue(
-          "quantity",
-          selectedHolding.current_quantity?.toString() || "",
-        );
-        form.setValue("value", selectedHolding.current_value?.toString() || "");
+        form.setValue("quantity", selectedHolding.current_quantity || 0);
+        form.setValue("value", selectedHolding.current_value || 0);
       }
     }
   }, [selectedHolding, form]);
@@ -100,8 +98,8 @@ export function UpdateForm() {
       formData.append("type", "update");
       formData.append("holding_id", values.holding_id);
       formData.append("date", values.date.toISOString());
-      formData.append("quantity", values.quantity.replace(/,/g, ""));
-      formData.append("value", values.value.replace(/,/g, ""));
+      formData.append("quantity", values.quantity.toString());
+      formData.append("value", values.value.toString());
       formData.append("description", values.description || "");
 
       const result = await createRecord(formData);
@@ -201,7 +199,7 @@ export function UpdateForm() {
                     placeholder="E.g., 420.69"
                     type="number"
                     {...field}
-                    value={field.value ?? ""}
+                    value={field.value === 0 ? "" : field.value}
                   />
                 </FormControl>
                 <FormMessage />
@@ -220,7 +218,7 @@ export function UpdateForm() {
                     placeholder="E.g., 10"
                     type="number"
                     {...field}
-                    value={field.value ?? ""}
+                    value={field.value === 0 ? "" : field.value}
                   />
                 </FormControl>
                 <FormMessage />

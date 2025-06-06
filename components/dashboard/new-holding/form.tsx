@@ -33,7 +33,12 @@ const formSchema = z.object({
   currency: z.string().length(3),
   current_value: z.coerce.number().gt(0, "Value must be greater than 0"),
   current_quantity: z.coerce.number().gt(0, "Quantity must be greater than 0"),
-  description: z.string().nullable(),
+  description: z
+    .string()
+    .max(256, {
+      message: "Description must not exceed 256 characters.",
+    })
+    .optional(),
 });
 
 export function NewHoldingForm() {
@@ -47,7 +52,7 @@ export function NewHoldingForm() {
       currency: profile.display_currency,
       current_value: 0,
       current_quantity: 0,
-      description: null,
+      description: "",
     },
   });
 
@@ -58,7 +63,15 @@ export function NewHoldingForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      const result = await createHolding(values);
+      const formData = new FormData();
+      formData.append("name", values.name);
+      formData.append("category_code", values.category_code);
+      formData.append("currency", values.currency);
+      formData.append("current_value", values.current_value.toString());
+      formData.append("current_quantity", values.current_quantity.toString());
+      formData.append("description", values.description || "");
+
+      const result = await createHolding(formData);
 
       // Handle error response from server action
       if (!result.success) {
@@ -170,11 +183,7 @@ export function NewHoldingForm() {
             <FormItem>
               <FormLabel>Description (optional)</FormLabel>
               <FormControl>
-                <Input
-                  placeholder="A description of this holding"
-                  {...field}
-                  value={field.value ?? ""}
-                />
+                <Input placeholder="A description of this holding" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
