@@ -258,7 +258,7 @@ export type Database = {
           },
         ];
       };
-      transactions: {
+      records: {
         Row: {
           created_at: string;
           currency: string | null;

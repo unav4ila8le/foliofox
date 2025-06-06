@@ -1,0 +1,104 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+
+import { getCurrentUser } from "@/server/auth/actions";
+
+import type { Record } from "@/types/global.types";
+
+type RecordInsert = Omit<
+  Record,
+  "id" | "created_at" | "updated_at" | "user_id"
+>;
+
+// Create record
+export async function createRecord(formData: FormData) {
+  const { supabase, user } = await getCurrentUser();
+
+  // Extract record type to determine how to process the data
+  const recordType = formData.get("type") as string;
+
+  // Base data extraction
+  const baseData = {
+    type: recordType as Record["type"],
+    date: new Date(formData.get("date") as string).toISOString(),
+    description: formData.get("description") as string | null,
+  };
+
+  let recordData: RecordInsert;
+
+  switch (recordType) {
+    case "purchase": {
+      // For purchases: create/update holding and record the transaction
+      recordData = {
+        ...baseData,
+        quantity: Number(formData.get("quantity")),
+        value: Number(formData.get("value")), // total value or price_per_unit * quantity
+        currency: formData.get("currency") as string,
+        destination_holding_id: formData.get("holding_id") as string | null,
+        source_holding_id: null,
+      };
+      break;
+    }
+
+    case "sale": {
+      // For sales: reduce holding quantity and record the transaction
+      recordData = {
+        ...baseData,
+        quantity: Number(formData.get("quantity")),
+        value: Number(formData.get("value")), // total value received
+        currency: formData.get("currency") as string,
+        source_holding_id: formData.get("holding_id") as string | null,
+        destination_holding_id: null,
+      };
+      break;
+    }
+
+    case "transfer": {
+      // For transfers: move funds between accounts (no holdings involved)
+      recordData = {
+        ...baseData,
+        quantity: Number(formData.get("amount")),
+        value: null, // transfers don't have separate value
+        currency: formData.get("currency") as string | null,
+        source_holding_id: formData.get("from_holding_id") as string | null,
+        destination_holding_id: formData.get("to_holding_id") as string | null,
+      };
+      break;
+    }
+
+    case "update": {
+      // For updates: manual adjustment of holding value/quantity
+      recordData = {
+        ...baseData,
+        quantity: Number(formData.get("quantity")),
+        value: Number(formData.get("value")),
+        currency: null, // updates typically don't change currency
+        destination_holding_id: formData.get("holding_id") as string | null,
+        source_holding_id: null,
+      };
+      break;
+    }
+
+    default:
+      return {
+        success: false,
+        code: "INVALID_TYPE",
+        message: "Invalid record type provided",
+      };
+  }
+
+  // Insert record into records table
+  const { error } = await supabase.from("records").insert({
+    user_id: user.id,
+    ...recordData,
+  });
+
+  // Return Supabase errors instead of throwing
+  if (error) {
+    return { success: false, code: error.code, message: error.message };
+  }
+
+  revalidatePath("/dashboard", "layout");
+  return { success: true };
+}
