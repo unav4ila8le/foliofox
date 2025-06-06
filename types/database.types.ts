@@ -323,25 +323,25 @@ export type Database = {
         };
         Relationships: [
           {
-            foreignKeyName: "transactions_currency_fkey";
-            columns: ["currency"];
-            isOneToOne: false;
-            referencedRelation: "currencies";
-            referencedColumns: ["alphabetic_code"];
-          },
-          {
-            foreignKeyName: "transactions_destination_holding_id_fkey";
+            foreignKeyName: "records_destination_holding_id_fkey";
             columns: ["destination_holding_id"];
             isOneToOne: false;
             referencedRelation: "holdings";
             referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "transactions_source_holding_id_fkey";
+            foreignKeyName: "records_source_holding_id_fkey";
             columns: ["source_holding_id"];
             isOneToOne: false;
             referencedRelation: "holdings";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "transactions_currency_fkey";
+            columns: ["currency"];
+            isOneToOne: false;
+            referencedRelation: "currencies";
+            referencedColumns: ["alphabetic_code"];
           },
         ];
       };
