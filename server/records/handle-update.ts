@@ -33,26 +33,32 @@ export async function handleUpdate(
 ) {
   try {
     // 1. Insert the record first
-    const { error: recordError } = await supabase.from("records").insert({
-      user_id: recordData.user_id,
-      type: recordData.type,
-      date: recordData.date,
-      quantity: recordData.quantity,
-      value: recordData.value,
-      description: recordData.description,
-      destination_holding_id: recordData.destination_holding_id,
-      source_holding_id: recordData.source_holding_id,
-      currency: recordData.currency,
-    });
+    const { data: recordResult, error: recordError } = await supabase
+      .from("records")
+      .insert({
+        user_id: recordData.user_id,
+        type: recordData.type,
+        date: recordData.date,
+        quantity: recordData.quantity,
+        value: recordData.value,
+        description: recordData.description,
+        destination_holding_id: recordData.destination_holding_id,
+        source_holding_id: recordData.source_holding_id,
+        currency: recordData.currency,
+      })
+      .select("id")
+      .single();
 
     // Return Supabase errors instead of throwing
-    if (recordError) {
+    if (recordError || !recordResult) {
       return {
         success: false,
-        code: recordError.code,
-        message: recordError.message,
+        code: recordError?.code || "UNEXPECTED_ERROR",
+        message: recordError?.message || "Failed to create record",
       };
     }
+
+    const recordId = recordResult.id;
 
     // 2. Insert holding quantity record
     const quantityData: Omit<
@@ -62,6 +68,7 @@ export async function handleUpdate(
       holding_id: recordData.destination_holding_id,
       date: recordData.date,
       quantity: recordData.quantity,
+      record_id: recordId,
     };
 
     const { error: quantityError } = await supabase
@@ -85,6 +92,7 @@ export async function handleUpdate(
       holding_id: recordData.destination_holding_id,
       date: recordData.date,
       value: recordData.value,
+      record_id: recordId,
     };
 
     const { error: valuationError } = await supabase

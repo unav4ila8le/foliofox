@@ -101,6 +101,7 @@ export type Database = {
           holding_id: string;
           id: string;
           quantity: number;
+          record_id: string | null;
         };
         Insert: {
           created_at?: string;
@@ -109,6 +110,7 @@ export type Database = {
           holding_id?: string;
           id?: string;
           quantity: number;
+          record_id?: string | null;
         };
         Update: {
           created_at?: string;
@@ -117,6 +119,7 @@ export type Database = {
           holding_id?: string;
           id?: string;
           quantity?: number;
+          record_id?: string | null;
         };
         Relationships: [
           {
@@ -124,6 +127,13 @@ export type Database = {
             columns: ["holding_id"];
             isOneToOne: false;
             referencedRelation: "holdings";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "holding_quantities_record_id_fkey";
+            columns: ["record_id"];
+            isOneToOne: false;
+            referencedRelation: "records";
             referencedColumns: ["id"];
           },
         ];
@@ -135,6 +145,7 @@ export type Database = {
           description: string | null;
           holding_id: string;
           id: string;
+          record_id: string | null;
           value: number;
         };
         Insert: {
@@ -143,6 +154,7 @@ export type Database = {
           description?: string | null;
           holding_id?: string;
           id?: string;
+          record_id?: string | null;
           value: number;
         };
         Update: {
@@ -151,6 +163,7 @@ export type Database = {
           description?: string | null;
           holding_id?: string;
           id?: string;
+          record_id?: string | null;
           value?: number;
         };
         Relationships: [
@@ -159,6 +172,13 @@ export type Database = {
             columns: ["holding_id"];
             isOneToOne: false;
             referencedRelation: "holdings";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "holding_valuations_record_id_fkey";
+            columns: ["record_id"];
+            isOneToOne: false;
+            referencedRelation: "records";
             referencedColumns: ["id"];
           },
         ];
