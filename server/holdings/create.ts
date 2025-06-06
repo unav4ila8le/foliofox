@@ -6,7 +6,6 @@ import { getCurrentUser } from "@/server/auth/actions";
 
 import type { Holding } from "@/types/global.types";
 
-// Create type for holding creation by omitting auto-generated fields
 type CreateHoldingData = Pick<
   Holding,
   | "name"

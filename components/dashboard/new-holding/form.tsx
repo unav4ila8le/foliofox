@@ -58,7 +58,6 @@ export function NewHoldingForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      // Pass values directly as object
       const result = await createHolding(values);
 
       // Handle error response from server action
@@ -133,7 +132,12 @@ export function NewHoldingForm() {
               <FormItem>
                 <FormLabel>Current value</FormLabel>
                 <FormControl>
-                  <Input placeholder="E.g., 420.69" type="number" {...field} />
+                  <Input
+                    placeholder="E.g., 420.69"
+                    type="number"
+                    {...field}
+                    value={field.value === 0 ? "" : field.value}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -146,7 +150,12 @@ export function NewHoldingForm() {
               <FormItem>
                 <FormLabel>Current quantity</FormLabel>
                 <FormControl>
-                  <Input placeholder="E.g., 10" type="number" {...field} />
+                  <Input
+                    placeholder="E.g., 10"
+                    type="number"
+                    {...field}
+                    value={field.value === 0 ? "" : field.value}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
