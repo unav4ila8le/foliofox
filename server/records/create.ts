@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { getCurrentUser } from "@/server/auth/actions";
+import { handleUpdate } from "./handle-update";
 
 import type { Record } from "@/types/global.types";
 
@@ -27,6 +28,7 @@ export async function createRecord(formData: FormData) {
 
   let recordData: RecordInsert;
 
+  // Prepare record data based on type
   switch (recordType) {
     case "purchase": {
       // For purchases: create/update holding and record the transaction
@@ -73,7 +75,7 @@ export async function createRecord(formData: FormData) {
         ...baseData,
         quantity: Number(formData.get("quantity")),
         value: Number(formData.get("value")),
-        currency: null, // updates typically don't change currency
+        currency: null,
         destination_holding_id: formData.get("holding_id") as string | null,
         source_holding_id: null,
       };
@@ -88,17 +90,56 @@ export async function createRecord(formData: FormData) {
       };
   }
 
-  // Insert record into records table
-  const { error } = await supabase.from("records").insert({
-    user_id: user.id,
-    ...recordData,
-  });
+  // Handle record insertion based on type
+  switch (recordType) {
+    case "update": {
+      // For updates, let the handler manage the entire process
+      const updateResult = await handleUpdate(
+        {
+          user_id: user.id,
+          type: recordData.type,
+          date: recordData.date,
+          quantity: recordData.quantity!,
+          value: recordData.value!,
+          description: recordData.description,
+          destination_holding_id: recordData.destination_holding_id!,
+          source_holding_id: recordData.source_holding_id,
+          currency: recordData.currency,
+        },
+        supabase,
+      );
 
-  // Return Supabase errors instead of throwing
-  if (error) {
-    return { success: false, code: error.code, message: error.message };
+      // Return errors from handler
+      if (!updateResult.success) {
+        return updateResult;
+      }
+
+      revalidatePath("/dashboard", "layout");
+      return { success: true };
+    }
+
+    // For other record types, use centralized insert (for now)
+    case "purchase":
+    case "sale":
+    case "transfer": {
+      const { error } = await supabase.from("records").insert({
+        user_id: user.id,
+        ...recordData,
+      });
+
+      if (error) {
+        return { success: false, code: error.code, message: error.message };
+      }
+
+      revalidatePath("/dashboard", "layout");
+      return { success: true };
+    }
+
+    default:
+      return {
+        success: false,
+        code: "INVALID_TYPE",
+        message: "Invalid record type provided",
+      };
   }
-
-  revalidatePath("/dashboard", "layout");
-  return { success: true };
 }
