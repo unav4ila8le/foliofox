@@ -33,7 +33,7 @@ const formSchema = z.object({
   currency: z.string().length(3),
   current_value: z.coerce.number().gt(0, "Value must be greater than 0"),
   current_quantity: z.coerce.number().gt(0, "Quantity must be greater than 0"),
-  description: z.string().optional(),
+  description: z.string().nullable(),
 });
 
 export function NewHoldingForm() {
@@ -45,9 +45,9 @@ export function NewHoldingForm() {
       name: "",
       category_code: "",
       currency: profile.display_currency,
-      current_value: undefined,
-      current_quantity: undefined,
-      description: "",
+      current_value: 0,
+      current_quantity: 0,
+      description: null,
     },
   });
 
@@ -58,15 +58,8 @@ export function NewHoldingForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      const formData = new FormData();
-      formData.append("name", values.name);
-      formData.append("category_code", values.category_code);
-      formData.append("currency", values.currency);
-      formData.append("current_value", values.current_value.toString());
-      formData.append("current_quantity", values.current_quantity.toString());
-      formData.append("description", values.description || "");
-
-      const result = await createHolding(formData);
+      // Pass values directly as object
+      const result = await createHolding(values);
 
       // Handle error response from server action
       if (!result.success) {
@@ -140,12 +133,7 @@ export function NewHoldingForm() {
               <FormItem>
                 <FormLabel>Current value</FormLabel>
                 <FormControl>
-                  <Input
-                    placeholder="E.g., 420.69"
-                    type="number"
-                    {...field}
-                    value={field.value ?? ""}
-                  />
+                  <Input placeholder="E.g., 420.69" type="number" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -158,12 +146,7 @@ export function NewHoldingForm() {
               <FormItem>
                 <FormLabel>Current quantity</FormLabel>
                 <FormControl>
-                  <Input
-                    placeholder="E.g., 10"
-                    type="number"
-                    {...field}
-                    value={field.value ?? ""}
-                  />
+                  <Input placeholder="E.g., 10" type="number" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -178,7 +161,11 @@ export function NewHoldingForm() {
             <FormItem>
               <FormLabel>Description (optional)</FormLabel>
               <FormControl>
-                <Input placeholder="A description of this holding" {...field} />
+                <Input
+                  placeholder="A description of this holding"
+                  {...field}
+                  value={field.value ?? ""}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

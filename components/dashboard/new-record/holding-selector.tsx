@@ -38,12 +38,14 @@ interface HoldingSelectorProps {
     value: string;
     onChange: (value: string) => void;
   };
+  onHoldingSelect?: (holding: Holding | null) => void;
   id?: string;
   preselectedHolding?: Holding | null;
 }
 
 export function HoldingSelector({
   field,
+  onHoldingSelect,
   id,
   preselectedHolding,
 }: HoldingSelectorProps) {
@@ -103,6 +105,7 @@ export function HoldingSelector({
             setOpen={setOpen}
             value={field.value}
             onChange={field.onChange}
+            onHoldingSelect={onHoldingSelect}
             holdings={holdings}
             isLoading={isLoading}
           />
@@ -141,6 +144,7 @@ export function HoldingSelector({
           setOpen={setOpen}
           value={field.value}
           onChange={field.onChange}
+          onHoldingSelect={onHoldingSelect}
           holdings={holdings}
           isLoading={isLoading}
         />
@@ -153,6 +157,7 @@ interface HoldingListProps {
   setOpen: (open: boolean) => void;
   value: string;
   onChange: (value: string) => void;
+  onHoldingSelect?: (holding: Holding | null) => void;
   holdings: Holding[];
   isLoading: boolean;
 }
@@ -161,6 +166,7 @@ function HoldingList({
   setOpen,
   value,
   onChange,
+  onHoldingSelect,
   holdings,
   isLoading,
 }: HoldingListProps) {
@@ -177,6 +183,7 @@ function HoldingList({
               key={holding.id}
               onSelect={() => {
                 onChange(holding.id);
+                onHoldingSelect?.(holding);
                 setOpen(false);
               }}
               value={holding.name}

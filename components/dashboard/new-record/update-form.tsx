@@ -1,11 +1,11 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { format } from "date-fns";
 import { CalendarIcon, LoaderCircle } from "lucide-react";
-import { useState } from "react";
 import { toast } from "sonner";
 
 import {
@@ -32,6 +32,8 @@ import { cn } from "@/lib/utils";
 
 import { createRecord } from "@/server/records/create";
 
+import type { Holding } from "@/types/global.types";
+
 const formSchema = z.object({
   date: z.date({
     required_error: "A date is required.",
@@ -51,6 +53,10 @@ const formSchema = z.object({
 export function UpdateForm() {
   const { setOpen, preselectedHolding } = useNewRecordDialog();
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedHolding, setSelectedHolding] = useState<Holding | null>(
+    preselectedHolding,
+  );
+
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -61,6 +67,26 @@ export function UpdateForm() {
       description: "",
     },
   });
+
+  // Pre-populate values when a holding is selected
+  useEffect(() => {
+    if (selectedHolding) {
+      // Only update if fields are empty or if it's a different holding
+      const currentHoldingId = form.getValues("holding_id");
+      if (currentHoldingId === selectedHolding.id) {
+        form.setValue(
+          "quantity",
+          selectedHolding.current_quantity?.toString() || "",
+        );
+        form.setValue("value", selectedHolding.current_value?.toString() || "");
+      }
+    }
+  }, [selectedHolding, form]);
+
+  // Handle holding selection from dropdown
+  const handleHoldingSelect = (holding: Holding | null) => {
+    setSelectedHolding(holding);
+  };
 
   // Get isDirty state from formState
   const { isDirty } = form.formState;
@@ -154,7 +180,8 @@ export function UpdateForm() {
               <FormControl>
                 <HoldingSelector
                   field={field}
-                  preselectedHolding={preselectedHolding}
+                  preselectedHolding={selectedHolding}
+                  onHoldingSelect={handleHoldingSelect}
                 />
               </FormControl>
               <FormMessage />

@@ -6,27 +6,20 @@ import { getCurrentUser } from "@/server/auth/actions";
 
 import type { Holding } from "@/types/global.types";
 
-// Create holding
-export async function createHolding(formData: FormData) {
-  const { supabase, user } = await getCurrentUser();
+// Create type for holding creation by omitting auto-generated fields
+type CreateHoldingData = Pick<
+  Holding,
+  | "name"
+  | "category_code"
+  | "currency"
+  | "current_value"
+  | "current_quantity"
+  | "description"
+>;
 
-  // Extract and validate data from formData
-  const data: Pick<
-    Holding,
-    | "name"
-    | "category_code"
-    | "currency"
-    | "current_value"
-    | "current_quantity"
-    | "description"
-  > = {
-    name: formData.get("name") as string,
-    category_code: formData.get("category_code") as string,
-    currency: formData.get("currency") as string,
-    current_value: Number(formData.get("current_value")),
-    current_quantity: Number(formData.get("current_quantity")),
-    description: formData.get("description") as string | null,
-  };
+// Create holding
+export async function createHolding(data: CreateHoldingData) {
+  const { supabase, user } = await getCurrentUser();
 
   // Insert into holdings table
   const { error } = await supabase.from("holdings").insert({

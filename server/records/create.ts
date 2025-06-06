@@ -35,7 +35,7 @@ export async function createRecord(formData: FormData) {
       recordData = {
         ...baseData,
         quantity: Number(formData.get("quantity")),
-        value: Number(formData.get("value")), // total value or price_per_unit * quantity
+        value: Number(formData.get("value")),
         currency: formData.get("currency") as string,
         destination_holding_id: formData.get("holding_id") as string | null,
         source_holding_id: null,
