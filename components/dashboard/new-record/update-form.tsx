@@ -26,11 +26,11 @@ import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 
 import { HoldingSelector } from "./holding-selector";
-
 import { useNewRecordDialog } from "./index";
+
 import { cn } from "@/lib/utils";
 
-import { updateHolding } from "@/server/holdings/update";
+import { createRecord } from "@/server/records/create";
 
 const formSchema = z.object({
   date: z.date({
@@ -71,13 +71,14 @@ export function UpdateForm() {
 
     try {
       const formData = new FormData();
+      formData.append("type", "update");
       formData.append("holding_id", values.holding_id);
       formData.append("date", values.date.toISOString());
       formData.append("quantity", values.quantity.replace(/,/g, ""));
       formData.append("value", values.value.replace(/,/g, ""));
       formData.append("description", values.description || "");
 
-      const result = await updateHolding(formData);
+      const result = await createRecord(formData);
 
       if (!result.success) {
         throw new Error(result.message);
