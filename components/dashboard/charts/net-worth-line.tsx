@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { differenceInWeeks, startOfYear, format } from "date-fns";
+import { TrendingUp } from "lucide-react";
 
 import { fetchNetWorthHistory } from "@/server/analysis/net-worth-history";
 
@@ -81,9 +82,16 @@ export function NetWorthLineChart({
         <div className="flex justify-between gap-4">
           <div>
             <CardDescription>Net Worth</CardDescription>
-            <h2 className="text-xl font-semibold">
-              {formatCurrency(netWorth, currency)}
-            </h2>
+            <div className="flex items-baseline-last gap-3">
+              <h2 className="text-xl font-semibold">
+                {formatCurrency(netWorth, currency)}
+              </h2>
+              <div className="flex items-center gap-1">
+                <TrendingUp className="size-4 text-green-500" />
+                <span className="text-green-500">+2,000 (+2.58%)</span>
+                <span className="text-muted-foreground">vs last month</span>
+              </div>
+            </div>
           </div>
           <Select
             defaultValue="24"
