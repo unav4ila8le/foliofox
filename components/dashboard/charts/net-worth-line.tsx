@@ -2,9 +2,16 @@
 
 import { useState } from "react";
 import { differenceInWeeks, startOfYear, format } from "date-fns";
-import { TrendingUp } from "lucide-react";
+import { TrendingUp, TrendingDown } from "lucide-react";
 
-import { fetchNetWorthHistory } from "@/server/analysis/net-worth-history";
+import {
+  fetchNetWorthHistory,
+  NetWorthHistoryData,
+} from "@/server/analysis/net-worth-history";
+import {
+  fetchNetWorthChange,
+  NetWorthChangeData,
+} from "@/server/analysis/net-worth-change";
 
 import {
   LineChart,
@@ -29,38 +36,51 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 
-import { formatCompactNumber, formatCurrency } from "@/lib/number/format";
+import {
+  formatCompactNumber,
+  formatCurrency,
+  formatNumber,
+} from "@/lib/number/format";
 import { cn } from "@/lib/utils";
-
-// Sample data structure for our weekly net worth data
-interface NetWorthData {
-  date: Date;
-  value: number;
-}
 
 export function NetWorthLineChart({
   currency,
   netWorth,
   history: initialHistory,
+  change: initialChange,
 }: {
   currency: string;
   netWorth: number;
-  history: NetWorthData[];
+  history: NetWorthHistoryData[];
+  change: NetWorthChangeData;
 }) {
   const [history, setHistory] = useState(initialHistory);
+  const [change, setChange] = useState(initialChange);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleWeeksChange = async (weeks: string) => {
     setIsLoading(true);
+
     try {
-      const newHistory = await fetchNetWorthHistory({
-        targetCurrency: currency,
-        weeksBack:
-          weeks === "ytd"
-            ? Math.ceil(differenceInWeeks(new Date(), startOfYear(new Date())))
-            : Number(weeks),
-      });
+      const weeksBackNum =
+        weeks === "ytd"
+          ? Math.ceil(differenceInWeeks(new Date(), startOfYear(new Date())))
+          : Number(weeks);
+
+      // Fetch both history and change in parallel
+      const [newHistory, newChange] = await Promise.all([
+        fetchNetWorthHistory({
+          targetCurrency: currency,
+          weeksBack: weeksBackNum,
+        }),
+        fetchNetWorthChange({
+          targetCurrency: currency,
+          weeksBack: weeksBackNum,
+        }),
+      ]);
+
       setHistory(newHistory);
+      setChange(newChange);
     } finally {
       setIsLoading(false);
     }
@@ -86,10 +106,30 @@ export function NetWorthLineChart({
               <h2 className="text-xl font-semibold">
                 {formatCurrency(netWorth, currency)}
               </h2>
-              <div className="flex items-center gap-1">
-                <TrendingUp className="size-4 text-green-500" />
-                <span className="text-green-500">+2,000 (+2.58%)</span>
-                <span className="text-muted-foreground">vs last month</span>
+              <div className="flex items-center gap-1 text-sm">
+                <div
+                  className={cn(
+                    "flex items-center gap-1",
+                    change.absoluteChange >= 0
+                      ? "text-green-500"
+                      : "text-red-500",
+                  )}
+                >
+                  {change.absoluteChange >= 0 ? (
+                    <TrendingUp className="size-4" />
+                  ) : (
+                    <TrendingDown className="size-4" />
+                  )}
+                  <span>
+                    {change.absoluteChange >= 0 ? "+" : ""}
+                    {formatNumber(Math.abs(change.absoluteChange), undefined, {
+                      maximumFractionDigits: 2,
+                    })}{" "}
+                    ({change.percentageChange >= 0 ? "+" : ""}
+                    {change.percentageChange.toFixed(2)}%)
+                  </span>
+                </div>
+                <span className="text-muted-foreground">vs last period</span>
               </div>
             </div>
           </div>

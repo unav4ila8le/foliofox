@@ -9,6 +9,7 @@ import { Greetings } from "@/components/dashboard/greetings";
 import { fetchProfile } from "@/server/profile/actions";
 import { calculateNetWorth } from "@/server/analysis/net-worth";
 import { fetchNetWorthHistory } from "@/server/analysis/net-worth-history";
+import { fetchNetWorthChange } from "@/server/analysis/net-worth-change";
 import { calculateAssetAllocation } from "@/server/analysis/asset-allocation";
 
 // Separate components for data fetching with suspense
@@ -19,15 +20,22 @@ async function NetWorthChartWrapper({
   displayCurrency: string;
   netWorth: number;
 }) {
-  const netWorthHistory = await fetchNetWorthHistory({
-    targetCurrency: displayCurrency,
-  });
+  // Fetch both history and change for default period (24 weeks)
+  const [netWorthHistory, netWorthChange] = await Promise.all([
+    fetchNetWorthHistory({
+      targetCurrency: displayCurrency,
+    }),
+    fetchNetWorthChange({
+      targetCurrency: displayCurrency,
+    }),
+  ]);
 
   return (
     <NetWorthLineChart
       currency={displayCurrency}
       netWorth={netWorth}
       history={netWorthHistory}
+      change={netWorthChange}
     />
   );
 }
