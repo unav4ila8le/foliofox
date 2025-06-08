@@ -126,7 +126,10 @@ export function NetWorthLineChart({
                       maximumFractionDigits: 2,
                     })}{" "}
                     ({change.percentageChange >= 0 ? "+" : ""}
-                    {change.percentageChange.toFixed(2)}%)
+                    {change.previousValue === 0
+                      ? "N/A"
+                      : change.percentageChange.toFixed(2)}
+                    %)
                   </span>
                 </div>
                 <span className="text-muted-foreground">vs last period</span>
