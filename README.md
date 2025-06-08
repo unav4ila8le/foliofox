@@ -33,26 +33,11 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 The project currently uses package overrides in `package.json` to handle React 19 compatibility. These are temporary solutions until the packages are officially updated:
 
-```json
-{
-  "overrides": {
-    "react-day-picker": {
-      "react": "^19.0.0"
-    }
-  }
+"overrides": {
+"react-is": "^19.1.0"
 }
-```
 
-#### Why these overrides?
-
-- **react-day-picker**: We're using shadcn/ui's calendar component which depends on react-day-picker v8. This version doesn't officially support React 19, so we use an override until shadcn updates to react-day-picker v9.
-
-#### Future Updates
-
-- When shadcn/ui updates their calendar component to use react-day-picker v9:
-  1. Remove the react-day-picker override
-  2. Update react-day-picker to v9
-  3. Update date-fns to v4 (currently locked to v3.6.0 for compatibility)
+This can be safely removed once Recharts releases a v3 version, fully compatible with React 19.
 
 ## Utility Functions Cheatsheet
 
@@ -85,7 +70,7 @@ All formatting functions accept both numbers and strings as input. Currency form
 
 ## To Do List
 
-- Add percentages increase over the different time periods selected
-- Add disclaimer about the fact that exchange rates are not updated in real-time but rather updated daily (6PM UTC)
-- **Implement Caching for Expensive Operations**: The net worth line chart calculation is resource intensive. In the future, implement server-side caching (e.g., using Next.js `use cache` or `unstable_cache` when stable) to avoid redundant calculations and improve performance, especially when users switch between time periods or currencies.
-- [Add any other planned features or improvements here]
+[x] Add percentages increase over the different time periods selected
+[ ] Add disclaimer about the fact that exchange rates are not updated in real-time but rather updated daily (6PM UTC)
+[ ] **Implement Caching for Expensive Operations**: The net worth line chart calculation is resource intensive. In the future, implement server-side caching (e.g., using Next.js `use cache` or `unstable_cache` when stable) to avoid redundant calculations and improve performance, especially when users switch between time periods or currencies.
+[Add any other planned features or improvements here]
