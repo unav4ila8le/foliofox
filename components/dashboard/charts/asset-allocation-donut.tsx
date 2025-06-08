@@ -47,11 +47,11 @@ export function AssetAllocationDonut({
   }, [assetAllocation]);
 
   return (
-    <Card className="flex h-64 flex-col md:h-80">
+    <Card className="flex h-64 flex-col gap-0 md:h-80">
       <CardHeader className="flex-none">
         <CardTitle>Asset Allocation</CardTitle>
       </CardHeader>
-      <CardContent className="flex-1">
+      <CardContent className="mt-6 flex-1">
         <ResponsiveContainer
           width="100%"
           height="100%"
@@ -62,8 +62,8 @@ export function AssetAllocationDonut({
               data={assetAllocation}
               dataKey="total_value"
               nameKey="name"
-              innerRadius={"65%"}
-              outerRadius={"80%"}
+              innerRadius={"80%"}
+              outerRadius={"90%"}
               paddingAngle={2}
               cornerRadius={99}
               labelLine={false}

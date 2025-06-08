@@ -102,7 +102,7 @@ export function NetWorthLineChart({
         <div className="flex justify-between gap-4">
           <div>
             <CardDescription>Net Worth</CardDescription>
-            <div className="flex items-baseline-last gap-3">
+            <div className="flex flex-col md:flex-row md:items-baseline-last md:gap-3">
               <h2 className="text-xl font-semibold">
                 {formatCurrency(netWorth, currency)}
               </h2>
@@ -132,7 +132,9 @@ export function NetWorthLineChart({
                     %)
                   </span>
                 </div>
-                <span className="text-muted-foreground">vs last period</span>
+                <span className="text-muted-foreground hidden md:block">
+                  vs last period
+                </span>
               </div>
             </div>
           </div>
