@@ -61,7 +61,7 @@ export function NewRecordDialogProvider({
           <DialogHeader>
             <DialogTitle>New Record</DialogTitle>
             <DialogDescription>
-              Add a new transaction, balance or value update.
+              Add a new value or quantity update.
             </DialogDescription>
           </DialogHeader>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -106,7 +106,7 @@ export function NewRecordButton() {
   return (
     <Button onClick={() => setOpen(true)}>
       <Plus />
-      Add Record
+      New Record
     </Button>
   );
 }
