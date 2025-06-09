@@ -73,9 +73,12 @@ export function ActionsCell({ holding }: { holding: Holding }) {
             onSelect={handleNewRecord}
             disabled={holding.is_archived}
           >
-            <Plus className="size-4" /> New Record
+            <Plus className="size-4" /> New record
           </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => setShowUpdateDialog(true)}>
+          <DropdownMenuItem
+            onSelect={() => setShowUpdateDialog(true)}
+            disabled={holding.is_archived}
+          >
             <SquarePen className="size-4" /> Edit holding
           </DropdownMenuItem>
           {holding.is_archived ? (
