@@ -14,8 +14,8 @@ import {
 } from "@/server/analysis/net-worth-change";
 
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -96,6 +96,12 @@ export function NetWorthLineChart({
     return formatCompactNumber(value);
   };
 
+  // Define area chart color based on percentage change
+  const chartColor =
+    change.percentageChange >= 0
+      ? "oklch(72.3% 0.219 149.579)"
+      : "oklch(63.7% 0.237 25.331)";
+
   return (
     <Card className="flex h-80 flex-col">
       <CardHeader className="flex-none">
@@ -159,7 +165,13 @@ export function NetWorthLineChart({
         className={cn("flex-1 transition-opacity", isLoading && "opacity-50")}
       >
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={history}>
+          <AreaChart data={history}>
+            <defs>
+              <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={chartColor} stopOpacity={0.2} />
+                <stop offset="100%" stopColor={chartColor} stopOpacity={0} />
+              </linearGradient>
+            </defs>
             <CartesianGrid stroke="var(--border)" vertical={false} />
             <YAxis
               dataKey="value"
@@ -199,10 +211,12 @@ export function NetWorthLineChart({
                 strokeWidth: 1,
               }}
             />
-            <Line
+            <Area
               dataKey="value"
-              stroke="var(--chart-0)"
-              strokeWidth={2}
+              stroke={chartColor}
+              strokeWidth={1.5}
+              fill="url(#areaGradient)"
+              fillOpacity={1}
               dot={false}
               activeDot={{
                 r: 4.5,
@@ -210,7 +224,7 @@ export function NetWorthLineChart({
                 filter: "drop-shadow(0px 1px 3px rgba(0, 0, 0, 0.3))",
               }}
             />
-          </LineChart>
+          </AreaChart>
         </ResponsiveContainer>
       </CardContent>
     </Card>
