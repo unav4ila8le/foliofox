@@ -101,7 +101,7 @@ export type Database = {
           holding_id: string;
           id: string;
           quantity: number;
-          record_id: string | null;
+          record_id: string;
         };
         Insert: {
           created_at?: string;
@@ -110,7 +110,7 @@ export type Database = {
           holding_id?: string;
           id?: string;
           quantity: number;
-          record_id?: string | null;
+          record_id: string;
         };
         Update: {
           created_at?: string;
@@ -119,7 +119,7 @@ export type Database = {
           holding_id?: string;
           id?: string;
           quantity?: number;
-          record_id?: string | null;
+          record_id?: string;
         };
         Relationships: [
           {
@@ -145,7 +145,7 @@ export type Database = {
           description: string | null;
           holding_id: string;
           id: string;
-          record_id: string | null;
+          record_id: string;
           value: number;
         };
         Insert: {
@@ -154,7 +154,7 @@ export type Database = {
           description?: string | null;
           holding_id?: string;
           id?: string;
-          record_id?: string | null;
+          record_id: string;
           value: number;
         };
         Update: {
@@ -163,7 +163,7 @@ export type Database = {
           description?: string | null;
           holding_id?: string;
           id?: string;
-          record_id?: string | null;
+          record_id?: string;
           value?: number;
         };
         Relationships: [
@@ -281,67 +281,44 @@ export type Database = {
       records: {
         Row: {
           created_at: string;
-          currency: string | null;
           date: string;
           description: string | null;
-          destination_holding_id: string | null;
+          holding_id: string;
           id: string;
           quantity: number;
-          source_holding_id: string | null;
-          type: Database["public"]["Enums"]["transaction_type"];
           updated_at: string;
           user_id: string;
-          value: number | null;
+          value: number;
         };
         Insert: {
           created_at?: string;
-          currency?: string | null;
           date?: string;
           description?: string | null;
-          destination_holding_id?: string | null;
+          holding_id: string;
           id?: string;
           quantity: number;
-          source_holding_id?: string | null;
-          type: Database["public"]["Enums"]["transaction_type"];
           updated_at?: string;
           user_id: string;
-          value?: number | null;
+          value: number;
         };
         Update: {
           created_at?: string;
-          currency?: string | null;
           date?: string;
           description?: string | null;
-          destination_holding_id?: string | null;
+          holding_id?: string;
           id?: string;
           quantity?: number;
-          source_holding_id?: string | null;
-          type?: Database["public"]["Enums"]["transaction_type"];
           updated_at?: string;
           user_id?: string;
-          value?: number | null;
+          value?: number;
         };
         Relationships: [
           {
-            foreignKeyName: "records_destination_holding_id_fkey";
-            columns: ["destination_holding_id"];
+            foreignKeyName: "records_holding_id_fkey";
+            columns: ["holding_id"];
             isOneToOne: false;
             referencedRelation: "holdings";
             referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "records_source_holding_id_fkey";
-            columns: ["source_holding_id"];
-            isOneToOne: false;
-            referencedRelation: "holdings";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "transactions_currency_fkey";
-            columns: ["currency"];
-            isOneToOne: false;
-            referencedRelation: "currencies";
-            referencedColumns: ["alphabetic_code"];
           },
         ];
       };
@@ -353,7 +330,7 @@ export type Database = {
       [_ in never]: never;
     };
     Enums: {
-      transaction_type: "purchase" | "sale" | "transfer" | "update";
+      [_ in never]: never;
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -468,8 +445,6 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {
-      transaction_type: ["purchase", "sale", "transfer", "update"],
-    },
+    Enums: {},
   },
 } as const;

@@ -11,20 +11,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-import { PurchaseForm } from "./purchase-form";
-import { SaleForm } from "./sale-form";
-import { TransferForm } from "./transfer-form";
-import { UpdateForm } from "./update-form";
+import { UpdateForm } from "./form";
 
 import type { Holding } from "@/types/global.types";
 
 type NewRecordDialogContextType = {
   open: boolean;
   setOpen: (open: boolean) => void;
-  activeTab: string;
-  setActiveTab: (tab: string) => void;
   preselectedHolding: Holding | null;
   setPreselectedHolding: (holding: Holding | null) => void;
 };
@@ -39,7 +33,6 @@ export function NewRecordDialogProvider({
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("purchase");
   const [preselectedHolding, setPreselectedHolding] = useState<Holding | null>(
     null,
   );
@@ -49,8 +42,6 @@ export function NewRecordDialogProvider({
       value={{
         open,
         setOpen,
-        activeTab,
-        setActiveTab,
         preselectedHolding,
         setPreselectedHolding,
       }}
@@ -61,29 +52,10 @@ export function NewRecordDialogProvider({
           <DialogHeader>
             <DialogTitle>New Record</DialogTitle>
             <DialogDescription>
-              Add a new value or quantity update.
+              Update the value and quantity of your holdings.
             </DialogDescription>
           </DialogHeader>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="mb-2 w-full">
-              <TabsTrigger value="purchase">Purchase</TabsTrigger>
-              <TabsTrigger value="sale">Sale</TabsTrigger>
-              <TabsTrigger value="transfer">Transfer</TabsTrigger>
-              <TabsTrigger value="update">Update</TabsTrigger>
-            </TabsList>
-            <TabsContent value="purchase">
-              <PurchaseForm />
-            </TabsContent>
-            <TabsContent value="sale">
-              <SaleForm />
-            </TabsContent>
-            <TabsContent value="transfer">
-              <TransferForm />
-            </TabsContent>
-            <TabsContent value="update">
-              <UpdateForm />
-            </TabsContent>
-          </Tabs>
+          <UpdateForm />
         </DialogContent>
       </Dialog>
     </NewRecordDialogContext.Provider>

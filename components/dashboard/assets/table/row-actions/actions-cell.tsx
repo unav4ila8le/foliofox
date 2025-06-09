@@ -27,14 +27,13 @@ import { DeleteDialog } from "./delete-dialog";
 import type { Holding } from "@/types/global.types";
 
 export function ActionsCell({ holding }: { holding: Holding }) {
-  const { setOpen, setActiveTab, setPreselectedHolding } = useNewRecordDialog();
+  const { setOpen, setPreselectedHolding } = useNewRecordDialog();
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   // Update holding
   const handleUpdate = () => {
     setPreselectedHolding(holding);
-    setActiveTab("update");
     setOpen(true);
   };
 

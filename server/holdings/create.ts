@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 
 import { getCurrentUser } from "@/server/auth/actions";
 
+import { createRecord } from "@/server/records/create";
+
 import type { Holding } from "@/types/global.types";
 
 // Create holding
@@ -29,14 +31,40 @@ export async function createHolding(formData: FormData) {
   };
 
   // Insert into holdings table
-  const { error } = await supabase.from("holdings").insert({
-    user_id: user.id,
-    ...data,
-  });
+  const { data: holding, error: holdingError } = await supabase
+    .from("holdings")
+    .insert({
+      user_id: user.id,
+      ...data,
+    })
+    .select("id")
+    .single();
 
   // Return Supabase errors instead of throwing
-  if (error) {
-    return { success: false, code: error.code, message: error.message };
+  if (!holding || holdingError) {
+    return {
+      success: false,
+      code: holdingError?.code || "UNKNOWN",
+      message: holdingError?.message || "Failed to create holding",
+    };
+  }
+
+  // Create initial record using the existing createRecord function (convert to formData first)
+  const recordFormData = new FormData();
+  recordFormData.append("holding_id", holding.id);
+  recordFormData.append("date", new Date().toISOString());
+  recordFormData.append("quantity", data.current_quantity.toString());
+  recordFormData.append("value", data.current_value.toString());
+  recordFormData.append("description", "Initial holding creation");
+
+  const recordResult = await createRecord(recordFormData);
+
+  if (!recordResult.success) {
+    return {
+      success: false,
+      code: recordResult.code,
+      message: recordResult.message,
+    };
   }
 
   revalidatePath("/dashboard", "layout");
