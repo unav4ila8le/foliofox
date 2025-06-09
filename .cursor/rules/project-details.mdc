@@ -23,14 +23,14 @@ Patrivio is a privacy-focused net worth tracking app. Users manually track asset
 ## Key Features
 - Track net worth over time with interactive charts
 - Multi-currency support with daily exchange rates
-- Manual entry and editing of assets, balances, and transactions
+- Manual entry and editing of assets.
 - Asset categories: Cash, Investments, Crypto, Real Estate, Metals, Luxury, etc.
 - Secure authentication and user profiles
 - Modular, type-safe codebase
 
 ## Data Model (Simplified)
 - **Holdings:** Assets and liabilities, grouped by category and currency
-- **Transactions:** Purchases, sales, transfers, and manual value updates
+- **Records:** Value and quantity updates
 - **Valuations:** Historical price/quantity snapshots for accurate net worth history
 - **Exchange Rates:** Daily rates for currency conversion
 
