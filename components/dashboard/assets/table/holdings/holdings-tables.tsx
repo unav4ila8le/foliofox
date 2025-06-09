@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Package } from "lucide-react";
 
 import { SearchInput } from "@/components/ui/search-input";
 import { NewHoldingButton } from "@/components/dashboard/new-holding";
@@ -45,15 +46,28 @@ export function HoldingsTables({ data }: { data: Holding[] }) {
         <NewHoldingButton />
         <TableActionsDropdown />
       </div>
-      {Object.entries(groupedHoldings).map(([code, { name, holdings }]) => (
-        <CollapsibleTable
-          key={code}
-          columns={columns}
-          data={holdings}
-          title={name}
-          filterValue={filterValue}
-        />
-      ))}
+
+      {data.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <div className="bg-accent rounded-lg p-2">
+            <Package className="text-muted-foreground size-4" />
+          </div>
+          <p className="mt-3 font-medium">No holdings found</p>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Start building your portfolio by adding your first holding
+          </p>
+        </div>
+      ) : (
+        Object.entries(groupedHoldings).map(([code, { name, holdings }]) => (
+          <CollapsibleTable
+            key={code}
+            columns={columns}
+            data={holdings}
+            title={name}
+            filterValue={filterValue}
+          />
+        ))
+      )}
     </div>
   );
 }
