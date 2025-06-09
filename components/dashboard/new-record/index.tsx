@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import { UpdateForm } from "./form";
+import { NewRecordForm } from "./form";
 
 import type { Holding } from "@/types/global.types";
 
@@ -55,7 +55,7 @@ export function NewRecordDialogProvider({
               Update the value and quantity of your holdings.
             </DialogDescription>
           </DialogHeader>
-          <UpdateForm />
+          <NewRecordForm />
         </DialogContent>
       </Dialog>
     </NewRecordDialogContext.Provider>

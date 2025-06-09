@@ -14,46 +14,43 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { CurrencySelector } from "@/components/dashboard/currency-selector";
+import { AssetCategorySelector } from "@/components/dashboard/asset-category-selector";
 
-import { updateProfile } from "@/server/profile/actions";
+import { updateHolding } from "@/server/holdings/update";
 
-import type { Profile } from "@/types/global.types";
+import type { Holding } from "@/types/global.types";
 
 interface SettingsFormProps {
-  profile: Profile;
-  email: string;
+  holding: Holding;
   onSuccess?: () => void;
 }
 
 const formSchema = z.object({
-  username: z
+  name: z
     .string()
-    .trim()
-    .min(3, "Username must be at least 3 characters.")
-    .max(16, "Username must not exceed 16 characters.")
-    .regex(
-      /^[a-zA-Z0-9]+$/,
-      "Username can only contain letters and numbers, without spaces.",
-    ),
-  display_currency: z.string({
-    required_error: "Please select a currency.",
-  }),
+    .min(3, "Name must be at least 3 characters.")
+    .max(64, "Name must not exceed 64 characters."),
+  category_code: z.string().min(1, "Category is required"),
+  description: z
+    .string()
+    .max(256, {
+      message: "Description must not exceed 256 characters.",
+    })
+    .optional(),
 });
 
-export function SettingsForm({ profile, onSuccess, email }: SettingsFormProps) {
+export function UpdateHoldingForm({ holding, onSuccess }: SettingsFormProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      username: profile.username,
-      display_currency: profile.display_currency,
+      name: holding.name,
+      category_code: holding.category_code,
+      description: holding.description ?? undefined,
     },
   });
 
@@ -65,23 +62,24 @@ export function SettingsForm({ profile, onSuccess, email }: SettingsFormProps) {
     setIsLoading(true);
     try {
       const formData = new FormData();
-      formData.append("username", values.username);
-      formData.append("display_currency", values.display_currency);
+      formData.append("name", values.name);
+      formData.append("category_code", values.category_code);
+      formData.append("description", values.description || "");
 
-      const result = await updateProfile(formData);
+      const result = await updateHolding(formData, holding.id);
 
       // Handle error response from server action
       if (!result.success) {
         throw new Error(result.message);
       }
 
-      toast.success("Profile updated successfully");
+      toast.success("Holding updated successfully");
 
       // Close the dialog
       onSuccess?.();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to update profile",
+        error instanceof Error ? error.message : "Failed to update holding",
       );
     } finally {
       setIsLoading(false);
@@ -93,55 +91,61 @@ export function SettingsForm({ profile, onSuccess, email }: SettingsFormProps) {
       <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
         <FormField
           control={form.control}
-          name="username"
+          name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Username</FormLabel>
+              <FormLabel>Name</FormLabel>
               <FormControl>
-                <Input placeholder="username" {...field} />
+                <Input
+                  placeholder="E.g., Chase Savings, Rental Property, Bitcoin Holdings"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-
         <FormField
           control={form.control}
-          name="display_currency"
+          name="category_code"
           render={({ field }) => (
-            <FormItem className="sm:w-1/2">
-              <FormLabel>Default currency</FormLabel>
+            <FormItem>
+              <FormLabel>Category</FormLabel>
               <FormControl>
-                <CurrencySelector field={field} />
+                <AssetCategorySelector field={field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description (optional)</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="Add a description of this holding"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        {/* Read-only email field */}
-        <FormItem>
-          <FormLabel>Email</FormLabel>
-          <FormControl>
-            <Input value={email} disabled />
-          </FormControl>
-          <FormDescription>
-            If you need to change your email, please contact support.
-          </FormDescription>
-          <FormMessage />
-        </FormItem>
-
+        {/* Footer */}
         <div className="flex justify-end gap-2">
-          <DialogClose asChild>
-            <Button
-              disabled={isLoading}
-              type="button"
-              variant="secondary"
-              className="w-1/2 sm:w-auto"
-            >
-              Cancel
-            </Button>
-          </DialogClose>
+          <Button
+            onClick={onSuccess}
+            disabled={isLoading}
+            type="button"
+            variant="secondary"
+            className="w-1/2 sm:w-auto"
+          >
+            Cancel
+          </Button>
           <Button
             disabled={isLoading || !isDirty}
             type="submit"
@@ -150,7 +154,7 @@ export function SettingsForm({ profile, onSuccess, email }: SettingsFormProps) {
             {isLoading ? (
               <>
                 <LoaderCircle className="animate-spin" />
-                Saving...
+                Updating...
               </>
             ) : (
               "Save changes"

@@ -4,10 +4,11 @@ import { useState } from "react";
 import { toast } from "sonner";
 import {
   MoreHorizontal,
-  SquarePen,
   Trash2,
   Archive,
   ArchiveRestore,
+  Plus,
+  SquarePen,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { useNewRecordDialog } from "@/components/dashboard/new-record";
+import { UpdateHoldingDialog } from "@/components/dashboard/update-holding";
 import { restoreHolding } from "@/server/holdings/restore";
 import { ArchiveDialog } from "./archive-dialog";
 import { DeleteDialog } from "./delete-dialog";
@@ -28,11 +30,12 @@ import type { Holding } from "@/types/global.types";
 
 export function ActionsCell({ holding }: { holding: Holding }) {
   const { setOpen, setPreselectedHolding } = useNewRecordDialog();
+  const [showUpdateDialog, setShowUpdateDialog] = useState(false);
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  // Update holding
-  const handleUpdate = () => {
+  // New record
+  const handleNewRecord = () => {
     setPreselectedHolding(holding);
     setOpen(true);
   };
@@ -67,10 +70,13 @@ export function ActionsCell({ holding }: { holding: Holding }) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem
-            onSelect={handleUpdate}
+            onSelect={handleNewRecord}
             disabled={holding.is_archived}
           >
-            <SquarePen className="size-4" /> Update
+            <Plus className="size-4" /> New Record
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => setShowUpdateDialog(true)}>
+            <SquarePen className="size-4" /> Edit holding
           </DropdownMenuItem>
           {holding.is_archived ? (
             <DropdownMenuItem onSelect={handleRestore}>
@@ -87,6 +93,12 @@ export function ActionsCell({ holding }: { holding: Holding }) {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <UpdateHoldingDialog
+        holding={holding}
+        open={showUpdateDialog}
+        onOpenChangeAction={setShowUpdateDialog}
+      />
 
       <ArchiveDialog
         holding={holding}

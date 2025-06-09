@@ -51,7 +51,7 @@ const formSchema = z.object({
     .optional(),
 });
 
-export function UpdateForm() {
+export function NewRecordForm() {
   const { setOpen, preselectedHolding } = useNewRecordDialog();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedHolding, setSelectedHolding] = useState<Holding | null>(
