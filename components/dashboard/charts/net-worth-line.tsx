@@ -55,9 +55,15 @@ export function NetWorthLineChart({
   history: NetWorthHistoryData[];
   change: NetWorthChangeData;
 }) {
-  const [history, setHistory] = useState(initialHistory);
-  const [change, setChange] = useState(initialChange);
+  const [customTimeRange, setCustomTimeRange] = useState<{
+    history: NetWorthHistoryData[];
+    change: NetWorthChangeData;
+  } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Display custom time range data or fall back to default initial data (6 months)
+  const history = customTimeRange?.history ?? initialHistory;
+  const change = customTimeRange?.change ?? initialChange;
 
   const handleWeeksChange = async (weeks: string) => {
     setIsLoading(true);
@@ -80,8 +86,10 @@ export function NetWorthLineChart({
         }),
       ]);
 
-      setHistory(newHistory);
-      setChange(newChange);
+      setCustomTimeRange({
+        history: newHistory,
+        change: newChange,
+      });
     } finally {
       setIsLoading(false);
     }
