@@ -7,8 +7,8 @@ import { Package } from "lucide-react";
 import { SearchInput } from "@/components/ui/search-input";
 import { NewHoldingButton } from "@/components/dashboard/new-holding";
 import { columns } from "@/components/dashboard/assets/table/holdings/columns";
+import { TableActionsDropdown } from "@/components/dashboard/assets/table/holdings/table-actions";
 import { CollapsibleTable } from "../collapsible/collapsible-table";
-import { TableActionsDropdown } from "@/components/dashboard/assets/table-actions";
 
 import type { TransformedHolding } from "@/types/global.types";
 

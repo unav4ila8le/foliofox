@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { CalendarIcon, LoaderCircle } from "lucide-react";
+import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { format } from "date-fns";
-import { CalendarIcon, LoaderCircle } from "lucide-react";
-import { toast } from "sonner";
 
 import {
   Form,
@@ -21,25 +21,24 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-
-import { HoldingSelector } from "./holding-selector";
-import { useNewRecordDialog } from "./index";
 
 import { cn } from "@/lib/utils";
 
-import { createRecord } from "@/server/records/create";
+import { updateRecord } from "@/server/records/update";
 
-import type { Holding } from "@/types/global.types";
+import type { Record } from "@/types/global.types";
+
+interface UpdateRecordFormProps {
+  record: Record;
+  onSuccess?: () => void;
+}
 
 const formSchema = z.object({
   date: z.date({
     required_error: "A date is required.",
-  }),
-  holding_id: z.string({
-    required_error: "Please select a holding.",
   }),
   quantity: z.coerce.number().gt(0, "Quantity must be greater than 0"),
   value: z.coerce.number().gt(0, "Value must be greater than 0"),
@@ -51,40 +50,18 @@ const formSchema = z.object({
     .optional(),
 });
 
-export function NewRecordForm() {
-  const { setOpen, preselectedHolding } = useNewRecordDialog();
+export function UpdateRecordForm({ record, onSuccess }: UpdateRecordFormProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedHolding, setSelectedHolding] = useState<Holding | null>(
-    preselectedHolding,
-  );
 
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      date: new Date(),
-      holding_id: preselectedHolding?.id || "",
-      quantity: 0,
-      value: 0,
-      description: "",
+      date: new Date(record.date),
+      quantity: record.quantity,
+      value: record.value,
+      description: record.description ?? undefined,
     },
   });
-
-  // Pre-populate values when a holding is selected
-  useEffect(() => {
-    if (selectedHolding) {
-      // Only update if fields are empty or if it's a different holding
-      const currentHoldingId = form.getValues("holding_id");
-      if (currentHoldingId === selectedHolding.id) {
-        form.setValue("quantity", selectedHolding.current_quantity || 0);
-        form.setValue("value", selectedHolding.current_value || 0);
-      }
-    }
-  }, [selectedHolding, form]);
-
-  // Handle holding selection from dropdown
-  const handleHoldingSelect = (holding: Holding | null) => {
-    setSelectedHolding(holding);
-  };
 
   // Get isDirty state from formState
   const { isDirty } = form.formState;
@@ -92,29 +69,27 @@ export function NewRecordForm() {
   // Submit handler
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-
     try {
       const formData = new FormData();
-      formData.append("type", "update");
-      formData.append("holding_id", values.holding_id);
       formData.append("date", values.date.toISOString());
       formData.append("quantity", values.quantity.toString());
       formData.append("value", values.value.toString());
       formData.append("description", values.description || "");
 
-      const result = await createRecord(formData);
+      const result = await updateRecord(formData, record.id);
 
+      // Handle error response from server action
       if (!result.success) {
         throw new Error(result.message);
       }
 
-      toast.success("Holding updated successfully");
-      setOpen(false);
+      toast.success("Record updated successfully");
+
+      // Close the dialog
+      onSuccess?.();
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to update holding. Please try again.",
+        error instanceof Error ? error.message : "Failed to update record",
       );
     } finally {
       setIsLoading(false);
@@ -123,10 +98,7 @@ export function NewRecordForm() {
 
   return (
     <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        className="grid gap-x-2 gap-y-4"
-      >
+      <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
         <FormField
           control={form.control}
           name="date"
@@ -164,24 +136,6 @@ export function NewRecordForm() {
                   />
                 </PopoverContent>
               </Popover>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="holding_id"
-          render={({ field }) => (
-            <FormItem className="sm:w-1/2 sm:pr-1">
-              <FormLabel>Holding</FormLabel>
-              <FormControl>
-                <HoldingSelector
-                  field={field}
-                  preselectedHolding={selectedHolding}
-                  onHoldingSelect={handleHoldingSelect}
-                />
-              </FormControl>
               <FormMessage />
             </FormItem>
           )}
@@ -235,7 +189,7 @@ export function NewRecordForm() {
               <FormLabel>Description (optional)</FormLabel>
               <FormControl>
                 <Input
-                  placeholder="Add any notes about this update"
+                  placeholder="Add a description of this record"
                   {...field}
                 />
               </FormControl>
@@ -247,7 +201,7 @@ export function NewRecordForm() {
         {/* Footer */}
         <div className="flex justify-end gap-2">
           <Button
-            onClick={() => setOpen(false)}
+            onClick={onSuccess}
             disabled={isLoading}
             type="button"
             variant="secondary"
@@ -256,14 +210,14 @@ export function NewRecordForm() {
             Cancel
           </Button>
           <Button
-            type="submit"
             disabled={isLoading || !isDirty}
+            type="submit"
             className="w-1/2 sm:w-auto"
           >
             {isLoading ? (
               <>
-                <LoaderCircle className="mr-2 animate-spin" />
-                Saving...
+                <LoaderCircle className="animate-spin" />
+                Updating...
               </>
             ) : (
               "Save changes"

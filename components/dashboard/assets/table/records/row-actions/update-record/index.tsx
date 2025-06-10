@@ -8,32 +8,32 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import { UpdateHoldingForm } from "./form";
+import { UpdateRecordForm } from "./form";
 
-import type { Holding } from "@/types/global.types";
+import type { Record } from "@/types/global.types";
 
-interface UpdateHoldingDialogProps {
-  holding: Holding;
+interface UpdateRecordDialogProps {
+  record: Record;
   open: boolean;
   onOpenChangeAction: (open: boolean) => void;
 }
 
-export function UpdateHoldingDialog({
-  holding,
+export function UpdateRecordDialog({
+  record,
   open,
   onOpenChangeAction,
-}: UpdateHoldingDialogProps) {
+}: UpdateRecordDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChangeAction}>
       <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Update Holding</DialogTitle>
+          <DialogTitle>Edit Record</DialogTitle>
           <DialogDescription>
-            Edit the name, category, currency, and description for this holding.
+            Edit the date, quantity, value, and description for this record.
           </DialogDescription>
         </DialogHeader>
-        <UpdateHoldingForm
-          holding={holding}
+        <UpdateRecordForm
+          record={record}
           onSuccess={() => onOpenChangeAction(false)}
         />
       </DialogContent>

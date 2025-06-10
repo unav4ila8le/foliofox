@@ -23,7 +23,7 @@ import { updateHolding } from "@/server/holdings/update";
 
 import type { Holding } from "@/types/global.types";
 
-interface SettingsFormProps {
+interface UpdateHoldingFormProps {
   holding: Holding;
   onSuccess?: () => void;
 }
@@ -42,7 +42,10 @@ const formSchema = z.object({
     .optional(),
 });
 
-export function UpdateHoldingForm({ holding, onSuccess }: SettingsFormProps) {
+export function UpdateHoldingForm({
+  holding,
+  onSuccess,
+}: UpdateHoldingFormProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm({

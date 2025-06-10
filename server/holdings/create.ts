@@ -27,7 +27,7 @@ export async function createHolding(formData: FormData) {
     currency: formData.get("currency") as string,
     current_value: Number(formData.get("current_value")),
     current_quantity: Number(formData.get("current_quantity")),
-    description: formData.get("description") as string | null,
+    description: (formData.get("description") as string) || "",
   };
 
   // Insert into holdings table

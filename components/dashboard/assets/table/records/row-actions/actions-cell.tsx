@@ -12,13 +12,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-// import { EditRecordDialog } from "./edit-dialog";
+import { UpdateRecordDialog } from "./update-record";
 import { DeleteRecordDialog } from "./delete-dialog";
 
 import type { TransformedRecord } from "@/types/global.types";
 
 export function ActionsCell({ record }: { record: TransformedRecord }) {
-  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showUpdateDialog, setShowUpdateDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   return (
@@ -34,7 +34,7 @@ export function ActionsCell({ record }: { record: TransformedRecord }) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={() => setShowEditDialog(true)}>
+          <DropdownMenuItem onSelect={() => setShowUpdateDialog(true)}>
             <SquarePen className="size-4" /> Edit record
           </DropdownMenuItem>
           <DropdownMenuSeparator />
@@ -44,11 +44,11 @@ export function ActionsCell({ record }: { record: TransformedRecord }) {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* <EditRecordDialog
+      <UpdateRecordDialog
         record={record}
-        open={showEditDialog}
-        onOpenChangeAction={setShowEditDialog}
-      /> */}
+        open={showUpdateDialog}
+        onOpenChangeAction={setShowUpdateDialog}
+      />
 
       <DeleteRecordDialog
         record={record}

@@ -4,23 +4,27 @@ import { revalidatePath } from "next/cache";
 
 import { getCurrentUser } from "@/server/auth/actions";
 
-import type { Holding } from "@/types/global.types";
+import type { Record } from "@/types/global.types";
 
-export async function updateHolding(formData: FormData, holdingId: string) {
+export async function updateRecord(formData: FormData, recordId: string) {
   const { supabase } = await getCurrentUser();
 
   // Extract and validate data from formData
-  const updateData: Pick<Holding, "name" | "category_code" | "description"> = {
-    name: formData.get("name") as string,
-    category_code: formData.get("category_code") as string,
+  const updateData: Pick<
+    Record,
+    "date" | "quantity" | "value" | "description"
+  > = {
+    date: formData.get("date") as string,
+    quantity: Number(formData.get("quantity")),
+    value: Number(formData.get("value")),
     description: (formData.get("description") as string) || "",
   };
 
-  // Update the holding in the database
+  // Update the record in the database
   const { error } = await supabase
-    .from("holdings")
+    .from("records")
     .update(updateData)
-    .eq("id", holdingId);
+    .eq("id", recordId);
 
   // Return errors instead of throwing
   if (error) {

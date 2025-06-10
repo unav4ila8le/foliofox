@@ -21,10 +21,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { useNewRecordDialog } from "@/components/dashboard/new-record";
-import { UpdateHoldingDialog } from "@/components/dashboard/update-holding";
-import { restoreHolding } from "@/server/holdings/restore";
+import { UpdateHoldingDialog } from "@/components/dashboard/assets/table/row-actions/update-holding";
 import { ArchiveHoldingDialog } from "./archive-dialog";
 import { DeleteHoldingDialog } from "./delete-dialog";
+
+import { restoreHolding } from "@/server/holdings/restore";
 
 import type { Holding } from "@/types/global.types";
 
