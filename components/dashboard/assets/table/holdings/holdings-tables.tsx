@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Package } from "lucide-react";
 
 import { SearchInput } from "@/components/ui/search-input";
@@ -9,17 +10,26 @@ import { columns } from "@/components/dashboard/assets/table/holdings/columns";
 import { CollapsibleTable } from "../collapsible/collapsible-table";
 import { TableActionsDropdown } from "@/components/dashboard/assets/table-actions";
 
-import type { Holding, TransformedHolding } from "@/types/global.types";
+import type { TransformedHolding } from "@/types/global.types";
 
 type GroupedHoldings = {
   [key: string]: {
     name: string;
-    holdings: Holding[];
+    holdings: TransformedHolding[];
   };
 };
 
 export function HoldingsTables({ data }: { data: TransformedHolding[] }) {
   const [filterValue, setFilterValue] = useState("");
+  const router = useRouter();
+
+  // Handle row click to navigate to holding page
+  const handleRowClick = useCallback(
+    (holding: TransformedHolding) => {
+      router.push(`/dashboard/assets/${holding.id}`);
+    },
+    [router],
+  );
 
   // Group holdings by category without filtering (TanStack will handle filtering)
   const groupedHoldings = data.reduce((acc, holding) => {
@@ -65,6 +75,7 @@ export function HoldingsTables({ data }: { data: TransformedHolding[] }) {
             data={holdings}
             title={name}
             filterValue={filterValue}
+            onRowClick={handleRowClick}
           />
         ))
       )}

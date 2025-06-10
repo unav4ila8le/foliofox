@@ -57,7 +57,7 @@ export function ActionsCell({ holding }: { holding: Holding }) {
   };
 
   return (
-    <>
+    <div onClick={(e) => e.stopPropagation()}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -114,6 +114,6 @@ export function ActionsCell({ holding }: { holding: Holding }) {
         open={showDeleteDialog}
         onOpenChangeAction={setShowDeleteDialog}
       />
-    </>
+    </div>
   );
 }

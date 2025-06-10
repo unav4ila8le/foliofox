@@ -8,9 +8,9 @@ import { ActionsCell } from "../row-actions/actions-cell";
 import { formatNumber } from "@/lib/number/format";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import type { Holding } from "@/types/global.types";
+import type { TransformedHolding } from "@/types/global.types";
 
-export const columns: ColumnDef<Holding>[] = [
+export const columns: ColumnDef<TransformedHolding>[] = [
   {
     accessorKey: "name",
     header: ({ column }) => {

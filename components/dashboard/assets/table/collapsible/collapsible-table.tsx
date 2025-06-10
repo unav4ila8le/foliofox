@@ -16,6 +16,7 @@ interface CollapsibleTableProps<TData, TValue> {
   data: TData[];
   title: string;
   filterValue: string;
+  onRowClick?: (row: TData) => void;
 }
 
 export function CollapsibleTable<TData, TValue>({
@@ -23,6 +24,7 @@ export function CollapsibleTable<TData, TValue>({
   data,
   title,
   filterValue,
+  onRowClick,
 }: CollapsibleTableProps<TData, TValue>) {
   return (
     <Collapsible defaultOpen={true} className="rounded-md border">
@@ -32,7 +34,12 @@ export function CollapsibleTable<TData, TValue>({
         <ChevronDownIcon className="text-muted-foreground ml-auto size-4 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180" />
       </CollapsibleTrigger>
       <CollapsibleContent className="data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down overflow-hidden border-t">
-        <DataTable columns={columns} data={data} filterValue={filterValue} />
+        <DataTable
+          columns={columns}
+          data={data}
+          filterValue={filterValue}
+          onRowClick={onRowClick}
+        />
       </CollapsibleContent>
     </Collapsible>
   );
