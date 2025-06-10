@@ -150,13 +150,9 @@ export function NetWorthLineChart({
                       )}
                       <span>
                         {change.absoluteChange >= 0 ? "+" : ""}
-                        {formatNumber(
-                          Math.abs(change.absoluteChange),
-                          undefined,
-                          {
-                            maximumFractionDigits: 2,
-                          },
-                        )}{" "}
+                        {formatNumber(change.absoluteChange, undefined, {
+                          maximumFractionDigits: 2,
+                        })}{" "}
                         ({change.percentageChange >= 0 ? "+" : ""}
                         {change.previousValue === 0
                           ? "N/A"
