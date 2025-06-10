@@ -28,6 +28,5 @@ export async function updateHolding(formData: FormData, holdingId: string) {
   }
 
   revalidatePath("/dashboard", "layout");
-
   return { success: true };
 }

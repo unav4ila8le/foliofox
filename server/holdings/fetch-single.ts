@@ -4,23 +4,16 @@ import { getCurrentUser } from "@/server/auth/actions";
 
 import type { Holding } from "@/types/global.types";
 
-interface FetchHoldingsOptions {
-  includeArchived?: boolean;
-  onlyArchived?: boolean;
-}
-
 type TransformedHolding = Holding & {
   asset_type: string;
   total_value: number;
 };
 
-// Fetch holdings with optional filtering for archived holdings
-export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
-  const { includeArchived = false, onlyArchived = false } = options;
-
+// Fetch single holding by ID
+export async function fetchSingleHolding(holdingId: string) {
   const { supabase, user } = await getCurrentUser();
 
-  const query = supabase
+  const { data: holding, error } = await supabase
     .from("holdings")
     .select(
       `
@@ -39,31 +32,21 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
       )
     `,
     )
-    .eq("user_id", user.id);
+    .eq("id", holdingId)
+    .eq("user_id", user.id)
+    .single();
 
-  // Handle archived holdings filtering
-  if (onlyArchived) {
-    query.eq("is_archived", true);
-  } else if (!includeArchived) {
-    query.eq("is_archived", false);
-  }
-
-  const { data: holdings, error } = await query.order(
-    "asset_categories(display_order)",
-    { ascending: true },
-  );
-
-  // Return Supabase errors instead of throwing
+  // Return errors instead of throwing
   if (error) {
     return { success: false, code: error.code, message: error.message };
   }
 
   // Transform the data to include asset_type and total_value
-  const transformedHoldings: TransformedHolding[] = holdings.map((holding) => ({
+  const transformedHolding: TransformedHolding = {
     ...holding,
     asset_type: holding.asset_categories.name,
     total_value: holding.current_value * holding.current_quantity,
-  }));
+  };
 
-  return transformedHoldings;
+  return transformedHolding;
 }
