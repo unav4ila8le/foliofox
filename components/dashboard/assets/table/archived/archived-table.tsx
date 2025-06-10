@@ -1,19 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 
 import { SearchInput } from "@/components/ui/search-input";
 import { DataTable } from "../base/data-table";
 import { columns } from "./columns";
 
-import type { Holding } from "@/types/global.types";
+import type { TransformedHolding } from "@/types/global.types";
 
 interface ArchivedTableProps {
-  data: Holding[];
+  data: TransformedHolding[];
 }
 
 export function ArchivedTable({ data }: ArchivedTableProps) {
   const [filterValue, setFilterValue] = useState("");
+  const router = useRouter();
+
+  // Handle row click to navigate to holding page
+  const handleRowClick = useCallback(
+    (holding: TransformedHolding) => {
+      router.push(`/dashboard/assets/${holding.id}`);
+    },
+    [router],
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -24,7 +34,12 @@ export function ArchivedTable({ data }: ArchivedTableProps) {
         onChange={(e) => setFilterValue(e.target.value)}
       />
       <div className="rounded-md border">
-        <DataTable columns={columns} data={data} filterValue={filterValue} />
+        <DataTable
+          columns={columns}
+          data={data}
+          filterValue={filterValue}
+          onRowClick={handleRowClick}
+        />
       </div>
     </div>
   );
