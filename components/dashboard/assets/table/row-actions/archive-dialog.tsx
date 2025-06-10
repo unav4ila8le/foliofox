@@ -25,7 +25,7 @@ interface ArchiveDialogProps {
   onOpenChangeAction: (open: boolean) => void;
 }
 
-export function ArchiveDialog({
+export function ArchiveHoldingDialog({
   holding,
   open,
   onOpenChangeAction,

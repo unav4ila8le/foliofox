@@ -2,6 +2,8 @@
 
 import { getCurrentUser } from "@/server/auth/actions";
 
+import type { TransformedRecord } from "@/types/global.types";
+
 // Fetch records for a specific holding
 export async function fetchRecords(holdingId: string) {
   const { supabase, user } = await getCurrentUser();
@@ -17,5 +19,11 @@ export async function fetchRecords(holdingId: string) {
     throw new Error(error.message);
   }
 
-  return records || [];
+  // Transform records to include total value
+  const transformedRecords: TransformedRecord[] = records.map((record) => ({
+    ...record,
+    total_value: record.quantity * record.value,
+  }));
+
+  return transformedRecords;
 }

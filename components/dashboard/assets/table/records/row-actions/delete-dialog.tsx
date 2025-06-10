@@ -4,9 +4,9 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
+  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -15,18 +15,18 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-import { deleteHolding } from "@/server/holdings/delete";
+import { deleteRecord } from "@/server/records/delete";
 
-import type { Holding } from "@/types/global.types";
+import type { TransformedRecord } from "@/types/global.types";
 
 interface DeleteDialogProps {
-  holding: Holding;
+  record: TransformedRecord;
   open: boolean;
   onOpenChangeAction: (open: boolean) => void;
 }
 
-export function DeleteHoldingDialog({
-  holding,
+export function DeleteRecordDialog({
+  record,
   open,
   onOpenChangeAction,
 }: DeleteDialogProps) {
@@ -35,17 +35,17 @@ export function DeleteHoldingDialog({
   const handleDelete = async () => {
     setIsLoading(true);
     try {
-      const result = await deleteHolding(holding.id);
+      const result = await deleteRecord(record.id);
 
       if (result.success) {
-        toast.success("Holding deleted successfully");
+        toast.success("Record deleted successfully");
         onOpenChangeAction(false);
       } else {
-        throw new Error(result.message || "Failed to delete holding");
+        throw new Error(result.message || "Failed to delete record");
       }
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to delete holding",
+        error instanceof Error ? error.message : "Failed to delete record",
       );
     } finally {
       setIsLoading(false);
@@ -56,32 +56,15 @@ export function DeleteHoldingDialog({
     <AlertDialog open={open} onOpenChange={onOpenChangeAction}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete holding?</AlertDialogTitle>
+          <AlertDialogTitle>Delete record?</AlertDialogTitle>
           <AlertDialogDescription>
-            You are about to permanently delete &quot;{holding.name}&quot;. This
-            action cannot be undone.
+            You are about to permanently delete this record. This action cannot
+            be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <div className="space-y-2">
-          <p>This will:</p>
-          <ul className="ml-6 list-disc space-y-1">
-            <li>Remove the holding from your portfolio</li>
-            <li>Delete all historical data records for this holding</li>
-            <li>Remove this holding from your net worth history</li>
-            <li>Recalculate your net worth history</li>
-          </ul>
-          <span className="text-destructive">
-            Consider archiving instead if you want to preserve the historical
-            data.
-          </span>
-        </div>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
-          <Button
-            variant="destructive"
-            disabled={isLoading}
-            onClick={handleDelete}
-          >
+          <AlertDialogAction disabled={isLoading} onClick={handleDelete}>
             {isLoading ? (
               <>
                 <Loader2 className="size-4 animate-spin" /> Deleting...
@@ -89,7 +72,7 @@ export function DeleteHoldingDialog({
             ) : (
               "Delete"
             )}
-          </Button>
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

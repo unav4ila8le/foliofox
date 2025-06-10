@@ -3,6 +3,7 @@ import { Archive } from "lucide-react";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { RecordsTable } from "@/components/dashboard/assets/table/records/records-table";
 
 import { fetchSingleHolding } from "@/server/holdings/fetch-single";
 import { fetchRecords } from "@/server/records/fetch";
@@ -44,12 +45,7 @@ async function RecordsTableWrapper({ holdingId }: { holdingId: string }) {
   return (
     <div className="flex flex-col gap-2">
       <h3 className="text-lg font-semibold">Records history</h3>
-      <div className="rounded-md border p-4">
-        <p className="text-muted-foreground">Records table will go here</p>
-        <p className="text-muted-foreground text-sm">
-          Found {records.length} records
-        </p>
-      </div>
+      <RecordsTable data={records} />
     </div>
   );
 }

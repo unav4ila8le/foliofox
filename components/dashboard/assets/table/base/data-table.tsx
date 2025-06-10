@@ -27,6 +27,7 @@ interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   filterValue?: string;
+  filterColumnId?: string;
   onRowClick?: (row: TData) => void;
 }
 
@@ -34,12 +35,13 @@ export function DataTable<TData, TValue>({
   columns,
   data,
   filterValue,
+  filterColumnId = "name",
   onRowClick,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([
     {
-      id: "name",
+      id: filterColumnId,
       value: filterValue,
     },
   ]);
@@ -61,11 +63,11 @@ export function DataTable<TData, TValue>({
   useEffect(() => {
     setColumnFilters([
       {
-        id: "name",
+        id: filterColumnId,
         value: filterValue,
       },
     ]);
-  }, [filterValue]);
+  }, [filterValue, filterColumnId]);
 
   return (
     <Table>
@@ -105,7 +107,7 @@ export function DataTable<TData, TValue>({
               key={row.id}
               data-state={row.getIsSelected() && "selected"}
               onClick={() => onRowClick?.(row.original)}
-              className="group/row cursor-pointer"
+              className={cn("group/row", onRowClick && "cursor-pointer")}
             >
               {row.getVisibleCells().map((cell) => (
                 <TableCell

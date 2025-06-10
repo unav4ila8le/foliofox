@@ -38,6 +38,16 @@ export const columns: ColumnDef<TransformedHolding>[] = [
   {
     accessorKey: "current_quantity",
     header: "Quantity",
+    cell: ({ row }) => {
+      const current_quantity = row.getValue<number>("current_quantity");
+      return (
+        <div className="tabular-nums">
+          {formatNumber(current_quantity, undefined, {
+            maximumFractionDigits: 6,
+          })}
+        </div>
+      );
+    },
   },
   {
     accessorKey: "current_value",
@@ -45,7 +55,11 @@ export const columns: ColumnDef<TransformedHolding>[] = [
     cell: ({ row }) => {
       const value = row.getValue<number>("current_value");
 
-      return <div className="tabular-nums">{formatNumber(value, 2)}</div>;
+      return (
+        <div className="tabular-nums">
+          {formatNumber(value, undefined, { maximumFractionDigits: 2 })}
+        </div>
+      );
     },
   },
   {
@@ -73,7 +87,7 @@ export const columns: ColumnDef<TransformedHolding>[] = [
     cell: ({ row }) => {
       const archived_at = row.getValue<Date>("archived_at");
 
-      return <div>{format(archived_at, "PPP")}</div>;
+      return format(archived_at, "PPP");
     },
   },
   {

@@ -44,3 +44,7 @@ export type ExchangeRate = Tables<"exchange_rates">;
 
 // Record
 export type Record = Tables<"records">;
+
+export type TransformedRecord = Record & {
+  total_value: number;
+};

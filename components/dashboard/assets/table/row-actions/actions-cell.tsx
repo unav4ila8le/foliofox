@@ -23,8 +23,8 @@ import {
 import { useNewRecordDialog } from "@/components/dashboard/new-record";
 import { UpdateHoldingDialog } from "@/components/dashboard/update-holding";
 import { restoreHolding } from "@/server/holdings/restore";
-import { ArchiveDialog } from "./archive-dialog";
-import { DeleteDialog } from "./delete-dialog";
+import { ArchiveHoldingDialog } from "./archive-dialog";
+import { DeleteHoldingDialog } from "./delete-dialog";
 
 import type { Holding } from "@/types/global.types";
 
@@ -103,13 +103,13 @@ export function ActionsCell({ holding }: { holding: Holding }) {
         onOpenChangeAction={setShowUpdateDialog}
       />
 
-      <ArchiveDialog
+      <ArchiveHoldingDialog
         holding={holding}
         open={showArchiveDialog}
         onOpenChangeAction={setShowArchiveDialog}
       />
 
-      <DeleteDialog
+      <DeleteHoldingDialog
         holding={holding}
         open={showDeleteDialog}
         onOpenChangeAction={setShowDeleteDialog}
