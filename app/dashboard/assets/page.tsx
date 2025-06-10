@@ -8,6 +8,7 @@ import { fetchHoldings } from "@/server/holdings/fetch";
 // Separate components for data fetching with suspense
 async function HoldingsTablesWrapper() {
   const holdings = await fetchHoldings();
+
   return <HoldingsTables data={holdings} />;
 }
 

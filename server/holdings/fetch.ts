@@ -2,17 +2,12 @@
 
 import { getCurrentUser } from "@/server/auth/actions";
 
-import type { Holding } from "@/types/global.types";
+import type { TransformedHolding } from "@/types/global.types";
 
 interface FetchHoldingsOptions {
   includeArchived?: boolean;
   onlyArchived?: boolean;
 }
-
-type TransformedHolding = Holding & {
-  asset_type: string;
-  total_value: number;
-};
 
 // Fetch holdings with optional filtering for archived holdings
 export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
@@ -53,9 +48,8 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
     { ascending: true },
   );
 
-  // Return Supabase errors instead of throwing
   if (error) {
-    return { success: false, code: error.code, message: error.message };
+    throw new Error(error.message);
   }
 
   // Transform the data to include asset_type and total_value

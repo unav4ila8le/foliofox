@@ -1,13 +1,10 @@
 "use server";
 
+import { notFound } from "next/navigation";
+
 import { getCurrentUser } from "@/server/auth/actions";
 
-import type { Holding } from "@/types/global.types";
-
-type TransformedHolding = Holding & {
-  asset_type: string;
-  total_value: number;
-};
+import type { TransformedHolding } from "@/types/global.types";
 
 // Fetch single holding by ID
 export async function fetchSingleHolding(holdingId: string) {
@@ -36,9 +33,11 @@ export async function fetchSingleHolding(holdingId: string) {
     .eq("user_id", user.id)
     .single();
 
-  // Return errors instead of throwing
   if (error) {
-    return { success: false, code: error.code, message: error.message };
+    if (error.code === "PGRST116") {
+      notFound();
+    }
+    throw new Error(error.message);
   }
 
   // Transform the data to include asset_type and total_value

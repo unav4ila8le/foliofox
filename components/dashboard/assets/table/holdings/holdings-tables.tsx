@@ -9,7 +9,7 @@ import { columns } from "@/components/dashboard/assets/table/holdings/columns";
 import { CollapsibleTable } from "../collapsible/collapsible-table";
 import { TableActionsDropdown } from "@/components/dashboard/assets/table-actions";
 
-import type { Holding } from "@/types/global.types";
+import type { Holding, TransformedHolding } from "@/types/global.types";
 
 type GroupedHoldings = {
   [key: string]: {
@@ -18,7 +18,7 @@ type GroupedHoldings = {
   };
 };
 
-export function HoldingsTables({ data }: { data: Holding[] }) {
+export function HoldingsTables({ data }: { data: TransformedHolding[] }) {
   const [filterValue, setFilterValue] = useState("");
 
   // Group holdings by category without filtering (TanStack will handle filtering)

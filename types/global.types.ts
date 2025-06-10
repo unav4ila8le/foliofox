@@ -25,6 +25,11 @@ export type Holding = Pick<
   asset_categories: Pick<Tables<"asset_categories">, "name" | "display_order">;
 };
 
+export type TransformedHolding = Holding & {
+  asset_type: string;
+  total_value: number;
+};
+
 //Asset Category
 export type AssetCategory = Tables<"asset_categories">;
 

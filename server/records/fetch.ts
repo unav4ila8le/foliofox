@@ -13,9 +13,8 @@ export async function fetchRecords(holdingId: string) {
     .eq("user_id", user.id)
     .order("date", { ascending: false });
 
-  // Return errors instead of throwing
   if (error) {
-    return { success: false, code: error.code, message: error.message };
+    throw new Error(error.message);
   }
 
   return records || [];
