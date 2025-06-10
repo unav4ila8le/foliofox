@@ -58,6 +58,7 @@ async function AssetAllocationChartWrapper({
   );
 }
 
+// Main page component
 export default async function DashboardPage() {
   const { profile } = await fetchProfile();
   const netWorth = await calculateNetWorth(profile.display_currency);

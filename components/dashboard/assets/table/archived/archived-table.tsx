@@ -41,6 +41,9 @@ export function ArchivedTable({ data }: ArchivedTableProps) {
           onRowClick={handleRowClick}
         />
       </div>
+      <p className="text-muted-foreground text-end text-sm">
+        {data.length} archived holding(s)
+      </p>
     </div>
   );
 }

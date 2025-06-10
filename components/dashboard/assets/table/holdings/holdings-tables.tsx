@@ -79,6 +79,9 @@ export function HoldingsTables({ data }: { data: TransformedHolding[] }) {
           />
         ))
       )}
+      <p className="text-muted-foreground text-end text-sm">
+        {data.length} holding(s)
+      </p>
     </div>
   );
 }
