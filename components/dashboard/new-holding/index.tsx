@@ -3,7 +3,7 @@
 import { createContext, useContext, useState } from "react";
 import { Plus } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,7 @@ import {
 import { NewHoldingForm } from "./form";
 
 import type { Profile } from "@/types/global.types";
+import type { VariantProps } from "class-variance-authority";
 
 type NewHoldingDialogContextType = {
   open: boolean;
@@ -61,11 +62,15 @@ export function useNewHoldingDialog() {
   return context;
 }
 
-export function NewHoldingButton() {
+export function NewHoldingButton({
+  variant = "default",
+}: {
+  variant?: VariantProps<typeof buttonVariants>["variant"];
+}) {
   const { setOpen } = useNewHoldingDialog();
 
   return (
-    <Button variant="outline" onClick={() => setOpen(true)}>
+    <Button variant={variant} onClick={() => setOpen(true)}>
       <Plus />
       New Holding
     </Button>

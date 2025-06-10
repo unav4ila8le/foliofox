@@ -122,7 +122,7 @@ export function NetWorthLineChart({
           <p className="text-muted-foreground mt-1 mb-3 text-sm">
             Add your holdings to start tracking your net worth
           </p>
-          <NewHoldingButton />
+          <NewHoldingButton variant="outline" />
         </div>
       ) : (
         <>

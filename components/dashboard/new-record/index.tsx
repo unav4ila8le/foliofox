@@ -3,7 +3,7 @@
 import { createContext, useContext, useState } from "react";
 import { Plus } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,7 @@ import {
 import { NewRecordForm } from "./form";
 
 import type { Holding } from "@/types/global.types";
+import type { VariantProps } from "class-variance-authority";
 
 type NewRecordDialogContextType = {
   open: boolean;
@@ -72,11 +73,15 @@ export function useNewRecordDialog() {
   return context;
 }
 
-export function NewRecordButton() {
+export function NewRecordButton({
+  variant = "default",
+}: {
+  variant?: VariantProps<typeof buttonVariants>["variant"];
+}) {
   const { setOpen } = useNewRecordDialog();
 
   return (
-    <Button onClick={() => setOpen(true)}>
+    <Button variant={variant} onClick={() => setOpen(true)}>
       <Plus />
       New Record
     </Button>

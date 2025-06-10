@@ -53,7 +53,7 @@ export function HoldingsTables({ data }: { data: TransformedHolding[] }) {
           value={filterValue}
           onChange={(e) => setFilterValue(e.target.value)}
         />
-        <NewHoldingButton />
+        <NewHoldingButton variant="outline" />
         <TableActionsDropdown />
       </div>
 
