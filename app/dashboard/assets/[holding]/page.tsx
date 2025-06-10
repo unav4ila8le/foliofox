@@ -43,7 +43,7 @@ async function RecordsTableWrapper({ holdingId }: { holdingId: string }) {
 
   return (
     <div className="flex flex-col gap-2">
-      <h2 className="text-lg font-semibold">Records History</h2>
+      <h3 className="text-lg font-semibold">Records history</h3>
       <div className="rounded-md border p-4">
         <p className="text-muted-foreground">Records table will go here</p>
         <p className="text-muted-foreground text-sm">
