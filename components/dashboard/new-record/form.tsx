@@ -63,9 +63,9 @@ export function NewRecordForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       date: new Date(),
-      holding_id: preselectedHolding?.id || undefined,
-      quantity: undefined,
-      unit_value: undefined,
+      holding_id: preselectedHolding?.id || "",
+      quantity: 0,
+      unit_value: 0,
       description: "",
     },
   });
