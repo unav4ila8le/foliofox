@@ -32,15 +32,17 @@ import { cn } from "@/lib/utils";
 
 import { createRecord } from "@/server/records/create";
 
-import type { Holding } from "@/types/global.types";
+import type { TransformedHolding } from "@/types/global.types";
 
 const formSchema = z.object({
   date: z.date({
     required_error: "A date is required.",
   }),
-  holding_id: z.string({
-    required_error: "Please select a holding.",
-  }),
+  holding_id: z
+    .string({
+      required_error: "Please select a holding.",
+    })
+    .min(1, "Please select a holding."),
   quantity: z.coerce.number().gt(0, "Quantity must be greater than 0"),
   unit_value: z.coerce.number().gt(0, "Value must be greater than 0"),
   description: z
@@ -54,17 +56,16 @@ const formSchema = z.object({
 export function NewRecordForm() {
   const { setOpen, preselectedHolding } = useNewRecordDialog();
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedHolding, setSelectedHolding] = useState<Holding | null>(
-    preselectedHolding,
-  );
+  const [selectedHolding, setSelectedHolding] =
+    useState<TransformedHolding | null>(preselectedHolding);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       date: new Date(),
-      holding_id: preselectedHolding?.id || "",
-      quantity: 0,
-      unit_value: 0,
+      holding_id: preselectedHolding?.id || undefined,
+      quantity: undefined,
+      unit_value: undefined,
       description: "",
     },
   });
@@ -72,17 +73,13 @@ export function NewRecordForm() {
   // Pre-populate values when a holding is selected
   useEffect(() => {
     if (selectedHolding) {
-      // Only update if fields are empty or if it's a different holding
-      const currentHoldingId = form.getValues("holding_id");
-      if (currentHoldingId === selectedHolding.id) {
-        form.setValue("quantity", selectedHolding.current_quantity || 0);
-        form.setValue("unit_value", selectedHolding.current_unit_value || 0);
-      }
+      form.setValue("quantity", selectedHolding.current_quantity || 0);
+      form.setValue("unit_value", selectedHolding.current_unit_value || 0);
     }
   }, [selectedHolding, form]);
 
   // Handle holding selection from dropdown
-  const handleHoldingSelect = (holding: Holding | null) => {
+  const handleHoldingSelect = (holding: TransformedHolding | null) => {
     setSelectedHolding(holding);
   };
 

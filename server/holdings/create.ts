@@ -15,20 +15,17 @@ export async function createHolding(formData: FormData) {
   // Extract and validate data from formData
   const data: Pick<
     Holding,
-    | "name"
-    | "category_code"
-    | "currency"
-    | "current_unit_value"
-    | "current_quantity"
-    | "description"
+    "name" | "category_code" | "currency" | "description"
   > = {
     name: formData.get("name") as string,
     category_code: formData.get("category_code") as string,
     currency: formData.get("currency") as string,
-    current_unit_value: Number(formData.get("current_unit_value")),
-    current_quantity: Number(formData.get("current_quantity")),
     description: (formData.get("description") as string) || "",
   };
+
+  // Extract current quantity and unit value separately (for the initial record)
+  const current_quantity = Number(formData.get("current_quantity"));
+  const current_unit_value = Number(formData.get("current_unit_value"));
 
   // Insert into holdings table
   const { data: holding, error: holdingError } = await supabase
@@ -53,8 +50,8 @@ export async function createHolding(formData: FormData) {
   const recordFormData = new FormData();
   recordFormData.append("holding_id", holding.id);
   recordFormData.append("date", new Date().toISOString());
-  recordFormData.append("quantity", data.current_quantity.toString());
-  recordFormData.append("unit_value", data.current_unit_value.toString());
+  recordFormData.append("quantity", current_quantity.toString());
+  recordFormData.append("unit_value", current_unit_value.toString());
   recordFormData.append("description", "Initial holding creation");
 
   const recordResult = await createRecord(recordFormData);

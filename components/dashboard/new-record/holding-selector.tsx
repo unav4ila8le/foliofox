@@ -30,7 +30,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 import { fetchHoldings } from "@/server/holdings/fetch";
 
-import type { Holding } from "@/types/global.types";
+import type { Holding, TransformedHolding } from "@/types/global.types";
 
 // Props interface for react-hook-form integration
 interface HoldingSelectorProps {
@@ -38,9 +38,9 @@ interface HoldingSelectorProps {
     value: string;
     onChange: (value: string) => void;
   };
-  onHoldingSelect?: (holding: Holding | null) => void;
+  onHoldingSelect?: (holding: TransformedHolding | null) => void;
   id?: string;
-  preselectedHolding?: Holding | null;
+  preselectedHolding?: TransformedHolding | null;
 }
 
 export function HoldingSelector({
@@ -50,7 +50,7 @@ export function HoldingSelector({
   preselectedHolding,
 }: HoldingSelectorProps) {
   const [open, setOpen] = useState(false);
-  const [holdings, setHoldings] = useState<Holding[]>([]);
+  const [holdings, setHoldings] = useState<TransformedHolding[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const isMobile = useIsMobile();
 
@@ -157,8 +157,8 @@ interface HoldingListProps {
   setOpen: (open: boolean) => void;
   value: string;
   onChange: (value: string) => void;
-  onHoldingSelect?: (holding: Holding | null) => void;
-  holdings: Holding[];
+  onHoldingSelect?: (holding: TransformedHolding | null) => void;
+  holdings: TransformedHolding[];
   isLoading: boolean;
 }
 

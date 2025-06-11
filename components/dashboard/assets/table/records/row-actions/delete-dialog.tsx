@@ -4,9 +4,9 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -64,7 +64,7 @@ export function DeleteRecordDialog({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
-          <AlertDialogAction disabled={isLoading} onClick={handleDelete}>
+          <Button disabled={isLoading} onClick={handleDelete}>
             {isLoading ? (
               <>
                 <Loader2 className="size-4 animate-spin" /> Deleting...
@@ -72,7 +72,7 @@ export function DeleteRecordDialog({
             ) : (
               "Delete"
             )}
-          </AlertDialogAction>
+          </Button>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

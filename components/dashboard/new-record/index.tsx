@@ -14,14 +14,14 @@ import {
 
 import { NewRecordForm } from "./form";
 
-import type { Holding } from "@/types/global.types";
+import type { TransformedHolding } from "@/types/global.types";
 import type { VariantProps } from "class-variance-authority";
 
 type NewRecordDialogContextType = {
   open: boolean;
   setOpen: (open: boolean) => void;
-  preselectedHolding: Holding | null;
-  setPreselectedHolding: (holding: Holding | null) => void;
+  preselectedHolding: TransformedHolding | null;
+  setPreselectedHolding: (holding: TransformedHolding | null) => void;
 };
 
 const NewRecordDialogContext = createContext<
@@ -34,9 +34,8 @@ export function NewRecordDialogProvider({
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
-  const [preselectedHolding, setPreselectedHolding] = useState<Holding | null>(
-    null,
-  );
+  const [preselectedHolding, setPreselectedHolding] =
+    useState<TransformedHolding | null>(null);
 
   return (
     <NewRecordDialogContext.Provider
