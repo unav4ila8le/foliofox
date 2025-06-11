@@ -27,9 +27,9 @@ import { DeleteHoldingDialog } from "./delete-dialog";
 
 import { restoreHolding } from "@/server/holdings/restore";
 
-import type { Holding } from "@/types/global.types";
+import type { TransformedHolding } from "@/types/global.types";
 
-export function ActionsCell({ holding }: { holding: Holding }) {
+export function ActionsCell({ holding }: { holding: TransformedHolding }) {
   const { setOpen, setPreselectedHolding } = useNewRecordDialog();
   const [showUpdateDialog, setShowUpdateDialog] = useState(false);
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
