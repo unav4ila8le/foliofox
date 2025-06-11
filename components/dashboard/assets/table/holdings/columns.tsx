@@ -67,7 +67,11 @@ export const columns: ColumnDef<TransformedHolding>[] = [
     cell: ({ row }) => {
       const total_value = row.getValue<number>("total_value");
 
-      return <div className="tabular-nums">{formatNumber(total_value, 2)}</div>;
+      return (
+        <div className="tabular-nums">
+          {formatNumber(total_value, undefined, { maximumFractionDigits: 2 })}
+        </div>
+      );
     },
   },
   {

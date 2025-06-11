@@ -54,7 +54,7 @@ export async function createHolding(formData: FormData) {
   recordFormData.append("holding_id", holding.id);
   recordFormData.append("date", new Date().toISOString());
   recordFormData.append("quantity", data.current_quantity.toString());
-  recordFormData.append("value", data.current_unit_value.toString());
+  recordFormData.append("unit_value", data.current_unit_value.toString());
   recordFormData.append("description", "Initial holding creation");
 
   const recordResult = await createRecord(recordFormData);

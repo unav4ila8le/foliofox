@@ -16,8 +16,6 @@ export type Holding = Pick<
   | "name"
   | "category_code"
   | "currency"
-  | "current_quantity"
-  | "current_unit_value"
   | "description"
   | "is_archived"
   | "archived_at"
@@ -27,6 +25,8 @@ export type Holding = Pick<
 
 export type TransformedHolding = Holding & {
   asset_type: string;
+  current_quantity: number;
+  current_unit_value: number;
   total_value: number;
 };
 

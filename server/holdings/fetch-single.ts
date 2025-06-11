@@ -18,8 +18,6 @@ export async function fetchSingleHolding(holdingId: string) {
       name,
       category_code,
       currency,
-      current_quantity,
-      current_unit_value,
       description,
       is_archived,
       archived_at,
@@ -40,11 +38,27 @@ export async function fetchSingleHolding(holdingId: string) {
     throw new Error(error.message);
   }
 
-  // Transform the data to include asset_type and total_value
+  // Get the most recent record for this holding
+  const { data: latestRecord } = await supabase
+    .from("records")
+    .select("unit_value, quantity")
+    .eq("holding_id", holding.id)
+    .eq("user_id", user.id)
+    .order("date", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const current_unit_value = latestRecord?.unit_value || 0;
+  const current_quantity = latestRecord?.quantity || 0;
+
+  // Transform the data to include current_unit_value, current_quantity, total_value and asset_type
   const transformedHolding: TransformedHolding = {
     ...holding,
     asset_type: holding.asset_categories.name,
-    total_value: holding.current_unit_value * holding.current_quantity,
+    current_unit_value,
+    current_quantity,
+    total_value: current_unit_value * current_quantity,
   };
 
   return transformedHolding;

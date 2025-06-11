@@ -23,8 +23,6 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
       name,
       category_code,
       currency,
-      current_quantity,
-      current_unit_value,
       description,
       is_archived,
       archived_at,
@@ -52,12 +50,32 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
     throw new Error(error.message);
   }
 
-  // Transform the data to include asset_type and total_value
-  const transformedHoldings: TransformedHolding[] = holdings.map((holding) => ({
-    ...holding,
-    asset_type: holding.asset_categories.name,
-    total_value: holding.current_unit_value * holding.current_quantity,
-  }));
+  // Transform the data by fetching latest records and include asset_type, current_unit_value, current_quantity, and total_value
+  const transformedHoldings: TransformedHolding[] = await Promise.all(
+    holdings.map(async (holding) => {
+      // Get the most recent record for this holding
+      const { data: latestRecord } = await supabase
+        .from("records")
+        .select("unit_value, quantity")
+        .eq("holding_id", holding.id)
+        .eq("user_id", user.id)
+        .order("date", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const current_unit_value = latestRecord?.unit_value || 0;
+      const current_quantity = latestRecord?.quantity || 0;
+
+      return {
+        ...holding,
+        asset_type: holding.asset_categories.name,
+        current_unit_value,
+        current_quantity,
+        total_value: current_unit_value * current_quantity,
+      };
+    }),
+  );
 
   return transformedHoldings;
 }

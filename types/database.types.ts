@@ -189,8 +189,6 @@ export type Database = {
           category_code: string;
           created_at: string;
           currency: string;
-          current_quantity: number;
-          current_unit_value: number;
           description: string | null;
           id: string;
           is_archived: boolean;
@@ -203,8 +201,6 @@ export type Database = {
           category_code?: string;
           created_at?: string;
           currency: string;
-          current_quantity?: number;
-          current_unit_value?: number;
           description?: string | null;
           id?: string;
           is_archived?: boolean;
@@ -217,8 +213,6 @@ export type Database = {
           category_code?: string;
           created_at?: string;
           currency?: string;
-          current_quantity?: number;
-          current_unit_value?: number;
           description?: string | null;
           id?: string;
           is_archived?: boolean;
