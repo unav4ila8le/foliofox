@@ -57,7 +57,7 @@ export function HoldingSelector({
   // Load holdings when the selector opens
   const getHoldings = async () => {
     try {
-      const data = await fetchHoldings({ includeArchived: false });
+      const data = await fetchHoldings();
       setHoldings(data);
     } catch (error) {
       console.error("Error loading holdings:", error);

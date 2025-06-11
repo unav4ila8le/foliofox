@@ -5,7 +5,7 @@ import { fetchExchangeRate } from "@/server/exchange-rates/fetch";
 
 // Calculate asset allocation by category
 export async function calculateAssetAllocation(targetCurrency: string) {
-  const holdings = await fetchHoldings();
+  const holdings = await fetchHoldings({ includeArchived: true });
 
   // Convert all holdings to USD and calculate their values
   const holdingsInUSD = await Promise.all(
