@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { format } from "date-fns";
 
 import { getCurrentUser } from "@/server/auth/actions";
 
@@ -49,7 +50,7 @@ export async function createHolding(formData: FormData) {
   // Create initial record using the existing createRecord function (convert to formData first)
   const recordFormData = new FormData();
   recordFormData.append("holding_id", holding.id);
-  recordFormData.append("date", new Date().toISOString());
+  recordFormData.append("date", format(new Date(), "yyyy-MM-dd"));
   recordFormData.append("quantity", current_quantity.toString());
   recordFormData.append("unit_value", current_unit_value.toString());
   recordFormData.append("description", "Initial holding creation");

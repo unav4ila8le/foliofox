@@ -1,5 +1,7 @@
 "use server";
 
+import { format } from "date-fns";
+
 import { fetchHoldings } from "@/server/holdings/fetch";
 import { fetchExchangeRate } from "@/server/exchange-rates/fetch";
 
@@ -11,8 +13,8 @@ import type { Holding } from "@/types/global.types";
 // Calculate total net worth in specified target currency at a specific date
 export async function calculateNetWorth(
   targetCurrency: string,
-  date: Date = new Date(), // Defaults to current date
-): Promise<number> {
+  date: Date = new Date(),
+) {
   const supabase = await createClient();
   const holdings = await fetchHoldings({ includeArchived: true });
 
@@ -59,7 +61,7 @@ async function fetchHistoricalData(
     .from("records")
     .select("unit_value, quantity")
     .eq("holding_id", holding.id)
-    .lte("date", date.toISOString())
+    .lte("date", format(date, "yyyy-MM-dd"))
     .order("date", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(1)

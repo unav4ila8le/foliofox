@@ -1,15 +1,14 @@
 "use server";
 
+import { format } from "date-fns";
+
 import { createClient } from "@/utils/supabase/server";
 
-/**
- * Fetch a specific exchange rate from USD to target currency.
- * Used for converting holding values to USD for net worth and other calculations.
- */
+// Fetch a specific exchange rate from USD to target currency.
 export async function fetchExchangeRate(
   targetCurrency: string,
   date: Date = new Date(),
-): Promise<number> {
+) {
   // Check if target currency is USD
   if (targetCurrency === "USD") {
     return 1;
@@ -17,7 +16,7 @@ export async function fetchExchangeRate(
 
   // Supabase client
   const supabase = await createClient();
-  const dateString = date.toISOString().slice(0, 10);
+  const dateString = format(date, "yyyy-MM-dd");
 
   // 1. Try to get the exchange rate for the exact date
   const { data: rate, error } = await supabase

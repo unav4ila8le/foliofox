@@ -94,7 +94,7 @@ export function NewRecordForm() {
       const formData = new FormData();
       formData.append("type", "update");
       formData.append("holding_id", values.holding_id);
-      formData.append("date", values.date.toISOString());
+      formData.append("date", format(values.date, "yyyy-MM-dd"));
       formData.append("quantity", values.quantity.toString());
       formData.append("unit_value", values.unit_value.toString());
       formData.append("description", values.description || "");

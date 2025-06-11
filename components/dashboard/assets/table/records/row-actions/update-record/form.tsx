@@ -71,7 +71,7 @@ export function UpdateRecordForm({ record, onSuccess }: UpdateRecordFormProps) {
     setIsLoading(true);
     try {
       const formData = new FormData();
-      formData.append("date", values.date.toISOString());
+      formData.append("date", format(values.date, "yyyy-MM-dd"));
       formData.append("quantity", values.quantity.toString());
       formData.append("unit_value", values.unit_value.toString());
       formData.append("description", values.description || "");
