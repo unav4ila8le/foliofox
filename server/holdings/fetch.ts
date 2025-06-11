@@ -24,7 +24,7 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
       category_code,
       currency,
       current_quantity,
-      current_value,
+      current_unit_value,
       description,
       is_archived,
       archived_at,
@@ -56,7 +56,7 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
   const transformedHoldings: TransformedHolding[] = holdings.map((holding) => ({
     ...holding,
     asset_type: holding.asset_categories.name,
-    total_value: holding.current_value * holding.current_quantity,
+    total_value: holding.current_unit_value * holding.current_quantity,
   }));
 
   return transformedHoldings;

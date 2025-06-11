@@ -41,7 +41,7 @@ const formSchema = z.object({
     required_error: "A date is required.",
   }),
   quantity: z.coerce.number().gt(0, "Quantity must be greater than 0"),
-  value: z.coerce.number().gt(0, "Value must be greater than 0"),
+  unit_value: z.coerce.number().gt(0, "Value must be greater than 0"),
   description: z
     .string()
     .max(256, {
@@ -58,7 +58,7 @@ export function UpdateRecordForm({ record, onSuccess }: UpdateRecordFormProps) {
     defaultValues: {
       date: new Date(record.date),
       quantity: record.quantity,
-      value: record.value,
+      unit_value: record.unit_value,
       description: record.description ?? undefined,
     },
   });
@@ -73,7 +73,7 @@ export function UpdateRecordForm({ record, onSuccess }: UpdateRecordFormProps) {
       const formData = new FormData();
       formData.append("date", values.date.toISOString());
       formData.append("quantity", values.quantity.toString());
-      formData.append("value", values.value.toString());
+      formData.append("unit_value", values.unit_value.toString());
       formData.append("description", values.description || "");
 
       const result = await updateRecord(formData, record.id);
@@ -144,10 +144,10 @@ export function UpdateRecordForm({ record, onSuccess }: UpdateRecordFormProps) {
         <div className="grid items-start gap-x-2 gap-y-4 sm:grid-cols-2">
           <FormField
             control={form.control}
-            name="value"
+            name="unit_value"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Value</FormLabel>
+                <FormLabel>Unit value</FormLabel>
                 <FormControl>
                   <Input
                     placeholder="E.g., 420.69"

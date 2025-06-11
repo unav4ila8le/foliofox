@@ -42,7 +42,7 @@ const formSchema = z.object({
     required_error: "Please select a holding.",
   }),
   quantity: z.coerce.number().gt(0, "Quantity must be greater than 0"),
-  value: z.coerce.number().gt(0, "Value must be greater than 0"),
+  unit_value: z.coerce.number().gt(0, "Value must be greater than 0"),
   description: z
     .string()
     .max(256, {
@@ -64,7 +64,7 @@ export function NewRecordForm() {
       date: new Date(),
       holding_id: preselectedHolding?.id || "",
       quantity: 0,
-      value: 0,
+      unit_value: 0,
       description: "",
     },
   });
@@ -76,7 +76,7 @@ export function NewRecordForm() {
       const currentHoldingId = form.getValues("holding_id");
       if (currentHoldingId === selectedHolding.id) {
         form.setValue("quantity", selectedHolding.current_quantity || 0);
-        form.setValue("value", selectedHolding.current_value || 0);
+        form.setValue("unit_value", selectedHolding.current_unit_value || 0);
       }
     }
   }, [selectedHolding, form]);
@@ -99,7 +99,7 @@ export function NewRecordForm() {
       formData.append("holding_id", values.holding_id);
       formData.append("date", values.date.toISOString());
       formData.append("quantity", values.quantity.toString());
-      formData.append("value", values.value.toString());
+      formData.append("unit_value", values.unit_value.toString());
       formData.append("description", values.description || "");
 
       const result = await createRecord(formData);
@@ -190,10 +190,10 @@ export function NewRecordForm() {
         <div className="grid items-start gap-x-2 gap-y-4 sm:grid-cols-2">
           <FormField
             control={form.control}
-            name="value"
+            name="unit_value"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Value</FormLabel>
+                <FormLabel>Unit value</FormLabel>
                 <FormControl>
                   <Input
                     placeholder="E.g., 420.69"

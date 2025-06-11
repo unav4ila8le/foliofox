@@ -12,11 +12,11 @@ export async function updateRecord(formData: FormData, recordId: string) {
   // Extract and validate data from formData
   const updateData: Pick<
     Record,
-    "date" | "quantity" | "value" | "description"
+    "date" | "quantity" | "unit_value" | "description"
   > = {
     date: formData.get("date") as string,
     quantity: Number(formData.get("quantity")),
-    value: Number(formData.get("value")),
+    unit_value: Number(formData.get("unit_value")),
     description: (formData.get("description") as string) || "",
   };
 

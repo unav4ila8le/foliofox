@@ -36,7 +36,7 @@ export async function calculateNetWorth(
           supabase,
         );
         holdingValue =
-          (valuationData?.value || 0) * (quantityData?.quantity || 0);
+          (valuationData?.unit_value || 0) * (quantityData?.quantity || 0);
       }
 
       const convertedValue = await convertToTargetCurrency(
@@ -67,7 +67,7 @@ async function fetchHistoricalData(
   const [valuationResponse, quantityResponse] = await Promise.all([
     supabase
       .from("holding_valuations")
-      .select("value")
+      .select("unit_value")
       .eq("holding_id", holding.id)
       .lte("date", date.toISOString())
       .order("date", { ascending: false })

@@ -17,7 +17,7 @@ export type Holding = Pick<
   | "category_code"
   | "currency"
   | "current_quantity"
-  | "current_value"
+  | "current_unit_value"
   | "description"
   | "is_archived"
   | "archived_at"

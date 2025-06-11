@@ -31,7 +31,7 @@ const formSchema = z.object({
     .max(64, "Name must not exceed 64 characters."),
   category_code: z.string().min(1, "Category is required"),
   currency: z.string().length(3),
-  current_value: z.coerce.number().gt(0, "Value must be greater than 0"),
+  current_unit_value: z.coerce.number().gt(0, "Value must be greater than 0"),
   current_quantity: z.coerce.number().gt(0, "Quantity must be greater than 0"),
   description: z
     .string()
@@ -50,7 +50,7 @@ export function NewHoldingForm() {
       name: "",
       category_code: "",
       currency: profile.display_currency,
-      current_value: 0,
+      current_unit_value: 0,
       current_quantity: 0,
       description: "",
     },
@@ -67,7 +67,10 @@ export function NewHoldingForm() {
       formData.append("name", values.name);
       formData.append("category_code", values.category_code);
       formData.append("currency", values.currency);
-      formData.append("current_value", values.current_value.toString());
+      formData.append(
+        "current_unit_value",
+        values.current_unit_value.toString(),
+      );
       formData.append("current_quantity", values.current_quantity.toString());
       formData.append("description", values.description || "");
 
@@ -140,10 +143,10 @@ export function NewHoldingForm() {
         <div className="grid items-start gap-x-2 gap-y-4 sm:grid-cols-2">
           <FormField
             control={form.control}
-            name="current_value"
+            name="current_unit_value"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Current value</FormLabel>
+                <FormLabel>Current unit value</FormLabel>
                 <FormControl>
                   <Input
                     placeholder="E.g., 420.69"

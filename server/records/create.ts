@@ -17,12 +17,12 @@ export async function createRecord(formData: FormData) {
   // Extract and validate data from formData
   const data: Pick<
     Record,
-    "date" | "holding_id" | "quantity" | "value" | "description"
+    "date" | "holding_id" | "quantity" | "unit_value" | "description"
   > = {
     date: formData.get("date") as string,
     holding_id: formData.get("holding_id") as string,
     quantity: Number(formData.get("quantity")),
-    value: Number(formData.get("value")),
+    unit_value: Number(formData.get("unit_value")),
     description: (formData.get("description") as string) || "",
   };
 
@@ -73,11 +73,11 @@ export async function createRecord(formData: FormData) {
   // Create holding_valuations entry
   const valuationData: Pick<
     HoldingValuation,
-    "holding_id" | "date" | "value" | "description" | "record_id"
+    "holding_id" | "date" | "unit_value" | "description" | "record_id"
   > = {
     holding_id: data.holding_id,
     date: data.date,
-    value: data.value,
+    unit_value: data.unit_value,
     description: "New record",
     record_id: record.id,
   };

@@ -50,14 +50,14 @@ export const columns: ColumnDef<TransformedHolding>[] = [
     },
   },
   {
-    accessorKey: "current_value",
-    header: "Value",
+    accessorKey: "current_unit_value",
+    header: "Unit value",
     cell: ({ row }) => {
-      const value = row.getValue<number>("current_value");
+      const unit_value = row.getValue<number>("current_unit_value");
 
       return (
         <div className="tabular-nums">
-          {formatNumber(value, undefined, { maximumFractionDigits: 2 })}
+          {formatNumber(unit_value, undefined, { maximumFractionDigits: 2 })}
         </div>
       );
     },

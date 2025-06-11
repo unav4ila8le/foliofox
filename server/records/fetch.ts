@@ -22,7 +22,7 @@ export async function fetchRecords(holdingId: string) {
   // Transform records to include total value
   const transformedRecords: TransformedRecord[] = records.map((record) => ({
     ...record,
-    total_value: record.quantity * record.value,
+    total_value: record.quantity * record.unit_value,
   }));
 
   return transformedRecords;

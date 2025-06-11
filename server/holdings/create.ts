@@ -18,14 +18,14 @@ export async function createHolding(formData: FormData) {
     | "name"
     | "category_code"
     | "currency"
-    | "current_value"
+    | "current_unit_value"
     | "current_quantity"
     | "description"
   > = {
     name: formData.get("name") as string,
     category_code: formData.get("category_code") as string,
     currency: formData.get("currency") as string,
-    current_value: Number(formData.get("current_value")),
+    current_unit_value: Number(formData.get("current_unit_value")),
     current_quantity: Number(formData.get("current_quantity")),
     description: (formData.get("description") as string) || "",
   };
@@ -54,7 +54,7 @@ export async function createHolding(formData: FormData) {
   recordFormData.append("holding_id", holding.id);
   recordFormData.append("date", new Date().toISOString());
   recordFormData.append("quantity", data.current_quantity.toString());
-  recordFormData.append("value", data.current_value.toString());
+  recordFormData.append("value", data.current_unit_value.toString());
   recordFormData.append("description", "Initial holding creation");
 
   const recordResult = await createRecord(recordFormData);

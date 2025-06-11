@@ -48,13 +48,13 @@ export const columns: ColumnDef<TransformedRecord>[] = [
     },
   },
   {
-    accessorKey: "value",
+    accessorKey: "unit_value",
     header: "Unit Value",
     cell: ({ row }) => {
-      const value = row.getValue<number>("value");
+      const unit_value = row.getValue<number>("unit_value");
       return (
         <div className="tabular-nums">
-          {formatNumber(value, undefined, { maximumFractionDigits: 2 })}
+          {formatNumber(unit_value, undefined, { maximumFractionDigits: 2 })}
         </div>
       );
     },

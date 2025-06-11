@@ -146,7 +146,7 @@ export type Database = {
           holding_id: string;
           id: string;
           record_id: string;
-          value: number;
+          unit_value: number;
         };
         Insert: {
           created_at?: string;
@@ -155,7 +155,7 @@ export type Database = {
           holding_id?: string;
           id?: string;
           record_id: string;
-          value: number;
+          unit_value: number;
         };
         Update: {
           created_at?: string;
@@ -164,7 +164,7 @@ export type Database = {
           holding_id?: string;
           id?: string;
           record_id?: string;
-          value?: number;
+          unit_value?: number;
         };
         Relationships: [
           {
@@ -190,7 +190,7 @@ export type Database = {
           created_at: string;
           currency: string;
           current_quantity: number;
-          current_value: number;
+          current_unit_value: number;
           description: string | null;
           id: string;
           is_archived: boolean;
@@ -204,7 +204,7 @@ export type Database = {
           created_at?: string;
           currency: string;
           current_quantity?: number;
-          current_value?: number;
+          current_unit_value?: number;
           description?: string | null;
           id?: string;
           is_archived?: boolean;
@@ -218,7 +218,7 @@ export type Database = {
           created_at?: string;
           currency?: string;
           current_quantity?: number;
-          current_value?: number;
+          current_unit_value?: number;
           description?: string | null;
           id?: string;
           is_archived?: boolean;
@@ -286,9 +286,9 @@ export type Database = {
           holding_id: string;
           id: string;
           quantity: number;
+          unit_value: number;
           updated_at: string;
           user_id: string;
-          value: number;
         };
         Insert: {
           created_at?: string;
@@ -297,9 +297,9 @@ export type Database = {
           holding_id: string;
           id?: string;
           quantity: number;
+          unit_value: number;
           updated_at?: string;
           user_id: string;
-          value: number;
         };
         Update: {
           created_at?: string;
@@ -308,9 +308,9 @@ export type Database = {
           holding_id?: string;
           id?: string;
           quantity?: number;
+          unit_value?: number;
           updated_at?: string;
           user_id?: string;
-          value?: number;
         };
         Relationships: [
           {

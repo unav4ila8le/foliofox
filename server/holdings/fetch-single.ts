@@ -19,7 +19,7 @@ export async function fetchSingleHolding(holdingId: string) {
       category_code,
       currency,
       current_quantity,
-      current_value,
+      current_unit_value,
       description,
       is_archived,
       archived_at,
@@ -44,7 +44,7 @@ export async function fetchSingleHolding(holdingId: string) {
   const transformedHolding: TransformedHolding = {
     ...holding,
     asset_type: holding.asset_categories.name,
-    total_value: holding.current_value * holding.current_quantity,
+    total_value: holding.current_unit_value * holding.current_quantity,
   };
 
   return transformedHolding;
