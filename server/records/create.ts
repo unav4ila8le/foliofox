@@ -4,11 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { getCurrentUser } from "@/server/auth/actions";
 
-import type {
-  Record,
-  HoldingQuantity,
-  HoldingValuation,
-} from "@/types/global.types";
+import type { Record } from "@/types/global.types";
 
 // Create record
 export async function createRecord(formData: FormData) {
@@ -27,71 +23,17 @@ export async function createRecord(formData: FormData) {
   };
 
   // Insert into records table
-  const { data: record, error: recordError } = await supabase
-    .from("records")
-    .insert({
-      user_id: user.id,
-      ...data,
-    })
-    .select("id")
-    .single();
+  const { error } = await supabase.from("records").insert({
+    user_id: user.id,
+    ...data,
+  });
 
   // Return Supabase errors instead of throwing
-  if (!record || recordError) {
+  if (error) {
     return {
       success: false,
-      code: recordError?.code || "UNKNOWN",
-      message: recordError?.message || "Failed to create record",
-    };
-  }
-
-  // Create holding_quantities entry
-  const quantityData: Pick<
-    HoldingQuantity,
-    "holding_id" | "date" | "quantity" | "description" | "record_id"
-  > = {
-    holding_id: data.holding_id,
-    date: data.date,
-    quantity: data.quantity,
-    description: "New record",
-    record_id: record.id,
-  };
-
-  const { error: quantityError } = await supabase
-    .from("holding_quantities")
-    .insert(quantityData);
-
-  // Return Supabase errors instead of throwing
-  if (quantityError) {
-    return {
-      success: false,
-      code: quantityError.code,
-      message: quantityError.message,
-    };
-  }
-
-  // Create holding_valuations entry
-  const valuationData: Pick<
-    HoldingValuation,
-    "holding_id" | "date" | "unit_value" | "description" | "record_id"
-  > = {
-    holding_id: data.holding_id,
-    date: data.date,
-    unit_value: data.unit_value,
-    description: "New record",
-    record_id: record.id,
-  };
-
-  const { error: valuationError } = await supabase
-    .from("holding_valuations")
-    .insert(valuationData);
-
-  // Return Supabase errors instead of throwing
-  if (valuationError) {
-    return {
-      success: false,
-      code: valuationError.code,
-      message: valuationError.message,
+      code: error?.code || "UNKNOWN",
+      message: error?.message || "Failed to create record",
     };
   }
 

@@ -30,21 +30,15 @@ export type TransformedHolding = Holding & {
   total_value: number;
 };
 
-//Asset Category
-export type AssetCategory = Tables<"asset_categories">;
-
-//Holding Quantity
-export type HoldingQuantity = Tables<"holding_quantities">;
-
-//Holding Valuation
-export type HoldingValuation = Tables<"holding_valuations">;
-
-//Exchange Rate
-export type ExchangeRate = Tables<"exchange_rates">;
-
 // Record
 export type Record = Tables<"records">;
 
 export type TransformedRecord = Record & {
   total_value: number;
 };
+
+//Asset Category
+export type AssetCategory = Tables<"asset_categories">;
+
+//Exchange Rate
+export type ExchangeRate = Tables<"exchange_rates">;

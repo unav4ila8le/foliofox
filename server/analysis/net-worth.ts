@@ -22,22 +22,12 @@ export async function calculateNetWorth(
 
   for (const holding of holdings) {
     try {
-      // For current date, use the cached total_value
-      const isToday = date.toDateString() === new Date().toDateString();
-
-      let holdingValue: number;
-      if (isToday) {
-        holdingValue = holding.total_value;
-      } else {
-        // For historical dates, fetch from database
-        const { valuationData, quantityData } = await fetchHistoricalData(
-          holding,
-          date,
-          supabase,
-        );
-        holdingValue =
-          (valuationData?.unit_value || 0) * (quantityData?.quantity || 0);
-      }
+      const { valuationData, quantityData } = await fetchHistoricalData(
+        holding,
+        date,
+        supabase,
+      );
+      const holdingValue = (valuationData || 0) * (quantityData || 0);
 
       const convertedValue = await convertToTargetCurrency(
         holdingValue,
@@ -64,28 +54,20 @@ async function fetchHistoricalData(
   date: Date,
   supabase: SupabaseClient,
 ) {
-  const [valuationResponse, quantityResponse] = await Promise.all([
-    supabase
-      .from("holding_valuations")
-      .select("unit_value")
-      .eq("holding_id", holding.id)
-      .lte("date", date.toISOString())
-      .order("date", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    supabase
-      .from("holding_quantities")
-      .select("quantity")
-      .eq("holding_id", holding.id)
-      .lte("date", date.toISOString())
-      .order("date", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-  ]);
+  // Get the most recent record for this holding at or before the specified date
+  const { data: record } = await supabase
+    .from("records")
+    .select("unit_value, quantity")
+    .eq("holding_id", holding.id)
+    .lte("date", date.toISOString())
+    .order("date", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
   return {
-    valuationData: valuationResponse.data,
-    quantityData: quantityResponse.data,
+    valuationData: record?.unit_value,
+    quantityData: record?.quantity,
   };
 }
 
