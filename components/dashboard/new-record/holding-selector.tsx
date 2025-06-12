@@ -30,7 +30,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 import { fetchHoldings } from "@/server/holdings/fetch";
 
-import type { Holding, TransformedHolding } from "@/types/global.types";
+import type { TransformedHolding } from "@/types/global.types";
 
 // Props interface for react-hook-form integration
 interface HoldingSelectorProps {
