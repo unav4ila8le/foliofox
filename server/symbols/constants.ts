@@ -1,5 +1,0 @@
-export const ASSET_CATEGORY_TO_QUOTE_TYPE = {
-  EQUITY: ["EQUITY", "ETF"],
-  "FIXED INCOME": ["BOND"],
-  CRYPTOCURRENCIES: ["CRYPTOCURRENCY"],
-} as const;
