@@ -51,45 +51,6 @@ export type Database = {
         };
         Relationships: [];
       };
-      equities: {
-        Row: {
-          created_at: string;
-          exchange: string | null;
-          id: string;
-          industry: string | null;
-          long_name: string | null;
-          name: string;
-          sector: string | null;
-          short_name: string | null;
-          symbol: string;
-          updated_at: string;
-        };
-        Insert: {
-          created_at?: string;
-          exchange?: string | null;
-          id?: string;
-          industry?: string | null;
-          long_name?: string | null;
-          name: string;
-          sector?: string | null;
-          short_name?: string | null;
-          symbol: string;
-          updated_at?: string;
-        };
-        Update: {
-          created_at?: string;
-          exchange?: string | null;
-          id?: string;
-          industry?: string | null;
-          long_name?: string | null;
-          name?: string;
-          sector?: string | null;
-          short_name?: string | null;
-          symbol?: string;
-          updated_at?: string;
-        };
-        Relationships: [];
-      };
       exchange_rates: {
         Row: {
           base_currency: string;
@@ -139,10 +100,10 @@ export type Database = {
           created_at: string;
           currency: string;
           description: string | null;
-          equity_id: string | null;
           id: string;
           is_archived: boolean;
           name: string;
+          symbol_id: string | null;
           updated_at: string;
           user_id: string;
         };
@@ -152,10 +113,10 @@ export type Database = {
           created_at?: string;
           currency: string;
           description?: string | null;
-          equity_id?: string | null;
           id?: string;
           is_archived?: boolean;
           name: string;
+          symbol_id?: string | null;
           updated_at?: string;
           user_id?: string;
         };
@@ -165,10 +126,10 @@ export type Database = {
           created_at?: string;
           currency?: string;
           description?: string | null;
-          equity_id?: string | null;
           id?: string;
           is_archived?: boolean;
           name?: string;
+          symbol_id?: string | null;
           updated_at?: string;
           user_id?: string;
         };
@@ -188,10 +149,10 @@ export type Database = {
             referencedColumns: ["alphabetic_code"];
           },
           {
-            foreignKeyName: "holdings_equity_id_fkey";
-            columns: ["equity_id"];
+            foreignKeyName: "holdings_symbol_id_fkey";
+            columns: ["symbol_id"];
             isOneToOne: false;
-            referencedRelation: "equities";
+            referencedRelation: "symbols";
             referencedColumns: ["id"];
           },
         ];
@@ -274,6 +235,45 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      symbols: {
+        Row: {
+          created_at: string;
+          exchange: string | null;
+          id: string;
+          industry: string | null;
+          long_name: string | null;
+          name: string;
+          quote_type: string;
+          sector: string | null;
+          short_name: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          exchange?: string | null;
+          id: string;
+          industry?: string | null;
+          long_name?: string | null;
+          name: string;
+          quote_type: string;
+          sector?: string | null;
+          short_name?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          exchange?: string | null;
+          id?: string;
+          industry?: string | null;
+          long_name?: string | null;
+          name?: string;
+          quote_type?: string;
+          sector?: string | null;
+          short_name?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
       };
     };
     Views: {

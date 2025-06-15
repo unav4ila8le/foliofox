@@ -28,63 +28,61 @@ import {
 
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { searchEquities } from "@/server/equities/search";
+import { searchSymbols } from "@/server/symbols/search";
 
-import type { Equity } from "@/types/global.types";
+import type { Symbol } from "@/types/global.types";
 
 // Props interface for react-hook-form integration
-interface EquitySelectorProps {
+interface SymbolSelectorProps {
   field: {
     value: string;
     onChange: (value: string) => void;
   };
   id?: string;
+  quoteType?: string;
 }
 
-export function EquitySelector({ field, id }: EquitySelectorProps) {
+export function SymbolSelector({ field, id, quoteType }: SymbolSelectorProps) {
   const [open, setOpen] = useState(false);
-  const [results, setResults] = useState<Equity[]>([]);
+  const [results, setResults] = useState<Symbol[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery] = useDebounce(searchQuery, 300);
   const isMobile = useIsMobile();
 
   // Find the selected equity
-  const selectedEquity = results.find(
-    (equity) => equity.symbol === field.value,
-  );
-  const equityName = selectedEquity
-    ? `${selectedEquity.symbol} - ${selectedEquity.name}`
+  const selectedSymbol = results.find((symbol) => symbol.id === field.value);
+  const symbolName = selectedSymbol
+    ? `${selectedSymbol.id} - ${selectedSymbol.name}`
     : field.value;
 
-  const handleSearch = async (query: string) => {
-    if (!query.trim()) {
+  useEffect(() => {
+    if (!debouncedQuery) {
       setResults([]);
       return;
     }
 
     setIsLoading(true);
-    try {
-      const result = await searchEquities({ query, limit: 10 });
-      if (result.success && result.data) {
-        setResults(result.data);
-      } else {
+    (async () => {
+      try {
+        const result = await searchSymbols({
+          query: debouncedQuery,
+          limit: 10,
+          quoteType: quoteType,
+        });
+        if (result.success && result.data) {
+          setResults(result.data);
+        } else {
+          setResults([]);
+        }
+      } catch (error) {
+        console.error("Error searching symbols:", error);
         setResults([]);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error("Error searching equities:", error);
-      setResults([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Debounce the search query
-  useEffect(() => {
-    if (debouncedQuery) {
-      handleSearch(debouncedQuery);
-    }
-  }, [debouncedQuery]);
+    })();
+  }, [debouncedQuery, quoteType]);
 
   if (isMobile) {
     return (
@@ -97,10 +95,10 @@ export function EquitySelector({ field, id }: EquitySelectorProps) {
             aria-expanded={open}
             className={cn(
               "justify-between font-normal",
-              !equityName && "text-muted-foreground",
+              !symbolName && "text-muted-foreground",
             )}
           >
-            {equityName || "Search equity"}
+            {symbolName || "Search symbol"}
             <Search className="text-muted-foreground" />
           </Button>
         </DrawerTrigger>
@@ -108,7 +106,7 @@ export function EquitySelector({ field, id }: EquitySelectorProps) {
           <DrawerHeader>
             <DrawerTitle>Equity</DrawerTitle>
           </DrawerHeader>
-          <EquityList
+          <SymbolList
             setOpen={setOpen}
             value={field.value}
             onChange={field.onChange}
@@ -131,15 +129,15 @@ export function EquitySelector({ field, id }: EquitySelectorProps) {
           aria-expanded={open}
           className={cn(
             "justify-between font-normal",
-            !equityName && "text-muted-foreground",
+            !symbolName && "text-muted-foreground",
           )}
         >
-          {equityName || "Search equity"}
+          {symbolName || "Search symbol"}
           <Search className="text-muted-foreground" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-(--radix-popover-trigger-width) p-0">
-        <EquityList
+        <SymbolList
           setOpen={setOpen}
           value={field.value}
           onChange={field.onChange}
@@ -152,49 +150,49 @@ export function EquitySelector({ field, id }: EquitySelectorProps) {
   );
 }
 
-interface EquityListProps {
+interface SymbolListProps {
   setOpen: (open: boolean) => void;
   value: string;
   onChange: (value: string) => void;
-  results: Equity[];
+  results: Symbol[];
   isLoading: boolean;
   setSearchQuery: (query: string) => void;
 }
 
-function EquityList({
+function SymbolList({
   setOpen,
   value,
   onChange,
   results,
   isLoading,
   setSearchQuery,
-}: EquityListProps) {
+}: SymbolListProps) {
   return (
     <Command>
       <CommandInput
-        placeholder="Search equity..."
+        placeholder="Search symbol..."
         className="h-9"
         onValueChange={setSearchQuery}
       />
       <CommandList>
         <CommandEmpty>
-          {isLoading ? "Searching..." : "No equities found."}
+          {isLoading ? "Searching..." : "No symbols found."}
         </CommandEmpty>
         <CommandGroup>
-          {results.map((equity) => (
+          {results.map((symbol) => (
             <CommandItem
-              key={equity.symbol}
+              key={symbol.id}
               onSelect={() => {
-                onChange(equity.symbol);
+                onChange(symbol.id);
                 setOpen(false);
               }}
-              value={equity.symbol}
+              value={symbol.id}
             >
-              {equity.symbol} - {equity.name}
+              {symbol.id} - {symbol.name}
               <Check
                 className={cn(
                   "ml-auto",
-                  value === equity.symbol ? "opacity-100" : "opacity-0",
+                  value === symbol.id ? "opacity-100" : "opacity-0",
                 )}
               />
             </CommandItem>
