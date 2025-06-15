@@ -43,6 +43,7 @@
     "recharts": "^2.15.1",
     "sonner": "^2.0.2",
     "tailwind-merge": "^3.0.2",
+    "use-debounce": "^10.0.5",
     "vaul": "^1.1.2",
     "yahoo-finance2": "^2.13.3",
     "zod": "^3.24.2"

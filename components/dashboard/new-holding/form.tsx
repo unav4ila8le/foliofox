@@ -17,8 +17,9 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { CurrencySelector } from "@/components/dashboard/currency-selector";
+import { EquitySelector } from "@/components/dashboard/equity-selector";
 import { AssetCategorySelector } from "@/components/dashboard/asset-category-selector";
+import { CurrencySelector } from "@/components/dashboard/currency-selector";
 
 import { useNewHoldingDialog } from "./index";
 
@@ -30,6 +31,7 @@ const formSchema = z.object({
     .min(3, "Name must be at least 3 characters.")
     .max(64, "Name must not exceed 64 characters."),
   category_code: z.string().min(1, "Category is required"),
+  equity_symbol: z.string(),
   currency: z.string().length(3),
   current_unit_value: z.coerce.number().gt(0, "Value must be greater than 0"),
   current_quantity: z.coerce.number().gt(0, "Quantity must be greater than 0"),
@@ -49,6 +51,7 @@ export function NewHoldingForm() {
     defaultValues: {
       name: "",
       category_code: "",
+      equity_symbol: "",
       currency: profile.display_currency,
       current_unit_value: 0,
       current_quantity: 0,
@@ -121,6 +124,19 @@ export function NewHoldingForm() {
               <FormLabel>Category</FormLabel>
               <FormControl>
                 <AssetCategorySelector field={field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="equity_symbol"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Equity</FormLabel>
+              <FormControl>
+                <EquitySelector field={field} />
               </FormControl>
               <FormMessage />
             </FormItem>
