@@ -42,3 +42,15 @@ export type AssetCategory = Tables<"asset_categories">;
 
 //Exchange Rate
 export type ExchangeRate = Tables<"exchange_rates">;
+
+// Equity
+export type Equity = Pick<
+  Tables<"equities">,
+  | "symbol"
+  | "name"
+  | "short_name"
+  | "long_name"
+  | "exchange"
+  | "industry"
+  | "sector"
+>;
