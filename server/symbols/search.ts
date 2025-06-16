@@ -5,28 +5,8 @@ import { z } from "zod";
 
 import type { Symbol } from "@/types/global.types";
 
-// Define the expected structure from yahoo-finance2 search results
-interface YahooSearchSymbol {
-  symbol: string;
-  quoteType?: string;
-  shortname?: string;
-  longname?: string;
-  exchDisp?: string;
-  exchange?: string;
-  industry?: string;
-  sector?: string;
-}
-
-interface YahooSearchSymbolResult {
-  quotes: YahooSearchSymbol[];
-}
-
-// Define the response type for our search function
-export interface SearchInstrumentsResponse {
-  success: boolean;
-  data?: Symbol[];
-  message?: string;
-}
+// Extract the search result type
+type SearchResult = Awaited<ReturnType<typeof yahooFinance.search>>;
 
 // Define the search parameters schema
 const searchParamsSchema = z.object({
@@ -36,30 +16,30 @@ const searchParamsSchema = z.object({
 });
 
 type SearchParams = z.infer<typeof searchParamsSchema>;
+type QuoteResult = SearchResult["quotes"][0];
 
-/**
- * Search for symbols using the Yahoo Finance API
- * @param params Search parameters including query and optional limit
- * @returns Promise<SearchSymbolsResponse>
- */
 export async function searchSymbols(params: SearchParams) {
   try {
     // Validate the input parameters
     const validatedParams = searchParamsSchema.parse(params);
 
     // Perform the search using yahoo-finance2
-    const searchResults = (await yahooFinance.search(validatedParams.query, {
-      quotesCount: validatedParams.limit,
-      newsCount: 0,
-      enableFuzzyQuery: true,
-    })) as YahooSearchSymbolResult;
+    const searchResults: SearchResult = await yahooFinance.search(
+      validatedParams.query,
+      {
+        quotesCount: validatedParams.limit,
+        newsCount: 0,
+        enableFuzzyQuery: true,
+      },
+    );
 
     // Filter and transform the results to match Symbol type
     const symbols: Symbol[] = searchResults.quotes
       .filter(
-        (quote) => !params.quoteType || quote.quoteType === params.quoteType,
+        (quote: QuoteResult) =>
+          !params.quoteType || quote.quoteType === params.quoteType,
       )
-      .map((quote) => ({
+      .map((quote: QuoteResult) => ({
         id: quote.symbol,
         quote_type: quote.quoteType || "",
         name: quote.shortname || quote.longname || quote.symbol,

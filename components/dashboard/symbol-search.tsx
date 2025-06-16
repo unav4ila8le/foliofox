@@ -33,7 +33,7 @@ import { searchSymbols } from "@/server/symbols/search";
 import type { Symbol } from "@/types/global.types";
 
 // Props interface for react-hook-form integration
-interface SymbolSelectorProps {
+interface SymbolSearchProps {
   field: {
     value: string;
     onChange: (value: string) => void;
@@ -42,7 +42,7 @@ interface SymbolSelectorProps {
   quoteType?: string;
 }
 
-export function SymbolSelector({ field, id, quoteType }: SymbolSelectorProps) {
+export function SymbolSearch({ field, id, quoteType }: SymbolSearchProps) {
   const [open, setOpen] = useState(false);
   const [results, setResults] = useState<Symbol[]>([]);
   const [isLoading, setIsLoading] = useState(false);

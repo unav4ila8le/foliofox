@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { SymbolSelector } from "@/components/dashboard/symbol-selector";
+import { SymbolSearch } from "@/components/dashboard/symbol-search";
 import { AssetCategorySelector } from "@/components/dashboard/asset-category-selector";
 import { CurrencySelector } from "@/components/dashboard/currency-selector";
 
@@ -136,7 +136,7 @@ export function NewHoldingForm() {
             <FormItem>
               <FormLabel>Symbol</FormLabel>
               <FormControl>
-                <SymbolSelector field={field} />
+                <SymbolSearch field={field} />
               </FormControl>
               <FormMessage />
             </FormItem>
