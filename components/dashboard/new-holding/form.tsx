@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { YahooFinanceLogo } from "@/components/ui/logos/yahoo-finance-logo";
 import { SymbolSearch } from "@/components/dashboard/symbol-search";
 import { AssetCategorySelector } from "@/components/dashboard/asset-category-selector";
 import { CurrencySelector } from "@/components/dashboard/currency-selector";
@@ -24,6 +25,11 @@ import { CurrencySelector } from "@/components/dashboard/currency-selector";
 import { useNewHoldingDialog } from "./index";
 
 import { createHolding } from "@/server/holdings/create";
+
+import {
+  shouldShowSymbolSearch,
+  getQuoteTypesForCategory,
+} from "@/lib/asset-category-mappings";
 
 const formSchema = z.object({
   name: z
@@ -129,19 +135,29 @@ export function NewHoldingForm() {
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="symbol_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Symbol</FormLabel>
-              <FormControl>
-                <SymbolSearch field={field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {shouldShowSymbolSearch(form.watch("category_code")) && (
+          <FormField
+            control={form.control}
+            name="symbol_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="flex items-center justify-between gap-2">
+                  Symbol
+                  <YahooFinanceLogo height={16} />
+                </FormLabel>
+                <FormControl>
+                  <SymbolSearch
+                    field={field}
+                    quoteTypes={getQuoteTypesForCategory(
+                      form.watch("category_code"),
+                    )}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
         <FormField
           control={form.control}
           name="currency"

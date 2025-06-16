@@ -39,10 +39,14 @@ interface SymbolSearchProps {
     onChange: (value: string) => void;
   };
   id?: string;
-  quoteType?: string;
+  quoteTypes?: string[];
 }
 
-export function SymbolSearch({ field, id, quoteType }: SymbolSearchProps) {
+export function SymbolSearch({
+  field,
+  id,
+  quoteTypes = [],
+}: SymbolSearchProps) {
   const [open, setOpen] = useState(false);
   const [results, setResults] = useState<Symbol[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -68,7 +72,7 @@ export function SymbolSearch({ field, id, quoteType }: SymbolSearchProps) {
         const result = await searchSymbols({
           query: debouncedQuery,
           limit: 10,
-          quoteType: quoteType,
+          quoteTypes: quoteTypes,
         });
         if (result.success && result.data) {
           setResults(result.data);
@@ -82,7 +86,7 @@ export function SymbolSearch({ field, id, quoteType }: SymbolSearchProps) {
         setIsLoading(false);
       }
     })();
-  }, [debouncedQuery, quoteType]);
+  }, [debouncedQuery, quoteTypes]);
 
   if (isMobile) {
     return (

@@ -1,4 +1,4 @@
-import { Logo } from "@/components/ui/logo";
+import { Logo } from "@/components/ui/logos/logo";
 
 export function Branding() {
   return (
