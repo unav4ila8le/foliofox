@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -18,7 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { YahooFinanceLogo } from "@/components/ui/logos/yahoo-finance-logo";
-import { SymbolSearch } from "@/components/dashboard/symbol-search";
+import { SymbolSearch } from "@/components/dashboard/new-holding/symbol-search";
 import { AssetCategorySelector } from "@/components/dashboard/asset-category-selector";
 import { CurrencySelector } from "@/components/dashboard/currency-selector";
 
@@ -83,6 +83,11 @@ export function NewHoldingForm() {
       formData.append("current_quantity", values.current_quantity.toString());
       formData.append("description", values.description || "");
 
+      // Add symbol_id if it exists
+      if (values.symbol_id) {
+        formData.append("symbol_id", values.symbol_id);
+      }
+
       const result = await createHolding(formData);
 
       // Handle error response from server action
@@ -102,6 +107,14 @@ export function NewHoldingForm() {
       setIsLoading(false);
     }
   }
+
+  // Clear symbol_id when switching to a category that doesn't support symbols
+  const categoryCode = form.watch("category_code");
+  useEffect(() => {
+    if (categoryCode && !shouldShowSymbolSearch(categoryCode)) {
+      form.setValue("symbol_id", "");
+    }
+  }, [categoryCode, form]);
 
   return (
     <Form {...form}>
@@ -158,39 +171,43 @@ export function NewHoldingForm() {
             )}
           />
         )}
-        <FormField
-          control={form.control}
-          name="currency"
-          render={({ field }) => (
-            <FormItem className="sm:w-1/2 sm:pr-1">
-              <FormLabel>Currency</FormLabel>
-              <FormControl>
-                <CurrencySelector field={field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="grid items-start gap-x-2 gap-y-4 sm:grid-cols-2">
+        {!shouldShowSymbolSearch(form.watch("category_code")) && (
           <FormField
             control={form.control}
-            name="current_unit_value"
+            name="currency"
             render={({ field }) => (
-              <FormItem>
-                <FormLabel>Current unit value</FormLabel>
+              <FormItem className="sm:w-1/2 sm:pr-1">
+                <FormLabel>Currency</FormLabel>
                 <FormControl>
-                  <Input
-                    placeholder="E.g., 420.69"
-                    type="number"
-                    {...field}
-                    value={field.value === 0 ? "" : field.value}
-                  />
+                  <CurrencySelector field={field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
+        )}
+
+        <div className="grid items-start gap-x-2 gap-y-4 sm:grid-cols-2">
+          {!shouldShowSymbolSearch(form.watch("category_code")) && (
+            <FormField
+              control={form.control}
+              name="current_unit_value"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Current unit value</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="E.g., 420.69"
+                      type="number"
+                      {...field}
+                      value={field.value === 0 ? "" : field.value}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
           <FormField
             control={form.control}
             name="current_quantity"

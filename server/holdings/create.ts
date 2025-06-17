@@ -16,12 +16,13 @@ export async function createHolding(formData: FormData) {
   // Extract and validate data from formData
   const data: Pick<
     Holding,
-    "name" | "category_code" | "currency" | "description"
+    "name" | "category_code" | "currency" | "description" | "symbol_id"
   > = {
     name: formData.get("name") as string,
     category_code: formData.get("category_code") as string,
     currency: formData.get("currency") as string,
     description: (formData.get("description") as string) || "",
+    symbol_id: (formData.get("symbol_id") as string) || "",
   };
 
   // Extract current quantity and unit value separately (for the initial record)

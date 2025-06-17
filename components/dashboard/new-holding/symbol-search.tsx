@@ -58,7 +58,7 @@ export function SymbolSearch({
   const selectedSymbol = results.find((symbol) => symbol.id === field.value);
   const symbolName = selectedSymbol
     ? `${selectedSymbol.id} - ${selectedSymbol.name}`
-    : field.value;
+    : field.value || "Search symbol";
 
   useEffect(() => {
     if (!debouncedQuery) {
@@ -102,7 +102,7 @@ export function SymbolSearch({
               !symbolName && "text-muted-foreground",
             )}
           >
-            {symbolName || "Search symbol"}
+            {symbolName}
             <Search className="text-muted-foreground" />
           </Button>
         </DrawerTrigger>
@@ -136,7 +136,7 @@ export function SymbolSearch({
             !symbolName && "text-muted-foreground",
           )}
         >
-          {symbolName || "Search symbol"}
+          {symbolName}
           <Search className="text-muted-foreground" />
         </Button>
       </PopoverTrigger>
