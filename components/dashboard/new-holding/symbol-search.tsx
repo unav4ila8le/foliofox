@@ -40,12 +40,14 @@ interface SymbolSearchProps {
   };
   id?: string;
   quoteTypes?: string[];
+  onSymbolSelect?: (symbol: Symbol) => void;
 }
 
 export function SymbolSearch({
   field,
   id,
   quoteTypes = [],
+  onSymbolSelect,
 }: SymbolSearchProps) {
   const [open, setOpen] = useState(false);
   const [results, setResults] = useState<Symbol[]>([]);
@@ -114,6 +116,7 @@ export function SymbolSearch({
             setOpen={setOpen}
             value={field.value}
             onChange={field.onChange}
+            onSymbolSelect={onSymbolSelect}
             results={results}
             isLoading={isLoading}
             setSearchQuery={setSearchQuery}
@@ -145,6 +148,7 @@ export function SymbolSearch({
           setOpen={setOpen}
           value={field.value}
           onChange={field.onChange}
+          onSymbolSelect={onSymbolSelect}
           results={results}
           isLoading={isLoading}
           setSearchQuery={setSearchQuery}
@@ -158,6 +162,7 @@ interface SymbolListProps {
   setOpen: (open: boolean) => void;
   value: string;
   onChange: (value: string) => void;
+  onSymbolSelect?: (symbol: Symbol) => void;
   results: Symbol[];
   isLoading: boolean;
   setSearchQuery: (query: string) => void;
@@ -167,6 +172,7 @@ function SymbolList({
   setOpen,
   value,
   onChange,
+  onSymbolSelect,
   results,
   isLoading,
   setSearchQuery,
@@ -188,6 +194,7 @@ function SymbolList({
               key={symbol.id}
               onSelect={() => {
                 onChange(symbol.id);
+                onSymbolSelect?.(symbol);
                 setOpen(false);
               }}
               value={symbol.id}

@@ -164,6 +164,15 @@ export function NewHoldingForm() {
                     quoteTypes={getQuoteTypesForCategory(
                       form.watch("category_code"),
                     )}
+                    onSymbolSelect={(symbol) => {
+                      // Auto-populate fields
+                      form.setValue("currency", "USD");
+                      form.setValue("current_unit_value", 100);
+
+                      if (!form.getValues("name")) {
+                        form.setValue("name", `${symbol.id} - ${symbol.name}`);
+                      }
+                    }}
                   />
                 </FormControl>
                 <FormMessage />

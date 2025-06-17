@@ -7,6 +7,7 @@ import type { Symbol } from "@/types/global.types";
 
 // Extract the search result type
 type SearchResult = Awaited<ReturnType<typeof yahooFinance.search>>;
+type QuoteResult = Awaited<ReturnType<typeof yahooFinance.quote>>;
 
 // Define the search parameters schema
 const searchParamsSchema = z.object({
@@ -16,7 +17,7 @@ const searchParamsSchema = z.object({
 });
 
 type SearchParams = z.infer<typeof searchParamsSchema>;
-type QuoteResult = SearchResult["quotes"][0];
+type SearchQuoteResult = SearchResult["quotes"][0];
 
 export async function searchSymbols(params: SearchParams) {
   try {
@@ -35,7 +36,7 @@ export async function searchSymbols(params: SearchParams) {
 
     // Filter and transform the results to match Symbol type
     const symbols: Symbol[] = searchResults.quotes
-      .filter((quote: QuoteResult) => {
+      .filter((quote: SearchQuoteResult) => {
         // If no quote types specified, include all
         if (
           !validatedParams.quoteTypes ||
@@ -46,7 +47,7 @@ export async function searchSymbols(params: SearchParams) {
         // Filter to include any of the specified quote types
         return validatedParams.quoteTypes.includes(quote.quoteType || "");
       })
-      .map((quote: QuoteResult) => ({
+      .map((quote: SearchQuoteResult) => ({
         id: quote.symbol,
         quote_type: quote.quoteType || "",
         name: quote.shortname || quote.longname || quote.symbol,
@@ -67,6 +68,33 @@ export async function searchSymbols(params: SearchParams) {
       success: false,
       message:
         error instanceof Error ? error.message : "Failed to search symbols",
+    };
+  }
+}
+
+// Get quote data for a specific symbol
+export async function getSymbolQuote(symbolId: string) {
+  try {
+    const quoteData: QuoteResult = await yahooFinance.quote(symbolId);
+
+    return {
+      success: true,
+      data: {
+        symbol: symbolId,
+        currency: quoteData.currency || "USD",
+        regularMarketPrice: quoteData.regularMarketPrice || 0,
+        longName: quoteData.longName || quoteData.shortName || symbolId,
+        shortName: quoteData.shortName || null,
+        exchange: quoteData.fullExchangeName || quoteData.exchange || null,
+        quoteType: quoteData.quoteType || "",
+      },
+    };
+  } catch (error) {
+    console.error("Error fetching quote for symbol:", symbolId, error);
+    return {
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to fetch quote data",
     };
   }
 }
