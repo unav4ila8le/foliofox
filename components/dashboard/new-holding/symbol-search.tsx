@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useDebounce } from "use-debounce";
-import { Check, Search } from "lucide-react";
+import { Check, LoaderCircle, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -52,6 +52,7 @@ export function SymbolSearch({
   const [open, setOpen] = useState(false);
   const [results, setResults] = useState<Symbol[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingQuote, setIsLoadingQuote] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery] = useDebounce(searchQuery, 300);
   const isMobile = useIsMobile();
@@ -61,6 +62,7 @@ export function SymbolSearch({
   const symbolName = selectedSymbol
     ? `${selectedSymbol.id} - ${selectedSymbol.name}`
     : field.value || "Search symbol";
+  const hasSelectedValue = Boolean(field.value && selectedSymbol);
 
   useEffect(() => {
     if (!debouncedQuery) {
@@ -90,6 +92,19 @@ export function SymbolSearch({
     })();
   }, [debouncedQuery, quoteTypes]);
 
+  // SymbolList props
+  const symbolListProps = {
+    setOpen,
+    value: field.value,
+    onChange: field.onChange,
+    onSymbolSelect,
+    results,
+    isLoading,
+    isLoadingQuote,
+    setIsLoadingQuote,
+    setSearchQuery,
+  };
+
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={setOpen}>
@@ -101,7 +116,7 @@ export function SymbolSearch({
             aria-expanded={open}
             className={cn(
               "justify-between font-normal",
-              !symbolName && "text-muted-foreground",
+              !hasSelectedValue && "text-muted-foreground",
             )}
           >
             {symbolName}
@@ -112,15 +127,7 @@ export function SymbolSearch({
           <DrawerHeader>
             <DrawerTitle>Equity</DrawerTitle>
           </DrawerHeader>
-          <SymbolList
-            setOpen={setOpen}
-            value={field.value}
-            onChange={field.onChange}
-            onSymbolSelect={onSymbolSelect}
-            results={results}
-            isLoading={isLoading}
-            setSearchQuery={setSearchQuery}
-          />
+          <SymbolList {...symbolListProps} />
         </DrawerContent>
       </Drawer>
     );
@@ -136,7 +143,7 @@ export function SymbolSearch({
           aria-expanded={open}
           className={cn(
             "justify-between font-normal",
-            !symbolName && "text-muted-foreground",
+            !hasSelectedValue && "text-muted-foreground",
           )}
         >
           {symbolName}
@@ -144,15 +151,7 @@ export function SymbolSearch({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-(--radix-popover-trigger-width) p-0">
-        <SymbolList
-          setOpen={setOpen}
-          value={field.value}
-          onChange={field.onChange}
-          onSymbolSelect={onSymbolSelect}
-          results={results}
-          isLoading={isLoading}
-          setSearchQuery={setSearchQuery}
-        />
+        <SymbolList {...symbolListProps} />
       </PopoverContent>
     </Popover>
   );
@@ -165,6 +164,8 @@ interface SymbolListProps {
   onSymbolSelect?: (symbol: Symbol) => void;
   results: Symbol[];
   isLoading: boolean;
+  isLoadingQuote: boolean;
+  setIsLoadingQuote: (loading: boolean) => void;
   setSearchQuery: (query: string) => void;
 }
 
@@ -175,14 +176,37 @@ function SymbolList({
   onSymbolSelect,
   results,
   isLoading,
+  isLoadingQuote,
+  setIsLoadingQuote,
   setSearchQuery,
 }: SymbolListProps) {
+  // Handle symbol selection with loading state
+  const handleSymbolSelect = async (symbol: Symbol) => {
+    try {
+      setIsLoadingQuote(true);
+      onChange(symbol.id);
+
+      // Call the async onSymbolSelect if provided
+      if (onSymbolSelect) {
+        await onSymbolSelect(symbol);
+      }
+
+      setOpen(false);
+    } catch (error) {
+      console.error("Error selecting symbol:", error);
+      // Keep the dialog open on error so user can try again
+    } finally {
+      setIsLoadingQuote(false);
+    }
+  };
+
   return (
     <Command>
       <CommandInput
         placeholder="Search symbol..."
         className="h-9"
         onValueChange={setSearchQuery}
+        disabled={isLoadingQuote}
       />
       <CommandList>
         <CommandEmpty>
@@ -192,20 +216,21 @@ function SymbolList({
           {results.map((symbol) => (
             <CommandItem
               key={symbol.id}
-              onSelect={() => {
-                onChange(symbol.id);
-                onSymbolSelect?.(symbol);
-                setOpen(false);
-              }}
+              onSelect={() => handleSymbolSelect(symbol)}
               value={symbol.id}
+              disabled={isLoadingQuote}
             >
               {symbol.id} - {symbol.name}
-              <Check
-                className={cn(
-                  "ml-auto",
-                  value === symbol.id ? "opacity-100" : "opacity-0",
-                )}
-              />
+              {isLoadingQuote && value === symbol.id ? (
+                <LoaderCircle className="ml-auto animate-spin" />
+              ) : (
+                <Check
+                  className={cn(
+                    "ml-auto",
+                    value === symbol.id ? "opacity-100" : "opacity-0",
+                  )}
+                />
+              )}
             </CommandItem>
           ))}
         </CommandGroup>

@@ -25,11 +25,14 @@ import { CurrencySelector } from "@/components/dashboard/currency-selector";
 import { useNewHoldingDialog } from "./index";
 
 import { createHolding } from "@/server/holdings/create";
+import { getSymbolQuote } from "@/server/symbols/search";
 
 import {
   shouldShowSymbolSearch,
   getQuoteTypesForCategory,
 } from "@/lib/asset-category-mappings";
+
+import type { Symbol } from "@/types/global.types";
 
 const formSchema = z.object({
   name: z
@@ -108,6 +111,41 @@ export function NewHoldingForm() {
     }
   }
 
+  const handleSymbolSelect = async (symbol: Symbol) => {
+    try {
+      const quoteResult = await getSymbolQuote(symbol.id);
+      const quoteData = quoteResult.success ? quoteResult.data : null;
+
+      // Auto-populate with real data or fallbacks
+      form.setValue("currency", quoteData?.currency || "USD");
+      form.setValue("current_unit_value", quoteData?.regularMarketPrice || 0);
+
+      // Set name if not already filled
+      if (!form.getValues("name")) {
+        const displayName =
+          quoteData?.longName || quoteData?.shortName || symbol.name;
+        form.setValue("name", `${symbol.id} - ${displayName}`);
+      }
+
+      // Show warning if quote fetch failed
+      if (!quoteResult.success) {
+        toast.warning("Could not fetch current price. Please enter manually.");
+      }
+    } catch (error) {
+      console.error("Error fetching quote data:", error);
+
+      // Fallback values on error
+      form.setValue("currency", "USD");
+      form.setValue("current_unit_value", 0);
+
+      if (!form.getValues("name")) {
+        form.setValue("name", `${symbol.id} - ${symbol.name}`);
+      }
+
+      toast.error("Failed to fetch current price. Please enter manually.");
+    }
+  };
+
   // Clear symbol_id when switching to a category that doesn't support symbols
   const categoryCode = form.watch("category_code");
   useEffect(() => {
@@ -164,15 +202,7 @@ export function NewHoldingForm() {
                     quoteTypes={getQuoteTypesForCategory(
                       form.watch("category_code"),
                     )}
-                    onSymbolSelect={(symbol) => {
-                      // Auto-populate fields
-                      form.setValue("currency", "USD");
-                      form.setValue("current_unit_value", 100);
-
-                      if (!form.getValues("name")) {
-                        form.setValue("name", `${symbol.id} - ${symbol.name}`);
-                      }
-                    }}
+                    onSymbolSelect={handleSymbolSelect}
                   />
                 </FormControl>
                 <FormMessage />
