@@ -81,12 +81,14 @@ export async function getSymbolQuote(symbolId: string) {
       success: true,
       data: {
         symbol: symbolId,
-        currency: quoteData.currency || "USD",
-        regularMarketPrice: quoteData.regularMarketPrice || 0,
+        quoteType: quoteData.quoteType,
+        shortName: quoteData.shortName || symbolId,
         longName: quoteData.longName || quoteData.shortName || symbolId,
-        shortName: quoteData.shortName || null,
-        exchange: quoteData.fullExchangeName || quoteData.exchange || null,
-        quoteType: quoteData.quoteType || "",
+        currency: quoteData.currency,
+        exchange: quoteData.fullExchangeName || quoteData.exchange,
+        sector: quoteData.sector,
+        industry: quoteData.industry,
+        regularMarketPrice: quoteData.regularMarketPrice,
       },
     };
   } catch (error) {

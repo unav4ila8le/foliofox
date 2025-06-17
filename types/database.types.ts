@@ -192,6 +192,38 @@ export type Database = {
           },
         ];
       };
+      quotes: {
+        Row: {
+          created_at: string;
+          date: string;
+          id: string;
+          price: number;
+          symbol_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          date: string;
+          id?: string;
+          price: number;
+          symbol_id: string;
+        };
+        Update: {
+          created_at?: string;
+          date?: string;
+          id?: string;
+          price?: number;
+          symbol_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "symbol_prices_symbol_id_fkey";
+            columns: ["symbol_id"];
+            isOneToOne: false;
+            referencedRelation: "symbols";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       records: {
         Row: {
           created_at: string;
@@ -239,11 +271,11 @@ export type Database = {
       symbols: {
         Row: {
           created_at: string;
+          currency: string;
           exchange: string | null;
           id: string;
           industry: string | null;
           long_name: string | null;
-          name: string;
           quote_type: string;
           sector: string | null;
           short_name: string | null;
@@ -251,11 +283,11 @@ export type Database = {
         };
         Insert: {
           created_at?: string;
+          currency: string;
           exchange?: string | null;
           id: string;
           industry?: string | null;
           long_name?: string | null;
-          name: string;
           quote_type: string;
           sector?: string | null;
           short_name?: string | null;
@@ -263,11 +295,11 @@ export type Database = {
         };
         Update: {
           created_at?: string;
+          currency?: string;
           exchange?: string | null;
           id?: string;
           industry?: string | null;
           long_name?: string | null;
-          name?: string;
           quote_type?: string;
           sector?: string | null;
           short_name?: string | null;

@@ -49,10 +49,16 @@ export type Symbol = Pick<
   Tables<"symbols">,
   | "id"
   | "quote_type"
-  | "name"
   | "short_name"
   | "long_name"
   | "exchange"
+  | "currency"
   | "industry"
   | "sector"
+>;
+
+// Quote
+export type Quote = Pick<
+  Tables<"quotes">,
+  "id" | "symbol_id" | "date" | "price"
 >;
