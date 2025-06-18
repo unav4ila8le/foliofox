@@ -220,7 +220,7 @@ function SymbolList({
               value={symbol.id}
               disabled={isLoadingQuote}
             >
-              {symbol.id} - {symbol.long_name}
+              {symbol.id} - {symbol.long_name || symbol.short_name}
               {isLoadingQuote && value === symbol.id ? (
                 <LoaderCircle className="ml-auto animate-spin" />
               ) : (
