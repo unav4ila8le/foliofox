@@ -5,7 +5,7 @@ import { format } from "date-fns";
 
 import { getCurrentUser } from "@/server/auth/actions";
 
-import { getSymbolQuote } from "@/server/symbols/search";
+import { createSymbol } from "@/server/symbols/create";
 import { createRecord } from "@/server/records/create";
 
 import type { Holding } from "@/types/global.types";
@@ -30,46 +30,15 @@ export async function createHolding(formData: FormData) {
   const current_quantity = Number(formData.get("current_quantity"));
   const current_unit_value = Number(formData.get("current_unit_value"));
 
-  // Check if symbol already exists
+  // Upsert symbol
   if (data.symbol_id) {
-    const { data: existingSymbol } = await supabase
-      .from("symbols")
-      .select("id")
-      .eq("id", data.symbol_id)
-      .single();
-
-    // If symbol doesn't exist, create it
-    if (!existingSymbol) {
-      // Get symbol data from Yahoo Finance
-      const quoteResult = await getSymbolQuote(data.symbol_id);
-
-      if (quoteResult.success) {
-        const { error: symbolError } = await supabase.from("symbols").insert({
-          id: data.symbol_id,
-          quote_type: quoteResult.data?.quoteType,
-          short_name: quoteResult.data?.shortName,
-          long_name: quoteResult.data?.longName,
-          exchange: quoteResult.data?.exchange,
-          currency: quoteResult.data?.currency,
-          sector: quoteResult.data?.sector,
-          industry: quoteResult.data?.industry,
-        });
-
-        // Return errors instead of throwing
-        if (symbolError) {
-          return {
-            success: false,
-            code: symbolError.code || "SYMBOL_INSERT_ERROR",
-            message: `Failed to create symbol: ${symbolError.message}`,
-          };
-        }
-      } else {
-        return {
-          success: false,
-          code: "QUOTE_FETCH_ERROR",
-          message: `Failed to fetch quote data for symbol ${data.symbol_id}: ${quoteResult.message}`,
-        };
-      }
+    const symbolResult = await createSymbol(data.symbol_id);
+    if (!symbolResult.success) {
+      return {
+        success: false,
+        code: symbolResult.code,
+        message: symbolResult.message,
+      };
     }
   }
 

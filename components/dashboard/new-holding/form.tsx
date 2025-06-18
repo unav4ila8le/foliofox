@@ -114,35 +114,29 @@ export function NewHoldingForm() {
   const handleSymbolSelect = async (symbol: Symbol) => {
     try {
       const quoteResult = await getSymbolQuote(symbol.id);
-      const quoteData = quoteResult.success ? quoteResult.data : null;
+      if (!quoteResult.success) {
+        throw new Error(quoteResult.message || "Error fetching quote data.");
+      }
+      const quoteData = quoteResult.data;
 
-      // Auto-populate with real data or fallbacks
-      form.setValue("currency", quoteData?.currency || "USD");
-      form.setValue("current_unit_value", quoteData?.regularMarketPrice || 0);
+      // Auto-populate with quote data
+      form.setValue("currency", quoteData?.currency);
+      form.setValue("current_unit_value", quoteData?.regularMarketPrice);
 
       // Set name if not already filled
       if (!form.getValues("name")) {
-        const displayName =
-          quoteData?.longName || quoteData?.shortName || symbol.name;
+        const displayName = quoteData?.longName || quoteData?.shortName;
         form.setValue("name", `${symbol.id} - ${displayName}`);
-      }
-
-      // Show warning if quote fetch failed
-      if (!quoteResult.success) {
-        toast.warning("Could not fetch current price. Please enter manually.");
       }
     } catch (error) {
       console.error("Error fetching quote data:", error);
 
-      // Fallback values on error
-      form.setValue("currency", "USD");
-      form.setValue("current_unit_value", 0);
+      toast.error(
+        error instanceof Error ? error.message : "Error fetching quote data.",
+      );
 
-      if (!form.getValues("name")) {
-        form.setValue("name", `${symbol.id} - ${symbol.name}`);
-      }
-
-      toast.error("Failed to fetch current price. Please enter manually.");
+      // Clear symbol_id if error occurs to force user to re-select
+      form.setValue("symbol_id", "");
     }
   };
 
