@@ -17,6 +17,7 @@ export async function fetchSingleHolding(holdingId: string) {
       id,
       name,
       category_code,
+      symbol_id,
       currency,
       description,
       is_archived,

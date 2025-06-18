@@ -22,6 +22,7 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
       id,
       name,
       category_code,
+      symbol_id,
       currency,
       description,
       is_archived,
