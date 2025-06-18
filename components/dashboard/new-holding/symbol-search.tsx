@@ -60,7 +60,7 @@ export function SymbolSearch({
   // Find the selected equity
   const selectedSymbol = results.find((symbol) => symbol.id === field.value);
   const symbolName = selectedSymbol
-    ? `${selectedSymbol.id} - ${selectedSymbol.name}`
+    ? `${selectedSymbol.id} - ${selectedSymbol.long_name}`
     : field.value || "Search symbol";
   const hasSelectedValue = Boolean(field.value && selectedSymbol);
 
@@ -220,7 +220,7 @@ function SymbolList({
               value={symbol.id}
               disabled={isLoadingQuote}
             >
-              {symbol.id} - {symbol.name}
+              {symbol.id} - {symbol.long_name}
               {isLoadingQuote && value === symbol.id ? (
                 <LoaderCircle className="ml-auto animate-spin" />
               ) : (
