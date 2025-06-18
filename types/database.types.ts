@@ -232,7 +232,7 @@ export type Database = {
           holding_id: string;
           id: string;
           quantity: number;
-          unit_value: number;
+          unit_value: number | null;
           updated_at: string;
           user_id: string;
         };
@@ -243,7 +243,7 @@ export type Database = {
           holding_id: string;
           id?: string;
           quantity: number;
-          unit_value: number;
+          unit_value?: number | null;
           updated_at?: string;
           user_id: string;
         };
@@ -254,7 +254,7 @@ export type Database = {
           holding_id?: string;
           id?: string;
           quantity?: number;
-          unit_value?: number;
+          unit_value?: number | null;
           updated_at?: string;
           user_id?: string;
         };

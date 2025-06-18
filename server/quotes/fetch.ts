@@ -23,7 +23,6 @@ export async function fetchQuote(symbolId: string, date: Date = new Date()) {
     // 2. Fetch from Yahoo Finance and create the quote
     const historicalData = await yahooFinance.historical(symbolId, {
       period1: dateString,
-      period2: dateString,
       interval: "1d",
     });
 

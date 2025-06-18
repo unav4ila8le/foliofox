@@ -3,6 +3,7 @@
 import { format } from "date-fns";
 
 import { fetchHoldings } from "@/server/holdings/fetch";
+import { fetchQuote } from "@/server/quotes/fetch";
 import { fetchExchangeRate } from "@/server/exchange-rates/fetch";
 
 import { createClient } from "@/utils/supabase/server";
@@ -67,8 +68,23 @@ async function fetchHistoricalData(
     .limit(1)
     .maybeSingle();
 
+  let valuationData = record?.unit_value;
+
+  // If the holding has a symbol, use the market price for that date
+  if (holding.symbol_id) {
+    try {
+      valuationData = await fetchQuote(holding.symbol_id, date);
+    } catch (error) {
+      // If fetching the quote fails, fall back to the record value
+      console.warn(
+        `Failed to fetch quote for symbol ${holding.symbol_id} on ${date}:`,
+        error,
+      );
+    }
+  }
+
   return {
-    valuationData: record?.unit_value,
+    valuationData,
     quantityData: record?.quantity,
   };
 }
