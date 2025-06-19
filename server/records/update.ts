@@ -17,7 +17,7 @@ export async function updateRecord(formData: FormData, recordId: string) {
     date: formData.get("date") as string,
     quantity: Number(formData.get("quantity")),
     unit_value: Number(formData.get("unit_value")),
-    description: (formData.get("description") as string) || "",
+    description: (formData.get("description") as string) || null,
   };
 
   // Update the record in the database

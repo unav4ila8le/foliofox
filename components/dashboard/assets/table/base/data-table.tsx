@@ -61,12 +61,11 @@ export function DataTable<TData, TValue>({
   });
 
   useEffect(() => {
-    setColumnFilters([
-      {
-        id: filterColumnId,
-        value: filterValue,
-      },
-    ]);
+    setColumnFilters(
+      filterValue && filterValue.trim()
+        ? [{ id: filterColumnId, value: filterValue }]
+        : [],
+    );
   }, [filterValue, filterColumnId]);
 
   return (

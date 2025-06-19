@@ -22,7 +22,7 @@ export async function createHolding(formData: FormData) {
     name: formData.get("name") as string,
     category_code: formData.get("category_code") as string,
     currency: formData.get("currency") as string,
-    description: (formData.get("description") as string) || "",
+    description: (formData.get("description") as string) || null,
     symbol_id: (formData.get("symbol_id") as string) || null,
   };
 

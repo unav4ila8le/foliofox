@@ -19,7 +19,7 @@ export async function createRecord(formData: FormData) {
     holding_id: formData.get("holding_id") as string,
     quantity: Number(formData.get("quantity")),
     unit_value: Number(formData.get("unit_value")),
-    description: (formData.get("description") as string) || "",
+    description: (formData.get("description") as string) || null,
   };
 
   // Insert into records table
