@@ -86,8 +86,8 @@ export function NewHoldingForm() {
       formData.append("current_quantity", values.current_quantity.toString());
       formData.append("description", values.description || "");
 
-      // Add symbol_id if it exists
-      if (values.symbol_id) {
+      // Add symbol_id if it exists and is not empty
+      if (values.symbol_id && values.symbol_id.trim() !== "") {
         formData.append("symbol_id", values.symbol_id);
       }
 

@@ -23,7 +23,7 @@ export async function createHolding(formData: FormData) {
     category_code: formData.get("category_code") as string,
     currency: formData.get("currency") as string,
     description: (formData.get("description") as string) || "",
-    symbol_id: (formData.get("symbol_id") as string) || "",
+    symbol_id: (formData.get("symbol_id") as string) || null,
   };
 
   // Extract current quantity and unit value separately (for the initial record)
