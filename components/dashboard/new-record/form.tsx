@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -31,6 +31,7 @@ import { useNewRecordDialog } from "./index";
 import { cn } from "@/lib/utils";
 
 import { createRecord } from "@/server/records/create";
+import { fetchQuote } from "@/server/quotes/fetch";
 
 import type { TransformedHolding } from "@/types/global.types";
 
@@ -56,6 +57,7 @@ const formSchema = z.object({
 export function NewRecordForm() {
   const { setOpen, preselectedHolding } = useNewRecordDialog();
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetchingQuote, setIsFetchingQuote] = useState(false);
   const [selectedHolding, setSelectedHolding] =
     useState<TransformedHolding | null>(preselectedHolding);
 
@@ -70,18 +72,59 @@ export function NewRecordForm() {
     },
   });
 
-  // Pre-populate values when a holding is selected
-  useEffect(() => {
-    if (selectedHolding) {
-      form.setValue("quantity", selectedHolding.current_quantity || 0);
-      form.setValue("unit_value", selectedHolding.current_unit_value || 0);
-    }
-  }, [selectedHolding, form]);
+  // Check if current holding has a symbol
+  const hasSymbol = !!selectedHolding?.symbol_id;
+
+  // Fetch quote for symbol-based holdings
+  const fetchQuoteForHolding = useCallback(
+    async (holding: TransformedHolding, date: Date) => {
+      if (!holding.symbol_id) return;
+
+      setIsFetchingQuote(true);
+      try {
+        const quote = await fetchQuote(holding.symbol_id, date);
+        form.setValue("unit_value", quote);
+      } catch (error) {
+        console.error("Error fetching quote:", error);
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Failed to fetch current price",
+        );
+      } finally {
+        setIsFetchingQuote(false);
+      }
+    },
+    [form],
+  );
 
   // Handle holding selection from dropdown
   const handleHoldingSelect = (holding: TransformedHolding | null) => {
     setSelectedHolding(holding);
   };
+
+  // Pre-populate values when a holding is selected
+  useEffect(() => {
+    if (selectedHolding) {
+      form.setValue("quantity", selectedHolding.current_quantity || 0);
+
+      if (selectedHolding.symbol_id) {
+        // For symbol-based holdings, fetch the quote
+        fetchQuoteForHolding(selectedHolding, form.getValues("date"));
+      } else {
+        // For non-symbol holdings, use the current unit value
+        form.setValue("unit_value", selectedHolding.current_unit_value || 0);
+      }
+    }
+  }, [selectedHolding, form, fetchQuoteForHolding]);
+
+  // Re-fetch quote when date changes for symbol-based holdings
+  const watchedDate = form.watch("date");
+  useEffect(() => {
+    if (selectedHolding?.symbol_id && watchedDate) {
+      fetchQuoteForHolding(selectedHolding, watchedDate);
+    }
+  }, [watchedDate, selectedHolding, fetchQuoteForHolding]);
 
   // Get isDirty state from formState
   const { isDirty } = form.formState;
@@ -195,6 +238,7 @@ export function NewRecordForm() {
                   <Input
                     placeholder="E.g., 420.69"
                     type="number"
+                    disabled={hasSymbol}
                     {...field}
                     value={field.value === 0 ? "" : field.value}
                   />
@@ -203,7 +247,6 @@ export function NewRecordForm() {
               </FormItem>
             )}
           />
-
           <FormField
             control={form.control}
             name="quantity"
@@ -245,7 +288,7 @@ export function NewRecordForm() {
         <div className="flex justify-end gap-2">
           <Button
             onClick={() => setOpen(false)}
-            disabled={isLoading}
+            disabled={isLoading || isFetchingQuote}
             type="button"
             variant="secondary"
             className="w-1/2 sm:w-auto"
@@ -254,7 +297,7 @@ export function NewRecordForm() {
           </Button>
           <Button
             type="submit"
-            disabled={isLoading || !isDirty}
+            disabled={isLoading || isFetchingQuote || !isDirty}
             className="w-1/2 sm:w-auto"
           >
             {isLoading ? (
