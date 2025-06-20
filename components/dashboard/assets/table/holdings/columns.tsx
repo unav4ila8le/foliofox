@@ -2,6 +2,13 @@
 
 import { ArrowUpDown } from "lucide-react";
 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
 import { Badge } from "@/components/ui/badge";
 import { ActionsCell } from "../row-actions/actions-cell";
 
@@ -13,6 +20,9 @@ import type { TransformedHolding } from "@/types/global.types";
 export const columns: ColumnDef<TransformedHolding>[] = [
   {
     accessorKey: "name",
+    maxSize: 248,
+    minSize: 128,
+    size: 248,
     header: ({ column }) => {
       return (
         <div
@@ -22,6 +32,19 @@ export const columns: ColumnDef<TransformedHolding>[] = [
           Asset name
           <ArrowUpDown className="size-4" />
         </div>
+      );
+    },
+    cell: ({ row }) => {
+      const name = row.getValue<string>("name");
+      return (
+        <TooltipProvider>
+          <Tooltip delayDuration={500}>
+            <TooltipTrigger>
+              <div className="max-w-60 truncate text-start">{name}</div>
+            </TooltipTrigger>
+            <TooltipContent>{name}</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       );
     },
   },
