@@ -5,13 +5,25 @@ import yahooFinance from "yahoo-finance2";
 
 import { createClient } from "@/utils/supabase/server";
 
-// Fetch a specific quote for a symbol on a date
+/**
+ * Fetch a quote price for a symbol on a specific date.
+ *
+ * This function implements a caching strategy:
+ * 1. First, try to get the quote from our database
+ * 2. If not found, fetch from Yahoo Finance using the chart() method
+ * 3. For historical dates, use the quotes array for accurate historical prices
+ * 4. For current/future dates, fall back to regularMarketPrice when quotes is empty
+ * 5. Cache the result in our database for future requests
+ *
+ * @param symbolId - The stock symbol (e.g., "AAPL", "BTC-USD")
+ * @param date - The date to fetch the quote for (defaults to today)
+ * @returns The price for the symbol on the given date
+ */
 export async function fetchQuote(symbolId: string, date: Date = new Date()) {
-  // Supabase client
   const supabase = await createClient();
   const dateString = format(date, "yyyy-MM-dd");
 
-  // 1. Try to get the quote for the exact date
+  // 1. Try to get the quote from our database first
   const { data: quote, error } = await supabase
     .from("quotes")
     .select("price")
@@ -20,56 +32,59 @@ export async function fetchQuote(symbolId: string, date: Date = new Date()) {
     .single();
 
   if (error || !quote) {
-    // 2. Fetch from Yahoo Finance and create the quote
-    const historicalData = await yahooFinance.historical(symbolId, {
+    // 2. Fetch from Yahoo Finance using chart method
+    const chartData = await yahooFinance.chart(symbolId, {
       period1: dateString,
       interval: "1d",
     });
 
-    if (!historicalData || historicalData.length === 0) {
+    if (!chartData) {
+      throw new Error(`No chart data found for ${symbolId} on ${dateString}`);
+    }
+
+    let price;
+
+    // Try to get price from quotes array first (for historical data)
+    if (chartData.quotes && chartData.quotes.length > 0) {
+      const latestQuote = chartData.quotes[chartData.quotes.length - 1];
+      price = latestQuote.adjclose ?? latestQuote.close;
+    }
+    // If quotes array is empty, use regularMarketPrice from meta (for current/future dates)
+    else if (chartData.meta && chartData.meta.regularMarketPrice) {
+      price = chartData.meta.regularMarketPrice;
+    }
+    // No price data available
+    else {
       throw new Error(
-        `No historical data found for ${symbolId} on ${dateString}`,
+        `No price data available for ${symbolId} on ${dateString}`,
       );
     }
 
-    const price = historicalData[0].adjClose || historicalData[0].close;
-
     if (!price || price <= 0) {
-      console.warn(`No valid price data for ${symbolId} on ${dateString}`);
       throw new Error(
         `No valid price data available for ${symbolId} on ${dateString}`,
       );
     }
 
-    // Insert the quote
-    const { error: insertError } = await supabase.from("quotes").upsert({
-      symbol_id: symbolId,
-      date: dateString,
-      price: price,
-    });
+    // 3. Insert the quote in our database with conflict resolution
+    const { error: insertError } = await supabase.from("quotes").upsert(
+      {
+        symbol_id: symbolId,
+        date: dateString,
+        price: price,
+      },
+      {
+        onConflict: "symbol_id,date",
+      },
+    );
 
     if (insertError) {
       throw new Error(`Failed to insert quote: ${insertError.message}`);
     }
 
-    // 3. Query the database again for the exact date
-    const { data: retryQuote, error: retryError } = await supabase
-      .from("quotes")
-      .select("price")
-      .eq("symbol_id", symbolId)
-      .lte("date", dateString)
-      .order("date", { ascending: false })
-      .limit(1)
-      .single();
-
-    if (!retryQuote || retryError) {
-      throw new Error(
-        `No quote found for ${symbolId} on ${dateString} after insertion`,
-      );
-    }
-
-    return retryQuote.price;
+    return price;
   }
 
+  // 4. Return cached quote from database
   return quote.price;
 }
