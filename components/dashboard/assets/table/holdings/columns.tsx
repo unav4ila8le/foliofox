@@ -86,7 +86,17 @@ export const columns: ColumnDef<TransformedHolding>[] = [
   },
   {
     accessorKey: "total_value",
-    header: "Total Value",
+    header: ({ column }) => {
+      return (
+        <div
+          className="hover:text-primary flex cursor-pointer items-center gap-2 transition-colors"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Total value
+          <ArrowUpDown className="size-4" />
+        </div>
+      );
+    },
     cell: ({ row }) => {
       const total_value = row.getValue<number>("total_value");
 
