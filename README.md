@@ -71,8 +71,8 @@ All formatting functions accept both numbers and strings as input. Currency form
 ## To Do List
 
 [x] Add percentages increase over the different time periods selected
-[ ] Add disclaimer about the fact that exchange rates are not updated in real-time but rather updated daily (6PM UTC)
-[ ] **Implement Caching for Expensive Operations**: The net worth line chart calculation is resource intensive. In the future, implement server-side caching (e.g., using Next.js `use cache` or `unstable_cache` when stable) to avoid redundant calculations and improve performance, especially when users switch between time periods or currencies.
 [x] Add financial data API to allow users to add fianncial instruments like stocks and other equities ( https://github.com/gadicc/node-yahoo-finance2 )
+[ ] Add disclaimer about the fact that exchange rates and market prices are not updated in real-time but rather updated daily (6PM UTC)
+[ ] **Implement Caching for Expensive Operations**: The net worth line chart calculation is resource intensive. In the future, implement server-side caching (e.g., using Next.js `use cache` or `unstable_cache` when stable) to avoid redundant calculations and improve performance, especially when users switch between time periods or currencies.
 [ ] Allow users to import CSV files
 [ ] Allow users to export their holdings
