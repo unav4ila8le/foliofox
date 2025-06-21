@@ -18,7 +18,7 @@ interface FetchNetWorthChangeParams {
 export async function fetchNetWorthChange({
   targetCurrency,
   weeksBack = 24,
-}: FetchNetWorthChangeParams): Promise<NetWorthChangeData> {
+}: FetchNetWorthChangeParams) {
   // Calculate comparison date
   const today = new Date();
   const comparisonDate = new Date(today);

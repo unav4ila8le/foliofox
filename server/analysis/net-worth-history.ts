@@ -16,7 +16,7 @@ interface FetchNetWorthHistoryParams {
 export async function fetchNetWorthHistory({
   targetCurrency,
   weeksBack = 24,
-}: FetchNetWorthHistoryParams): Promise<NetWorthHistoryData[]> {
+}: FetchNetWorthHistoryParams) {
   // Generate weekly date points
   const weeklyDates = generateWeeklyDates(weeksBack);
 
