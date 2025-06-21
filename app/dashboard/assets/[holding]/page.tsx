@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { RecordsTable } from "@/components/dashboard/assets/table/records/records-table";
 
-import { fetchSingleHolding } from "@/server/holdings/fetch-single";
+import { fetchSingleHolding } from "@/server/holdings/fetch";
 import { fetchRecords } from "@/server/records/fetch";
 
 // Only needed for dynamic routes

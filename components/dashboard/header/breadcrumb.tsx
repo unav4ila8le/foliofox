@@ -13,7 +13,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 
-import { fetchSingleHolding } from "@/server/holdings/fetch-single";
+import { fetchSingleHolding } from "@/server/holdings/fetch";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // Separate component for holding name fetching
