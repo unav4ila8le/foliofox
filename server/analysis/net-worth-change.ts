@@ -1,6 +1,6 @@
 "use server";
 
-import { calculateNetWorthBulk } from "@/server/analysis/net-worth";
+import { calculateNetWorth } from "@/server/analysis/net-worth";
 
 export interface NetWorthChangeData {
   currentValue: number;
@@ -26,8 +26,8 @@ export async function fetchNetWorthChange({
 
   // Calculate net worth at both dates in parallel
   const [currentValue, previousValue] = await Promise.all([
-    calculateNetWorthBulk(targetCurrency), // Current (defaults to today)
-    calculateNetWorthBulk(targetCurrency, comparisonDate), // Historical
+    calculateNetWorth(targetCurrency), // Current (defaults to today)
+    calculateNetWorth(targetCurrency, comparisonDate), // Historical
   ]);
 
   // Calculate changes

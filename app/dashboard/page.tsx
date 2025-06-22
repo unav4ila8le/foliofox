@@ -7,7 +7,7 @@ import { NetWorthLineChart } from "@/components/dashboard/charts/net-worth-line"
 import { Greetings } from "@/components/dashboard/greetings";
 
 import { fetchProfile } from "@/server/profile/actions";
-import { calculateNetWorthBulk } from "@/server/analysis/net-worth";
+import { calculateNetWorth } from "@/server/analysis/net-worth";
 import { fetchNetWorthHistory } from "@/server/analysis/net-worth-history";
 import { fetchNetWorthChange } from "@/server/analysis/net-worth-change";
 import { calculateAssetAllocation } from "@/server/analysis/asset-allocation";
@@ -61,7 +61,7 @@ async function AssetAllocationChartWrapper({
 // Main page component
 export default async function DashboardPage() {
   const { profile } = await fetchProfile();
-  const netWorth = await calculateNetWorthBulk(profile.display_currency);
+  const netWorth = await calculateNetWorth(profile.display_currency);
 
   return (
     <div className="flex flex-col gap-4">

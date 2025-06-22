@@ -72,6 +72,9 @@ All formatting functions accept both numbers and strings as input. Currency form
 
 [x] Add percentages increase over the different time periods selected
 [x] Add financial data API to allow users to add fianncial instruments like stocks and other equities ( https://github.com/gadicc/node-yahoo-finance2 )
+[ ] Refactor for optimization
+[ ] Handle fetch single holding to [0] directly in the server action
+[ ] Use client for exchange rates, symbols and quotes (they are not private data)
 [ ] Add disclaimer about the fact that exchange rates and market prices are not updated in real-time but rather updated daily (6PM UTC)
 [ ] **Implement Caching for Expensive Operations**: The net worth line chart calculation is resource intensive. In the future, implement server-side caching (e.g., using Next.js `use cache` or `unstable_cache` when stable) to avoid redundant calculations and improve performance, especially when users switch between time periods or currencies.
 [ ] Allow users to import CSV files

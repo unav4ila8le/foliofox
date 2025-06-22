@@ -10,7 +10,12 @@ interface FetchHoldingsOptions {
   holdingId?: string;
 }
 
-// Fetch holdings with optional filtering for archived holdings
+/**
+ * Fetch holdings with optional filtering for archived holdings.
+ *
+ * @param options - Optional filtering options
+ * @returns Array of transformed holdings
+ */
 export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
   const { includeArchived = false, onlyArchived = false, holdingId } = options;
 
@@ -117,13 +122,13 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
   return transformedHoldings;
 }
 
-// Fetch a single holding by its ID
+/**
+ * Fetch a single holding by its ID.
+ *
+ * @param holdingId - The ID of the holding to fetch
+ * @returns The transformed holding
+ */
 export async function fetchSingleHolding(holdingId: string) {
   const holdings = await fetchHoldings({ holdingId });
-
-  if (!holdings || holdings.length === 0) {
-    throw new Error("Holding not found");
-  }
-
   return holdings[0];
 }

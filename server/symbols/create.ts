@@ -20,19 +20,12 @@ export async function createSymbol(symbolId: string) {
     };
   }
 
-  // Try to get sector/industry from search if missing from quote
-  let sector = quoteResult.data?.sector;
-  let industry = quoteResult.data?.industry;
-
-  if (!sector || !industry) {
-    const searchResult = await searchSymbols({ query: symbolId, limit: 1 });
-    if (searchResult.success && searchResult.data?.[0]) {
-      const { sector: searchSector, industry: searchIndustry } =
-        searchResult.data[0];
-      sector = sector || searchSector;
-      industry = industry || searchIndustry;
-    }
-  }
+  // Always get sector/industry from search since quotes don't provide them
+  const searchResult = await searchSymbols({ query: symbolId, limit: 1 });
+  const sector =
+    (searchResult.success && searchResult.data?.[0]?.sector) || null;
+  const industry =
+    (searchResult.success && searchResult.data?.[0]?.industry) || null;
 
   // Extract and validate data for symbol creation
   const data: Symbol = {

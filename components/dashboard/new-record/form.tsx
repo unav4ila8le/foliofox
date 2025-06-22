@@ -31,7 +31,7 @@ import { useNewRecordDialog } from "./index";
 import { cn } from "@/lib/utils";
 
 import { createRecord } from "@/server/records/create";
-import { fetchQuote } from "@/server/quotes/fetch";
+import { fetchSingleQuote } from "@/server/quotes/fetch";
 
 import type { TransformedHolding } from "@/types/global.types";
 
@@ -82,7 +82,8 @@ export function NewRecordForm() {
 
       setIsFetchingQuote(true);
       try {
-        const quote = await fetchQuote(holding.symbol_id, date);
+        const quote = await fetchSingleQuote(holding.symbol_id, date);
+
         form.setValue("unit_value", quote);
       } catch (error) {
         console.error("Error fetching quote:", error);
