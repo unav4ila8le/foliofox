@@ -1,6 +1,6 @@
 "use server";
 
-import { calculateNetWorth } from "@/server/analysis/net-worth";
+import { calculateNetWorthBulk } from "@/server/analysis/net-worth";
 
 export interface NetWorthHistoryData {
   date: Date;
@@ -23,7 +23,7 @@ export async function fetchNetWorthHistory({
   // Calculate net worth for each weekly date
   const history = await Promise.all(
     weeklyDates.map(async (date) => {
-      const netWorth = await calculateNetWorth(targetCurrency, date);
+      const netWorth = await calculateNetWorthBulk(targetCurrency, date);
 
       return {
         date: date,

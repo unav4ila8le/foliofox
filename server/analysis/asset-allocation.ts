@@ -1,24 +1,48 @@
 "use server";
 
 import { fetchHoldings } from "@/server/holdings/fetch";
-import { fetchExchangeRate } from "@/server/exchange-rates/fetch";
+import { fetchMultipleExchangeRates } from "@/server/exchange-rates/fetch";
 
-// Calculate asset allocation by category
+/**
+ * Calculate asset allocation by category.
+ * Uses bulk exchange rate fetching for optimal performance.
+ */
 export async function calculateAssetAllocation(targetCurrency: string) {
+  // Step 1: Get all holdings
   const holdings = await fetchHoldings({ includeArchived: true });
 
-  // Convert all holdings to USD and calculate their values
-  const holdingsInUSD = await Promise.all(
-    holdings.map(async (holding) => {
-      const rate = await fetchExchangeRate(holding.currency);
-      return {
-        ...holding,
-        total_value_usd: holding.total_value / rate,
-      };
-    }),
-  );
+  if (holdings.length === 0) {
+    return [];
+  }
 
-  // Group by category and sum USD values
+  // Step 2: Collect all currencies we need exchange rates for
+  const holdingCurrencies = [...new Set(holdings.map((h) => h.currency))];
+  const allCurrencies = [...new Set([...holdingCurrencies, targetCurrency])];
+
+  // Step 3: Bulk fetch all exchange rates at once
+  const exchangeRateRequests = allCurrencies.map((currency) => ({
+    currency,
+    date: new Date(),
+  }));
+
+  const exchangeRates = await fetchMultipleExchangeRates(exchangeRateRequests);
+
+  // Step 4: Convert all holdings to USD using bulk-fetched rates
+  const holdingsInUSD = holdings.map((holding) => {
+    const rateKey = `${holding.currency}|${new Date().toISOString().split("T")[0]}`;
+    const rate = exchangeRates.get(rateKey);
+
+    if (!rate) {
+      throw new Error(`Exchange rate not found for ${holding.currency}`);
+    }
+
+    return {
+      ...holding,
+      total_value_usd: holding.total_value / rate,
+    };
+  });
+
+  // Step 5: Group by category and sum USD values
   const assetAllocationInUSD: Record<
     string,
     {
@@ -43,15 +67,21 @@ export async function calculateAssetAllocation(targetCurrency: string) {
     }
   });
 
-  // Convert back to target currency
-  const assetAllocation = await Promise.all(
-    Object.values(assetAllocationInUSD).map(async (allocation) => {
-      const rate = await fetchExchangeRate(targetCurrency);
-      return {
-        category_code: allocation.category_code,
-        name: allocation.name,
-        total_value: allocation.total_value_usd * rate,
-      };
+  // Step 6: Convert back to target currency (only need 1 rate, not N rates)
+  const targetCurrencyRateKey = `${targetCurrency}|${new Date().toISOString().split("T")[0]}`;
+  const targetRate = exchangeRates.get(targetCurrencyRateKey);
+
+  if (!targetRate) {
+    throw new Error(
+      `Exchange rate not found for target currency ${targetCurrency}`,
+    );
+  }
+
+  const assetAllocation = Object.values(assetAllocationInUSD).map(
+    (allocation) => ({
+      category_code: allocation.category_code,
+      name: allocation.name,
+      total_value: allocation.total_value_usd * targetRate,
     }),
   );
 

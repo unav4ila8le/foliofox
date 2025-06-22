@@ -42,10 +42,10 @@
 
 **Tasks:**
 
-- [ ] **1.1** Refactor `fetchHoldings()` to use single query with joins
-  - [ ] Replace individual record queries with bulk fetch
-  - [ ] Use PostgREST joins to get latest records efficiently
-  - [ ] Test performance improvements
+- [x] **1.1** Refactor `fetchHoldings()` to use single query with joins
+  - [x] Replace individual record queries with bulk fetch using .in()
+  - [x] Use JavaScript grouping to match records to holdings
+  - [x] Test performance improvements
 - [ ] **1.2** Optimize `calculateNetWorth()` for parallel processing
   - [ ] Fetch all holdings data upfront
   - [ ] Parallelize external API calls (Yahoo Finance, Exchange Rates)
