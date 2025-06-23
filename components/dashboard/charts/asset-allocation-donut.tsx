@@ -65,11 +65,7 @@ export function AssetAllocationDonut({
             <CardTitle>Asset Allocation</CardTitle>
           </CardHeader>
           <CardContent className="mt-6 flex-1">
-            <ResponsiveContainer
-              width="100%"
-              height="100%"
-              className="[&_.recharts-layer]:outline-hidden [&_.recharts-sector]:outline-hidden [&_.recharts-surface]:outline-hidden"
-            >
+            <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={assetAllocation}
@@ -149,29 +145,38 @@ export function AssetAllocationDonut({
                   layout="vertical"
                   verticalAlign="middle"
                   align="right"
-                  wrapperStyle={{ width: "40%", right: 0 }}
+                  wrapperStyle={{ width: "45%", right: 0 }}
                   content={({ payload }) => {
                     if (payload)
                       return (
                         <ul className="flex flex-col gap-2">
-                          {payload.map((entry, index) => (
-                            <li key={`item-${index}`}>
-                              <div className="flex items-center gap-1">
-                                <div
-                                  className="h-2 w-2 shrink-0 rounded-[2px]"
-                                  style={{ backgroundColor: entry.color }}
-                                />
-                                <span className="text-xs">
-                                  {entry.value}{" "}
-                                  <span className="text-muted-foreground text-xs">
-                                    {formatPercentage(
-                                      entry.payload?.value / totalHoldingsValue,
-                                    )}
+                          {payload.map((entry, index) => {
+                            // Fix for Recharts 3.0: Access data from entry.payload instead
+                            const categoryData = assetAllocation.find(
+                              (item) => item.name === entry.value,
+                            );
+
+                            return (
+                              <li key={`item-${index}`}>
+                                <div className="flex items-center gap-1">
+                                  <div
+                                    className="h-2 w-2 shrink-0 rounded-[2px]"
+                                    style={{ backgroundColor: entry.color }}
+                                  />
+                                  <span className="text-xs">
+                                    {entry.value}{" "}
+                                    <span className="text-muted-foreground text-xs">
+                                      {categoryData &&
+                                        formatPercentage(
+                                          categoryData.total_value /
+                                            totalHoldingsValue,
+                                        )}
+                                    </span>
                                   </span>
-                                </span>
-                              </div>
-                            </li>
-                          ))}
+                                </div>
+                              </li>
+                            );
+                          })}
                         </ul>
                       );
                     return null;

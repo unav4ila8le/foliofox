@@ -239,10 +239,7 @@ export function NetWorthLineChart({
                       </div>
                     );
                   }}
-                  cursorStyle={{
-                    stroke: "var(--border)",
-                    strokeWidth: 1,
-                  }}
+                  cursor={{ stroke: "var(--border)", strokeWidth: 1 }}
                 />
                 <Area
                   dataKey="value"

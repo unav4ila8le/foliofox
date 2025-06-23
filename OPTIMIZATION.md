@@ -5,19 +5,16 @@
 ### **Performance Bottlenecks Identified:**
 
 1. **❌ Major N+1 Query Problems:**
-
    - `fetchHoldings()` - makes separate DB query for each holding's latest record
    - `calculateNetWorth()` - sequential processing of holdings with multiple API calls per holding
    - `calculateAssetAllocation()` - multiple exchange rate fetches
 
 2. **❌ Inefficient Sequential Processing:**
-
    - Net worth calculation processes holdings one by one (should be parallel)
    - Multiple API calls to Yahoo Finance and exchange rates
    - Redundant database connections in server actions
 
 3. **❌ Missing Caching:**
-
    - No caching for expensive net worth calculations (already noted in README TODO)
    - Exchange rates and quotes fetched individually
    - No memoization for repeated calculations
