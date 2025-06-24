@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
+import { MarketDataDisclaimer } from "@/components/dashboard/market-data-disclaimer";
 
 import { AssetAllocationDonut } from "@/components/dashboard/charts/asset-allocation-donut";
 import { NetWorthLineChart } from "@/components/dashboard/charts/net-worth-line";
@@ -70,11 +71,7 @@ export default async function DashboardPage() {
           <Greetings username={profile.username} />
           <p className="text-muted-foreground">Here&apos;s your summary</p>
         </div>
-        <p className="text-muted-foreground text-xs lg:text-right">
-          Exchange rates and market prices are not updated in real-time.
-          <br />
-          Data is refreshed daily at 10:00 PM UTC.
-        </p>
+        <MarketDataDisclaimer />
       </div>
       <div className="grid grid-cols-6 gap-4">
         <div className="col-span-6 xl:col-span-4">

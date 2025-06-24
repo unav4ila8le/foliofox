@@ -1,5 +1,7 @@
 "use client";
+
 import { useEffect, useState } from "react";
+
 import { getTimeBasedGreetings } from "@/lib/date";
 
 export function Greetings({ username }: { username: string }) {
