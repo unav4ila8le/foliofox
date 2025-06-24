@@ -1,5 +1,7 @@
 "use server";
 
+import { format } from "date-fns";
+
 import { fetchHoldings } from "@/server/holdings/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 
@@ -29,7 +31,7 @@ export async function calculateAssetAllocation(targetCurrency: string) {
 
   // 4. Convert all holdings to USD using bulk-fetched rates
   const holdingsInUSD = holdings.map((holding) => {
-    const rateKey = `${holding.currency}|${new Date().toISOString().split("T")[0]}`;
+    const rateKey = `${holding.currency}|${format(new Date(), "yyyy-MM-dd")}`;
     const rate = exchangeRates.get(rateKey);
 
     if (!rate) {
@@ -68,7 +70,7 @@ export async function calculateAssetAllocation(targetCurrency: string) {
   });
 
   // 6. Convert back to target currency (only need 1 rate, not N rates)
-  const targetCurrencyRateKey = `${targetCurrency}|${new Date().toISOString().split("T")[0]}`;
+  const targetCurrencyRateKey = `${targetCurrency}|${format(new Date(), "yyyy-MM-dd")}`;
   const targetRate = exchangeRates.get(targetCurrencyRateKey);
 
   if (!targetRate) {

@@ -29,16 +29,6 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 ## Package Dependencies Notes
 
-### Current Overrides
-
-The project currently uses package overrides in `package.json` to handle React 19 compatibility. These are temporary solutions until the packages are officially updated:
-
-"overrides": {
-"react-is": "^19.1.0"
-}
-
-This can be safely removed once Recharts releases a v3 version, fully compatible with React 19.
-
 ## Utility Functions Cheatsheet
 
 ### Number Formatting
