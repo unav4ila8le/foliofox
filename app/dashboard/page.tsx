@@ -65,11 +65,17 @@ export default async function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <Greetings username={profile.username} />
-        <p className="text-muted-foreground">Here&apos;s your summary</p>
+      <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <Greetings username={profile.username} />
+          <p className="text-muted-foreground">Here&apos;s your summary</p>
+        </div>
+        <p className="text-muted-foreground text-xs lg:text-right">
+          Exchange rates and market prices are not updated in real-time.
+          <br />
+          Data is refreshed daily at 10:00 PM UTC.
+        </p>
       </div>
-
       <div className="grid grid-cols-6 gap-4">
         <div className="col-span-6 xl:col-span-4">
           <Suspense fallback={<Skeleton className="h-80 rounded-xl" />}>
