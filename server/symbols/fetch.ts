@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/utils/supabase/server";
+import { createServiceClient } from "@/utils/supabase/service";
 
 /**
  * Fetch all unique symbol IDs from the database.
@@ -9,7 +9,7 @@ import { createClient } from "@/utils/supabase/server";
  * @returns Array of unique symbol IDs
  */
 export async function fetchSymbols() {
-  const supabase = await createClient();
+  const supabase = await createServiceClient();
 
   try {
     console.log("Fetching symbols from database...");
