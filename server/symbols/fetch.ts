@@ -12,16 +12,9 @@ export async function fetchSymbols() {
   const supabase = await createServiceClient();
 
   try {
-    console.log("Fetching symbols from database...");
-
     const { data: symbols, error } = await supabase
       .from("symbols")
       .select("id");
-    console.log("Symbols query result:", {
-      symbols,
-      error,
-      count: symbols?.length,
-    });
 
     if (error) {
       throw new Error(`Failed to fetch symbols: ${error.message}`);
