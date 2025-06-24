@@ -3,7 +3,7 @@
 import { format, subDays } from "date-fns";
 import yahooFinance from "yahoo-finance2";
 
-import { createClient } from "@/utils/supabase/server";
+import { createServiceClient } from "@/utils/supabase/service";
 
 /**
  * Fetch multiple quotes for different symbols and dates in bulk.
@@ -17,7 +17,7 @@ export async function fetchQuotes(
   // Early return if no requests
   if (!requests.length) return new Map();
 
-  const supabase = await createClient();
+  const supabase = await createServiceClient();
   const results = new Map<string, number>();
 
   // 1. Check what's already cached in database
