@@ -4,7 +4,12 @@ import { getCurrentUser } from "@/server/auth/actions";
 
 import type { TransformedRecord } from "@/types/global.types";
 
-// Fetch records for a specific holding
+/**
+ * Fetch records for a specific holding
+ *
+ * @param holdingId - The ID of the holding to fetch records for
+ * @returns An array of transformed records
+ */
 export async function fetchRecords(holdingId: string) {
   const { supabase, user } = await getCurrentUser();
 
@@ -16,7 +21,7 @@ export async function fetchRecords(holdingId: string) {
     .order("date", { ascending: false });
 
   if (error) {
-    throw new Error(error.message);
+    throw new Error(`Failed to fetch records: ${error.message}`);
   }
 
   // Transform records to include total value
