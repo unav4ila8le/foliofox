@@ -111,8 +111,8 @@ export async function calculateNetWorth(
     const toUsdKey = `${holding.currency}|${format(date, "yyyy-MM-dd")}`;
     const fromUsdKey = `${targetCurrency}|${format(date, "yyyy-MM-dd")}`;
 
-    const toUsdRate = exchangeRatesMap.get(toUsdKey) || 1;
-    const fromUsdRate = exchangeRatesMap.get(fromUsdKey) || 1;
+    const toUsdRate = exchangeRatesMap.get(toUsdKey);
+    const fromUsdRate = exchangeRatesMap.get(fromUsdKey);
 
     const valueInUsd = holdingValue / toUsdRate;
     const convertedValue = valueInUsd * fromUsdRate;

@@ -30,11 +30,12 @@ export async function GET(request: NextRequest) {
 
     console.log(`Found ${symbolIds.length} symbols to fetch quotes for`);
 
-    // 2. Prepare requests for today's date
-    const today = new Date();
+    // 2. Prepare requests for tomorrow's date (proactive caching)
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
     const quoteRequests = symbolIds.map((symbolId) => ({
       symbolId,
-      date: today,
+      date: tomorrow,
     }));
 
     // 3. Fetch quotes using your existing function
@@ -57,7 +58,7 @@ export async function GET(request: NextRequest) {
         totalSymbols: symbolIds.length,
         successfulFetches,
         failedFetches,
-        date: today.toISOString(),
+        date: tomorrow.toISOString(),
       },
     });
   } catch (error) {

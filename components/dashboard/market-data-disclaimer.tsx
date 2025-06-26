@@ -9,14 +9,14 @@ export function MarketDataDisclaimer() {
     <Tooltip>
       <TooltipTrigger asChild>
         <p className="text-muted-foreground text-xs lg:text-right">
-          10:00 PM UTC · European Central Bank
+          10:00 PM UTC · One day behind
         </p>
       </TooltipTrigger>
       <TooltipContent side="bottom" align="end">
         <p>
-          Exchange rates and market prices are not updated in real-time.
+          Market prices and exchange rates are updated daily at 10:00 PM UTC.
           <br />
-          Data is refreshed daily at 10:00 PM UTC.
+          Data shown is from the previous trading day.
         </p>
       </TooltipContent>
     </Tooltip>
