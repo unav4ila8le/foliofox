@@ -5,51 +5,60 @@ import { fetchQuotes } from "@/server/quotes/fetch";
 
 export async function GET(request: NextRequest) {
   try {
-    // Security: Verify the request is from Vercel Cron
+    // 1. Security check: Verify the request is from Vercel Cron
     const authHeader = request.headers.get("authorization");
-
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return new Response("Unauthorized", {
         status: 401,
       });
     }
 
+    // 2. Log start
     console.log("Starting daily quote fetch cron job...");
 
-    // 1. Get all symbol IDs from database
-    const symbolIds = await fetchSymbols();
+    // 3. Get date (from query param, default to tomorrow)
+    const url = new URL(request.url);
+    const date =
+      url.searchParams.get("date") ||
+      (() => {
+        const d = new Date();
+        d.setDate(d.getDate() + 1);
+        return d.toISOString().slice(0, 10);
+      })();
 
+    // 4. Fetch all symbol IDs from database
+    const symbolIds = await fetchSymbols();
     if (symbolIds.length === 0) {
       console.log("No symbols found in database");
       return NextResponse.json({
         success: true,
         message: "No symbols to fetch",
-        symbolCount: 0,
+        stats: {
+          totalSymbols: 0,
+          successfulFetches: 0,
+          failedFetches: 0,
+          date,
+        },
       });
     }
 
-    console.log(`Found ${symbolIds.length} symbols to fetch quotes for`);
-
-    // 2. Prepare requests for tomorrow's date (proactive caching)
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    // 5. Prepare quote requests for the target date
     const quoteRequests = symbolIds.map((symbolId) => ({
       symbolId,
-      date: tomorrow,
+      date: new Date(date),
     }));
 
-    // 3. Fetch quotes using your existing function
+    // 6. Fetch quotes using your existing function
     const quotesMap = await fetchQuotes(quoteRequests);
 
-    // 4. Count successful fetches
+    // 7. Count successful fetches
     const successfulFetches = quotesMap.size;
     const failedFetches = symbolIds.length - successfulFetches;
 
-    console.log(`Quote fetch completed:`, {
-      total: symbolIds.length,
-      successful: successfulFetches,
-      failed: failedFetches,
-    });
+    // 8. Log and return stats
+    console.log(
+      `Quote fetch completed for ${date}: ${successfulFetches} successful, ${failedFetches} failed.`,
+    );
 
     return NextResponse.json({
       success: true,
@@ -58,11 +67,11 @@ export async function GET(request: NextRequest) {
         totalSymbols: symbolIds.length,
         successfulFetches,
         failedFetches,
-        date: tomorrow.toISOString(),
+        date,
       },
     });
   } catch (error) {
-    console.error("Cron job failed:", error);
+    console.error("Quote cron job failed:", error);
     return NextResponse.json(
       {
         success: false,

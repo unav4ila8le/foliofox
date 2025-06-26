@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/cron/fetch-exchange-rates",
+      "schedule": "0 22 * * *"
+    },
+    {
       "path": "/api/cron/fetch-quotes",
       "schedule": "0 22 * * *"
     }
