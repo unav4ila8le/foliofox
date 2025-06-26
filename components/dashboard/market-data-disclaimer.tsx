@@ -1,3 +1,5 @@
+import { Info } from "lucide-react";
+
 import {
   Tooltip,
   TooltipContent,
@@ -8,9 +10,10 @@ export function MarketDataDisclaimer() {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <p className="text-muted-foreground text-xs lg:text-right">
-          10:00 PM UTC · One day behind
-        </p>
+        <div className="text-muted-foreground flex items-center gap-2">
+          <Info className="size-4" />
+          <p className="text-xs">10:00 PM UTC · One day behind</p>
+        </div>
       </TooltipTrigger>
       <TooltipContent side="bottom" align="end">
         <p>
