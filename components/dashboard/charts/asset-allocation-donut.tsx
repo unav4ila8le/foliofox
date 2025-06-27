@@ -86,41 +86,26 @@ export function AssetAllocationDonut({
                   ))}
                   <Label
                     position="center"
-                    offset={0}
-                    content={({ viewBox }) => {
-                      if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                        return (
-                          <text
-                            x={viewBox.cx}
-                            y={viewBox.cy}
-                            textAnchor="middle"
-                            dominantBaseline="middle"
-                          >
-                            <tspan
-                              x={viewBox.cx}
-                              y={viewBox.cy}
-                              fill="var(--foreground)"
-                              fontSize={16}
-                              fontWeight="bolder"
-                            >
-                              {formatCompactCurrency(netWorth, currency)}
-                            </tspan>
-                            <tspan
-                              x={viewBox.cx}
-                              y={(viewBox.cy || 0) + 20}
-                              fill="var(--muted-foreground)"
-                              fontSize={12}
-                            >
-                              Net Worth
-                            </tspan>
-                          </text>
-                        );
-                      }
-                      return null;
+                    value={formatCompactCurrency(netWorth, currency)}
+                    style={{
+                      fontSize: "16px",
+                      fontWeight: "bolder",
+                      fill: "var(--foreground)",
                     }}
+                    dy={-5}
+                  />
+                  <Label
+                    position="center"
+                    value="Net Worth"
+                    style={{
+                      fontSize: "12px",
+                      fill: "var(--muted-foreground)",
+                    }}
+                    dy={15}
                   />
                 </Pie>
                 <Tooltip
+                  wrapperStyle={{ zIndex: 10 }}
                   content={({ active, payload }) => {
                     if (!active || !payload?.length) return null;
 
@@ -145,7 +130,7 @@ export function AssetAllocationDonut({
                   layout="vertical"
                   verticalAlign="middle"
                   align="right"
-                  wrapperStyle={{ width: "45%", right: 0 }}
+                  wrapperStyle={{ width: "45%", right: 0, zIndex: 1 }}
                   content={({ payload }) => {
                     if (payload)
                       return (
