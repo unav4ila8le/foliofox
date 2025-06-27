@@ -10,8 +10,8 @@ export function MarketDataDisclaimer() {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <div className="text-muted-foreground flex items-center gap-2">
-          <Info className="size-4" />
+        <div className="text-muted-foreground flex items-center gap-1.5">
+          <Info className="size-3.5" />
           <p className="text-xs">10:00 PM UTC · One day behind</p>
         </div>
       </TooltipTrigger>
