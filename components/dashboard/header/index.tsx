@@ -5,8 +5,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Breadcrumb } from "@/components/dashboard/header/breadcrumb";
-import { NewRecordButton } from "@/components/dashboard/new-record";
+
+import { Breadcrumb } from "./breadcrumb";
+import { NewActionButton } from "./new-action-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export function Header() {
@@ -28,7 +29,7 @@ export function Header() {
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <NewRecordButton />
+        <NewActionButton />
         <ThemeToggle />
       </div>
     </header>
