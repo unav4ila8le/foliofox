@@ -1,6 +1,9 @@
 "use server";
 
+import { format } from "date-fns";
+
 import { getCurrentUser } from "@/server/auth/actions";
+import { fetchQuotes } from "@/server/quotes/fetch";
 
 import type { TransformedHolding } from "@/types/global.types";
 
@@ -99,6 +102,20 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
     recordsByHolding.get(holdingId).push(record);
   });
 
+  // Identify holdings with symbols and fetch their latest quotes
+  const holdingsWithSymbols = holdings.filter((holding) => holding.symbol_id);
+  const symbolIds = holdingsWithSymbols.map((holding) => holding.symbol_id!);
+
+  let quotesMap = new Map<string, number>();
+  if (symbolIds.length > 0) {
+    const today = new Date();
+    const quoteRequests = symbolIds.map((symbolId) => ({
+      symbolId,
+      date: today,
+    }));
+    quotesMap = await fetchQuotes(quoteRequests);
+  }
+
   // Transform the holdings data
   const transformedHoldings: TransformedHolding[] = holdings.map((holding) => {
     // Get the records for this specific holding
@@ -107,7 +124,20 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
     // Get the latest record (first one, since they're sorted by date descending)
     const latestRecord = holdingRecords[0];
 
-    const current_unit_value = latestRecord?.unit_value || 0;
+    // Determine current_unit_value based on whether holding has a symbol
+    let current_unit_value: number;
+    if (holding.symbol_id) {
+      // For holdings with symbols, use the latest quote
+      const today = new Date();
+      const quoteKey = `${holding.symbol_id}|${format(today, "yyyy-MM-dd")}`;
+      current_unit_value =
+        quotesMap.get(quoteKey) || latestRecord?.unit_value || 0;
+    } else {
+      // For holdings without symbols, use the latest record
+      current_unit_value = latestRecord?.unit_value || 0;
+    }
+
+    // Get the current quantity from the latest record
     const current_quantity = latestRecord?.quantity || 0;
 
     return {
