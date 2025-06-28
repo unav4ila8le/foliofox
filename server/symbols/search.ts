@@ -75,17 +75,21 @@ export async function searchSymbols(params: SearchParams) {
 // Get quote data for a specific symbol
 export async function getSymbolQuote(symbolId: string) {
   try {
-    const quoteData: QuoteResult = await yahooFinance.quote(symbolId, {
-      fields: [
-        "symbol",
-        "quoteType",
-        "shortName",
-        "longName",
-        "currency",
-        "fullExchangeName",
-        "regularMarketPrice",
-      ],
-    });
+    const quoteData: QuoteResult = await yahooFinance.quote(
+      symbolId,
+      {
+        fields: [
+          "symbol",
+          "quoteType",
+          "shortName",
+          "longName",
+          "currency",
+          "fullExchangeName",
+          "regularMarketPrice",
+        ],
+      },
+      { validateResult: false },
+    );
 
     return {
       success: true,
