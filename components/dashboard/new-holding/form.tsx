@@ -43,8 +43,8 @@ const formSchema = z.object({
     .max(64, "Name must not exceed 64 characters."),
   symbol_id: z.string(),
   currency: z.string().length(3),
-  current_unit_value: z.coerce.number().gt(0, "Value must be greater than 0"),
-  current_quantity: z.coerce.number().gt(0, "Quantity must be greater than 0"),
+  unit_value: z.coerce.number().gt(0, "Value must be greater than 0"),
+  quantity: z.coerce.number().gt(0, "Quantity must be greater than 0"),
   description: z
     .string()
     .max(256, {
@@ -63,8 +63,8 @@ export function NewHoldingForm() {
       name: "",
       symbol_id: "",
       currency: profile.display_currency,
-      current_unit_value: 0,
-      current_quantity: 0,
+      unit_value: 0,
+      quantity: 0,
       description: "",
     },
   });
@@ -80,11 +80,8 @@ export function NewHoldingForm() {
       formData.append("category_code", values.category_code);
       formData.append("name", values.name);
       formData.append("currency", values.currency);
-      formData.append(
-        "current_unit_value",
-        values.current_unit_value.toString(),
-      );
-      formData.append("current_quantity", values.current_quantity.toString());
+      formData.append("unit_value", values.unit_value.toString());
+      formData.append("quantity", values.quantity.toString());
       formData.append("description", values.description || "");
 
       // Add symbol_id if it exists and is not empty
@@ -122,7 +119,7 @@ export function NewHoldingForm() {
 
       // Auto-populate with quote data
       form.setValue("currency", quoteData?.currency);
-      form.setValue("current_unit_value", quoteData?.regularMarketPrice);
+      form.setValue("unit_value", quoteData?.regularMarketPrice);
 
       // Set name if not already filled
       if (!form.getValues("name")) {
@@ -152,7 +149,7 @@ export function NewHoldingForm() {
   // Auto-set quantity to 1 for categories that don't support (need) quantity
   useEffect(() => {
     if (categoryCode && shouldHideQuantity(categoryCode)) {
-      form.setValue("current_quantity", 1);
+      form.setValue("quantity", 1);
     }
   }, [categoryCode, form]);
 
@@ -232,7 +229,7 @@ export function NewHoldingForm() {
           {!shouldShowSymbolSearch(form.watch("category_code")) && (
             <FormField
               control={form.control}
-              name="current_unit_value"
+              name="unit_value"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Current unit value</FormLabel>
@@ -252,7 +249,7 @@ export function NewHoldingForm() {
           {!shouldHideQuantity(form.watch("category_code")) && (
             <FormField
               control={form.control}
-              name="current_quantity"
+              name="quantity"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Current quantity</FormLabel>

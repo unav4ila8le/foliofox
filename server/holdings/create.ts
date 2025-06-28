@@ -27,8 +27,8 @@ export async function createHolding(formData: FormData) {
   };
 
   // Extract current quantity and unit value separately (for the initial record)
-  const current_quantity = Number(formData.get("current_quantity"));
-  const current_unit_value = Number(formData.get("current_unit_value"));
+  const quantity = Number(formData.get("quantity"));
+  const unit_value = Number(formData.get("unit_value"));
 
   // Upsert symbol
   if (data.symbol_id) {
@@ -65,8 +65,8 @@ export async function createHolding(formData: FormData) {
   const recordFormData = new FormData();
   recordFormData.append("holding_id", holding.id);
   recordFormData.append("date", format(new Date(), "yyyy-MM-dd"));
-  recordFormData.append("quantity", current_quantity.toString());
-  recordFormData.append("unit_value", current_unit_value.toString());
+  recordFormData.append("quantity", quantity.toString());
+  recordFormData.append("unit_value", unit_value.toString());
   recordFormData.append("description", "Initial holding creation");
 
   const recordResult = await createRecord(recordFormData);
