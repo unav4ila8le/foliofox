@@ -37,14 +37,14 @@ export const columns: ColumnDef<TransformedHolding>[] = [
     cell: ({ row }) => {
       const name = row.getValue<string>("name");
       return (
-        <TooltipProvider>
-          <Tooltip delayDuration={500}>
-            <TooltipTrigger>
-              <div className="max-w-60 truncate text-start">{name}</div>
-            </TooltipTrigger>
-            <TooltipContent>{name}</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <div className="max-w-60 truncate text-start">
+          <TooltipProvider>
+            <Tooltip delayDuration={500}>
+              <TooltipTrigger>{name}</TooltipTrigger>
+              <TooltipContent>{name}</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
       );
     },
   },
