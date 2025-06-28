@@ -22,10 +22,19 @@ export const CATEGORIES_WITH_SYMBOL_SEARCH = [
   "cryptocurrency",
 ];
 
+/**
+ * Categories that should hide quantity field (auto-set to 1)
+ */
+export const CATEGORIES_WITH_HIDDEN_QUANTITY = ["cash", "real_estate"];
+
+export function getQuoteTypesForCategory(categoryCode: string): string[] {
+  return ASSET_CATEGORY_QUOTE_TYPES[categoryCode] || [];
+}
+
 export function shouldShowSymbolSearch(categoryCode: string): boolean {
   return CATEGORIES_WITH_SYMBOL_SEARCH.includes(categoryCode);
 }
 
-export function getQuoteTypesForCategory(categoryCode: string): string[] {
-  return ASSET_CATEGORY_QUOTE_TYPES[categoryCode] || [];
+export function shouldHideQuantity(categoryCode: string): boolean {
+  return CATEGORIES_WITH_HIDDEN_QUANTITY.includes(categoryCode);
 }

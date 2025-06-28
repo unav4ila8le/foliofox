@@ -68,6 +68,6 @@ All formatting functions accept both numbers and strings as input. Currency form
 [ ] Allow users to import CSV files
 [ ] Allow users to export their holdings
 [x] Change primary button in navbar to "New" with dropdown
-[ ] Change order of new holding fields
-[ ] Dynamic quantity fields
+[x] Change order of new holding fields
+[x] Dynamic quantity fields
 [x] Holding current value should be the latest quote if holding has a symbol_id

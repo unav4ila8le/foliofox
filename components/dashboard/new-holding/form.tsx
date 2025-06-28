@@ -29,17 +29,18 @@ import { getSymbolQuote } from "@/server/symbols/search";
 
 import {
   shouldShowSymbolSearch,
+  shouldHideQuantity,
   getQuoteTypesForCategory,
 } from "@/lib/asset-category-mappings";
 
 import type { Symbol } from "@/types/global.types";
 
 const formSchema = z.object({
+  category_code: z.string().min(1, "Category is required"),
   name: z
     .string()
     .min(3, "Name must be at least 3 characters.")
     .max(64, "Name must not exceed 64 characters."),
-  category_code: z.string().min(1, "Category is required"),
   symbol_id: z.string(),
   currency: z.string().length(3),
   current_unit_value: z.coerce.number().gt(0, "Value must be greater than 0"),
@@ -58,8 +59,8 @@ export function NewHoldingForm() {
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
       category_code: "",
+      name: "",
       symbol_id: "",
       currency: profile.display_currency,
       current_unit_value: 0,
@@ -76,8 +77,8 @@ export function NewHoldingForm() {
     setIsLoading(true);
     try {
       const formData = new FormData();
-      formData.append("name", values.name);
       formData.append("category_code", values.category_code);
+      formData.append("name", values.name);
       formData.append("currency", values.currency);
       formData.append(
         "current_unit_value",
@@ -148,25 +149,16 @@ export function NewHoldingForm() {
     }
   }, [categoryCode, form]);
 
+  // Auto-set quantity to 1 for categories that don't support (need) quantity
+  useEffect(() => {
+    if (categoryCode && shouldHideQuantity(categoryCode)) {
+      form.setValue("current_quantity", 1);
+    }
+  }, [categoryCode, form]);
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="E.g., Chase Savings, Rental Property, Bitcoin Holdings"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
         <FormField
           control={form.control}
           name="category_code"
@@ -204,6 +196,22 @@ export function NewHoldingForm() {
             )}
           />
         )}
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Name</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="E.g., Chase Savings, Rental Property, Bitcoin Holdings"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         {!shouldShowSymbolSearch(form.watch("category_code")) && (
           <FormField
             control={form.control}
@@ -241,24 +249,26 @@ export function NewHoldingForm() {
               )}
             />
           )}
-          <FormField
-            control={form.control}
-            name="current_quantity"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Current quantity</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="E.g., 10"
-                    type="number"
-                    {...field}
-                    value={field.value === 0 ? "" : field.value}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {!shouldHideQuantity(form.watch("category_code")) && (
+            <FormField
+              control={form.control}
+              name="current_quantity"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Current quantity</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="E.g., 10"
+                      type="number"
+                      {...field}
+                      value={field.value === 0 ? "" : field.value}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
         </div>
 
         <FormField
