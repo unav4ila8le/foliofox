@@ -1,13 +1,12 @@
 "use server";
 
-import yahooFinance from "yahoo-finance2";
+import YahooFinance from "yahoo-finance2";
 import { z } from "zod";
 
 import type { Symbol } from "@/types/global.types";
+type SearchSymbol = Omit<Symbol, "currency">;
 
-// Extract the search result type
-type SearchResult = Awaited<ReturnType<typeof yahooFinance.search>>;
-type QuoteResult = Awaited<ReturnType<typeof yahooFinance.quote>>;
+const yahooFinance = new YahooFinance();
 
 // Define the search parameters schema
 const searchParamsSchema = z.object({
@@ -17,7 +16,6 @@ const searchParamsSchema = z.object({
 });
 
 type SearchParams = z.infer<typeof searchParamsSchema>;
-type SearchQuoteResult = SearchResult["quotes"][0];
 
 export async function searchSymbols(params: SearchParams) {
   try {
@@ -25,18 +23,15 @@ export async function searchSymbols(params: SearchParams) {
     const validatedParams = searchParamsSchema.parse(params);
 
     // Perform the search using yahoo-finance2
-    const searchResults: SearchResult = await yahooFinance.search(
-      validatedParams.query,
-      {
-        quotesCount: validatedParams.limit,
-        newsCount: 0,
-        enableFuzzyQuery: true,
-      },
-    );
+    const searchResults = await yahooFinance.search(validatedParams.query, {
+      quotesCount: validatedParams.limit,
+      newsCount: 0,
+      enableFuzzyQuery: true,
+    });
 
     // Filter and transform the results to match Symbol type
-    const symbols: Symbol[] = searchResults.quotes
-      .filter((quote: SearchQuoteResult) => {
+    const symbols: SearchSymbol[] = searchResults.quotes
+      .filter((quote: Record<string, unknown>) => {
         // If no quote types specified, include all
         if (
           !validatedParams.quoteTypes ||
@@ -45,17 +40,23 @@ export async function searchSymbols(params: SearchParams) {
           return true;
         }
         // Filter to include any of the specified quote types
-        return validatedParams.quoteTypes.includes(quote.quoteType || "");
+        return validatedParams.quoteTypes.includes(
+          (quote.quoteType as string) || "",
+        );
       })
-      .map((quote: SearchQuoteResult) => ({
-        id: quote.symbol,
-        quote_type: quote.quoteType || "",
-        name: quote.shortname || quote.longname || quote.symbol,
-        short_name: quote.shortname || null,
-        long_name: quote.longname || null,
-        exchange: quote.exchDisp || quote.exchange || null,
-        industry: quote.industry || null,
-        sector: quote.sector || null,
+      .map((quote: Record<string, unknown>) => ({
+        id: quote.symbol as string,
+        quote_type: quote.quoteType as string,
+        name:
+          (quote.shortname as string) ||
+          (quote.longname as string) ||
+          (quote.symbol as string),
+        short_name: (quote.shortname as string) || null,
+        long_name: (quote.longname as string) || null,
+        exchange:
+          (quote.exchDisp as string) || (quote.exchange as string) || null,
+        industry: (quote.industry as string) || null,
+        sector: (quote.sector as string) || null,
       }));
 
     return {
@@ -75,21 +76,17 @@ export async function searchSymbols(params: SearchParams) {
 // Get quote data for a specific symbol
 export async function getSymbolQuote(symbolId: string) {
   try {
-    const quoteData: QuoteResult = await yahooFinance.quote(
-      symbolId,
-      {
-        fields: [
-          "symbol",
-          "quoteType",
-          "shortName",
-          "longName",
-          "currency",
-          "fullExchangeName",
-          "regularMarketPrice",
-        ],
-      },
-      { validateResult: false },
-    );
+    const quoteData = await yahooFinance.quote(symbolId, {
+      fields: [
+        "symbol",
+        "quoteType",
+        "shortName",
+        "longName",
+        "currency",
+        "fullExchangeName",
+        "regularMarketPrice",
+      ],
+    });
 
     return {
       success: true,

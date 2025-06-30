@@ -1,9 +1,12 @@
 "use server";
 
 import { format, subDays } from "date-fns";
-import yahooFinance from "yahoo-finance2";
+import YahooFinance from "yahoo-finance2";
 
 import { createServiceClient } from "@/utils/supabase/service";
+
+// Initialize yahooFinance with v3 pattern
+const yahooFinance = new YahooFinance();
 
 /**
  * Fetch multiple quotes for different symbols and dates in bulk.
