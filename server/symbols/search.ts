@@ -4,7 +4,6 @@ import YahooFinance from "yahoo-finance2";
 import { z } from "zod";
 
 import type { Symbol } from "@/types/global.types";
-type SearchSymbol = Omit<Symbol, "currency">;
 
 const yahooFinance = new YahooFinance();
 
@@ -30,7 +29,7 @@ export async function searchSymbols(params: SearchParams) {
     });
 
     // Filter and transform the results to match Symbol type
-    const symbols: SearchSymbol[] = searchResults.quotes
+    const symbols: Symbol[] = searchResults.quotes
       .filter((quote: Record<string, unknown>) => {
         // If no quote types specified, include all
         if (
@@ -57,6 +56,7 @@ export async function searchSymbols(params: SearchParams) {
           (quote.exchDisp as string) || (quote.exchange as string) || null,
         industry: (quote.industry as string) || null,
         sector: (quote.sector as string) || null,
+        currency: (quote.currency as string) || "",
       }));
 
     return {
@@ -83,8 +83,8 @@ export async function getSymbolQuote(symbolId: string) {
         "shortName",
         "longName",
         "currency",
+        "exchange",
         "fullExchangeName",
-        "regularMarketPrice",
       ],
     });
 
@@ -99,7 +99,6 @@ export async function getSymbolQuote(symbolId: string) {
         exchange: quoteData.fullExchangeName || quoteData.exchange,
         sector: quoteData.sector,
         industry: quoteData.industry,
-        regularMarketPrice: quoteData.regularMarketPrice,
       },
     };
   } catch (error) {

@@ -28,13 +28,21 @@ export async function createSymbol(symbolId: string) {
     (searchResult.success && searchResult.data?.[0]?.industry) || null;
 
   // Extract and validate data for symbol creation
+  const quoteData = quoteResult.data;
+  if (!quoteData?.quoteType || !quoteData?.exchange || !quoteData?.currency) {
+    return {
+      success: false,
+      code: "QUOTE_DATA_INCOMPLETE",
+      message: "Missing required quote data for symbol creation.",
+    };
+  }
   const data: Symbol = {
     id: symbolId,
-    quote_type: quoteResult.data?.quoteType,
-    short_name: quoteResult.data?.shortName,
-    long_name: quoteResult.data?.longName,
-    exchange: quoteResult.data?.exchange,
-    currency: quoteResult.data?.currency,
+    quote_type: quoteData.quoteType,
+    short_name: quoteData.shortName || symbolId,
+    long_name: quoteData.longName || quoteData.shortName || symbolId,
+    exchange: quoteData.exchange,
+    currency: quoteData.currency,
     sector,
     industry,
   };

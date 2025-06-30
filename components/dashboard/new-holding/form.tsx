@@ -26,6 +26,7 @@ import { useNewHoldingDialog } from "./index";
 
 import { createHolding } from "@/server/holdings/create";
 import { getSymbolQuote } from "@/server/symbols/search";
+import { fetchSingleQuote } from "@/server/quotes/fetch";
 
 import {
   shouldShowSymbolSearch,
@@ -111,15 +112,26 @@ export function NewHoldingForm() {
 
   const handleSymbolSelect = async (symbol: Symbol) => {
     try {
+      // Get static symbol info
       const quoteResult = await getSymbolQuote(symbol.id);
       if (!quoteResult.success) {
         throw new Error(quoteResult.message || "Error fetching quote data.");
       }
       const quoteData = quoteResult.data;
 
+      // Fetch the historical price (adjClose/close) for today (or most recent trading day)
+      const today = new Date();
+      const unitValue = await fetchSingleQuote(symbol.id, today);
+
+      if (!quoteData?.currency || !unitValue) {
+        throw new Error(
+          "Currency or historical price is missing from quote data.",
+        );
+      }
+
       // Auto-populate with quote data
-      form.setValue("currency", quoteData?.currency);
-      form.setValue("unit_value", quoteData?.regularMarketPrice);
+      form.setValue("currency", quoteData.currency);
+      form.setValue("unit_value", unitValue);
 
       // Set name if not already filled
       if (!form.getValues("name")) {
