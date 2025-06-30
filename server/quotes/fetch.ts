@@ -52,11 +52,26 @@ export async function fetchQuotes(
     const fetchPromises = missingRequests.map(
       async ({ symbolId, dateString, cacheKey }) => {
         try {
-          const chartData = await yahooFinance.chart(symbolId, {
+          // First try to get data for the exact date
+          let chartData = await yahooFinance.chart(symbolId, {
             period1: subDays(dateString, 1),
             period2: dateString,
             interval: "1d",
           });
+
+          // If no data for exact date (weekend/holiday), extend the range
+          if (
+            !chartData ||
+            !chartData.quotes ||
+            chartData.quotes.length === 0
+          ) {
+            // Go back up to 7 days to find the closest trading day
+            chartData = await yahooFinance.chart(symbolId, {
+              period1: subDays(dateString, 7),
+              period2: dateString,
+              interval: "1d",
+            });
+          }
 
           if (!chartData) {
             throw new Error(
@@ -64,21 +79,13 @@ export async function fetchQuotes(
             );
           }
 
-          let price;
-          if (chartData.quotes && chartData.quotes.length > 0) {
-            const latestQuote = chartData.quotes[chartData.quotes.length - 1];
-            price = latestQuote.adjclose ?? latestQuote.close;
-          } else if (chartData.meta && chartData.meta.regularMarketPrice) {
-            price = chartData.meta.regularMarketPrice;
-          } else {
-            throw new Error(
-              `No price data available for ${symbolId} on ${dateString}`,
-            );
-          }
+          // Use the most recent available data (closest trading day)
+          const latestQuote = chartData.quotes[chartData.quotes.length - 1];
+          const price = latestQuote.adjclose ?? latestQuote.close;
 
           if (!price || price <= 0) {
             throw new Error(
-              `No valid price data available for ${symbolId} on ${dateString}`,
+              `No valid price data available for ${symbolId} around ${dateString}`,
             );
           }
 
