@@ -8,7 +8,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-
 import { Badge } from "@/components/ui/badge";
 import { ActionsCell } from "../row-actions/actions-cell";
 
@@ -20,9 +19,6 @@ import type { TransformedHolding } from "@/types/global.types";
 export const columns: ColumnDef<TransformedHolding>[] = [
   {
     accessorKey: "name",
-    maxSize: 248,
-    minSize: 128,
-    size: 248,
     header: ({ column }) => {
       return (
         <div
@@ -37,10 +33,10 @@ export const columns: ColumnDef<TransformedHolding>[] = [
     cell: ({ row }) => {
       const name = row.getValue<string>("name");
       return (
-        <div className="max-w-60 truncate text-start">
+        <div className="flex max-w-40 md:max-w-80">
           <TooltipProvider>
             <Tooltip delayDuration={500}>
-              <TooltipTrigger>{name}</TooltipTrigger>
+              <TooltipTrigger className="truncate">{name}</TooltipTrigger>
               <TooltipContent>{name}</TooltipContent>
             </Tooltip>
           </TooltipProvider>

@@ -3,6 +3,12 @@
 import { ArrowUpDown } from "lucide-react";
 import { format } from "date-fns";
 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { ActionsCell } from "@/components/dashboard/assets/table/row-actions/actions-cell";
 
@@ -22,6 +28,19 @@ export const columns: ColumnDef<TransformedHolding>[] = [
         >
           Asset name
           <ArrowUpDown className="size-4" />
+        </div>
+      );
+    },
+    cell: ({ row }) => {
+      const name = row.getValue<string>("name");
+      return (
+        <div className="flex max-w-40 md:max-w-80">
+          <TooltipProvider>
+            <Tooltip delayDuration={500}>
+              <TooltipTrigger className="truncate">{name}</TooltipTrigger>
+              <TooltipContent>{name}</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       );
     },
