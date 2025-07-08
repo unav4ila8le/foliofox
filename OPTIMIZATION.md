@@ -48,8 +48,8 @@
   - [x] Parallelize external API calls (Yahoo Finance, Exchange Rates)
   - [x] Implement bulk data fetching strategy
 - [ ] **1.3** Create optimized database queries
-  - [ ] Add composite indexes for common query patterns
-  - [ ] Optimize JOIN queries for holdings + records
+  - [x] Add composite indexes for common query patterns
+  - [x] Optimize JOIN queries for holdings + records
   - [ ] Add database performance monitoring
 - [ ] **1.4** Bulk fetch functions for external data
   - [x] Create `fetchMultipleQuotes()` function
