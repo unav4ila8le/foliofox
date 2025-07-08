@@ -6,8 +6,6 @@ import { fetchHoldings } from "@/server/holdings/fetch";
 import { fetchQuotes } from "@/server/quotes/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 
-import { createClient } from "@/utils/supabase/server";
-
 import type { Record } from "@/types/global.types";
 
 /**
@@ -18,13 +16,19 @@ export async function calculateNetWorth(
   targetCurrency: string,
   date: Date = new Date(),
 ) {
-  const holdings = await fetchHoldings({ includeArchived: true });
+  const result = await fetchHoldings({
+    includeArchived: true,
+    quoteDate: null,
+    includeRecords: true,
+  });
+
+  const holdings = Array.isArray(result) ? result : result.holdings;
+  const recordsByHolding = Array.isArray(result) ? new Map() : result.records;
 
   if (!holdings?.length) return 0;
 
   // 1. Collect all requests we need to make
   const quoteRequests: Array<{ symbolId: string; date: Date }> = [];
-  const exchangeRequests: Array<{ currency: string; date: Date }> = [];
 
   // Collect quote requests (only for holdings with symbols)
   holdings.forEach((holding) => {
@@ -36,18 +40,18 @@ export async function calculateNetWorth(
     }
   });
 
-  // Collect exchange rate requests (for each holding's currency + target currency)
+  // Collect unique currencies we need exchange rates for
+  const uniqueCurrencies = new Set<string>();
   holdings.forEach((holding) => {
-    exchangeRequests.push({
-      currency: holding.currency,
-      date: date,
-    });
-
-    exchangeRequests.push({
-      currency: targetCurrency,
-      date: date,
-    });
+    uniqueCurrencies.add(holding.currency);
   });
+  uniqueCurrencies.add(targetCurrency);
+
+  // Create exchange rate requests for unique currencies only
+  const exchangeRequests = Array.from(uniqueCurrencies).map((currency) => ({
+    currency,
+    date: date,
+  }));
 
   // 2. Make bulk requests in parallel
   const [quotesMap, exchangeRatesMap] = await Promise.all([
@@ -60,20 +64,7 @@ export async function calculateNetWorth(
       : new Map(),
   ]);
 
-  // 3. Bulk fetch historical records and process results
-  const supabase = await createClient();
-  const holdingIds = holdings.map((h) => h.id);
-
-  // Bulk fetch historical records for all holdings
-  const { data: allRecords } = await supabase
-    .from("records")
-    .select("holding_id, unit_value, quantity, date, created_at")
-    .in("holding_id", holdingIds)
-    .lte("date", format(date, "yyyy-MM-dd"))
-    .order("date", { ascending: false })
-    .order("created_at", { ascending: false });
-
-  // Group records by holding_id and get the latest for each
+  // 3. Process historical records (already fetched by fetchHoldings)
   const latestRecords = new Map<
     string,
     Pick<
@@ -81,9 +72,16 @@ export async function calculateNetWorth(
       "holding_id" | "unit_value" | "quantity" | "date" | "created_at"
     >
   >();
-  allRecords?.forEach((record) => {
-    if (!latestRecords.has(record.holding_id)) {
-      latestRecords.set(record.holding_id, record);
+
+  // Filter records by date and get the latest for each holding
+  holdings.forEach((holding) => {
+    const holdingRecords = recordsByHolding.get(holding.id) || [];
+    const recordsForDate = holdingRecords.filter(
+      (record: Record) => record.date <= format(date, "yyyy-MM-dd"),
+    );
+
+    if (recordsForDate.length > 0) {
+      latestRecords.set(holding.id, recordsForDate[0]); // First one is latest due to sorting
     }
   });
 

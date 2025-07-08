@@ -43,17 +43,17 @@
   - [x] Replace individual record queries with bulk fetch using .in()
   - [x] Use JavaScript grouping to match records to holdings
   - [x] Test performance improvements
-- [ ] **1.2** Optimize `calculateNetWorth()` for parallel processing
-  - [ ] Fetch all holdings data upfront
-  - [ ] Parallelize external API calls (Yahoo Finance, Exchange Rates)
-  - [ ] Implement bulk data fetching strategy
+- [x] **1.2** Optimize `calculateNetWorth()` for parallel processing
+  - [x] Fetch all holdings data upfront
+  - [x] Parallelize external API calls (Yahoo Finance, Exchange Rates)
+  - [x] Implement bulk data fetching strategy
 - [ ] **1.3** Create optimized database queries
   - [ ] Add composite indexes for common query patterns
   - [ ] Optimize JOIN queries for holdings + records
   - [ ] Add database performance monitoring
 - [ ] **1.4** Bulk fetch functions for external data
-  - [ ] Create `fetchMultipleQuotes()` function
-  - [ ] Create `fetchMultipleExchangeRates()` function
+  - [x] Create `fetchMultipleQuotes()` function
+  - [x] Create `fetchMultipleExchangeRates()` function
   - [ ] Implement request batching where possible
 
 **Expected Impact:** 70-90% reduction in database queries

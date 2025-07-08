@@ -11,6 +11,8 @@ interface FetchHoldingsOptions {
   includeArchived?: boolean;
   onlyArchived?: boolean;
   holdingId?: string;
+  quoteDate?: Date | null;
+  includeRecords?: boolean;
 }
 
 /**
@@ -20,7 +22,13 @@ interface FetchHoldingsOptions {
  * @returns Array of transformed holdings
  */
 export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
-  const { includeArchived = false, onlyArchived = false, holdingId } = options;
+  const {
+    includeArchived = false,
+    onlyArchived = false,
+    holdingId,
+    quoteDate = new Date(),
+    includeRecords = false,
+  } = options;
 
   const { supabase, user } = await getCurrentUser();
 
@@ -107,11 +115,10 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
   const symbolIds = holdingsWithSymbols.map((holding) => holding.symbol_id!);
 
   let quotesMap = new Map<string, number>();
-  if (symbolIds.length > 0) {
-    const today = new Date();
+  if (symbolIds.length > 0 && quoteDate !== null) {
     const quoteRequests = symbolIds.map((symbolId) => ({
       symbolId,
-      date: today,
+      date: quoteDate,
     }));
     quotesMap = await fetchQuotes(quoteRequests);
   }
@@ -126,14 +133,13 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
 
     // Determine current_unit_value based on whether holding has a symbol
     let current_unit_value: number;
-    if (holding.symbol_id) {
-      // For holdings with symbols, use the latest quote
-      const today = new Date();
-      const quoteKey = `${holding.symbol_id}|${format(today, "yyyy-MM-dd")}`;
+    if (holding.symbol_id && quoteDate !== null) {
+      // For holdings with symbols, use the quote for the specified date
+      const quoteKey = `${holding.symbol_id}|${format(quoteDate, "yyyy-MM-dd")}`;
       current_unit_value =
         quotesMap.get(quoteKey) || latestRecord?.unit_value || 0;
     } else {
-      // For holdings without symbols, use the latest record
+      // For holdings without symbols or when quotes are skipped, use the latest record
       current_unit_value = latestRecord?.unit_value || 0;
     }
 
@@ -149,6 +155,13 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
     };
   });
 
+  if (includeRecords) {
+    return {
+      holdings: transformedHoldings,
+      records: recordsByHolding,
+    };
+  }
+
   return transformedHoldings;
 }
 
@@ -159,6 +172,6 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
  * @returns The transformed holding
  */
 export async function fetchSingleHolding(holdingId: string) {
-  const holdings = await fetchHoldings({ holdingId });
-  return holdings[0];
+  const result = await fetchHoldings({ holdingId });
+  return Array.isArray(result) ? result[0] : result.holdings[0];
 }
