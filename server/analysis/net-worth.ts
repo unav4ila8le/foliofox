@@ -22,8 +22,7 @@ export async function calculateNetWorth(
     includeRecords: true,
   });
 
-  const holdings = Array.isArray(result) ? result : result.holdings;
-  const recordsByHolding = Array.isArray(result) ? new Map() : result.records;
+  const { holdings, records: recordsByHolding } = result;
 
   if (!holdings?.length) return 0;
 

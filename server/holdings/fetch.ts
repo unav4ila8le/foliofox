@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import { getCurrentUser } from "@/server/auth/actions";
 import { fetchQuotes } from "@/server/quotes/fetch";
 
-import type { TransformedHolding } from "@/types/global.types";
+import type { TransformedHolding, Record } from "@/types/global.types";
 
 interface FetchHoldingsOptions {
   includeArchived?: boolean;
@@ -21,6 +21,14 @@ interface FetchHoldingsOptions {
  * @param options - Optional filtering options
  * @returns Array of transformed holdings
  */
+export async function fetchHoldings(
+  options: FetchHoldingsOptions & { includeRecords: true },
+): Promise<{ holdings: TransformedHolding[]; records: Map<string, Record[]> }>;
+
+export async function fetchHoldings(
+  options?: FetchHoldingsOptions & { includeRecords?: false | undefined },
+): Promise<TransformedHolding[]>;
+
 export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
   const {
     includeArchived = false,
@@ -79,15 +87,21 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
 
   const holdingIds = holdings.map((holding) => holding.id);
 
-  // If no holdings are found, return an empty array
+  // If no holdings are found, return an empty array or empty map
   if (holdingIds.length === 0) {
+    if (includeRecords) {
+      return {
+        holdings: [],
+        records: new Map<string, Record[]>(),
+      };
+    }
     return [];
   }
 
   // Get records for all holdings at once
   const { data: allRecords, error: recordsError } = await supabase
     .from("records")
-    .select("holding_id, unit_value, quantity, date, created_at")
+    .select("*")
     .in("holding_id", holdingIds)
     .eq("user_id", user.id)
     .order("date", { ascending: false })
@@ -98,16 +112,15 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
   }
 
   // Group records by holding_id
-  const recordsByHolding = new Map();
+  const recordsByHolding = new Map<string, Record[]>();
 
   allRecords?.forEach((record) => {
     const holdingId = record.holding_id;
 
-    if (!recordsByHolding.has(holdingId)) {
-      recordsByHolding.set(holdingId, []);
-    }
-
-    recordsByHolding.get(holdingId).push(record);
+    // Get existing array or create new one
+    const existingRecords = recordsByHolding.get(holdingId) || [];
+    existingRecords.push(record);
+    recordsByHolding.set(holdingId, existingRecords);
   });
 
   // Identify holdings with symbols and fetch their latest quotes
@@ -171,7 +184,28 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
  * @param holdingId - The ID of the holding to fetch
  * @returns The transformed holding
  */
-export async function fetchSingleHolding(holdingId: string) {
-  const result = await fetchHoldings({ holdingId });
-  return Array.isArray(result) ? result[0] : result.holdings[0];
+export async function fetchSingleHolding(
+  holdingId: string,
+  includeRecords: true,
+): Promise<TransformedHolding>;
+
+export async function fetchSingleHolding(
+  holdingId: string,
+  includeRecords?: false | undefined,
+): Promise<TransformedHolding>;
+
+export async function fetchSingleHolding(
+  holdingId: string,
+  includeRecords: boolean = false,
+) {
+  if (includeRecords) {
+    const { holdings } = await fetchHoldings({
+      holdingId,
+      includeRecords: true,
+    });
+    return holdings[0];
+  } else {
+    const holdings = await fetchHoldings({ holdingId });
+    return holdings[0];
+  }
 }
