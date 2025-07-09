@@ -71,5 +71,5 @@ All formatting functions accept both numbers and strings as input. Currency form
 [x] Change order of new holding fields
 [x] Dynamic quantity fields
 [x] Holding current value should be the latest quote if holding has a symbol_id
-[ ] Prevent users from adding a symbol with a currency not in the database (currency not supported yet)
+[x] Prevent users from adding a symbol with a currency not in the database (currency not supported yet)
 [ ] Find a way to have a more accurate historical calculation which doesn't add much overhead. WeeksBack solution is fast but not accurate cause the date is "rounded" to match weeks and not days.

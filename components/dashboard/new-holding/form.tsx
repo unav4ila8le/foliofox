@@ -23,6 +23,7 @@ import { AssetCategorySelector } from "@/components/dashboard/asset-category-sel
 import { CurrencySelector } from "@/components/dashboard/currency-selector";
 
 import { useNewHoldingDialog } from "./index";
+import { useCurrencies } from "@/hooks/client/use-currencies";
 
 import { createHolding } from "@/server/holdings/create";
 import { getSymbolQuote } from "@/server/symbols/search";
@@ -57,6 +58,10 @@ const formSchema = z.object({
 export function NewHoldingForm() {
   const { setOpen, profile } = useNewHoldingDialog();
   const [isLoading, setIsLoading] = useState(false);
+
+  // Get supported currencies for validation
+  const { currencies } = useCurrencies();
+
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -127,6 +132,19 @@ export function NewHoldingForm() {
         throw new Error(
           "Currency or historical price is missing from quote data.",
         );
+      }
+
+      // Check if currency is supported using existing currencies list
+      const isCurrencySupported = currencies.some(
+        (currency) => currency.alphabetic_code === quoteData.currency,
+      );
+
+      if (!isCurrencySupported) {
+        toast.error(
+          `Currency ${quoteData.currency} is not supported yet. Please contact us to add this currency or select a different symbol.`,
+        );
+        form.setValue("symbol_id", "");
+        return;
       }
 
       // Auto-populate with quote data
