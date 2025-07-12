@@ -73,3 +73,4 @@ All formatting functions accept both numbers and strings as input. Currency form
 [x] Holding current value should be the latest quote if holding has a symbol_id
 [x] Prevent users from adding a symbol with a currency not in the database (currency not supported yet)
 [ ] Find a way to have a more accurate historical calculation which doesn't add much overhead. WeeksBack solution is fast but not accurate cause the date is "rounded" to match weeks and not days.
+[ ] Add P/L in the holdings table

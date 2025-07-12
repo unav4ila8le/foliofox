@@ -54,7 +54,7 @@
 - [ ] **1.4** Bulk fetch functions for external data
   - [x] Create `fetchMultipleQuotes()` function
   - [x] Create `fetchMultipleExchangeRates()` function
-  - [x] Implement request batching where possible
+  - [ ] Implement request batching where possible
 
 **Expected Impact:** 70-90% reduction in database queries
 
