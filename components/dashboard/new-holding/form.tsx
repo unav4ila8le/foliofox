@@ -38,19 +38,23 @@ import {
 import type { Symbol } from "@/types/global.types";
 
 const formSchema = z.object({
-  category_code: z.string().min(1, "Category is required"),
+  category_code: z.string().min(1, { error: "Category is required." }),
   name: z
     .string()
-    .min(3, "Name must be at least 3 characters.")
-    .max(64, "Name must not exceed 64 characters."),
+    .min(3, { error: "Name must be at least 3 characters." })
+    .max(64, { error: "Name must not exceed 64 characters." }),
   symbol_id: z.string(),
   currency: z.string().length(3),
-  unit_value: z.coerce.number().gt(0, "Value must be greater than 0"),
-  quantity: z.coerce.number().gt(0, "Quantity must be greater than 0"),
+  unit_value: z.coerce
+    .number()
+    .gt(0, { error: "Value must be greater than 0" }),
+  quantity: z.coerce
+    .number()
+    .gt(0, { error: "Quantity must be greater than 0" }),
   description: z
     .string()
     .max(256, {
-      message: "Description must not exceed 256 characters.",
+      error: "Description must not exceed 256 characters.",
     })
     .optional(),
 });
@@ -268,7 +272,11 @@ export function NewHoldingForm() {
                       placeholder="E.g., 420.69"
                       type="number"
                       {...field}
-                      value={field.value === 0 ? "" : field.value}
+                      value={
+                        field.value === 0
+                          ? ""
+                          : (field.value as number | string)
+                      }
                     />
                   </FormControl>
                   <FormMessage />
@@ -288,7 +296,11 @@ export function NewHoldingForm() {
                       placeholder="E.g., 10"
                       type="number"
                       {...field}
-                      value={field.value === 0 ? "" : field.value}
+                      value={
+                        field.value === 0
+                          ? ""
+                          : (field.value as number | string)
+                      }
                     />
                   </FormControl>
                   <FormMessage />

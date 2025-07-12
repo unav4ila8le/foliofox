@@ -30,24 +30,23 @@ import { signup } from "@/server/auth/actions";
 
 const formSchema = z
   .object({
-    email: z.string().trim().email("Please enter a valid email address"),
+    email: z.email({ error: "Please enter a valid email address." }).trim(),
     username: z
       .string()
       .trim()
-      .min(3, "Username must be at least 3 characters.")
-      .max(16, "Username must not exceed 16 characters.")
-      .regex(
-        /^[a-zA-Z0-9]+$/,
-        "Username can only contain letters and numbers, without spaces.",
-      ),
+      .min(3, { error: "Username must be at least 3 characters." })
+      .max(16, { error: "Username must not exceed 16 characters." })
+      .regex(/^[a-zA-Z0-9]+$/, {
+        error: "Username can only contain letters and numbers, without spaces.",
+      }),
     password: z
       .string()
-      .min(6, "Password must be at least 6 characters.")
-      .max(20, "Password must not exceed 20 characters."),
+      .min(6, { error: "Password must be at least 6 characters." })
+      .max(20, { error: "Password must not exceed 20 characters." }),
     repeatPassword: z.string(),
   })
   .refine((data) => data.password === data.repeatPassword, {
-    message: "Passwords do not match.",
+    error: "Passwords do not match.",
     path: ["repeatPassword"],
   });
 

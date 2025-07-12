@@ -36,20 +36,18 @@ import { fetchSingleQuote } from "@/server/quotes/fetch";
 import type { TransformedHolding } from "@/types/global.types";
 
 const formSchema = z.object({
-  date: z.date({
-    required_error: "A date is required.",
-  }),
-  holding_id: z
-    .string({
-      required_error: "Please select a holding.",
-    })
-    .min(1, "Please select a holding."),
-  quantity: z.coerce.number().gt(0, "Quantity must be greater than 0"),
-  unit_value: z.coerce.number().gt(0, "Value must be greater than 0"),
+  date: z.date({ error: "A date is required." }),
+  holding_id: z.string().min(1, { error: "Please select a holding." }),
+  quantity: z.coerce
+    .number()
+    .gt(0, { error: "Quantity must be greater than 0" }),
+  unit_value: z.coerce
+    .number()
+    .gt(0, { error: "Value must be greater than 0" }),
   description: z
     .string()
     .max(256, {
-      message: "Description must not exceed 256 characters.",
+      error: "Description must not exceed 256 characters.",
     })
     .optional(),
 });
@@ -241,7 +239,9 @@ export function NewRecordForm() {
                     type="number"
                     disabled={hasSymbol}
                     {...field}
-                    value={field.value === 0 ? "" : field.value}
+                    value={
+                      field.value === 0 ? "" : (field.value as number | string)
+                    }
                   />
                 </FormControl>
                 <FormMessage />
@@ -259,7 +259,9 @@ export function NewRecordForm() {
                     placeholder="E.g., 10"
                     type="number"
                     {...field}
-                    value={field.value === 0 ? "" : field.value}
+                    value={
+                      field.value === 0 ? "" : (field.value as number | string)
+                    }
                   />
                 </FormControl>
                 <FormMessage />

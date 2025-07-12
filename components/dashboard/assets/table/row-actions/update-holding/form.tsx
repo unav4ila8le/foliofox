@@ -31,13 +31,13 @@ interface UpdateHoldingFormProps {
 const formSchema = z.object({
   name: z
     .string()
-    .min(3, "Name must be at least 3 characters.")
-    .max(64, "Name must not exceed 64 characters."),
-  category_code: z.string().min(1, "Category is required"),
+    .min(3, { error: "Name must be at least 3 characters." })
+    .max(64, { error: "Name must not exceed 64 characters." }),
+  category_code: z.string().min(1, { error: "Category is required." }),
   description: z
     .string()
     .max(256, {
-      message: "Description must not exceed 256 characters.",
+      error: "Description must not exceed 256 characters.",
     })
     .optional(),
 });

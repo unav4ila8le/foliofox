@@ -9,7 +9,7 @@ const yahooFinance = new YahooFinance();
 
 // Define the search parameters schema
 const searchParamsSchema = z.object({
-  query: z.string().min(1, "Search query is required"),
+  query: z.string().min(1, { error: "Search query is required." }),
   limit: z.number().min(1).max(20).optional().default(10),
   quoteTypes: z.array(z.string()).optional(),
 });

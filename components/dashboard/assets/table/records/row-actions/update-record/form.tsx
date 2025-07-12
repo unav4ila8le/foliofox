@@ -37,15 +37,17 @@ interface UpdateRecordFormProps {
 }
 
 const formSchema = z.object({
-  date: z.date({
-    required_error: "A date is required.",
-  }),
-  quantity: z.coerce.number().gt(0, "Quantity must be greater than 0"),
-  unit_value: z.coerce.number().gt(0, "Value must be greater than 0"),
+  date: z.date({ error: "A date is required." }),
+  quantity: z.coerce
+    .number()
+    .gt(0, { error: "Quantity must be greater than 0" }),
+  unit_value: z.coerce
+    .number()
+    .gt(0, { error: "Value must be greater than 0" }),
   description: z
     .string()
     .max(256, {
-      message: "Description must not exceed 256 characters.",
+      error: "Description must not exceed 256 characters.",
     })
     .optional(),
 });
@@ -153,7 +155,9 @@ export function UpdateRecordForm({ record, onSuccess }: UpdateRecordFormProps) {
                     placeholder="E.g., 420.69"
                     type="number"
                     {...field}
-                    value={field.value === 0 ? "" : field.value}
+                    value={
+                      field.value === 0 ? "" : (field.value as number | string)
+                    }
                   />
                 </FormControl>
                 <FormMessage />
@@ -172,7 +176,9 @@ export function UpdateRecordForm({ record, onSuccess }: UpdateRecordFormProps) {
                     placeholder="E.g., 10"
                     type="number"
                     {...field}
-                    value={field.value === 0 ? "" : field.value}
+                    value={
+                      field.value === 0 ? "" : (field.value as number | string)
+                    }
                   />
                 </FormControl>
                 <FormMessage />
