@@ -8,20 +8,20 @@ import {
 
 export function MarketDataDisclaimer() {
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <div className="text-muted-foreground flex items-center gap-1.5">
+    <div className="text-muted-foreground flex items-center gap-1.5">
+      <Tooltip>
+        <TooltipTrigger asChild>
           <Info className="size-3.5" />
-          <p className="text-xs">10:00 PM UTC · One day behind</p>
-        </div>
-      </TooltipTrigger>
-      <TooltipContent side="bottom" align="end">
-        <p>
-          Market prices and exchange rates are updated daily at 10:00 PM UTC.
-          <br />
-          Data shown is from the previous trading day.
-        </p>
-      </TooltipContent>
-    </Tooltip>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="max-w-80">
+          <p>
+            Market prices and exchange rates are updated daily at 10:00 PM UTC.
+            <br />
+            Data shown is from the previous trading day.
+          </p>
+        </TooltipContent>
+      </Tooltip>
+      <p className="text-xs">10:00 PM UTC · One day behind</p>
+    </div>
   );
 }

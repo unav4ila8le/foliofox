@@ -5,7 +5,11 @@ import { format } from "date-fns";
 import { getCurrentUser } from "@/server/auth/actions";
 import { fetchQuotes } from "@/server/quotes/fetch";
 
-import type { TransformedHolding, Record } from "@/types/global.types";
+import type {
+  TransformedHolding,
+  Record,
+  TransformedRecord,
+} from "@/types/global.types";
 
 interface FetchHoldingsOptions {
   includeArchived?: boolean;
@@ -13,6 +17,11 @@ interface FetchHoldingsOptions {
   holdingId?: string;
   quoteDate?: Date | null;
   includeRecords?: boolean;
+}
+
+interface FetchSingleHoldingOptions {
+  includeRecords?: boolean;
+  includeArchived?: boolean;
 }
 
 /**
@@ -98,30 +107,63 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
     return [];
   }
 
-  // Get records for all holdings at once
-  const { data: allRecords, error: recordsError } = await supabase
-    .from("records")
-    .select("*")
-    .in("holding_id", holdingIds)
-    .eq("user_id", user.id)
-    .order("date", { ascending: false })
-    .order("created_at", { ascending: false });
-
-  if (recordsError) {
-    throw new Error(`Failed to fetch records: ${recordsError.message}`);
-  }
-
-  // Group records by holding_id
   const recordsByHolding = new Map<string, Record[]>();
 
-  allRecords?.forEach((record) => {
-    const holdingId = record.holding_id;
+  // Get records for all holdings at once (only if includeRecords is true)
+  if (includeRecords) {
+    const { data: allRecords, error: recordsError } = await supabase
+      .from("records")
+      .select("*")
+      .in("holding_id", holdingIds)
+      .eq("user_id", user.id)
+      .order("date", { ascending: false })
+      .order("created_at", { ascending: false });
 
-    // Get existing array or create new one
-    const existingRecords = recordsByHolding.get(holdingId) || [];
-    existingRecords.push(record);
-    recordsByHolding.set(holdingId, existingRecords);
-  });
+    if (recordsError) {
+      throw new Error(`Failed to fetch records: ${recordsError.message}`);
+    }
+
+    // Populate with ALL records for each holding
+    allRecords?.forEach((record) => {
+      const holdingId = record.holding_id;
+
+      // Get existing array or create new one
+      const existingRecords = recordsByHolding.get(holdingId) || [];
+      existingRecords.push(record);
+      recordsByHolding.set(holdingId, existingRecords);
+    });
+  } else {
+    // Fetch only the single latest record for each holding (for TransformedHolding)
+    const latestRecordsPromises = holdingIds.map((holdingId) =>
+      supabase
+        .from("records")
+        .select("*")
+        .eq("holding_id", holdingId)
+        .eq("user_id", user.id)
+        .order("date", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    );
+
+    const results = await Promise.all(latestRecordsPromises);
+
+    // Check for errors first
+    const errors = results.filter((result) => result.error);
+    if (errors.length > 0) {
+      throw new Error(
+        `Failed to fetch latest records: ${errors[0].error?.message}`,
+      );
+    }
+
+    // Then populate with the latest record for each holding
+    results.forEach((result, index) => {
+      const holdingId = holdingIds[index];
+      if (result.data && !result.error) {
+        recordsByHolding.set(holdingId, [result.data]);
+      }
+    });
+  }
 
   // Identify holdings with symbols and fetch their latest quotes
   const holdingsWithSymbols = holdings.filter((holding) => holding.symbol_id);
@@ -186,26 +228,35 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
  */
 export async function fetchSingleHolding(
   holdingId: string,
-  includeRecords: true,
+  options: FetchSingleHoldingOptions & { includeRecords: true },
+): Promise<{ holding: TransformedHolding; records: TransformedRecord[] }>;
+
+export async function fetchSingleHolding(
+  holdingId: string,
+  options?: FetchSingleHoldingOptions & { includeRecords?: false | undefined },
 ): Promise<TransformedHolding>;
 
 export async function fetchSingleHolding(
   holdingId: string,
-  includeRecords?: false | undefined,
-): Promise<TransformedHolding>;
-
-export async function fetchSingleHolding(
-  holdingId: string,
-  includeRecords: boolean = false,
+  options: FetchSingleHoldingOptions = {},
 ) {
+  const { includeRecords = false, includeArchived = true } = options;
+
   if (includeRecords) {
-    const { holdings } = await fetchHoldings({
+    const { holdings, records } = await fetchHoldings({
       holdingId,
       includeRecords: true,
+      includeArchived,
     });
-    return holdings[0];
+    return {
+      holding: holdings[0],
+      records: Array.from(records.get(holdings[0].id) || []),
+    };
   } else {
-    const holdings = await fetchHoldings({ holdingId });
+    const holdings = await fetchHoldings({
+      holdingId,
+      includeArchived,
+    });
     return holdings[0];
   }
 }

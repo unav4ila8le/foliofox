@@ -50,11 +50,11 @@
 - [ ] **1.3** Create optimized database queries
   - [x] Add composite indexes for common query patterns
   - [x] Optimize JOIN queries for holdings + records
-  - [ ] Add database performance monitoring
+  - [x] Optimize database performance
 - [ ] **1.4** Bulk fetch functions for external data
   - [x] Create `fetchMultipleQuotes()` function
   - [x] Create `fetchMultipleExchangeRates()` function
-  - [ ] Implement request batching where possible
+  - [ ] Implement request batching where possible (net-worth-history still missing batching)
 
 **Expected Impact:** 70-90% reduction in database queries
 

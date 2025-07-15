@@ -10,9 +10,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Patrivio - Take Control of Your Financial Future",
+  title: "Patrivio - Portfolio Intelligence Platform",
   description:
-    "Effortlessly monitor and grow your wealth with Patrivio, the intuitive net worth tracker. Track assets, manage liabilities, and visualize your financial progress. Take control of your financial future today.",
+    "Comprehensive portfolio tracking and AI-powered financial planning. Monitor your assets, analyze performance, and discover growth opportunities with predictive insights tailored to your wealth-building strategy.",
 };
 
 export default function RootLayout({
