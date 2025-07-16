@@ -4,12 +4,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { HoldingsTables } from "@/components/dashboard/assets/table/holdings/holdings-tables";
 
 import { fetchHoldings } from "@/server/holdings/fetch";
+import { calculateProfitLoss } from "@/lib/analysis/profit-loss";
 
 // Separate components for data fetching with suspense
 async function HoldingsTablesWrapper() {
-  const holdings = await fetchHoldings();
+  // Fetch all holdings with their complete record history
+  const { holdings, records } = await fetchHoldings({ includeRecords: true });
+  // Transform data to add P/L calculations (no additional queries)
+  const holdingsWithProfitLoss = calculateProfitLoss(holdings, records);
 
-  return <HoldingsTables data={holdings} />;
+  return <HoldingsTables data={holdingsWithProfitLoss} />;
 }
 
 export default async function AssetsPage() {

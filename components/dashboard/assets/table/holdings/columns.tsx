@@ -11,12 +11,13 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ActionsCell } from "../row-actions/actions-cell";
 
-import { formatNumber } from "@/lib/number/format";
+import { cn } from "@/lib/utils";
+import { formatNumber, formatPercentage } from "@/lib/number/format";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import type { TransformedHolding } from "@/types/global.types";
+import type { HoldingWithProfitLoss } from "@/types/global.types";
 
-export const columns: ColumnDef<TransformedHolding>[] = [
+export const columns: ColumnDef<HoldingWithProfitLoss>[] = [
   {
     accessorKey: "name",
     header: ({ column }) => {
@@ -78,6 +79,68 @@ export const columns: ColumnDef<TransformedHolding>[] = [
       return (
         <div className="tabular-nums">
           {formatNumber(unit_value, undefined, { maximumFractionDigits: 2 })}
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "profit_loss",
+    header: ({ column }) => {
+      return (
+        <div
+          className="hover:text-primary flex cursor-pointer items-center gap-2 transition-colors"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Change
+          <ArrowUpDown className="size-4" />
+        </div>
+      );
+    },
+    cell: ({ row }) => {
+      const profit_loss = row.getValue<number>("profit_loss");
+      const isPositive = profit_loss >= 0;
+
+      return (
+        <div
+          className={cn(
+            "tabular-nums",
+            isPositive ? "text-green-600" : "text-red-600",
+          )}
+        >
+          {isPositive ? "+" : ""}
+          {formatNumber(profit_loss, undefined, { maximumFractionDigits: 2 })}
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "profit_loss_percentage",
+    header: ({ column }) => {
+      return (
+        <div
+          className="hover:text-primary flex cursor-pointer items-center gap-2 transition-colors"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Change %
+          <ArrowUpDown className="size-4" />
+        </div>
+      );
+    },
+    cell: ({ row }) => {
+      const profit_loss_percentage = row.getValue<number>(
+        "profit_loss_percentage",
+      );
+      const isPositive = profit_loss_percentage >= 0;
+
+      return (
+        <div
+          className={cn(
+            "tabular-nums",
+            isPositive ? "text-green-600" : "text-red-600",
+          )}
+        >
+          {isPositive ? "+" : ""}
+          {formatPercentage(profit_loss_percentage)}
         </div>
       );
     },

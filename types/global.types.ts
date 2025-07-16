@@ -31,6 +31,11 @@ export type TransformedHolding = Holding & {
   total_value: number;
 };
 
+export type HoldingWithProfitLoss = TransformedHolding & {
+  profit_loss: number;
+  profit_loss_percentage: number;
+};
+
 // Record
 export type Record = Tables<"records">;
 

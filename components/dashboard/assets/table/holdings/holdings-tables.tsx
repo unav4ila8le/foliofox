@@ -10,22 +10,22 @@ import { columns } from "@/components/dashboard/assets/table/holdings/columns";
 import { TableActionsDropdown } from "@/components/dashboard/assets/table/holdings/table-actions";
 import { CollapsibleTable } from "../collapsible/collapsible-table";
 
-import type { TransformedHolding } from "@/types/global.types";
+import type { HoldingWithProfitLoss } from "@/types/global.types";
 
 type GroupedHoldings = {
   [key: string]: {
     name: string;
-    holdings: TransformedHolding[];
+    holdings: HoldingWithProfitLoss[];
   };
 };
 
-export function HoldingsTables({ data }: { data: TransformedHolding[] }) {
+export function HoldingsTables({ data }: { data: HoldingWithProfitLoss[] }) {
   const [filterValue, setFilterValue] = useState("");
   const router = useRouter();
 
   // Handle row click to navigate to holding page
   const handleRowClick = useCallback(
-    (holding: TransformedHolding) => {
+    (holding: HoldingWithProfitLoss) => {
       router.push(`/dashboard/assets/${holding.id}`);
     },
     [router],

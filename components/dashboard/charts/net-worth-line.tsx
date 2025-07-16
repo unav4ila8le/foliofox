@@ -108,8 +108,8 @@ export function NetWorthLineChart({
   // Define area chart color based on percentage change
   const chartColor =
     change.percentageChange >= 0
-      ? "oklch(72.3% 0.219 149.579)"
-      : "oklch(63.7% 0.237 25.331)";
+      ? "oklch(0.63 0.17 149)"
+      : "oklch(0.58 0.22 27)";
 
   return (
     <Card className="flex h-80 flex-col">
@@ -139,8 +139,8 @@ export function NetWorthLineChart({
                       className={cn(
                         "flex items-center gap-1",
                         change.absoluteChange >= 0
-                          ? "text-green-500"
-                          : "text-red-500",
+                          ? "text-green-600"
+                          : "text-red-600",
                       )}
                     >
                       {change.absoluteChange >= 0 ? (
