@@ -30,6 +30,7 @@ export async function fetchQuotes(
     cacheKey: `${symbolId}|${format(date, "yyyy-MM-dd")}`,
   }));
 
+  // Get unique symbolIds and dateStrings for efficient query
   const symbolIds = [...new Set(cacheQueries.map((q) => q.symbolId))];
   const dateStrings = [...new Set(cacheQueries.map((q) => q.dateString))];
 

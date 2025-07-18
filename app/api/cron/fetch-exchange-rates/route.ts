@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { createServiceClient } from "@/utils/supabase/service";
-
-const FRANKFURTER_API = "https://api.frankfurter.app";
+import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 
 export async function GET(request: NextRequest) {
   try {
@@ -37,50 +36,33 @@ export async function GET(request: NextRequest) {
         "Failed to fetch currency codes: " + currenciesError.message,
       );
     }
-    const symbols = currencies.map((row) => row.alphabetic_code);
 
-    // 5. Fetch rates from Frankfurter API
-    const base = "USD";
-    const symbolsParam = symbols.join(",");
-    const frankfurterUrl = `${FRANKFURTER_API}/${date}?base=${base}&symbols=${symbolsParam}`;
-    const response = await fetch(frankfurterUrl);
-    if (!response.ok) {
-      throw new Error(`Frankfurter API error: ${response.statusText}`);
-    }
-    const frankfurterData = await response.json();
-    const rates = frankfurterData.rates;
-
-    // 6. Insert rates into Supabase
-    const rows = Object.entries(rates).map(([target_currency, rate]) => ({
-      base_currency: base,
-      target_currency,
-      rate: Number(rate),
-      date,
+    // 5. Prepare rate requests for the target date
+    const rateRequests = currencies.map((currency) => ({
+      currency: currency.alphabetic_code,
+      date: new Date(date),
     }));
-    const { error: insertError } = await supabase
-      .from("exchange_rates")
-      .upsert(rows, {
-        onConflict: "base_currency,target_currency,date",
-      });
-    if (insertError) {
-      throw new Error(
-        "Failed to upsert exchange rates: " + insertError.message,
-      );
-    }
 
-    // 7. Log and return stats
+    // 6. Fetch exchange rates using your existing function
+    const ratesMap = await fetchExchangeRates(rateRequests);
+
+    // 7. Count successful fetches
+    const successfulFetches = ratesMap.size;
+    const failedFetches = currencies.length - successfulFetches;
+
+    // 8. Log and return stats
     console.log(
-      `Exchange rates fetch completed for ${date}: ${Object.keys(rates).length} rates inserted.`,
+      `Exchange rates fetch completed for ${date}: ${successfulFetches} successful, ${failedFetches} failed.`,
     );
 
     return NextResponse.json({
       success: true,
       message: "Daily exchange rates fetch completed",
       stats: {
-        base,
+        totalCurrencies: currencies.length,
+        successfulFetches,
+        failedFetches,
         date,
-        totalCurrencies: symbols.length,
-        insertedRates: Object.keys(rates).length,
       },
     });
   } catch (error) {

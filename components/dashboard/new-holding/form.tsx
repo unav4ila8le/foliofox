@@ -26,7 +26,7 @@ import { useNewHoldingDialog } from "./index";
 import { useCurrencies } from "@/hooks/client/use-currencies";
 
 import { createHolding } from "@/server/holdings/create";
-import { getSymbolQuote } from "@/server/symbols/search";
+import { createSymbol } from "@/server/symbols/create";
 import { fetchSingleQuote } from "@/server/quotes/fetch";
 
 import {
@@ -121,43 +121,44 @@ export function NewHoldingForm() {
 
   const handleSymbolSelect = async (symbol: Symbol) => {
     try {
-      // Get static symbol info
-      const quoteResult = await getSymbolQuote(symbol.id);
-      if (!quoteResult.success) {
-        throw new Error(quoteResult.message || "Error fetching quote data.");
+      // 1. Create symbol
+      const symbolResult = await createSymbol(symbol.id);
+      if (!symbolResult.success) {
+        throw new Error(symbolResult.message);
       }
-      const quoteData = quoteResult.data;
 
-      // Fetch the historical price (adjClose/close) for today (or most recent trading day)
-      const today = new Date();
-      const unitValue = await fetchSingleQuote(symbol.id, today);
+      // 2. Use the returned symbol data directly
+      const symbolData = symbolResult.data;
 
-      if (!quoteData?.currency || !unitValue) {
+      // 3. Fetch the historical price (adjClose/close) for today (or most recent trading day)
+      const unitValue = await fetchSingleQuote(symbol.id);
+
+      if (!symbolData?.currency || !unitValue) {
         throw new Error(
           "Currency or historical price is missing from quote data.",
         );
       }
 
-      // Check if currency is supported using existing currencies list
+      // 4. Check if currency is supported using existing currencies list
       const isCurrencySupported = currencies.some(
-        (currency) => currency.alphabetic_code === quoteData.currency,
+        (currency) => currency.alphabetic_code === symbolData.currency,
       );
 
       if (!isCurrencySupported) {
         toast.error(
-          `Currency ${quoteData.currency} is not supported yet. Please contact us to add this currency or select a different symbol.`,
+          `Currency ${symbolData.currency} is not supported yet. Please contact us to add this currency or select a different symbol.`,
         );
         form.setValue("symbol_id", "");
         return;
       }
 
-      // Auto-populate with quote data
-      form.setValue("currency", quoteData.currency);
+      // 5. Auto-populate with quote data
+      form.setValue("currency", symbolData.currency);
       form.setValue("unit_value", unitValue);
 
       // Set name if not already filled
       if (!form.getValues("name")) {
-        const displayName = quoteData?.longName || quoteData?.shortName;
+        const displayName = symbolData?.long_name || symbolData?.short_name;
         form.setValue("name", `${symbol.id} - ${displayName}`);
       }
     } catch (error) {

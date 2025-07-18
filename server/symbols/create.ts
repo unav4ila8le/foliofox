@@ -59,5 +59,5 @@ export async function createSymbol(symbolId: string) {
     };
   }
 
-  return { success: true };
+  return { success: true, data: data };
 }

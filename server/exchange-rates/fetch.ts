@@ -2,7 +2,10 @@
 
 import { format } from "date-fns";
 
-import { createClient } from "@/utils/supabase/server";
+import { createServiceClient } from "@/utils/supabase/service";
+
+// Exchange rate API
+const FRANKFURTER_API = "https://api.frankfurter.app";
 
 /**
  * Fetch multiple exchange rates for different currencies and dates in bulk.
@@ -30,7 +33,7 @@ export async function fetchExchangeRates(
 
   if (nonUsdRequests.length === 0) return results;
 
-  const supabase = await createClient();
+  const supabase = createServiceClient();
 
   // 1. Check what's already cached in database
   const cacheQueries = nonUsdRequests.map(({ currency, date }) => ({
@@ -61,46 +64,74 @@ export async function fetchExchangeRates(
     ({ cacheKey }) => !results.has(cacheKey),
   );
 
-  // 3. Fetch missing rates using edge function
+  // 3. Fetch missing rates using frankfurter api in parallel
   if (missingRequests.length > 0) {
-    // Group by unique dates for edge function calls
+    // Group by unique dates for frankfurter api calls
     const uniqueDates = [...new Set(missingRequests.map((r) => r.dateString))];
 
-    for (const dateString of uniqueDates) {
+    // Create parallel promises for each date
+    const fetchPromises = uniqueDates.map(async (dateString) => {
       try {
-        const edgeUrl = `https://icnvjrvkdjtbnldhootf.supabase.co/functions/v1/fetch-exchange-rates?date=${dateString}`;
-        const jwt = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        const missingCurrenciesForDate = missingRequests
+          .filter((req) => req.dateString === dateString)
+          .map((req) => req.currency);
 
-        await fetch(edgeUrl, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${jwt}`,
-            "Content-Type": "application/json",
-          },
-        });
+        const response = await fetch(
+          `${FRANKFURTER_API}/${dateString}?base=USD&symbols=${missingCurrenciesForDate.join(",")}`,
+        );
+        const data = await response.json();
+
+        if (!data.rates) {
+          throw new Error(`No rates data found for ${dateString}`);
+        }
+
+        // Return the data for this date
+        return {
+          dateString,
+          rates: data.rates,
+          success: true,
+        };
       } catch (error) {
         console.warn(
           `Failed to fetch exchange rates for ${dateString}:`,
           error,
         );
-      }
-    }
-
-    // 4. Re-query database for the missing rates
-    const { data: newRates } = await supabase
-      .from("exchange_rates")
-      .select("target_currency, date, rate")
-      .eq("base_currency", "USD")
-      .in("target_currency", currencies)
-      .in("date", dateStrings);
-
-    // Add new rates to results
-    newRates?.forEach((rate) => {
-      const cacheKey = `${rate.target_currency}|${rate.date}`;
-      if (!results.has(cacheKey)) {
-        results.set(cacheKey, rate.rate);
+        return { dateString, success: false };
       }
     });
+
+    // Wait for all fetches to complete
+    const fetchResults = await Promise.all(fetchPromises);
+
+    // Filter successful fetches and prepare for bulk insert
+    const successfulFetches = fetchResults.filter((result) => result.success);
+
+    if (successfulFetches.length > 0) {
+      // Prepare all rows for bulk insert
+      const allRows = successfulFetches.flatMap(({ dateString, rates }) =>
+        Object.entries(rates).map(([currency, rate]) => ({
+          base_currency: "USD",
+          target_currency: currency,
+          rate: Number(rate),
+          date: dateString,
+        })),
+      );
+
+      // Single bulk insert into database
+      const { error: insertError } = await supabase
+        .from("exchange_rates")
+        .upsert(allRows, { onConflict: "base_currency,target_currency,date" });
+
+      if (insertError) {
+        console.error("Failed to bulk insert exchange rates:", insertError);
+      }
+
+      // Add to results directly (no re-querying database!)
+      allRows.forEach(({ target_currency, date, rate }) => {
+        const cacheKey = `${target_currency}|${date}`;
+        results.set(cacheKey, rate);
+      });
+    }
   }
 
   return results;
