@@ -64,7 +64,6 @@ All formatting functions accept both numbers and strings as input. Currency form
 [x] Add financial data API to allow users to add fianncial instruments like stocks and other equities ( https://github.com/gadicc/node-yahoo-finance2 )
 [ ] Use client for exchange rates, symbols and quotes (they are not private data)
 [x] Add disclaimer about the fact that exchange rates and market prices are not updated in real-time but rather updated daily (10PM UTC)
-[ ] **Implement Caching for Expensive Operations**: The net worth line chart calculation is resource intensive. In the future, implement server-side caching (e.g., using Next.js `use cache` or `unstable_cache` when stable) to avoid redundant calculations and improve performance, especially when users switch between time periods or currencies.
 [ ] Allow users to import CSV files
 [ ] Allow users to export their holdings
 [x] Change primary button in navbar to "New" with dropdown
@@ -75,3 +74,4 @@ All formatting functions accept both numbers and strings as input. Currency form
 [ ] Find a way to have a more accurate historical calculation which doesn't add much overhead. WeeksBack solution is fast but not accurate cause the date is "rounded" to match weeks and not days.
 [x] Add P/L in the holdings table (basic change from first record, no cost basis)
 [x] Start migrating to the new JWT signing key https://supabase.com/blog/jwt-signing-keys
+[ ] Add a dividends tracker. It should show the user the holdings that pay dividends, and their yearly/monthly expected dividend payout

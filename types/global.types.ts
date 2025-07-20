@@ -1,15 +1,15 @@
 import type { Tables } from "@/types/database.types";
 
-//Profile
+// Profile
 export type Profile = Pick<
   Tables<"profiles">,
   "username" | "display_currency" | "avatar_url"
 >;
 
-//Currency
+// Currency
 export type Currency = Pick<Tables<"currencies">, "alphabetic_code" | "name">;
 
-//Holding
+// Holding
 export type Holding = Pick<
   Tables<"holdings">,
   | "id"
@@ -43,10 +43,10 @@ export type TransformedRecord = Record & {
   total_value: number;
 };
 
-//Asset Category
+// Asset Category
 export type AssetCategory = Tables<"asset_categories">;
 
-//Exchange Rate
+// Exchange Rate
 export type ExchangeRate = Tables<"exchange_rates">;
 
 // Symbol
