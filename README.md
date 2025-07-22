@@ -29,6 +29,8 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 ## Package Dependencies Notes
 
+N/A
+
 ## Utility Functions Cheatsheet
 
 ### Number Formatting
@@ -75,3 +77,5 @@ All formatting functions accept both numbers and strings as input. Currency form
 [x] Add P/L in the holdings table (basic change from first record, no cost basis)
 [x] Start migrating to the new JWT signing key https://supabase.com/blog/jwt-signing-keys
 [ ] Add a dividends tracker. It should show the user the holdings that pay dividends, and their yearly/monthly expected dividend payout
+[ ] Add a way for the user to "share" their portfolio. Ideally, after agreeing, they get a public sharable link which leads to a single public page view of all their holdings and relevant performance charts.
+[ ] Upgrade postgres version to 17 on Supabase
