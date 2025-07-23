@@ -51,7 +51,7 @@
   - [x] Add composite indexes for common query patterns
   - [x] Optimize JOIN queries for holdings + records
   - [x] Optimize database performance
-- [ ] **1.4** Bulk fetch functions for external data
+- [x] **1.4** Bulk fetch functions for external data
   - [x] Create `fetchMultipleQuotes()` function
   - [x] Create `fetchMultipleExchangeRates()` function
   - [x] Implement request batching where possible

@@ -74,6 +74,7 @@ export const columns: ColumnDef<TransformedRecord>[] = [
   {
     accessorKey: "description",
     header: "Description",
+    accessorFn: (row) => row.description || "",
     cell: ({ row }) => {
       const description = row.getValue<string | null>("description");
       return (
