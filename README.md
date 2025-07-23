@@ -63,7 +63,7 @@ All formatting functions accept both numbers and strings as input. Currency form
 ## To Do List
 
 [x] Add percentages increase over the different time periods selected
-[x] Add financial data API to allow users to add fianncial instruments like stocks and other equities ( https://github.com/gadicc/node-yahoo-finance2 )
+[x] Add financial data API to allow users to add financial instruments like stocks and other equities ( https://github.com/gadicc/node-yahoo-finance2 )
 [ ] Use client for exchange rates, symbols and quotes (they are not private data)
 [x] Add disclaimer about the fact that exchange rates and market prices are not updated in real-time but rather updated daily (10PM UTC)
 [ ] Allow users to import CSV files
@@ -78,4 +78,4 @@ All formatting functions accept both numbers and strings as input. Currency form
 [x] Start migrating to the new JWT signing key https://supabase.com/blog/jwt-signing-keys
 [ ] Add a dividends tracker. It should show the user the holdings that pay dividends, and their yearly/monthly expected dividend payout
 [ ] Add a way for the user to "share" their portfolio. Ideally, after agreeing, they get a public sharable link which leads to a single public page view of all their holdings and relevant performance charts.
-[ ] Upgrade postgres version to 17 on Supabase
+[x] Upgrade postgres version to 17 on Supabase
