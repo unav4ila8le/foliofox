@@ -64,7 +64,7 @@ All formatting functions accept both numbers and strings as input. Currency form
 
 [x] Add percentages increase over the different time periods selected
 [x] Add financial data API to allow users to add financial instruments like stocks and other equities ( https://github.com/gadicc/node-yahoo-finance2 )
-[ ] Use client for exchange rates, symbols and quotes (they are not private data)
+[ ] Maybe use client for exchange rates, symbols and quotes (they are not private data)
 [x] Add disclaimer about the fact that exchange rates and market prices are not updated in real-time but rather updated daily (10PM UTC)
 [ ] Allow users to import CSV files
 [ ] Allow users to export their holdings

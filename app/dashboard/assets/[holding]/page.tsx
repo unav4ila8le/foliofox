@@ -40,12 +40,15 @@ async function HoldingPageHeader({ holdingId }: { holdingId: string }) {
 }
 
 async function RecordsTableWrapper({ holdingId }: { holdingId: string }) {
-  const records = await fetchRecords(holdingId);
+  const [holding, records] = await Promise.all([
+    fetchSingleHolding(holdingId),
+    fetchRecords(holdingId),
+  ]);
 
   return (
     <div className="flex flex-col gap-2">
       <h3 className="text-lg font-semibold">Records history</h3>
-      <RecordsTable data={records} />
+      <RecordsTable data={records} holding={holding} />
     </div>
   );
 }

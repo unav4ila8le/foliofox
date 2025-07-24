@@ -50,7 +50,11 @@ export function NewRecordDialogProvider({
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>New Record</DialogTitle>
+            <DialogTitle>
+              {preselectedHolding
+                ? `New Record for ${preselectedHolding.name}`
+                : "New Record"}
+            </DialogTitle>
             <DialogDescription>
               Update the value and quantity of your holdings.
             </DialogDescription>
@@ -74,13 +78,22 @@ export function useNewRecordDialog() {
 
 export function NewRecordButton({
   variant = "default",
+  preselectedHolding,
 }: {
   variant?: VariantProps<typeof buttonVariants>["variant"];
+  preselectedHolding?: TransformedHolding;
 }) {
-  const { setOpen } = useNewRecordDialog();
+  const { setOpen, setPreselectedHolding } = useNewRecordDialog();
+
+  const handleClick = () => {
+    if (preselectedHolding) {
+      setPreselectedHolding(preselectedHolding);
+    }
+    setOpen(true);
+  };
 
   return (
-    <Button variant={variant} onClick={() => setOpen(true)}>
+    <Button variant={variant} onClick={handleClick}>
       <Plus />
       New Record
     </Button>

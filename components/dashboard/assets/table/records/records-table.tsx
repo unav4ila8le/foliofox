@@ -8,13 +8,17 @@ import { DataTable } from "@/components/dashboard/assets/table/base/data-table";
 import { columns } from "@/components/dashboard/assets/table/records/columns";
 import { NewRecordButton } from "@/components/dashboard/new-record";
 
-import type { TransformedRecord } from "@/types/global.types";
+import type {
+  TransformedRecord,
+  TransformedHolding,
+} from "@/types/global.types";
 
 interface RecordsTableProps {
   data: TransformedRecord[];
+  holding: TransformedHolding;
 }
 
-export function RecordsTable({ data }: RecordsTableProps) {
+export function RecordsTable({ data, holding }: RecordsTableProps) {
   const [filterValue, setFilterValue] = useState("");
 
   return (
@@ -26,6 +30,9 @@ export function RecordsTable({ data }: RecordsTableProps) {
           value={filterValue}
           onChange={(e) => setFilterValue(e.target.value)}
         />
+        {data.length > 0 && (
+          <NewRecordButton variant="outline" preselectedHolding={holding} />
+        )}
       </div>
 
       {data.length === 0 ? (
@@ -37,7 +44,7 @@ export function RecordsTable({ data }: RecordsTableProps) {
           <p className="text-muted-foreground mt-1 mb-3 text-sm">
             Records for this holding will appear here
           </p>
-          <NewRecordButton variant="outline" />
+          <NewRecordButton variant="outline" preselectedHolding={holding} />
         </div>
       ) : (
         <div className="rounded-md border">

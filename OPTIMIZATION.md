@@ -72,8 +72,8 @@
 
 - [ ] **QW.1** Loading State Improvements (15-20 mins)
   - [ ] Add skeleton loaders for missing components
-  - [ ] Ensure all action buttons show loading states during async operations
-  - [ ] Check forms for consistent loading indicators
+  - [x] Ensure all action buttons show loading states during async operations
+  - [x] Check forms for consistent loading indicators
 - [ ] **QW.2** Simple Error Handling (15-20 mins)
   - [ ] Add try/catch blocks to server functions missing them
   - [ ] Improve error messages for better user feedback

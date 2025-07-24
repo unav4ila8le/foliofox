@@ -59,6 +59,9 @@ export function NewRecordForm() {
   const [selectedHolding, setSelectedHolding] =
     useState<TransformedHolding | null>(preselectedHolding);
 
+  // Determine if holding selector should be shown
+  const showHoldingSelector = !preselectedHolding;
+
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -166,6 +169,7 @@ export function NewRecordForm() {
         onSubmit={form.handleSubmit(onSubmit)}
         className="grid gap-x-2 gap-y-4"
       >
+        {/* Date field */}
         <FormField
           control={form.control}
           name="date"
@@ -208,24 +212,28 @@ export function NewRecordForm() {
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="holding_id"
-          render={({ field }) => (
-            <FormItem className="sm:w-1/2 sm:pr-1">
-              <FormLabel>Holding</FormLabel>
-              <FormControl>
-                <HoldingSelector
-                  field={field}
-                  preselectedHolding={selectedHolding}
-                  onHoldingSelect={handleHoldingSelect}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {/* Holding selector - only show if no preselected holding */}
+        {showHoldingSelector && (
+          <FormField
+            control={form.control}
+            name="holding_id"
+            render={({ field }) => (
+              <FormItem className="sm:w-1/2 sm:pr-1">
+                <FormLabel>Holding</FormLabel>
+                <FormControl>
+                  <HoldingSelector
+                    field={field}
+                    preselectedHolding={selectedHolding}
+                    onHoldingSelect={handleHoldingSelect}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
+        {/* Unit value and quantity fields */}
         <div className="grid items-start gap-x-2 gap-y-4 sm:grid-cols-2">
           <FormField
             control={form.control}
@@ -270,6 +278,7 @@ export function NewRecordForm() {
           />
         </div>
 
+        {/* Description field */}
         <FormField
           control={form.control}
           name="description"
