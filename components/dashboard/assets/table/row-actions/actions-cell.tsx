@@ -9,6 +9,7 @@ import {
   ArchiveRestore,
   Plus,
   SquarePen,
+  LoaderCircle,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ import type { TransformedHolding } from "@/types/global.types";
 
 export function ActionsCell({ holding }: { holding: TransformedHolding }) {
   const { setOpen, setPreselectedHolding } = useNewRecordDialog();
+  const [isRestoring, setIsRestoring] = useState(false);
   const [showUpdateDialog, setShowUpdateDialog] = useState(false);
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -43,6 +45,7 @@ export function ActionsCell({ holding }: { holding: TransformedHolding }) {
 
   // Restore holding
   const handleRestore = async () => {
+    setIsRestoring(true);
     try {
       const result = await restoreHolding(holding.id);
       if (result.success) {
@@ -54,6 +57,8 @@ export function ActionsCell({ holding }: { holding: TransformedHolding }) {
       toast.error(
         error instanceof Error ? error.message : "Failed to restore holding",
       );
+    } finally {
+      setIsRestoring(false);
     }
   };
 
@@ -83,8 +88,13 @@ export function ActionsCell({ holding }: { holding: TransformedHolding }) {
             <SquarePen className="size-4" /> Edit holding
           </DropdownMenuItem>
           {holding.is_archived ? (
-            <DropdownMenuItem onSelect={handleRestore}>
-              <ArchiveRestore className="size-4" /> Restore
+            <DropdownMenuItem onSelect={handleRestore} disabled={isRestoring}>
+              {isRestoring ? (
+                <LoaderCircle className="size-4 animate-spin" />
+              ) : (
+                <ArchiveRestore className="size-4" />
+              )}{" "}
+              Restore
             </DropdownMenuItem>
           ) : (
             <DropdownMenuItem onSelect={() => setShowArchiveDialog(true)}>
