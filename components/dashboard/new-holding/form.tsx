@@ -60,12 +60,14 @@ const formSchema = z.object({
 });
 
 export function NewHoldingForm() {
+  // Props destructuring and context hooks
   const { setOpen, profile } = useNewHoldingDialog();
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Get supported currencies for validation
   const { currencies } = useCurrencies();
 
+  // State declarations
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Form setup and derived state
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -82,43 +84,24 @@ export function NewHoldingForm() {
   // Get isDirty state from formState
   const { isDirty } = form.formState;
 
-  // Submit handler
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsLoading(true);
-    try {
-      const formData = new FormData();
-      formData.append("category_code", values.category_code);
-      formData.append("name", values.name);
-      formData.append("currency", values.currency);
-      formData.append("unit_value", values.unit_value.toString());
-      formData.append("quantity", values.quantity.toString());
-      formData.append("description", values.description || "");
+  // Watch category changes
+  const categoryCode = form.watch("category_code") || "";
 
-      // Add symbol_id if it exists and is not empty
-      if (values.symbol_id && values.symbol_id.trim() !== "") {
-        formData.append("symbol_id", values.symbol_id);
-      }
-
-      const result = await createHolding(formData);
-
-      // Handle error response from server action
-      if (!result.success) {
-        throw new Error(result.message);
-      }
-
-      toast.success("Holding created successfully");
-      setOpen(false);
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to create a new holding",
-      );
-    } finally {
-      setIsLoading(false);
+  // Clear symbol_id when switching to a category that doesn't support symbols
+  useEffect(() => {
+    if (categoryCode && !shouldShowSymbolSearch(categoryCode)) {
+      form.setValue("symbol_id", "");
     }
-  }
+  }, [categoryCode, form]);
 
+  // Auto-set quantity to 1 for categories that don't support (need) quantity
+  useEffect(() => {
+    if (categoryCode && shouldHideQuantity(categoryCode)) {
+      form.setValue("quantity", 1);
+    }
+  }, [categoryCode, form]);
+
+  // Handle symbol selection from dropdown
   const handleSymbolSelect = async (symbol: Symbol) => {
     try {
       // 1. Create symbol
@@ -173,20 +156,46 @@ export function NewHoldingForm() {
     }
   };
 
-  // Clear symbol_id when switching to a category that doesn't support symbols
-  const categoryCode = form.watch("category_code");
-  useEffect(() => {
-    if (categoryCode && !shouldShowSymbolSearch(categoryCode)) {
-      form.setValue("symbol_id", "");
-    }
-  }, [categoryCode, form]);
+  // Submit handler
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append("category_code", values.category_code);
+      formData.append("name", values.name);
+      formData.append("currency", values.currency);
+      formData.append("unit_value", values.unit_value.toString());
+      formData.append("quantity", values.quantity.toString());
 
-  // Auto-set quantity to 1 for categories that don't support (need) quantity
-  useEffect(() => {
-    if (categoryCode && shouldHideQuantity(categoryCode)) {
-      form.setValue("quantity", 1);
+      // Only append description if it exists
+      if (values.description) {
+        formData.append("description", values.description);
+      }
+
+      // Add symbol_id if it exists and is not empty
+      if (values.symbol_id && values.symbol_id.trim() !== "") {
+        formData.append("symbol_id", values.symbol_id);
+      }
+
+      const result = await createHolding(formData);
+
+      // Handle error response from server action
+      if (!result.success) {
+        throw new Error(result.message);
+      }
+
+      toast.success("Holding created successfully");
+      setOpen(false);
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to create a new holding",
+      );
+    } finally {
+      setIsLoading(false);
     }
-  }, [categoryCode, form]);
+  }
 
   return (
     <Form {...form}>
@@ -204,7 +213,7 @@ export function NewHoldingForm() {
             </FormItem>
           )}
         />
-        {shouldShowSymbolSearch(form.watch("category_code")) && (
+        {shouldShowSymbolSearch(categoryCode) && (
           <FormField
             control={form.control}
             name="symbol_id"
@@ -217,9 +226,7 @@ export function NewHoldingForm() {
                 <FormControl>
                   <SymbolSearch
                     field={field}
-                    quoteTypes={getQuoteTypesForCategory(
-                      form.watch("category_code"),
-                    )}
+                    quoteTypes={getQuoteTypesForCategory(categoryCode)}
                     onSymbolSelect={handleSymbolSelect}
                   />
                 </FormControl>
@@ -244,7 +251,7 @@ export function NewHoldingForm() {
             </FormItem>
           )}
         />
-        {!shouldShowSymbolSearch(form.watch("category_code")) && (
+        {!shouldShowSymbolSearch(categoryCode) && (
           <FormField
             control={form.control}
             name="currency"
@@ -261,7 +268,7 @@ export function NewHoldingForm() {
         )}
 
         <div className="grid items-start gap-x-2 gap-y-4 sm:grid-cols-2">
-          {!shouldShowSymbolSearch(form.watch("category_code")) && (
+          {!shouldShowSymbolSearch(categoryCode) && (
             <FormField
               control={form.control}
               name="unit_value"
@@ -285,7 +292,7 @@ export function NewHoldingForm() {
               )}
             />
           )}
-          {!shouldHideQuantity(form.watch("category_code")) && (
+          {!shouldHideQuantity(categoryCode) && (
             <FormField
               control={form.control}
               name="quantity"

@@ -29,6 +29,7 @@ import { HoldingSelector } from "./holding-selector";
 import { useNewRecordDialog } from "./index";
 
 import { cn } from "@/lib/utils";
+import { shouldHideQuantity } from "@/lib/asset-category-mappings";
 
 import { createRecord } from "@/server/records/create";
 import { fetchSingleQuote } from "@/server/quotes/fetch";
@@ -53,7 +54,10 @@ const formSchema = z.object({
 });
 
 export function NewRecordForm() {
+  // Props destructuring and context hooks
   const { setOpen, preselectedHolding } = useNewRecordDialog();
+
+  // State declarations
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingQuote, setIsFetchingQuote] = useState(false);
   const [selectedHolding, setSelectedHolding] =
@@ -62,6 +66,10 @@ export function NewRecordForm() {
   // Determine if holding selector should be shown
   const showHoldingSelector = !preselectedHolding;
 
+  // Check if current holding has a symbol
+  const hasSymbol = !!selectedHolding?.symbol_id;
+
+  // Form setup and derived state
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -73,8 +81,8 @@ export function NewRecordForm() {
     },
   });
 
-  // Check if current holding has a symbol
-  const hasSymbol = !!selectedHolding?.symbol_id;
+  // Get isDirty state from formState
+  const { isDirty } = form.formState;
 
   // Fetch quote for symbol-based holdings
   const fetchQuoteForHolding = useCallback(
@@ -100,11 +108,6 @@ export function NewRecordForm() {
     [form],
   );
 
-  // Handle holding selection from dropdown
-  const handleHoldingSelect = (holding: TransformedHolding | null) => {
-    setSelectedHolding(holding);
-  };
-
   // Pre-populate values when a holding is selected
   useEffect(() => {
     if (selectedHolding) {
@@ -120,6 +123,13 @@ export function NewRecordForm() {
     }
   }, [selectedHolding, form, fetchQuoteForHolding]);
 
+  // Auto-set quantity to 1 for categories that don't support quantity
+  useEffect(() => {
+    if (selectedHolding && shouldHideQuantity(selectedHolding.category_code)) {
+      form.setValue("quantity", 1);
+    }
+  }, [selectedHolding, form]);
+
   // Re-fetch quote when date changes for symbol-based holdings
   const watchedDate = form.watch("date");
   useEffect(() => {
@@ -128,8 +138,10 @@ export function NewRecordForm() {
     }
   }, [watchedDate, selectedHolding, fetchQuoteForHolding]);
 
-  // Get isDirty state from formState
-  const { isDirty } = form.formState;
+  // Handle holding selection from dropdown
+  const handleHoldingSelect = (holding: TransformedHolding | null) => {
+    setSelectedHolding(holding);
+  };
 
   // Submit handler
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -142,7 +154,11 @@ export function NewRecordForm() {
       formData.append("date", format(values.date, "yyyy-MM-dd"));
       formData.append("quantity", values.quantity.toString());
       formData.append("unit_value", values.unit_value.toString());
-      formData.append("description", values.description || "");
+
+      // Only append description if it exists
+      if (values.description) {
+        formData.append("description", values.description);
+      }
 
       const result = await createRecord(formData);
 
@@ -235,6 +251,7 @@ export function NewRecordForm() {
 
         {/* Unit value and quantity fields */}
         <div className="grid items-start gap-x-2 gap-y-4 sm:grid-cols-2">
+          {/* Unit value field */}
           <FormField
             control={form.control}
             name="unit_value"
@@ -256,26 +273,32 @@ export function NewRecordForm() {
               </FormItem>
             )}
           />
-          <FormField
-            control={form.control}
-            name="quantity"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Quantity</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="E.g., 10"
-                    type="number"
-                    {...field}
-                    value={
-                      field.value === 0 ? "" : (field.value as number | string)
-                    }
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+
+          {/* Quantity field - only show if category doesn't hide it */}
+          {!shouldHideQuantity(selectedHolding?.category_code || "") && (
+            <FormField
+              control={form.control}
+              name="quantity"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Quantity</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="E.g., 10"
+                      type="number"
+                      {...field}
+                      value={
+                        field.value === 0
+                          ? ""
+                          : (field.value as number | string)
+                      }
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
         </div>
 
         {/* Description field */}

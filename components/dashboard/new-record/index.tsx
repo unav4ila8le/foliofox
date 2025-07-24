@@ -37,6 +37,16 @@ export function NewRecordDialogProvider({
   const [preselectedHolding, setPreselectedHolding] =
     useState<TransformedHolding | null>(null);
 
+  // Handle dialog open/close and reset state when closing
+  const handleOpenChange = (isOpen: boolean) => {
+    setOpen(isOpen);
+
+    // Clear preselected holding when dialog closes
+    if (!isOpen) {
+      setPreselectedHolding(null);
+    }
+  };
+
   return (
     <NewRecordDialogContext.Provider
       value={{
@@ -47,7 +57,7 @@ export function NewRecordDialogProvider({
       }}
     >
       {children}
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
