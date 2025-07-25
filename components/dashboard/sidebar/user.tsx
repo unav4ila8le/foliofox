@@ -65,7 +65,7 @@ export function User({
             </Avatar>
             <div className="flex flex-col">
               <p className="text truncate font-semibold">{profile.username}</p>
-              <span className="text-muted-foreground truncate text-xs">
+              <span className="text-muted-foreground truncate text-xs tabular-nums">
                 {formatCurrency(netWorth, profile.display_currency)}
               </span>
             </div>
