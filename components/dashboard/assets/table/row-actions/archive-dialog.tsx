@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { LoaderCircle, Archive } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -77,10 +77,12 @@ export function ArchiveHoldingDialog({
           <Button disabled={isLoading} onClick={handleArchive}>
             {isLoading ? (
               <>
-                <Loader2 className="size-4 animate-spin" /> Archiving...
+                <LoaderCircle className="size-4 animate-spin" /> Archiving...
               </>
             ) : (
-              "Archive"
+              <>
+                <Archive className="size-4" /> Archive
+              </>
             )}
           </Button>
         </AlertDialogFooter>
