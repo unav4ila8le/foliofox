@@ -56,7 +56,7 @@ export function ArchiveHoldingDialog({
     <AlertDialog open={open} onOpenChange={onOpenChangeAction}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Archive holding?</AlertDialogTitle>
+          <AlertDialogTitle>Archive Holding?</AlertDialogTitle>
           <AlertDialogDescription>
             You are about to archive &quot;{holding.name}&quot;.
           </AlertDialogDescription>

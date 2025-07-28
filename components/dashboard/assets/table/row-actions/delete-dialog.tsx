@@ -56,7 +56,7 @@ export function DeleteHoldingDialog({
     <AlertDialog open={open} onOpenChange={onOpenChangeAction}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete holding?</AlertDialogTitle>
+          <AlertDialogTitle>Delete Holding?</AlertDialogTitle>
           <AlertDialogDescription>
             You are about to permanently delete &quot;{holding.name}&quot;. This
             action cannot be undone.
