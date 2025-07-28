@@ -4,16 +4,18 @@ import Link from "next/link";
 import { AuthToastHandler } from "@/components/auth/auth-toast-handler";
 import { Logo } from "@/components/ui/logos/logo";
 import { LoginForm } from "@/components/auth/login-form";
+
 import { createClient } from "@/utils/supabase/server";
 
 export default async function LoginPage() {
   // Check if user is already logged in and redirect to dashboard
   const supabase = await createClient();
 
-  const { data, error } = await supabase.auth.getUser();
-  if (data?.user && !error) {
+  const { data } = await supabase.auth.getClaims();
+  if (data?.claims) {
     redirect("/dashboard");
   }
+
   return (
     <div className="bg-muted flex min-h-svh flex-col items-center justify-center p-4">
       <AuthToastHandler />
