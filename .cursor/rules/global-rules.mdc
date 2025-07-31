@@ -1,17 +1,20 @@
 ---
 description: Global edits and additions
-globs: 
+globs:
 alwaysApply: true
 ---
-# Patrivio - Global Development Rules
+
+# Plutolo - Global Development Rules
 
 ## Project Context
+
 - Next.js 15 App Router application for net worth tracking
 - Stack: TypeScript, Supabase, Shadcn UI, Tailwind CSS
 - Deployment: Vercel
 - Data Strategy: Periodic refreshes and manual updates (no WebSocket)
 
 ## Development Principles
+
 1. **Architecture**
    - Favor React Server Components (RSC) over Client Components
    - Use 'nuqs' for URL state management
@@ -28,6 +31,7 @@ alwaysApply: true
    - Prefer maps or objects over enums
 
 3. **File Structure**
+
    ```
    components/
      ├── ui/          # Shadcn components (do not modify)
@@ -41,31 +45,33 @@ alwaysApply: true
    ```
 
 4. **Import Order**
+
    ```typescript
    // 1. External Dependencies
-   import { type FC } from 'react'
-   import { createClient } from '@supabase/supabase-js'
-   
+   import { type FC } from "react";
+   import { createClient } from "@supabase/supabase-js";
+
    // 2. UI Components
-   import { Button } from '@/components/ui/button'
-   
+   import { Button } from "@/components/ui/button";
+
    // 3. Custom Components
    import { LoginForm } from "@/components/auth/login-form";
-   
+
    // 4. Internal Modules
-   import { useSignout } from '@/hooks/use-signout'
-   
+   import { useSignout } from "@/hooks/use-signout";
+
    // 5. Local Files and Types
    import type { Holding } from "@/types/global.types";
    ```
 
 5. **Component Structure**
+
    ```typescript
    // Types and interfaces first
    interface Props {
      // ...
    }
-   
+
    // Component with explicit return type
    export function ComponentName({ prop1, prop2 }: Props): JSX.Element {
      // 1. Hooks
@@ -74,6 +80,7 @@ alwaysApply: true
      // 4. Render
    }
    ```
+
    - Use named exports for components, except for Next.js route files, which require default exports.
 
 6. **Currency & Data Handling**
@@ -94,7 +101,7 @@ alwaysApply: true
    - Group related components in feature directories
 
 ## Role Context
+
 - You (AI): Senior TypeScript/React engineer focusing on logic and functionality
 - User: UX/UI expert handling design and styling
 - Collaboration: You build functional components, user enhances UI/UX
-

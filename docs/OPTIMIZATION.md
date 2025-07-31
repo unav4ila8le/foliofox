@@ -1,4 +1,4 @@
-# 🚀 Patrivio Performance Optimization Plan
+# 🚀 Plutolo Performance Optimization Plan
 
 ## 📊 Current Performance Analysis
 

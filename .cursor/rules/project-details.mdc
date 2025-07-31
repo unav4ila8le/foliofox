@@ -1,14 +1,17 @@
 ---
-description: Project specifications and technical overview for Patrivio
-globs: 
+description: Project specifications and technical overview for Plutolo
+globs:
 alwaysApply: false
 ---
-# Patrivio - Project Details
+
+Plutolo - Project Details
 
 ## Overview
-Patrivio is a privacy-focused net worth tracking app. Users manually track assets, liabilities, and net worth over time, with multi-currency support and clear visualizations. The app is designed for personal use, with future extensibility in mind.
+
+Plutolo is a privacy-focused portfolio inteligence and net worth tracking app. Users can track assets, liabilities, and net worth over time, with multi-currency support and clear visualizations. The app is designed for personal use, with future extensibility in mind, includive AI for portfolio advisory.
 
 ## Tech Stack
+
 - **Framework:** Next.js 15 (App Router)
 - **Language:** TypeScript (strict mode)
 - **Database:** Supabase (Postgres, Auth)
@@ -16,11 +19,13 @@ Patrivio is a privacy-focused net worth tracking app. Users manually track asset
 - **Deployment:** Vercel
 
 ## Core Principles
+
 - **Privacy:** No third-party data sharing or scraping.
 - **Simplicity:** Minimal, modular UI. Logic and calculations are prioritized over design.
 - **Extensible:** Codebase and data model are designed for future features and scaling.
 
 ## Key Features
+
 - Track net worth over time with interactive charts
 - Multi-currency support with daily exchange rates
 - Manual entry and editing of assets.
@@ -29,12 +34,14 @@ Patrivio is a privacy-focused net worth tracking app. Users manually track asset
 - Modular, type-safe codebase
 
 ## Data Model (Simplified)
+
 - **Holdings:** Assets and liabilities, grouped by category and currency
 - **Records:** Value and quantity updates
 - **Valuations:** Historical price/quantity snapshots for accurate net worth history
 - **Exchange Rates:** Daily rates for currency conversion
 
 ## Development Guidelines
+
 - Follow `global-rules.mdc` for architecture, code style, and file structure.
 - Prioritize server components and functional programming patterns.
 - Use Zod for data validation.
@@ -42,10 +49,12 @@ Patrivio is a privacy-focused net worth tracking app. Users manually track asset
 - Use ISO currency codes (USD, EUR, etc.) throughout.
 
 ## Not in Scope (MVP)
+
 - No automatic bank or brokerage integrations
 - No expense tracking or budgeting features
 - No real-time data feeds (periodic refreshes only)
 
 ## For More Details
+
 - See `README.md` for setup and utility function cheatsheets.
 - See `global-rules.mdc` for code conventions and architecture.

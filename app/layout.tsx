@@ -10,7 +10,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Patrivio - Portfolio Intelligence Platform",
+  title: "Plutolo - Portfolio Intelligence Platform",
   description:
     "Comprehensive portfolio tracking and AI-powered financial planning. Monitor your assets, analyze performance, and discover growth opportunities with predictive insights tailored to your wealth-building strategy.",
 };
