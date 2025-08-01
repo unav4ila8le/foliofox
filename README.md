@@ -1,4 +1,4 @@
-# Plutolo
+# Patrivio
 
 A modern net worth tracking app built with Next.js, Supabase, Shadcn UI, and Tailwind CSS.
 

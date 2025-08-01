@@ -1,14 +1,14 @@
 ---
-description: Project specifications and technical overview for Plutolo
+description: Project specifications and technical overview for Patrivio
 globs:
 alwaysApply: false
 ---
 
-Plutolo - Project Details
+Patrivio - Project Details
 
 ## Overview
 
-Plutolo is a privacy-focused portfolio inteligence and net worth tracking app. Users can track assets, liabilities, and net worth over time, with multi-currency support and clear visualizations. The app is designed for personal use, with future extensibility in mind, includive AI for portfolio advisory.
+Patrivio is a privacy-focused portfolio inteligence and net worth tracking app. Users can track assets, liabilities, and net worth over time, with multi-currency support and clear visualizations. The app is designed for personal use, with future extensibility in mind, includive AI for portfolio advisory.
 
 ## Tech Stack
 
