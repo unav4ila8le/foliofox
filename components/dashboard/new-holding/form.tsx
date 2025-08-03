@@ -45,12 +45,10 @@ const formSchema = z.object({
     .max(64, { error: "Name must not exceed 64 characters." }),
   symbol_id: z.string(),
   currency: z.string().length(3),
-  unit_value: z.coerce
-    .number()
-    .gt(0, { error: "Value must be greater than 0" }),
+  unit_value: z.coerce.number().gte(0, { error: "Value must be 0 or greater" }),
   quantity: z.coerce
     .number()
-    .gt(0, { error: "Quantity must be greater than 0" }),
+    .gte(0, { error: "Quantity must be 0 or greater" }),
   description: z
     .string()
     .max(256, {

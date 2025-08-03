@@ -41,10 +41,8 @@ const formSchema = z.object({
   holding_id: z.string().min(1, { error: "Please select a holding." }),
   quantity: z.coerce
     .number()
-    .gt(0, { error: "Quantity must be greater than 0" }),
-  unit_value: z.coerce
-    .number()
-    .gt(0, { error: "Value must be greater than 0" }),
+    .gte(0, { error: "Quantity must be 0 or greater" }),
+  unit_value: z.coerce.number().gte(0, { error: "Value must be 0 or greater" }),
   description: z
     .string()
     .max(256, {
