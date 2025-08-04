@@ -18,7 +18,7 @@ import {
   formatCompactCurrency,
   formatCurrency,
   formatPercentage,
-} from "@/lib/number/format";
+} from "@/lib/number-format";
 
 const COLORS = [
   "var(--chart-0)",

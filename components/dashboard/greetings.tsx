@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { getTimeBasedGreetings } from "@/lib/date";
+import { getTimeBasedGreetings } from "@/lib/time-based-greetings";
 
 export function Greetings({ username }: { username: string }) {
   const [greeting, setGreeting] = useState<string>("");

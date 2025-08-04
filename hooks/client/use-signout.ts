@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-import { createClient } from "@/utils/supabase/client";
+import { createClient } from "@/supabase/client";
 
 export type SignOutScope = "global" | "local" | "others";
 

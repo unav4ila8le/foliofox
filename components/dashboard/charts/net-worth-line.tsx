@@ -41,7 +41,7 @@ import {
   formatCompactNumber,
   formatCurrency,
   formatNumber,
-} from "@/lib/number/format";
+} from "@/lib/number-format";
 import { cn } from "@/lib/utils";
 
 export function NetWorthLineChart({

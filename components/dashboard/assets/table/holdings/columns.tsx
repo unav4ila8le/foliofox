@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { ActionsCell } from "../row-actions/actions-cell";
 
 import { cn } from "@/lib/utils";
-import { formatNumber, formatPercentage } from "@/lib/number/format";
+import { formatNumber, formatPercentage } from "@/lib/number-format";
 
 import type { ColumnDef } from "@tanstack/react-table";
 import type { HoldingWithProfitLoss } from "@/types/global.types";

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Logo } from "@/components/ui/logos/logo";
 import { SignupForm } from "@/components/auth/signup-form";
 
-import { createClient } from "@/utils/supabase/server";
+import { createClient } from "@/supabase/server";
 
 export default async function SignupPage() {
   // Check if user is already logged in and redirect to dashboard

@@ -2,7 +2,7 @@
 
 import { format } from "date-fns";
 
-import { createServiceClient } from "@/utils/supabase/service";
+import { createServiceClient } from "@/supabase/service";
 
 // Exchange rate API
 const FRANKFURTER_API = "https://api.frankfurter.app";

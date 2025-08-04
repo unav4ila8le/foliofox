@@ -22,7 +22,7 @@ import {
 import { SidebarMenuButton, useSidebar } from "@/components/ui/sidebar";
 import { SettingsForm } from "@/components/dashboard/sidebar/settings-form";
 
-import { formatCurrency } from "@/lib/number";
+import { formatCurrency } from "@/lib/number-format";
 
 import { useSignout } from "@/hooks/client/use-signout";
 

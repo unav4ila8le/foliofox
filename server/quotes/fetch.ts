@@ -3,7 +3,7 @@
 import { format, subDays } from "date-fns";
 import YahooFinance from "yahoo-finance2";
 
-import { createServiceClient } from "@/utils/supabase/service";
+import { createServiceClient } from "@/supabase/service";
 
 // Initialize yahooFinance with v3 pattern
 const yahooFinance = new YahooFinance();

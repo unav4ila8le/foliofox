@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { createClient } from "@/utils/supabase/client";
+import { createClient } from "@/supabase/client";
 
 import type { Currency } from "@/types/global.types";
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { createServiceClient } from "@/utils/supabase/service";
+import { createServiceClient } from "@/supabase/service";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 
 export async function GET(request: NextRequest) {

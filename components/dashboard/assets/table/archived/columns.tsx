@@ -12,7 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ActionsCell } from "@/components/dashboard/assets/table/row-actions/actions-cell";
 
-import { formatNumber } from "@/lib/number/format";
+import { formatNumber } from "@/lib/number-format";
 
 import type { ColumnDef } from "@tanstack/react-table";
 import type { TransformedHolding } from "@/types/global.types";

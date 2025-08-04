@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { HoldingsTables } from "@/components/dashboard/assets/table/holdings/holdings-tables";
 
 import { fetchHoldings } from "@/server/holdings/fetch";
-import { calculateProfitLoss } from "@/lib/analysis/profit-loss";
+import { calculateProfitLoss } from "@/lib/profit-loss";
 
 // Separate components for data fetching with suspense
 async function HoldingsTablesWrapper() {

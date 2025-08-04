@@ -5,7 +5,7 @@ import { format } from "date-fns";
 
 import { ActionsCell } from "./row-actions/actions-cell";
 
-import { formatNumber } from "@/lib/number/format";
+import { formatNumber } from "@/lib/number-format";
 
 import type { ColumnDef } from "@tanstack/react-table";
 import type { TransformedRecord } from "@/types/global.types";
