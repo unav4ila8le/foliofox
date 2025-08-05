@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { format } from "date-fns";
-import { Download, LoaderCircle, FileText } from "lucide-react";
+import { Download, LoaderCircle, FileText, Info } from "lucide-react";
 import { toast } from "sonner";
 
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 import { exportHoldings } from "@/server/holdings/export";
 
@@ -78,20 +79,24 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="space-y-2 rounded-lg border p-4">
-            <h4 className="font-medium">What will be exported:</h4>
-            <ul className="text-muted-foreground space-y-1 text-sm">
-              <li>Holding name, category, and currency</li>
-              <li>Current quantity and market value</li>
-              <li>Symbol information (if applicable)</li>
-              <li>Description and notes</li>
-            </ul>
-          </div>
+          <Alert>
+            <Info className="size-4" />
+            <AlertTitle>Export summary</AlertTitle>
+            <AlertDescription>
+              <ul className="list-inside list-disc text-sm">
+                <li>Holding name, category, and currency</li>
+                <li>Current quantity and market value</li>
+                <li>Symbol information (if applicable)</li>
+                <li>Description and notes</li>
+              </ul>
+            </AlertDescription>
+          </Alert>
 
           <div className="text-sm">
-            <strong>File format:</strong> CSV (Comma Separated Values)
+            <span className="font-medium">File format:</span> CSV (Comma
+            Separated Values)
             <br />
-            <strong>Filename:</strong> patrivio-holdings-
+            <span className="font-medium">Filename:</span> patrivio-holdings-
             {format(new Date(), "yyyy-MM-dd")}.csv
           </div>
         </div>

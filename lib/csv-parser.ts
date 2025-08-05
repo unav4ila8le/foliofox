@@ -23,6 +23,9 @@ interface CSVHoldingRow {
  */
 export async function parseHoldingsCSV(csvContent: string) {
   try {
+    // Initialize errors array
+    const errors: string[] = [];
+
     // Get supported currencies and extract just the codes
     const currencies = await fetchCurrencies();
     const supportedCurrencies = currencies.map((c) => c.alphabetic_code);
@@ -70,11 +73,18 @@ export async function parseHoldingsCSV(csvContent: string) {
     if (missingHeaders.length > 0) {
       return {
         success: false,
-        error: `Missing required columns: ${missingHeaders.join(", ")}`,
+        errors: missingHeaders.map(
+          (header) => `Missing required column: ${header}`,
+        ),
       };
     }
 
-    // Parse each data row
+    const columnMap = new Map<string, number>();
+    actualHeaders.forEach((header, index) => {
+      columnMap.set(header, index);
+    });
+
+    // Parse each data row - continue even if headers are wrong to find all issues at once
     const dataRows = lines.slice(1); // Skip header row
     const parsedHoldings: CSVHoldingRow[] = [];
 
@@ -93,77 +103,67 @@ export async function parseHoldingsCSV(csvContent: string) {
         };
       }
 
-      // Convert string values to proper types
+      // Convert string values to proper types using column mapping
       const holding: CSVHoldingRow = {
-        name: values[0] || "",
-        category_code: values[1] || "",
-        currency: values[2] || "",
-        current_quantity: parseFloat(values[3]) || 0,
-        current_unit_value: parseFloat(values[4]) || 0,
-        symbol_id: values[5] || null,
-        description: values[6] || null,
+        name: values[columnMap.get("name")!] || "",
+        category_code: values[columnMap.get("category_code")!] || "",
+        currency: values[columnMap.get("currency")!] || "",
+        current_quantity:
+          parseFloat(values[columnMap.get("current_quantity")!]) || 0,
+        current_unit_value:
+          parseFloat(values[columnMap.get("current_unit_value")!]) || 0,
+        symbol_id: values[columnMap.get("symbol_id")!] || null,
+        description: values[columnMap.get("description")!] || null,
       };
 
-      // Validate required fields
+      // Validate all required fields
       if (!holding.name.trim()) {
-        return {
-          success: false,
-          error: `Row ${rowNumber}: Name is required`,
-        };
+        errors.push(`Row ${rowNumber}: Name is required`);
       }
 
       if (!holding.category_code.trim()) {
-        return {
-          success: false,
-          error: `Row ${rowNumber}: Category is required`,
-        };
-      }
-
-      if (!supportedCategories.includes(holding.category_code)) {
+        errors.push(`Row ${rowNumber}: Category is required`);
+      } else if (!supportedCategories.includes(holding.category_code)) {
         const availableCategories = supportedCategories.join(", ");
-        return {
-          success: false,
-          error: `Row ${rowNumber}: Category "${holding.category_code}" is not supported. Available categories: ${availableCategories}`,
-        };
+        errors.push(
+          `Row ${rowNumber}: Category "${holding.category_code}" is not supported. Available categories: ${availableCategories}`,
+        );
       }
 
       if (!holding.currency.trim()) {
-        return {
-          success: false,
-          error: `Row ${rowNumber}: Currency is required`,
-        };
-      }
-
-      if (holding.currency.length !== 3) {
-        return {
-          success: false,
-          error: `Row ${rowNumber}: Currency must be 3-character ISO 4217 code (e.g., USD, EUR)`,
-        };
-      }
-
-      if (!supportedCurrencies.includes(holding.currency.toUpperCase())) {
-        return {
-          success: false,
-          error: `Row ${rowNumber}: Currency "${holding.currency}" is not supported`,
-        };
+        errors.push(`Row ${rowNumber}: Currency is required`);
+      } else {
+        if (holding.currency.length !== 3) {
+          errors.push(
+            `Row ${rowNumber}: Currency must be 3-character ISO 4217 code (e.g., USD, EUR, GBP)`,
+          );
+        } else if (
+          !supportedCurrencies.includes(holding.currency.toUpperCase())
+        ) {
+          errors.push(
+            `Row ${rowNumber}: Currency "${holding.currency}" is not supported`,
+          );
+        }
       }
 
       if (holding.current_quantity <= 0) {
-        return {
-          success: false,
-          error: `Row ${rowNumber}: Quantity must be greater than 0`,
-        };
+        errors.push(`Row ${rowNumber}: Quantity must be greater than 0`);
       }
 
       if (holding.current_unit_value <= 0) {
-        return {
-          success: false,
-          error: `Row ${rowNumber}: Unit value must be greater than 0`,
-        };
+        errors.push(`Row ${rowNumber}: Unit value must be greater than 0`);
       }
 
-      // Add valid holding to results
+      // Add holding to results
       parsedHoldings.push(holding);
+    }
+
+    // Return all errors if any exist
+    if (errors.length > 0) {
+      return {
+        success: false,
+        errors: errors, // Return array of errors for better display
+      };
     }
 
     return {
@@ -171,6 +171,7 @@ export async function parseHoldingsCSV(csvContent: string) {
       data: parsedHoldings,
     };
   } catch (error) {
+    console.error("Unexpected error during CSV parsing:", error);
     return {
       success: false,
       error: `Failed to parse CSV: ${error instanceof Error ? error.message : "Unknown error"}`,

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { MoreHorizontal, Archive, Download } from "lucide-react";
+import { MoreHorizontal, Upload, Download, Archive } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -13,8 +13,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ExportDialog } from "@/components/dashboard/assets/export/dialog";
 
+import { useImportHoldingsDialog } from "@/components/dashboard/assets/import";
+
 export function TableActionsDropdown() {
   const [showExportDialog, setShowExportDialog] = useState(false);
+
+  const { setOpen: setOpenImportHoldingsDialog } = useImportHoldingsDialog();
 
   return (
     <>
@@ -26,6 +30,9 @@ export function TableActionsDropdown() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <DropdownMenuItem onSelect={() => setOpenImportHoldingsDialog(true)}>
+            <Upload className="size-4" /> Import
+          </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => setShowExportDialog(true)}>
             <Download className="size-4" /> Export
           </DropdownMenuItem>

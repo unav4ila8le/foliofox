@@ -36,6 +36,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { NewHoldingButton } from "@/components/dashboard/new-holding";
+import { ImportHoldingsButton } from "@/components/dashboard/assets/import";
 
 import {
   formatCompactNumber,
@@ -122,7 +123,10 @@ export function NetWorthLineChart({
           <p className="text-muted-foreground mt-1 mb-3 text-sm">
             Add your holdings to start tracking your net worth
           </p>
-          <NewHoldingButton variant="outline" />
+          <div className="flex items-center justify-center gap-2">
+            <NewHoldingButton variant="outline" />
+            <ImportHoldingsButton variant="outline" />
+          </div>
         </div>
       ) : (
         <>
