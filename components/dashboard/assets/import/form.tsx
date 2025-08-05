@@ -26,7 +26,8 @@ export function ImportForm() {
   const { setOpen, open } = useImportHoldingsDialog();
 
   // State for the entire import flow
-  const [isLoading, setIsLoading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
   const [csvContent, setCsvContent] = useState<string>("");
@@ -38,7 +39,7 @@ export function ImportForm() {
 
     setSelectedFile(file);
     setParseResult(null);
-    setIsLoading(true);
+    setIsProcessing(true);
 
     try {
       // Read file content
@@ -56,7 +57,7 @@ export function ImportForm() {
         errors: ["Failed to read file. Please try again."],
       });
     } finally {
-      setIsLoading(false);
+      setIsProcessing(false);
     }
   }, []);
 
@@ -88,7 +89,7 @@ export function ImportForm() {
       },
       maxSize: 5 * 1024 * 1024, // 5MB
       multiple: false,
-      disabled: isLoading,
+      disabled: isProcessing || isImporting,
     });
 
   // Helper function to read file content
@@ -105,7 +106,7 @@ export function ImportForm() {
   const handleImport = async () => {
     if (!csvContent) return;
 
-    setIsLoading(true);
+    setIsImporting(true);
     try {
       const result = await importHoldings(csvContent);
 
@@ -121,7 +122,7 @@ export function ImportForm() {
         error instanceof Error ? error.message : "Failed to import holdings",
       );
     } finally {
-      setIsLoading(false);
+      setIsImporting(false);
     }
   };
 
@@ -155,12 +156,12 @@ export function ImportForm() {
           "hover:bg-muted hover:border-primary/50",
           isDragActive && "bg-muted border-primary/50",
           isDragReject && "bg-destructive/10 border-destructive",
-          isLoading && "cursor-not-allowed opacity-50",
+          (isProcessing || isImporting) && "pointer-events-none opacity-50",
         )}
       >
         <input {...getInputProps()} />
 
-        {isLoading ? (
+        {isProcessing ? (
           <div className="flex items-center justify-center py-4">
             <LoaderCircle className="mr-2 size-4 animate-spin" />
             <span>Processing file...</span>
@@ -203,7 +204,7 @@ export function ImportForm() {
       </div>
 
       {/* Parse Results */}
-      {parseResult && !isLoading && (
+      {parseResult && !isProcessing && (
         <div className="space-y-4">
           {parseResult.success ? (
             // Success - Show summary
@@ -249,14 +250,14 @@ export function ImportForm() {
         <Button
           variant="outline"
           onClick={() => setOpen(false)}
-          disabled={isLoading}
+          disabled={isProcessing || isImporting}
         >
           Cancel
         </Button>
 
-        {parseResult?.success && (
-          <Button onClick={handleImport} disabled={isLoading}>
-            {isLoading ? (
+        {parseResult?.success && !isProcessing && (
+          <Button onClick={handleImport} disabled={isImporting}>
+            {isImporting ? (
               <>
                 <LoaderCircle className="size-4 animate-spin" />
                 Importing...
