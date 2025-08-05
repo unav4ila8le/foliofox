@@ -208,10 +208,10 @@ export function ImportForm() {
         <div className="space-y-4">
           {parseResult.success ? (
             // Success - Show summary
-            <Alert className="border-green-200 bg-green-50 text-green-800">
+            <Alert className="text-green-600">
               <CheckCircle className="size-4" />
               <AlertTitle>File validated successfully!</AlertTitle>
-              <AlertDescription className="text-green-800">
+              <AlertDescription className="text-green-600">
                 Found {parseResult.data?.length} holdings ready to import.
               </AlertDescription>
             </Alert>
@@ -221,7 +221,7 @@ export function ImportForm() {
               <AlertCircle className="size-4" />
               <AlertTitle>Validation Error</AlertTitle>
               <AlertDescription>
-                <ul className="ml-4 list-outside list-disc space-y-2 text-sm">
+                <ul className="ml-4 list-outside list-disc space-y-1 text-sm">
                   {parseResult.errors?.map((error, index) => (
                     <li key={index}>{error}</li>
                   ))}

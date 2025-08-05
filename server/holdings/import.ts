@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { parseHoldingsCSV } from "@/lib/csv-parser";
+import { fetchSingleQuote } from "@/server/quotes/fetch";
 import { createHolding } from "@/server/holdings/create";
 
 /**
@@ -27,13 +28,27 @@ export async function importHoldings(csvContent: string) {
     for (let i = 0; i < holdings.length; i++) {
       const holding = holdings[i];
 
+      // For holdings with symbols, fetch current market price
+      let unitValue = holding.current_unit_value;
+      if (holding.symbol_id && holding.symbol_id.trim() !== "") {
+        try {
+          unitValue = await fetchSingleQuote(holding.symbol_id);
+        } catch (error) {
+          console.error(
+            `Failed to fetch quote for ${holding.symbol_id}:`,
+            error,
+          );
+          // Fall back to CSV value if quote fetch fails
+        }
+      }
+
       // Create FormData for the existing createHolding function
       const formData = new FormData();
       formData.append("name", holding.name);
       formData.append("category_code", holding.category_code);
       formData.append("currency", holding.currency);
       formData.append("quantity", holding.current_quantity.toString());
-      formData.append("unit_value", holding.current_unit_value.toString());
+      formData.append("unit_value", unitValue.toString());
       formData.append("symbol_id", holding.symbol_id || "");
       formData.append("description", holding.description || "");
 

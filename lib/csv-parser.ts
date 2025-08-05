@@ -146,12 +146,12 @@ export async function parseHoldingsCSV(csvContent: string) {
         }
       }
 
-      if (holding.current_quantity <= 0) {
-        errors.push(`Row ${rowNumber}: Quantity must be greater than 0`);
+      if (holding.current_quantity < 0) {
+        errors.push(`Row ${rowNumber}: Quantity must be 0 or greater`);
       }
 
-      if (holding.current_unit_value <= 0) {
-        errors.push(`Row ${rowNumber}: Unit value must be greater than 0`);
+      if (holding.current_unit_value < 0) {
+        errors.push(`Row ${rowNumber}: Unit value must be 0 or greater`);
       }
 
       // Add holding to results
