@@ -108,7 +108,13 @@ export function ImportForm() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      <div className="text-muted-foreground text-sm">
+        <span className="text-foreground font-medium">Required columns:</span>{" "}
+        name, category_code, currency, current_quantity, current_unit_value,
+        symbol_id, description.
+      </div>
+
       {/* File Upload Section */}
       <div className="space-y-3">
         <div className="space-y-2">
@@ -168,6 +174,19 @@ export function ImportForm() {
           )}
         </div>
       )}
+
+      {/* Help text */}
+      <div className="text-muted-foreground text-sm">
+        Need help? Download a{" "}
+        <a
+          href="/sample-holdings-template.csv"
+          download
+          className="text-primary underline-offset-2 hover:underline"
+        >
+          sample template
+        </a>{" "}
+        or export your existing holdings to see the correct format.
+      </div>
 
       {/* Action Buttons */}
       <div className="flex justify-end gap-2">

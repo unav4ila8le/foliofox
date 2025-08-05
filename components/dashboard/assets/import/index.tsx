@@ -43,8 +43,8 @@ export function ImportHoldingsDialogProvider({
               Import Holdings
             </DialogTitle>
             <DialogDescription>
-              Upload a CSV file to import your holdings. Use the same format as
-              your export.
+              Upload a CSV file to import your holdings. The first row should
+              contain the headers exactly as shown below.
             </DialogDescription>
           </DialogHeader>
           <ImportForm />
@@ -74,7 +74,7 @@ export function ImportHoldingsButton({
   return (
     <Button variant={variant} onClick={() => setOpen(true)}>
       <Upload className="size-4" />
-      Import
+      Import from CSV
     </Button>
   );
 }
