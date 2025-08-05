@@ -1,28 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useDropzone, type FileRejection } from "react-dropzone";
 import {
   Upload,
   FileText,
   AlertCircle,
   CheckCircle,
   LoaderCircle,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 import { useImportHoldingsDialog } from "./index";
 import { parseHoldingsCSV } from "@/lib/csv-parser";
 import { importHoldings } from "@/server/holdings/import";
+import { cn } from "@/lib/utils";
 
 type ParseResult = Awaited<ReturnType<typeof parseHoldingsCSV>>;
 
 export function ImportForm() {
-  const { setOpen } = useImportHoldingsDialog();
+  const { setOpen, open } = useImportHoldingsDialog();
 
   // State for the entire import flow
   const [isLoading, setIsLoading] = useState(false);
@@ -30,20 +31,13 @@ export function ImportForm() {
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
   const [csvContent, setCsvContent] = useState<string>("");
 
-  // Handle file selection and immediate parsing
-  const handleFileSelect = async (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const file = event.target.files?.[0];
+  // Handle file drop/selection and immediate parsing
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
     if (!file) return;
 
-    // Validate file type
-    if (!file.name.endsWith(".csv")) {
-      toast.error("Please select a CSV file");
-      return;
-    }
-
     setSelectedFile(file);
+    setParseResult(null);
     setIsLoading(true);
 
     try {
@@ -59,12 +53,43 @@ export function ImportForm() {
       toast.error("Failed to read file");
       setParseResult({
         success: false,
-        error: "Failed to read file. Please try again.",
+        errors: ["Failed to read file. Please try again."],
       });
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  // Handle file rejection
+  const onDropRejected = useCallback((rejectedFiles: FileRejection[]) => {
+    const rejection = rejectedFiles[0];
+    const errorCode = rejection?.errors?.[0]?.code;
+
+    let message = "Invalid file. Please try again.";
+
+    if (errorCode === "file-too-large") {
+      message = "File is too large. Maximum size is 5MB.";
+    } else if (errorCode === "file-invalid-type") {
+      message = "Invalid file type. Please select a CSV file.";
+    }
+
+    toast.error(message);
+  }, []);
+
+  // Setup dropzone
+  const { getRootProps, getInputProps, isDragActive, isDragReject } =
+    useDropzone({
+      onDrop,
+      onDropRejected,
+      accept: {
+        "text/csv": [".csv"],
+        "application/vnd.ms-excel": [".csv"],
+        "text/plain": [".csv"],
+      },
+      maxSize: 5 * 1024 * 1024, // 5MB
+      multiple: false,
+      disabled: isLoading,
+    });
 
   // Helper function to read file content
   const readFileContent = (file: File): Promise<string> => {
@@ -107,6 +132,13 @@ export function ImportForm() {
     setCsvContent("");
   };
 
+  // Reset when dialog closes (any way it closes)
+  useEffect(() => {
+    if (!open) {
+      handleReset();
+    }
+  }, [open]);
+
   return (
     <div className="space-y-4">
       <div className="text-muted-foreground text-sm">
@@ -115,36 +147,60 @@ export function ImportForm() {
         symbol_id, description.
       </div>
 
-      {/* File Upload Section */}
-      <div className="space-y-3">
-        <div className="space-y-2">
-          <Label htmlFor="csv-file">Select CSV file</Label>
-          <Input
-            id="csv-file"
-            type="file"
-            accept=".csv"
-            onChange={handleFileSelect}
-            disabled={isLoading}
-          />
-        </div>
+      {/* Dropzone Section */}
+      <div
+        {...getRootProps()}
+        className={cn(
+          "bg-muted/30 relative rounded-lg border border-dashed p-6 text-center transition-colors",
+          "hover:bg-muted hover:border-primary/50",
+          isDragActive && "bg-muted border-primary/50",
+          isDragReject && "bg-destructive/10 border-destructive",
+          isLoading && "cursor-not-allowed opacity-50",
+        )}
+      >
+        <input {...getInputProps()} />
 
-        {selectedFile && (
-          <div className="text-muted-foreground flex items-center gap-1 text-sm">
-            <FileText className="size-4" />
-            <span>
-              {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
-            </span>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-4">
+            <LoaderCircle className="mr-2 size-4 animate-spin" />
+            <span>Processing file...</span>
+          </div>
+        ) : selectedFile ? (
+          <div className="space-y-2">
+            <div className="flex items-center justify-center gap-1">
+              <FileText className="size-4" />
+              <span className="font-medium">{selectedFile.name}</span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleReset();
+                }}
+                className="text-muted-foreground hover:text-foreground absolute top-2 right-2"
+              >
+                <X className="size-4" />
+                <span className="sr-only">Reset</span>
+              </button>
+            </div>
+            <p className="text-muted-foreground text-sm">
+              {(selectedFile.size / 1024).toFixed(1)} KB
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <Upload className="text-muted-foreground mx-auto size-8" />
+            <div>
+              <p className="font-medium">
+                {isDragActive
+                  ? "Drop your CSV file here"
+                  : "Drag and drop your CSV file here"}
+              </p>
+              <p className="text-muted-foreground text-sm">
+                or click to browse (max 5MB)
+              </p>
+            </div>
           </div>
         )}
       </div>
-
-      {/* Loading State */}
-      {isLoading && (
-        <div className="flex items-center justify-center py-8">
-          <LoaderCircle className="mr-2 size-6 animate-spin" />
-          <span>Processing file...</span>
-        </div>
-      )}
 
       {/* Parse Results */}
       {parseResult && !isLoading && (
@@ -197,12 +253,6 @@ export function ImportForm() {
         >
           Cancel
         </Button>
-
-        {parseResult && !parseResult.success && (
-          <Button variant="outline" onClick={handleReset} disabled={isLoading}>
-            Try Again
-          </Button>
-        )}
 
         {parseResult?.success && (
           <Button onClick={handleImport} disabled={isLoading}>
