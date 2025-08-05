@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { LoaderCircle, Trash } from "lucide-react";
+import { AlertCircle, Info, LoaderCircle, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +14,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 import { deleteHolding } from "@/server/holdings/delete";
 
@@ -56,24 +57,35 @@ export function DeleteHoldingDialog({
     <AlertDialog open={open} onOpenChange={onOpenChangeAction}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete Holding?</AlertDialogTitle>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <Trash2 className="size-5" /> Delete Holding
+          </AlertDialogTitle>
           <AlertDialogDescription>
             You are about to permanently delete &quot;{holding.name}&quot;. This
             action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="space-y-2">
-          <p>This will:</p>
-          <ul className="ml-6 list-disc space-y-1">
-            <li>Remove the holding from your portfolio</li>
-            <li>Delete all historical data records for this holding</li>
-            <li>Remove this holding from your net worth history</li>
-            <li>Recalculate your net worth history</li>
-          </ul>
-          <span className="text-destructive">
-            Consider archiving instead if you want to preserve the historical
-            data.
-          </span>
+          <Alert variant="destructive">
+            <AlertCircle className="size-4" />
+            <AlertTitle>This action will:</AlertTitle>
+            <AlertDescription>
+              <ul className="list-inside list-disc space-y-1">
+                <li>Remove the holding from your portfolio</li>
+                <li>Delete all historical data records for this holding</li>
+                <li>Remove this holding from your net worth history</li>
+                <li>Recalculate your net worth history</li>
+              </ul>
+            </AlertDescription>
+          </Alert>
+          <Alert>
+            <Info className="size-4" />
+            <AlertTitle>Consider archiving instead</AlertTitle>
+            <AlertDescription>
+              If you want to preserve the historical data, consider archiving
+              instead.
+            </AlertDescription>
+          </Alert>
         </div>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
@@ -88,7 +100,7 @@ export function DeleteHoldingDialog({
               </>
             ) : (
               <>
-                <Trash className="size-4" /> Delete
+                <Trash2 className="size-4" /> Delete
               </>
             )}
           </Button>

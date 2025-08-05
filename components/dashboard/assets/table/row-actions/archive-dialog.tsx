@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
-import { LoaderCircle, Archive } from "lucide-react";
+import { LoaderCircle, Archive, Info } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 import { archiveHolding } from "@/server/holdings/archive";
 
@@ -56,21 +58,34 @@ export function ArchiveHoldingDialog({
     <AlertDialog open={open} onOpenChange={onOpenChangeAction}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Archive Holding?</AlertDialogTitle>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <Archive className="size-5" /> Archive Holding
+          </AlertDialogTitle>
           <AlertDialogDescription>
             You are about to archive &quot;{holding.name}&quot;.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="space-y-2">
-          <p>This will:</p>
-          <ul className="ml-6 list-disc space-y-1">
-            <li>Hide the holding from your main portfolio view</li>
-            <li>Preserve all historical data</li>
-          </ul>
-          <span className="text-muted-foreground">
-            You can restore this holding later from the archived holdings
-            section.
-          </span>
+          <Alert>
+            <Info className="size-4" />
+            <AlertTitle>This action will:</AlertTitle>
+            <AlertDescription>
+              <ul className="list-inside list-disc space-y-1">
+                <li>Hide the holding from your main portfolio view</li>
+                <li>Preserve all historical data</li>
+              </ul>
+            </AlertDescription>
+          </Alert>
+          <p className="text-muted-foreground text-sm">
+            Restore this holding anytime from the{" "}
+            <Link
+              href="/dashboard/assets/archived"
+              className="text-primary underline-offset-2 hover:underline"
+            >
+              archived holdings
+            </Link>{" "}
+            page.
+          </p>
         </div>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
