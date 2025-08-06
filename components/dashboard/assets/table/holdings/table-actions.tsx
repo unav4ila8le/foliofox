@@ -15,7 +15,11 @@ import { ExportDialog } from "@/components/dashboard/assets/export/dialog";
 
 import { useImportHoldingsDialog } from "@/components/dashboard/assets/import";
 
-export function TableActionsDropdown() {
+export function TableActionsDropdown({
+  holdingsCount,
+}: {
+  holdingsCount?: number;
+}) {
   const [showExportDialog, setShowExportDialog] = useState(false);
 
   const { setOpen: setOpenImportHoldingsDialog } = useImportHoldingsDialog();
@@ -33,7 +37,10 @@ export function TableActionsDropdown() {
           <DropdownMenuItem onSelect={() => setOpenImportHoldingsDialog(true)}>
             <Upload className="size-4" /> Import from CSV
           </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => setShowExportDialog(true)}>
+          <DropdownMenuItem
+            onSelect={() => setShowExportDialog(true)}
+            disabled={!holdingsCount || holdingsCount === 0}
+          >
             <Download className="size-4" /> Export
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
@@ -48,6 +55,7 @@ export function TableActionsDropdown() {
       <ExportDialog
         open={showExportDialog}
         onOpenChange={setShowExportDialog}
+        holdingsCount={holdingsCount}
       />
     </>
   );

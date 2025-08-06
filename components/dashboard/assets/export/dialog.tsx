@@ -21,9 +21,14 @@ import { exportHoldings } from "@/server/holdings/export";
 interface ExportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  holdingsCount?: number;
 }
 
-export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
+export function ExportDialog({
+  open,
+  onOpenChange,
+  holdingsCount,
+}: ExportDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleExport = async () => {
@@ -112,11 +117,13 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
           <Button onClick={handleExport} disabled={isLoading}>
             {isLoading ? (
               <>
-                <LoaderCircle className="size-4 animate-spin" /> Exporting...
+                <LoaderCircle className="size-4 animate-spin" />
+                Exporting...
               </>
             ) : (
               <>
-                <Download className="size-4" /> Export
+                <Download className="size-4" />
+                Export {holdingsCount || 0} holding(s)
               </>
             )}
           </Button>

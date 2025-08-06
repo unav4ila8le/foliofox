@@ -54,7 +54,7 @@ export function HoldingsTables({ data }: { data: HoldingWithProfitLoss[] }) {
           onChange={(e) => setFilterValue(e.target.value)}
         />
         <NewHoldingButton variant="outline" />
-        <TableActionsDropdown />
+        <TableActionsDropdown holdingsCount={data.length} />
       </div>
 
       {data.length === 0 ? (

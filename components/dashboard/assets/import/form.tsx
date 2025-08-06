@@ -283,7 +283,7 @@ export function ImportForm() {
             ) : (
               <>
                 <Upload className="size-4" />
-                Import {parseResult.data?.length} holdings
+                Import {parseResult.data?.length} holding(s)
               </>
             )}
           </Button>
