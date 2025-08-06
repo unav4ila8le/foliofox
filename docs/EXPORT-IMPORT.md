@@ -43,9 +43,9 @@ name,category_code,currency,current_quantity,current_unit_value,symbol_id,descri
 
 **Tasks:**
 
-- [ ] **2.1** CSV parsing and validation
-- [ ] **2.2** Import processing using existing `createHolding()`
-- [ ] **2.3** Import UI
+- [x] **2.1** CSV parsing and validation
+- [x] **2.2** Import processing using existing `createHolding()`
+- [x] **2.3** Import UI
 
 ---
 
@@ -89,8 +89,8 @@ export async function importHoldings(csvContent: string) {
 ## ✅ Success Metrics
 
 - [x] Phase 1: Holdings export working in 1-2 days
-- [ ] Phase 2: Holdings import working in 3-4 days
-- [ ] User can: Export → Edit → Import successfully
-- [ ] Clean foundation for advanced export options
+- [x] Phase 2: Holdings import working in 3-4 days
+- [x] User can: Export → Edit → Import successfully
+- [x] Clean foundation for advanced export options
 
 **Next Steps:** Start with holdings export using current values from `fetchHoldings()`.

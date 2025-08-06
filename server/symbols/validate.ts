@@ -53,6 +53,7 @@ export async function validateSymbol(symbolId: string) {
       error: `Symbol "${symbolId}" not found in Yahoo Finance`,
     };
   } catch (error) {
+    console.error(`Unexpected error validating symbol "${symbolId}":`, error);
     return {
       valid: false,
       error: `Failed to validate symbol "${symbolId}": ${error instanceof Error ? error.message : "Unknown error"}`,
