@@ -1,5 +1,6 @@
 import { fetchAssetCategories } from "@/server/asset-categories/fetch";
 import { fetchCurrencies } from "@/server/currencies/fetch";
+import { validateSymbolsBatch } from "@/server/symbols/validate";
 
 /**
  * Parse CSV content and validate it against expected holdings format
@@ -156,6 +157,47 @@ export async function parseHoldingsCSV(csvContent: string) {
 
       // Add holding to results
       parsedHoldings.push(holding);
+    }
+
+    // Validate symbols if any are provided
+    const symbolsToValidate = parsedHoldings
+      .map((h) => h.symbol_id)
+      .filter((s) => s && s.trim() !== "") as string[];
+
+    if (symbolsToValidate.length > 0) {
+      const symbolValidation = await validateSymbolsBatch(symbolsToValidate);
+
+      if (!symbolValidation.valid) {
+        // Add symbol validation errors to the errors array
+        symbolValidation.errors.forEach((error) => errors.push(error));
+      }
+
+      // Update normalized symbols in the parsed holdings
+      parsedHoldings.forEach((holding) => {
+        if (holding.symbol_id) {
+          const validation = symbolValidation.results.get(holding.symbol_id);
+          if (validation?.valid && validation.normalized) {
+            holding.symbol_id = validation.normalized;
+          }
+        }
+      });
+
+      // Validate that symbol currencies match CSV currencies
+      parsedHoldings.forEach((holding, index) => {
+        if (holding.symbol_id) {
+          const validation = symbolValidation.results.get(holding.symbol_id);
+          if (validation?.valid) {
+            // Get the symbol's actual currency from the validation result
+            const symbolCurrency = validation.currency; // We need to get the actual currency
+
+            if (symbolCurrency && symbolCurrency !== holding.currency) {
+              errors.push(
+                `Row ${index + 2}: Symbol "${holding.symbol_id}" uses ${symbolCurrency} currency, but CSV specifies ${holding.currency}`,
+              );
+            }
+          }
+        }
+      });
     }
 
     // Return all errors if any exist

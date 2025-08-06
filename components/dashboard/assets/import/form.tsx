@@ -14,6 +14,12 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 import { useImportHoldingsDialog } from "./index";
 import { parseHoldingsCSV } from "@/lib/csv-parser";
@@ -144,8 +150,20 @@ export function ImportForm() {
     <div className="space-y-4">
       <div className="text-muted-foreground text-sm">
         <span className="text-foreground font-medium">Required columns:</span>{" "}
-        name, category_code, currency, current_quantity, current_unit_value,
-        symbol_id, description.
+        name, category_code, currency, current_quantity, current_unit_value,{" "}
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="text-foreground inline-block cursor-help underline-offset-3 hover:underline">
+                symbol_id
+              </span>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">
+              Use Yahoo Finance ticker symbols (e.g., AAPL, MSFT, VWCE.DE).
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        , description.
       </div>
 
       {/* Dropzone Section */}
