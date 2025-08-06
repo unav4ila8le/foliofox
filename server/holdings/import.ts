@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { parseHoldingsCSV } from "@/lib/csv-parser";
+import { createSymbol } from "@/server/symbols/create";
 import { fetchSingleQuote } from "@/server/quotes/fetch";
 import { createHolding } from "@/server/holdings/create";
 
@@ -32,6 +33,16 @@ export async function importHoldings(csvContent: string) {
       let unitValue = holding.current_unit_value;
       if (holding.symbol_id && holding.symbol_id.trim() !== "") {
         try {
+          // 1. Create symbol first (this ensures it exists in the database)
+          const symbolResult = await createSymbol(holding.symbol_id);
+          if (!symbolResult.success) {
+            return {
+              success: false,
+              error: `Failed to create symbol ${holding.symbol_id}: ${symbolResult.message}`,
+            };
+          }
+
+          // 2. Now fetch the current market price
           unitValue = await fetchSingleQuote(holding.symbol_id);
         } catch (error) {
           console.error(

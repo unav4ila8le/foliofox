@@ -7,7 +7,7 @@ export const ASSET_CATEGORY_QUOTE_TYPES: Record<string, string[]> = {
   equity: ["EQUITY", "ETF"],
   fixed_income: ["MUTUALFUND", "ETF"],
   real_estate: [],
-  commodities: ["FUTURES", "ETF"],
+  commodities: ["FUTURE", "ETF"],
   cryptocurrency: ["CRYPTOCURRENCY"],
   other: [],
 };
