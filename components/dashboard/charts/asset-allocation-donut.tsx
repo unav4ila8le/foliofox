@@ -85,8 +85,8 @@ export function AssetAllocationDonut({
                     />
                   ))}
                   <Label
-                    position="center"
                     value={formatCompactCurrency(netWorth, currency)}
+                    position="center"
                     style={{
                       fontSize: "16px",
                       fontWeight: "bolder",
@@ -95,8 +95,8 @@ export function AssetAllocationDonut({
                     dy={-5}
                   />
                   <Label
-                    position="center"
                     value="Net Worth"
+                    position="center"
                     style={{
                       fontSize: "12px",
                       fill: "var(--muted-foreground)",
