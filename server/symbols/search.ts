@@ -11,7 +11,6 @@ const yahooFinance = new YahooFinance();
 const searchParamsSchema = z.object({
   query: z.string().min(1, { error: "Search query is required." }),
   limit: z.number().min(1).max(20).optional().default(10),
-  quoteTypes: z.array(z.string()).optional(),
 });
 
 type SearchParams = z.infer<typeof searchParamsSchema>;
@@ -31,16 +30,11 @@ export async function searchSymbols(params: SearchParams) {
     // Filter and transform the results to match Symbol type
     const symbols: Symbol[] = searchResults.quotes
       .filter((quote: Record<string, unknown>) => {
-        // If no quote types specified, include all
-        if (
-          !validatedParams.quoteTypes ||
-          validatedParams.quoteTypes.length === 0
-        ) {
-          return true;
-        }
-        // Filter to include any of the specified quote types
-        return validatedParams.quoteTypes.includes(
-          (quote.quoteType as string) || "",
+        // Only include quotes that have a valid symbol
+        return (
+          quote.symbol &&
+          typeof quote.symbol === "string" &&
+          quote.symbol.trim() !== ""
         );
       })
       .map((quote: Record<string, unknown>) => ({

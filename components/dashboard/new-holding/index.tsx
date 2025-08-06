@@ -11,8 +11,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
-import { NewHoldingForm } from "./form";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SymbolSearchForm } from "./forms/symbol-search-form";
+import { ManualEntryForm } from "./forms/manual-entry-form";
 
 import type { Profile } from "@/types/global.types";
 import type { VariantProps } from "class-variance-authority";
@@ -45,7 +46,22 @@ export function NewHoldingDialogProvider({
             <DialogTitle>New Holding</DialogTitle>
             <DialogDescription>Add a new holding.</DialogDescription>
           </DialogHeader>
-          <NewHoldingForm />
+          <Tabs defaultValue="symbol-search-form" className="gap-4">
+            <TabsList className="w-full">
+              <TabsTrigger value="symbol-search-form">
+                Search by Symbol
+              </TabsTrigger>
+              <TabsTrigger value="manual-entry-form">
+                Enter Manually
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="symbol-search-form">
+              <SymbolSearchForm />
+            </TabsContent>
+            <TabsContent value="manual-entry-form">
+              <ManualEntryForm />
+            </TabsContent>
+          </Tabs>
         </DialogContent>
       </Dialog>
     </NewHoldingDialogContext.Provider>

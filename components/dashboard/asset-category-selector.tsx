@@ -38,9 +38,14 @@ interface CategorySelectorProps {
     onChange: (value: string) => void;
   };
   id?: string;
+  disabled?: boolean;
 }
 
-export function AssetCategorySelector({ field, id }: CategorySelectorProps) {
+export function AssetCategorySelector({
+  field,
+  id,
+  disabled = false,
+}: CategorySelectorProps) {
   const [open, setOpen] = useState(false);
   const isMobile = useIsMobile();
 
@@ -60,6 +65,7 @@ export function AssetCategorySelector({ field, id }: CategorySelectorProps) {
             variant="outline"
             role="combobox"
             aria-expanded={open}
+            disabled={disabled}
             className={cn(
               "justify-between font-normal",
               !categoryName && "text-muted-foreground",
@@ -93,6 +99,7 @@ export function AssetCategorySelector({ field, id }: CategorySelectorProps) {
           variant="outline"
           role="combobox"
           aria-expanded={open}
+          disabled={disabled}
           className={cn(
             "justify-between font-normal",
             !categoryName && "text-muted-foreground",

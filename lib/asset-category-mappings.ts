@@ -3,13 +3,13 @@
  */
 
 export const ASSET_CATEGORY_QUOTE_TYPES: Record<string, string[]> = {
-  cash: [],
+  cash: ["CURRENCY", "MONEYMARKET"],
   equity: ["EQUITY", "ETF"],
-  fixed_income: ["MUTUALFUND", "ETF"],
-  real_estate: [],
-  commodities: ["FUTURE", "ETF"],
+  fixed_income: ["MUTUALFUND"],
+  real_estate: [], // No specific quoteType for REITs in Yahoo Finance, usually handled as EQUITY or ETF
+  commodities: ["FUTURE"],
   cryptocurrency: ["CRYPTOCURRENCY"],
-  other: [],
+  other: ["INDEX", "OPTION"], // Option and Index don’t neatly fit into the main categories
 };
 
 /**
@@ -26,6 +26,20 @@ export const CATEGORIES_WITH_SYMBOL_SEARCH = [
  * Categories that should hide quantity field (auto-set to 1)
  */
 export const CATEGORIES_WITH_HIDDEN_QUANTITY = ["cash", "real_estate"];
+
+/**
+ * Get category from Yahoo Finance quote type (reverse lookup)
+ */
+export function getCategoryFromQuoteType(quoteType: string): string | null {
+  for (const [category, quoteTypes] of Object.entries(
+    ASSET_CATEGORY_QUOTE_TYPES,
+  )) {
+    if (quoteTypes.includes(quoteType)) {
+      return category;
+    }
+  }
+  return null; // Return empty string if not found
+}
 
 export function getQuoteTypesForCategory(categoryCode: string): string[] {
   return ASSET_CATEGORY_QUOTE_TYPES[categoryCode] || [];
