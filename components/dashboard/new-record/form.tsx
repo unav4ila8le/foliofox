@@ -317,21 +317,19 @@ export function NewRecordForm() {
           )}
         />
 
-        {/* Footer */}
-        <div className="flex justify-end gap-2">
+        {/* Footer - Action buttons */}
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Button
             onClick={() => setOpen(false)}
             disabled={isLoading || isFetchingQuote}
             type="button"
             variant="secondary"
-            className="w-1/2 sm:w-auto"
           >
             Cancel
           </Button>
           <Button
             type="submit"
             disabled={isLoading || isFetchingQuote || !isDirty}
-            className="w-1/2 sm:w-auto"
           >
             {isLoading ? (
               <>

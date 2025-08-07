@@ -283,21 +283,19 @@ export function SymbolSearchForm() {
           )}
         />
 
-        {/* Action buttons */}
-        <div className="flex justify-end gap-2">
+        {/* Footer - Action buttons */}
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Button
             onClick={() => setOpen(false)}
             disabled={isLoading}
             type="button"
             variant="secondary"
-            className="w-1/2 sm:w-auto"
           >
             Cancel
           </Button>
           <Button
             disabled={isLoading || !isDirty || !isFormReady}
             type="submit"
-            className="w-1/2 sm:w-auto"
           >
             {isLoading ? (
               <>

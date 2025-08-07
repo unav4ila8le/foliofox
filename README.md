@@ -64,10 +64,9 @@ All formatting functions accept both numbers and strings as input. Currency form
 
 [x] Add percentages increase over the different time periods selected
 [x] Add financial data API to allow users to add financial instruments like stocks and other equities ( https://github.com/gadicc/node-yahoo-finance2 )
-[ ] Maybe use client for exchange rates, symbols and quotes (they are not private data)
 [x] Add disclaimer about the fact that exchange rates and market prices are not updated in real-time but rather updated daily (10PM UTC)
-[ ] Allow users to import CSV files
-[ ] Allow users to export their holdings
+[x] Allow users to import CSV files
+[x] Allow users to export their holdings
 [x] Change primary button in navbar to "New" with dropdown
 [x] Change order of new holding fields
 [x] Dynamic quantity fields
@@ -79,3 +78,5 @@ All formatting functions accept both numbers and strings as input. Currency form
 [ ] Add a dividends tracker. It should show the user the holdings that pay dividends, and their yearly/monthly expected dividend payout
 [ ] Add a way for the user to "share" their portfolio. Ideally, after agreeing, they get a public sharable link which leads to a single public page view of all their holdings and relevant performance charts.
 [x] Upgrade postgres version to 17 on Supabase
+[ ] Allow user to review their imports and tweak them
+[ ] Add news based on user's portfolio

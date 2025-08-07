@@ -263,8 +263,8 @@ export function ImportForm() {
         or export your existing holdings to see the correct format.
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex justify-end gap-2">
+      {/* Footer - Action buttons */}
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Button
           variant="outline"
           onClick={() => setOpen(false)}

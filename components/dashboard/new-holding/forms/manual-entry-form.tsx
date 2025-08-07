@@ -234,22 +234,17 @@ export function ManualEntryForm() {
           )}
         />
 
-        {/* Action buttons */}
-        <div className="flex justify-end gap-2">
+        {/* Footer - Action buttons */}
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Button
             onClick={() => setOpen(false)}
             disabled={isLoading}
             type="button"
             variant="secondary"
-            className="w-1/2 sm:w-auto"
           >
             Cancel
           </Button>
-          <Button
-            disabled={isLoading || !isDirty}
-            type="submit"
-            className="w-1/2 sm:w-auto"
-          >
+          <Button disabled={isLoading || !isDirty} type="submit">
             {isLoading ? (
               <>
                 <LoaderCircle className="animate-spin" />
