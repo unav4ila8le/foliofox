@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/tooltip";
 
 import { useImportHoldingsDialog } from "./index";
+import { useAssetCategories } from "@/hooks/client/use-asset-categories";
 import { parseHoldingsCSV } from "@/lib/csv-parser";
 import { importHoldings } from "@/server/holdings/import";
 import { cn } from "@/lib/utils";
@@ -30,6 +31,7 @@ type ParseResult = Awaited<ReturnType<typeof parseHoldingsCSV>>;
 
 export function ImportForm() {
   const { setOpen, open } = useImportHoldingsDialog();
+  const { categories } = useAssetCategories();
 
   // State for the entire import flow
   const [isProcessing, setIsProcessing] = useState(false);
@@ -150,7 +152,21 @@ export function ImportForm() {
     <div className="space-y-4">
       <div className="text-muted-foreground text-sm">
         <span className="text-foreground font-medium">Required columns:</span>{" "}
-        name, category_code, currency, current_quantity, current_unit_value,{" "}
+        name,{" "}
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="text-foreground inline-block cursor-help underline-offset-3 hover:underline">
+                category_code
+              </span>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">
+              Available categories:{" "}
+              {categories.map((category) => category.code).join(", ")}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        , currency, current_quantity, current_unit_value,{" "}
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>

@@ -107,7 +107,9 @@ export async function parseHoldingsCSV(csvContent: string) {
       // Convert string values to proper types using column mapping
       const holding: CSVHoldingRow = {
         name: values[columnMap.get("name")!] || "",
-        category_code: values[columnMap.get("category_code")!] || "",
+        category_code: (
+          values[columnMap.get("category_code")!] || ""
+        ).toLowerCase(),
         currency: values[columnMap.get("currency")!] || "",
         current_quantity:
           parseFloat(values[columnMap.get("current_quantity")!]) || 0,
