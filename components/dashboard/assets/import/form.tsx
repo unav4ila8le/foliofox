@@ -92,8 +92,9 @@ export function ImportForm() {
       onDropRejected,
       accept: {
         "text/csv": [".csv"],
+        "text/tab-separated-values": [".tsv"],
+        "text/plain": [".csv", ".tsv"],
         "application/vnd.ms-excel": [".csv"],
-        "text/plain": [".csv"],
       },
       maxSize: 5 * 1024 * 1024, // 5MB
       multiple: false,

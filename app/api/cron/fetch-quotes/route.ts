@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     // 4. Fetch all symbol IDs from database
     const symbolIds = await fetchSymbols();
     if (symbolIds.length === 0) {
-      console.log("No symbols found in database");
+      console.warn("No symbols found in database");
       return NextResponse.json({
         success: true,
         message: "No symbols to fetch",

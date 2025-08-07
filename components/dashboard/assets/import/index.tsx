@@ -43,8 +43,8 @@ export function ImportHoldingsDialogProvider({
               Import Holdings
             </DialogTitle>
             <DialogDescription>
-              Upload a CSV file to import your holdings. The first row should
-              contain the headers exactly as shown below.
+              Upload a CSV or TSV file to import your holdings. The first row
+              should contain the headers exactly as shown below.
             </DialogDescription>
           </DialogHeader>
           <ImportForm />

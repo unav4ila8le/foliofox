@@ -21,6 +21,30 @@ export interface CSVHoldingRow {
 }
 
 /**
+ * Detect the delimiter used in the file (comma, tab, or semicolon).
+ * @param content - File content to analyze
+ * @returns The detected delimiter
+ */
+function detectDelimiter(content: string): string {
+  const firstLine = content.split("\n")[0];
+
+  const counts = {
+    comma: (firstLine.match(/,/g) || []).length,
+    tab: (firstLine.match(/\t/g) || []).length,
+    semicolon: (firstLine.match(/;/g) || []).length,
+  };
+
+  // Determine the highest count
+  const maxCount = Math.max(counts.comma, counts.tab, counts.semicolon);
+
+  if (maxCount === 0) return ","; // Default fallback
+
+  if (counts.tab === maxCount) return "\t";
+  if (counts.semicolon === maxCount) return ";";
+  return ",";
+}
+
+/**
  * Parse CSV text into structured data
  * @param csvContent - Raw CSV text from uploaded file
  * @returns Parsed holdings data or error details
@@ -43,6 +67,9 @@ export async function parseHoldingsCSV(csvContent: string) {
       supportedCategories,
       supportedCurrencies,
     };
+
+    // Detect delimiter first
+    const delimiter = detectDelimiter(csvContent);
 
     // Split content into lines and remove empty lines
     const lines = csvContent
@@ -72,7 +99,7 @@ export async function parseHoldingsCSV(csvContent: string) {
 
     // Parse header row and clean up quotes, convert to lowercase
     const actualHeaders = headerRow
-      .split(",")
+      .split(delimiter)
       .map((h) => h.trim().replace(/"/g, "").toLowerCase());
 
     // Check if all required columns are present
@@ -104,7 +131,7 @@ export async function parseHoldingsCSV(csvContent: string) {
       const rowNumber = i + 2; // +2 because we skip header and arrays start at 0
 
       // Parse CSV row (handles quoted values with commas inside)
-      const values = parseCSVRow(row);
+      const values = parseCSVRow(row, delimiter);
 
       // Check if row has correct number of columns
       if (values.length !== expectedHeaders.length) {
@@ -202,9 +229,10 @@ export async function parseHoldingsCSV(csvContent: string) {
 /**
  * Parse a single CSV row, handling quoted values with commas inside
  * @param row - Single CSV row as string
+ * @param delimiter - The delimiter to use
  * @returns Array of clean values
  */
-function parseCSVRow(row: string): string[] {
+function parseCSVRow(row: string, delimiter: string): string[] {
   const values: string[] = [];
   let currentValue = "";
   let insideQuotes = false;
@@ -221,8 +249,8 @@ function parseCSVRow(row: string): string[] {
         // Toggle quote state (entering or leaving quotes)
         insideQuotes = !insideQuotes;
       }
-    } else if (char === "," && !insideQuotes) {
-      // End of value (comma outside quotes)
+    } else if (char === delimiter && !insideQuotes) {
+      // End of value (delimiter outside quotes)
       values.push(currentValue.trim());
       currentValue = "";
     } else {
