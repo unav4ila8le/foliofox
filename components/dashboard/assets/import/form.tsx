@@ -23,7 +23,7 @@ import {
 
 import { useImportHoldingsDialog } from "./index";
 import { useAssetCategories } from "@/hooks/client/use-asset-categories";
-import { parseHoldingsCSV } from "@/lib/csv-parser";
+import { parseHoldingsCSV } from "@/lib/csv-parser/index";
 import { importHoldings } from "@/server/holdings/import";
 import { cn } from "@/lib/utils";
 

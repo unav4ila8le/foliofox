@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { parseHoldingsCSV } from "@/lib/csv-parser";
+import { parseHoldingsCSV } from "@/lib/csv-parser/index";
 import { createSymbol } from "@/server/symbols/create";
 import { fetchSingleQuote } from "@/server/quotes/fetch";
 import { createHolding } from "@/server/holdings/create";

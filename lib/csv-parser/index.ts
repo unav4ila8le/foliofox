@@ -1,3 +1,6 @@
+import { mapCategory } from "./category-mapper";
+import { validateHolding, validateSymbolCurrency } from "./validation";
+
 import { fetchAssetCategories } from "@/server/asset-categories/fetch";
 import { fetchCurrencies } from "@/server/currencies/fetch";
 import { validateSymbolsBatch } from "@/server/symbols/validate";
@@ -6,8 +9,8 @@ import { validateSymbolsBatch } from "@/server/symbols/validate";
  * Parse CSV content and validate it against expected holdings format
  */
 
-// Define the expected CSV structure that matches our export format
-interface CSVHoldingRow {
+// Define and export the expected CSV structure that matches our export format
+export interface CSVHoldingRow {
   name: string;
   category_code: string;
   currency: string;
@@ -35,6 +38,12 @@ export async function parseHoldingsCSV(csvContent: string) {
     const categories = await fetchAssetCategories();
     const supportedCategories = categories.map((c) => c.code);
 
+    // Create context for validation
+    const validationContext = {
+      supportedCategories,
+      supportedCurrencies,
+    };
+
     // Split content into lines and remove empty lines
     const lines = csvContent
       .split("\n")
@@ -61,10 +70,10 @@ export async function parseHoldingsCSV(csvContent: string) {
       "description",
     ];
 
-    // Parse header row and clean up quotes
+    // Parse header row and clean up quotes, convert to lowercase
     const actualHeaders = headerRow
       .split(",")
-      .map((h) => h.trim().replace(/"/g, ""));
+      .map((h) => h.trim().replace(/"/g, "").toLowerCase());
 
     // Check if all required columns are present
     const missingHeaders = expectedHeaders.filter(
@@ -80,6 +89,7 @@ export async function parseHoldingsCSV(csvContent: string) {
       };
     }
 
+    // Create column mapping
     const columnMap = new Map<string, number>();
     actualHeaders.forEach((header, index) => {
       columnMap.set(header, index);
@@ -107,10 +117,8 @@ export async function parseHoldingsCSV(csvContent: string) {
       // Convert string values to proper types using column mapping
       const holding: CSVHoldingRow = {
         name: values[columnMap.get("name")!] || "",
-        category_code: (
-          values[columnMap.get("category_code")!] || ""
-        ).toLowerCase(),
-        currency: values[columnMap.get("currency")!] || "",
+        category_code: mapCategory(values[columnMap.get("category_code")!]),
+        currency: (values[columnMap.get("currency")!] || "").toUpperCase(),
         current_quantity:
           parseFloat(values[columnMap.get("current_quantity")!]) || 0,
         current_unit_value:
@@ -120,42 +128,12 @@ export async function parseHoldingsCSV(csvContent: string) {
       };
 
       // Validate all required fields
-      if (!holding.name.trim()) {
-        errors.push(`Row ${rowNumber}: Name is required`);
-      }
-
-      if (!holding.category_code.trim()) {
-        errors.push(`Row ${rowNumber}: Category is required`);
-      } else if (!supportedCategories.includes(holding.category_code)) {
-        const availableCategories = supportedCategories.join(", ");
-        errors.push(
-          `Row ${rowNumber}: Category "${holding.category_code}" is not supported. Available categories: ${availableCategories}`,
-        );
-      }
-
-      if (!holding.currency.trim()) {
-        errors.push(`Row ${rowNumber}: Currency is required`);
-      } else {
-        if (holding.currency.length !== 3) {
-          errors.push(
-            `Row ${rowNumber}: Currency must be 3-character ISO 4217 code (e.g., USD, EUR, GBP)`,
-          );
-        } else if (
-          !supportedCurrencies.includes(holding.currency.toUpperCase())
-        ) {
-          errors.push(
-            `Row ${rowNumber}: Currency "${holding.currency}" is not supported`,
-          );
-        }
-      }
-
-      if (holding.current_quantity < 0) {
-        errors.push(`Row ${rowNumber}: Quantity must be 0 or greater`);
-      }
-
-      if (holding.current_unit_value < 0) {
-        errors.push(`Row ${rowNumber}: Unit value must be 0 or greater`);
-      }
+      const validationErrors = validateHolding(
+        holding,
+        rowNumber,
+        validationContext,
+      );
+      errors.push(...validationErrors);
 
       // Add holding to results
       parsedHoldings.push(holding);
@@ -188,15 +166,13 @@ export async function parseHoldingsCSV(csvContent: string) {
       parsedHoldings.forEach((holding, index) => {
         if (holding.symbol_id) {
           const validation = symbolValidation.results.get(holding.symbol_id);
-          if (validation?.valid) {
-            // Get the symbol's actual currency from the validation result
-            const symbolCurrency = validation.currency; // We need to get the actual currency
-
-            if (symbolCurrency && symbolCurrency !== holding.currency) {
-              errors.push(
-                `Row ${index + 2}: Symbol "${holding.symbol_id}" uses ${symbolCurrency} currency, but CSV specifies ${holding.currency}`,
-              );
-            }
+          if (validation?.valid && validation.currency) {
+            const currencyErrors = validateSymbolCurrency(
+              holding,
+              index + 2,
+              validation.currency,
+            );
+            errors.push(...currencyErrors);
           }
         }
       });
