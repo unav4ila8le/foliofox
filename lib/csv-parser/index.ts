@@ -74,7 +74,7 @@ export async function parseHoldingsCSV(csvContent: string) {
     // Split content into lines and remove empty lines
     const lines = csvContent
       .split("\n")
-      .map((line) => line.trim())
+      .map((line) => line.replace(/\r$/, ""))
       .filter((line) => line.length > 0);
 
     // Must have at least header + 1 data row
@@ -137,7 +137,9 @@ export async function parseHoldingsCSV(csvContent: string) {
       if (values.length !== expectedHeaders.length) {
         return {
           success: false,
-          error: `Row ${rowNumber}: Expected ${expectedHeaders.length} columns, got ${values.length}`,
+          errors: [
+            `Row ${rowNumber}: Expected ${expectedHeaders.length} columns, got ${values.length}`,
+          ],
         };
       }
 
@@ -223,7 +225,9 @@ export async function parseHoldingsCSV(csvContent: string) {
     console.error("Unexpected error during CSV parsing:", error);
     return {
       success: false,
-      error: `Failed to parse CSV: ${error instanceof Error ? error.message : "Unknown error"}`,
+      errors: [
+        `Failed to parse CSV: ${error instanceof Error ? error.message : "Unknown error"}`,
+      ], // Array instead of string
     };
   }
 }
