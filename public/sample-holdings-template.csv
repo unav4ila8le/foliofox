@@ -1,22 +1,13 @@
 name,category_code,currency,current_quantity,current_unit_value,symbol_id,description
-Emergency Fund,cash,USD,5000,1.00,,High-yield savings account
-HK Dollar Cash,cash,HKD,15000,1.00,,Hong Kong bank account
-Apple Inc,equity,USD,25,192.53,AAPL,Technology stock
-Microsoft Corporation,equity,USD,15,378.85,MSFT,Technology stock
-Tesla Inc,equity,USD,8,248.42,TSLA,Electric vehicle company
-Alphabet Inc,equity,USD,12,142.56,GOOGL,Search and cloud services
-NVIDIA Corporation,equity,USD,10,875.28,NVDA,AI and graphics chips
-S&P 500 ETF,equity,USD,50,445.12,SPY,Broad market index fund
-Total Stock Market ETF,equity,USD,30,241.67,VTI,Total US stock market
-Tencent Holdings,equity,HKD,100,320.50,0700.HK,Chinese technology company
-Vanguard Total Bond Market,equity,USD,100,78.45,BND,US aggregate bond fund ETF
-Corporate Bond Fund,fixed_income,USD,50,98.75,VCIT,Investment grade corporate bonds
-Realty Income Corporation,equity,USD,75,56.23,O,Monthly dividend REIT
-Main Residence,real_estate,USD,1,450000.00,,Primary family home
-Rental Property,real_estate,HKD,1,3200000.00,,Hong Kong investment property
-Bitcoin,cryptocurrency,USD,0.25,67240.00,BTC-USD,Digital currency
-Ethereum,cryptocurrency,USD,2.1,3456.78,ETH-USD,Smart contract platform
-Gold ETF,equity,USD,40,198.76,GLD,Physical gold exposure ETF
-Crude Oil ETF,equity,USD,25,76.45,USO,Crude oil commodity ETF
-Physical Silver,commodities,USD,50,24.85,SI=F,Silver futures/physical silver
-Collectible Watches,other,USD,3,3500.00,,Luxury timepiece collection
+Emergency Fund,cash,USD,5000.0,1,,High-yield savings account
+Checking Account,cash,EUR,3000.0,1,,Daily bank account
+Apple Inc,equity,USD,10.0,,AAPL,
+SoftBank,equity,JPY,50.0,,9984.T,
+iShares Core MSCI World,equity,EUR,20.0,,IWRD.AS,
+US Treasury Bond,fixed_income,USD,10000.0,1.01,,10Y treasury
+Corporate Bond Fund,fixed_income,EUR,2000.0,1.03,,EUR investment-grade bonds
+Hong Kong Apartment,real_estate,HKD,1.0,8200000,,Residential property in HK
+Bitcoin Wallet,cryptocurrency,USD,0.35,,BTC-USD,
+Ethereum Wallet,cryptocurrency,USD,1.25,,ETH-USD,
+Gold ETF,commodities,HKD,15.0,,2840.HK,
+Art Collection,other,USD,1.0,50000,,Paintings and collectibles

@@ -47,7 +47,7 @@ export function validateHolding(
     }
   }
 
-  // Validate numeric fields
+  // Validate quantity
   if (isNaN(holding.current_quantity)) {
     errors.push(
       `Row ${rowNumber}: Quantity must be a valid number (e.g. 16.2)`,
@@ -56,12 +56,23 @@ export function validateHolding(
     errors.push(`Row ${rowNumber}: Quantity must be 0 or greater`);
   }
 
-  if (isNaN(holding.current_unit_value)) {
-    errors.push(
-      `Row ${rowNumber}: Unit value must be a valid number (e.g. 4420.69)`,
-    );
-  } else if (holding.current_unit_value < 0) {
-    errors.push(`Row ${rowNumber}: Unit value must be 0 or greater`);
+  // Validate unit value
+  if (holding.symbol_id && holding.symbol_id.trim() !== "") {
+    // For holdings with symbols, unit value is optional (will be fetched from market)
+    if (!isNaN(holding.current_unit_value) && holding.current_unit_value < 0) {
+      errors.push(
+        `Row ${rowNumber}: Unit value must be 0 or greater (if provided)`,
+      );
+    }
+  } else {
+    // For holdings without symbols, unit value is required
+    if (isNaN(holding.current_unit_value)) {
+      errors.push(
+        `Row ${rowNumber}: Unit value must be a valid number (e.g. 4420.69)`,
+      );
+    } else if (holding.current_unit_value < 0) {
+      errors.push(`Row ${rowNumber}: Unit value must be 0 or greater`);
+    }
   }
 
   return errors;
