@@ -146,10 +146,12 @@ export async function parseHoldingsCSV(csvContent: string) {
         name: values[columnMap.get("name")!] || "",
         category_code: mapCategory(values[columnMap.get("category_code")!]),
         currency: (values[columnMap.get("currency")!] || "").toUpperCase(),
-        current_quantity:
-          parseFloat(values[columnMap.get("current_quantity")!]) || 0,
-        current_unit_value:
-          parseFloat(values[columnMap.get("current_unit_value")!]) || 0,
+        current_quantity: parseFloat(
+          values[columnMap.get("current_quantity")!],
+        ),
+        current_unit_value: parseFloat(
+          values[columnMap.get("current_unit_value")!],
+        ),
         symbol_id: values[columnMap.get("symbol_id")!] || null,
         description: values[columnMap.get("description")!] || null,
       };

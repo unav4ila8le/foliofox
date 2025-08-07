@@ -48,11 +48,19 @@ export function validateHolding(
   }
 
   // Validate numeric fields
-  if (holding.current_quantity < 0) {
+  if (isNaN(holding.current_quantity)) {
+    errors.push(
+      `Row ${rowNumber}: Quantity must be a valid number (e.g. 16.2)`,
+    );
+  } else if (holding.current_quantity < 0) {
     errors.push(`Row ${rowNumber}: Quantity must be 0 or greater`);
   }
 
-  if (holding.current_unit_value < 0) {
+  if (isNaN(holding.current_unit_value)) {
+    errors.push(
+      `Row ${rowNumber}: Unit value must be a valid number (e.g. 4420.69)`,
+    );
+  } else if (holding.current_unit_value < 0) {
     errors.push(`Row ${rowNumber}: Unit value must be 0 or greater`);
   }
 
