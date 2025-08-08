@@ -35,7 +35,9 @@ const HEADER_ALIASES: Record<CanonicalHeader, string[]> = {
     "security description",
     "security name",
     "investment",
+    "investment name",
     "instrument",
+    "instrument name",
     "holding",
     "description",
   ],
@@ -100,6 +102,7 @@ const HEADER_ALIASES: Record<CanonicalHeader, string[]> = {
 
   // Optional category hints (not required; we can infer later)
   category_code: [
+    "category_code",
     "category",
     "asset class",
     "asset type",
