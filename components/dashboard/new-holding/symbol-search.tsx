@@ -210,7 +210,21 @@ function SymbolList({
             <CommandItem
               key={symbol.id}
               onSelect={() => handleSymbolSelect(symbol)}
-              value={symbol.id}
+              value={[
+                symbol.id,
+                symbol.short_name ?? "",
+                symbol.long_name ?? "",
+                symbol.exchange ?? "",
+              ]
+                .filter(Boolean)
+                .join(" ")
+                .replace(/\s+/g, " ")}
+              keywords={[
+                symbol.id,
+                symbol.short_name ?? "",
+                symbol.long_name ?? "",
+                symbol.exchange ?? "",
+              ].filter(Boolean)}
               disabled={isLoadingQuote}
             >
               {symbol.id} - {symbol.long_name || symbol.short_name}

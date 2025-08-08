@@ -40,10 +40,6 @@ export async function searchSymbols(params: SearchParams) {
       .map((quote: Record<string, unknown>) => ({
         id: quote.symbol as string,
         quote_type: quote.quoteType as string,
-        name:
-          (quote.shortname as string) ||
-          (quote.longname as string) ||
-          (quote.symbol as string),
         short_name: (quote.shortname as string) || null,
         long_name: (quote.longname as string) || null,
         exchange:
