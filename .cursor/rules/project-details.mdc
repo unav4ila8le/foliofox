@@ -8,15 +8,17 @@ Patrivio - Project Details
 
 ## Overview
 
-Patrivio is a privacy-focused portfolio inteligence and net worth tracking app. Users can track assets, liabilities, and net worth over time, with multi-currency support and clear visualizations. The app is designed for personal use, with future extensibility in mind, includive AI for portfolio advisory.
+Patrivio is a privacy-focused portfolio intelligence and net worth tracking app. Users can track assets, liabilities, and net worth over time with multi-currency support and clear visualizations. The app is designed for personal use, with future extensibility in mind, including AI for portfolio advisory.
 
 ## Tech Stack
 
 - **Framework:** Next.js 15 (App Router)
 - **Language:** TypeScript (strict mode)
 - **Database:** Supabase (Postgres, Auth)
-- **Styling:** Tailwind CSS
-- **Deployment:** Vercel
+- **Styling:** Tailwind CSS, Shadcn UI
+- **Charting:** Recharts
+- **External Data:** Yahoo Finance v3 (quotes), Frankfurter API (FX)
+- **Deployment & Jobs:** Vercel, Vercel Cron
 
 ## Core Principles
 
@@ -26,33 +28,48 @@ Patrivio is a privacy-focused portfolio inteligence and net worth tracking app. 
 
 ## Key Features
 
-- Track net worth over time with interactive charts
-- Multi-currency support with daily exchange rates
-- Manual entry and editing of assets.
-- Asset categories: Cash, Investments, Crypto, Real Estate, Metals, Luxury, etc.
+- Track net worth over time with interactive charts (1m, 3m, 6m, YTD)
+- Multi-currency with daily exchange rates (one-day data lag)
+- Manual entry and market-priced holdings via symbols
+- CSV import/export with strict validation and helpful errors
+- Archive and restore holdings
 - Secure authentication and user profiles
 - Modular, type-safe codebase
 
 ## Data Model (Simplified)
 
 - **Holdings:** Assets and liabilities, grouped by category and currency
-- **Records:** Value and quantity updates
-- **Valuations:** Historical price/quantity snapshots for accurate net worth history
-- **Exchange Rates:** Daily rates for currency conversion
+- **Records:** Quantity and unit value snapshots (latest drives current state)
+- **Symbols:** Canonical instrument metadata (currency, exchange, quote type)
+- **Quotes:** Daily market prices cached by symbol and date
+- **Exchange Rates:** Daily USD-base FX rates cached by target currency and date
+- **Profiles, Asset Categories, Currencies:** User profile and reference data
+
+Notes:
+
+- Store all dates in UTC. Handle all monetary values as numbers; format only for display.
+- FX uses USD as base for caching and conversion.
 
 ## Development Guidelines
 
 - Follow `global-rules.mdc` for architecture, code style, and file structure.
-- Prioritize server components and functional programming patterns.
+- Prefer React Server Components; use Client Components only for browser APIs.
+- Keep server actions in `server/` with `"use server"`.
+- Use user-scoped Supabase client from `supabase/server.ts`; reserve `supabase/service.ts` (service role; bypasses RLS) for cron/admin tasks.
 - Use Zod for data validation.
-- Store all dates in UTC and all monetary values as numbers (format only for display).
 - Use ISO currency codes (USD, EUR, etc.) throughout.
+
+## Market & FX Data
+
+- Daily updates via cron endpoints `app/api/cron/fetch-quotes` and `app/api/cron/fetch-exchange-rates`, authorized with `Authorization: Bearer ${CRON_SECRET}`.
+- Refresh target: 22:00 UTC; UI indicates a one‑day delay.
+- Bulk fetching and DB caching: missing quotes/FX are fetched in batches and upserted for reuse by analysis.
 
 ## Not in Scope (MVP)
 
 - No automatic bank or brokerage integrations
 - No expense tracking or budgeting features
-- No real-time data feeds (periodic refreshes only)
+- No real-time data feeds (daily refreshes; no WebSockets)
 
 ## For More Details
 

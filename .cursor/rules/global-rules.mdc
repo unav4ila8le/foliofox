@@ -11,15 +11,17 @@ alwaysApply: true
 - Next.js 15 App Router application for net worth tracking
 - Stack: TypeScript, Supabase, Shadcn UI, Tailwind CSS
 - Deployment: Vercel
-- Data Strategy: Periodic refreshes and manual updates (no WebSocket)
+- Data Strategy: Daily cron refreshes for market/FX and manual updates (no WebSocket)
 
 ## Development Principles
 
 1. **Architecture**
    - Favor React Server Components (RSC) over Client Components
-   - Use 'nuqs' for URL state management
+   - Keep URL state minimal; prefer lightweight search param helpers when needed
    - Minimize 'use client' directives - only for Web API/browser features
    - Split complex features into modular components
+   - Keep server actions in `server/` with `"use server"`
+   - Supabase: use user-scoped client from `supabase/server.ts`; reserve service-role client from `supabase/service.ts` for cron/admin only (bypasses RLS)
 
 2. **TypeScript & Code Style**
    - Use TypeScript for all code with strict type checking
@@ -29,6 +31,8 @@ alwaysApply: true
    - Follow functional programming patterns
    - Avoid unnecessary class usage
    - Prefer maps or objects over enums
+   - Avoid wrapping async functions in explicit `new Promise`
+   - Prefer explicit named boolean flags (e.g., `includeRecords: true`) over positional booleans
 
 3. **File Structure**
 
@@ -88,12 +92,14 @@ alwaysApply: true
    - Store all dates in UTC
    - Handle all monetary values as numbers, format only for display
    - Use Zod for data validation
+   - Fetch quotes/FX in bulk and cache in DB; avoid N+1 network calls
 
 7. **Performance**
    - Implement Suspense boundaries for loading states
    - Use dynamic imports for heavy components
    - Optimize images with next/image
    - Monitor and optimize Core Web Vitals
+   - Batch external/database calls; reuse cached results (quotes, FX)
 
 8. **File Naming**
    - Use kebab-case for files and directories
