@@ -19,7 +19,7 @@ export async function importHoldings(csvContent: string) {
     if (!parseResult.success) {
       return {
         success: false,
-        error: parseResult.error,
+        error: (parseResult.errors ?? ["Failed to parse CSV"]).join("\n"),
       };
     }
 
