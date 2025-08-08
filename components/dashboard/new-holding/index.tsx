@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Search, PencilLine } from "lucide-react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -49,9 +49,11 @@ export function NewHoldingDialogProvider({
           <Tabs defaultValue="symbol-search-form" className="gap-4">
             <TabsList className="w-full">
               <TabsTrigger value="symbol-search-form">
+                <Search className="size-4" />
                 Search by Symbol
               </TabsTrigger>
               <TabsTrigger value="manual-entry-form">
+                <PencilLine className="size-4" />
                 Enter Manually
               </TabsTrigger>
             </TabsList>
