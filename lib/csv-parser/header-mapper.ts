@@ -45,6 +45,7 @@ const HEADER_ALIASES: Record<CanonicalHeader, string[]> = {
     "symbol_id",
     "symbol",
     "ticker",
+    "ticker symbol",
     "isin",
     "symbol/isin",
     "security id",
@@ -59,6 +60,7 @@ const HEADER_ALIASES: Record<CanonicalHeader, string[]> = {
     "shares",
     "amount",
     "position",
+    "qty",
   ],
 
   // Unit price (the per-unit value; for cash/physical, users often set quantity=1)
@@ -76,6 +78,8 @@ const HEADER_ALIASES: Record<CanonicalHeader, string[]> = {
     "price per share",
     "rate",
     "market price",
+    "average price",
+    "avg price",
   ],
 
   // Currency code (ISO 4217 where possible)
@@ -86,13 +90,23 @@ const HEADER_ALIASES: Record<CanonicalHeader, string[]> = {
     "portfolio currency",
     "trade currency",
     "holding currency",
+    "base currency",
+    "instrument currency",
+    "currency code",
   ],
 
   // Free-form note/description
   description: ["description", "notes", "comment", "memo", "details"],
 
   // Optional category hints (not required; we can infer later)
-  category_code: ["category", "asset class", "asset type", "type", "class"],
+  category_code: [
+    "category",
+    "asset class",
+    "asset type",
+    "asset category",
+    "type",
+    "class",
+  ],
 };
 
 const FLAT_HEADER_MAP: Record<string, CanonicalHeader> = {};
@@ -170,7 +184,7 @@ export const REQUIRED_HEADERS: CanonicalHeader[] = [
 export function hasRequiredHeaders(
   map: Map<CanonicalHeader, number>,
 ): { ok: true } | { ok: false; missing: CanonicalHeader[] } {
-  const missing = REQUIRED_HEADERS.filter((h) => !map.has(h));
+  const missing = REQUIRED_HEADERS.filter((headerName) => !map.has(headerName));
   if (missing.length === 0) return { ok: true };
   return { ok: false, missing };
 }

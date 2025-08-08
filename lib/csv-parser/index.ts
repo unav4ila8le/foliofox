@@ -226,9 +226,9 @@ export async function parseHoldingsCSV(csvContent: string) {
     // Parse each data row - continue even if headers are wrong to find all issues at once
     const parsedHoldings: CSVHoldingRow[] = [];
 
-    for (let i = 0; i < dataRows.length; i++) {
-      const rowNumber = i + 2; // +2 because we skip header and arrays start at 0
-      const values = dataRows[i];
+    for (let rowIndex = 0; rowIndex < dataRows.length; rowIndex++) {
+      const rowNumber = rowIndex + 2; // +2 because we skip header and arrays start at 0
+      const values = dataRows[rowIndex];
 
       // Safe reads for optional columns
       const categoryRaw = columnMap.has("category_code")
@@ -258,7 +258,7 @@ export async function parseHoldingsCSV(csvContent: string) {
       const holding: CSVHoldingRow = {
         name: nameValue,
         category_code: mapCategory(categoryRaw),
-        currency: (currencyRaw || "").toUpperCase(),
+        currency: (currencyRaw || "").trim().toUpperCase(),
         current_quantity: parseNumberStrict(
           values[columnMap.get("current_quantity")!],
         ),
