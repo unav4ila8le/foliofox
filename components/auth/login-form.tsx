@@ -31,7 +31,7 @@ import { login } from "@/server/auth/actions";
 
 const formSchema = z.object({
   email: z.email({ error: "Please enter a valid email address." }).trim(),
-  password: z.string(),
+  password: z.string().min(1, { error: "Password is required." }),
 });
 
 export function LoginForm() {
