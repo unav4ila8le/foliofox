@@ -37,6 +37,7 @@ const HEADER_ALIASES: Record<CanonicalHeader, string[]> = {
     "investment",
     "instrument",
     "holding",
+    "description",
   ],
 
   // Symbol or ISIN (we’ll validate/normalize later)
@@ -66,8 +67,11 @@ const HEADER_ALIASES: Record<CanonicalHeader, string[]> = {
     "price",
     "closing",
     "close",
+    "close price",
+    "closing price",
     "unit price",
     "last",
+    "last price",
     "price/share",
     "price per share",
     "rate",
@@ -158,7 +162,6 @@ export const REQUIRED_HEADERS: CanonicalHeader[] = [
   "name",
   "currency",
   "current_quantity",
-  "current_unit_value",
 ];
 
 /**
