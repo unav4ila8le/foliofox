@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -23,8 +23,6 @@ import { CurrencySelector } from "@/components/dashboard/currency-selector";
 import { useNewHoldingDialog } from "../index";
 
 import { createHolding } from "@/server/holdings/create";
-
-import { shouldHideQuantity } from "@/lib/asset-category-mappings";
 
 const formSchema = z.object({
   name: z
@@ -67,16 +65,6 @@ export function ManualEntryForm() {
 
   // Get isDirty state from formState
   const { isDirty } = form.formState;
-
-  // Watch category changes
-  const categoryCode = form.watch("category_code") || "";
-
-  // Auto-set quantity to 1 for categories that don't support (need) quantity
-  useEffect(() => {
-    if (categoryCode && shouldHideQuantity(categoryCode)) {
-      form.setValue("quantity", 1);
-    }
-  }, [categoryCode, form]);
 
   // Submit handler
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -190,30 +178,26 @@ export function ManualEntryForm() {
           />
 
           {/* Quantity */}
-          {!shouldHideQuantity(categoryCode) && (
-            <FormField
-              control={form.control}
-              name="quantity"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Current quantity</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="E.g., 10"
-                      type="number"
-                      {...field}
-                      value={
-                        field.value === 0
-                          ? ""
-                          : (field.value as number | string)
-                      }
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
+          <FormField
+            control={form.control}
+            name="quantity"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Current quantity</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="E.g., 10"
+                    type="number"
+                    {...field}
+                    value={
+                      field.value === 0 ? "" : (field.value as number | string)
+                    }
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
 
         {/* Description */}

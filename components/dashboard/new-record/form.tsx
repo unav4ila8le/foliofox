@@ -29,7 +29,6 @@ import { HoldingSelector } from "./holding-selector";
 import { useNewRecordDialog } from "./index";
 
 import { cn } from "@/lib/utils";
-import { shouldHideQuantity } from "@/lib/asset-category-mappings";
 
 import { createRecord } from "@/server/records/create";
 import { fetchSingleQuote } from "@/server/quotes/fetch";
@@ -120,13 +119,6 @@ export function NewRecordForm() {
       }
     }
   }, [selectedHolding, form, fetchQuoteForHolding]);
-
-  // Auto-set quantity to 1 for categories that don't support quantity
-  useEffect(() => {
-    if (selectedHolding && shouldHideQuantity(selectedHolding.category_code)) {
-      form.setValue("quantity", 1);
-    }
-  }, [selectedHolding, form]);
 
   // Re-fetch quote when date changes for symbol-based holdings
   const watchedDate = form.watch("date");
@@ -272,31 +264,27 @@ export function NewRecordForm() {
             )}
           />
 
-          {/* Quantity field - only show if category doesn't hide it */}
-          {!shouldHideQuantity(selectedHolding?.category_code || "") && (
-            <FormField
-              control={form.control}
-              name="quantity"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Quantity</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="E.g., 10"
-                      type="number"
-                      {...field}
-                      value={
-                        field.value === 0
-                          ? ""
-                          : (field.value as number | string)
-                      }
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
+          {/* Quantity field */}
+          <FormField
+            control={form.control}
+            name="quantity"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Quantity</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="E.g., 10"
+                    type="number"
+                    {...field}
+                    value={
+                      field.value === 0 ? "" : (field.value as number | string)
+                    }
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
 
         {/* Description field */}

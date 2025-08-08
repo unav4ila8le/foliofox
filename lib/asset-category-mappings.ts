@@ -20,8 +20,3 @@ export function getCategoryFromQuoteType(quoteType: string): string | null {
   }
   return null; // Return null if not found
 }
-
-// Categories that should hide quantity field in the manual entry form (auto-set to 1)
-export function shouldHideQuantity(categoryCode: string): boolean {
-  return ["cash", "real_estate"].includes(categoryCode);
-}
