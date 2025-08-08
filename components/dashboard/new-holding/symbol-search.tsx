@@ -226,18 +226,34 @@ function SymbolList({
                 symbol.exchange ?? "",
               ].filter(Boolean)}
               disabled={isLoadingQuote}
+              className="flex flex-row justify-between gap-4"
             >
-              {symbol.id} - {symbol.long_name || symbol.short_name}
-              {isLoadingQuote && value === symbol.id ? (
-                <LoaderCircle className="ml-auto animate-spin" />
-              ) : (
-                <Check
-                  className={cn(
-                    "ml-auto",
-                    value === symbol.id ? "opacity-100" : "opacity-0",
-                  )}
-                />
-              )}
+              <div className="flex flex-col">
+                <span>{symbol.id}</span>
+                <span className="text-muted-foreground text-xs">
+                  {symbol.short_name || symbol.long_name}
+                </span>
+              </div>
+              <div className="flex flex-row gap-2">
+                <div className="flex flex-col items-end">
+                  <span className="text-muted-foreground text-xs">
+                    {symbol.exchange}
+                  </span>
+                  <span className="text-muted-foreground text-xs">
+                    {symbol.quote_type}
+                  </span>
+                </div>
+                {isLoadingQuote && value === symbol.id ? (
+                  <LoaderCircle className="ml-auto animate-spin" />
+                ) : (
+                  <Check
+                    className={cn(
+                      "ml-auto",
+                      value === symbol.id ? "opacity-100" : "opacity-0",
+                    )}
+                  />
+                )}
+              </div>
             </CommandItem>
           ))}
         </CommandGroup>
