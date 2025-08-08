@@ -151,36 +151,42 @@ export function ImportForm() {
 
   return (
     <div className="space-y-4">
-      <div className="text-muted-foreground text-sm">
-        <span className="text-foreground font-medium">Required columns:</span>{" "}
-        name,{" "}
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="text-foreground inline-block cursor-help underline-offset-3 hover:underline">
-                category_code
-              </span>
-            </TooltipTrigger>
-            <TooltipContent className="max-w-xs">
-              Available categories:{" "}
-              {categories.map((category) => category.code).join(", ")}
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        , currency, current_quantity, current_unit_value,{" "}
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="text-foreground inline-block cursor-help underline-offset-3 hover:underline">
-                symbol_id
-              </span>
-            </TooltipTrigger>
-            <TooltipContent className="max-w-xs">
-              Use Yahoo Finance ticker symbols (e.g., AAPL, MSFT, VWCE.DE).
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        , description.
+      <div className="text-muted-foreground space-y-2 text-sm">
+        <p>
+          Upload a CSV or TSV file to import your holdings. The first row should
+          contain the headers exactly as shown below.
+        </p>
+        <p>
+          <span className="text-foreground font-medium">Required columns:</span>{" "}
+          name,{" "}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="text-foreground inline-block cursor-help underline-offset-3 hover:underline">
+                  category_code
+                </span>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                Available categories:{" "}
+                {categories.map((category) => category.code).join(", ")}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          , currency, current_quantity, current_unit_value,{" "}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="text-foreground inline-block cursor-help underline-offset-3 hover:underline">
+                  symbol_id
+                </span>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                Use Yahoo Finance ticker symbols (e.g., AAPL, MSFT, VWCE.DE).
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          , description.
+        </p>
       </div>
 
       {/* Dropzone Section */}

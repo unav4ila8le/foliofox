@@ -1,16 +1,16 @@
 "use client";
 
 import { createContext, useContext, useState } from "react";
-import { Upload } from "lucide-react";
+import { FileText, Sparkles, Upload } from "lucide-react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { ImportForm } from "./form";
 
@@ -42,12 +42,21 @@ export function ImportHoldingsDialogProvider({
               <Upload className="size-5" />
               Import Holdings
             </DialogTitle>
-            <DialogDescription>
-              Upload a CSV or TSV file to import your holdings. The first row
-              should contain the headers exactly as shown below.
-            </DialogDescription>
           </DialogHeader>
-          <ImportForm />
+          <Tabs defaultValue="csv-import" className="gap-4">
+            <TabsList className="w-full">
+              <TabsTrigger value="csv-import">
+                <FileText className="size-4" /> CSV Import
+              </TabsTrigger>
+              <TabsTrigger value="ai-import" disabled>
+                <Sparkles className="size-4" /> AI Import (Coming Soon)
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="csv-import">
+              <ImportForm />
+            </TabsContent>
+            <TabsContent value="ai-import">AI Import</TabsContent>
+          </Tabs>
         </DialogContent>
       </Dialog>
     </ImportDialogContext.Provider>
