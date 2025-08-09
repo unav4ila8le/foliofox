@@ -7,9 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "types:supabase": "npx supabase gen types typescript --project-id icnvjrvkdjtbnldhootf > types/database.types.ts"
+    "types:supabase": "supabase gen types typescript --project-id icnvjrvkdjtbnldhootf > types/database.types.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.0",
@@ -26,7 +27,7 @@
     "radix-ui": "^1.4.2",
     "react": "^19.1.0",
     "react-day-picker": "^9.7.0",
-    "react-dom": "^19.0.0",
+    "react-dom": "^19.1.0",
     "react-dropzone": "^14.3.8",
     "react-hook-form": "^7.55.0",
     "recharts": "^3.0.2",
@@ -44,7 +45,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "^15.2.1",
+    "eslint-config-next": "^15.4.1",
     "postcss": "^8",
     "prettier": "^3.5.2",
     "prettier-plugin-tailwindcss": "^0.6.11",
