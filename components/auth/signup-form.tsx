@@ -68,8 +68,8 @@ export function SignupForm() {
     setIsLoading(true);
     try {
       const formData = new FormData();
-      formData.append("email", values.email);
-      formData.append("username", values.username);
+      formData.append("email", values.email.trim().toLowerCase());
+      formData.append("username", values.username.trim());
       formData.append("password", values.password);
 
       const result = await signup(formData);

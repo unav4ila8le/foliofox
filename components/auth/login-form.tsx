@@ -51,7 +51,7 @@ export function LoginForm() {
     setIsLoading(true);
     try {
       const formData = new FormData();
-      formData.append("email", values.email);
+      formData.append("email", values.email.trim().toLowerCase());
       formData.append("password", values.password);
 
       const result = await login(formData);

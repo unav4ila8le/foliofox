@@ -26,8 +26,8 @@ export async function login(formData: FormData) {
 
   // Data is already validated in the form component
   const data = {
-    email: formData.get("email") as string,
-    password: formData.get("password") as string,
+    email: String(formData.get("email")).trim().toLowerCase(),
+    password: String(formData.get("password")),
   };
 
   const { error } = await supabase.auth.signInWithPassword(data);
@@ -47,11 +47,11 @@ export async function signup(formData: FormData) {
 
   // Data is already validated in the form component
   const data = {
-    email: formData.get("email") as string,
-    password: formData.get("password") as string,
+    email: String(formData.get("email")).trim().toLowerCase(),
+    password: String(formData.get("password")),
     options: {
       data: {
-        username: formData.get("username") as string,
+        username: String(formData.get("username")).trim(),
       },
     },
   };

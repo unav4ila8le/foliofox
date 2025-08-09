@@ -33,8 +33,10 @@ export async function updateProfile(formData: FormData) {
 
   // Data is already validated in the form component
   const data: Pick<Profile, "username" | "display_currency"> = {
-    username: formData.get("username") as string,
-    display_currency: formData.get("display_currency") as string,
+    username: String(formData.get("username")).trim(),
+    display_currency: String(formData.get("display_currency"))
+      .trim()
+      .toUpperCase(),
   };
 
   // Update profile

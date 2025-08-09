@@ -64,8 +64,11 @@ export function SettingsForm({ profile, onSuccess, email }: SettingsFormProps) {
     setIsLoading(true);
     try {
       const formData = new FormData();
-      formData.append("username", values.username);
-      formData.append("display_currency", values.display_currency);
+      formData.append("username", values.username.trim());
+      formData.append(
+        "display_currency",
+        values.display_currency.trim().toUpperCase(),
+      );
 
       const result = await updateProfile(formData);
 
