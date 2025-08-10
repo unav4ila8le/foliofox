@@ -25,10 +25,7 @@ export function ActionsCell({ record }: { record: TransformedRecord }) {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            className="size-8 p-0 opacity-100 group-hover/row:opacity-100 data-[state=open]:opacity-100 md:opacity-0"
-          >
+          <Button variant="ghost" className="size-8 p-0">
             <span className="sr-only">Open menu</span>
             <MoreHorizontal className="size-4" />
           </Button>

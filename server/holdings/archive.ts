@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/server/auth/actions";
 
+// Single holding archiving
 export async function archiveHolding(holding_id: string) {
   const { supabase } = await getCurrentUser();
 

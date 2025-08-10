@@ -156,13 +156,13 @@ export function NewRecordForm() {
         throw new Error(result.message);
       }
 
-      toast.success("Holding updated successfully");
+      toast.success("Record created successfully");
       setOpen(false);
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Failed to update holding. Please try again.",
+          : "Failed to create record. Please try again.",
       );
     } finally {
       setIsLoading(false);
@@ -296,7 +296,7 @@ export function NewRecordForm() {
               <FormLabel>Description (optional)</FormLabel>
               <FormControl>
                 <Input
-                  placeholder="Add any notes about this update"
+                  placeholder="Add any notes about this record"
                   {...field}
                 />
               </FormControl>
@@ -322,10 +322,10 @@ export function NewRecordForm() {
             {isLoading ? (
               <>
                 <LoaderCircle className="mr-2 animate-spin" />
-                Saving...
+                Creating...
               </>
             ) : (
-              "Save changes"
+              "Create record"
             )}
           </Button>
         </div>
