@@ -26,11 +26,12 @@ export function useSignout() {
         toast.error("Failed to log out", {
           description: error.message,
         });
+        setIsLoading(false);
         return;
       }
 
       // Redirect to login page
-      router.push("/auth/login");
+      router.replace("/auth/login");
       toast.success("You have been signed out successfully");
     } catch (error) {
       // Handle unexpected errors
@@ -40,7 +41,6 @@ export function useSignout() {
             ? error.message
             : "An unexpected error occurred. If the problem persists, please contact support.",
       });
-    } finally {
       setIsLoading(false);
     }
   };

@@ -38,7 +38,7 @@ export async function login(formData: FormData) {
   }
 
   revalidatePath("/", "layout");
-  return { success: true };
+  redirect("/dashboard");
 }
 
 // Signup
