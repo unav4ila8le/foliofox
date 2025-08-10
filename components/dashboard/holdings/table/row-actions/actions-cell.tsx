@@ -121,7 +121,7 @@ export function ActionsCell({ holding }: { holding: TransformedHolding }) {
       />
 
       <DeleteHoldingDialog
-        holding={holding}
+        holdings={[holding]}
         open={showDeleteDialog}
         onOpenChangeAction={setShowDeleteDialog}
       />

@@ -10,6 +10,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ActionsCell } from "@/components/dashboard/holdings/table/row-actions/actions-cell";
 
 import { formatNumber } from "@/lib/number-format";
@@ -18,6 +19,31 @@ import type { ColumnDef } from "@tanstack/react-table";
 import type { TransformedHolding } from "@/types/global.types";
 
 export const columns: ColumnDef<TransformedHolding>[] = [
+  {
+    id: "select",
+    header: ({ table }) => (
+      <Checkbox
+        checked={
+          table.getIsAllPageRowsSelected() ||
+          (table.getIsSomePageRowsSelected() && "indeterminate")
+        }
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        onClick={(e) => e.stopPropagation()}
+        aria-label="Select all"
+      />
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+        onClick={(e) => e.stopPropagation()}
+        aria-label="Select row"
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+    size: 32,
+  },
   {
     accessorKey: "name",
     header: ({ column }) => {

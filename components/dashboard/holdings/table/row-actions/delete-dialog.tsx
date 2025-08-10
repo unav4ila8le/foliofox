@@ -16,37 +16,47 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-import { deleteHolding } from "@/server/holdings/delete";
-
-import type { Holding } from "@/types/global.types";
+import { deleteHolding, deleteHoldings } from "@/server/holdings/delete";
 
 interface DeleteDialogProps {
-  holding: Holding;
+  holdings: { id: string; name: string }[];
   open: boolean;
   onOpenChangeAction: (open: boolean) => void;
+  onCompleted?: () => void;
 }
 
 export function DeleteHoldingDialog({
-  holding,
+  holdings,
   open,
   onOpenChangeAction,
+  onCompleted,
 }: DeleteDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
+
+  if (!open || holdings.length === 0) return null;
+
+  const ids = holdings.map((holding) => holding.id);
+  const isBulk = holdings.length > 1;
 
   const handleDelete = async () => {
     setIsLoading(true);
     try {
-      const result = await deleteHolding(holding.id);
-
-      if (result.success) {
-        toast.success("Holding deleted successfully");
-        onOpenChangeAction(false);
+      if (isBulk) {
+        const result = await deleteHoldings(ids);
+        if (!result.success)
+          throw new Error(result.message || "Failed to delete holdings");
+        toast.success(`${result.count} holdings deleted successfully`);
       } else {
-        throw new Error(result.message || "Failed to delete holding");
+        const result = await deleteHolding(ids[0]);
+        if (!result.success)
+          throw new Error(result.message || "Failed to delete holding");
+        toast.success("Holding deleted successfully");
       }
+      onCompleted?.();
+      onOpenChangeAction(false);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to delete holding",
+        error instanceof Error ? error.message : "Failed to delete holding(s)",
       );
     } finally {
       setIsLoading(false);
@@ -58,11 +68,13 @@ export function DeleteHoldingDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2">
-            <Trash2 className="size-5" /> Delete Holding
+            <Trash2 className="size-5" />{" "}
+            {isBulk ? `Delete ${ids.length} holdings` : "Delete Holding"}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            You are about to permanently delete &quot;{holding.name}&quot;. This
-            action cannot be undone.
+            {isBulk
+              ? "You are about to permanently delete the selected holdings. This action cannot be undone."
+              : `You are about to permanently delete "${holdings[0].name}". This action cannot be undone.`}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="space-y-2">

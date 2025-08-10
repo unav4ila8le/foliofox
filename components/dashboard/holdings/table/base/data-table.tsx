@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from "react";
 import {
-  ColumnDef,
-  SortingState,
-  ColumnFiltersState,
+  type ColumnDef,
+  type SortingState,
+  type ColumnFiltersState,
+  type RowSelectionState,
+  type Updater,
   flexRender,
   getCoreRowModel,
   getSortedRowModel,
@@ -29,6 +31,10 @@ interface DataTableProps<TData, TValue> {
   filterValue?: string;
   filterColumnId?: string;
   onRowClick?: (row: TData) => void;
+  enableRowSelection?: boolean;
+  rowSelection?: RowSelectionState;
+  onRowSelectionChange?: (updater: Updater<RowSelectionState>) => void;
+  onSelectedChange?: (rows: TData[]) => void;
 }
 
 export function DataTable<TData, TValue>({
@@ -37,8 +43,11 @@ export function DataTable<TData, TValue>({
   filterValue,
   filterColumnId = "name",
   onRowClick,
+  enableRowSelection = false,
+  onSelectedChange,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([
     {
       id: filterColumnId,
@@ -54,12 +63,15 @@ export function DataTable<TData, TValue>({
     getSortedRowModel: getSortedRowModel(),
     onColumnFiltersChange: setColumnFilters,
     getFilteredRowModel: getFilteredRowModel(),
+    onRowSelectionChange: setRowSelection,
     state: {
       sorting,
       columnFilters,
+      rowSelection,
     },
   });
 
+  // Filter
   useEffect(() => {
     setColumnFilters(
       filterValue && filterValue.trim()
@@ -67,6 +79,15 @@ export function DataTable<TData, TValue>({
         : [],
     );
   }, [filterValue, filterColumnId]);
+
+  // Row selection
+  useEffect(() => {
+    if (!enableRowSelection || !onSelectedChange) return;
+    const selectedRows = table
+      .getSelectedRowModel()
+      .rows.map((row) => row.original as TData);
+    onSelectedChange(selectedRows);
+  }, [enableRowSelection, onSelectedChange, table, rowSelection]);
 
   return (
     <Table>
