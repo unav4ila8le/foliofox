@@ -49,7 +49,7 @@ export function HoldingsTables({ data }: { data: HoldingWithProfitLoss[] }) {
       <div className="flex items-center justify-between gap-2">
         <SearchInput
           className="max-w-sm"
-          placeholder="Search assets..."
+          placeholder="Search holdings..."
           value={filterValue}
           onChange={(e) => setFilterValue(e.target.value)}
         />

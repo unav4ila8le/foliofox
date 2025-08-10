@@ -25,7 +25,7 @@ name,category_code,currency,current_quantity,current_unit_value,symbol_id,descri
   - [x] Transform to flat CSV using current_quantity/current_unit_value
   - [x] Generate CSV with proper headers
 - [x] **1.2** Add export UI
-  - [x] Export button in assets page
+  - [x] Export button in holdings page
   - [x] Download trigger with filename `patrivio-holdings-YYYY-MM-DD.csv`
 
 **Expected Outcome:** Users get clean portfolio snapshot for migration/backup

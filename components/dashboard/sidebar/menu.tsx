@@ -19,7 +19,7 @@ const items = [
     icon: Home,
   },
   {
-    title: "Assets",
+    title: "Holdings",
     url: "/dashboard/assets",
     icon: TrendingUp,
   },

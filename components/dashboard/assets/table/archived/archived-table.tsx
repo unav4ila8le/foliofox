@@ -29,7 +29,7 @@ export function ArchivedTable({ data }: ArchivedTableProps) {
     <div className="flex flex-col gap-4">
       <SearchInput
         className="max-w-sm"
-        placeholder="Search archived assets..."
+        placeholder="Search archived holdings..."
         value={filterValue}
         onChange={(e) => setFilterValue(e.target.value)}
       />
