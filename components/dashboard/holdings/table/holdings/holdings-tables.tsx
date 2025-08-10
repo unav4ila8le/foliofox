@@ -6,8 +6,8 @@ import { Package } from "lucide-react";
 
 import { SearchInput } from "@/components/ui/search-input";
 import { NewHoldingButton } from "@/components/dashboard/new-holding";
-import { columns } from "@/components/dashboard/assets/table/holdings/columns";
-import { TableActionsDropdown } from "@/components/dashboard/assets/table/holdings/table-actions";
+import { columns } from "@/components/dashboard/holdings/table/holdings/columns";
+import { TableActionsDropdown } from "@/components/dashboard/holdings/table/holdings/table-actions";
 import { CollapsibleTable } from "../collapsible/collapsible-table";
 
 import type { HoldingWithProfitLoss } from "@/types/global.types";
@@ -26,7 +26,7 @@ export function HoldingsTables({ data }: { data: HoldingWithProfitLoss[] }) {
   // Handle row click to navigate to holding page
   const handleRowClick = useCallback(
     (holding: HoldingWithProfitLoss) => {
-      router.push(`/dashboard/assets/${holding.id}`);
+      router.push(`/dashboard/holdings/${holding.id}`);
     },
     [router],
   );

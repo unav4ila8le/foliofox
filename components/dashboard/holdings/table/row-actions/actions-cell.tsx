@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { useNewRecordDialog } from "@/components/dashboard/new-record";
-import { UpdateHoldingDialog } from "@/components/dashboard/assets/table/row-actions/update-holding";
+import { UpdateHoldingDialog } from "@/components/dashboard/holdings/table/row-actions/update-holding";
 import { ArchiveHoldingDialog } from "./archive-dialog";
 import { DeleteHoldingDialog } from "./delete-dialog";
 

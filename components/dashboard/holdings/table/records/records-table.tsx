@@ -4,8 +4,8 @@ import { useState } from "react";
 import { FileText } from "lucide-react";
 
 import { SearchInput } from "@/components/ui/search-input";
-import { DataTable } from "@/components/dashboard/assets/table/base/data-table";
-import { columns } from "@/components/dashboard/assets/table/records/columns";
+import { DataTable } from "@/components/dashboard/holdings/table/base/data-table";
+import { columns } from "@/components/dashboard/holdings/table/records/columns";
 import { NewRecordButton } from "@/components/dashboard/new-record";
 
 import type {

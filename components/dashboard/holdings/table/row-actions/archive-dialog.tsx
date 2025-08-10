@@ -79,7 +79,7 @@ export function ArchiveHoldingDialog({
           <p className="text-muted-foreground text-sm">
             Restore this holding anytime from the{" "}
             <Link
-              href="/dashboard/assets/archived"
+              href="/dashboard/holdings/archived"
               className="text-primary underline-offset-2 hover:underline"
             >
               archived holdings

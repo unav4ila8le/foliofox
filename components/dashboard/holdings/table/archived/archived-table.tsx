@@ -20,7 +20,7 @@ export function ArchivedTable({ data }: ArchivedTableProps) {
   // Handle row click to navigate to holding page
   const handleRowClick = useCallback(
     (holding: TransformedHolding) => {
-      router.push(`/dashboard/assets/${holding.id}`);
+      router.push(`/dashboard/holdings/${holding.id}`);
     },
     [router],
   );

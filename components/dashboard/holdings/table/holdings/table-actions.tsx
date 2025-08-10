@@ -11,9 +11,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ExportDialog } from "@/components/dashboard/assets/export/dialog";
+import { ExportDialog } from "@/components/dashboard/holdings/export/dialog";
 
-import { useImportHoldingsDialog } from "@/components/dashboard/assets/import";
+import { useImportHoldingsDialog } from "@/components/dashboard/holdings/import";
 
 export function TableActionsDropdown({
   holdingsCount,
@@ -44,7 +44,7 @@ export function TableActionsDropdown({
             <Download className="size-4" /> Export
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link href="/dashboard/assets/archived">
+            <Link href="/dashboard/holdings/archived">
               <Archive className="size-4" /> View archived
             </Link>
           </DropdownMenuItem>

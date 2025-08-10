@@ -19,6 +19,6 @@ export async function archiveHolding(holding_id: string) {
     return { success: false, code: error.code, message: error.message };
   }
 
-  revalidatePath("/dashboard/assets", "layout");
+  revalidatePath("/dashboard/holdings", "layout");
   return { success: true };
 }

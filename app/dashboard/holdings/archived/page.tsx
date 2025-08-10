@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArchivedTable } from "@/components/dashboard/assets/table/archived/archived-table";
+import { ArchivedTable } from "@/components/dashboard/holdings/table/archived/archived-table";
 
 import { fetchHoldings } from "@/server/holdings/fetch";
 
@@ -11,7 +11,7 @@ async function ArchivedTableWrapper() {
   return <ArchivedTable data={holdings} />;
 }
 
-export default async function ArchivedAssetsPage() {
+export default async function ArchivedHoldingsPage() {
   return (
     <Suspense fallback={<Skeleton className="h-80" />}>
       <ArchivedTableWrapper />

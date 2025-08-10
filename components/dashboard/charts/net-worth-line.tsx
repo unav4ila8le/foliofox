@@ -36,7 +36,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { NewHoldingButton } from "@/components/dashboard/new-holding";
-import { ImportHoldingsButton } from "@/components/dashboard/assets/import";
+import { ImportHoldingsButton } from "@/components/dashboard/holdings/import";
 
 import {
   formatCompactNumber,

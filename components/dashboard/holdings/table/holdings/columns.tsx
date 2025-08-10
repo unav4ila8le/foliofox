@@ -1,7 +1,6 @@
 "use client";
 
 import { ArrowUpDown } from "lucide-react";
-import { format } from "date-fns";
 
 import {
   Tooltip,
@@ -10,14 +9,15 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
-import { ActionsCell } from "@/components/dashboard/assets/table/row-actions/actions-cell";
+import { ActionsCell } from "../row-actions/actions-cell";
 
-import { formatNumber } from "@/lib/number-format";
+import { cn } from "@/lib/utils";
+import { formatNumber, formatPercentage } from "@/lib/number-format";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import type { TransformedHolding } from "@/types/global.types";
+import type { HoldingWithProfitLoss } from "@/types/global.types";
 
-export const columns: ColumnDef<TransformedHolding>[] = [
+export const columns: ColumnDef<HoldingWithProfitLoss>[] = [
   {
     accessorKey: "name",
     header: ({ column }) => {
@@ -26,7 +26,7 @@ export const columns: ColumnDef<TransformedHolding>[] = [
           className="hover:text-primary flex cursor-pointer items-center gap-2 transition-colors"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Asset name
+          Name
           <ArrowUpDown className="size-4" />
         </div>
       );
@@ -84,8 +84,80 @@ export const columns: ColumnDef<TransformedHolding>[] = [
     },
   },
   {
+    accessorKey: "profit_loss",
+    header: ({ column }) => {
+      return (
+        <div
+          className="hover:text-primary flex cursor-pointer items-center gap-2 transition-colors"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Change
+          <ArrowUpDown className="size-4" />
+        </div>
+      );
+    },
+    cell: ({ row }) => {
+      const profit_loss = row.getValue<number>("profit_loss");
+      const isPositive = profit_loss >= 0;
+
+      return (
+        <div
+          className={cn(
+            "tabular-nums",
+            isPositive ? "text-green-600" : "text-red-600",
+          )}
+        >
+          {isPositive ? "+" : ""}
+          {formatNumber(profit_loss, undefined, { maximumFractionDigits: 2 })}
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "profit_loss_percentage",
+    header: ({ column }) => {
+      return (
+        <div
+          className="hover:text-primary flex cursor-pointer items-center gap-2 transition-colors"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Change %
+          <ArrowUpDown className="size-4" />
+        </div>
+      );
+    },
+    cell: ({ row }) => {
+      const profit_loss_percentage = row.getValue<number>(
+        "profit_loss_percentage",
+      );
+      const isPositive = profit_loss_percentage >= 0;
+
+      return (
+        <div
+          className={cn(
+            "tabular-nums",
+            isPositive ? "text-green-600" : "text-red-600",
+          )}
+        >
+          {isPositive ? "+" : ""}
+          {formatPercentage(profit_loss_percentage)}
+        </div>
+      );
+    },
+  },
+  {
     accessorKey: "total_value",
-    header: "Total Value",
+    header: ({ column }) => {
+      return (
+        <div
+          className="hover:text-primary flex cursor-pointer items-center gap-2 transition-colors"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Total value
+          <ArrowUpDown className="size-4" />
+        </div>
+      );
+    },
     cell: ({ row }) => {
       const total_value = row.getValue<number>("total_value");
 
@@ -94,25 +166,6 @@ export const columns: ColumnDef<TransformedHolding>[] = [
           {formatNumber(total_value, undefined, { maximumFractionDigits: 2 })}
         </div>
       );
-    },
-  },
-  {
-    accessorKey: "archived_at",
-    header: ({ column }) => {
-      return (
-        <div
-          className="hover:text-primary flex cursor-pointer items-center gap-2 transition-colors"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Archived on
-          <ArrowUpDown className="size-4" />
-        </div>
-      );
-    },
-    cell: ({ row }) => {
-      const archived_at = row.getValue<Date>("archived_at");
-
-      return format(archived_at, "PPP");
     },
   },
   {

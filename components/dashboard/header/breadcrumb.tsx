@@ -40,7 +40,7 @@ export function Breadcrumb() {
 
   // Check if we're on a holding page
   const isHoldingPage =
-    segments[0] === "assets" && segments[1] && segments[1] !== "archived";
+    segments[0] === "holdings" && segments[1] && segments[1] !== "archived";
   const holdingId = isHoldingPage ? segments[1] : null;
 
   return (

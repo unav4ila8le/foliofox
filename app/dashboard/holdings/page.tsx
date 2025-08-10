@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { HoldingsTables } from "@/components/dashboard/assets/table/holdings/holdings-tables";
+import { HoldingsTables } from "@/components/dashboard/holdings/table/holdings/holdings-tables";
 
 import { fetchHoldings } from "@/server/holdings/fetch";
 import { calculateProfitLoss } from "@/lib/profit-loss";
@@ -16,11 +16,11 @@ async function HoldingsTablesWrapper() {
   return <HoldingsTables data={holdingsWithProfitLoss} />;
 }
 
-export default async function AssetsPage() {
+export default async function HoldingsPage() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-2xl font-semibold">Asset Portfolio</h1>
+        <h1 className="text-2xl font-semibold">Portfolio Holdings</h1>
         <p className="text-muted-foreground">
           Here&apos;s a list of all your holdings
         </p>

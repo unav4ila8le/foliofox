@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { Header } from "@/components/dashboard/header";
-import { ImportHoldingsDialogProvider } from "@/components/dashboard/assets/import";
+import { ImportHoldingsDialogProvider } from "@/components/dashboard/holdings/import";
 import { NewHoldingDialogProvider } from "@/components/dashboard/new-holding";
 import { NewRecordDialogProvider } from "@/components/dashboard/new-record";
 

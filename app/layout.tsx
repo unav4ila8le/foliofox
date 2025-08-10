@@ -12,7 +12,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Patrivio - Portfolio Intelligence Platform",
   description:
-    "Comprehensive portfolio tracking and AI-powered financial planning. Monitor your assets, analyze performance, and discover growth opportunities with predictive insights tailored to your wealth-building strategy.",
+    "Comprehensive portfolio tracking and AI-powered financial planning. Monitor your holdings, analyze performance, and discover growth opportunities with predictive insights tailored to your wealth-building strategy.",
 };
 
 export default function RootLayout({
