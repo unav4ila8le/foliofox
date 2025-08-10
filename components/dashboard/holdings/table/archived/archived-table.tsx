@@ -41,8 +41,8 @@ export function ArchivedTable({ data }: ArchivedTableProps) {
   const handleRestore = async () => {
     setIsRestoring(true);
     try {
-      const ids = selectedRows.map((row) => row.id);
-      const result = await restoreHoldings(ids);
+      const holdingIds = selectedRows.map((row) => row.id);
+      const result = await restoreHoldings(holdingIds);
       if (result.success) {
         toast.success(`${result.count} holding(s) restored successfully`);
       } else {

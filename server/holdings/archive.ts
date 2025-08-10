@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/server/auth/actions";
 
 // Single holding archiving
-export async function archiveHolding(holding_id: string) {
+export async function archiveHolding(holdingId: string) {
   const { supabase } = await getCurrentUser();
 
   const { error } = await supabase
@@ -13,7 +13,7 @@ export async function archiveHolding(holding_id: string) {
       is_archived: true,
       archived_at: new Date().toISOString(),
     })
-    .eq("id", holding_id);
+    .eq("id", holdingId);
 
   // Return Supabase errors instead of throwing
   if (error) {
@@ -22,4 +22,29 @@ export async function archiveHolding(holding_id: string) {
 
   revalidatePath("/dashboard/holdings", "layout");
   return { success: true };
+}
+
+// Multiple holdings archiving
+export async function restoreHoldings(holdingIds: string[]) {
+  if (holdingIds.length === 0) {
+    return { success: false, code: "no_ids", message: "No holdings selected." };
+  }
+
+  const { supabase } = await getCurrentUser();
+
+  const { error } = await supabase
+    .from("holdings")
+    .update({
+      is_archived: true,
+      archived_at: new Date().toISOString(),
+    })
+    .in("id", holdingIds);
+
+  // Return Supabase errors instead of throwing
+  if (error) {
+    return { success: false, code: error.code, message: error.message };
+  }
+
+  revalidatePath("/dashboard/holdings", "layout");
+  return { success: true, count: holdingIds.length };
 }

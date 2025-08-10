@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/server/auth/actions";
 
 // Single holding restoration
-export async function restoreHolding(holding_id: string) {
+export async function restoreHolding(holdingId: string) {
   const { supabase } = await getCurrentUser();
 
   const { error } = await supabase
@@ -13,7 +13,7 @@ export async function restoreHolding(holding_id: string) {
       is_archived: false,
       archived_at: null,
     })
-    .eq("id", holding_id);
+    .eq("id", holdingId);
 
   // Return Supabase errors instead of throwing
   if (error) {
@@ -25,12 +25,7 @@ export async function restoreHolding(holding_id: string) {
 }
 
 // Multiple holdings restoration
-function normalizeIds(ids: string[]): string[] {
-  return ids.map((id) => id.trim()).filter(Boolean);
-}
-
-export async function restoreHoldings(ids: string[]) {
-  const holdingIds = normalizeIds(ids);
+export async function restoreHoldings(holdingIds: string[]) {
   if (holdingIds.length === 0) {
     return { success: false, code: "no_ids", message: "No holdings selected." };
   }

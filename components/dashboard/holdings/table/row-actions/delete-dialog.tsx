@@ -35,19 +35,19 @@ export function DeleteHoldingDialog({
 
   if (!open || holdings.length === 0) return null;
 
-  const ids = holdings.map((holding) => holding.id);
+  const holdingIds = holdings.map((holding) => holding.id);
   const isBulk = holdings.length > 1;
 
   const handleDelete = async () => {
     setIsLoading(true);
     try {
       if (isBulk) {
-        const result = await deleteHoldings(ids);
+        const result = await deleteHoldings(holdingIds);
         if (!result.success)
           throw new Error(result.message || "Failed to delete holdings");
         toast.success(`${result.count} holdings deleted successfully`);
       } else {
-        const result = await deleteHolding(ids[0]);
+        const result = await deleteHolding(holdingIds[0]);
         if (!result.success)
           throw new Error(result.message || "Failed to delete holding");
         toast.success("Holding deleted successfully");
@@ -69,7 +69,7 @@ export function DeleteHoldingDialog({
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2">
             <Trash2 className="size-5" />{" "}
-            {isBulk ? `Delete ${ids.length} holdings` : "Delete Holding"}
+            {isBulk ? `Delete ${holdingIds.length} holdings` : "Delete Holding"}
           </AlertDialogTitle>
           <AlertDialogDescription>
             {isBulk
