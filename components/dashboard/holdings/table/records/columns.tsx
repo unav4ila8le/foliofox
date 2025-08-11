@@ -7,16 +7,43 @@ import { ActionsCell } from "./row-actions/actions-cell";
 
 import { formatNumber } from "@/lib/number-format";
 
-import type { ColumnDef } from "@tanstack/react-table";
-import type { TransformedRecord } from "@/types/global.types";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Checkbox } from "@/components/ui/checkbox";
+
+import type { ColumnDef } from "@tanstack/react-table";
+import type { TransformedRecord } from "@/types/global.types";
 
 export const columns: ColumnDef<TransformedRecord>[] = [
+  {
+    id: "select",
+    header: ({ table }) => (
+      <Checkbox
+        checked={
+          table.getIsAllPageRowsSelected() ||
+          (table.getIsSomePageRowsSelected() && "indeterminate")
+        }
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        onClick={(e) => e.stopPropagation()}
+        aria-label="Select all"
+      />
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+        onClick={(e) => e.stopPropagation()}
+        aria-label="Select row"
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+    size: 32,
+  },
   {
     accessorKey: "date",
     header: ({ column }) => {

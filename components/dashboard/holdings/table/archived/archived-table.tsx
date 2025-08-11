@@ -25,7 +25,7 @@ export function ArchivedTable({ data }: ArchivedTableProps) {
   const [filterValue, setFilterValue] = useState("");
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [selectedRows, setSelectedRows] = useState<TransformedHolding[]>([]);
-  const [openDelete, setOpenDelete] = useState(false);
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
 
   const router = useRouter();
 
@@ -43,11 +43,13 @@ export function ArchivedTable({ data }: ArchivedTableProps) {
     try {
       const holdingIds = selectedRows.map((row) => row.id);
       const result = await restoreHoldings(holdingIds);
-      if (result.success) {
-        toast.success(`${result.count} holding(s) restored successfully`);
-      } else {
+      if (!result.success) {
         throw new Error(result.message || "Failed to restore holding(s)");
       }
+      toast.success(`${result.count} holding(s) restored successfully`);
+      // Reset selection state
+      setRowSelection({});
+      setSelectedRows([]);
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to restore holding(s)",
@@ -71,7 +73,7 @@ export function ArchivedTable({ data }: ArchivedTableProps) {
         {/* Bulk actions */}
         {selectedRows.length > 0 && (
           <div className="flex items-center gap-2">
-            <Button onClick={() => setOpenDelete(true)} variant="outline">
+            <Button onClick={() => setOpenDeleteDialog(true)} variant="outline">
               <Trash2 className="text-destructive size-4" /> Delete
             </Button>
             <Button
@@ -117,9 +119,9 @@ export function ArchivedTable({ data }: ArchivedTableProps) {
 
       {/* Delete dialog */}
       <DeleteHoldingDialog
-        open={openDelete}
-        onOpenChangeAction={setOpenDelete}
-        holdings={selectedRows}
+        open={openDeleteDialog}
+        onOpenChangeAction={setOpenDeleteDialog}
+        holdings={selectedRows.map(({ id, name }) => ({ id, name }))} // Minimal DTO
         onCompleted={() => {
           setSelectedRows([]);
           setRowSelection({});

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -15,37 +15,49 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-import { deleteRecord } from "@/server/records/delete";
+import { deleteRecord, deleteRecords } from "@/server/records/delete";
 
 import type { TransformedRecord } from "@/types/global.types";
 
 interface DeleteDialogProps {
-  record: TransformedRecord;
+  records: TransformedRecord[];
   open: boolean;
   onOpenChangeAction: (open: boolean) => void;
+  onCompleted?: () => void;
 }
 
 export function DeleteRecordDialog({
-  record,
+  records,
   open,
   onOpenChangeAction,
+  onCompleted,
 }: DeleteDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
+
+  if (!open || records.length === 0) return null;
+
+  const recordIds = records.map((record) => record.id);
+  const isBulk = records.length > 1;
 
   const handleDelete = async () => {
     setIsLoading(true);
     try {
-      const result = await deleteRecord(record.id);
-
-      if (result.success) {
-        toast.success("Record deleted successfully");
-        onOpenChangeAction(false);
+      if (isBulk) {
+        const result = await deleteRecords(recordIds);
+        if (!result.success)
+          throw new Error(result.message || "Failed to delete records");
+        toast.success(`${result.count} records deleted successfully`);
       } else {
-        throw new Error(result.message || "Failed to delete record");
+        const result = await deleteRecord(recordIds[0]);
+        if (!result.success)
+          throw new Error(result.message || "Failed to delete record");
+        toast.success("Record deleted successfully");
       }
+      onCompleted?.();
+      onOpenChangeAction(false);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to delete record",
+        error instanceof Error ? error.message : "Failed to delete record(s)",
       );
     } finally {
       setIsLoading(false);
@@ -56,10 +68,14 @@ export function DeleteRecordDialog({
     <AlertDialog open={open} onOpenChange={onOpenChangeAction}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete record?</AlertDialogTitle>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <Trash2 className="size-5" />{" "}
+            {isBulk ? `Delete ${recordIds.length} records` : "Delete Record"}
+          </AlertDialogTitle>
           <AlertDialogDescription>
-            You are about to permanently delete this record. This action cannot
-            be undone.
+            {isBulk
+              ? "You are about to permanently delete the selected records. This action cannot be undone."
+              : "You are about to permanently delete this record. This action cannot be undone."}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

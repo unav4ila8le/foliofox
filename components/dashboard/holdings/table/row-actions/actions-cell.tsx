@@ -118,7 +118,7 @@ export function ActionsCell({ holding }: { holding: TransformedHolding }) {
       />
 
       <DeleteHoldingDialog
-        holdings={[holding]}
+        holdings={[{ id: holding.id, name: holding.name }]} // Minimal DTO
         open={showDeleteDialog}
         onOpenChangeAction={setShowDeleteDialog}
       />

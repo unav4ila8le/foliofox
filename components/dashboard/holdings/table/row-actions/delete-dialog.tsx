@@ -19,7 +19,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { deleteHolding, deleteHoldings } from "@/server/holdings/delete";
 
 interface DeleteDialogProps {
-  holdings: { id: string; name: string }[];
+  holdings: { id: string; name: string }[]; // Minimal DTO
   open: boolean;
   onOpenChangeAction: (open: boolean) => void;
   onCompleted?: () => void;
