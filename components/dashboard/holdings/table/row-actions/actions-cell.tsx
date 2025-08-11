@@ -112,7 +112,7 @@ export function ActionsCell({ holding }: { holding: TransformedHolding }) {
       />
 
       <ArchiveHoldingDialog
-        holding={holding}
+        holdings={[{ id: holding.id, name: holding.name }]} // Minimal DTO
         open={showArchiveDialog}
         onOpenChangeAction={setShowArchiveDialog}
       />

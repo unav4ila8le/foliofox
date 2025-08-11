@@ -3,14 +3,13 @@
 import { useState } from "react";
 import { FileText, Trash2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
 import { DataTable } from "@/components/dashboard/holdings/table/base/data-table";
 import { columns } from "@/components/dashboard/holdings/table/records/columns";
 import { NewRecordButton } from "@/components/dashboard/new-record";
+import { BulkActionBar } from "@/components/dashboard/holdings/table/base/bulk-action-bar";
 import { DeleteRecordDialog } from "@/components/dashboard/holdings/table/records/row-actions/delete-dialog";
 
-import type { RowSelectionState } from "@tanstack/react-table";
 import type {
   TransformedRecord,
   TransformedHolding,
@@ -23,8 +22,8 @@ interface RecordsTableProps {
 
 export function RecordsTable({ data, holding }: RecordsTableProps) {
   const [filterValue, setFilterValue] = useState("");
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [selectedRows, setSelectedRows] = useState<TransformedRecord[]>([]);
+  const [resetSelectionSignal, setResetSelectionSignal] = useState(0);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
 
   return (
@@ -39,14 +38,8 @@ export function RecordsTable({ data, holding }: RecordsTableProps) {
           onChange={(e) => setFilterValue(e.target.value)}
         />
         {/* New record button */}
-        {data.length > 0 && !selectedRows.length && (
+        {data.length > 0 && (
           <NewRecordButton variant="outline" preselectedHolding={holding} />
-        )}
-        {/* Bulk actions */}
-        {selectedRows.length > 0 && (
-          <Button onClick={() => setOpenDeleteDialog(true)} variant="outline">
-            <Trash2 className="text-destructive size-4" /> Delete selected
-          </Button>
         )}
       </div>
 
@@ -69,23 +62,30 @@ export function RecordsTable({ data, holding }: RecordsTableProps) {
             data={data}
             filterValue={filterValue}
             filterColumnId="description"
-            enableRowSelection
-            rowSelection={rowSelection}
-            onRowSelectionChange={setRowSelection}
-            onSelectedChange={setSelectedRows}
+            onSelectedRowsChange={setSelectedRows}
+            resetRowSelectionSignal={resetSelectionSignal}
           />
         </div>
       )}
 
-      {/* Selected rows count */}
-      {selectedRows.length > 0 ? (
-        <p className="text-muted-foreground text-end text-sm">
-          {selectedRows.length} of {data.length} row(s) selected
-        </p>
-      ) : (
-        <p className="text-muted-foreground text-end text-sm">
-          {data.length} record(s)
-        </p>
+      {/* Rows count */}
+      <p className="text-muted-foreground text-end text-sm">
+        {data.length} record(s)
+      </p>
+
+      {/* Floating bulk action bar */}
+      {selectedRows.length > 0 && (
+        <BulkActionBar
+          selectedCount={selectedRows.length}
+          actions={[
+            {
+              label: "Delete selected",
+              onClick: () => setOpenDeleteDialog(true),
+              icon: <Trash2 className="size-4" />,
+              variant: "destructive",
+            },
+          ]}
+        />
       )}
 
       {/* Delete dialog */}
@@ -94,8 +94,7 @@ export function RecordsTable({ data, holding }: RecordsTableProps) {
         onOpenChangeAction={setOpenDeleteDialog}
         records={selectedRows}
         onCompleted={() => {
-          setSelectedRows([]);
-          setRowSelection({});
+          setResetSelectionSignal((prev) => prev + 1);
         }}
       />
     </div>

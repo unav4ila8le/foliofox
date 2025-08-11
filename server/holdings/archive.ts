@@ -25,7 +25,7 @@ export async function archiveHolding(holdingId: string) {
 }
 
 // Multiple holdings archiving
-export async function restoreHoldings(holdingIds: string[]) {
+export async function archiveHoldings(holdingIds: string[]) {
   if (holdingIds.length === 0) {
     return { success: false, code: "no_ids", message: "No holdings selected." };
   }

@@ -6,7 +6,6 @@ import {
   type SortingState,
   type ColumnFiltersState,
   type RowSelectionState,
-  type Updater,
   flexRender,
   getCoreRowModel,
   getSortedRowModel,
@@ -31,10 +30,8 @@ interface DataTableProps<TData, TValue> {
   filterValue?: string;
   filterColumnId?: string;
   onRowClick?: (row: TData) => void;
-  enableRowSelection?: boolean;
-  rowSelection?: RowSelectionState;
-  onRowSelectionChange?: (updater: Updater<RowSelectionState>) => void;
-  onSelectedChange?: (rows: TData[]) => void;
+  onSelectedRowsChange?: (rows: TData[]) => void;
+  resetRowSelectionSignal?: number;
 }
 
 export function DataTable<TData, TValue>({
@@ -43,8 +40,8 @@ export function DataTable<TData, TValue>({
   filterValue,
   filterColumnId = "name",
   onRowClick,
-  enableRowSelection = false,
-  onSelectedChange,
+  onSelectedRowsChange,
+  resetRowSelectionSignal = 0,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
@@ -64,6 +61,10 @@ export function DataTable<TData, TValue>({
     onColumnFiltersChange: setColumnFilters,
     getFilteredRowModel: getFilteredRowModel(),
     onRowSelectionChange: setRowSelection,
+    enableRowSelection: true,
+    getRowId: (row, index) =>
+      // @ts-expect-error - generic rows may or may not have id; fallback to index
+      row?.id ? String(row.id) : String(index),
     state: {
       sorting,
       columnFilters,
@@ -80,14 +81,19 @@ export function DataTable<TData, TValue>({
     );
   }, [filterValue, filterColumnId]);
 
-  // Row selection
+  // Emit selected rows to parent whenever selection changes
   useEffect(() => {
-    if (!enableRowSelection || !onSelectedChange) return;
-    const selectedRows = table
+    if (!onSelectedRowsChange) return;
+    const selected = table
       .getSelectedRowModel()
-      .rows.map((row) => row.original as TData);
-    onSelectedChange(selectedRows);
-  }, [enableRowSelection, onSelectedChange, table, rowSelection]);
+      .rows.map((row) => row.original);
+    onSelectedRowsChange(selected);
+  }, [rowSelection, onSelectedRowsChange, table]);
+
+  // Reset selection when signal changes
+  useEffect(() => {
+    table.resetRowSelection();
+  }, [resetRowSelectionSignal, table]);
 
   return (
     <Table>

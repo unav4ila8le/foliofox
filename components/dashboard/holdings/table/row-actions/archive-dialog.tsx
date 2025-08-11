@@ -17,37 +17,47 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-import { archiveHolding } from "@/server/holdings/archive";
-
-import type { Holding } from "@/types/global.types";
+import { archiveHolding, archiveHoldings } from "@/server/holdings/archive";
 
 interface ArchiveDialogProps {
-  holding: Holding;
+  holdings: { id: string; name: string }[]; // Minimal DTO
   open: boolean;
   onOpenChangeAction: (open: boolean) => void;
+  onCompleted?: () => void;
 }
 
 export function ArchiveHoldingDialog({
-  holding,
+  holdings,
   open,
   onOpenChangeAction,
+  onCompleted,
 }: ArchiveDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
+
+  if (!open || holdings.length === 0) return null;
+
+  const holdingIds = holdings.map((holding) => holding.id);
+  const isBulk = holdings.length > 1;
 
   const handleArchive = async () => {
     setIsLoading(true);
     try {
-      const result = await archiveHolding(holding.id);
-
-      if (result.success) {
-        toast.success("Holding archived successfully");
-        onOpenChangeAction(false);
+      if (isBulk) {
+        const result = await archiveHoldings(holdingIds);
+        if (!result.success)
+          throw new Error(result.message || "Failed to archive holdings");
+        toast.success(`${result.count} holdings archived successfully`);
       } else {
-        throw new Error(result.message || "Failed to archive holding");
+        const result = await archiveHolding(holdingIds[0]);
+        if (!result.success)
+          throw new Error(result.message || "Failed to archive holding");
+        toast.success("Holding archived successfully");
       }
+      onCompleted?.();
+      onOpenChangeAction(false);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to archive holding",
+        error instanceof Error ? error.message : "Failed to archive holding(s)",
       );
     } finally {
       setIsLoading(false);
@@ -59,10 +69,15 @@ export function ArchiveHoldingDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2">
-            <Archive className="size-5" /> Archive Holding
+            <Archive className="size-5" />{" "}
+            {isBulk
+              ? `Archive ${holdingIds.length} holdings`
+              : "Archive Holding"}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            You are about to archive &quot;{holding.name}&quot;.
+            {isBulk
+              ? "You are about to archive the selected holdings. This action cannot be undone."
+              : `You are about to archive "${holdings[0].name}". This action cannot be undone.`}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="space-y-2">

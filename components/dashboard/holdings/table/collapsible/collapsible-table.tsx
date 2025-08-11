@@ -17,6 +17,8 @@ interface CollapsibleTableProps<TData, TValue> {
   title: string;
   filterValue: string;
   onRowClick?: (row: TData) => void;
+  onSelectedRowsChange?: (rows: TData[]) => void;
+  resetRowSelectionSignal?: number;
 }
 
 export function CollapsibleTable<TData, TValue>({
@@ -25,6 +27,8 @@ export function CollapsibleTable<TData, TValue>({
   title,
   filterValue,
   onRowClick,
+  onSelectedRowsChange,
+  resetRowSelectionSignal,
 }: CollapsibleTableProps<TData, TValue>) {
   return (
     <Collapsible defaultOpen={true} className="rounded-md border">
@@ -39,6 +43,8 @@ export function CollapsibleTable<TData, TValue>({
           data={data}
           filterValue={filterValue}
           onRowClick={onRowClick}
+          onSelectedRowsChange={onSelectedRowsChange}
+          resetRowSelectionSignal={resetRowSelectionSignal}
         />
       </CollapsibleContent>
     </Collapsible>

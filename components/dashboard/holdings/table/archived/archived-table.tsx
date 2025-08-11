@@ -7,13 +7,13 @@ import { Trash2, ArchiveRestore, LoaderCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
+import { BulkActionBar } from "@/components/dashboard/holdings/table/base/bulk-action-bar";
 import { DeleteHoldingDialog } from "@/components/dashboard/holdings/table/row-actions/delete-dialog";
 import { DataTable } from "../base/data-table";
 import { columns } from "./columns";
 
 import { restoreHoldings } from "@/server/holdings/restore";
 
-import type { RowSelectionState } from "@tanstack/react-table";
 import type { TransformedHolding } from "@/types/global.types";
 
 interface ArchivedTableProps {
@@ -23,8 +23,8 @@ interface ArchivedTableProps {
 export function ArchivedTable({ data }: ArchivedTableProps) {
   const [isRestoring, setIsRestoring] = useState(false);
   const [filterValue, setFilterValue] = useState("");
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [selectedRows, setSelectedRows] = useState<TransformedHolding[]>([]);
+  const [resetSelectionSignal, setResetSelectionSignal] = useState(0);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
 
   const router = useRouter();
@@ -48,8 +48,7 @@ export function ArchivedTable({ data }: ArchivedTableProps) {
       }
       toast.success(`${result.count} holding(s) restored successfully`);
       // Reset selection state
-      setRowSelection({});
-      setSelectedRows([]);
+      setResetSelectionSignal((prev) => prev + 1);
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to restore holding(s)",
@@ -99,22 +98,37 @@ export function ArchivedTable({ data }: ArchivedTableProps) {
           data={data}
           filterValue={filterValue}
           onRowClick={handleRowClick}
-          enableRowSelection
-          rowSelection={rowSelection}
-          onRowSelectionChange={setRowSelection}
-          onSelectedChange={setSelectedRows}
+          onSelectedRowsChange={setSelectedRows}
+          resetRowSelectionSignal={resetSelectionSignal}
         />
       </div>
 
-      {/* Selected rows count */}
-      {selectedRows.length > 0 ? (
-        <p className="text-muted-foreground text-end text-sm">
-          {selectedRows.length} of {data.length} row(s) selected
-        </p>
-      ) : (
-        <p className="text-muted-foreground text-end text-sm">
-          {data.length} archived holding(s)
-        </p>
+      {/* Rows count */}
+      <p className="text-muted-foreground text-end text-sm">
+        {data.length} archived holding(s)
+      </p>
+
+      {/* Floating bulk action bar */}
+      {selectedRows.length > 0 && (
+        <BulkActionBar
+          selectedCount={selectedRows.length}
+          actions={[
+            {
+              label: "Restore selected",
+              onClick: handleRestore,
+              icon: <ArchiveRestore className="size-4" />,
+              variant: "outline",
+              disabled: isRestoring,
+              loading: isRestoring,
+            },
+            {
+              label: "Delete selected",
+              onClick: () => setOpenDeleteDialog(true),
+              icon: <Trash2 className="size-4" />,
+              variant: "destructive",
+            },
+          ]}
+        />
       )}
 
       {/* Delete dialog */}
@@ -123,8 +137,7 @@ export function ArchivedTable({ data }: ArchivedTableProps) {
         onOpenChangeAction={setOpenDeleteDialog}
         holdings={selectedRows.map(({ id, name }) => ({ id, name }))} // Minimal DTO
         onCompleted={() => {
-          setSelectedRows([]);
-          setRowSelection({});
+          setResetSelectionSignal((prev) => prev + 1);
         }}
       />
     </div>
