@@ -3,9 +3,8 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Trash2, ArchiveRestore, LoaderCircle } from "lucide-react";
+import { Trash2, ArchiveRestore } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
 import { BulkActionBar } from "@/components/dashboard/holdings/table/base/bulk-action-bar";
 import { DeleteHoldingDialog } from "@/components/dashboard/holdings/table/row-actions/delete-dialog";
@@ -60,36 +59,13 @@ export function ArchivedTable({ data }: ArchivedTableProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Toolbar */}
-      <div className="flex items-center gap-2">
-        {/* Search */}
-        <SearchInput
-          className="max-w-sm"
-          placeholder="Search archived holdings..."
-          value={filterValue}
-          onChange={(e) => setFilterValue(e.target.value)}
-        />
-        {/* Bulk actions */}
-        {selectedRows.length > 0 && (
-          <div className="flex items-center gap-2">
-            <Button onClick={() => setOpenDeleteDialog(true)} variant="outline">
-              <Trash2 className="text-destructive size-4" /> Delete
-            </Button>
-            <Button
-              onClick={handleRestore}
-              variant="outline"
-              disabled={isRestoring}
-            >
-              {isRestoring ? (
-                <LoaderCircle className="size-4 animate-spin" />
-              ) : (
-                <ArchiveRestore className="size-4" />
-              )}{" "}
-              Restore
-            </Button>
-          </div>
-        )}
-      </div>
+      {/* Search */}
+      <SearchInput
+        className="max-w-sm"
+        placeholder="Search archived holdings..."
+        value={filterValue}
+        onChange={(e) => setFilterValue(e.target.value)}
+      />
 
       {/* Table */}
       <div className="rounded-md border">
