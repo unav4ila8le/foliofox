@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Archive, Package, Trash2 } from "lucide-react";
 
@@ -15,24 +15,6 @@ import { columns } from "./columns";
 
 import type { HoldingWithProfitLoss } from "@/types/global.types";
 
-// Union type for table rows - holdings and category headers
-type TableRow =
-  | HoldingWithProfitLoss
-  | {
-      id: string;
-      type: "category-header";
-      categoryName: string;
-      categoryCode: string;
-      holdingCount: number;
-    };
-
-// Type guard to check if row is a category header
-function isCategoryHeader(
-  row: TableRow,
-): row is Extract<TableRow, { type: "category-header" }> {
-  return "type" in row && row.type === "category-header";
-}
-
 interface HoldingsTableProps {
   data: HoldingWithProfitLoss[];
 }
@@ -46,68 +28,13 @@ export function HoldingsTable({ data }: HoldingsTableProps) {
 
   const router = useRouter();
 
-  // Handle row click to navigate to holding page (only for holding rows)
+  // Handle row click to navigate to holding page
   const handleRowClick = useCallback(
-    (row: TableRow) => {
-      if (!isCategoryHeader(row)) {
-        router.push(`/dashboard/holdings/${row.id}`);
-      }
+    (holding: HoldingWithProfitLoss) => {
+      router.push(`/dashboard/holdings/${holding.id}`);
     },
     [router],
   );
-
-  // Transform data to include category headers
-  const tableData = useMemo(() => {
-    // Group holdings by category
-    const groupedHoldings = data.reduce(
-      (grouped, holding) => {
-        const { category_code, asset_categories } = holding;
-        if (!grouped[category_code]) {
-          grouped[category_code] = {
-            name: asset_categories.name,
-            holdings: [],
-          };
-        }
-        grouped[category_code].holdings.push(holding);
-        return grouped;
-      },
-      {} as Record<string, { name: string; holdings: HoldingWithProfitLoss[] }>,
-    );
-
-    // Flatten into table rows with category headers
-    const tableRows: TableRow[] = [];
-
-    Object.entries(groupedHoldings).forEach(
-      ([categoryCode, { name, holdings }]) => {
-        // Add category header row
-        tableRows.push({
-          id: `category-${categoryCode}`,
-          type: "category-header",
-          categoryName: name,
-          categoryCode,
-          holdingCount: holdings.length,
-        });
-
-        // Add holding rows
-        tableRows.push(...holdings);
-      },
-    );
-
-    return tableRows;
-  }, [data]);
-
-  // Handle selection change - filter out category headers
-  const handleSelectedRowsChange = useCallback((rows: TableRow[]) => {
-    const holdingRows = rows.filter(
-      (row): row is HoldingWithProfitLoss => !isCategoryHeader(row),
-    );
-    setSelectedRows(holdingRows);
-  }, []);
-
-  // Determine if row is clickable
-  const isRowClickable = useCallback((row: TableRow) => {
-    return !isCategoryHeader(row);
-  }, []);
 
   return (
     <div className="flex flex-col gap-4">
@@ -138,11 +65,11 @@ export function HoldingsTable({ data }: HoldingsTableProps) {
         <div className="rounded-md border">
           <DataTable
             columns={columns}
-            data={tableData}
+            data={data}
             filterValue={filterValue}
             onRowClick={handleRowClick}
-            onSelectedRowsChange={handleSelectedRowsChange}
-            isRowClickable={isRowClickable}
+            onSelectedRowsChange={setSelectedRows}
+            groupBy={["category_code"]}
           />
         </div>
       )}

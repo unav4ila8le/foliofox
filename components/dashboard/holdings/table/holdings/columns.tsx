@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowUpDown } from "lucide-react";
+import type { ColumnDef } from "@tanstack/react-table";
 
 import {
   Tooltip,
@@ -15,28 +16,9 @@ import { ActionsCell } from "../row-actions/actions-cell";
 import { cn } from "@/lib/utils";
 import { formatNumber, formatPercentage } from "@/lib/number-format";
 
-import type { ColumnDef } from "@tanstack/react-table";
-import type { HoldingWithProfitLoss } from "@/types/global.types";
+import { HoldingWithProfitLoss } from "@/types/global.types";
 
-// Union type for table rows - holdings and category headers
-type TableRow =
-  | HoldingWithProfitLoss
-  | {
-      id: string;
-      type: "category-header";
-      categoryName: string;
-      categoryCode: string;
-      holdingCount: number;
-    };
-
-// Type guard to check if row is a category header
-function isCategoryHeader(
-  row: TableRow,
-): row is Extract<TableRow, { type: "category-header" }> {
-  return "type" in row && row.type === "category-header";
-}
-
-export const columns: ColumnDef<TableRow>[] = [
+export const columns: ColumnDef<HoldingWithProfitLoss>[] = [
   {
     id: "select",
     header: ({ table }) => (
@@ -50,26 +32,28 @@ export const columns: ColumnDef<TableRow>[] = [
         aria-label="Select all"
       />
     ),
-    cell: ({ row }) => {
-      const rowData = row.original;
-
-      // Category headers are not selectable
-      if (isCategoryHeader(rowData)) {
-        return null;
-      }
-
-      return (
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          onClick={(e) => e.stopPropagation()}
-          aria-label="Select row"
-        />
-      );
-    },
+    cell: ({ row }) => (
+      <Checkbox
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+        onClick={(e) => e.stopPropagation()}
+        aria-label="Select row"
+      />
+    ),
     enableSorting: false,
     enableHiding: false,
     size: 32,
+  },
+  // Category header - hidden
+  {
+    accessorKey: "category_code",
+    header: () => null,
+    cell: () => null,
+    enableSorting: false,
+    enableHiding: false,
+    size: 0,
+    minSize: 0,
+    maxSize: 0,
   },
   {
     accessorKey: "name",
@@ -85,15 +69,14 @@ export const columns: ColumnDef<TableRow>[] = [
       );
     },
     cell: ({ row }) => {
-      const rowData = row.original;
-
-      // Render category header
-      if (isCategoryHeader(rowData)) {
-        return <div className="font-semibold">{rowData.categoryName}</div>;
+      if (row.getIsGrouped()) {
+        // group row → show category name aligned under Name column
+        const firstLeaf = row.getLeafRows()[0];
+        const categoryName = firstLeaf?.original.asset_categories.name;
+        return <div className="font-semibold">{categoryName}</div>;
       }
 
-      // Render holding name
-      const name = rowData.name;
+      const name = row.getValue<string>("name");
       return (
         <div className="flex w-40 sm:w-64 lg:w-80">
           <TooltipProvider>
@@ -112,30 +95,18 @@ export const columns: ColumnDef<TableRow>[] = [
     accessorKey: "currency",
     header: "Currency",
     cell: ({ row }) => {
-      const rowData = row.original;
-
-      // Category headers don't have currency
-      if (isCategoryHeader(rowData)) {
-        return null;
-      }
-
-      return <Badge variant="secondary">{rowData.currency}</Badge>;
+      const currency = row.getValue<string>("currency");
+      return <Badge variant="secondary">{currency}</Badge>;
     },
   },
   {
     accessorKey: "current_quantity",
     header: "Quantity",
     cell: ({ row }) => {
-      const rowData = row.original;
-
-      // Category headers don't have quantity
-      if (isCategoryHeader(rowData)) {
-        return null;
-      }
-
+      const current_quantity = row.getValue<number>("current_quantity");
       return (
         <div className="tabular-nums">
-          {formatNumber(rowData.current_quantity, undefined, {
+          {formatNumber(current_quantity, undefined, {
             maximumFractionDigits: 6,
           })}
         </div>
@@ -146,16 +117,10 @@ export const columns: ColumnDef<TableRow>[] = [
     accessorKey: "current_unit_value",
     header: "Unit value",
     cell: ({ row }) => {
-      const rowData = row.original;
-
-      // Category headers don't have unit value
-      if (isCategoryHeader(rowData)) {
-        return null;
-      }
-
+      const current_unit_value = row.getValue<number>("current_unit_value");
       return (
         <div className="tabular-nums">
-          {formatNumber(rowData.current_unit_value, undefined, {
+          {formatNumber(current_unit_value, undefined, {
             maximumFractionDigits: 2,
           })}
         </div>
@@ -176,14 +141,7 @@ export const columns: ColumnDef<TableRow>[] = [
       );
     },
     cell: ({ row }) => {
-      const rowData = row.original;
-
-      // Category headers don't have profit/loss
-      if (isCategoryHeader(rowData)) {
-        return null;
-      }
-
-      const profit_loss = rowData.profit_loss;
+      const profit_loss = row.getValue<number>("profit_loss");
       const isPositive = profit_loss >= 0;
 
       return (
@@ -213,14 +171,9 @@ export const columns: ColumnDef<TableRow>[] = [
       );
     },
     cell: ({ row }) => {
-      const rowData = row.original;
-
-      // Category headers don't have profit/loss percentage
-      if (isCategoryHeader(rowData)) {
-        return null;
-      }
-
-      const profit_loss_percentage = rowData.profit_loss_percentage;
+      const profit_loss_percentage = row.getValue<number>(
+        "profit_loss_percentage",
+      );
       const isPositive = profit_loss_percentage >= 0;
 
       return (
@@ -250,16 +203,10 @@ export const columns: ColumnDef<TableRow>[] = [
       );
     },
     cell: ({ row }) => {
-      const rowData = row.original;
-
-      // Category headers don't have total value
-      if (isCategoryHeader(rowData)) {
-        return null;
-      }
-
+      const total_value = row.getValue<number>("total_value");
       return (
         <div className="tabular-nums">
-          {formatNumber(rowData.total_value, undefined, {
+          {formatNumber(total_value, undefined, {
             maximumFractionDigits: 2,
           })}
         </div>
@@ -273,13 +220,8 @@ export const columns: ColumnDef<TableRow>[] = [
       cellClassName: "text-right",
     },
     cell: ({ row }) => {
-      const rowData = row.original;
-
-      // Category headers don't have actions
-      if (isCategoryHeader(rowData)) {
-        return null;
-      }
-      return <ActionsCell holding={rowData} />;
+      const holding = row.original;
+      return <ActionsCell holding={holding} />;
     },
   },
 ];
