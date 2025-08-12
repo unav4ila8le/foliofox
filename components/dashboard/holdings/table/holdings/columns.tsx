@@ -70,10 +70,17 @@ export const columns: ColumnDef<HoldingWithProfitLoss>[] = [
     },
     cell: ({ row }) => {
       if (row.getIsGrouped()) {
-        // group row → show category name aligned under Name column
+        // group row → show category name and number of holdings aligned under Name column
         const firstLeaf = row.getLeafRows()[0];
         const categoryName = firstLeaf?.original.asset_categories.name;
-        return <div className="font-semibold">{categoryName}</div>;
+        return (
+          <div className="flex items-center gap-2 font-semibold">
+            {categoryName}
+            <Badge variant="secondary" className="font-semibold">
+              {row.getLeafRows().length}
+            </Badge>
+          </div>
+        );
       }
 
       const name = row.getValue<string>("name");
