@@ -3,6 +3,7 @@ import { Archive } from "lucide-react";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { EditHoldingButton } from "@/components/dashboard/holdings/edit-holding-button";
 import { RecordsTable } from "@/components/dashboard/holdings/table/records/records-table";
 
 import { fetchSingleHolding } from "@/server/holdings/fetch";
@@ -37,6 +38,7 @@ async function HoldingPageHeader({ holdingId }: { holdingId: string }) {
             </Badge>
           )}
         </div>
+        <EditHoldingButton holding={holding} />
       </div>
 
       {/* Symbol details */}
