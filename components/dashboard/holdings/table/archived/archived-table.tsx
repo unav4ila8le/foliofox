@@ -23,7 +23,6 @@ export function ArchivedTable({ data }: ArchivedTableProps) {
   const [isRestoring, setIsRestoring] = useState(false);
   const [filterValue, setFilterValue] = useState("");
   const [selectedRows, setSelectedRows] = useState<TransformedHolding[]>([]);
-  const [resetSelectionSignal, setResetSelectionSignal] = useState(0);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
 
   const router = useRouter();
@@ -47,7 +46,7 @@ export function ArchivedTable({ data }: ArchivedTableProps) {
       }
       toast.success(`${result.count} holding(s) restored successfully`);
       // Reset selection state
-      setResetSelectionSignal((prev) => prev + 1);
+      setSelectedRows([]);
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to restore holding(s)",
@@ -75,7 +74,6 @@ export function ArchivedTable({ data }: ArchivedTableProps) {
           filterValue={filterValue}
           onRowClick={handleRowClick}
           onSelectedRowsChange={setSelectedRows}
-          resetRowSelectionSignal={resetSelectionSignal}
         />
       </div>
 
@@ -113,7 +111,7 @@ export function ArchivedTable({ data }: ArchivedTableProps) {
         onOpenChangeAction={setOpenDeleteDialog}
         holdings={selectedRows.map(({ id, name }) => ({ id, name }))} // Minimal DTO
         onCompleted={() => {
-          setResetSelectionSignal((prev) => prev + 1);
+          setSelectedRows([]);
         }}
       />
     </div>

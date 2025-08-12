@@ -23,7 +23,6 @@ interface RecordsTableProps {
 export function RecordsTable({ data, holding }: RecordsTableProps) {
   const [filterValue, setFilterValue] = useState("");
   const [selectedRows, setSelectedRows] = useState<TransformedRecord[]>([]);
-  const [resetSelectionSignal, setResetSelectionSignal] = useState(0);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
 
   return (
@@ -63,7 +62,6 @@ export function RecordsTable({ data, holding }: RecordsTableProps) {
             filterValue={filterValue}
             filterColumnId="description"
             onSelectedRowsChange={setSelectedRows}
-            resetRowSelectionSignal={resetSelectionSignal}
           />
         </div>
       )}
@@ -94,7 +92,7 @@ export function RecordsTable({ data, holding }: RecordsTableProps) {
         onOpenChangeAction={setOpenDeleteDialog}
         records={selectedRows.map(({ id }) => ({ id }))} // Minimal DTO
         onCompleted={() => {
-          setResetSelectionSignal((prev) => prev + 1);
+          setSelectedRows([]);
         }}
       />
     </div>

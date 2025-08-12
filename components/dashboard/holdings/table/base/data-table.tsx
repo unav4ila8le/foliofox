@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   type ColumnDef,
   type SortingState,
@@ -31,26 +31,36 @@ interface DataTableProps<TData, TValue> {
   filterColumnId?: string;
   onRowClick?: (row: TData) => void;
   onSelectedRowsChange?: (rows: TData[]) => void;
-  resetRowSelectionSignal?: number;
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
-  filterValue,
+  filterValue = "",
   filterColumnId = "name",
   onRowClick,
   onSelectedRowsChange,
-  resetRowSelectionSignal = 0,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([
-    {
-      id: filterColumnId,
-      value: filterValue,
+
+  // Memoize column filters to prevent unnecessary re-renders
+  const columnFilters = useMemo<ColumnFiltersState>(() => {
+    if (!filterValue?.trim()) return [];
+    return [{ id: filterColumnId, value: filterValue }];
+  }, [filterValue, filterColumnId]);
+
+  // Memoize row selection change handler to prevent infinite re-renders
+  const handleRowSelectionChange = useCallback(
+    (
+      updaterOrValue:
+        | RowSelectionState
+        | ((old: RowSelectionState) => RowSelectionState),
+    ) => {
+      setRowSelection(updaterOrValue);
     },
-  ]);
+    [],
+  );
 
   const table = useReactTable({
     data,
@@ -58,9 +68,9 @@ export function DataTable<TData, TValue>({
     getCoreRowModel: getCoreRowModel(),
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
-    onColumnFiltersChange: setColumnFilters,
+    onColumnFiltersChange: () => {},
     getFilteredRowModel: getFilteredRowModel(),
-    onRowSelectionChange: setRowSelection,
+    onRowSelectionChange: handleRowSelectionChange,
     enableRowSelection: true,
     getRowId: (row, index) =>
       // @ts-expect-error - generic rows may or may not have id; fallback to index
@@ -72,28 +82,22 @@ export function DataTable<TData, TValue>({
     },
   });
 
-  // Filter
-  useEffect(() => {
-    setColumnFilters(
-      filterValue && filterValue.trim()
-        ? [{ id: filterColumnId, value: filterValue }]
-        : [],
-    );
-  }, [filterValue, filterColumnId]);
-
-  // Emit selected rows to parent whenever selection changes
+  // Emit selected rows to parent - only when selection actually changes
   useEffect(() => {
     if (!onSelectedRowsChange) return;
-    const selected = table
+    const selectedRows = table
       .getSelectedRowModel()
       .rows.map((row) => row.original);
-    onSelectedRowsChange(selected);
+    onSelectedRowsChange(selectedRows);
   }, [rowSelection, onSelectedRowsChange, table]);
 
-  // Reset selection when signal changes
-  useEffect(() => {
-    table.resetRowSelection();
-  }, [resetRowSelectionSignal, table]);
+  // Memoize row click handler to prevent unnecessary re-renders
+  const handleRowClick = useCallback(
+    (rowData: TData) => {
+      onRowClick?.(rowData);
+    },
+    [onRowClick],
+  );
 
   return (
     <Table>
@@ -132,8 +136,8 @@ export function DataTable<TData, TValue>({
             <TableRow
               key={row.id}
               data-state={row.getIsSelected() && "selected"}
-              onClick={() => onRowClick?.(row.original)}
-              className={onRowClick && "cursor-pointer"}
+              onClick={() => handleRowClick(row.original)}
+              className={cn(onRowClick && "cursor-pointer")}
             >
               {row.getVisibleCells().map((cell) => (
                 <TableCell

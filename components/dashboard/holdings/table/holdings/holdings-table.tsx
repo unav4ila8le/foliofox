@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Archive, Package, Trash2 } from "lucide-react";
 
 import { SearchInput } from "@/components/ui/search-input";
+import { NewHoldingButton } from "@/components/dashboard/new-holding";
+import { TableActionsDropdown } from "@/components/dashboard/holdings/table/holdings/table-actions";
 import { BulkActionBar } from "@/components/dashboard/holdings/table/base/bulk-action-bar";
 import { DeleteHoldingDialog } from "@/components/dashboard/holdings/table/row-actions/delete-dialog";
 import { ArchiveHoldingDialog } from "@/components/dashboard/holdings/table/row-actions/archive-dialog";
@@ -38,7 +40,7 @@ interface HoldingsTableProps {
 export function HoldingsTable({ data }: HoldingsTableProps) {
   const [filterValue, setFilterValue] = useState("");
   const [selectedRows, setSelectedRows] = useState<HoldingWithProfitLoss[]>([]);
-  const [resetSelectionSignal, setResetSelectionSignal] = useState(0);
+
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [openArchiveDialog, setOpenArchiveDialog] = useState(false);
 
@@ -104,13 +106,17 @@ export function HoldingsTable({ data }: HoldingsTableProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Search */}
-      <SearchInput
-        className="max-w-sm"
-        placeholder="Search holdings..."
-        value={filterValue}
-        onChange={(e) => setFilterValue(e.target.value)}
-      />
+      {/* Toolbar */}
+      <div className="flex items-center justify-between gap-2">
+        <SearchInput
+          className="max-w-sm"
+          placeholder="Search holdings..."
+          value={filterValue}
+          onChange={(e) => setFilterValue(e.target.value)}
+        />
+        <NewHoldingButton variant="outline" />
+        <TableActionsDropdown holdingsCount={data.length} />
+      </div>
 
       {/* Table */}
       {data.length === 0 ? (
@@ -131,7 +137,6 @@ export function HoldingsTable({ data }: HoldingsTableProps) {
             filterValue={filterValue}
             onRowClick={handleRowClick}
             onSelectedRowsChange={handleSelectedRowsChange}
-            resetRowSelectionSignal={resetSelectionSignal}
           />
         </div>
       )}
@@ -168,7 +173,7 @@ export function HoldingsTable({ data }: HoldingsTableProps) {
         onOpenChangeAction={setOpenDeleteDialog}
         holdings={selectedRows.map(({ id, name }) => ({ id, name }))} // Minimal DTO
         onCompleted={() => {
-          setResetSelectionSignal((prev) => prev + 1);
+          setSelectedRows([]);
         }}
       />
 
@@ -178,7 +183,7 @@ export function HoldingsTable({ data }: HoldingsTableProps) {
         onOpenChangeAction={setOpenArchiveDialog}
         holdings={selectedRows.map(({ id, name }) => ({ id, name }))} // Minimal DTO
         onCompleted={() => {
-          setResetSelectionSignal((prev) => prev + 1);
+          setSelectedRows([]);
         }}
       />
     </div>
