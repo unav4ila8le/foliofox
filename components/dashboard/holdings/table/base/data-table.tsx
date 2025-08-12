@@ -27,23 +27,28 @@ import {
 
 import { cn } from "@/lib/utils";
 
-interface DataTableProps<TData, TValue> {
+// Helper type to ensure data has an id field for row identification
+type DataWithId = { id: string | number };
+
+interface DataTableProps<TData extends DataWithId, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   filterValue?: string;
   filterColumnId?: string;
   onRowClick?: (row: TData) => void;
   onSelectedRowsChange?: (rows: TData[]) => void;
+  enableGrouping?: boolean;
   groupBy?: string[];
 }
 
-export function DataTable<TData, TValue>({
+export function DataTable<TData extends DataWithId, TValue>({
   columns,
   data,
   filterValue = "",
   filterColumnId = "name",
   onRowClick,
   onSelectedRowsChange,
+  enableGrouping = false,
   groupBy = [],
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -76,25 +81,27 @@ export function DataTable<TData, TValue>({
     getSortedRowModel: getSortedRowModel(),
     onColumnFiltersChange: () => {},
     getFilteredRowModel: getFilteredRowModel(),
-    getGroupedRowModel: getGroupedRowModel(),
-    getExpandedRowModel: getExpandedRowModel(),
-    onExpandedChange: setExpanded,
+    ...(enableGrouping && {
+      getGroupedRowModel: getGroupedRowModel(),
+      getExpandedRowModel: getExpandedRowModel(),
+      onExpandedChange: setExpanded,
+    }),
     onRowSelectionChange: handleRowSelectionChange,
     enableRowSelection: true,
-    enableExpanding: true,
-    groupedColumnMode: "remove",
+    enableExpanding: enableGrouping,
+    groupedColumnMode: enableGrouping ? "remove" : false,
     autoResetAll: false,
     autoResetExpanded: false,
     autoResetPageIndex: false,
-    getRowId: (row, index) =>
-      // @ts-expect-error - generic rows may or may not have id; fallback to index
-      row?.id ? String(row.id) : String(index),
+    getRowId: (row) => String(row.id),
     state: {
       sorting,
       columnFilters,
       rowSelection,
-      grouping: groupBy,
-      expanded,
+      ...(enableGrouping && {
+        grouping: groupBy,
+        expanded,
+      }),
     },
   });
 
@@ -150,7 +157,7 @@ export function DataTable<TData, TValue>({
         {table.getRowModel().rows?.length ? (
           table.getRowModel().rows.map((row) => {
             if (row.getIsGrouped()) {
-              // Render only the first visible cell (the Name column) and span the row
+              // Default group row rendering - can be customized via column definitions
               const visibleCells = row.getVisibleCells();
               const selectCell = visibleCells[0];
               const nameCell = visibleCells[1];
@@ -190,9 +197,9 @@ export function DataTable<TData, TValue>({
               <TableRow
                 key={row.id}
                 data-state={row.getIsSelected() && "selected"}
-                onClick={() => {
-                  handleRowClick(row.original);
-                }}
+                onClick={
+                  onRowClick ? () => handleRowClick(row.original) : undefined
+                }
                 className={cn(onRowClick && "cursor-pointer")}
               >
                 {row.getVisibleCells().map((cell) => (

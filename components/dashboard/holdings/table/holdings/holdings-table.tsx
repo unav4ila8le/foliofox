@@ -69,6 +69,7 @@ export function HoldingsTable({ data }: HoldingsTableProps) {
             filterValue={filterValue}
             onRowClick={handleRowClick}
             onSelectedRowsChange={setSelectedRows}
+            enableGrouping={true}
             groupBy={["category_code"]}
           />
         </div>
