@@ -48,7 +48,7 @@ export function ActionsCell({ record }: { record: TransformedRecord }) {
       />
 
       <DeleteRecordDialog
-        record={record}
+        records={[{ id: record.id }]} // Minimal DTO
         open={showDeleteDialog}
         onOpenChangeAction={setShowDeleteDialog}
       />

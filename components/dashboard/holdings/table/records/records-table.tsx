@@ -92,7 +92,7 @@ export function RecordsTable({ data, holding }: RecordsTableProps) {
       <DeleteRecordDialog
         open={openDeleteDialog}
         onOpenChangeAction={setOpenDeleteDialog}
-        records={selectedRows}
+        records={selectedRows.map(({ id }) => ({ id }))} // Minimal DTO
         onCompleted={() => {
           setResetSelectionSignal((prev) => prev + 1);
         }}

@@ -17,10 +17,8 @@ import {
 
 import { deleteRecord, deleteRecords } from "@/server/records/delete";
 
-import type { TransformedRecord } from "@/types/global.types";
-
 interface DeleteDialogProps {
-  records: TransformedRecord[];
+  records: { id: string }[];
   open: boolean;
   onOpenChangeAction: (open: boolean) => void;
   onCompleted?: () => void;
