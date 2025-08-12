@@ -18,7 +18,25 @@ import { formatNumber, formatPercentage } from "@/lib/number-format";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { HoldingWithProfitLoss } from "@/types/global.types";
 
-export const columns: ColumnDef<HoldingWithProfitLoss>[] = [
+// Union type for table rows - holdings and category headers
+type TableRow =
+  | HoldingWithProfitLoss
+  | {
+      id: string;
+      type: "category-header";
+      categoryName: string;
+      categoryCode: string;
+      holdingCount: number;
+    };
+
+// Type guard to check if row is a category header
+function isCategoryHeader(
+  row: TableRow,
+): row is Extract<TableRow, { type: "category-header" }> {
+  return "type" in row && row.type === "category-header";
+}
+
+export const columns: ColumnDef<TableRow>[] = [
   {
     id: "select",
     header: ({ table }) => (
@@ -32,14 +50,23 @@ export const columns: ColumnDef<HoldingWithProfitLoss>[] = [
         aria-label="Select all"
       />
     ),
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        onClick={(e) => e.stopPropagation()}
-        aria-label="Select row"
-      />
-    ),
+    cell: ({ row }) => {
+      const rowData = row.original;
+
+      // Category headers are not selectable
+      if (isCategoryHeader(rowData)) {
+        return null;
+      }
+
+      return (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          onClick={(e) => e.stopPropagation()}
+          aria-label="Select row"
+        />
+      );
+    },
     enableSorting: false,
     enableHiding: false,
     size: 32,
@@ -58,7 +85,15 @@ export const columns: ColumnDef<HoldingWithProfitLoss>[] = [
       );
     },
     cell: ({ row }) => {
-      const name = row.getValue<string>("name");
+      const rowData = row.original;
+
+      // Render category header
+      if (isCategoryHeader(rowData)) {
+        return <div className="font-semibold">{rowData.categoryName}</div>;
+      }
+
+      // Render holding name
+      const name = rowData.name;
       return (
         <div className="flex w-40 sm:w-64 lg:w-80">
           <TooltipProvider>
@@ -77,19 +112,30 @@ export const columns: ColumnDef<HoldingWithProfitLoss>[] = [
     accessorKey: "currency",
     header: "Currency",
     cell: ({ row }) => {
-      const currency = row.getValue<string>("currency");
+      const rowData = row.original;
 
-      return <Badge variant="secondary">{currency}</Badge>;
+      // Category headers don't have currency
+      if (isCategoryHeader(rowData)) {
+        return null;
+      }
+
+      return <Badge variant="secondary">{rowData.currency}</Badge>;
     },
   },
   {
     accessorKey: "current_quantity",
     header: "Quantity",
     cell: ({ row }) => {
-      const current_quantity = row.getValue<number>("current_quantity");
+      const rowData = row.original;
+
+      // Category headers don't have quantity
+      if (isCategoryHeader(rowData)) {
+        return null;
+      }
+
       return (
         <div className="tabular-nums">
-          {formatNumber(current_quantity, undefined, {
+          {formatNumber(rowData.current_quantity, undefined, {
             maximumFractionDigits: 6,
           })}
         </div>
@@ -100,11 +146,18 @@ export const columns: ColumnDef<HoldingWithProfitLoss>[] = [
     accessorKey: "current_unit_value",
     header: "Unit value",
     cell: ({ row }) => {
-      const unit_value = row.getValue<number>("current_unit_value");
+      const rowData = row.original;
+
+      // Category headers don't have unit value
+      if (isCategoryHeader(rowData)) {
+        return null;
+      }
 
       return (
         <div className="tabular-nums">
-          {formatNumber(unit_value, undefined, { maximumFractionDigits: 2 })}
+          {formatNumber(rowData.current_unit_value, undefined, {
+            maximumFractionDigits: 2,
+          })}
         </div>
       );
     },
@@ -123,7 +176,14 @@ export const columns: ColumnDef<HoldingWithProfitLoss>[] = [
       );
     },
     cell: ({ row }) => {
-      const profit_loss = row.getValue<number>("profit_loss");
+      const rowData = row.original;
+
+      // Category headers don't have profit/loss
+      if (isCategoryHeader(rowData)) {
+        return null;
+      }
+
+      const profit_loss = rowData.profit_loss;
       const isPositive = profit_loss >= 0;
 
       return (
@@ -153,9 +213,14 @@ export const columns: ColumnDef<HoldingWithProfitLoss>[] = [
       );
     },
     cell: ({ row }) => {
-      const profit_loss_percentage = row.getValue<number>(
-        "profit_loss_percentage",
-      );
+      const rowData = row.original;
+
+      // Category headers don't have profit/loss percentage
+      if (isCategoryHeader(rowData)) {
+        return null;
+      }
+
+      const profit_loss_percentage = rowData.profit_loss_percentage;
       const isPositive = profit_loss_percentage >= 0;
 
       return (
@@ -185,11 +250,18 @@ export const columns: ColumnDef<HoldingWithProfitLoss>[] = [
       );
     },
     cell: ({ row }) => {
-      const total_value = row.getValue<number>("total_value");
+      const rowData = row.original;
+
+      // Category headers don't have total value
+      if (isCategoryHeader(rowData)) {
+        return null;
+      }
 
       return (
         <div className="tabular-nums">
-          {formatNumber(total_value, undefined, { maximumFractionDigits: 2 })}
+          {formatNumber(rowData.total_value, undefined, {
+            maximumFractionDigits: 2,
+          })}
         </div>
       );
     },
@@ -201,8 +273,13 @@ export const columns: ColumnDef<HoldingWithProfitLoss>[] = [
       cellClassName: "text-right",
     },
     cell: ({ row }) => {
-      const holding = row.original;
-      return <ActionsCell holding={holding} />;
+      const rowData = row.original;
+
+      // Category headers don't have actions
+      if (isCategoryHeader(rowData)) {
+        return null;
+      }
+      return <ActionsCell holding={rowData} />;
     },
   },
 ];

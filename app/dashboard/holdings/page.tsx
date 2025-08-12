@@ -1,19 +1,19 @@
 import { Suspense } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { HoldingsTables } from "@/components/dashboard/holdings/table/holdings/holdings-tables";
+import { HoldingsTable } from "@/components/dashboard/holdings/table/holdings/holdings-table";
 
 import { fetchHoldings } from "@/server/holdings/fetch";
 import { calculateProfitLoss } from "@/lib/profit-loss";
 
 // Separate components for data fetching with suspense
-async function HoldingsTablesWrapper() {
+async function HoldingsTableWrapper() {
   // Fetch all holdings with their complete record history
   const { holdings, records } = await fetchHoldings({ includeRecords: true });
   // Transform data to add P/L calculations (no additional queries)
   const holdingsWithProfitLoss = calculateProfitLoss(holdings, records);
 
-  return <HoldingsTables data={holdingsWithProfitLoss} />;
+  return <HoldingsTable data={holdingsWithProfitLoss} />;
 }
 
 export default async function HoldingsPage() {
@@ -25,8 +25,8 @@ export default async function HoldingsPage() {
           Here&apos;s a list of all your holdings
         </p>
       </div>
-      <Suspense fallback={<Skeleton count={4} className="h-40" />}>
-        <HoldingsTablesWrapper />
+      <Suspense fallback={<Skeleton className="h-96" />}>
+        <HoldingsTableWrapper />
       </Suspense>
     </div>
   );
