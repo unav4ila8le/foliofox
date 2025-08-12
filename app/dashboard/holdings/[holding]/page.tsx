@@ -28,17 +28,17 @@ async function HoldingPageHeader({ holdingId }: { holdingId: string }) {
   return (
     <div className="space-y-2">
       {/* Holding name and type */}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-col items-start gap-2 md:flex-row md:items-center">
         <h1 className="text-2xl font-semibold">{holding.name}</h1>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Badge variant="secondary">{holding.asset_type}</Badge>
           {holding.is_archived && (
             <Badge variant="secondary">
               <Archive className="size-4" /> Archived
             </Badge>
           )}
+          <EditHoldingButton holding={holding} />
         </div>
-        <EditHoldingButton holding={holding} />
       </div>
 
       {/* Symbol details */}
