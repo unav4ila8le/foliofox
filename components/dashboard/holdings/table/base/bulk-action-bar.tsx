@@ -28,7 +28,7 @@ export function BulkActionBar({
   return (
     <div
       className={cn(
-        "bg-background animate-in fade-in-0 slide-in-from-bottom-8 fixed right-8 bottom-6 z-50 flex items-center gap-2 rounded-xl border p-2 shadow-lg duration-200 ease-out",
+        "bg-background animate-in fade-in-0 slide-in-from-bottom-8 fixed right-6 bottom-6 z-50 flex items-center gap-2 rounded-xl border p-2 shadow-lg duration-200 ease-out md:right-8",
         className,
       )}
     >
@@ -47,7 +47,9 @@ export function BulkActionBar({
           ) : (
             action.icon
           )}
-          {action.label}
+          <span className={cn(action.icon && "sr-only md:not-sr-only")}>
+            {action.label}
+          </span>
         </Button>
       ))}
     </div>
