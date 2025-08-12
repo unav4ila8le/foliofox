@@ -104,6 +104,11 @@ export function HoldingsTable({ data }: HoldingsTableProps) {
     setSelectedRows(holdingRows);
   }, []);
 
+  // Determine if row is clickable
+  const isRowClickable = useCallback((row: TableRow) => {
+    return !isCategoryHeader(row);
+  }, []);
+
   return (
     <div className="flex flex-col gap-4">
       {/* Toolbar */}
@@ -137,6 +142,7 @@ export function HoldingsTable({ data }: HoldingsTableProps) {
             filterValue={filterValue}
             onRowClick={handleRowClick}
             onSelectedRowsChange={handleSelectedRowsChange}
+            isRowClickable={isRowClickable}
           />
         </div>
       )}

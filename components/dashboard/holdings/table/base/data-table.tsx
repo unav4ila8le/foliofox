@@ -31,6 +31,7 @@ interface DataTableProps<TData, TValue> {
   filterColumnId?: string;
   onRowClick?: (row: TData) => void;
   onSelectedRowsChange?: (rows: TData[]) => void;
+  isRowClickable?: (row: TData) => boolean;
 }
 
 export function DataTable<TData, TValue>({
@@ -40,6 +41,7 @@ export function DataTable<TData, TValue>({
   filterColumnId = "name",
   onRowClick,
   onSelectedRowsChange,
+  isRowClickable,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
@@ -137,7 +139,12 @@ export function DataTable<TData, TValue>({
               key={row.id}
               data-state={row.getIsSelected() && "selected"}
               onClick={() => handleRowClick(row.original)}
-              className={cn(onRowClick && "cursor-pointer")}
+              className={cn(
+                onRowClick &&
+                  isRowClickable?.(row.original) &&
+                  "cursor-pointer",
+                !isRowClickable?.(row.original) && "bg-muted/50",
+              )}
             >
               {row.getVisibleCells().map((cell) => (
                 <TableCell
