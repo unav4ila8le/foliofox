@@ -1,6 +1,9 @@
 "use server";
 
 import { createServiceClient } from "@/supabase/service";
+import { createClient } from "@/supabase/server";
+
+import type { Symbol } from "@/types/global.types";
 
 /**
  * Fetch all unique symbol IDs from the database.
@@ -11,19 +14,35 @@ import { createServiceClient } from "@/supabase/service";
 export async function fetchSymbols() {
   const supabase = await createServiceClient();
 
-  try {
-    const { data: symbols, error } = await supabase
-      .from("symbols")
-      .select("id");
+  const { data, error } = await supabase.from("symbols").select("id");
 
-    if (error) {
-      throw new Error(`Failed to fetch symbols: ${error.message}`);
-    }
-
-    return symbols?.map((symbol) => symbol.id) || [];
-  } catch (error) {
-    throw new Error(
-      `Failed to fetch symbol IDs: ${error instanceof Error ? error.message : "Unknown error"}`,
-    );
+  if (error) {
+    throw new Error(`Failed to fetch symbols: ${error.message}`);
   }
+
+  return data?.map((symbol) => symbol.id) || [];
+}
+
+/**
+ * Fetch a symbol by its ID
+ *
+ * @param symbolId - The ID of the symbol to fetch
+ * @returns The symbol
+ */
+export async function fetchSymbol(symbolId: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("symbols")
+    .select(
+      "id, quote_type, short_name, long_name, exchange, currency, industry, sector",
+    )
+    .eq("id", symbolId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to fetch symbol: ${error.message}`);
+  }
+
+  return data as Symbol;
 }

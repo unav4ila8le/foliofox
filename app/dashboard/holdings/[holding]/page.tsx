@@ -7,6 +7,7 @@ import { RecordsTable } from "@/components/dashboard/holdings/table/records/reco
 
 import { fetchSingleHolding } from "@/server/holdings/fetch";
 import { fetchRecords } from "@/server/records/fetch";
+import { fetchSymbol } from "@/server/symbols/fetch";
 
 // Only needed for dynamic routes
 interface HoldingPageProps {
@@ -18,9 +19,14 @@ interface HoldingPageProps {
 // Separate components for data fetching with suspense
 async function HoldingPageHeader({ holdingId }: { holdingId: string }) {
   const holding = await fetchSingleHolding(holdingId);
+  // Get symbol details for the holding (if it's supported)
+  const symbol = holding.symbol_id
+    ? await fetchSymbol(holding.symbol_id)
+    : null;
 
   return (
-    <div>
+    <div className="space-y-2">
+      {/* Holding name and type */}
       <div className="flex items-center gap-3">
         <h1 className="text-2xl font-semibold">{holding.name}</h1>
         <div className="flex items-center gap-2">
@@ -32,9 +38,39 @@ async function HoldingPageHeader({ holdingId }: { holdingId: string }) {
           )}
         </div>
       </div>
-      <p className="text-muted-foreground">
-        {holding.description || "No description"}
-      </p>
+
+      {/* Symbol details */}
+      {symbol && (
+        <div className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-sm">
+          <p>
+            Ticker Symbol
+            <span className="text-foreground ml-1 font-medium">
+              {symbol.id}
+            </span>
+          </p>
+          {symbol.exchange && (
+            <p>
+              Exchange
+              <span className="text-foreground ml-1 font-medium">
+                {symbol.exchange}
+              </span>
+            </p>
+          )}
+          {symbol.currency && (
+            <p>
+              Currency
+              <span className="text-foreground ml-1 font-medium">
+                {symbol.currency}
+              </span>
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Holding description */}
+      {holding.description && (
+        <p className="text-muted-foreground">{holding.description}</p>
+      )}
     </div>
   );
 }
