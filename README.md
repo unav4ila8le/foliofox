@@ -18,14 +18,97 @@ A modern net worth tracking app built with Next.js, Supabase, Shadcn UI, and Tai
 
 ## Getting Started
 
+### Prerequisites
+
+- Node.js 20+
+- A Supabase project (get your Project URL and anon key)
+- Optional: Vercel account (for one-click deploy and scheduled cron jobs)
+
+### 1) Clone and install
+
 ```bash
-npm run dev
-# or yarn, pnpm, bun
+git clone https://github.com/unav4ila8le/patrivio.git
+cd patrivio
+npm install
 ```
 
-Set up your `.env.local` with your Supabase credentials.
+### 2) Configure environment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load Google fonts.
+Create a `.env.local` file in the project root:
+
+```bash
+# Required
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# Optional (needed for scheduled jobs / admin tasks)
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+
+# Used to authorize cron invocations
+CRON_SECRET=generate_a_strong_random_string
+```
+
+### 3) Run the dev server
+
+```bash
+npm run dev
+```
+
+Visit http://localhost:3000
+
+### 4) (Optional) Generate database types from Supabase
+
+If you use your own Supabase project, regenerate `types/database.types.ts`:
+
+```bash
+npx supabase login
+npx supabase link --project-ref <your-project-ref>
+# Option A: use the provided script (update project id in package.json first)
+npm run types:supabase
+# Option B: ad-hoc generation
+npx supabase gen types typescript --project-id <your-project-ref> > types/database.types.ts
+```
+
+### 5) (Optional) Deploying to Vercel
+
+- Import the repo into Vercel
+- Set the same environment variables in Vercel (Project Settings → Environment Variables):
+  - `NEXT_PUBLIC_SUPABASE_URL`
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+  - `SUPABASE_SERVICE_ROLE_KEY` (optional, required for cron jobs)
+  - `CRON_SECRET`
+- This repo includes `vercel.json` with daily cron jobs at 22:00 UTC for quotes and FX updates. The cron endpoints expect an `Authorization: Bearer <CRON_SECRET>` header. If supported in your Vercel plan, you can add headers directly in `vercel.json` like this:
+
+```json
+{
+  "crons": [
+    {
+      "path": "/api/cron/fetch-exchange-rates",
+      "schedule": "0 22 * * *",
+      "headers": { "authorization": "Bearer ${CRON_SECRET}" }
+    },
+    {
+      "path": "/api/cron/fetch-quotes",
+      "schedule": "0 22 * * *",
+      "headers": { "authorization": "Bearer ${CRON_SECRET}" }
+    }
+  ]
+}
+```
+
+If headers cannot be configured in your environment, you can trigger the endpoints manually (see below) or adjust your deployment to inject the header.
+
+### 6) Manually trigger cron jobs (local/testing)
+
+```bash
+# Exchange rates
+curl "http://localhost:3000/api/cron/fetch-exchange-rates" \
+  -H "authorization: Bearer $CRON_SECRET"
+
+# Quotes
+curl "http://localhost:3000/api/cron/fetch-quotes" \
+  -H "authorization: Bearer $CRON_SECRET"
+```
 
 ## Package Dependencies Notes
 
@@ -62,21 +145,22 @@ All formatting functions accept both numbers and strings as input. Currency form
 
 ## To Do List
 
-[x] Add percentages increase over the different time periods selected
-[x] Add financial data API to allow users to add financial instruments like stocks and other equities ( https://github.com/gadicc/node-yahoo-finance2 )
-[x] Add disclaimer about the fact that exchange rates and market prices are not updated in real-time but rather updated daily (10PM UTC)
-[x] Allow users to import CSV files
-[x] Allow users to export their holdings
-[x] Change primary button in navbar to "New" with dropdown
-[x] Change order of new holding fields
-[x] Dynamic quantity fields
-[x] Holding current value should be the latest quote if holding has a symbol_id
-[x] Prevent users from adding a symbol with a currency not in the database (currency not supported yet)
-[ ] Find a way to have a more accurate historical calculation which doesn't add much overhead. WeeksBack solution is fast but not accurate cause the date is "rounded" to match weeks and not days.
-[x] Add P/L in the holdings table (basic change from first record, no cost basis)
-[x] Start migrating to the new JWT signing key https://supabase.com/blog/jwt-signing-keys
-[ ] Add a dividends tracker. It should show the user the holdings that pay dividends, and their yearly/monthly expected dividend payout
-[ ] Add a way for the user to "share" their portfolio. Ideally, after agreeing, they get a public sharable link which leads to a single public page view of all their holdings and relevant performance charts.
-[x] Upgrade postgres version to 17 on Supabase
-[ ] Allow user to review their imports and tweak them
-[ ] Add news based on user's portfolio
+- [x] Add percentages increase over the different time periods selected
+- [x] Add financial data API to allow users to add financial instruments like stocks and other equities ( https://github.com/gadicc/node-yahoo-finance2 )
+- [x] Add disclaimer about the fact that exchange rates and market prices are not updated in real-time but rather updated daily (10PM UTC)
+- [x] Allow users to import CSV files
+- [x] Allow users to export their holdings
+- [x] Change primary button in navbar to "New" with dropdown
+- [x] Change order of new holding fields
+- [x] Dynamic quantity fields
+- [x] Holding current value should be the latest quote if holding has a symbol_id
+- [x] Prevent users from adding a symbol with a currency not in the database (currency not supported yet)
+- [x] Add P/L in the holdings table (basic change from first record, no cost basis)
+- [x] Start migrating to the new JWT signing key https://supabase.com/blog/jwt-signing-keys
+- [x] Upgrade postgres version to 17 on Supabase
+- [ ] Add a dividends tracker. It should show the user the holdings that pay dividends, and their yearly/monthly expected dividend payout
+- [ ] Allow user to review their imports and tweak them
+- [ ] Add AI powered import (import from images, pdfs, excels, and more)
+- [ ] Add news based on user's portfolio
+- [ ] Find a way to have a more accurate historical calculation which doesn't add much overhead. WeeksBack solution is fast but not accurate cause the date is "rounded" to match weeks and not days.
+- [ ] Add a way for the user to "share" their portfolio. Ideally, after agreeing, they get a public sharable link which leads to a single public page view of all their holdings and relevant performance charts.
