@@ -59,14 +59,14 @@ Visit http://localhost:3000
 
 ### 4) Database Setup (Optional)
 
-This repository includes a schema-only dump at `supabase/schema.sql` so you can reproduce the database structure with zero data.
+This repository includes a schema-only dump at `supabase/schema/schema.sql` so you can reproduce the database structure with zero data.
 
 **Apply to your own Supabase project:**
 
 ```bash
 npx supabase db execute \
   --db-url "postgresql://postgres:<password>@db.<your-ref>.supabase.co:5432/postgres" \
-  supabase/schema.sql
+  supabase/schema/schema.sql
 ```
 
 **Apply locally (for local development):**
@@ -74,7 +74,7 @@ npx supabase db execute \
 ```bash
 npx supabase start
 npx supabase db reset
-npx supabase db execute supabase/schema.sql
+npx supabase db execute supabase/schema/schema.sql
 ```
 
 **Regenerate schema (maintainers only):**
@@ -84,7 +84,7 @@ npx supabase db execute supabase/schema.sql
 pg_dump "postgresql://postgres:<password>@db.<your-ref>.supabase.co:6543/postgres?sslmode=require" \
   --schema-only \
   --schema=public \
-  --file=supabase/schema.sql
+  --file=supabase/schema/schema.sql
 ```
 
 **Notes:**
