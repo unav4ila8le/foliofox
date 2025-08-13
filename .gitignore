@@ -42,3 +42,7 @@ next-env.d.ts
 
 # cursor
 .cursor/mcp.json
+
+# supabase
+supabase/.temp/
+supabase/config.toml
