@@ -154,7 +154,7 @@ export function ImportForm() {
       <div className="text-muted-foreground space-y-2 text-sm">
         <p>
           Upload a CSV or TSV file to import your holdings. The first row should
-          contain the headers exactly as shown below.
+          contain the headers below.
         </p>
         <p>
           <span className="text-foreground font-medium">Required columns:</span>{" "}
@@ -162,7 +162,7 @@ export function ImportForm() {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className="text-foreground inline-block cursor-help underline-offset-3 hover:underline">
+                <span className="text-foreground inline-block cursor-help underline-offset-4 hover:underline">
                   category_code
                 </span>
               </TooltipTrigger>
@@ -176,7 +176,7 @@ export function ImportForm() {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className="text-foreground inline-block cursor-help underline-offset-3 hover:underline">
+                <span className="text-foreground inline-block cursor-help underline-offset-4 hover:underline">
                   symbol_id
                 </span>
               </TooltipTrigger>
@@ -279,7 +279,7 @@ export function ImportForm() {
         <a
           href="/sample-holdings-template.csv"
           download
-          className="text-primary underline-offset-2 hover:underline"
+          className="text-primary underline-offset-4 hover:underline"
         >
           sample template
         </a>{" "}
