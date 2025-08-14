@@ -24,7 +24,6 @@ import { AssetCategorySelector } from "@/components/dashboard/asset-category-sel
 import { useNewHoldingDialog } from "../index";
 
 import { createHolding } from "@/server/holdings/create";
-import { createSymbol } from "@/server/symbols/create";
 import { fetchSingleQuote } from "@/server/quotes/fetch";
 
 import { getCategoryFromQuoteType } from "@/lib/asset-category-mappings";
@@ -82,43 +81,27 @@ export function SymbolSearchForm() {
   // Handle symbol selection from dropdown
   const handleSymbolSelect = async (symbol: Symbol) => {
     try {
-      // 1. Create symbol
-      const symbolResult = await createSymbol(symbol.id);
-      if (!symbolResult.success) {
-        toast.error(symbolResult.message);
-        form.setValue("symbol_id", "");
-        setSelectedSymbol(null);
-        return;
-      }
-
-      // 2. Use the returned symbol data directly
-      const symbolData = symbolResult.data;
-
-      // 3. Fetch the historical price for today (or most recent trading day)
+      // 1. Fetch the historical price for today (or most recent trading day)
       const unitValue = await fetchSingleQuote(symbol.id);
 
-      if (!symbolData?.currency || !unitValue) {
-        throw new Error(
-          "Currency or historical price is missing from quote data.",
-        );
-      }
-
-      // 4. Auto-fill category based on quote type
-      const category = getCategoryFromQuoteType(symbolData.quote_type);
+      // 2. Auto-fill category based on quote type
+      const category = getCategoryFromQuoteType(symbol.quote_type);
       if (category) {
         form.setValue("category_code", category);
       }
 
-      // 5. Auto-fill other fields
-      form.setValue("currency", symbolData.currency);
+      // 3. Auto-fill other fields from the selected symbol
+      if (symbol.currency) {
+        form.setValue("currency", symbol.currency.toUpperCase());
+      }
       form.setValue("unit_value", unitValue);
 
-      // Set name
-      const displayName = symbolData?.long_name || symbolData?.short_name;
+      // 4. Set name
+      const displayName = symbol.long_name || symbol.short_name;
       form.setValue("name", `${symbol.id} - ${displayName}`);
 
-      // Store selected symbol for reference
-      setSelectedSymbol(symbolData);
+      // 5. Store selected symbol for reference
+      setSelectedSymbol(symbol);
     } catch (error) {
       console.warn(
         "Error selecting symbol:",
