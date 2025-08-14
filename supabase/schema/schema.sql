@@ -417,6 +417,13 @@ CREATE INDEX symbol_prices_date_idx ON public.quotes USING btree (date);
 
 
 --
+-- Name: symbols_currency_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX symbols_currency_idx ON public.symbols USING btree (currency);
+
+
+--
 -- Name: holdings holdings_handle_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
@@ -515,6 +522,14 @@ ALTER TABLE ONLY public.records
 
 ALTER TABLE ONLY public.quotes
     ADD CONSTRAINT symbol_prices_symbol_id_fkey FOREIGN KEY (symbol_id) REFERENCES public.symbols(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: symbols symbols_currency_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.symbols
+    ADD CONSTRAINT symbols_currency_fkey FOREIGN KEY (currency) REFERENCES public.currencies(alphabetic_code) ON UPDATE CASCADE ON DELETE RESTRICT;
 
 
 --

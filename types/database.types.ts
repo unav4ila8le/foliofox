@@ -310,7 +310,15 @@ export type Database = {
           short_name?: string | null;
           updated_at?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "symbols_currency_fkey";
+            columns: ["currency"];
+            isOneToOne: false;
+            referencedRelation: "currencies";
+            referencedColumns: ["alphabetic_code"];
+          },
+        ];
       };
     };
     Views: {

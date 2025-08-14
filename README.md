@@ -81,7 +81,7 @@ npx supabase db execute supabase/schema/schema.sql
 
 ```bash
 # Note: Requires PostgreSQL 17+ for version compatibility
-pg_dump "postgresql://postgres:<password>@db.<your-ref>.supabase.co:6543/postgres?sslmode=require" \
+pg_dump "postgresql://postgres.<your-project-ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres?sslmode=require" \
   --schema-only \
   --schema=public \
   --file=supabase/schema/schema.sql
