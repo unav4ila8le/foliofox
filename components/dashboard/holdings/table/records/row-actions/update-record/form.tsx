@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 
 import { cn } from "@/lib/utils";
+import { requiredMinNumber } from "@/lib/zod-helpers";
 
 import { updateRecord } from "@/server/records/update";
 
@@ -38,10 +39,14 @@ interface UpdateRecordFormProps {
 
 const formSchema = z.object({
   date: z.date({ error: "A date is required." }),
-  quantity: z.coerce
-    .number()
-    .gte(0, { error: "Quantity must be 0 or greater" }),
-  unit_value: z.coerce.number().gte(0, { error: "Value must be 0 or greater" }),
+  quantity: requiredMinNumber(
+    "Quantity is required.",
+    "Quantity must be 0 or greater",
+  ),
+  unit_value: requiredMinNumber(
+    "Unit value is required.",
+    "Value must be 0 or greater",
+  ),
   description: z
     .string()
     .max(256, {
@@ -152,10 +157,11 @@ export function UpdateRecordForm({ record, onSuccess }: UpdateRecordFormProps) {
                   <Input
                     placeholder="E.g., 420.69"
                     type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="any"
                     {...field}
-                    value={
-                      field.value === 0 ? "" : (field.value as number | string)
-                    }
+                    value={field.value as number}
                   />
                 </FormControl>
                 <FormMessage />
@@ -173,10 +179,11 @@ export function UpdateRecordForm({ record, onSuccess }: UpdateRecordFormProps) {
                   <Input
                     placeholder="E.g., 10"
                     type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="any"
                     {...field}
-                    value={
-                      field.value === 0 ? "" : (field.value as number | string)
-                    }
+                    value={field.value as number}
                   />
                 </FormControl>
                 <FormMessage />

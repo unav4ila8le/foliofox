@@ -22,6 +22,8 @@ import { CurrencySelector } from "@/components/dashboard/currency-selector";
 
 import { useNewHoldingDialog } from "../index";
 
+import { requiredMinNumber } from "@/lib/zod-helpers";
+
 import { createHolding } from "@/server/holdings/create";
 
 const formSchema = z.object({
@@ -31,10 +33,14 @@ const formSchema = z.object({
     .max(64, { error: "Name must not exceed 64 characters." }),
   category_code: z.string().min(1, { error: "Category is required." }),
   currency: z.string().length(3),
-  unit_value: z.coerce.number().gte(0, { error: "Value must be 0 or greater" }),
-  quantity: z.coerce
-    .number()
-    .gte(0, { error: "Quantity must be 0 or greater" }),
+  unit_value: requiredMinNumber(
+    "Unit value is required.",
+    "Value must be 0 or greater",
+  ),
+  quantity: requiredMinNumber(
+    "Quantity is required.",
+    "Quantity must be 0 or greater",
+  ),
   description: z
     .string()
     .max(256, {
@@ -57,8 +63,8 @@ export function ManualEntryForm() {
       name: "",
       category_code: "",
       currency: profile.display_currency,
-      unit_value: 0,
-      quantity: 0,
+      unit_value: "",
+      quantity: "",
       description: "",
     },
   });
@@ -166,10 +172,11 @@ export function ManualEntryForm() {
                   <Input
                     placeholder="E.g., 420.69"
                     type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="any"
                     {...field}
-                    value={
-                      field.value === 0 ? "" : (field.value as number | string)
-                    }
+                    value={field.value as number}
                   />
                 </FormControl>
                 <FormMessage />
@@ -188,10 +195,11 @@ export function ManualEntryForm() {
                   <Input
                     placeholder="E.g., 10"
                     type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="any"
                     {...field}
-                    value={
-                      field.value === 0 ? "" : (field.value as number | string)
-                    }
+                    value={field.value as number}
                   />
                 </FormControl>
                 <FormMessage />

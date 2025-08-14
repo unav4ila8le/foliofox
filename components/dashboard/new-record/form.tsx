@@ -29,6 +29,7 @@ import { HoldingSelector } from "./holding-selector";
 import { useNewRecordDialog } from "./index";
 
 import { cn } from "@/lib/utils";
+import { requiredMinNumber } from "@/lib/zod-helpers";
 
 import { createRecord } from "@/server/records/create";
 import { fetchSingleQuote } from "@/server/quotes/fetch";
@@ -38,10 +39,14 @@ import type { TransformedHolding } from "@/types/global.types";
 const formSchema = z.object({
   date: z.date({ error: "A date is required." }),
   holding_id: z.string().min(1, { error: "Please select a holding." }),
-  quantity: z.coerce
-    .number()
-    .gte(0, { error: "Quantity must be 0 or greater" }),
-  unit_value: z.coerce.number().gte(0, { error: "Value must be 0 or greater" }),
+  quantity: requiredMinNumber(
+    "Quantity is required.",
+    "Quantity must be 0 or greater",
+  ),
+  unit_value: requiredMinNumber(
+    "Unit value is required.",
+    "Value must be 0 or greater",
+  ),
   description: z
     .string()
     .max(256, {
@@ -252,11 +257,12 @@ export function NewRecordForm() {
                   <Input
                     placeholder="E.g., 420.69"
                     type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="any"
                     disabled={hasSymbol}
                     {...field}
-                    value={
-                      field.value === 0 ? "" : (field.value as number | string)
-                    }
+                    value={field.value as number}
                   />
                 </FormControl>
                 <FormMessage />
@@ -275,10 +281,11 @@ export function NewRecordForm() {
                   <Input
                     placeholder="E.g., 10"
                     type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="any"
                     {...field}
-                    value={
-                      field.value === 0 ? "" : (field.value as number | string)
-                    }
+                    value={field.value as number}
                   />
                 </FormControl>
                 <FormMessage />
