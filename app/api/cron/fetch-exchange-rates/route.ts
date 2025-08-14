@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { createServiceClient } from "@/supabase/service";
+import { fetchCurrencies } from "@/server/currencies/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 
 export async function GET(request: NextRequest) {
@@ -27,15 +27,7 @@ export async function GET(request: NextRequest) {
       })();
 
     // 4. Fetch all currency codes from Supabase
-    const supabase = createServiceClient();
-    const { data: currencies, error: currenciesError } = await supabase
-      .from("currencies")
-      .select("alphabetic_code");
-    if (currenciesError) {
-      throw new Error(
-        "Failed to fetch currency codes: " + currenciesError.message,
-      );
-    }
+    const currencies = await fetchCurrencies();
 
     // 5. Prepare rate requests for the target date
     const rateRequests = currencies.map((currency) => ({
