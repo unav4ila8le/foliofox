@@ -97,7 +97,7 @@ export function NewRecordButton({
 
   const handleClick = () => {
     if (preselectedHolding) {
-      setPreselectedHolding(preselectedHolding);
+      setPreselectedHolding(preselectedHolding ?? null);
     }
     setOpen(true);
   };
