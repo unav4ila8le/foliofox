@@ -22,7 +22,6 @@ import { SymbolSearch } from "../symbol-search";
 import { AssetCategorySelector } from "@/components/dashboard/asset-category-selector";
 
 import { useNewHoldingDialog } from "../index";
-import { useCurrencies } from "@/hooks/client/use-currencies";
 
 import { createHolding } from "@/server/holdings/create";
 import { createSymbol } from "@/server/symbols/create";
@@ -55,7 +54,6 @@ const formSchema = z.object({
 export function SymbolSearchForm() {
   // Props destructuring and context hooks
   const { setOpen, profile } = useNewHoldingDialog();
-  const { currencies } = useCurrencies();
 
   // State declarations
   const [isLoading, setIsLoading] = useState(false);
@@ -87,7 +85,10 @@ export function SymbolSearchForm() {
       // 1. Create symbol
       const symbolResult = await createSymbol(symbol.id);
       if (!symbolResult.success) {
-        throw new Error(symbolResult.message);
+        toast.error(symbolResult.message);
+        form.setValue("symbol_id", "");
+        setSelectedSymbol(null);
+        return;
       }
 
       // 2. Use the returned symbol data directly
@@ -102,26 +103,13 @@ export function SymbolSearchForm() {
         );
       }
 
-      // 4. Check if currency is supported by database
-      const isCurrencySupported = currencies.some(
-        (currency) => currency.alphabetic_code === symbolData.currency,
-      );
-
-      if (!isCurrencySupported) {
-        toast.error(
-          `Currency ${symbolData.currency} is not supported yet. Please contact us to add this currency or select a different symbol.`,
-        );
-        form.setValue("symbol_id", "");
-        return;
-      }
-
-      // 5. Auto-fill category based on quote type
+      // 4. Auto-fill category based on quote type
       const category = getCategoryFromQuoteType(symbolData.quote_type);
       if (category) {
         form.setValue("category_code", category);
       }
 
-      // 6. Auto-fill other fields
+      // 5. Auto-fill other fields
       form.setValue("currency", symbolData.currency);
       form.setValue("unit_value", unitValue);
 
@@ -132,13 +120,15 @@ export function SymbolSearchForm() {
       // Store selected symbol for reference
       setSelectedSymbol(symbolData);
     } catch (error) {
-      console.error("Error fetching quote data:", error);
-
+      console.warn(
+        "Error selecting symbol:",
+        error instanceof Error ? error.message : error,
+      );
       toast.error(
-        error instanceof Error ? error.message : "Error fetching quote data.",
+        error instanceof Error ? error.message : "Error selecting symbol.",
       );
 
-      // Clear symbol_id if error occurs to force user to re-select
+      // Clear symbol_id if any error occurs to force user to re-select
       form.setValue("symbol_id", "");
       setSelectedSymbol(null);
     }

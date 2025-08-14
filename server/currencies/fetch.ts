@@ -1,12 +1,12 @@
 "use server";
 
-import { createClient } from "@/supabase/server";
+import { createServiceClient } from "@/supabase/service";
 
 /**
  * Fetch all supported currencies
  */
 export async function fetchCurrencies() {
-  const supabase = await createClient();
+  const supabase = await createServiceClient();
 
   const { data: currencies, error } = await supabase
     .from("currencies")

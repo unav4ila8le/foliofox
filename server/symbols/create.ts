@@ -2,6 +2,7 @@
 
 import { getCurrentUser } from "@/server/auth/actions";
 import { getSymbolQuote, searchSymbols } from "@/server/symbols/search";
+import { fetchCurrencies } from "@/server/currencies/fetch";
 
 import type { Symbol } from "@/types/global.types";
 
@@ -9,7 +10,7 @@ import type { Symbol } from "@/types/global.types";
 export async function createSymbol(symbolId: string) {
   const { supabase } = await getCurrentUser();
 
-  // Get symbol data from Yahoo Finance
+  // 1) Get symbol data from Yahoo Finance
   const quoteResult = await getSymbolQuote(symbolId);
 
   if (!quoteResult.success) {
@@ -20,14 +21,6 @@ export async function createSymbol(symbolId: string) {
     };
   }
 
-  // Always get sector/industry from search since quotes don't provide them
-  const searchResult = await searchSymbols({ query: symbolId, limit: 1 });
-  const sector =
-    (searchResult.success && searchResult.data?.[0]?.sector) || null;
-  const industry =
-    (searchResult.success && searchResult.data?.[0]?.industry) || null;
-
-  // Extract and validate data for symbol creation
   const quoteData = quoteResult.data;
   if (!quoteData?.quoteType || !quoteData?.exchange || !quoteData?.currency) {
     return {
@@ -36,21 +29,43 @@ export async function createSymbol(symbolId: string) {
       message: "Missing required quote data for symbol creation.",
     };
   }
+
+  // 2) Server-side guard: ensure currency is supported in our DB
+  const currencyCode = String(quoteData.currency).toUpperCase();
+  const currencies = await fetchCurrencies();
+  const isSupportedCurrency = currencies.some(
+    (c) => c.alphabetic_code === currencyCode,
+  );
+  if (!isSupportedCurrency) {
+    return {
+      success: false,
+      code: "UNSUPPORTED_CURRENCY",
+      message: `Currency ${currencyCode} is not supported yet. Please contact us to add this currency or select a different symbol.`,
+    };
+  }
+
+  // 3) Fetch sector/industry from search (after currency is validated)
+  const searchResult = await searchSymbols({ query: symbolId, limit: 1 });
+  const sector =
+    (searchResult.success && searchResult.data?.[0]?.sector) || null;
+  const industry =
+    (searchResult.success && searchResult.data?.[0]?.industry) || null;
+
+  // 4) Prepare data
   const data: Symbol = {
     id: symbolId,
     quote_type: quoteData.quoteType,
     short_name: quoteData.shortName || symbolId,
     long_name: quoteData.longName || quoteData.shortName || symbolId,
     exchange: quoteData.exchange,
-    currency: quoteData.currency,
+    currency: currencyCode,
     sector,
     industry,
   };
 
-  // Insert into symbols table
+  // 5) Insert into symbols table
   const { error } = await supabase.from("symbols").upsert(data);
 
-  // Return Supabase errors instead of throwing
   if (error) {
     return {
       success: false,
@@ -59,5 +74,5 @@ export async function createSymbol(symbolId: string) {
     };
   }
 
-  return { success: true, data: data };
+  return { success: true, data };
 }
