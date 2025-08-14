@@ -26,21 +26,19 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-import { login } from "@/server/auth/actions";
+import { requestPasswordReset } from "@/server/auth/actions";
 
 const formSchema = z.object({
   email: z.email({ error: "Please enter a valid email address." }).trim(),
-  password: z.string().min(1, { error: "Password is required." }),
 });
 
-export function LoginForm() {
+export function ResetPasswordForm() {
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",
-      password: "",
     },
   });
 
@@ -50,35 +48,30 @@ export function LoginForm() {
 
     const formData = new FormData();
     formData.append("email", values.email.trim().toLowerCase());
-    formData.append("password", values.password);
 
-    const result = await login(formData);
+    const result = await requestPasswordReset(formData);
 
-    // Handle expected auth errors
-    if (result.success === false) {
-      if (result.code === "invalid_credentials") {
-        form.setError("email", {
-          type: "manual",
-        });
-        form.setError("password", {
-          type: "manual",
-          message: result.message,
-        });
-      } else {
-        toast.error("Login failed", {
-          description: result.message,
-        });
-      }
-      setIsLoading(false);
-      return;
+    if (result.success) {
+      toast.success("Reset link sent!", {
+        description: "Check your email for the password reset link.",
+        position: "top-center",
+        duration: 8000,
+      });
+    } else {
+      toast.error("Failed to send reset link", {
+        description: result.message,
+      });
     }
+    setIsLoading(false);
   }
 
   return (
     <Card>
-      <CardHeader className="text-center">
-        <CardTitle className="text-xl">Welcome back</CardTitle>
-        <CardDescription>Log in here to continue</CardDescription>
+      <CardHeader>
+        <CardTitle>Reset your password</CardTitle>
+        <CardDescription>
+          Enter your email address and we will send you a reset link.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -96,43 +89,22 @@ export function LoginForm() {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <div className="flex items-center justify-between gap-4">
-                    <FormLabel>Password</FormLabel>
-                    <Link
-                      href="/auth/forgot-password"
-                      className="text-muted-foreground hover:text-foreground text-sm"
-                    >
-                      Forgot password?
-                    </Link>
-                  </div>
-                  <FormControl>
-                    <Input {...field} type="password" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
             <Button disabled={isLoading} type="submit">
               {isLoading ? (
                 <>
                   <Loader2 className="animate-spin" />
-                  Logging in...
+                  Sending...
                 </>
               ) : (
-                "Log in"
+                "Send reset link"
               )}
             </Button>
           </form>
         </Form>
         <div className="mt-4 text-center text-sm">
-          Don&apos;t have an account?{" "}
-          <Link href="/auth/signup" className="underline underline-offset-4">
-            Sign up instead
+          Remember your password?{" "}
+          <Link href="/auth/login" className="underline underline-offset-4">
+            Log in instead
           </Link>
         </div>
       </CardContent>

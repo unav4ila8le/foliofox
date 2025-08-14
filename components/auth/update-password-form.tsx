@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
+import { redirect } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -26,21 +26,29 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-import { login } from "@/server/auth/actions";
+import { updatePassword } from "@/server/auth/actions";
 
-const formSchema = z.object({
-  email: z.email({ error: "Please enter a valid email address." }).trim(),
-  password: z.string().min(1, { error: "Password is required." }),
-});
+const formSchema = z
+  .object({
+    password: z
+      .string()
+      .min(6, { error: "Password must be at least 6 characters." })
+      .max(20, { error: "Password must not exceed 20 characters." }),
+    repeatPassword: z.string(),
+  })
+  .refine((data) => data.password === data.repeatPassword, {
+    error: "Passwords do not match.",
+    path: ["repeatPassword"],
+  });
 
-export function LoginForm() {
+export function UpdatePasswordForm() {
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: "",
       password: "",
+      repeatPassword: "",
     },
   });
 
@@ -49,48 +57,44 @@ export function LoginForm() {
     setIsLoading(true);
 
     const formData = new FormData();
-    formData.append("email", values.email.trim().toLowerCase());
     formData.append("password", values.password);
 
-    const result = await login(formData);
+    const result = await updatePassword(formData);
 
-    // Handle expected auth errors
-    if (result.success === false) {
-      if (result.code === "invalid_credentials") {
-        form.setError("email", {
-          type: "manual",
-        });
-        form.setError("password", {
-          type: "manual",
-          message: result.message,
-        });
-      } else {
-        toast.error("Login failed", {
-          description: result.message,
-        });
-      }
-      setIsLoading(false);
-      return;
+    if (result.success) {
+      toast.success("Password updated successfully!", {
+        description: "You can now log in with your new password.",
+        position: "top-center",
+        duration: 8000,
+      });
+      // Redirect to login after successful password update
+      redirect("/auth/login");
+    } else {
+      toast.error("Failed to update password", {
+        description: result.message,
+      });
     }
+
+    setIsLoading(false);
   }
 
   return (
     <Card>
       <CardHeader className="text-center">
-        <CardTitle className="text-xl">Welcome back</CardTitle>
-        <CardDescription>Log in here to continue</CardDescription>
+        <CardTitle className="text-xl">Set new password</CardTitle>
+        <CardDescription>Enter your new password below.</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form className="grid gap-4" onSubmit={form.handleSubmit(onSubmit)}>
             <FormField
               control={form.control}
-              name="email"
+              name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>New Password</FormLabel>
                   <FormControl>
-                    <Input placeholder="mail@example.com" {...field} />
+                    <Input {...field} type="password" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -98,18 +102,10 @@ export function LoginForm() {
             />
             <FormField
               control={form.control}
-              name="password"
+              name="repeatPassword"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex items-center justify-between gap-4">
-                    <FormLabel>Password</FormLabel>
-                    <Link
-                      href="/auth/forgot-password"
-                      className="text-muted-foreground hover:text-foreground text-sm"
-                    >
-                      Forgot password?
-                    </Link>
-                  </div>
+                  <FormLabel>Confirm New Password</FormLabel>
                   <FormControl>
                     <Input {...field} type="password" />
                   </FormControl>
@@ -121,20 +117,14 @@ export function LoginForm() {
               {isLoading ? (
                 <>
                   <Loader2 className="animate-spin" />
-                  Logging in...
+                  Updating...
                 </>
               ) : (
-                "Log in"
+                "Update Password"
               )}
             </Button>
           </form>
         </Form>
-        <div className="mt-4 text-center text-sm">
-          Don&apos;t have an account?{" "}
-          <Link href="/auth/signup" className="underline underline-offset-4">
-            Sign up instead
-          </Link>
-        </div>
       </CardContent>
     </Card>
   );

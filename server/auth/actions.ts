@@ -75,3 +75,40 @@ export async function signup(formData: FormData) {
   revalidatePath("/", "layout");
   return { success: true };
 }
+
+// Request password reset
+export async function requestPasswordReset(formData: FormData) {
+  const supabase = await createClient();
+
+  const email = String(formData.get("email")).trim().toLowerCase();
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/update-password`,
+  });
+
+  // Return Supabase errors
+  if (error) {
+    return { success: false, code: error.code, message: error.message };
+  }
+
+  return { success: true };
+}
+
+// Update password
+export async function updatePassword(formData: FormData) {
+  const supabase = await createClient();
+
+  const password = String(formData.get("password"));
+
+  const { error } = await supabase.auth.updateUser({
+    password,
+  });
+
+  // Return Supabase errors
+  if (error) {
+    return { success: false, code: error.code, message: error.message };
+  }
+
+  revalidatePath("/", "layout");
+  return { success: true };
+}
