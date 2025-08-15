@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { redirect } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -67,8 +66,6 @@ export function UpdatePasswordForm() {
         position: "top-center",
         duration: 8000,
       });
-      // Redirect to login after successful password update
-      redirect("/auth/login");
     } else {
       toast.error("Failed to update password", {
         description: result.message,
@@ -82,7 +79,7 @@ export function UpdatePasswordForm() {
     <Card>
       <CardHeader className="text-center">
         <CardTitle className="text-xl">Set new password</CardTitle>
-        <CardDescription>Enter your new password below.</CardDescription>
+        <CardDescription>Enter your new password below</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -92,7 +89,7 @@ export function UpdatePasswordForm() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>New Password</FormLabel>
+                  <FormLabel>New password</FormLabel>
                   <FormControl>
                     <Input {...field} type="password" />
                   </FormControl>
@@ -105,7 +102,7 @@ export function UpdatePasswordForm() {
               name="repeatPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Confirm New Password</FormLabel>
+                  <FormLabel>Confirm new password</FormLabel>
                   <FormControl>
                     <Input {...field} type="password" />
                   </FormControl>
@@ -120,7 +117,7 @@ export function UpdatePasswordForm() {
                   Updating...
                 </>
               ) : (
-                "Update Password"
+                "Update password"
               )}
             </Button>
           </form>

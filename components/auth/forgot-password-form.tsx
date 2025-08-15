@@ -52,11 +52,13 @@ export function ResetPasswordForm() {
     const result = await requestPasswordReset(formData);
 
     if (result.success) {
-      toast.success("Reset link sent!", {
-        description: "Check your email for the password reset link.",
+      toast.success("Check your inbox for a reset link", {
+        description:
+          "If an account exists with this email, you'll receive a password reset link shortly.",
         position: "top-center",
         duration: 8000,
       });
+      form.reset();
     } else {
       toast.error("Failed to send reset link", {
         description: result.message,

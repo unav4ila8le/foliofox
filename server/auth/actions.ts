@@ -100,6 +100,7 @@ export async function updatePassword(formData: FormData) {
 
   const password = String(formData.get("password"));
 
+  // First update the password
   const { error } = await supabase.auth.updateUser({
     password,
   });
@@ -108,6 +109,9 @@ export async function updatePassword(formData: FormData) {
   if (error) {
     return { success: false, code: error.code, message: error.message };
   }
+
+  // Then sign out
+  await supabase.auth.signOut();
 
   revalidatePath("/", "layout");
   return { success: true };

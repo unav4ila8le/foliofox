@@ -105,7 +105,7 @@ export function LoginForm() {
                     <FormLabel>Password</FormLabel>
                     <Link
                       href="/auth/forgot-password"
-                      className="text-muted-foreground hover:text-foreground text-sm"
+                      className="text-sm underline-offset-4 hover:underline"
                     >
                       Forgot password?
                     </Link>
