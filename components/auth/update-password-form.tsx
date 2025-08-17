@@ -60,19 +60,19 @@ export function UpdatePasswordForm() {
 
     const result = await updatePassword(formData);
 
-    if (result.success) {
+    // Handle expected auth errors
+    if (!result.success) {
+      toast.error("Failed to update password", {
+        description: result.message,
+      });
+      setIsLoading(false);
+    } else {
       toast.success("Password updated successfully!", {
         description: "You can now log in with your new password.",
         position: "top-center",
         duration: 8000,
       });
-    } else {
-      toast.error("Failed to update password", {
-        description: result.message,
-      });
     }
-
-    setIsLoading(false);
   }
 
   return (

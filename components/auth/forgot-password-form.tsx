@@ -51,7 +51,12 @@ export function ResetPasswordForm() {
 
     const result = await resetPassword(formData);
 
-    if (result.success) {
+    // Handle expected auth errors
+    if (!result.success) {
+      toast.error("Failed to send reset link", {
+        description: result.message,
+      });
+    } else {
       toast.success("Check your inbox for a reset link", {
         description:
           "If an account exists with this email, you'll receive a password reset link shortly.",
@@ -59,10 +64,6 @@ export function ResetPasswordForm() {
         duration: 8000,
       });
       form.reset();
-    } else {
-      toast.error("Failed to send reset link", {
-        description: result.message,
-      });
     }
     setIsLoading(false);
   }
