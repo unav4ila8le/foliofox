@@ -25,7 +25,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-import { updatePassword } from "@/server/auth/actions";
+import { updatePassword } from "@/server/auth/update-password";
 
 const formSchema = z
   .object({

@@ -26,7 +26,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-import { requestPasswordReset } from "@/server/auth/actions";
+import { resetPassword } from "@/server/auth/reset-password";
 
 const formSchema = z.object({
   email: z.email({ error: "Please enter a valid email address." }).trim(),
@@ -49,7 +49,7 @@ export function ResetPasswordForm() {
     const formData = new FormData();
     formData.append("email", values.email.trim().toLowerCase());
 
-    const result = await requestPasswordReset(formData);
+    const result = await resetPassword(formData);
 
     if (result.success) {
       toast.success("Check your inbox for a reset link", {
