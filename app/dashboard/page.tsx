@@ -1,11 +1,11 @@
 import { Suspense } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
+import { Greetings } from "@/components/dashboard/greetings";
 import { MarketDataDisclaimer } from "@/components/dashboard/market-data-disclaimer";
-
 import { AssetAllocationDonut } from "@/components/dashboard/charts/asset-allocation-donut";
 import { NetWorthLineChart } from "@/components/dashboard/charts/net-worth-line";
-import { Greetings } from "@/components/dashboard/greetings";
+import { NewsWidget } from "@/components/dashboard/news/widget";
 
 import { fetchProfile } from "@/server/profile/actions";
 import { calculateNetWorth } from "@/server/analysis/net-worth";
@@ -59,6 +59,10 @@ async function AssetAllocationChartWrapper({
   );
 }
 
+async function NewsWidgetWrapper() {
+  return <NewsWidget />;
+}
+
 // Main page component
 export default async function DashboardPage() {
   const { profile } = await fetchProfile();
@@ -88,6 +92,11 @@ export default async function DashboardPage() {
               displayCurrency={profile.display_currency}
               netWorth={netWorth}
             />
+          </Suspense>
+        </div>
+        <div className="col-span-6 lg:col-span-3">
+          <Suspense fallback={<Skeleton className="h-80 rounded-xl" />}>
+            <NewsWidgetWrapper />
           </Suspense>
         </div>
       </div>

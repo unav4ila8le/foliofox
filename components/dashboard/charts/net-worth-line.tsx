@@ -119,7 +119,7 @@ export function NetWorthLineChart({
           <div className="bg-accent rounded-lg p-2">
             <TrendingUp className="text-muted-foreground size-4" />
           </div>
-          <p className="mt-3 font-medium">No net worth history available yet</p>
+          <p className="mt-3 font-medium">Net Worth History</p>
           <p className="text-muted-foreground mt-1 mb-3 text-sm">
             Add your holdings to start tracking your net worth
           </p>

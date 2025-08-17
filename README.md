@@ -195,6 +195,7 @@ All formatting functions accept both numbers and strings as input. Currency form
 - [x] Add P/L in the holdings table (basic change from first record, no cost basis)
 - [x] Start migrating to the new JWT signing key https://supabase.com/blog/jwt-signing-keys
 - [x] Upgrade postgres version to 17 on Supabase
+- [ ] Add a feedback sharing feature
 - [ ] Add a dividends tracker. It should show the user the holdings that pay dividends, and their yearly/monthly expected dividend payout
 - [ ] Allow user to review their imports and tweak them
 - [ ] Add AI powered import (import from images, pdfs, excels, and more)
