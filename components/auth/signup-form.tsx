@@ -26,7 +26,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-import { signup } from "@/server/auth/actions";
+import { signUp } from "@/server/auth/sign-up";
 
 const formSchema = z
   .object({
@@ -72,10 +72,10 @@ export function SignupForm() {
       formData.append("username", values.username.trim());
       formData.append("password", values.password);
 
-      const result = await signup(formData);
+      const result = await signUp(formData);
 
       // Handle expected auth errors
-      if (result.success === false) {
+      if (!result.success) {
         if (result.code === "user_already_exists") {
           form.setError("email", {
             type: "manual",

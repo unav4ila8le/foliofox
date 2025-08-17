@@ -26,7 +26,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-import { login } from "@/server/auth/actions";
+import { signIn } from "@/server/auth/sign-in";
 
 const formSchema = z.object({
   email: z.email({ error: "Please enter a valid email address." }).trim(),
@@ -52,10 +52,10 @@ export function LoginForm() {
     formData.append("email", values.email.trim().toLowerCase());
     formData.append("password", values.password);
 
-    const result = await login(formData);
+    const result = await signIn(formData);
 
     // Handle expected auth errors
-    if (result.success === false) {
+    if (!result.success) {
       if (result.code === "invalid_credentials") {
         form.setError("email", {
           type: "manual",

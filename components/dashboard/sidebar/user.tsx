@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { LoaderCircle, LogOut, MoreVertical, Settings } from "lucide-react";
+import { toast } from "sonner";
 
 import {
   Dialog,
@@ -24,7 +25,7 @@ import { SettingsForm } from "@/components/dashboard/sidebar/settings-form";
 
 import { formatCurrency } from "@/lib/number-format";
 
-import { useSignout } from "@/hooks/client/use-signout";
+import { signOut } from "@/server/auth/sign-out";
 
 import type { Profile } from "@/types/global.types";
 
@@ -37,11 +38,28 @@ export function User({
   email: string;
   netWorth: number;
 }) {
+  const [isLoading, setIsLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const { isMobile } = useSidebar();
 
-  const { handleSignOut, isLoading } = useSignout();
+  // Sign out
+  async function handleSignOut() {
+    setIsLoading(true);
+
+    const result = await signOut("local");
+
+    // Handle expected auth errors
+    if (!result.success) {
+      toast.error("Logout failed", {
+        description: result.message,
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    toast.success("You have been logged out successfully");
+  }
 
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -89,7 +107,7 @@ export function User({
           <DropdownMenuItem
             onSelect={(event) => {
               event.preventDefault(); // This keeps the dropdown open
-              handleSignOut("local");
+              handleSignOut();
             }}
             disabled={isLoading}
           >

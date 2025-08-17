@@ -62,7 +62,7 @@ alwaysApply: true
    import { LoginForm } from "@/components/auth/login-form";
 
    // 4. Internal Modules
-   import { useSignout } from "@/hooks/use-signout";
+   import { useCurrencies } from "@/hooks/client/use-currencies";
 
    // 5. Local Files and Types
    import type { Holding } from "@/types/global.types";
