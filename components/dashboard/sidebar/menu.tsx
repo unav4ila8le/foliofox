@@ -42,7 +42,7 @@ export function Menu() {
             asChild
             className={
               pathname === item.url
-                ? "bg-background hover:bg-background text-primary shadow"
+                ? "bg-background hover:bg-background text-foreground shadow"
                 : "text-muted-foreground"
             }
           >
