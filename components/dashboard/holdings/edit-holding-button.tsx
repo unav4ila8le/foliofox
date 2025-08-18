@@ -4,7 +4,7 @@ import { useState } from "react";
 import { SquarePen } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { UpdateHoldingDialog } from "@/components/dashboard/holdings/table/row-actions/update-holding";
+import { UpdateHoldingDialog } from "@/components/dashboard/holdings/tables/row-actions/update-holding";
 
 import type { Holding } from "@/types/global.types";
 

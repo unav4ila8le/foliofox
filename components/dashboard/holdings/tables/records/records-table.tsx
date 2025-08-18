@@ -4,11 +4,11 @@ import { useState } from "react";
 import { FileText, Trash2 } from "lucide-react";
 
 import { SearchInput } from "@/components/ui/search-input";
-import { DataTable } from "@/components/dashboard/holdings/table/base/data-table";
-import { columns } from "@/components/dashboard/holdings/table/records/columns";
+import { DataTable } from "@/components/dashboard/holdings/tables/base/data-table";
+import { columns } from "@/components/dashboard/holdings/tables/records/columns";
 import { NewRecordButton } from "@/components/dashboard/new-record";
-import { BulkActionBar } from "@/components/dashboard/holdings/table/base/bulk-action-bar";
-import { DeleteRecordDialog } from "@/components/dashboard/holdings/table/records/row-actions/delete-dialog";
+import { BulkActionBar } from "@/components/dashboard/holdings/tables/base/bulk-action-bar";
+import { DeleteRecordDialog } from "@/components/dashboard/holdings/tables/records/row-actions/delete-dialog";
 
 import type {
   TransformedRecord,

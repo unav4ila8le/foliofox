@@ -108,7 +108,18 @@ export async function fetchQuotes(
     const fetchResults = await Promise.all(fetchPromises);
 
     // 4. Store successful fetches in database and results
-    const successfulFetches = fetchResults.filter((result) => result !== null);
+    const successfulFetches = [];
+    // Remove duplicates
+    const seen = new Set<string>();
+    for (const result of fetchResults) {
+      if (result) {
+        const key = `${result.symbolId}|${result.dateString}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          successfulFetches.push(result);
+        }
+      }
+    }
 
     if (successfulFetches.length > 0) {
       // Bulk insert into database

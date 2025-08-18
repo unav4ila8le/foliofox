@@ -1,17 +1,18 @@
 import { Suspense } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
+import { Greetings } from "@/components/dashboard/greetings";
 import { MarketDataDisclaimer } from "@/components/dashboard/market-data-disclaimer";
-
 import { AssetAllocationDonut } from "@/components/dashboard/charts/asset-allocation-donut";
 import { NetWorthLineChart } from "@/components/dashboard/charts/net-worth-line";
-import { Greetings } from "@/components/dashboard/greetings";
+import { NewsWidget } from "@/components/dashboard/news/widget";
 
 import { fetchProfile } from "@/server/profile/actions";
 import { calculateNetWorth } from "@/server/analysis/net-worth";
 import { fetchNetWorthHistory } from "@/server/analysis/net-worth-history";
 import { fetchNetWorthChange } from "@/server/analysis/net-worth-change";
 import { calculateAssetAllocation } from "@/server/analysis/asset-allocation";
+import { fetchPortfolioNews } from "@/server/news/fetch";
 
 // Separate components for data fetching with suspense
 async function NetWorthChartWrapper({
@@ -59,6 +60,11 @@ async function AssetAllocationChartWrapper({
   );
 }
 
+async function NewsWidgetWrapper() {
+  const newsResult = await fetchPortfolioNews(8);
+  return <NewsWidget newsData={newsResult} />;
+}
+
 // Main page component
 export default async function DashboardPage() {
   const { profile } = await fetchProfile();
@@ -88,6 +94,11 @@ export default async function DashboardPage() {
               displayCurrency={profile.display_currency}
               netWorth={netWorth}
             />
+          </Suspense>
+        </div>
+        <div className="col-span-6 lg:col-span-3">
+          <Suspense fallback={<Skeleton className="h-80 rounded-xl" />}>
+            <NewsWidgetWrapper />
           </Suspense>
         </div>
       </div>

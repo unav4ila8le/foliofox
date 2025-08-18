@@ -4,11 +4,13 @@ import { Archive } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { EditHoldingButton } from "@/components/dashboard/holdings/edit-holding-button";
-import { RecordsTable } from "@/components/dashboard/holdings/table/records/records-table";
+import { RecordsTable } from "@/components/dashboard/holdings/tables/records/records-table";
+import { HoldingNews } from "@/components/dashboard/holdings/holding/news";
 
 import { fetchSingleHolding } from "@/server/holdings/fetch";
 import { fetchRecords } from "@/server/records/fetch";
 import { fetchSymbol } from "@/server/symbols/fetch";
+import { fetchSymbolNews } from "@/server/news/fetch";
 
 // Only needed for dynamic routes
 interface HoldingPageProps {
@@ -17,9 +19,14 @@ interface HoldingPageProps {
   }>;
 }
 
+// Shared data fetching function
+async function getHoldingData(holdingId: string) {
+  return await fetchSingleHolding(holdingId);
+}
+
 // Separate components for data fetching with suspense
 async function HoldingPageHeader({ holdingId }: { holdingId: string }) {
-  const holding = await fetchSingleHolding(holdingId);
+  const holding = await getHoldingData(holdingId);
   // Get symbol details for the holding (if it's supported)
   const symbol = holding.symbol_id
     ? await fetchSymbol(holding.symbol_id)
@@ -28,7 +35,7 @@ async function HoldingPageHeader({ holdingId }: { holdingId: string }) {
   return (
     <div className="space-y-2">
       {/* Holding name and type */}
-      <div className="flex flex-col items-start gap-2 md:flex-row md:items-center">
+      <div className="flex flex-col flex-wrap items-start gap-2 md:flex-row md:items-center">
         <h1 className="text-2xl font-semibold">{holding.name}</h1>
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="secondary">{holding.asset_type}</Badge>
@@ -77,15 +84,27 @@ async function HoldingPageHeader({ holdingId }: { holdingId: string }) {
   );
 }
 
+async function HoldingNewsWrapper({ holdingId }: { holdingId: string }) {
+  const holding = await getHoldingData(holdingId);
+  // Don't render anything if no symbol_id
+  if (!holding.symbol_id) {
+    return null;
+  }
+
+  // Fetch news for this symbol
+  const newsResult = await fetchSymbolNews(holding.symbol_id, 5);
+  return <HoldingNews newsData={newsResult} />;
+}
+
 async function RecordsTableWrapper({ holdingId }: { holdingId: string }) {
   const [holding, records] = await Promise.all([
-    fetchSingleHolding(holdingId),
+    getHoldingData(holdingId),
     fetchRecords(holdingId),
   ]);
 
   return (
     <div className="flex flex-col gap-2">
-      <h3 className="text-lg font-semibold">Records history</h3>
+      <h3 className="font-semibold">Records history</h3>
       <RecordsTable data={records} holding={holding} />
     </div>
   );
@@ -96,13 +115,24 @@ export default async function HoldingPage({ params }: HoldingPageProps) {
   const { holding: holdingId } = await params;
 
   return (
-    <div className="flex flex-col gap-4">
-      <Suspense fallback={<Skeleton className="h-24" />}>
-        <HoldingPageHeader holdingId={holdingId} />
-      </Suspense>
-      <Suspense fallback={<Skeleton className="h-80" />}>
-        <RecordsTableWrapper holdingId={holdingId} />
-      </Suspense>
+    <div className="grid grid-cols-6 gap-4 lg:gap-10">
+      <div className="col-span-6 space-y-4 lg:col-span-2">
+        <Suspense fallback={<Skeleton className="h-24" />}>
+          <HoldingPageHeader holdingId={holdingId} />
+        </Suspense>
+        <hr />
+        {/* News */}
+        <Suspense fallback={<Skeleton className="h-80" />}>
+          <HoldingNewsWrapper holdingId={holdingId} />
+        </Suspense>
+      </div>
+
+      {/* Records table */}
+      <div className="col-span-6 lg:col-span-4">
+        <Suspense fallback={<Skeleton className="h-80" />}>
+          <RecordsTableWrapper holdingId={holdingId} />
+        </Suspense>
+      </div>
     </div>
   );
 }
