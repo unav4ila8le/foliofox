@@ -162,6 +162,42 @@ export type Database = {
           },
         ];
       };
+      news: {
+        Row: {
+          created_at: string;
+          id: string;
+          link: string;
+          published_at: string;
+          publisher: string;
+          related_symbol_ids: string[] | null;
+          title: string;
+          updated_at: string;
+          yahoo_uuid: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          link: string;
+          published_at: string;
+          publisher: string;
+          related_symbol_ids?: string[] | null;
+          title: string;
+          updated_at?: string;
+          yahoo_uuid: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          link?: string;
+          published_at?: string;
+          publisher?: string;
+          related_symbol_ids?: string[] | null;
+          title?: string;
+          updated_at?: string;
+          yahoo_uuid?: string;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
           avatar_url: string | null;

@@ -12,6 +12,7 @@ import { calculateNetWorth } from "@/server/analysis/net-worth";
 import { fetchNetWorthHistory } from "@/server/analysis/net-worth-history";
 import { fetchNetWorthChange } from "@/server/analysis/net-worth-change";
 import { calculateAssetAllocation } from "@/server/analysis/asset-allocation";
+import { fetchPortfolioNews } from "@/server/news/fetch";
 
 // Separate components for data fetching with suspense
 async function NetWorthChartWrapper({
@@ -60,7 +61,8 @@ async function AssetAllocationChartWrapper({
 }
 
 async function NewsWidgetWrapper() {
-  return <NewsWidget />;
+  const newsResult = await fetchPortfolioNews(10);
+  return <NewsWidget newsData={newsResult} />;
 }
 
 // Main page component

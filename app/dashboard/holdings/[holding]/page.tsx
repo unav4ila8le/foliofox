@@ -10,6 +10,7 @@ import { HoldingNews } from "@/components/dashboard/holdings/holding/news";
 import { fetchSingleHolding } from "@/server/holdings/fetch";
 import { fetchRecords } from "@/server/records/fetch";
 import { fetchSymbol } from "@/server/symbols/fetch";
+import { fetchSymbolNews } from "@/server/news/fetch";
 
 // Only needed for dynamic routes
 interface HoldingPageProps {
@@ -18,9 +19,14 @@ interface HoldingPageProps {
   }>;
 }
 
+// Shared data fetching function
+async function getHoldingData(holdingId: string) {
+  return await fetchSingleHolding(holdingId);
+}
+
 // Separate components for data fetching with suspense
 async function HoldingPageHeader({ holdingId }: { holdingId: string }) {
-  const holding = await fetchSingleHolding(holdingId);
+  const holding = await getHoldingData(holdingId);
   // Get symbol details for the holding (if it's supported)
   const symbol = holding.symbol_id
     ? await fetchSymbol(holding.symbol_id)
@@ -78,9 +84,21 @@ async function HoldingPageHeader({ holdingId }: { holdingId: string }) {
   );
 }
 
+async function HoldingNewsWrapper({ holdingId }: { holdingId: string }) {
+  const holding = await getHoldingData(holdingId);
+  // Don't render anything if no symbol_id
+  if (!holding.symbol_id) {
+    return null;
+  }
+
+  // Fetch news for this symbol
+  const newsResult = await fetchSymbolNews(holding.symbol_id, 5);
+  return <HoldingNews newsData={newsResult} />;
+}
+
 async function RecordsTableWrapper({ holdingId }: { holdingId: string }) {
   const [holding, records] = await Promise.all([
-    fetchSingleHolding(holdingId),
+    getHoldingData(holdingId),
     fetchRecords(holdingId),
   ]);
 
@@ -91,12 +109,6 @@ async function RecordsTableWrapper({ holdingId }: { holdingId: string }) {
     </div>
   );
 }
-
-async function HoldingNewsWrapper({ symbol }: { symbol: string }) {
-  return <HoldingNews symbol={symbol} />;
-}
-
-const symbolId = "AAPL";
 
 // Main page component
 export default async function HoldingPage({ params }: HoldingPageProps) {
@@ -110,11 +122,9 @@ export default async function HoldingPage({ params }: HoldingPageProps) {
         </Suspense>
         <hr />
         {/* News */}
-        {symbolId && (
-          <Suspense fallback={<Skeleton className="h-80 rounded-xl" />}>
-            <HoldingNewsWrapper symbol={symbolId} />
-          </Suspense>
-        )}
+        <Suspense fallback={<Skeleton className="h-80" />}>
+          <HoldingNewsWrapper holdingId={holdingId} />
+        </Suspense>
       </div>
 
       {/* Records table */}

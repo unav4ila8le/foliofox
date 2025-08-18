@@ -67,3 +67,6 @@ export type Quote = Pick<
   Tables<"quotes">,
   "id" | "symbol_id" | "date" | "price"
 >;
+
+// News
+export type NewsArticle = Tables<"news">;
