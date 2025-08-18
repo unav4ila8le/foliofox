@@ -44,7 +44,7 @@ export function HoldingNews({ newsData }: HoldingNewsProps) {
   return (
     <div className="space-y-2">
       <h3 className="font-semibold">News</h3>
-      <div className="divide-y overflow-y-auto">
+      <div className="custom-scrollbar divide-y overflow-y-auto">
         {newsData.data.map((article) => (
           <a
             key={article.id}

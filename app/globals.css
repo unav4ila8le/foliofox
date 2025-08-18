@@ -178,6 +178,15 @@ body {
 }
 
 /*
+  Custom scrollbar
+*/
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+/*
   Accordion/Collapsible animation
 */
 
