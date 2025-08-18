@@ -210,10 +210,17 @@ export async function fetchPortfolioNews(limit: number = 10) {
       return { success: true, data: [] };
     }
 
-    return await fetchNewsForSymbols(
+    const result = await fetchNewsForSymbols(
       symbolIds,
       Math.ceil(limit / symbolIds.length),
     );
+
+    // Apply final limit here:
+    if (result.success && result.data) {
+      result.data = result.data.slice(0, limit);
+    }
+
+    return result;
   } catch (error) {
     console.error("Error fetching portfolio news:", error);
     return {

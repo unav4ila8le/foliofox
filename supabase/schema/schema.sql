@@ -159,6 +159,25 @@ CREATE TABLE public.holdings (
 ALTER TABLE public.holdings OWNER TO postgres;
 
 --
+-- Name: news; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.news (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    yahoo_uuid text NOT NULL,
+    related_symbol_ids text[] DEFAULT '{}'::text[],
+    title text NOT NULL,
+    publisher text NOT NULL,
+    link text NOT NULL,
+    published_at timestamp with time zone NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.news OWNER TO postgres;
+
+--
 -- Name: profiles; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -286,6 +305,22 @@ ALTER TABLE ONLY public.holdings
 
 
 --
+-- Name: news news_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.news
+    ADD CONSTRAINT news_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: news news_yahoo_uuid_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.news
+    ADD CONSTRAINT news_yahoo_uuid_key UNIQUE (yahoo_uuid);
+
+
+--
 -- Name: profiles profiles_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -382,10 +417,31 @@ CREATE INDEX idx_holdings_user_archived ON public.holdings USING btree (user_id,
 
 
 --
+-- Name: idx_news_related_symbols; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_news_related_symbols ON public.news USING gin (related_symbol_ids);
+
+
+--
 -- Name: idx_records_holding_user_date_created; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX idx_records_holding_user_date_created ON public.records USING btree (holding_id, user_id, date DESC, created_at DESC);
+
+
+--
+-- Name: news_created_at_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX news_created_at_idx ON public.news USING btree (created_at DESC);
+
+
+--
+-- Name: news_published_at_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX news_published_at_idx ON public.news USING btree (published_at DESC);
 
 
 --
@@ -428,6 +484,13 @@ CREATE INDEX symbols_currency_idx ON public.symbols USING btree (currency);
 --
 
 CREATE TRIGGER holdings_handle_updated_at BEFORE UPDATE ON public.holdings FOR EACH ROW EXECUTE FUNCTION storage.update_updated_at_column();
+
+
+--
+-- Name: news news_handle_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER news_handle_updated_at BEFORE UPDATE ON public.news FOR EACH ROW EXECUTE FUNCTION storage.update_updated_at_column();
 
 
 --
@@ -583,6 +646,13 @@ CREATE POLICY "Enable read access for all authenticated users" ON public.exchang
 
 
 --
+-- Name: news Enable read access for all authenticated users; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Enable read access for all authenticated users" ON public.news FOR SELECT TO authenticated USING (true);
+
+
+--
 -- Name: quotes Enable read access for all authenticated users; Type: POLICY; Schema: public; Owner: postgres
 --
 
@@ -705,6 +775,12 @@ ALTER TABLE public.exchange_rates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.holdings ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: news; Type: ROW SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE public.news ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: profiles; Type: ROW SECURITY; Schema: public; Owner: postgres
 --
 
@@ -781,6 +857,15 @@ GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.ex
 GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.holdings TO anon;
 GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.holdings TO authenticated;
 GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.holdings TO service_role;
+
+
+--
+-- Name: TABLE news; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.news TO anon;
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.news TO authenticated;
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.news TO service_role;
 
 
 --

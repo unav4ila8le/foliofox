@@ -11,6 +11,7 @@ interface NewsWidgetProps {
 }
 
 export function NewsWidget({ newsData }: NewsWidgetProps) {
+  console.log("[widget] Articles received:", newsData.data?.length);
   // Handle error state
   if (!newsData.success) {
     return (
