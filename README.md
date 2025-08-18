@@ -199,6 +199,6 @@ All formatting functions accept both numbers and strings as input. Currency form
 - [ ] Add a dividends tracker. It should show the user the holdings that pay dividends, and their yearly/monthly expected dividend payout
 - [ ] Allow user to review their imports and tweak them
 - [ ] Add AI powered import (import from images, pdfs, excels, and more)
-- [ ] Add news based on user's portfolio
+- [x] Add news based on user's portfolio
 - [ ] Find a way to have a more accurate historical calculation which doesn't add much overhead. WeeksBack solution is fast but not accurate cause the date is "rounded" to match weeks and not days.
 - [ ] Add a way for the user to "share" their portfolio. Ideally, after agreeing, they get a public sharable link which leads to a single public page view of all their holdings and relevant performance charts.
