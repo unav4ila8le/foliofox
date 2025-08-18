@@ -244,11 +244,11 @@ function SymbolList({
                   </span>
                 </div>
                 {isLoadingQuote && value === symbol.id ? (
-                  <LoaderCircle className="ml-auto animate-spin" />
+                  <LoaderCircle className="size-4 animate-spin" />
                 ) : (
                   <Check
                     className={cn(
-                      "ml-auto",
+                      "size-4",
                       value === symbol.id ? "opacity-100" : "opacity-0",
                     )}
                   />
