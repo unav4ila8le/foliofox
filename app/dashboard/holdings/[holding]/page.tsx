@@ -93,7 +93,12 @@ async function HoldingNewsWrapper({ holdingId }: { holdingId: string }) {
 
   // Fetch news for this symbol
   const newsResult = await fetchSymbolNews(holding.symbol_id, 5);
-  return <HoldingNews newsData={newsResult} />;
+  return (
+    <>
+      <hr />
+      <HoldingNews newsData={newsResult} />
+    </>
+  );
 }
 
 async function RecordsTableWrapper({ holdingId }: { holdingId: string }) {
@@ -120,7 +125,7 @@ export default async function HoldingPage({ params }: HoldingPageProps) {
         <Suspense fallback={<Skeleton className="h-24" />}>
           <HoldingPageHeader holdingId={holdingId} />
         </Suspense>
-        <hr />
+
         {/* News */}
         <Suspense fallback={<Skeleton className="h-80" />}>
           <HoldingNewsWrapper holdingId={holdingId} />
