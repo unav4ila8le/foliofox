@@ -5,10 +5,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { EditHoldingButton } from "@/components/dashboard/holdings/edit-holding-button";
 import { RecordsTable } from "@/components/dashboard/holdings/table/records/records-table";
+import { NewsWidget } from "@/components/dashboard/news/widget";
 
 import { fetchSingleHolding } from "@/server/holdings/fetch";
 import { fetchRecords } from "@/server/records/fetch";
 import { fetchSymbol } from "@/server/symbols/fetch";
+
+import { cn } from "@/lib/utils";
 
 // Only needed for dynamic routes
 interface HoldingPageProps {
@@ -85,24 +88,46 @@ async function RecordsTableWrapper({ holdingId }: { holdingId: string }) {
 
   return (
     <div className="flex flex-col gap-2">
-      <h3 className="text-lg font-semibold">Records history</h3>
+      <h3 className="font-semibold">Records history</h3>
       <RecordsTable data={records} holding={holding} />
     </div>
   );
 }
+
+async function NewsWidgetWrapper({ symbol }: { symbol: string }) {
+  return <NewsWidget symbol={symbol} variant="compact" />;
+}
+
+const symbolId = "AAPL";
 
 // Main page component
 export default async function HoldingPage({ params }: HoldingPageProps) {
   const { holding: holdingId } = await params;
 
   return (
-    <div className="flex flex-col gap-4">
-      <Suspense fallback={<Skeleton className="h-24" />}>
-        <HoldingPageHeader holdingId={holdingId} />
-      </Suspense>
-      <Suspense fallback={<Skeleton className="h-80" />}>
-        <RecordsTableWrapper holdingId={holdingId} />
-      </Suspense>
+    <div className="grid grid-cols-6 gap-4 lg:gap-10">
+      <div
+        className={cn(
+          "col-span-6 space-y-4",
+          symbolId ? "lg:col-span-4" : "lg:col-span-6",
+        )}
+      >
+        <Suspense fallback={<Skeleton className="h-24" />}>
+          <HoldingPageHeader holdingId={holdingId} />
+        </Suspense>
+        <Suspense fallback={<Skeleton className="h-80" />}>
+          <RecordsTableWrapper holdingId={holdingId} />
+        </Suspense>
+      </div>
+
+      {/* News widget */}
+      {symbolId && (
+        <div className="col-span-6 lg:col-span-2">
+          <Suspense fallback={<Skeleton className="h-80 rounded-xl" />}>
+            <NewsWidgetWrapper symbol={symbolId} />
+          </Suspense>
+        </div>
+      )}
     </div>
   );
 }
