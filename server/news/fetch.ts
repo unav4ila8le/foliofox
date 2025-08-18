@@ -110,7 +110,9 @@ export async function fetchNewsForSymbols(
                 publisher: article.publisher,
                 link: article.link,
                 published_at: article.providerPublishTime.toISOString(),
-                related_symbol_ids: article.relatedTickers || [symbolId],
+                related_symbol_ids: [
+                  ...new Set([symbolId, ...(article.relatedTickers || [])]),
+                ],
               });
 
               // Add to our return data with temporary IDs
@@ -121,7 +123,9 @@ export async function fetchNewsForSymbols(
                 publisher: article.publisher,
                 link: article.link,
                 published_at: article.providerPublishTime.toISOString(),
-                related_symbol_ids: article.relatedTickers || [symbolId],
+                related_symbol_ids: [
+                  ...new Set([symbolId, ...(article.relatedTickers || [])]),
+                ],
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
               });
