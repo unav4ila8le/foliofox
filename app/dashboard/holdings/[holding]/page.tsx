@@ -5,13 +5,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { EditHoldingButton } from "@/components/dashboard/holdings/edit-holding-button";
 import { RecordsTable } from "@/components/dashboard/holdings/tables/records/records-table";
-import { NewsWidget } from "@/components/dashboard/news/widget";
+import { HoldingNews } from "@/components/dashboard/holdings/holding/news";
 
 import { fetchSingleHolding } from "@/server/holdings/fetch";
 import { fetchRecords } from "@/server/records/fetch";
 import { fetchSymbol } from "@/server/symbols/fetch";
-
-import { cn } from "@/lib/utils";
 
 // Only needed for dynamic routes
 interface HoldingPageProps {
@@ -31,7 +29,7 @@ async function HoldingPageHeader({ holdingId }: { holdingId: string }) {
   return (
     <div className="space-y-2">
       {/* Holding name and type */}
-      <div className="flex flex-col items-start gap-2 md:flex-row md:items-center">
+      <div className="flex flex-col flex-wrap items-start gap-2 md:flex-row md:items-center">
         <h1 className="text-2xl font-semibold">{holding.name}</h1>
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="secondary">{holding.asset_type}</Badge>
@@ -94,8 +92,8 @@ async function RecordsTableWrapper({ holdingId }: { holdingId: string }) {
   );
 }
 
-async function NewsWidgetWrapper({ symbol }: { symbol: string }) {
-  return <NewsWidget symbol={symbol} variant="compact" />;
+async function HoldingNewsWrapper({ symbol }: { symbol: string }) {
+  return <HoldingNews symbol={symbol} />;
 }
 
 const symbolId = "AAPL";
@@ -106,28 +104,25 @@ export default async function HoldingPage({ params }: HoldingPageProps) {
 
   return (
     <div className="grid grid-cols-6 gap-4 lg:gap-10">
-      <div
-        className={cn(
-          "col-span-6 space-y-4",
-          symbolId ? "lg:col-span-4" : "lg:col-span-6",
-        )}
-      >
+      <div className="col-span-6 space-y-4 lg:col-span-2">
         <Suspense fallback={<Skeleton className="h-24" />}>
           <HoldingPageHeader holdingId={holdingId} />
         </Suspense>
+        <hr />
+        {/* News */}
+        {symbolId && (
+          <Suspense fallback={<Skeleton className="h-80 rounded-xl" />}>
+            <HoldingNewsWrapper symbol={symbolId} />
+          </Suspense>
+        )}
+      </div>
+
+      {/* Records table */}
+      <div className="col-span-6 lg:col-span-4">
         <Suspense fallback={<Skeleton className="h-80" />}>
           <RecordsTableWrapper holdingId={holdingId} />
         </Suspense>
       </div>
-
-      {/* News widget */}
-      {symbolId && (
-        <div className="col-span-6 lg:col-span-2">
-          <Suspense fallback={<Skeleton className="h-80 rounded-xl" />}>
-            <NewsWidgetWrapper symbol={symbolId} />
-          </Suspense>
-        </div>
-      )}
     </div>
   );
 }
