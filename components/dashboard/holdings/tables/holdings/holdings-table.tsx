@@ -6,10 +6,10 @@ import { Archive, Package, Trash2 } from "lucide-react";
 
 import { SearchInput } from "@/components/ui/search-input";
 import { NewHoldingButton } from "@/components/dashboard/new-holding";
-import { TableActionsDropdown } from "@/components/dashboard/holdings/table/holdings/table-actions";
-import { BulkActionBar } from "@/components/dashboard/holdings/table/base/bulk-action-bar";
-import { DeleteHoldingDialog } from "@/components/dashboard/holdings/table/row-actions/delete-dialog";
-import { ArchiveHoldingDialog } from "@/components/dashboard/holdings/table/row-actions/archive-dialog";
+import { TableActionsDropdown } from "@/components/dashboard/holdings/tables/holdings/table-actions";
+import { BulkActionBar } from "@/components/dashboard/holdings/tables/base/bulk-action-bar";
+import { DeleteHoldingDialog } from "@/components/dashboard/holdings/tables/row-actions/delete-dialog";
+import { ArchiveHoldingDialog } from "@/components/dashboard/holdings/tables/row-actions/archive-dialog";
 import { DataTable } from "../base/data-table";
 import { columns } from "./columns";
 

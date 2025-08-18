@@ -6,8 +6,8 @@ import { toast } from "sonner";
 import { Trash2, ArchiveRestore } from "lucide-react";
 
 import { SearchInput } from "@/components/ui/search-input";
-import { BulkActionBar } from "@/components/dashboard/holdings/table/base/bulk-action-bar";
-import { DeleteHoldingDialog } from "@/components/dashboard/holdings/table/row-actions/delete-dialog";
+import { BulkActionBar } from "@/components/dashboard/holdings/tables/base/bulk-action-bar";
+import { DeleteHoldingDialog } from "@/components/dashboard/holdings/tables/row-actions/delete-dialog";
 import { DataTable } from "../base/data-table";
 import { columns } from "./columns";
 

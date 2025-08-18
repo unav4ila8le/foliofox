@@ -4,7 +4,7 @@ import { Archive } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { EditHoldingButton } from "@/components/dashboard/holdings/edit-holding-button";
-import { RecordsTable } from "@/components/dashboard/holdings/table/records/records-table";
+import { RecordsTable } from "@/components/dashboard/holdings/tables/records/records-table";
 import { NewsWidget } from "@/components/dashboard/news/widget";
 
 import { fetchSingleHolding } from "@/server/holdings/fetch";
