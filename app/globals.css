@@ -37,7 +37,8 @@
 }
 
 body {
-  font-family: var(--font-inter), Arial, Helvetica, sans-serif;
+  font-family:
+    var(--font-poppins), system-ui, Helvetica, "Roboto", Arial, sans-serif;
 }
 
 /*
