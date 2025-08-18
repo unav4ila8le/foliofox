@@ -91,51 +91,54 @@ export async function fetchNewsForSymbols(
     const articlesToCache: TablesInsert<"news">[] = []; // For batch database insert
 
     if (symbolsNeedingFresh.length > 0) {
-      // Fetch from Yahoo Finance for each symbol that needs fresh data
-      // Note: We avoid Promise.all here as you prefer sequential async calls
-      for (const symbolId of symbolsNeedingFresh) {
+      // Fetch all symbols in parallel from Yahoo Finance
+      const fetchPromises = symbolsNeedingFresh.map(async (symbolId) => {
         try {
           const searchResult = await yahooFinance.search(symbolId, {
             quotesCount: 0,
             newsCount: limit,
             enableFuzzyQuery: false,
           });
-
-          if (searchResult.news && searchResult.news.length > 0) {
-            // Prepare articles for database caching
-            searchResult.news.forEach((article) => {
-              articlesToCache.push({
-                yahoo_uuid: article.uuid,
-                title: article.title,
-                publisher: article.publisher,
-                link: article.link,
-                published_at: article.providerPublishTime.toISOString(),
-                related_symbol_ids: [
-                  ...new Set([symbolId, ...(article.relatedTickers || [])]),
-                ],
-              });
-
-              // Add to our return data with temporary IDs
-              freshArticles.push({
-                id: crypto.randomUUID(),
-                yahoo_uuid: article.uuid,
-                title: article.title,
-                publisher: article.publisher,
-                link: article.link,
-                published_at: article.providerPublishTime.toISOString(),
-                related_symbol_ids: [
-                  ...new Set([symbolId, ...(article.relatedTickers || [])]),
-                ],
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-              });
-            });
-          }
+          return { symbolId, searchResult };
         } catch (error) {
           console.warn(`Failed to fetch news for symbol ${symbolId}:`, error);
-          // Continue with other symbols - don't let one failure break everything
+          return { symbolId, searchResult: null };
         }
-      }
+      });
+
+      const results = await Promise.all(fetchPromises);
+
+      // Process all results
+      results.forEach(({ symbolId, searchResult }) => {
+        if (searchResult?.news && searchResult.news.length > 0) {
+          searchResult.news.forEach((article) => {
+            articlesToCache.push({
+              yahoo_uuid: article.uuid,
+              title: article.title,
+              publisher: article.publisher,
+              link: article.link,
+              published_at: article.providerPublishTime.toISOString(),
+              related_symbol_ids: [
+                ...new Set([symbolId, ...(article.relatedTickers || [])]),
+              ],
+            });
+
+            freshArticles.push({
+              id: crypto.randomUUID(),
+              yahoo_uuid: article.uuid,
+              title: article.title,
+              publisher: article.publisher,
+              link: article.link,
+              published_at: article.providerPublishTime.toISOString(),
+              related_symbol_ids: [
+                ...new Set([symbolId, ...(article.relatedTickers || [])]),
+              ],
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            });
+          });
+        }
+      });
 
       // 5. Store all new articles in database with one batch operation
       if (articlesToCache.length > 0) {
