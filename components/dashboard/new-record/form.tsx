@@ -93,7 +93,10 @@ export function NewRecordForm() {
 
       setIsFetchingQuote(true);
       try {
-        const quote = await fetchSingleQuote(holding.symbol_id, date);
+        const quote = await fetchSingleQuote(holding.symbol_id, {
+          date: date,
+          upsert: false,
+        });
 
         form.setValue("unit_value", quote);
       } catch (error) {

@@ -3,7 +3,7 @@
 import YahooFinance from "yahoo-finance2";
 import { z } from "zod";
 
-import type { Symbol } from "@/types/global.types";
+import type { Symbol, SymbolSearchResult } from "@/types/global.types";
 
 const yahooFinance = new YahooFinance();
 
@@ -15,7 +15,7 @@ const searchParamsSchema = z.object({
 
 type SearchParams = z.infer<typeof searchParamsSchema>;
 
-export async function searchSymbols(params: SearchParams) {
+export async function searchYahooFinanceSymbols(params: SearchParams) {
   try {
     // Validate the input parameters
     const validatedParams = searchParamsSchema.parse(params);
@@ -27,8 +27,8 @@ export async function searchSymbols(params: SearchParams) {
       enableFuzzyQuery: true,
     });
 
-    // Filter and transform the results to match Symbol type
-    const symbols: Symbol[] = searchResults.quotes
+    // Filter and transform the results to match SymbolSearchResult type
+    const symbols: SymbolSearchResult[] = searchResults.quotes
       .filter((quote: Record<string, unknown>) => {
         // Only include quotes that have a valid symbol
         return (
@@ -39,20 +39,16 @@ export async function searchSymbols(params: SearchParams) {
       })
       .map((quote: Record<string, unknown>) => ({
         id: quote.symbol as string,
-        quote_type: quote.quoteType as string,
-        short_name: (quote.shortname as string) || null,
-        long_name: (quote.longname as string) || null,
+        nameDisp:
+          (quote.longname as string) ||
+          (quote.shortname as string) ||
+          (quote.symbol as string),
         exchange:
-          (quote.exchDisp as string) || (quote.exchange as string) || null,
-        industry: (quote.industry as string) || null,
-        sector: (quote.sector as string) || null,
-        currency: (quote.currency as string) || "",
+          (quote.exchange as string) || (quote.exchDisp as string) || null,
+        typeDisp: quote.typeDisp as string,
       }));
 
-    return {
-      success: true,
-      data: symbols,
-    };
+    return { success: true, data: symbols };
   } catch (error) {
     console.error("Error searching symbols:", error);
     return {
@@ -63,34 +59,27 @@ export async function searchSymbols(params: SearchParams) {
   }
 }
 
-// Get quote data for a specific symbol
-export async function getSymbolQuote(symbolId: string) {
+// Fetch quote summary data for a specific symbol
+export async function fetchYahooFinanceSymbol(symbolId: string) {
   try {
-    const quoteData = await yahooFinance.quote(symbolId, {
-      fields: [
-        "symbol",
-        "quoteType",
-        "shortName",
-        "longName",
-        "currency",
-        "exchange",
-        "fullExchangeName",
-      ],
+    const summary = await yahooFinance.quoteSummary(symbolId, {
+      modules: ["price", "assetProfile"],
     });
 
-    return {
-      success: true,
-      data: {
-        symbol: symbolId,
-        quoteType: quoteData.quoteType,
-        shortName: quoteData.shortName || symbolId,
-        longName: quoteData.longName || quoteData.shortName || symbolId,
-        currency: quoteData.currency,
-        exchange: quoteData.fullExchangeName || quoteData.exchange,
-        sector: quoteData.sector,
-        industry: quoteData.industry,
-      },
+    const price = summary.price;
+    const profile = summary.assetProfile;
+
+    const data: Symbol = {
+      id: symbolId,
+      quote_type: price?.quoteType || "",
+      short_name: price?.shortName || symbolId,
+      long_name: price?.longName || price?.shortName || symbolId,
+      currency: price?.currency || "",
+      exchange: price?.exchangeName || price?.exchange || null,
+      sector: profile?.sector || null,
+      industry: profile?.industry || null,
     };
+    return { success: true, data };
   } catch (error) {
     console.error("Error fetching quote for symbol:", symbolId, error);
     return {

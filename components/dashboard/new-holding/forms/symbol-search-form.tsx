@@ -25,12 +25,11 @@ import { useNewHoldingDialog } from "../index";
 
 import { requiredMinNumber } from "@/lib/zod-helpers";
 
-import { createHolding } from "@/server/holdings/create";
+import { fetchYahooFinanceSymbol } from "@/server/symbols/search";
 import { fetchSingleQuote } from "@/server/quotes/fetch";
+import { createHolding } from "@/server/holdings/create";
 
 import { getCategoryFromQuoteType } from "@/lib/asset-category-mappings";
-
-import type { Symbol } from "@/types/global.types";
 
 const formSchema = z.object({
   symbol_id: z.string().min(1, { error: "Symbol is required." }),
@@ -58,11 +57,10 @@ const formSchema = z.object({
 
 export function SymbolSearchForm() {
   // Props destructuring and context hooks
-  const { setOpen, profile } = useNewHoldingDialog();
+  const { setOpen } = useNewHoldingDialog();
 
   // State declarations
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedSymbol, setSelectedSymbol] = useState<Symbol | null>(null);
 
   // Form setup and derived state
   const form = useForm({
@@ -71,7 +69,7 @@ export function SymbolSearchForm() {
       symbol_id: "",
       name: "",
       category_code: "",
-      currency: profile.display_currency,
+      currency: "",
       unit_value: "",
       quantity: "",
       description: "",
@@ -85,29 +83,39 @@ export function SymbolSearchForm() {
   const symbolId = form.watch("symbol_id") || "";
 
   // Handle symbol selection from dropdown
-  const handleSymbolSelect = async (symbol: Symbol) => {
+  const handleSymbolSelect = async (symbolId: string) => {
     try {
-      // 1. Fetch the historical price for today (or most recent trading day)
-      const unitValue = await fetchSingleQuote(symbol.id);
+      // 1. Fetch the symbol quote details
+      const yahooFinanceSymbol = await fetchYahooFinanceSymbol(symbolId);
+      if (!yahooFinanceSymbol.success || !yahooFinanceSymbol.data) {
+        throw new Error(
+          yahooFinanceSymbol.message || "Failed to fetch symbol details",
+        );
+      }
 
-      // 2. Auto-fill category based on quote type
-      const category = getCategoryFromQuoteType(symbol.quote_type);
+      // 2. Fetch the price for today without upsert
+      const unitValue = await fetchSingleQuote(symbolId, { upsert: false });
+
+      // 3. Auto-fill form fields
+      const symbolData = yahooFinanceSymbol.data;
+
+      // Category
+      const category = getCategoryFromQuoteType(symbolData.quote_type || "");
       if (category) {
         form.setValue("category_code", category);
       }
 
-      // 3. Auto-fill other fields from the selected symbol
-      if (symbol.currency) {
-        form.setValue("currency", symbol.currency.toUpperCase());
+      // Currency
+      if (symbolData.currency) {
+        form.setValue("currency", symbolData.currency);
       }
+
+      // Unit value
       form.setValue("unit_value", unitValue);
 
-      // 4. Set name
-      const displayName = symbol.long_name || symbol.short_name;
-      form.setValue("name", `${symbol.id} - ${displayName}`);
-
-      // 5. Store selected symbol for reference
-      setSelectedSymbol(symbol);
+      // Name
+      const displayName = symbolData.long_name || symbolData.short_name;
+      form.setValue("name", `${symbolId} - ${displayName}`);
     } catch (error) {
       console.warn(
         "Error selecting symbol:",
@@ -117,9 +125,8 @@ export function SymbolSearchForm() {
         error instanceof Error ? error.message : "Error selecting symbol.",
       );
 
-      // Clear symbol_id if any error occurs to force user to re-select
-      form.setValue("symbol_id", "");
-      setSelectedSymbol(null);
+      // Clear form if any error occurs to force user to re-select
+      form.reset();
     }
   };
 
@@ -148,7 +155,6 @@ export function SymbolSearchForm() {
 
       toast.success("Holding created successfully");
       form.reset(); // Clear form
-      setSelectedSymbol(null); // Clear symbol state
       setOpen(false);
     } catch (error) {
       toast.error(
@@ -162,7 +168,7 @@ export function SymbolSearchForm() {
   }
 
   // Check if form is ready (symbol selected)
-  const isFormReady = Boolean(symbolId && selectedSymbol);
+  const isFormReady = Boolean(symbolId);
 
   return (
     <Form {...form}>

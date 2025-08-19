@@ -28,9 +28,9 @@ import {
 
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { searchSymbols } from "@/server/symbols/search";
+import { searchYahooFinanceSymbols } from "@/server/symbols/search";
 
-import type { Symbol } from "@/types/global.types";
+import type { SymbolSearchResult } from "@/types/global.types";
 
 // Props interface for react-hook-form integration
 interface SymbolSearchProps {
@@ -39,12 +39,12 @@ interface SymbolSearchProps {
     onChange: (value: string) => void;
   };
   id?: string;
-  onSymbolSelect?: (symbol: Symbol) => void;
+  onSymbolSelect?: (symbolId: string) => void;
 }
 
 export function SymbolSearch({ field, id, onSymbolSelect }: SymbolSearchProps) {
   const [open, setOpen] = useState(false);
-  const [results, setResults] = useState<Symbol[]>([]);
+  const [results, setResults] = useState<SymbolSearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingQuote, setIsLoadingQuote] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -54,7 +54,7 @@ export function SymbolSearch({ field, id, onSymbolSelect }: SymbolSearchProps) {
   // Find the selected equity
   const selectedSymbol = results.find((symbol) => symbol.id === field.value);
   const symbolName = selectedSymbol
-    ? `${selectedSymbol.id} - ${selectedSymbol.long_name}`
+    ? selectedSymbol.id
     : field.value || "Search symbol";
   const hasSelectedValue = Boolean(field.value && selectedSymbol);
 
@@ -67,7 +67,7 @@ export function SymbolSearch({ field, id, onSymbolSelect }: SymbolSearchProps) {
     setIsLoading(true);
     (async () => {
       try {
-        const result = await searchSymbols({
+        const result = await searchYahooFinanceSymbols({
           query: debouncedQuery,
           limit: 10,
         });
@@ -154,8 +154,8 @@ interface SymbolListProps {
   setOpen: (open: boolean) => void;
   value: string;
   onChange: (value: string) => void;
-  onSymbolSelect?: (symbol: Symbol) => void;
-  results: Symbol[];
+  onSymbolSelect?: (symbolId: string) => void;
+  results: SymbolSearchResult[];
   isLoading: boolean;
   isLoadingQuote: boolean;
   setIsLoadingQuote: (loading: boolean) => void;
@@ -174,14 +174,14 @@ function SymbolList({
   setSearchQuery,
 }: SymbolListProps) {
   // Handle symbol selection with loading state
-  const handleSymbolSelect = async (symbol: Symbol) => {
+  const handleSymbolSelect = async (symbol: SymbolSearchResult) => {
     try {
       setIsLoadingQuote(true);
       onChange(symbol.id);
 
       // Call the async onSymbolSelect if provided
       if (onSymbolSelect) {
-        await onSymbolSelect(symbol);
+        await onSymbolSelect(symbol.id);
       }
 
       setOpen(false);
@@ -210,19 +210,13 @@ function SymbolList({
             <CommandItem
               key={symbol.id}
               onSelect={() => handleSymbolSelect(symbol)}
-              value={[
-                symbol.id,
-                symbol.short_name ?? "",
-                symbol.long_name ?? "",
-                symbol.exchange ?? "",
-              ]
+              value={[symbol.id, symbol.nameDisp ?? "", symbol.exchange ?? ""]
                 .filter(Boolean)
                 .join(" ")
                 .replace(/\s+/g, " ")}
               keywords={[
                 symbol.id,
-                symbol.short_name ?? "",
-                symbol.long_name ?? "",
+                symbol.nameDisp ?? "",
                 symbol.exchange ?? "",
               ].filter(Boolean)}
               disabled={isLoadingQuote}
@@ -231,7 +225,7 @@ function SymbolList({
               <div className="flex flex-col">
                 <span>{symbol.id}</span>
                 <span className="text-muted-foreground text-xs">
-                  {symbol.short_name || symbol.long_name}
+                  {symbol.nameDisp}
                 </span>
               </div>
               <div className="flex flex-row gap-2">
@@ -240,7 +234,7 @@ function SymbolList({
                     {symbol.exchange}
                   </span>
                   <span className="text-muted-foreground text-xs">
-                    {symbol.quote_type}
+                    {symbol.typeDisp}
                   </span>
                 </div>
                 {isLoadingQuote && value === symbol.id ? (

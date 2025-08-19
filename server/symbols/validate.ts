@@ -1,6 +1,9 @@
 "use server";
 
-import { getSymbolQuote, searchSymbols } from "@/server/symbols/search";
+import {
+  fetchYahooFinanceSymbol,
+  searchYahooFinanceSymbols,
+} from "@/server/symbols/search";
 
 // Types for validation results
 export interface SymbolValidationResult {
@@ -22,7 +25,7 @@ export async function validateSymbol(symbolId: string) {
     const cleanedSymbol = await normalizeSymbol(symbolId);
 
     // 1. Try exact match first (fastest)
-    const exactMatch = await getSymbolQuote(cleanedSymbol);
+    const exactMatch = await fetchYahooFinanceSymbol(cleanedSymbol);
     if (exactMatch.success) {
       return {
         valid: true,
@@ -32,7 +35,7 @@ export async function validateSymbol(symbolId: string) {
     }
 
     // 2. Try fuzzy search for suggestions
-    const fuzzyMatch = await searchSymbols({
+    const fuzzyMatch = await searchYahooFinanceSymbols({
       query: cleanedSymbol,
       limit: 5,
     });

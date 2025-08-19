@@ -3,8 +3,6 @@
 import { createServiceClient } from "@/supabase/service";
 import { createClient } from "@/supabase/server";
 
-import type { Symbol } from "@/types/global.types";
-
 /**
  * Fetch all unique symbol IDs from the database.
  * Used by cron jobs to get all symbols that need quote updates.
@@ -44,5 +42,5 @@ export async function fetchSymbol(symbolId: string) {
     throw new Error(`Failed to fetch symbol: ${error.message}`);
   }
 
-  return data as Symbol;
+  return data;
 }

@@ -12,54 +12,63 @@ const yahooFinance = new YahooFinance();
  * Fetch multiple quotes for different symbols and dates in bulk.
  *
  * @param requests - Array of {symbolId, date} pairs to fetch
+ * @param upsert - Whether to cache results in database (defaults to true)
  * @returns Map where key is "symbolId|date" and value is the price
  */
 export async function fetchQuotes(
   requests: Array<{ symbolId: string; date: Date }>,
+  upsert: boolean = true,
 ) {
   // Early return if no requests
   if (!requests.length) return new Map();
 
-  const supabase = await createServiceClient();
   const results = new Map<string, number>();
 
-  // 1. Check what's already cached in database
+  // Prepare cache queries for all requests
   const cacheQueries = requests.map(({ symbolId, date }) => ({
     symbolId,
     dateString: format(date, "yyyy-MM-dd"),
     cacheKey: `${symbolId}|${format(date, "yyyy-MM-dd")}`,
   }));
 
-  // Get unique symbolIds and dateStrings for efficient query
-  const symbolIds = [...new Set(cacheQueries.map((q) => q.symbolId))];
-  const dateStrings = [...new Set(cacheQueries.map((q) => q.dateString))];
+  let missingRequests = cacheQueries;
 
-  const { data: cachedQuotes } = await supabase
-    .from("quotes")
-    .select("symbol_id, date, price")
-    .in("symbol_id", symbolIds)
-    .in("date", dateStrings);
+  // 1. Check database cache only if upsert is enabled
+  if (upsert) {
+    const supabase = await createServiceClient();
 
-  // Store cached results
-  cachedQuotes?.forEach((quote) => {
-    const cacheKey = `${quote.symbol_id}|${quote.date}`;
-    results.set(cacheKey, quote.price);
-  });
+    // Get unique symbolIds and dateStrings for efficient query
+    const symbolIds = [...new Set(cacheQueries.map((q) => q.symbolId))];
+    const dateStrings = [...new Set(cacheQueries.map((q) => q.dateString))];
 
-  // 2. Find what's missing from cache
-  const missingRequests = cacheQueries.filter(
-    ({ cacheKey }) => !results.has(cacheKey),
-  );
+    const { data: cachedQuotes } = await supabase
+      .from("quotes")
+      .select("symbol_id, date, price")
+      .in("symbol_id", symbolIds)
+      .in("date", dateStrings);
 
-  // 3. Fetch missing quotes from Yahoo Finance in parallel
+    // Store cached results
+    cachedQuotes?.forEach((quote) => {
+      const cacheKey = `${quote.symbol_id}|${quote.date}`;
+      results.set(cacheKey, quote.price);
+    });
+
+    // Find what's missing from cache
+    missingRequests = cacheQueries.filter(
+      ({ cacheKey }) => !results.has(cacheKey),
+    );
+  }
+
+  // 2. Fetch missing quotes from Yahoo Finance in parallel
   if (missingRequests.length > 0) {
     const fetchPromises = missingRequests.map(
       async ({ symbolId, dateString, cacheKey }) => {
         try {
           // First try to get data for the exact date
+          const period2 = new Date(dateString);
           let chartData = await yahooFinance.chart(symbolId, {
-            period1: subDays(dateString, 1),
-            period2: dateString,
+            period1: subDays(period2, 1),
+            period2: period2,
             interval: "1d",
           });
 
@@ -71,13 +80,17 @@ export async function fetchQuotes(
           ) {
             // Go back up to 7 days to find the closest trading day
             chartData = await yahooFinance.chart(symbolId, {
-              period1: subDays(dateString, 7),
-              period2: dateString,
+              period1: subDays(period2, 7),
+              period2: period2,
               interval: "1d",
             });
           }
 
-          if (!chartData) {
+          if (
+            !chartData ||
+            !chartData.quotes ||
+            chartData.quotes.length === 0
+          ) {
             throw new Error(
               `No chart data found for ${symbolId} on ${dateString}`,
             );
@@ -107,7 +120,7 @@ export async function fetchQuotes(
     // Wait for all fetches to complete
     const fetchResults = await Promise.all(fetchPromises);
 
-    // 4. Store successful fetches in database and results
+    // 3. Store successful fetches in results (always) and in database if upsert is enabled
     const successfulFetches = [];
     // Remove duplicates
     const seen = new Set<string>();
@@ -121,7 +134,14 @@ export async function fetchQuotes(
       }
     }
 
-    if (successfulFetches.length > 0) {
+    // Add to results
+    successfulFetches.forEach(({ cacheKey, price }) => {
+      results.set(cacheKey, price);
+    });
+
+    // 4. Upsert to database only if enabled
+    if (upsert && successfulFetches.length > 0) {
+      const supabase = await createServiceClient();
       // Bulk insert into database
       const { error: insertError } = await supabase.from("quotes").upsert(
         successfulFetches.map(({ symbolId, dateString, price }) => ({
@@ -135,11 +155,6 @@ export async function fetchQuotes(
       if (insertError) {
         console.error("Failed to bulk insert quotes:", insertError);
       }
-
-      // Add to results
-      successfulFetches.forEach(({ cacheKey, price }) => {
-        results.set(cacheKey, price);
-      });
     }
   }
 
@@ -150,14 +165,19 @@ export async function fetchQuotes(
  * Fetch a single quote for a specific symbol and date.
  *
  * @param symbolId - The symbol to fetch the quote for
- * @param date - The date to fetch the quote for
+ * @param options - Optional configuration
  * @returns The quote price
  */
 export async function fetchSingleQuote(
   symbolId: string,
-  date: Date = new Date(),
+  options: {
+    date?: Date;
+    upsert?: boolean;
+  } = {},
 ): Promise<number> {
-  const quotes = await fetchQuotes([{ symbolId, date }]);
+  const { date = new Date(), upsert = true } = options;
+
+  const quotes = await fetchQuotes([{ symbolId, date }], upsert);
   const key = `${symbolId}|${format(date, "yyyy-MM-dd")}`;
   return quotes.get(key) || 0;
 }

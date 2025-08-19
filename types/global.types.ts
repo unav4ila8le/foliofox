@@ -62,6 +62,13 @@ export type Symbol = Pick<
   | "sector"
 >;
 
+export type SymbolSearchResult = {
+  id: string;
+  nameDisp: string;
+  exchange: string | null;
+  typeDisp: string;
+};
+
 // Quote
 export type Quote = Pick<
   Tables<"quotes">,
