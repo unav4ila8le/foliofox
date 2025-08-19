@@ -77,8 +77,8 @@ export function NewRecordForm() {
     defaultValues: {
       date: new Date(),
       holding_id: preselectedHolding?.id || "",
-      quantity: 0,
-      unit_value: 0,
+      quantity: "",
+      unit_value: preselectedHolding?.current_unit_value || "",
       description: "",
     },
   });
