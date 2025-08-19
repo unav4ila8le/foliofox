@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
 import { HoldingHeader } from "@/components/dashboard/holdings/holding/header";
 import { RecordsTable } from "@/components/dashboard/holdings/tables/records/records-table";
 import { HoldingNews } from "@/components/dashboard/holdings/holding/news";
@@ -56,6 +57,8 @@ async function HoldingContent({ holdingId }: { holdingId: string }) {
         <HoldingHeader holding={holding} symbol={symbol} />
       </div>
 
+      <Separator className="col-span-6" />
+
       {/* News */}
       {hasSymbol && (
         <div className="col-span-6 space-y-2 lg:col-span-2">
@@ -63,6 +66,8 @@ async function HoldingContent({ holdingId }: { holdingId: string }) {
           <HoldingNews newsData={newsResult} />
         </div>
       )}
+
+      <Separator className="col-span-6 lg:hidden" />
 
       {/* Records */}
       <div
