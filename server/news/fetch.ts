@@ -17,8 +17,8 @@ export interface NewsSearchResult {
 // Initialize yahooFinance consistent with other modules
 const yahooFinance = new YahooFinance();
 
-// Cache duration: 15 minutes
-const CACHE_DURATION_MS = 15 * 60 * 1000;
+// Cache duration: 30 minutes
+const CACHE_DURATION_MS = 30 * 60 * 1000;
 
 /**
  * Fetch news for specific symbols with caching
@@ -45,7 +45,7 @@ export async function fetchNewsForSymbols(
       .from("news")
       .select("*")
       .overlaps("related_symbol_ids", symbolIds) // Find news matching ANY symbol
-      .gte("created_at", cacheThreshold.toISOString()) // Only fresh cache (< 15 minutes old)
+      .gte("created_at", cacheThreshold.toISOString()) // Only fresh cache (< 30 minutes old)
       .order("published_at", { ascending: false });
 
     // 2. Figure out which symbols have enough cached articles
