@@ -26,7 +26,7 @@ export function RecordsTable({ data, holding }: RecordsTableProps) {
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="space-y-4">
       {/* Toolbar */}
       <div className="flex items-center justify-between gap-2">
         {/* Search */}
