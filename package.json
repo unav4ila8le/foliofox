@@ -8,7 +8,7 @@
     "start": "next start",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "lint": "next lint",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "types:supabase": "supabase gen types typescript --project-id icnvjrvkdjtbnldhootf > types/database.types.ts"
   },
