@@ -17,6 +17,5 @@ export const config = {
      */
     "/dashboard/:path*",
     "/auth/update-password",
-    "/auth/confirm",
   ],
 };
