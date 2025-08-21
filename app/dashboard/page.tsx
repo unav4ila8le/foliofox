@@ -6,6 +6,7 @@ import { MarketDataDisclaimer } from "@/components/dashboard/market-data-disclai
 import { AssetAllocationDonut } from "@/components/dashboard/charts/asset-allocation-donut";
 import { NetWorthLineChart } from "@/components/dashboard/charts/net-worth-line";
 import { NewsWidget } from "@/components/dashboard/news/widget";
+import { ProjectedIncomeWidget } from "@/components/dashboard/projected-income/widget";
 
 import { fetchProfile } from "@/server/profile/actions";
 import { calculateNetWorth } from "@/server/analysis/net-worth";
@@ -100,6 +101,9 @@ export default async function DashboardPage() {
           <Suspense fallback={<Skeleton className="h-80 rounded-xl" />}>
             <NewsWidgetWrapper />
           </Suspense>
+        </div>
+        <div className="col-span-6 lg:col-span-3">
+          <ProjectedIncomeWidget />
         </div>
       </div>
     </div>
