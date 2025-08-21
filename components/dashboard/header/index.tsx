@@ -8,6 +8,7 @@ import {
 
 import { Breadcrumb } from "./breadcrumb";
 import { NewActionButton } from "./new-action-button";
+import { FeedbackButton } from "@/components/dashboard/header/feedback";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export function Header() {
@@ -30,6 +31,7 @@ export function Header() {
       </div>
       <div className="flex items-center gap-2">
         <NewActionButton />
+        <FeedbackButton />
         <ThemeToggle />
       </div>
     </header>

@@ -98,6 +98,30 @@ export type Database = {
           },
         ];
       };
+      feedback: {
+        Row: {
+          created_at: string;
+          id: string;
+          message: string;
+          type: Database["public"]["Enums"]["feedback_type"];
+          user_id: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          message: string;
+          type: Database["public"]["Enums"]["feedback_type"];
+          user_id?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          message?: string;
+          type?: Database["public"]["Enums"]["feedback_type"];
+          user_id?: string | null;
+        };
+        Relationships: [];
+      };
       holdings: {
         Row: {
           archived_at: string | null;
@@ -364,7 +388,7 @@ export type Database = {
       [_ in never]: never;
     };
     Enums: {
-      [_ in never]: never;
+      feedback_type: "issue" | "idea" | "other";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -494,6 +518,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      feedback_type: ["issue", "idea", "other"],
+    },
   },
 } as const;

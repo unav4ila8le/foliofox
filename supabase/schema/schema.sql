@@ -34,6 +34,19 @@ COMMENT ON SCHEMA public IS 'standard public schema';
 
 
 --
+-- Name: feedback_type; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public.feedback_type AS ENUM (
+    'issue',
+    'idea',
+    'other'
+);
+
+
+ALTER TYPE public.feedback_type OWNER TO postgres;
+
+--
 -- Name: handle_new_user(); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -136,6 +149,21 @@ CREATE TABLE public.exchange_rates (
 
 
 ALTER TABLE public.exchange_rates OWNER TO postgres;
+
+--
+-- Name: feedback; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.feedback (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid DEFAULT gen_random_uuid(),
+    type public.feedback_type NOT NULL,
+    message text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.feedback OWNER TO postgres;
 
 --
 -- Name: holdings; Type: TABLE; Schema: public; Owner: postgres
@@ -294,6 +322,14 @@ ALTER TABLE ONLY public.exchange_rates
 
 ALTER TABLE ONLY public.exchange_rates
     ADD CONSTRAINT exchange_rates_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: feedback feedback_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.feedback
+    ADD CONSTRAINT feedback_pkey PRIMARY KEY (id);
 
 
 --
@@ -531,6 +567,14 @@ ALTER TABLE ONLY public.exchange_rates
 
 
 --
+-- Name: feedback feedback_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.feedback
+    ADD CONSTRAINT feedback_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
 -- Name: holdings holdings_category_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -629,6 +673,13 @@ CREATE POLICY "Enable insert for all authenticated users" ON public.quotes FOR I
 --
 
 CREATE POLICY "Enable insert for all authenticated users" ON public.symbols FOR INSERT TO authenticated WITH CHECK (true);
+
+
+--
+-- Name: feedback Enable insert for authenticated users only; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Enable insert for authenticated users only" ON public.feedback FOR INSERT TO authenticated WITH CHECK (true);
 
 
 --
@@ -776,6 +827,12 @@ ALTER TABLE public.currencies ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.exchange_rates ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: feedback; Type: ROW SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE public.feedback ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: holdings; Type: ROW SECURITY; Schema: public; Owner: postgres
 --
 
@@ -855,6 +912,15 @@ GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.cu
 GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.exchange_rates TO anon;
 GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.exchange_rates TO authenticated;
 GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.exchange_rates TO service_role;
+
+
+--
+-- Name: TABLE feedback; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.feedback TO anon;
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.feedback TO authenticated;
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.feedback TO service_role;
 
 
 --

@@ -22,8 +22,8 @@ export async function fetchProfile() {
 
   // Return both profile and email
   return {
-    profile: profile as Profile,
-    email: user.email as string,
+    profile,
+    email: user.email ?? "",
   };
 }
 
