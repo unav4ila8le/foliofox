@@ -38,11 +38,7 @@ export async function updateSession(request: NextRequest) {
   const user = data?.claims;
 
   // Only protect /dashboard routes - redirect to login if no user
-  if (!user && request.nextUrl.pathname.startsWith("/dashboard")) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/auth/login";
-    return NextResponse.redirect(url);
-  }
+  if (!user) return NextResponse.redirect(new URL("/auth/login", request.url));
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is.
   // If you're creating a new response object with NextResponse.next() make sure to:
