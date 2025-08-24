@@ -8,7 +8,7 @@ export function ProjectedIncomeWidget() {
         <CardTitle>Projected Income</CardTitle>
       </CardHeader>
       <CardContent className="flex-1">
-        <ProjectedIncomeBarChart />
+        <ProjectedIncomeBarChart currency="USD" />
       </CardContent>
     </Card>
   );

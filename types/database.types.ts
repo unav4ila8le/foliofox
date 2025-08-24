@@ -103,6 +103,7 @@ export type Database = {
           created_at: string;
           id: string;
           message: string;
+          resolved: boolean;
           type: Database["public"]["Enums"]["feedback_type"];
           user_id: string | null;
         };
@@ -110,6 +111,7 @@ export type Database = {
           created_at?: string;
           id?: string;
           message: string;
+          resolved?: boolean;
           type: Database["public"]["Enums"]["feedback_type"];
           user_id?: string | null;
         };
@@ -117,6 +119,7 @@ export type Database = {
           created_at?: string;
           id?: string;
           message?: string;
+          resolved?: boolean;
           type?: Database["public"]["Enums"]["feedback_type"];
           user_id?: string | null;
         };
