@@ -37,7 +37,7 @@
     "tailwind-merge": "^3.0.2",
     "use-debounce": "^10.0.5",
     "vaul": "^1.1.2",
-    "yahoo-finance2": "^3.4.0",
+    "yahoo-finance2": "^3.6.4",
     "zod": "^4.0.0"
   },
   "devDependencies": {
