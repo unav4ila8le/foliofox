@@ -159,7 +159,8 @@ CREATE TABLE public.feedback (
     user_id uuid DEFAULT gen_random_uuid(),
     type public.feedback_type NOT NULL,
     message text NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    resolved boolean DEFAULT false NOT NULL
 );
 
 
@@ -457,6 +458,13 @@ CREATE INDEX idx_holdings_user_archived ON public.holdings USING btree (user_id,
 --
 
 CREATE INDEX idx_news_related_symbols ON public.news USING gin (related_symbol_ids);
+
+
+--
+-- Name: idx_quotes_date_desc; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_quotes_date_desc ON public.quotes USING btree (date DESC);
 
 
 --

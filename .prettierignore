@@ -2,3 +2,5 @@ node_modules
 .next
 build
 dist
+supabase/.temp
+supabase/schema

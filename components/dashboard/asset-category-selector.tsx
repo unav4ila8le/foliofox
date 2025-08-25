@@ -27,7 +27,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useAssetCategories } from "@/hooks/client/use-asset-categories";
+import { useAssetCategories } from "@/hooks/use-asset-categories";
 
 import type { AssetCategory } from "@/types/global.types";
 

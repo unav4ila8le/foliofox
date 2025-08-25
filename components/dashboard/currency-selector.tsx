@@ -27,7 +27,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useCurrencies } from "@/hooks/client/use-currencies";
+import { useCurrencies } from "@/hooks/use-currencies";
 
 import type { Currency } from "@/types/global.types";
 
