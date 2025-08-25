@@ -48,7 +48,7 @@ export function ExportDialog({
       // Create temporary link and trigger download
       const link = document.createElement("a");
       link.href = url;
-      link.download = `patrivio-holdings-${format(new Date(), "yyyy-MM-dd")}.csv`;
+      link.download = `foliofox-holdings-${format(new Date(), "yyyy-MM-dd")}.csv`;
       link.style.display = "none";
       document.body.appendChild(link);
       link.click();
@@ -101,7 +101,7 @@ export function ExportDialog({
             <span className="font-medium">File format:</span> CSV (Comma
             Separated Values)
             <br />
-            <span className="font-medium">Filename:</span> patrivio-holdings-
+            <span className="font-medium">Filename:</span> foliofox-holdings-
             {format(new Date(), "yyyy-MM-dd")}.csv
           </div>
         </div>

@@ -10,7 +10,7 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "Patrivio - Portfolio Intelligence Platform",
+  title: "Foliofox - Portfolio Intelligence Platform",
   description:
     "Comprehensive portfolio tracking and AI-powered financial planning. Monitor your holdings, analyze performance, and discover growth opportunities with predictive insights tailored to your wealth-building strategy.",
 };
