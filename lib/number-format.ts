@@ -1,3 +1,42 @@
+/**
+ * Number Formatting Utilities
+ *
+ * A comprehensive set of functions for formatting numbers, currencies, and percentages
+ * in a consistent way across the application. Numbers and strings are supported.
+ *
+ * @example
+ * // Basic number formatting
+ * formatNumber(1234.5678);        // "1,235"
+ * formatNumber(1234.5678, 2);     // "1,234.57"
+ * formatNumber(1234.5678, 0);     // "1,235"
+ *
+ * @example
+ * // Currency formatting (automatic decimal places)
+ * formatCurrency(1234.56, "USD");  // "USD 1,234.56"  (2 decimals)
+ * formatCurrency(1234.56, "JPY");  // "JPY 1,235"     (0 decimals)
+ * formatCurrency(1234.56, "BHD");  // "BHD 1,234.560" (3 decimals)
+ *
+ * @example
+ * // Currency with symbols
+ * formatCurrency(1234.56, "USD", { display: "symbol" }); // "$1,234.56"
+ * formatCurrency(1234.56, "JPY", { display: "symbol" }); // "¥1,235"
+ *
+ * @example
+ * // Percentage formatting
+ * formatPercentage(0.1234);     // "12.34%"
+ * formatPercentage(0.1234, 1);  // "12.3%"
+ *
+ * @example
+ * // Compact formatting for large numbers
+ * formatCompactNumber(1234567);           // "1.2M"
+ * formatCompactCurrency(1234567, "USD");  // "1.2M USD"
+ *
+ * @example
+ * // String input handling
+ * formatNumber("1,234.56");         // "1,235"
+ * formatCurrency("invalid", "USD"); // "" (empty string for invalid input)
+ */
+
 type FormatNumberOptions = {
   /**
    * Minimum number of decimal places
