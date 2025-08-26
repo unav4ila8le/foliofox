@@ -113,6 +113,70 @@ export async function calculateProjectedIncome(
 }
 
 /**
+ * Calculate projected income for a specific symbol
+ */
+export async function calculateSymbolProjectedIncome(
+  symbolId: string,
+  quantity: number,
+  targetCurrency: string = "USD",
+  monthsAhead: number = 12,
+): Promise<ProjectedIncomeData[]> {
+  // Fetch dividend data for this specific symbol
+  const dividendsMap = await fetchDividends([{ symbolId }]);
+  const dividendData = dividendsMap.get(symbolId);
+
+  if (!dividendData?.summary) {
+    return [];
+  }
+
+  // Get the symbol's currency from the dividend data
+  const symbolCurrency =
+    dividendData.events.length > 0 ? dividendData.events[0].currency : "USD";
+
+  // Fetch exchange rates
+  const exchangeRequests = [
+    { currency: symbolCurrency, date: new Date() },
+    { currency: targetCurrency, date: new Date() },
+  ];
+
+  const exchangeRatesMap = await fetchExchangeRates(exchangeRequests);
+
+  // Calculate monthly projected income
+  const monthlyIncome = new Map<string, number>();
+  const today = new Date();
+
+  for (let i = 0; i < monthsAhead; i++) {
+    const monthStart = startOfMonth(addMonths(today, i));
+    const monthKey = format(monthStart, "yyyy-MM");
+
+    const { summary } = dividendData;
+    const monthlyDividend = calculateMonthlyDividend(
+      summary,
+      monthStart,
+      dividendData.events,
+    );
+    const symbolDividendIncome = monthlyDividend * quantity;
+
+    // Convert to target currency
+    const convertedValue = convertCurrency(
+      symbolDividendIncome,
+      symbolCurrency,
+      targetCurrency,
+      exchangeRatesMap,
+      format(new Date(), "yyyy-MM-dd"),
+    );
+
+    monthlyIncome.set(monthKey, convertedValue || 0);
+  }
+
+  return Array.from(monthlyIncome.entries()).map(([month, income]) => ({
+    date: new Date(month + "-01"),
+    income,
+  }));
+}
+
+/**
+ * Utility function
  * Convert amount from source currency to target currency using USD as base
  */
 function convertCurrency(
