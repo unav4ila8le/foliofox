@@ -17,7 +17,7 @@ export function ProjectedIncomeWidget({
   if (data.length === 0) {
     return (
       <Card className="flex h-80 flex-col gap-4">
-        <div className="flex flex-1 flex-col items-center justify-center text-center">
+        <CardContent className="flex flex-1 flex-col items-center justify-center text-center">
           <div className="bg-accent rounded-lg p-2">
             <BanknoteArrowDown className="text-muted-foreground size-4" />
           </div>
@@ -25,7 +25,7 @@ export function ProjectedIncomeWidget({
           <p className="text-muted-foreground mt-1 text-sm">
             No projected income or dividend data available for your portfolio
           </p>
-        </div>
+        </CardContent>
       </Card>
     );
   }

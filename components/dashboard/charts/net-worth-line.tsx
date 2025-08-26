@@ -115,7 +115,7 @@ export function NetWorthLineChart({
   return (
     <Card className="flex h-80 flex-col">
       {netWorth === 0 ? (
-        <div className="flex flex-1 flex-col items-center justify-center text-center">
+        <CardContent className="flex flex-1 flex-col items-center justify-center text-center">
           <div className="bg-accent rounded-lg p-2">
             <TrendingUp className="text-muted-foreground size-4" />
           </div>
@@ -127,7 +127,7 @@ export function NetWorthLineChart({
             <NewHoldingButton variant="outline" />
             <ImportHoldingsButton variant="outline" />
           </div>
-        </div>
+        </CardContent>
       ) : (
         <>
           <CardHeader className="flex-none">

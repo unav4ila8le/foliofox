@@ -50,7 +50,7 @@ export function AssetAllocationDonut({
   return (
     <Card className="flex h-64 flex-col gap-0 md:h-80">
       {assetAllocation.length === 0 ? (
-        <div className="flex flex-1 flex-col items-center justify-center text-center">
+        <CardContent className="flex flex-1 flex-col items-center justify-center text-center">
           <div className="bg-accent rounded-lg p-2">
             <ChartPie className="text-muted-foreground size-4" />
           </div>
@@ -58,7 +58,7 @@ export function AssetAllocationDonut({
           <p className="text-muted-foreground mt-1 text-sm">
             Your holdings will appear here once you add them
           </p>
-        </div>
+        </CardContent>
       ) : (
         <>
           <CardHeader className="flex-none">
