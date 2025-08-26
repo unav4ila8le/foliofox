@@ -14,6 +14,7 @@ import { fetchNetWorthHistory } from "@/server/analysis/net-worth-history";
 import { fetchNetWorthChange } from "@/server/analysis/net-worth-change";
 import { calculateAssetAllocation } from "@/server/analysis/asset-allocation";
 import { fetchPortfolioNews } from "@/server/news/fetch";
+import { calculateProjectedIncome } from "@/server/analysis/projected-income";
 
 // Separate components for data fetching with suspense
 async function NetWorthChartWrapper({
@@ -66,6 +67,18 @@ async function NewsWidgetWrapper() {
   return <NewsWidget newsData={newsResult} />;
 }
 
+async function ProjectedIncomeWidgetWrapper({
+  displayCurrency,
+}: {
+  displayCurrency: string;
+}) {
+  const projectedData = await calculateProjectedIncome(displayCurrency, 12);
+
+  return (
+    <ProjectedIncomeWidget data={projectedData} currency={displayCurrency} />
+  );
+}
+
 // Main page component
 export default async function DashboardPage() {
   const { profile } = await fetchProfile();
@@ -103,7 +116,11 @@ export default async function DashboardPage() {
           </Suspense>
         </div>
         <div className="col-span-6 lg:col-span-3">
-          <ProjectedIncomeWidget />
+          <Suspense fallback={<Skeleton className="h-80 rounded-xl" />}>
+            <ProjectedIncomeWidgetWrapper
+              displayCurrency={profile.display_currency}
+            />
+          </Suspense>
         </div>
       </div>
     </div>

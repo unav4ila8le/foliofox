@@ -13,25 +13,17 @@ import {
 
 import { formatCompactNumber, formatCurrency } from "@/lib/number-format";
 
-const data = [
-  { date: new Date("2025-09-01"), income: 1000 },
-  { date: new Date("2025-10-01"), income: 1200 },
-  { date: new Date("2025-11-01"), income: 1500 },
-  { date: new Date("2025-12-01"), income: 1300 },
-  { date: new Date("2026-01-01"), income: 1400 },
-  { date: new Date("2026-02-01"), income: 1500 },
-  { date: new Date("2026-03-01"), income: 1600 },
-  { date: new Date("2026-04-01"), income: 1700 },
-  { date: new Date("2026-05-01"), income: 1800 },
-  { date: new Date("2026-06-01"), income: 1900 },
-  { date: new Date("2026-07-01"), income: 2000 },
-];
+import type { ProjectedIncomeData } from "@/types/global.types";
+
+interface ProjectedIncomeBarChartProps {
+  data: ProjectedIncomeData[];
+  currency: string;
+}
 
 export function ProjectedIncomeBarChart({
-  currency = "USD",
-}: {
-  currency: string;
-}) {
+  data,
+  currency,
+}: ProjectedIncomeBarChartProps) {
   // Format date for display on X-axis
   const formatXAxisDate = (date: Date) => {
     return format(date, "MMM yy");

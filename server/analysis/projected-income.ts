@@ -6,7 +6,11 @@ import { fetchHoldings } from "@/server/holdings/fetch";
 import { fetchDividends } from "@/server/dividends/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 
-import type { Dividend, ProjectedIncomeData } from "@/types/global.types";
+import type {
+  Dividend,
+  DividendEvent,
+  ProjectedIncomeData,
+} from "@/types/global.types";
 
 /**
  * Calculate projected monthly income for user's portfolio
@@ -36,6 +40,12 @@ export async function calculateProjectedIncome(
   const uniqueCurrencies = new Set<string>();
   holdings.forEach((holding) => {
     uniqueCurrencies.add(holding.currency);
+  });
+  // Add dividend event currencies (from dividend_events table)
+  dividendsMap.forEach(({ events }) => {
+    events.forEach((event: DividendEvent) => {
+      uniqueCurrencies.add(event.currency);
+    });
   });
   uniqueCurrencies.add(targetCurrency);
 
@@ -69,16 +79,22 @@ export async function calculateProjectedIncome(
       const monthlyDividend = calculateMonthlyDividend(summary, monthStart);
       const holdingDividendIncome = monthlyDividend * holding.current_quantity;
 
-      // Convert to target currency using exchange rates
-      const toUsdKey = `${holding.currency}|${format(new Date(), "yyyy-MM-dd")}`;
-      const fromUsdKey = `${targetCurrency}|${format(new Date(), "yyyy-MM-dd")}`;
+      // Get the currency from dividend events (use most recent event's currency)
+      const dividendCurrency =
+        dividendData.events.length > 0
+          ? dividendData.events[0].currency
+          : holding.currency;
 
-      const toUsdRate = exchangeRatesMap.get(toUsdKey);
-      const fromUsdRate = exchangeRatesMap.get(fromUsdKey);
+      // Handle currency conversion
+      const convertedValue = convertCurrency(
+        holdingDividendIncome,
+        dividendCurrency,
+        targetCurrency,
+        exchangeRatesMap,
+        format(new Date(), "yyyy-MM-dd"),
+      );
 
-      if (toUsdRate && fromUsdRate) {
-        const valueInUsd = holdingDividendIncome / toUsdRate;
-        const convertedValue = valueInUsd * fromUsdRate;
+      if (convertedValue !== null) {
         monthTotal += convertedValue;
       }
     });
@@ -90,6 +106,42 @@ export async function calculateProjectedIncome(
     date: new Date(month + "-01"),
     income,
   }));
+}
+
+/**
+ * Convert amount from source currency to target currency using USD as base
+ */
+function convertCurrency(
+  amount: number,
+  sourceCurrency: string,
+  targetCurrency: string,
+  exchangeRatesMap: Map<string, number>,
+  date: string,
+): number | null {
+  // If currencies are the same, no conversion needed
+  if (sourceCurrency === targetCurrency) {
+    return amount;
+  }
+
+  // Get exchange rates
+  const toUsdKey = `${sourceCurrency}|${date}`;
+  const fromUsdKey = `${targetCurrency}|${date}`;
+
+  const toUsdRate = exchangeRatesMap.get(toUsdKey);
+  const fromUsdRate = exchangeRatesMap.get(fromUsdKey);
+
+  if (!toUsdRate || !fromUsdRate) {
+    console.warn(
+      `Missing exchange rates for ${sourceCurrency} or ${targetCurrency} on ${date}`,
+    );
+    return null;
+  }
+
+  // Convert: source -> USD -> target
+  const valueInUsd = amount / toUsdRate;
+  const convertedValue = valueInUsd * fromUsdRate;
+
+  return convertedValue;
 }
 
 /**
