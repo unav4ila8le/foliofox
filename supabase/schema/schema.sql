@@ -135,6 +135,42 @@ COMMENT ON COLUMN public.currencies.numeric_code IS '3 digit numeric code';
 
 
 --
+-- Name: dividend_events; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.dividend_events (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    symbol_id text NOT NULL,
+    event_date timestamp with time zone NOT NULL,
+    gross_amount numeric NOT NULL,
+    currency text NOT NULL,
+    source text DEFAULT 'yahoo'::text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.dividend_events OWNER TO postgres;
+
+--
+-- Name: dividends; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.dividends (
+    symbol_id text NOT NULL,
+    forward_annual_dividend numeric,
+    trailing_ttm_dividend numeric,
+    dividend_yield numeric,
+    ex_dividend_date timestamp with time zone,
+    last_dividend_date date,
+    inferred_frequency text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.dividends OWNER TO postgres;
+
+--
 -- Name: exchange_rates; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -302,6 +338,30 @@ ALTER TABLE ONLY public.currencies
 
 
 --
+-- Name: dividend_events dividend_events_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.dividend_events
+    ADD CONSTRAINT dividend_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: dividend_events dividend_events_symbol_id_event_date_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.dividend_events
+    ADD CONSTRAINT dividend_events_symbol_id_event_date_key UNIQUE (symbol_id, event_date);
+
+
+--
+-- Name: dividends dividends_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.dividends
+    ADD CONSTRAINT dividends_pkey PRIMARY KEY (symbol_id);
+
+
+--
 -- Name: symbols equities_symbol_exchange_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -398,6 +458,34 @@ ALTER TABLE ONLY public.quotes
 
 
 --
+-- Name: dividend_events_created_at_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX dividend_events_created_at_idx ON public.dividend_events USING btree (created_at DESC);
+
+
+--
+-- Name: dividend_events_currency_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX dividend_events_currency_idx ON public.dividend_events USING btree (currency);
+
+
+--
+-- Name: dividend_events_symbol_id_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX dividend_events_symbol_id_idx ON public.dividend_events USING btree (symbol_id);
+
+
+--
+-- Name: dividends_updated_at_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX dividends_updated_at_idx ON public.dividends USING btree (updated_at DESC);
+
+
+--
 -- Name: exchange_rates_base_currency_target_currency_date_desc_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -437,6 +525,20 @@ CREATE INDEX holdings_equity_id_idx ON public.holdings USING btree (symbol_id);
 --
 
 CREATE INDEX holdings_user_id_idx ON public.holdings USING btree (user_id);
+
+
+--
+-- Name: idx_dividend_events_event_date_desc; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_dividend_events_event_date_desc ON public.dividend_events USING btree (event_date DESC);
+
+
+--
+-- Name: idx_dividend_events_symbol_date_desc; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_dividend_events_symbol_date_desc ON public.dividend_events USING btree (symbol_id, event_date DESC);
 
 
 --
@@ -556,6 +658,30 @@ CREATE TRIGGER records_handle_updated_at BEFORE UPDATE ON public.records FOR EAC
 --
 
 CREATE TRIGGER symbols_handle_updated_at BEFORE UPDATE ON public.symbols FOR EACH ROW WHEN (((((((((((new.id IS DISTINCT FROM old.id) OR (new.short_name IS DISTINCT FROM old.short_name)) OR (new.long_name IS DISTINCT FROM old.long_name)) OR (new.exchange IS DISTINCT FROM old.exchange)) OR (new.sector IS DISTINCT FROM old.sector)) OR (new.industry IS DISTINCT FROM old.industry)) OR (new.created_at IS DISTINCT FROM old.created_at)) OR (new.updated_at IS DISTINCT FROM old.updated_at)) OR (new.quote_type IS DISTINCT FROM old.quote_type)) OR (new.currency IS DISTINCT FROM old.currency))) EXECUTE FUNCTION storage.update_updated_at_column();
+
+
+--
+-- Name: dividend_events dividend_events_currency_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.dividend_events
+    ADD CONSTRAINT dividend_events_currency_fkey FOREIGN KEY (currency) REFERENCES public.currencies(alphabetic_code) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+--
+-- Name: dividend_events dividend_events_symbol_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.dividend_events
+    ADD CONSTRAINT dividend_events_symbol_id_fkey FOREIGN KEY (symbol_id) REFERENCES public.symbols(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: dividends dividends_symbol_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.dividends
+    ADD CONSTRAINT dividends_symbol_id_fkey FOREIGN KEY (symbol_id) REFERENCES public.symbols(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
@@ -705,6 +831,20 @@ CREATE POLICY "Enable read access for all authenticated users" ON public.currenc
 
 
 --
+-- Name: dividend_events Enable read access for all authenticated users; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Enable read access for all authenticated users" ON public.dividend_events FOR SELECT TO authenticated USING (true);
+
+
+--
+-- Name: dividends Enable read access for all authenticated users; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Enable read access for all authenticated users" ON public.dividends FOR SELECT TO authenticated USING (true);
+
+
+--
 -- Name: exchange_rates Enable read access for all authenticated users; Type: POLICY; Schema: public; Owner: postgres
 --
 
@@ -829,6 +969,18 @@ ALTER TABLE public.asset_categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.currencies ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: dividend_events; Type: ROW SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE public.dividend_events ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: dividends; Type: ROW SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE public.dividends ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: exchange_rates; Type: ROW SECURITY; Schema: public; Owner: postgres
 --
 
@@ -911,6 +1063,24 @@ GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.as
 GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.currencies TO anon;
 GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.currencies TO authenticated;
 GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.currencies TO service_role;
+
+
+--
+-- Name: TABLE dividend_events; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.dividend_events TO anon;
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.dividend_events TO authenticated;
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.dividend_events TO service_role;
+
+
+--
+-- Name: TABLE dividends; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.dividends TO anon;
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.dividends TO authenticated;
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.dividends TO service_role;
 
 
 --
