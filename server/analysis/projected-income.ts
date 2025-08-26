@@ -76,7 +76,11 @@ export async function calculateProjectedIncome(
       const { summary } = dividendData;
 
       // Calculate expected dividend for this month based on frequency
-      const monthlyDividend = calculateMonthlyDividend(summary, monthStart);
+      const monthlyDividend = calculateMonthlyDividend(
+        summary,
+        monthStart,
+        dividendData.events,
+      );
       const holdingDividendIncome = monthlyDividend * holding.current_quantity;
 
       // Get the currency from dividend events (use most recent event's currency)
@@ -147,13 +151,41 @@ function convertCurrency(
 /**
  * Calculate monthly dividend amount based on frequency
  */
-function calculateMonthlyDividend(summary: Dividend, month: Date): number {
-  if (!summary.trailing_ttm_dividend || summary.trailing_ttm_dividend <= 0) {
+function calculateMonthlyDividend(
+  summary: Dividend,
+  month: Date,
+  events: DividendEvent[],
+): number {
+  // Try to get annual dividend amount from summary first
+  let annualAmount =
+    summary.trailing_ttm_dividend || summary.forward_annual_dividend;
+
+  // If summary data is missing, calculate from historical events
+  if (!annualAmount || annualAmount <= 0) {
+    if (events.length > 0) {
+      // Calculate average annual dividend from last 12 months of events
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+      const recentEvents = events.filter(
+        (event) => new Date(event.event_date) >= oneYearAgo,
+      );
+
+      if (recentEvents.length > 0) {
+        const totalAmount = recentEvents.reduce(
+          (sum, event) => sum + event.gross_amount,
+          0,
+        );
+        annualAmount = totalAmount; // This is the total paid in the last year
+      }
+    }
+  }
+
+  if (!annualAmount || annualAmount <= 0) {
     return 0;
   }
 
   const frequency = summary.inferred_frequency;
-  const annualAmount = summary.trailing_ttm_dividend;
 
   switch (frequency) {
     case "monthly":

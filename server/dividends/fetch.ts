@@ -115,23 +115,36 @@ export async function fetchDividends(
               )[0].event_date
             : null;
 
-        // Build summary with calculated fields
-        const summaryData: Dividend = {
-          symbol_id: symbolId,
-          forward_annual_dividend: summary.summaryDetail?.dividendRate || null,
-          trailing_ttm_dividend:
-            summary.summaryDetail?.trailingAnnualDividendRate || null,
-          dividend_yield: summary.summaryDetail?.dividendYield || null,
-          ex_dividend_date: summary.calendarEvents?.exDividendDate
-            ? format(summary.calendarEvents.exDividendDate, "yyyy-MM-dd")
-            : null,
-          last_dividend_date,
-          inferred_frequency,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
+        // Only create dividend summary if the symbol actually pays dividends
+        const hasDividendData =
+          summary.summaryDetail?.dividendRate ||
+          summary.summaryDetail?.trailingAnnualDividendRate ||
+          summary.summaryDetail?.dividendYield ||
+          (chart.events?.dividends && chart.events.dividends.length > 0);
 
-        return { symbolId, events, summary: summaryData };
+        // Build summary with calculated fields
+        if (hasDividendData) {
+          const summaryData: Dividend = {
+            symbol_id: symbolId,
+            forward_annual_dividend:
+              summary.summaryDetail?.dividendRate || null,
+            trailing_ttm_dividend:
+              summary.summaryDetail?.trailingAnnualDividendRate || null,
+            dividend_yield: summary.summaryDetail?.dividendYield || null,
+            ex_dividend_date: summary.calendarEvents?.exDividendDate
+              ? format(summary.calendarEvents.exDividendDate, "yyyy-MM-dd")
+              : null,
+            last_dividend_date,
+            inferred_frequency,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+
+          return { symbolId, events, summary: summaryData };
+        } else {
+          // Return null summary for non-dividend stocks
+          return { symbolId, events, summary: null };
+        }
       } catch (error) {
         console.warn(`Failed to fetch dividends for ${symbolId}:`, error);
         return { symbolId, events: [], summary: null };
