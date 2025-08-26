@@ -251,22 +251,27 @@ function calculateMonthlyDividend(
 
   const frequency = summary.inferred_frequency;
 
+  const lastPaymentMonth = summary.last_dividend_date
+    ? new Date(summary.last_dividend_date).getMonth()
+    : 0;
+  const currentMonth = month.getMonth();
+
   switch (frequency) {
     case "monthly":
       return annualAmount / 12;
     case "quarterly":
       // Check if this month aligns with quarterly pattern
-      const lastPaymentMonth = summary.last_dividend_date
-        ? new Date(summary.last_dividend_date).getMonth()
-        : 0;
-      const currentMonth = month.getMonth();
       const monthsSinceLastPayment =
         (currentMonth - lastPaymentMonth + 12) % 12;
       return monthsSinceLastPayment % 3 === 0 ? annualAmount / 4 : 0;
     case "semiannual":
-      return annualAmount / 12; // Spread over 12 months
+      // Check if this month aligns with semiannual pattern (every 6 months)
+      const monthsSinceLastPaymentSemi =
+        (currentMonth - lastPaymentMonth + 12) % 12;
+      return monthsSinceLastPaymentSemi % 6 === 0 ? annualAmount / 2 : 0;
     case "annual":
-      return annualAmount / 12; // Spread over 12 months
+      // Return full annual amount only in the payment month
+      return currentMonth === lastPaymentMonth ? annualAmount : 0;
     default:
       return 0;
   }
