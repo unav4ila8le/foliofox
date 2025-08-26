@@ -1,4 +1,4 @@
-# 🚀 Patrivio Performance Optimization Plan
+# 🚀 Foliofox Performance Optimization Plan
 
 ## 📊 Current Performance Analysis
 

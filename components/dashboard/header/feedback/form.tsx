@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -33,9 +32,7 @@ const formSchema = z.object({
     .max(1024, { error: "Message must be not longer than 1024 characters." }),
 });
 
-export function FeedbackForm() {
-  const [isLoading, setIsLoading] = useState(false);
-
+export function FeedbackForm({ onSuccess }: { onSuccess: () => void }) {
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -44,13 +41,11 @@ export function FeedbackForm() {
     },
   });
 
-  // Get isDirty state from formState
-  const { isDirty } = form.formState;
+  // Get isDirty and isSubmitting state from formState
+  const { isDirty, isSubmitting } = form.formState;
 
   // Submit handler
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsLoading(true);
-
     const formData = new FormData();
     formData.append("type", values.type);
     formData.append("message", values.message.trim());
@@ -59,14 +54,13 @@ export function FeedbackForm() {
 
     if (result?.success) {
       toast.success("Feedback sent successfully");
+      form.reset();
+      onSuccess();
     } else {
       toast.error("Failed to send feedback", {
         description: result?.message,
       });
     }
-
-    form.reset();
-    setIsLoading(false);
   }
 
   return (
@@ -125,8 +119,8 @@ export function FeedbackForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" disabled={isLoading || !isDirty}>
-          {isLoading ? (
+        <Button type="submit" disabled={isSubmitting || !isDirty}>
+          {isSubmitting ? (
             <>
               <LoaderCircle className="size-4 animate-spin" />
               Sending...

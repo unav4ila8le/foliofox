@@ -1,4 +1,4 @@
-# Patrivio
+# Foliofox
 
 A modern net worth tracking app built with Next.js, Supabase, Shadcn UI, and Tailwind CSS.
 
@@ -151,35 +151,6 @@ curl "http://localhost:3000/api/cron/fetch-quotes" \
 
 N/A
 
-## Utility Functions Cheatsheet
-
-### Number Formatting
-
-The project includes several utility functions for number formatting. Here's a quick cheatsheet:
-
-```typescript
-// Basic number formatting
-formatNumber(1234.5678); // "1,235"
-formatNumber(1234.5678, 2); // "1,234.57"
-
-// Currency formatting (uses currency-specific decimal places)
-formatCurrency(1234.56, "USD"); // "USD 1,234.56"  // 2 decimals for USD
-formatCurrency(1234.56, "JPY"); // "JPY 1,235"     // 0 decimals for JPY
-formatCurrency(1234.56, "BHD"); // "BHD 1,234.560" // 3 decimals for BHD
-formatCurrency(1234.56, "USD", { display: "symbol" }); // "$1,234.56"
-formatCurrency(1234.56, "JPY", { display: "symbol" }); // "¥1,235"
-
-// Percentage formatting
-formatPercentage(0.1234); // "12.34%"
-formatPercentage(0.1234, 1); // "12.3%"
-
-// Compact number formatting
-formatCompactNumber(1234567); // "1.2M"
-formatCompactCurrency(1234567, "USD"); // "1.2M USD"
-```
-
-All formatting functions accept both numbers and strings as input. Currency formatting automatically uses the appropriate number of decimal places based on the currency code. For more details, check the implementation in `lib/number/format.ts`.
-
 ## To Do List
 
 - [x] Add percentages increase over the different time periods selected
@@ -195,10 +166,12 @@ All formatting functions accept both numbers and strings as input. Currency form
 - [x] Add P/L in the holdings table (basic change from first record, no cost basis)
 - [x] Start migrating to the new JWT signing key https://supabase.com/blog/jwt-signing-keys
 - [x] Upgrade postgres version to 17 on Supabase
-- [ ] Add a feedback sharing feature
+- [x] Add a feedback sharing feature
 - [ ] Add a dividends tracker. It should show the user the holdings that pay dividends, and their yearly/monthly expected dividend payout
 - [ ] Allow user to review their imports and tweak them
 - [ ] Add AI powered import (import from images, pdfs, excels, and more)
 - [x] Add news based on user's portfolio
 - [ ] Find a way to have a more accurate historical calculation which doesn't add much overhead. WeeksBack solution is fast but not accurate cause the date is "rounded" to match weeks and not days.
 - [ ] Add a way for the user to "share" their portfolio. Ideally, after agreeing, they get a public sharable link which leads to a single public page view of all their holdings and relevant performance charts.
+- [ ] Add domains tracking support
+- [ ] Add crypto wallet address sync

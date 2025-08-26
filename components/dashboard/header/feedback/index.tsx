@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { MessageCircleQuestionMark } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -10,8 +13,10 @@ import {
 import { FeedbackForm } from "./form";
 
 export function FeedbackButton() {
+  const [open, setOpen] = useState(false);
+
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="outline" size="icon">
           <MessageCircleQuestionMark />
@@ -19,7 +24,7 @@ export function FeedbackButton() {
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end">
-        <FeedbackForm />
+        <FeedbackForm onSuccess={() => setOpen(false)} />
       </PopoverContent>
     </Popover>
   );

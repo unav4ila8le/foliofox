@@ -77,3 +77,13 @@ export type Quote = Pick<
 
 // News
 export type NewsArticle = Tables<"news">;
+
+// Dividend
+export type Dividend = Tables<"dividends">;
+
+export type DividendEvent = Tables<"dividend_events">;
+
+export type ProjectedIncomeData = {
+  date: Date;
+  income: number;
+};

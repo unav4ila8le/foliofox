@@ -6,6 +6,7 @@ import { MarketDataDisclaimer } from "@/components/dashboard/market-data-disclai
 import { AssetAllocationDonut } from "@/components/dashboard/charts/asset-allocation-donut";
 import { NetWorthLineChart } from "@/components/dashboard/charts/net-worth-line";
 import { NewsWidget } from "@/components/dashboard/news/widget";
+import { ProjectedIncomeWidget } from "@/components/dashboard/charts/projected-income/widget";
 
 import { fetchProfile } from "@/server/profile/actions";
 import { calculateNetWorth } from "@/server/analysis/net-worth";
@@ -13,6 +14,7 @@ import { fetchNetWorthHistory } from "@/server/analysis/net-worth-history";
 import { fetchNetWorthChange } from "@/server/analysis/net-worth-change";
 import { calculateAssetAllocation } from "@/server/analysis/asset-allocation";
 import { fetchPortfolioNews } from "@/server/news/fetch";
+import { calculateProjectedIncome } from "@/server/analysis/projected-income";
 
 // Separate components for data fetching with suspense
 async function NetWorthChartWrapper({
@@ -65,6 +67,21 @@ async function NewsWidgetWrapper() {
   return <NewsWidget newsData={newsResult} />;
 }
 
+async function ProjectedIncomeWidgetWrapper({
+  displayCurrency,
+}: {
+  displayCurrency: string;
+}) {
+  const projectedData = await calculateProjectedIncome(displayCurrency, 12);
+
+  return (
+    <ProjectedIncomeWidget
+      projectedIncome={projectedData}
+      currency={displayCurrency}
+    />
+  );
+}
+
 // Main page component
 export default async function DashboardPage() {
   const { profile } = await fetchProfile();
@@ -99,6 +116,13 @@ export default async function DashboardPage() {
         <div className="col-span-6 lg:col-span-3">
           <Suspense fallback={<Skeleton className="h-80 rounded-xl" />}>
             <NewsWidgetWrapper />
+          </Suspense>
+        </div>
+        <div className="col-span-6 lg:col-span-3">
+          <Suspense fallback={<Skeleton className="h-80 rounded-xl" />}>
+            <ProjectedIncomeWidgetWrapper
+              displayCurrency={profile.display_currency}
+            />
           </Suspense>
         </div>
       </div>

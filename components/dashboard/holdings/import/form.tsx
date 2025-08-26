@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/tooltip";
 
 import { useImportHoldingsDialog } from "./index";
-import { useAssetCategories } from "@/hooks/client/use-asset-categories";
+import { useAssetCategories } from "@/hooks/use-asset-categories";
 import { parseHoldingsCSV } from "@/lib/csv-parser/index";
 import { importHoldings } from "@/server/holdings/import";
 import { cn } from "@/lib/utils";

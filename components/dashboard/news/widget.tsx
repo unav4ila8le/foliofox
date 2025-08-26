@@ -15,7 +15,7 @@ export function NewsWidget({ newsData }: NewsWidgetProps) {
   if (!newsData.success) {
     return (
       <Card className="flex h-80 flex-col gap-4">
-        <div className="flex flex-1 flex-col items-center justify-center text-center">
+        <CardContent className="flex flex-1 flex-col items-center justify-center text-center">
           <div className="bg-accent rounded-lg p-2">
             <Newspaper className="text-muted-foreground size-4" />
           </div>
@@ -23,7 +23,7 @@ export function NewsWidget({ newsData }: NewsWidgetProps) {
           <p className="text-muted-foreground mt-1 text-sm">
             {newsData.message || "Failed to load news. Please try again later."}
           </p>
-        </div>
+        </CardContent>
       </Card>
     );
   }
@@ -32,7 +32,7 @@ export function NewsWidget({ newsData }: NewsWidgetProps) {
   if (!newsData.data || newsData.data.length === 0) {
     return (
       <Card className="flex h-80 flex-col gap-4">
-        <div className="flex flex-1 flex-col items-center justify-center text-center">
+        <CardContent className="flex flex-1 flex-col items-center justify-center text-center">
           <div className="bg-accent rounded-lg p-2">
             <Newspaper className="text-muted-foreground size-4" />
           </div>
@@ -40,7 +40,7 @@ export function NewsWidget({ newsData }: NewsWidgetProps) {
           <p className="text-muted-foreground mt-1 text-sm">
             Add holdings to start receiving news related to your portfolio
           </p>
-        </div>
+        </CardContent>
       </Card>
     );
   }

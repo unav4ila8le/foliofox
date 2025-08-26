@@ -1,14 +1,14 @@
 ---
-description: Project specifications and technical overview for Patrivio
+description: Project specifications and technical overview for Foliofox
 globs:
 alwaysApply: false
 ---
 
-Patrivio - Project Details
+Foliofox - Project Details
 
 ## Overview
 
-Patrivio is a privacy-focused portfolio intelligence and net worth tracking app. Users can track assets, liabilities, and net worth over time with multi-currency support and clear visualizations. The app is designed for personal use, with future extensibility in mind, including AI for portfolio advisory.
+Foliofox is a privacy-focused portfolio intelligence and net worth tracking app. Users can track assets, liabilities, and net worth over time with multi-currency support and clear visualizations. The app is designed for personal use, with future extensibility in mind, including AI for portfolio advisory.
 
 ## Tech Stack
 

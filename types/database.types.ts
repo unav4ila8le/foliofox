@@ -56,6 +56,95 @@ export type Database = {
         };
         Relationships: [];
       };
+      dividend_events: {
+        Row: {
+          created_at: string;
+          currency: string;
+          event_date: string;
+          gross_amount: number;
+          id: string;
+          source: string;
+          symbol_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          currency: string;
+          event_date: string;
+          gross_amount: number;
+          id?: string;
+          source?: string;
+          symbol_id: string;
+        };
+        Update: {
+          created_at?: string;
+          currency?: string;
+          event_date?: string;
+          gross_amount?: number;
+          id?: string;
+          source?: string;
+          symbol_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "dividend_events_currency_fkey";
+            columns: ["currency"];
+            isOneToOne: false;
+            referencedRelation: "currencies";
+            referencedColumns: ["alphabetic_code"];
+          },
+          {
+            foreignKeyName: "dividend_events_symbol_id_fkey";
+            columns: ["symbol_id"];
+            isOneToOne: false;
+            referencedRelation: "symbols";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      dividends: {
+        Row: {
+          created_at: string;
+          dividend_yield: number | null;
+          ex_dividend_date: string | null;
+          forward_annual_dividend: number | null;
+          inferred_frequency: string | null;
+          last_dividend_date: string | null;
+          symbol_id: string;
+          trailing_ttm_dividend: number | null;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          dividend_yield?: number | null;
+          ex_dividend_date?: string | null;
+          forward_annual_dividend?: number | null;
+          inferred_frequency?: string | null;
+          last_dividend_date?: string | null;
+          symbol_id: string;
+          trailing_ttm_dividend?: number | null;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          dividend_yield?: number | null;
+          ex_dividend_date?: string | null;
+          forward_annual_dividend?: number | null;
+          inferred_frequency?: string | null;
+          last_dividend_date?: string | null;
+          symbol_id?: string;
+          trailing_ttm_dividend?: number | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "dividends_symbol_id_fkey";
+            columns: ["symbol_id"];
+            isOneToOne: true;
+            referencedRelation: "symbols";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       exchange_rates: {
         Row: {
           base_currency: string;
@@ -103,6 +192,7 @@ export type Database = {
           created_at: string;
           id: string;
           message: string;
+          resolved: boolean;
           type: Database["public"]["Enums"]["feedback_type"];
           user_id: string | null;
         };
@@ -110,6 +200,7 @@ export type Database = {
           created_at?: string;
           id?: string;
           message: string;
+          resolved?: boolean;
           type: Database["public"]["Enums"]["feedback_type"];
           user_id?: string | null;
         };
@@ -117,6 +208,7 @@ export type Database = {
           created_at?: string;
           id?: string;
           message?: string;
+          resolved?: boolean;
           type?: Database["public"]["Enums"]["feedback_type"];
           user_id?: string | null;
         };
