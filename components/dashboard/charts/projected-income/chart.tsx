@@ -78,9 +78,9 @@ export function ProjectedIncomeBarChart({
               </div>
             );
           }}
-          cursor={{ fill: "var(--accent)", opacity: 0.5 }}
+          cursor={{ fill: "var(--accent)", opacity: 0.7 }}
         />
-        <Bar dataKey="income" fill="var(--chart-0)" maxBarSize={24} />
+        <Bar dataKey="income" fill="var(--chart-3)" maxBarSize={24} />
       </BarChart>
     </ResponsiveContainer>
   );
