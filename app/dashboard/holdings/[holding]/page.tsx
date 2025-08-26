@@ -5,14 +5,17 @@ import { Separator } from "@/components/ui/separator";
 import { HoldingHeader } from "@/components/dashboard/holdings/holding/header";
 import { RecordsTable } from "@/components/dashboard/holdings/tables/records/records-table";
 import { HoldingNews } from "@/components/dashboard/holdings/holding/news";
-import { ProjectedIncomeBarChart } from "@/components/dashboard/charts/projected-income/chart";
+import { HoldingProjectedIncome } from "@/components/dashboard/holdings/holding/projected-income";
 
 import { fetchProfile } from "@/server/profile/actions";
 import { fetchSingleHolding } from "@/server/holdings/fetch";
 import { fetchRecords } from "@/server/records/fetch";
 import { fetchSymbol } from "@/server/symbols/fetch";
 import { fetchSymbolNews } from "@/server/news/fetch";
-import { calculateSymbolProjectedIncome } from "@/server/analysis/projected-income";
+import {
+  calculateSymbolProjectedIncome,
+  type ProjectedIncomeResult,
+} from "@/server/analysis/projected-income";
 
 // Only needed for dynamic routes
 interface HoldingPageProps {
@@ -33,7 +36,7 @@ function PageSkeleton() {
         <Skeleton className="h-64" />
       </div>
       <div className="col-span-6 lg:col-span-4">
-        <Skeleton className="h-80" />
+        <Skeleton className="h-96" />
       </div>
     </div>
   );
@@ -57,10 +60,13 @@ async function HoldingContent({ holdingId }: { holdingId: string }) {
           holding.current_quantity,
           profile.display_currency,
         )
-      : [],
+      : { success: false, data: [] },
   ]);
 
   const hasSymbol = Boolean(symbol);
+
+  const dividendCurrency =
+    (projectedIncome as ProjectedIncomeResult)?.currency || holding.currency;
 
   return (
     <div className="grid grid-cols-6 gap-4">
@@ -80,11 +86,11 @@ async function HoldingContent({ holdingId }: { holdingId: string }) {
           </div>
           <Separator />
           {/* Projected Income */}
-          <div className="flex h-56 flex-col gap-3">
-            <h3 className="flex-none font-semibold">Projected Income</h3>
-            <ProjectedIncomeBarChart
-              data={projectedIncome}
-              currency={holding.currency}
+          <div className="space-y-3">
+            <h3 className="font-semibold">Projected Income</h3>
+            <HoldingProjectedIncome
+              projectedIncome={projectedIncome}
+              dividendCurrency={dividendCurrency}
             />
           </div>
         </div>
