@@ -160,7 +160,6 @@ export async function calculateProjectedIncome(
 export async function calculateSymbolProjectedIncome(
   symbolId: string,
   quantity: number,
-  targetCurrency: string = "USD",
   monthsAhead: number = 12,
 ) {
   try {
@@ -188,15 +187,7 @@ export async function calculateSymbolProjectedIncome(
     const symbolCurrency =
       dividendData.events.length > 0 ? dividendData.events[0].currency : "USD";
 
-    // Fetch exchange rates
-    const exchangeRequests = [
-      { currency: symbolCurrency, date: new Date() },
-      { currency: targetCurrency, date: new Date() },
-    ];
-
-    const exchangeRatesMap = await fetchExchangeRates(exchangeRequests);
-
-    // Calculate monthly projected income
+    // Calculate monthly projected income in the dividend's own currency
     const monthlyIncome = new Map<string, number>();
     const today = new Date();
 
@@ -212,16 +203,8 @@ export async function calculateSymbolProjectedIncome(
       );
       const symbolDividendIncome = monthlyDividend * quantity;
 
-      // Convert to target currency
-      const convertedValue = convertCurrency(
-        symbolDividendIncome,
-        symbolCurrency,
-        targetCurrency,
-        exchangeRatesMap,
-        format(new Date(), "yyyy-MM-dd"),
-      );
-
-      monthlyIncome.set(monthKey, convertedValue || 0);
+      // Keep the income in the dividend's own currency (no conversion)
+      monthlyIncome.set(monthKey, symbolDividendIncome);
     }
 
     return {

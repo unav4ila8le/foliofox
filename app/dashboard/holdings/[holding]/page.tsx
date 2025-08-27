@@ -7,7 +7,6 @@ import { RecordsTable } from "@/components/dashboard/holdings/tables/records/rec
 import { HoldingNews } from "@/components/dashboard/holdings/holding/news";
 import { HoldingProjectedIncome } from "@/components/dashboard/holdings/holding/projected-income";
 
-import { fetchProfile } from "@/server/profile/actions";
 import { fetchSingleHolding } from "@/server/holdings/fetch";
 import { fetchRecords } from "@/server/records/fetch";
 import { fetchSymbol } from "@/server/symbols/fetch";
@@ -44,7 +43,6 @@ function PageSkeleton() {
 
 async function HoldingContent({ holdingId }: { holdingId: string }) {
   const holding = await fetchSingleHolding(holdingId);
-  const { profile } = await fetchProfile();
 
   // Batch all remaining requests
   const [records, symbol, newsResult, projectedIncome] = await Promise.all([
@@ -58,7 +56,6 @@ async function HoldingContent({ holdingId }: { holdingId: string }) {
       ? calculateSymbolProjectedIncome(
           holding.symbol_id,
           holding.current_quantity,
-          profile.display_currency,
         )
       : { success: false, data: [] },
   ]);

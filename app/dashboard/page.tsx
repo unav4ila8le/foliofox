@@ -72,7 +72,7 @@ async function ProjectedIncomeWidgetWrapper({
 }: {
   displayCurrency: string;
 }) {
-  const projectedData = await calculateProjectedIncome(displayCurrency, 12);
+  const projectedData = await calculateProjectedIncome(displayCurrency);
 
   return (
     <ProjectedIncomeWidget
