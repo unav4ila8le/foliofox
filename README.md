@@ -28,8 +28,8 @@ A modern net worth tracking app built with Next.js, Supabase, Shadcn UI, and Tai
 ### 1) Clone and install
 
 ```bash
-git clone https://github.com/unav4ila8le/patrivio.git
-cd patrivio
+git clone https://github.com/unav4ila8le/foliofox.git
+cd foliofox
 npm install
 ```
 
@@ -167,7 +167,7 @@ N/A
 - [x] Start migrating to the new JWT signing key https://supabase.com/blog/jwt-signing-keys
 - [x] Upgrade postgres version to 17 on Supabase
 - [x] Add a feedback sharing feature
-- [ ] Add a dividends tracker. It should show the user the holdings that pay dividends, and their yearly/monthly expected dividend payout
+- [x] Add a dividends tracker. It should show the user the holdings that pay dividends, and their yearly/monthly expected dividend payout
 - [ ] Allow user to review their imports and tweak them
 - [ ] Add AI powered import (import from images, pdfs, excels, and more)
 - [x] Add news based on user's portfolio
