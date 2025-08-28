@@ -44,7 +44,7 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
     holdingId, // Used in fetchSingleHolding
     includeArchived = false,
     onlyArchived = false,
-    quoteDate = new Date(),
+    quoteDate = null,
     includeRecords = false,
   } = options;
 
@@ -245,7 +245,7 @@ export async function fetchSingleHolding(
   const {
     includeRecords = false,
     includeArchived = true,
-    quoteDate = new Date(),
+    quoteDate = null,
   } = options;
 
   if (includeRecords) {

@@ -18,7 +18,6 @@ export async function calculateNetWorth(
 ) {
   const result = await fetchHoldings({
     includeArchived: true,
-    quoteDate: null,
     includeRecords: true,
   });
 

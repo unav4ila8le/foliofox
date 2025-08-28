@@ -32,7 +32,6 @@ export async function fetchNetWorthHistory({
   // 1. Fetch holdings data once
   const result = await fetchHoldings({
     includeArchived: true,
-    quoteDate: null,
     includeRecords: true,
   });
 

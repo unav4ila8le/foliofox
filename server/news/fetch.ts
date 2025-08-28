@@ -198,10 +198,7 @@ export async function fetchNewsForSymbols(
  */
 export async function fetchPortfolioNews(limit: number = 10) {
   try {
-    const holdings = await fetchHoldings({
-      includeArchived: false,
-      quoteDate: null,
-    });
+    const holdings = await fetchHoldings();
     const symbolIds = holdings
       .filter((holding) => holding.symbol_id)
       .map((holding) => holding.symbol_id!);

@@ -27,10 +27,7 @@ export async function calculateProjectedIncome(
   monthsAhead: number = 12,
 ) {
   try {
-    const holdings = await fetchHoldings({
-      includeArchived: false,
-      quoteDate: null,
-    });
+    const holdings = await fetchHoldings();
 
     const symbolIds = holdings
       .filter((holding) => holding.symbol_id)

@@ -11,7 +11,10 @@ import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
  */
 export async function calculateAssetAllocation(targetCurrency: string) {
   // 1. Get all holdings
-  const holdings = await fetchHoldings({ includeArchived: true });
+  const holdings = await fetchHoldings({
+    includeArchived: true,
+    quoteDate: new Date(),
+  });
 
   if (holdings.length === 0) {
     return [];

@@ -175,4 +175,4 @@ N/A
 - [ ] Add a way for the user to "share" their portfolio. Ideally, after agreeing, they get a public sharable link which leads to a single public page view of all their holdings and relevant performance charts.
 - [ ] Add domains tracking support
 - [ ] Add crypto wallet address sync
-- [ ] Review params for holdings fetch, especially quoteDate
+- [x] Review params for holdings fetch, especially quoteDate

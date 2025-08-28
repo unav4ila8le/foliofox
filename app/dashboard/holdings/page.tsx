@@ -8,8 +8,11 @@ import { calculateProfitLoss } from "@/lib/profit-loss";
 
 // Separate components for data fetching with suspense
 async function HoldingsTableWrapper() {
-  // Fetch all holdings with their complete record history
-  const { holdings, records } = await fetchHoldings({ includeRecords: true });
+  // Fetch all holdings with their complete record history and current quotes
+  const { holdings, records } = await fetchHoldings({
+    includeRecords: true,
+    quoteDate: new Date(),
+  });
   // Transform data to add P/L calculations (no additional queries)
   const holdingsWithProfitLoss = calculateProfitLoss(holdings, records);
 

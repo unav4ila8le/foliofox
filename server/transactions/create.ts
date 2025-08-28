@@ -26,10 +26,7 @@ export async function createTransaction(formData: FormData) {
   };
 
   // In createTransaction
-  const holding = await fetchSingleHolding(transactionData.holding_id, {
-    includeRecords: false,
-    quoteDate: null,
-  });
+  const holding = await fetchSingleHolding(transactionData.holding_id);
   const holdingCreatedAt = new Date(holding.created_at);
 
   if (new Date(transactionData.date) < holdingCreatedAt) {
