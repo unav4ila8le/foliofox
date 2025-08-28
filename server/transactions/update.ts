@@ -4,27 +4,32 @@ import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/supabase/server";
 
-import type { Record } from "@/types/global.types";
+import type { Transaction } from "@/types/global.types";
 
-export async function updateRecord(formData: FormData, recordId: string) {
+// Update a single transaction
+export async function updateTransaction(
+  formData: FormData,
+  transactionId: string,
+) {
   const supabase = await createClient();
 
   // Extract and validate data from formData
   const updateData: Pick<
-    Record,
-    "date" | "quantity" | "unit_value" | "description"
+    Transaction,
+    "type" | "date" | "quantity" | "unit_value" | "description"
   > = {
+    type: formData.get("type") as "buy" | "sell" | "update",
     date: formData.get("date") as string,
     quantity: Number(formData.get("quantity")),
     unit_value: Number(formData.get("unit_value")),
     description: (formData.get("description") as string) || null,
   };
 
-  // Update the record in the database
+  // Update the transaction in the database
   const { error } = await supabase
-    .from("records")
+    .from("transactions")
     .update(updateData)
-    .eq("id", recordId);
+    .eq("id", transactionId);
 
   // Return errors instead of throwing
   if (error) {

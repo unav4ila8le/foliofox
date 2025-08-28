@@ -2,12 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 
-import { getCurrentUser } from "@/server/auth/actions";
+import { createClient } from "@/supabase/server";
 
 import type { Holding } from "@/types/global.types";
 
 export async function updateHolding(formData: FormData, holdingId: string) {
-  const { supabase } = await getCurrentUser();
+  const supabase = await createClient();
 
   // Extract and validate data from formData
   const updateData: Pick<Holding, "name" | "category_code" | "description"> = {

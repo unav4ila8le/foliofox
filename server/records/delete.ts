@@ -1,11 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getCurrentUser } from "@/server/auth/actions";
+import { createClient } from "@/supabase/server";
 
 // Single record deletion
 export async function deleteRecord(recordId: string) {
-  const { supabase } = await getCurrentUser();
+  const supabase = await createClient();
 
   const { error } = await supabase.from("records").delete().eq("id", recordId);
 
@@ -24,7 +24,7 @@ export async function deleteRecords(recordIds: string[]) {
     return { success: false, code: "no_ids", message: "No records selected." };
   }
 
-  const { supabase } = await getCurrentUser();
+  const supabase = await createClient();
 
   const { error } = await supabase.from("records").delete().in("id", recordIds);
 
