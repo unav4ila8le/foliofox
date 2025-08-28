@@ -47,6 +47,19 @@ CREATE TYPE public.feedback_type AS ENUM (
 ALTER TYPE public.feedback_type OWNER TO postgres;
 
 --
+-- Name: transaction_type; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public.transaction_type AS ENUM (
+    'buy',
+    'sell',
+    'update'
+);
+
+
+ALTER TYPE public.transaction_type OWNER TO postgres;
+
+--
 -- Name: handle_new_user(); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -314,6 +327,28 @@ CREATE TABLE public.symbols (
 ALTER TABLE public.symbols OWNER TO postgres;
 
 --
+-- Name: transactions; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.transactions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    holding_id uuid NOT NULL,
+    type public.transaction_type NOT NULL,
+    date date NOT NULL,
+    quantity numeric NOT NULL,
+    unit_value numeric NOT NULL,
+    description text,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
+    CONSTRAINT transactions_quantity_check CHECK ((quantity > (0)::numeric)),
+    CONSTRAINT transactions_unit_value_check CHECK ((unit_value > (0)::numeric))
+);
+
+
+ALTER TABLE public.transactions OWNER TO postgres;
+
+--
 -- Name: asset_categories asset_categories_display_order_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -447,6 +482,14 @@ ALTER TABLE ONLY public.quotes
 
 ALTER TABLE ONLY public.symbols
     ADD CONSTRAINT symbols_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: transactions transactions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.transactions
+    ADD CONSTRAINT transactions_pkey PRIMARY KEY (id);
 
 
 --
@@ -626,6 +669,41 @@ CREATE INDEX symbols_currency_idx ON public.symbols USING btree (currency);
 
 
 --
+-- Name: transactions_date_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX transactions_date_idx ON public.transactions USING btree (date);
+
+
+--
+-- Name: transactions_holding_date_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX transactions_holding_date_idx ON public.transactions USING btree (holding_id, date DESC);
+
+
+--
+-- Name: transactions_holding_id_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX transactions_holding_id_idx ON public.transactions USING btree (holding_id);
+
+
+--
+-- Name: transactions_type_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX transactions_type_idx ON public.transactions USING btree (type);
+
+
+--
+-- Name: transactions_user_id_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX transactions_user_id_idx ON public.transactions USING btree (user_id);
+
+
+--
 -- Name: holdings holdings_handle_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
@@ -658,6 +736,13 @@ CREATE TRIGGER records_handle_updated_at BEFORE UPDATE ON public.records FOR EAC
 --
 
 CREATE TRIGGER symbols_handle_updated_at BEFORE UPDATE ON public.symbols FOR EACH ROW WHEN (((((((((((new.id IS DISTINCT FROM old.id) OR (new.short_name IS DISTINCT FROM old.short_name)) OR (new.long_name IS DISTINCT FROM old.long_name)) OR (new.exchange IS DISTINCT FROM old.exchange)) OR (new.sector IS DISTINCT FROM old.sector)) OR (new.industry IS DISTINCT FROM old.industry)) OR (new.created_at IS DISTINCT FROM old.created_at)) OR (new.updated_at IS DISTINCT FROM old.updated_at)) OR (new.quote_type IS DISTINCT FROM old.quote_type)) OR (new.currency IS DISTINCT FROM old.currency))) EXECUTE FUNCTION storage.update_updated_at_column();
+
+
+--
+-- Name: transactions transactions_handle_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER transactions_handle_updated_at BEFORE UPDATE ON public.transactions FOR EACH ROW EXECUTE FUNCTION storage.update_updated_at_column();
 
 
 --
@@ -781,11 +866,27 @@ ALTER TABLE ONLY public.symbols
 
 
 --
+-- Name: transactions transactions_holding_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.transactions
+    ADD CONSTRAINT transactions_holding_id_fkey FOREIGN KEY (holding_id) REFERENCES public.holdings(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
 -- Name: records transactions_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.records
     ADD CONSTRAINT transactions_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: transactions transactions_user_id_fkey1; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.transactions
+    ADD CONSTRAINT transactions_user_id_fkey1 FOREIGN KEY (user_id) REFERENCES auth.users(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
@@ -887,10 +988,17 @@ CREATE POLICY "Users can delete their own holdings" ON public.holdings FOR DELET
 
 
 --
--- Name: records Users can delete their own transactions; Type: POLICY; Schema: public; Owner: postgres
+-- Name: records Users can delete their own records; Type: POLICY; Schema: public; Owner: postgres
 --
 
-CREATE POLICY "Users can delete their own transactions" ON public.records FOR DELETE TO authenticated USING ((user_id = ( SELECT auth.uid() AS uid)));
+CREATE POLICY "Users can delete their own records" ON public.records FOR DELETE TO authenticated USING ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+--
+-- Name: transactions Users can delete their own transactions; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Users can delete their own transactions" ON public.transactions FOR DELETE TO authenticated USING ((user_id = ( SELECT auth.uid() AS uid)));
 
 
 --
@@ -908,10 +1016,17 @@ CREATE POLICY "Users can insert their own holdings" ON public.holdings FOR INSER
 
 
 --
--- Name: records Users can insert their own transactions; Type: POLICY; Schema: public; Owner: postgres
+-- Name: records Users can insert their own records; Type: POLICY; Schema: public; Owner: postgres
 --
 
-CREATE POLICY "Users can insert their own transactions" ON public.records FOR INSERT TO authenticated WITH CHECK ((user_id = ( SELECT auth.uid() AS uid)));
+CREATE POLICY "Users can insert their own records" ON public.records FOR INSERT TO authenticated WITH CHECK ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+--
+-- Name: transactions Users can insert their own transactions; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Users can insert their own transactions" ON public.transactions FOR INSERT TO authenticated WITH CHECK ((user_id = ( SELECT auth.uid() AS uid)));
 
 
 --
@@ -929,10 +1044,17 @@ CREATE POLICY "Users can update their own holdings" ON public.holdings FOR UPDAT
 
 
 --
--- Name: records Users can update their own transactions; Type: POLICY; Schema: public; Owner: postgres
+-- Name: records Users can update their own records; Type: POLICY; Schema: public; Owner: postgres
 --
 
-CREATE POLICY "Users can update their own transactions" ON public.records FOR UPDATE TO authenticated USING ((user_id = ( SELECT auth.uid() AS uid))) WITH CHECK ((user_id = ( SELECT auth.uid() AS uid)));
+CREATE POLICY "Users can update their own records" ON public.records FOR UPDATE TO authenticated USING ((user_id = ( SELECT auth.uid() AS uid))) WITH CHECK ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+--
+-- Name: transactions Users can update their own transactions; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Users can update their own transactions" ON public.transactions FOR UPDATE TO authenticated USING ((user_id = ( SELECT auth.uid() AS uid))) WITH CHECK ((user_id = ( SELECT auth.uid() AS uid)));
 
 
 --
@@ -950,10 +1072,17 @@ CREATE POLICY "Users can view their own holdings" ON public.holdings FOR SELECT 
 
 
 --
--- Name: records Users can view their own transactions; Type: POLICY; Schema: public; Owner: postgres
+-- Name: records Users can view their own records; Type: POLICY; Schema: public; Owner: postgres
 --
 
-CREATE POLICY "Users can view their own transactions" ON public.records FOR SELECT TO authenticated USING ((user_id = ( SELECT auth.uid() AS uid)));
+CREATE POLICY "Users can view their own records" ON public.records FOR SELECT TO authenticated USING ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+--
+-- Name: transactions Users can view their own transactions; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Users can view their own transactions" ON public.transactions FOR SELECT TO authenticated USING ((user_id = ( SELECT auth.uid() AS uid)));
 
 
 --
@@ -1027,6 +1156,12 @@ ALTER TABLE public.records ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE public.symbols ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: transactions; Type: ROW SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: SCHEMA public; Type: ACL; Schema: -; Owner: pg_database_owner
@@ -1153,6 +1288,15 @@ GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.re
 GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.symbols TO anon;
 GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.symbols TO authenticated;
 GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.symbols TO service_role;
+
+
+--
+-- Name: TABLE transactions; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.transactions TO anon;
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.transactions TO authenticated;
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.transactions TO service_role;
 
 
 --

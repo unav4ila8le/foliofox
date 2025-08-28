@@ -472,6 +472,53 @@ export type Database = {
           },
         ];
       };
+      transactions: {
+        Row: {
+          created_at: string | null;
+          date: string;
+          description: string | null;
+          holding_id: string;
+          id: string;
+          quantity: number;
+          type: Database["public"]["Enums"]["transaction_type"];
+          unit_value: number;
+          updated_at: string | null;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string | null;
+          date: string;
+          description?: string | null;
+          holding_id: string;
+          id?: string;
+          quantity: number;
+          type: Database["public"]["Enums"]["transaction_type"];
+          unit_value: number;
+          updated_at?: string | null;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string | null;
+          date?: string;
+          description?: string | null;
+          holding_id?: string;
+          id?: string;
+          quantity?: number;
+          type?: Database["public"]["Enums"]["transaction_type"];
+          unit_value?: number;
+          updated_at?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "transactions_holding_id_fkey";
+            columns: ["holding_id"];
+            isOneToOne: false;
+            referencedRelation: "holdings";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -481,6 +528,7 @@ export type Database = {
     };
     Enums: {
       feedback_type: "issue" | "idea" | "other";
+      transaction_type: "buy" | "sell" | "update";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -612,6 +660,7 @@ export const Constants = {
   public: {
     Enums: {
       feedback_type: ["issue", "idea", "other"],
+      transaction_type: ["buy", "sell", "update"],
     },
   },
 } as const;
