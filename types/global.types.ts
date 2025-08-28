@@ -20,6 +20,7 @@ export type Holding = Pick<
   | "description"
   | "is_archived"
   | "archived_at"
+  | "created_at"
 > & {
   asset_categories: Pick<Tables<"asset_categories">, "name" | "display_order">;
 };
@@ -35,6 +36,9 @@ export type HoldingWithProfitLoss = TransformedHolding & {
   profit_loss: number;
   profit_loss_percentage: number;
 };
+
+// Transaction
+export type Transaction = Tables<"transactions">;
 
 // Record
 export type Record = Tables<"records">;

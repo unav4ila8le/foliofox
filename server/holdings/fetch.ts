@@ -22,6 +22,7 @@ interface FetchHoldingsOptions {
 interface FetchSingleHoldingOptions {
   includeRecords?: boolean;
   includeArchived?: boolean;
+  quoteDate?: Date | null;
 }
 
 /**
@@ -40,9 +41,9 @@ export async function fetchHoldings(
 
 export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
   const {
+    holdingId, // Used in fetchSingleHolding
     includeArchived = false,
     onlyArchived = false,
-    holdingId,
     quoteDate = new Date(),
     includeRecords = false,
   } = options;
@@ -61,6 +62,7 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
       description,
       is_archived,
       archived_at,
+      created_at,
       asset_categories (
         name,
         display_order
@@ -240,13 +242,18 @@ export async function fetchSingleHolding(
   holdingId: string,
   options: FetchSingleHoldingOptions = {},
 ) {
-  const { includeRecords = false, includeArchived = true } = options;
+  const {
+    includeRecords = false,
+    includeArchived = true,
+    quoteDate = new Date(),
+  } = options;
 
   if (includeRecords) {
     const { holdings, records } = await fetchHoldings({
       holdingId,
       includeRecords: true,
       includeArchived,
+      quoteDate,
     });
     return {
       holding: holdings[0],
@@ -256,6 +263,7 @@ export async function fetchSingleHolding(
     const holdings = await fetchHoldings({
       holdingId,
       includeArchived,
+      quoteDate,
     });
     return holdings[0];
   }

@@ -300,7 +300,8 @@ CREATE TABLE public.records (
     description text,
     quantity numeric NOT NULL,
     unit_value numeric NOT NULL,
-    holding_id uuid NOT NULL
+    holding_id uuid NOT NULL,
+    transaction_id uuid
 );
 
 
@@ -620,6 +621,13 @@ CREATE INDEX idx_records_holding_user_date_created ON public.records USING btree
 
 
 --
+-- Name: idx_records_transaction_id; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_records_transaction_id ON public.records USING btree (transaction_id);
+
+
+--
 -- Name: news_created_at_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -847,6 +855,14 @@ ALTER TABLE ONLY public.profiles
 
 ALTER TABLE ONLY public.records
     ADD CONSTRAINT records_holding_id_fkey FOREIGN KEY (holding_id) REFERENCES public.holdings(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: records records_transaction_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.records
+    ADD CONSTRAINT records_transaction_id_fkey FOREIGN KEY (transaction_id) REFERENCES public.transactions(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --

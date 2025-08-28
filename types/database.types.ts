@@ -389,6 +389,7 @@ export type Database = {
           holding_id: string;
           id: string;
           quantity: number;
+          transaction_id: string | null;
           unit_value: number;
           updated_at: string;
           user_id: string;
@@ -400,6 +401,7 @@ export type Database = {
           holding_id: string;
           id?: string;
           quantity: number;
+          transaction_id?: string | null;
           unit_value: number;
           updated_at?: string;
           user_id: string;
@@ -411,6 +413,7 @@ export type Database = {
           holding_id?: string;
           id?: string;
           quantity?: number;
+          transaction_id?: string | null;
           unit_value?: number;
           updated_at?: string;
           user_id?: string;
@@ -421,6 +424,13 @@ export type Database = {
             columns: ["holding_id"];
             isOneToOne: false;
             referencedRelation: "holdings";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "records_transaction_id_fkey";
+            columns: ["transaction_id"];
+            isOneToOne: false;
+            referencedRelation: "transactions";
             referencedColumns: ["id"];
           },
         ];
