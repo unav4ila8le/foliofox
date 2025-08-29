@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/server/auth/actions";
 import { createRecord } from "@/server/records/create";
 import { fetchSingleHolding } from "@/server/holdings/fetch";
+import { recalculateRecordsAfterDate } from "@/server/transactions/recalculate-records";
 
 import type { Transaction } from "@/types/global.types";
 
@@ -25,7 +26,7 @@ export async function createTransaction(formData: FormData) {
     description: (formData.get("description") as string) || null,
   };
 
-  // In createTransaction
+  // Check date constraint (transaction date cannot be before holding creation date)
   const holding = await fetchSingleHolding(transactionData.holding_id);
   const holdingCreatedAt = new Date(holding.created_at);
 
@@ -35,41 +36,6 @@ export async function createTransaction(formData: FormData) {
       code: "INVALID_DATE",
       message: "Transaction date cannot be before holding creation date",
     };
-  }
-
-  // Get the latest record to know current totals
-  const { data: latestRecord } = await supabase
-    .from("records")
-    .select("quantity, unit_value")
-    .eq("holding_id", transactionData.holding_id)
-    .eq("user_id", user.id)
-    .order("date", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  // Calculate new totals based on transaction type
-  let newTotalQuantity: number = 0;
-  let newUnitValue: number = 0;
-
-  if (transactionData.type === "update") {
-    // Update: Use the new values directly
-    newTotalQuantity = transactionData.quantity;
-    newUnitValue = transactionData.unit_value;
-  } else if (transactionData.type === "buy") {
-    // Buy: Add to existing quantity, calculate weighted average price
-    const currentQuantity = latestRecord?.quantity || 0;
-    const currentValue = (latestRecord?.unit_value || 0) * currentQuantity;
-    const newValue = transactionData.quantity * transactionData.unit_value;
-
-    newTotalQuantity = currentQuantity + transactionData.quantity;
-    newUnitValue =
-      newTotalQuantity > 0 ? (currentValue + newValue) / newTotalQuantity : 0;
-  } else if (transactionData.type === "sell") {
-    // Sell: Subtract from quantity, keep same unit value (FIFO assumption)
-    const currentQuantity = latestRecord?.quantity || 0;
-    newTotalQuantity = Math.max(0, currentQuantity - transactionData.quantity);
-    newUnitValue = latestRecord?.unit_value || 0;
   }
 
   // Insert transaction
@@ -90,12 +56,12 @@ export async function createTransaction(formData: FormData) {
     };
   }
 
-  // Create record with updated totals
+  // Create initial record for this transaction
   const recordFormData = new FormData();
   recordFormData.append("holding_id", transactionData.holding_id);
   recordFormData.append("date", transactionData.date);
-  recordFormData.append("quantity", newTotalQuantity.toString());
-  recordFormData.append("unit_value", newUnitValue.toString());
+  recordFormData.append("quantity", transactionData.quantity.toString());
+  recordFormData.append("unit_value", transactionData.unit_value.toString());
   recordFormData.append("description", transactionData.description || "");
 
   const recordResult = await createRecord(recordFormData);
@@ -105,6 +71,26 @@ export async function createTransaction(formData: FormData) {
       success: false,
       code: recordResult.code,
       message: recordResult.message,
+    };
+  }
+
+  // Recalculate all records from this transaction date forward
+  const recalculateResult = await recalculateRecordsAfterDate({
+    holdingId: transactionData.holding_id,
+    fromDate: new Date(transactionData.date),
+    newTransactionData: {
+      type: transactionData.type,
+      quantity: transactionData.quantity,
+      unit_value: transactionData.unit_value,
+      date: transactionData.date,
+    },
+  });
+
+  if (!recalculateResult.success) {
+    return {
+      success: false,
+      code: "RECALCULATION_FAILED",
+      message: "Failed to recalculate records after transaction creation",
     };
   }
 

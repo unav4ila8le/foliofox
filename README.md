@@ -176,3 +176,5 @@ N/A
 - [ ] Add domains tracking support
 - [ ] Add crypto wallet address sync
 - [x] Review params for holdings fetch, especially quoteDate
+- [ ] Optimize recalculateRecords to use batch requests
+- [ ] Optimize projected income analysis
