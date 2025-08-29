@@ -1,38 +1,44 @@
 "use server";
 
-import { createClient } from "@/supabase/client";
+import { createServiceClient } from "@/supabase/service";
+import { fetchSingleHolding } from "@/server/holdings/fetch";
+
+import type { Transaction } from "@/types/global.types";
 
 interface RecalculateOptions {
   holdingId: string;
   fromDate: Date;
-  excludeTransactionId?: string; // The transaction we're updating/deleting
-  newTransactionData?: {
-    // New data if updating
-    type: "buy" | "sell" | "update";
-    quantity: number;
-    unit_value: number;
-    date: string;
-  };
+  excludeTransactionId?: string;
+  newTransactionData?: Pick<
+    Transaction,
+    "type" | "quantity" | "unit_value" | "date"
+  >;
 }
 
+/**
+ * Recalculate all records for a holding from a specific date forward
+ */
 export async function recalculateRecordsAfterDate(options: RecalculateOptions) {
   const { holdingId, fromDate, excludeTransactionId, newTransactionData } =
     options;
-  const supabase = await createClient();
 
-  // Step 1: Find all records that need recalculation
+  const supabase = await createServiceClient();
+
+  // Find all records that need recalculation
+  // Exclude initial holding records (transaction_id = null) from recalculation
   const { data: affectedRecords } = await supabase
     .from("records")
     .select("*")
     .eq("holding_id", holdingId)
-    .gte("date", fromDate.toISOString())
+    .gt("date", fromDate.toISOString())
+    .not("transaction_id", "is", null)
     .order("date", { ascending: true });
 
   if (!affectedRecords || affectedRecords.length === 0) {
-    return { success: true }; // Nothing to recalculate
+    return { success: true };
   }
 
-  // Step 2: Get the "base" record (the one before our changes)
+  // Get the base record (latest before fromDate)
   const { data: baseRecord } = await supabase
     .from("records")
     .select("*")
@@ -42,13 +48,11 @@ export async function recalculateRecordsAfterDate(options: RecalculateOptions) {
     .limit(1)
     .maybeSingle();
 
-  // Step 3: Start with the base values
   let runningQuantity = baseRecord?.quantity || 0;
-  let runningUnitValue = baseRecord?.unit_value || 0;
 
-  // Step 4: Recalculate each record in sequence
+  // Recalculate each record in sequence
   for (const record of affectedRecords) {
-    // Get transactions up to this record's date, EXCLUDING the one we're modifying
+    // Get transactions up to this record's date
     let { data: transactions } = await supabase
       .from("transactions")
       .select("*")
@@ -57,56 +61,66 @@ export async function recalculateRecordsAfterDate(options: RecalculateOptions) {
       .lte("date", record.date)
       .order("date", { ascending: true });
 
-    // Filter out the transaction we're excluding
+    // Filter out excluded transaction if specified
     if (excludeTransactionId) {
       transactions =
         transactions?.filter((t) => t.id !== excludeTransactionId) || [];
     }
 
-    // Apply transactions to get new running totals
-    for (const transaction of transactions || []) {
-      if (transaction.type === "buy") {
-        const newQuantity = runningQuantity + transaction.quantity;
-        const newValue =
-          runningQuantity * runningUnitValue +
-          transaction.quantity * transaction.unit_value;
-        runningQuantity = newQuantity;
-        runningUnitValue = newQuantity > 0 ? newValue / newQuantity : 0;
-      } else if (transaction.type === "sell") {
-        runningQuantity = Math.max(0, runningQuantity - transaction.quantity);
-        // runningUnitValue stays the same
-      } else if (transaction.type === "update") {
-        runningQuantity = transaction.quantity;
-        runningUnitValue = transaction.unit_value;
-      }
-    }
-
-    // If we have new transaction data and it affects this record, apply it
-    if (newTransactionData && newTransactionData.date <= record.date) {
-      if (newTransactionData.type === "buy") {
-        const newQuantity = runningQuantity + newTransactionData.quantity;
-        const newValue =
-          runningQuantity * runningUnitValue +
-          newTransactionData.quantity * newTransactionData.unit_value;
-        runningQuantity = newQuantity;
-        runningUnitValue = newQuantity > 0 ? newValue / newQuantity : 0;
-      } else if (newTransactionData.type === "sell") {
+    // Helper function to apply transaction to running quantity
+    const applyTransaction = (
+      transactionData: Pick<Transaction, "type" | "quantity">,
+    ) => {
+      if (
+        transactionData.type === "buy" ||
+        transactionData.type === "deposit"
+      ) {
+        runningQuantity += transactionData.quantity;
+      } else if (
+        transactionData.type === "sell" ||
+        transactionData.type === "withdrawal"
+      ) {
         runningQuantity = Math.max(
           0,
-          runningQuantity - newTransactionData.quantity,
+          runningQuantity - transactionData.quantity,
         );
-      } else if (newTransactionData.type === "update") {
-        runningQuantity = newTransactionData.quantity;
-        runningUnitValue = newTransactionData.unit_value;
+      } else if (transactionData.type === "update") {
+        // For UPDATE transactions, calculate the relative change from the original baseline
+        // and apply it to current running quantity to maintain user's original intent
+        const originalBaseline = baseRecord?.quantity || 0;
+        const intendedChange = transactionData.quantity - originalBaseline;
+        runningQuantity += intendedChange;
       }
+    };
+
+    // Apply all transactions up to this record's date
+    for (const transaction of transactions || []) {
+      applyTransaction(transaction);
     }
 
-    // Update this record with the new running totals
+    // Apply new transaction data if it affects this record
+    if (newTransactionData && newTransactionData.date <= record.date) {
+      applyTransaction(newTransactionData);
+    }
+
+    // Fetch market price for this record's date
+    let marketPrice: number;
+    try {
+      const holding = await fetchSingleHolding(holdingId, {
+        quoteDate: new Date(record.date),
+      });
+      marketPrice = holding.current_unit_value;
+    } catch {
+      // Fallback to existing record value or new transaction value
+      marketPrice = newTransactionData?.unit_value || record.unit_value || 1;
+    }
+
+    // Update this record with new quantity and market price
     await supabase
       .from("records")
       .update({
         quantity: runningQuantity,
-        unit_value: runningUnitValue,
+        unit_value: marketPrice,
       })
       .eq("id", record.id);
   }

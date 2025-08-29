@@ -53,7 +53,9 @@ ALTER TYPE public.feedback_type OWNER TO postgres;
 CREATE TYPE public.transaction_type AS ENUM (
     'buy',
     'sell',
-    'update'
+    'update',
+    'deposit',
+    'withdrawal'
 );
 
 

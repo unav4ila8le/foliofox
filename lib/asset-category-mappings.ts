@@ -1,3 +1,55 @@
+// Transaction types supported for each asset category
+export const ASSET_CATEGORY_TRANSACTION_TYPES = {
+  equity: ["buy", "sell", "update"],
+  fixed_income: ["buy", "sell", "update"],
+  real_estate: ["update"],
+  cryptocurrency: ["buy", "sell", "update"],
+  commodities: ["buy", "sell", "update"],
+  cash: ["deposit", "withdrawal", "update"],
+  other: ["update"],
+};
+
+// Transaction type labels
+export const TRANSACTION_TYPE_LABELS = {
+  buy: "Purchase",
+  sell: "Sale",
+  deposit: "Deposit",
+  withdrawal: "Withdrawal",
+  update: "Update",
+};
+
+// Transaction type icons (using string names for easier maintenance)
+export const TRANSACTION_TYPE_ICONS = {
+  buy: "CircleArrowUp",
+  sell: "CircleArrowDown",
+  deposit: "CircleArrowUp",
+  withdrawal: "CircleArrowDown",
+  update: "PencilLine",
+};
+
+// Utility functions
+export function getTransactionTypesForCategory(categoryCode: string): string[] {
+  return (
+    ASSET_CATEGORY_TRANSACTION_TYPES[
+      categoryCode as keyof typeof ASSET_CATEGORY_TRANSACTION_TYPES
+    ] || ["update"]
+  );
+}
+
+export function getTransactionTypeLabel(type: string): string {
+  return (
+    TRANSACTION_TYPE_LABELS[type as keyof typeof TRANSACTION_TYPE_LABELS] ||
+    type
+  );
+}
+
+export function getTransactionTypeIcon(type: string): string {
+  return (
+    TRANSACTION_TYPE_ICONS[type as keyof typeof TRANSACTION_TYPE_ICONS] ||
+    "PencilLine"
+  );
+}
+
 // Simple mapping of asset categories to Yahoo Finance quote types
 const ASSET_CATEGORY_QUOTE_TYPES: Record<string, string[]> = {
   cash: ["CURRENCY", "MONEYMARKET"],

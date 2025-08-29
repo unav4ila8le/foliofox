@@ -538,7 +538,7 @@ export type Database = {
     };
     Enums: {
       feedback_type: "issue" | "idea" | "other";
-      transaction_type: "buy" | "sell" | "update";
+      transaction_type: "buy" | "sell" | "update" | "deposit" | "withdrawal";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -670,7 +670,7 @@ export const Constants = {
   public: {
     Enums: {
       feedback_type: ["issue", "idea", "other"],
-      transaction_type: ["buy", "sell", "update"],
+      transaction_type: ["buy", "sell", "update", "deposit", "withdrawal"],
     },
   },
 } as const;

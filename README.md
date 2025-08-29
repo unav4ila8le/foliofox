@@ -178,3 +178,7 @@ N/A
 - [x] Review params for holdings fetch, especially quoteDate
 - [ ] Optimize recalculateRecords to use batch requests
 - [ ] Optimize projected income analysis
+- [ ] Improve folder structure for mappings in lib
+- [ ] Prevent user from creating holdings with same name
+- [ ] Better empty messages for news and projected income
+- [ ] Review Zod helpers in lib

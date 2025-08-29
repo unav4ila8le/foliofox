@@ -19,7 +19,12 @@ export async function updateTransaction(
     Transaction,
     "type" | "date" | "quantity" | "unit_value" | "description"
   > = {
-    type: formData.get("type") as "buy" | "sell" | "update",
+    type: formData.get("type") as
+      | "buy"
+      | "sell"
+      | "update"
+      | "deposit"
+      | "withdrawal",
     date: formData.get("date") as string,
     quantity: Number(formData.get("quantity")),
     unit_value: Number(formData.get("unit_value")),
