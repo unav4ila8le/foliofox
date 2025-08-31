@@ -383,6 +383,7 @@ export type Database = {
       };
       records: {
         Row: {
+          cost_basis_per_unit: number | null;
           created_at: string;
           date: string;
           description: string | null;
@@ -395,6 +396,7 @@ export type Database = {
           user_id: string;
         };
         Insert: {
+          cost_basis_per_unit?: number | null;
           created_at?: string;
           date?: string;
           description?: string | null;
@@ -407,6 +409,7 @@ export type Database = {
           user_id: string;
         };
         Update: {
+          cost_basis_per_unit?: number | null;
           created_at?: string;
           date?: string;
           description?: string | null;

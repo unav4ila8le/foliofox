@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 
 import { getCurrentUser } from "@/server/auth/actions";
 import { createRecord } from "@/server/records/create";
-import { recalculateRecordsAfterDate } from "@/server/transactions/recalculate-records";
-import { fetchSingleHolding } from "@/server/holdings/fetch";
+import { recalculateRecordsUntilNextUpdate } from "@/server/transactions/recalculate-records";
+import { fetchSingleQuote } from "@/server/quotes/fetch";
 
 import type { Transaction } from "@/types/global.types";
 
@@ -79,15 +79,27 @@ export async function createTransaction(formData: FormData) {
     };
   }
 
-  // Helper function to get market price for record
+  // Helper to resolve record unit value (market for symbols; user input for manual holdings)
   const getMarketPriceForRecord = async () => {
+    // Check if holding has a symbol
+    const { data: holdingMeta } = await supabase
+      .from("holdings")
+      .select("symbol_id")
+      .eq("id", transactionData.holding_id)
+      .maybeSingle();
+
+    if (!holdingMeta?.symbol_id) {
+      // Manual asset: use user's provided unit_value
+      return transactionData.unit_value;
+    }
+
     try {
-      const holding = await fetchSingleHolding(transactionData.holding_id, {
-        quoteDate: new Date(transactionData.date),
+      const price = await fetchSingleQuote(holdingMeta.symbol_id, {
+        date: new Date(transactionData.date),
+        upsert: false,
       });
-      return holding.current_unit_value;
+      return price || transactionData.unit_value;
     } catch {
-      // Fall back to transaction price if quote fetch fails
       return transactionData.unit_value;
     }
   };
@@ -97,9 +109,10 @@ export async function createTransaction(formData: FormData) {
     await supabase.from("transactions").delete().eq("id", transaction.id);
   };
 
-  // Calculate correct record values based on transaction type
+  // Compute record fields
   let recordQuantity: number;
   let recordUnitValue: number;
+  let recordCostBasisPerUnit: number;
 
   if (
     transactionData.type === "sell" ||
@@ -110,12 +123,13 @@ export async function createTransaction(formData: FormData) {
     // For SELL/WITHDRAWAL/BUY/DEPOSIT: Get latest record before transaction date
     const { data: latestRecord } = await supabase
       .from("records")
-      .select("quantity, unit_value")
+      .select("quantity, unit_value, cost_basis_per_unit, date, created_at")
       .eq("holding_id", transactionData.holding_id)
-      .lt("date", transactionData.date)
+      .lte("date", transactionData.date)
       .order("date", { ascending: false })
+      .order("created_at", { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
     if (!latestRecord) {
       await cleanupTransaction();
@@ -140,11 +154,56 @@ export async function createTransaction(formData: FormData) {
       recordQuantity = latestRecord.quantity + transactionData.quantity;
     }
 
+    // Market price for record
     recordUnitValue = await getMarketPriceForRecord();
+
+    // Cost basis
+    const prevCostBasis =
+      latestRecord.cost_basis_per_unit ??
+      latestRecord.unit_value ??
+      transactionData.unit_value;
+
+    if (transactionData.type === "buy" || transactionData.type === "deposit") {
+      const newTotalQty = Math.max(
+        0,
+        latestRecord.quantity + transactionData.quantity,
+      );
+      recordCostBasisPerUnit =
+        newTotalQty > 0
+          ? (latestRecord.quantity * prevCostBasis +
+              transactionData.quantity * transactionData.unit_value) /
+            newTotalQty
+          : transactionData.unit_value;
+    } else {
+      // SELL/WITHDRAWAL: cost basis per unit remains unchanged
+      recordCostBasisPerUnit = prevCostBasis;
+    }
   } else {
-    // For UPDATE: Use transaction quantity directly
+    // For UPDATE: absolute quantity; cost basis comes from user or fallback
     recordQuantity = transactionData.quantity;
     recordUnitValue = await getMarketPriceForRecord();
+
+    const provided = formData.get("cost_basis_per_unit");
+    const providedNum =
+      provided !== null && String(provided).trim() !== ""
+        ? Number(provided)
+        : NaN;
+
+    if (!Number.isNaN(providedNum) && providedNum > 0) {
+      recordCostBasisPerUnit = providedNum;
+    } else {
+      const { data: prev } = await supabase
+        .from("records")
+        .select("cost_basis_per_unit, unit_value")
+        .eq("holding_id", transactionData.holding_id)
+        .lt("date", transactionData.date)
+        .order("date", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      recordCostBasisPerUnit =
+        prev?.cost_basis_per_unit ?? prev?.unit_value ?? recordUnitValue;
+    }
   }
 
   // Create the record
@@ -154,6 +213,10 @@ export async function createTransaction(formData: FormData) {
   recordFormData.append("quantity", recordQuantity.toString());
   recordFormData.append("unit_value", recordUnitValue.toString());
   recordFormData.append("description", transactionData.description || "");
+  recordFormData.append(
+    "cost_basis_per_unit",
+    recordCostBasisPerUnit.toString(),
+  );
 
   const recordResult = await createRecord(recordFormData, transaction.id);
 
@@ -167,7 +230,7 @@ export async function createTransaction(formData: FormData) {
   }
 
   // Recalculate all records from this transaction date forward
-  const recalculateResult = await recalculateRecordsAfterDate({
+  const recalculateResult = await recalculateRecordsUntilNextUpdate({
     holdingId: transactionData.holding_id,
     fromDate: new Date(transactionData.date),
   });

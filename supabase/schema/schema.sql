@@ -303,7 +303,8 @@ CREATE TABLE public.records (
     quantity numeric NOT NULL,
     unit_value numeric NOT NULL,
     holding_id uuid NOT NULL,
-    transaction_id uuid
+    transaction_id uuid,
+    cost_basis_per_unit numeric
 );
 
 
@@ -613,6 +614,13 @@ CREATE INDEX idx_news_related_symbols ON public.news USING gin (related_symbol_i
 --
 
 CREATE INDEX idx_quotes_date_desc ON public.quotes USING btree (date DESC);
+
+
+--
+-- Name: idx_records_cost_basis_per_unit; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_records_cost_basis_per_unit ON public.records USING btree (cost_basis_per_unit);
 
 
 --

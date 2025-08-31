@@ -161,16 +161,16 @@ export function ManualEntryForm() {
         />
 
         <div className="grid items-start gap-x-2 gap-y-4 sm:grid-cols-2">
-          {/* Unit value */}
+          {/* Quantity */}
           <FormField
             control={form.control}
-            name="unit_value"
+            name="quantity"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Current unit value</FormLabel>
+                <FormLabel>Current quantity</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="E.g., 420.69"
+                    placeholder="E.g., 10"
                     type="number"
                     inputMode="decimal"
                     min={0}
@@ -184,16 +184,16 @@ export function ManualEntryForm() {
             )}
           />
 
-          {/* Quantity */}
+          {/* Unit value */}
           <FormField
             control={form.control}
-            name="quantity"
+            name="unit_value"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Current quantity</FormLabel>
+                <FormLabel>Current unit value</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="E.g., 10"
+                    placeholder="E.g., 420.69"
                     type="number"
                     inputMode="decimal"
                     min={0}

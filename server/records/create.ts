@@ -13,13 +13,19 @@ export async function createRecord(formData: FormData, transactionId?: string) {
   // Extract and validate data from formData
   const data: Pick<
     Record,
-    "date" | "holding_id" | "quantity" | "unit_value" | "description"
+    | "date"
+    | "holding_id"
+    | "quantity"
+    | "unit_value"
+    | "description"
+    | "cost_basis_per_unit"
   > = {
     date: formData.get("date") as string,
     holding_id: formData.get("holding_id") as string,
     quantity: Number(formData.get("quantity")),
     unit_value: Number(formData.get("unit_value")),
     description: (formData.get("description") as string) || null,
+    cost_basis_per_unit: Number(formData.get("cost_basis_per_unit")) || null,
   };
 
   // Insert into records table

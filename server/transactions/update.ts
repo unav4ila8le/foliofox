@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/supabase/server";
-import { recalculateRecordsAfterDate } from "@/server/transactions/recalculate-records";
+import { recalculateRecordsUntilNextUpdate } from "@/server/transactions/recalculate-records";
 
 import type { Transaction } from "@/types/global.types";
 
@@ -52,7 +52,7 @@ export async function updateTransaction(
   const fromDate = originalDate < newDate ? originalDate : newDate;
 
   // Recalculate records from the earliest affected date
-  const recalculateResult = await recalculateRecordsAfterDate({
+  const recalculateResult = await recalculateRecordsUntilNextUpdate({
     holdingId: currentTransaction.holding_id,
     fromDate: fromDate,
     excludeTransactionId: transactionId,

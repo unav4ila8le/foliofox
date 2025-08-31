@@ -32,7 +32,12 @@ export type TransformedHolding = Holding & {
   total_value: number;
 };
 
-export type HoldingWithProfitLoss = TransformedHolding & {
+export type HoldingWithCostBasis = TransformedHolding & {
+  cost_basis_per_unit: number;
+  total_cost_basis: number;
+};
+
+export type HoldingWithProfitLoss = HoldingWithCostBasis & {
   profit_loss: number;
   profit_loss_percentage: number;
 };

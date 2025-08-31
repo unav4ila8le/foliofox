@@ -133,7 +133,7 @@ export function SellForm() {
         onSubmit={form.handleSubmit(onSubmit)}
         className="grid gap-x-2 gap-y-4"
       >
-        {/* Date picker field */}
+        {/* Date */}
         <FormField
           control={form.control}
           name="date"
@@ -225,7 +225,7 @@ export function SellForm() {
           />
         </div>
 
-        {/* Optional description field */}
+        {/* Description */}
         <FormField
           control={form.control}
           name="description"
@@ -240,7 +240,7 @@ export function SellForm() {
           )}
         />
 
-        {/* Action buttons */}
+        {/* Action */}
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Button
             onClick={() => setOpen(false)}

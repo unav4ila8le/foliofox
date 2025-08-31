@@ -182,3 +182,4 @@ N/A
 - [ ] Prevent user from creating holdings with same name
 - [ ] Better empty messages for news and projected income
 - [ ] Review Zod helpers in lib
+- [ ] Let users input their cost basis (optional) for new holdings, and then use it to create the new record

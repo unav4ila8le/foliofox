@@ -5,7 +5,7 @@ export const ASSET_CATEGORY_TRANSACTION_TYPES = {
   real_estate: ["update"],
   cryptocurrency: ["buy", "sell", "update"],
   commodities: ["buy", "sell", "update"],
-  cash: ["deposit", "withdrawal", "update"],
+  cash: ["update"],
   other: ["update"],
 };
 
@@ -13,18 +13,7 @@ export const ASSET_CATEGORY_TRANSACTION_TYPES = {
 export const TRANSACTION_TYPE_LABELS = {
   buy: "Purchase",
   sell: "Sale",
-  deposit: "Deposit",
-  withdrawal: "Withdrawal",
   update: "Update",
-};
-
-// Transaction type icons (using string names for easier maintenance)
-export const TRANSACTION_TYPE_ICONS = {
-  buy: "CircleArrowUp",
-  sell: "CircleArrowDown",
-  deposit: "CircleArrowUp",
-  withdrawal: "CircleArrowDown",
-  update: "PencilLine",
 };
 
 // Utility functions
@@ -40,13 +29,6 @@ export function getTransactionTypeLabel(type: string): string {
   return (
     TRANSACTION_TYPE_LABELS[type as keyof typeof TRANSACTION_TYPE_LABELS] ||
     type
-  );
-}
-
-export function getTransactionTypeIcon(type: string): string {
-  return (
-    TRANSACTION_TYPE_ICONS[type as keyof typeof TRANSACTION_TYPE_ICONS] ||
-    "PencilLine"
   );
 }
 

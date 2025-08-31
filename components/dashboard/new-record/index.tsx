@@ -13,16 +13,22 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HoldingSelector } from "./holding-selector";
+import { BuyForm } from "./forms/buy-form";
 import { SellForm } from "./forms/sell-form";
 import { UpdateForm } from "./forms/update-form";
 import {
   getTransactionTypesForCategory,
   getTransactionTypeLabel,
-  getTransactionTypeIcon,
 } from "@/lib/asset-category-mappings";
 
 import type { TransformedHolding } from "@/types/global.types";
 import type { VariantProps } from "class-variance-authority";
+
+const TRANSACTION_TYPE_ICONS: Record<string, React.ElementType> = {
+  buy: CircleArrowUp,
+  sell: CircleArrowDown,
+  update: PencilLine,
+};
 
 type NewRecordDialogContextType = {
   open: boolean;
@@ -56,25 +62,8 @@ export function NewRecordDialogProvider({
 
   // Get available transaction types based on selected holding
   const getAvailableTransactionTypes = () => {
-    if (!preselectedHolding) {
-      return ["buy", "sell", "update"]; // Default for no selection
-    }
-
+    if (!preselectedHolding) return ["buy", "sell", "update"];
     return getTransactionTypesForCategory(preselectedHolding.category_code);
-  };
-
-  // Get icon component based on icon name
-  const getIconComponent = (iconName: string) => {
-    switch (iconName) {
-      case "CircleArrowUp":
-        return <CircleArrowUp className="size-4" />;
-      case "CircleArrowDown":
-        return <CircleArrowDown className="size-4" />;
-      case "PencilLine":
-        return <PencilLine className="size-4" />;
-      default:
-        return <PencilLine className="size-4" />;
-    }
   };
 
   const availableTypes = getAvailableTransactionTypes();
@@ -115,30 +104,32 @@ export function NewRecordDialogProvider({
 
           {/* Tabs for transaction types */}
           <Tabs key={defaultTab} defaultValue={defaultTab} className="gap-4">
-            <TabsList className="w-full">
-              {availableTypes.map((type) => (
-                <TabsTrigger
-                  key={type}
-                  value={`${type}-form`}
-                  disabled={!preselectedHolding}
-                >
-                  {getIconComponent(getTransactionTypeIcon(type))}
-                  {getTransactionTypeLabel(type)}
-                </TabsTrigger>
-              ))}
+            <TabsList
+              className={availableTypes.length > 1 ? "w-full" : "hidden"}
+            >
+              {availableTypes.map((type) => {
+                const Icon =
+                  TRANSACTION_TYPE_ICONS[type] ?? TRANSACTION_TYPE_ICONS.update;
+                return (
+                  <TabsTrigger
+                    key={type}
+                    value={`${type}-form`}
+                    disabled={!preselectedHolding}
+                  >
+                    <Icon className="size-4" />
+                    {getTransactionTypeLabel(type)}
+                  </TabsTrigger>
+                );
+              })}
             </TabsList>
-            <TabsContent value="buy-form">buy form goes here</TabsContent>
+            <TabsContent value="buy-form">
+              <BuyForm />
+            </TabsContent>
             <TabsContent value="sell-form">
               <SellForm />
             </TabsContent>
             <TabsContent value="update-form">
               <UpdateForm />
-            </TabsContent>
-            <TabsContent value="deposit-form">
-              deposit form goes here
-            </TabsContent>
-            <TabsContent value="withdrawal-form">
-              withdrawal form goes here
             </TabsContent>
           </Tabs>
         </DialogContent>

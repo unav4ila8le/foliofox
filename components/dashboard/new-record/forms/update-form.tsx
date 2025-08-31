@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { format } from "date-fns";
-import { CalendarIcon, LoaderCircle } from "lucide-react";
+import { CalendarIcon, LoaderCircle, Info } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -21,6 +21,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  TooltipProvider,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
@@ -28,7 +34,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { useNewRecordDialog } from "../index";
 
 import { cn } from "@/lib/utils";
-import { requiredMinNumber } from "@/lib/zod-helpers";
+import { requiredNumberWithConstraints } from "@/lib/zod-helpers";
 
 import { createTransaction } from "@/server/transactions/create";
 import { fetchSingleQuote } from "@/server/quotes/fetch";
@@ -38,14 +44,27 @@ import type { TransformedHolding } from "@/types/global.types";
 // Form validation schema using Zod
 const formSchema = z.object({
   date: z.date({ error: "A date is required." }),
-  quantity: requiredMinNumber(
-    "Quantity is required.",
-    "Quantity must be 0 or greater",
-  ),
-  unit_value: requiredMinNumber(
-    "Unit value is required.",
-    "Value must be 0 or greater",
-  ),
+  quantity: requiredNumberWithConstraints("Quantity is required.", {
+    gte: { value: 0, message: "Quantity must be 0 or greater." },
+  }),
+  unit_value: requiredNumberWithConstraints("Unit value is required.", {
+    gte: { value: 0, message: "Value must be 0 or greater." },
+  }),
+  cost_basis_per_unit: z
+    .string()
+    .optional()
+    .refine(
+      (value) =>
+        value === undefined ||
+        value.trim() === "" ||
+        !Number.isNaN(Number(value)),
+      { message: "Cost basis per unit must be a number" },
+    )
+    .refine(
+      (value) =>
+        value === undefined || value.trim() === "" || Number(value) > 0,
+      { message: "Cost basis per unit must be greater than 0" },
+    ),
   description: z
     .string()
     .max(256, {
@@ -72,6 +91,7 @@ export function UpdateForm() {
       date: new Date(),
       quantity: preselectedHolding?.current_quantity || "",
       unit_value: preselectedHolding?.current_unit_value || "",
+      cost_basis_per_unit: "",
       description: "",
     },
   });
@@ -153,6 +173,14 @@ export function UpdateForm() {
       // Only add description if provided
       if (values.description) {
         formData.append("description", values.description);
+      }
+
+      // Only add cost basis per unit if provided
+      if (values.cost_basis_per_unit) {
+        formData.append(
+          "cost_basis_per_unit",
+          values.cost_basis_per_unit.toString(),
+        );
       }
 
       // Create transaction using server action
@@ -274,6 +302,43 @@ export function UpdateForm() {
             )}
           />
         </div>
+
+        {/* Optional cost basis per unit */}
+        <FormField
+          control={form.control}
+          name="cost_basis_per_unit"
+          render={({ field }) => (
+            <FormItem className="sm:w-1/2 sm:pr-1">
+              <div className="flex items-center gap-1">
+                <FormLabel>Cost basis per unit (optional)</FormLabel>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="size-4" aria-label="Cost basis help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Enter your average price paid per unit at this date. Used
+                      for P/L. If omitted, we infer it from previous records or
+                      from the unit value.
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <FormControl>
+                <Input
+                  placeholder="E.g., 12.41"
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step="any"
+                  {...field}
+                  value={field.value}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         {/* Optional description field */}
         <FormField

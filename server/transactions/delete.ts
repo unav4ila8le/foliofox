@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/supabase/server";
-import { recalculateRecordsAfterDate } from "@/server/transactions/recalculate-records";
+import { recalculateRecordsUntilNextUpdate } from "@/server/transactions/recalculate-records";
 
 // Delete a single transaction (no cascade yet)
 export async function deleteTransaction(transactionId: string) {
@@ -25,7 +25,7 @@ export async function deleteTransaction(transactionId: string) {
   }
 
   // Recalculate records from the transaction date forward (excluding this transaction)
-  const recalculateResult = await recalculateRecordsAfterDate({
+  const recalculateResult = await recalculateRecordsUntilNextUpdate({
     holdingId: transaction.holding_id,
     fromDate: new Date(transaction.date),
     excludeTransactionId: transactionId,

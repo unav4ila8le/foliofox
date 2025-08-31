@@ -18,7 +18,8 @@ export async function fetchRecords(holdingId: string) {
     .select("*")
     .eq("holding_id", holdingId)
     .eq("user_id", user.id)
-    .order("date", { ascending: false });
+    .order("date", { ascending: false })
+    .order("created_at", { ascending: false });
 
   if (error) {
     throw new Error(`Failed to fetch records: ${error.message}`);
