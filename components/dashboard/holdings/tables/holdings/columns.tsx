@@ -135,6 +135,20 @@ export const columns: ColumnDef<HoldingWithProfitLoss>[] = [
     },
   },
   {
+    accessorKey: "cost_basis_per_unit",
+    header: "Cost basis",
+    cell: ({ row }) => {
+      const cost_basis_per_unit = row.getValue<number>("cost_basis_per_unit");
+      return (
+        <div className="tabular-nums">
+          {formatNumber(cost_basis_per_unit, undefined, {
+            maximumFractionDigits: 2,
+          })}
+        </div>
+      );
+    },
+  },
+  {
     accessorKey: "profit_loss",
     header: ({ column }) => {
       return (
@@ -142,7 +156,7 @@ export const columns: ColumnDef<HoldingWithProfitLoss>[] = [
           className="hover:text-primary flex cursor-pointer items-center gap-2 transition-colors"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Change
+          P/L
           <ArrowUpDown className="size-4" />
         </div>
       );
@@ -172,7 +186,7 @@ export const columns: ColumnDef<HoldingWithProfitLoss>[] = [
           className="hover:text-primary flex cursor-pointer items-center gap-2 transition-colors"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Change %
+          P/L %
           <ArrowUpDown className="size-4" />
         </div>
       );

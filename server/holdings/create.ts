@@ -30,6 +30,10 @@ export async function createHolding(formData: FormData) {
   const quantity = Number(formData.get("quantity"));
   const unit_value = Number(formData.get("unit_value"));
 
+  // Cost basis per unit (fallback to unit value if not provided)
+  const cost_basis_per_unit =
+    Number(formData.get("cost_basis_per_unit")) || unit_value;
+
   // Upsert symbol
   if (data.symbol_id) {
     const symbolResult = await createSymbol(data.symbol_id);
@@ -67,6 +71,7 @@ export async function createHolding(formData: FormData) {
   recordFormData.append("date", format(new Date(), "yyyy-MM-dd"));
   recordFormData.append("quantity", quantity.toString());
   recordFormData.append("unit_value", unit_value.toString());
+  recordFormData.append("cost_basis_per_unit", cost_basis_per_unit.toString());
   recordFormData.append("description", "Initial holding creation");
 
   const recordResult = await createRecord(recordFormData);

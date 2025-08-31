@@ -4,7 +4,7 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { LoaderCircle } from "lucide-react";
+import { LoaderCircle, Info } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -16,6 +16,12 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  TooltipProvider,
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { YahooFinanceLogo } from "@/components/ui/logos/yahoo-finance-logo";
 import { SymbolSearch } from "../symbol-search";
@@ -23,7 +29,7 @@ import { AssetCategorySelector } from "@/components/dashboard/asset-category-sel
 
 import { useNewHoldingDialog } from "../index";
 
-import { requiredMinNumber } from "@/lib/zod-helpers";
+import { requiredNumberWithConstraints } from "@/lib/zod-helpers";
 
 import { fetchYahooFinanceSymbol } from "@/server/symbols/search";
 import { fetchSingleQuote } from "@/server/quotes/fetch";
@@ -39,14 +45,24 @@ const formSchema = z.object({
     .max(64, { error: "Name must not exceed 64 characters." }),
   category_code: z.string().min(1, { error: "Category is required." }),
   currency: z.string().length(3),
-  unit_value: requiredMinNumber(
-    "Unit value is required.",
-    "Value must be 0 or greater",
-  ),
-  quantity: requiredMinNumber(
-    "Quantity is required.",
-    "Quantity must be 0 or greater",
-  ),
+  unit_value: requiredNumberWithConstraints("Unit value is required.", {
+    gte: { value: 0, message: "Value must be 0 or greater" },
+  }),
+  quantity: requiredNumberWithConstraints("Quantity is required.", {
+    gte: { value: 0, message: "Quantity must be 0 or greater" },
+  }),
+  cost_basis_per_unit: z
+    .string()
+    .optional()
+    .refine(
+      (v) => v === undefined || v.trim() === "" || !Number.isNaN(Number(v)),
+      {
+        message: "Cost basis per unit must be a number",
+      },
+    )
+    .refine((v) => v === undefined || v.trim() === "" || Number(v) > 0, {
+      message: "Cost basis per unit must be greater than 0",
+    }),
   description: z
     .string()
     .max(256, {
@@ -72,6 +88,7 @@ export function SymbolSearchForm() {
       currency: "",
       unit_value: "",
       quantity: "",
+      cost_basis_per_unit: "",
       description: "",
     },
   });
@@ -142,6 +159,15 @@ export function SymbolSearchForm() {
       formData.append("unit_value", values.unit_value.toString());
       formData.append("quantity", values.quantity.toString());
 
+      // Only append cost basis per unit if it exists
+      if (values.cost_basis_per_unit) {
+        formData.append(
+          "cost_basis_per_unit",
+          values.cost_basis_per_unit.toString(),
+        );
+      }
+
+      // Only append description if it exists
       if (values.description) {
         formData.append("description", values.description);
       }
@@ -244,6 +270,42 @@ export function SymbolSearchForm() {
                   step="any"
                   {...field}
                   value={field.value as number}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Cost basis per unit */}
+        <FormField
+          control={form.control}
+          name="cost_basis_per_unit"
+          render={({ field }) => (
+            <FormItem className="sm:w-1/2 sm:pr-1">
+              <div className="flex items-center gap-1">
+                <FormLabel>Cost basis per unit (optional)</FormLabel>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="size-4" aria-label="Cost basis help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      If omitted, we’ll use the unit value as your initial cost
+                      basis.
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <FormControl>
+                <Input
+                  placeholder="E.g., 12.41"
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step="any"
+                  {...field}
+                  value={field.value}
                 />
               </FormControl>
               <FormMessage />

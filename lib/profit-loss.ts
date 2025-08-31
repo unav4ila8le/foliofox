@@ -5,7 +5,11 @@ import type {
 } from "@/types/global.types";
 
 /**
- * Transform holdings data to include basic P/L calculations.
+ * Calculate unrealized P/L using latest record's cost basis and current values.
+ * - cost_basis_per_unit: from latest record (fallback to unit_value)
+ * - total_cost_basis: cost_basis_per_unit * current_quantity
+ * - profit_loss: holding.total_value - total_cost_basis
+ * - profit_loss_percentage: profit_loss / total_cost_basis (0 if basis is 0)
  */
 export function calculateProfitLoss(
   holdings: TransformedHolding[],
@@ -17,29 +21,45 @@ export function calculateProfitLoss(
     if (holdingRecords.length === 0) {
       return {
         ...holding,
+        cost_basis_per_unit: 0,
+        total_cost_basis: 0,
         profit_loss: 0,
         profit_loss_percentage: 0,
       };
     }
 
-    // Sort records by date to get first (earliest) record
-    const sortedRecords = [...holdingRecords].sort(
-      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-    );
+    // sort once
+    const sorted = [...holdingRecords].sort((a, b) => {
+      const dDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+      if (dDiff !== 0) return dDiff;
+      return (
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+    });
 
-    const firstRecord = sortedRecords[0];
-    const first_value = firstRecord.quantity * firstRecord.unit_value;
-    const current_value = holding.total_value;
+    // Prefer latest transactional record with basis; then any record with basis; else latest
+    const basisRecord =
+      sorted.find((r) => r.transaction_id && r.cost_basis_per_unit != null) ??
+      sorted.find((r) => r.cost_basis_per_unit != null) ??
+      sorted[0];
 
-    // Simple change from first record
-    const profit_loss = current_value - first_value;
-    const profit_loss_percentage =
-      first_value > 0 ? profit_loss / first_value : 0;
+    const costBasisPerUnit = (basisRecord.cost_basis_per_unit ??
+      basisRecord.unit_value ??
+      0) as number;
+
+    const currentQuantity = holding.current_quantity || 0;
+    const currentTotalValue = holding.total_value || 0;
+
+    const totalCostBasis = costBasisPerUnit * currentQuantity;
+    const profitLoss = currentTotalValue - totalCostBasis;
+    const profitLossPct = totalCostBasis > 0 ? profitLoss / totalCostBasis : 0;
 
     return {
       ...holding,
-      profit_loss,
-      profit_loss_percentage,
+      cost_basis_per_unit: costBasisPerUnit,
+      total_cost_basis: totalCostBasis,
+      profit_loss: profitLoss,
+      profit_loss_percentage: profitLossPct,
     };
   });
 }
