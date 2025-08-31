@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 
 import { cn } from "@/lib/utils";
-import { requiredMinNumber } from "@/lib/zod-helpers";
+import { requiredNumberWithConstraints } from "@/lib/zod-helpers";
 
 import { updateRecord } from "@/server/records/update";
 
@@ -39,14 +39,12 @@ interface UpdateRecordFormProps {
 
 const formSchema = z.object({
   date: z.date({ error: "A date is required." }),
-  quantity: requiredMinNumber(
-    "Quantity is required.",
-    "Quantity must be 0 or greater",
-  ),
-  unit_value: requiredMinNumber(
-    "Unit value is required.",
-    "Value must be 0 or greater",
-  ),
+  quantity: requiredNumberWithConstraints("Quantity is required.", {
+    gte: { value: 0, message: "Quantity must be 0 or greater" },
+  }),
+  unit_value: requiredNumberWithConstraints("Unit value is required.", {
+    gte: { value: 0, message: "Value must be 0 or greater" },
+  }),
   description: z
     .string()
     .max(256, {
