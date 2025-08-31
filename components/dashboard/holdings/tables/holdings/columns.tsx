@@ -138,6 +138,11 @@ export const columns: ColumnDef<HoldingWithProfitLoss>[] = [
     accessorKey: "cost_basis_per_unit",
     header: "Cost basis",
     cell: ({ row }) => {
+      const hasMarketData = !!row.original.symbol_id;
+      if (!hasMarketData) {
+        return <span className="text-muted-foreground">-</span>;
+      }
+
       const cost_basis_per_unit = row.getValue<number>("cost_basis_per_unit");
       return (
         <div className="tabular-nums">
@@ -162,6 +167,11 @@ export const columns: ColumnDef<HoldingWithProfitLoss>[] = [
       );
     },
     cell: ({ row }) => {
+      const hasMarketData = !!row.original.symbol_id;
+      if (!hasMarketData) {
+        return <span className="text-muted-foreground">-</span>;
+      }
+
       const profit_loss = row.getValue<number>("profit_loss");
       const isPositive = profit_loss >= 0;
 
@@ -192,6 +202,11 @@ export const columns: ColumnDef<HoldingWithProfitLoss>[] = [
       );
     },
     cell: ({ row }) => {
+      const hasMarketData = !!row.original.symbol_id;
+      if (!hasMarketData) {
+        return <span className="text-muted-foreground">-</span>;
+      }
+
       const profit_loss_percentage = row.getValue<number>(
         "profit_loss_percentage",
       );
