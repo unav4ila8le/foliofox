@@ -181,5 +181,5 @@ N/A
 - [ ] Improve folder structure for mappings in lib
 - [ ] Prevent user from creating holdings with same name
 - [ ] Better empty messages for news and projected income
-- [ ] Review Zod helpers in lib
-- [ ] Let users input their cost basis (optional) for new holdings, and then use it to create the new record
+- [ ] Review Zod helpers in lib and make them more flexible
+- [x] Let users input their cost basis (optional) for new holdings, and then use it to create the new record
