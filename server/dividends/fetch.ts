@@ -42,7 +42,7 @@ export async function fetchDividends(
         .from("dividends")
         .select("*")
         .in("symbol_id", symbolIds)
-        .gte("updated_at", subDays(new Date(), 7).toISOString()),
+        .gte("updated_at", subDays(new Date(), 30).toISOString()),
     ]);
 
     // Group cached results by symbol

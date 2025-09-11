@@ -111,7 +111,7 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
 
   const recordsByHolding = new Map<string, Record[]>();
 
-  // Get records for all holdings at once (only if includeRecords is true)
+  // Bulk fetch ALL records for all holdings at once (only if includeRecords is true)
   if (includeRecords) {
     const { data: allRecords, error: recordsError } = await supabase
       .from("records")
@@ -135,35 +135,36 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
       recordsByHolding.set(holdingId, existingRecords);
     });
   } else {
-    // Fetch only the single latest record for each holding (for TransformedHolding)
-    const latestRecordsPromises = holdingIds.map((holdingId) =>
-      supabase
-        .from("records")
-        .select("*")
-        .eq("holding_id", holdingId)
-        .eq("user_id", user.id)
-        .order("date", { ascending: false })
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-    );
+    // Bulk fetch LATEST records only for all holdings at once (for TransformedHolding)
+    const { data: latestRecords, error: recordsError } = await supabase
+      .from("records")
+      .select("*")
+      .in("holding_id", holdingIds)
+      .eq("user_id", user.id)
+      .order("holding_id")
+      .order("date", { ascending: false })
+      .order("created_at", { ascending: false });
 
-    const results = await Promise.all(latestRecordsPromises);
-
-    // Check for errors first
-    const errors = results.filter((result) => result.error);
-    if (errors.length > 0) {
+    if (recordsError) {
       throw new Error(
-        `Failed to fetch latest records: ${errors[0].error?.message}`,
+        `Failed to fetch latest records: ${recordsError.message}`,
       );
     }
 
-    // Then populate with the latest record for each holding
-    results.forEach((result, index) => {
-      const holdingId = holdingIds[index];
-      if (result.data && !result.error) {
-        recordsByHolding.set(holdingId, [result.data]);
+    // Group by holding_id and keep only the latest record for each
+    const latestByHolding = new Map<string, Record>();
+    latestRecords?.forEach((record) => {
+      const holdingId = record.holding_id;
+      // Since records are ordered by holding_id, date DESC, created_at DESC
+      // the first record we see for each holding_id is the latest
+      if (!latestByHolding.has(holdingId)) {
+        latestByHolding.set(holdingId, record);
       }
+    });
+
+    // Populate recordsByHolding with just the latest record for each holding
+    latestByHolding.forEach((record, holdingId) => {
+      recordsByHolding.set(holdingId, [record]);
     });
   }
 
