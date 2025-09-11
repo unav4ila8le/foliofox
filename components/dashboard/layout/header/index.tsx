@@ -8,17 +8,18 @@ import {
 
 import { Breadcrumb } from "./breadcrumb";
 import { NewActionButton } from "./new-action-button";
-import { FeedbackButton } from "@/components/dashboard/header/feedback";
+import { FeedbackButton } from "@/components/dashboard/layout/header/feedback";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { RightPanelToggleButton } from "@/components/dashboard/layout/header/right-panel-toggle-button";
 
 export function Header() {
   return (
     <header className="flex items-center justify-between px-4 py-2">
       <div className="flex items-center gap-2">
         <TooltipProvider>
-          <Tooltip delayDuration={700}>
+          <Tooltip delayDuration={500}>
             <TooltipTrigger asChild>
-              <SidebarTrigger className="-ml-2 lg:hidden" />
+              <SidebarTrigger className="-ml-2 xl:hidden" />
             </TooltipTrigger>
             <TooltipContent>Toggle sidebar</TooltipContent>
           </Tooltip>
@@ -33,6 +34,7 @@ export function Header() {
         <NewActionButton />
         <FeedbackButton />
         <ThemeToggle />
+        <RightPanelToggleButton />
       </div>
     </header>
   );

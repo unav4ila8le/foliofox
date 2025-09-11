@@ -1,8 +1,13 @@
 import { cookies } from "next/headers";
 
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { DashboardSidebar } from "@/components/dashboard/sidebar";
-import { Header } from "@/components/dashboard/header";
+import { DashboardSidebar } from "@/components/dashboard/layout/sidebar";
+import { Header } from "@/components/dashboard/layout/header";
+import { RightPanel } from "@/components/dashboard/layout/right-panel";
+import {
+  RightPanelProvider,
+  AI_PANEL_COOKIE_NAME,
+} from "@/components/dashboard/layout/right-panel";
 import { ImportHoldingsDialogProvider } from "@/components/dashboard/holdings/import";
 import { NewHoldingDialogProvider } from "@/components/dashboard/new-holding";
 import { NewRecordDialogProvider } from "@/components/dashboard/new-record";
@@ -17,9 +22,14 @@ export default async function Layout({
 }) {
   const cookieStore = await cookies();
 
-  // Sidebar state
+  // Left sidebar state
   const sidebarStateCookie = cookieStore.get("sidebar_state")?.value;
   const defaultOpen = sidebarStateCookie !== "false";
+
+  // Right panel state
+  const aiPanelCookie = cookieStore.get(AI_PANEL_COOKIE_NAME)?.value;
+  console.log("AI Panel Cookie:", aiPanelCookie);
+  const aiDefaultOpen = aiPanelCookie !== "false";
 
   const { profile, email } = await fetchProfile();
   const netWorth = await calculateNetWorth(profile.display_currency);
@@ -29,26 +39,29 @@ export default async function Layout({
       defaultOpen={defaultOpen}
       style={
         {
-          "--sidebar-width": "max(16rem, 20vw)",
+          "--sidebar-width": "max(16rem, 16vw)",
           "--sidebar-width-mobile": "max(18rem, 80vw)",
         } as React.CSSProperties
       }
     >
-      <ImportHoldingsDialogProvider>
-        <NewHoldingDialogProvider profile={profile}>
-          <NewRecordDialogProvider>
-            <DashboardSidebar
-              profile={profile}
-              email={email}
-              netWorth={netWorth}
-            />
-            <SidebarInset className="min-w-0">
-              <Header />
-              <div className="p-4 pt-2">{children}</div>
-            </SidebarInset>
-          </NewRecordDialogProvider>
-        </NewHoldingDialogProvider>
-      </ImportHoldingsDialogProvider>
+      <RightPanelProvider defaultOpen={aiDefaultOpen}>
+        <ImportHoldingsDialogProvider>
+          <NewHoldingDialogProvider profile={profile}>
+            <NewRecordDialogProvider>
+              <DashboardSidebar
+                profile={profile}
+                email={email}
+                netWorth={netWorth}
+              />
+              <SidebarInset className="min-w-0">
+                <Header />
+                <div className="p-4 pt-2">{children}</div>
+              </SidebarInset>
+              <RightPanel />
+            </NewRecordDialogProvider>
+          </NewHoldingDialogProvider>
+        </ImportHoldingsDialogProvider>
+      </RightPanelProvider>
     </SidebarProvider>
   );
 }
