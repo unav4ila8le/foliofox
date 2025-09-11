@@ -2,10 +2,30 @@
 
 import { revalidatePath } from "next/cache";
 
-import { parseHoldingsCSV } from "@/lib/csv-parser/index";
+import { getCurrentUser } from "@/server/auth/actions";
 import { createSymbol } from "@/server/symbols/create";
 import { fetchSingleQuote } from "@/server/quotes/fetch";
 import { createHolding } from "@/server/holdings/create";
+
+import { parseHoldingsCSV } from "@/lib/csv-parser/index";
+
+// Helper function to check for duplicate holding names in batch
+async function checkForDuplicateNames(holdingNames: string[]) {
+  const { supabase, user } = await getCurrentUser();
+
+  const { data, error } = await supabase
+    .from("holdings")
+    .select("name")
+    .eq("user_id", user.id)
+    .eq("is_archived", false)
+    .in("name", holdingNames);
+
+  if (error) {
+    throw new Error(`Failed to check for duplicate names: ${error.message}`);
+  }
+
+  return data?.map((holding) => holding.name) || [];
+}
 
 /**
  * Import holdings from CSV content
@@ -24,6 +44,18 @@ export async function importHoldings(csvContent: string) {
     }
 
     const holdings = parseResult.data!;
+
+    // Check for duplicate names upfront - abort if any exist
+    const holdingNames = holdings.map((holding) => holding.name);
+    const duplicateNames = await checkForDuplicateNames(holdingNames);
+
+    if (duplicateNames.length > 0) {
+      const duplicateList = duplicateNames.join(", ");
+      return {
+        success: false,
+        error: `Cannot import: the following holding name(s) already exist: ${duplicateList}. Please rename these holdings in your CSV file and try again.`,
+      };
+    }
 
     // Import each holding one by one
     for (let i = 0; i < holdings.length; i++) {

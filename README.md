@@ -177,9 +177,9 @@ N/A
 - [ ] Add crypto wallet address sync
 - [x] Review params for holdings fetch, especially quoteDate
 - [ ] Optimize recalculateRecords to use batch requests
-- [ ] Optimize projected income analysis
-- [ ] Improve folder structure for mappings in lib
+- [x] Optimize projected income analysis
+- [x] Improve folder structure for mappings in lib
 - [ ] Prevent user from creating holdings with same name
 - [ ] Better empty messages for news and projected income
-- [ ] Review Zod helpers in lib and make them more flexible
+- [x] Review Zod helpers in lib and make them more flexible
 - [x] Let users input their cost basis (optional) for new holdings, and then use it to create the new record

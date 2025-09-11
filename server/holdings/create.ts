@@ -10,6 +10,35 @@ import { createRecord } from "@/server/records/create";
 
 import type { Holding } from "@/types/global.types";
 
+// Helper function to check for duplicate holding names
+async function checkDuplicateHoldingName(
+  holdingName: string,
+  userId: string,
+  excludeHoldingId?: string,
+) {
+  const { supabase } = await getCurrentUser();
+
+  let query = supabase
+    .from("holdings")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("name", holdingName)
+    .eq("is_archived", false); // Only check active holdings
+
+  // If updating an existing holding, exclude it from the duplicate check
+  if (excludeHoldingId) {
+    query = query.neq("id", excludeHoldingId);
+  }
+
+  const { data, error } = await query.limit(1);
+
+  if (error) {
+    throw new Error(`Failed to check for duplicate names: ${error.message}`);
+  }
+
+  return data && data.length > 0;
+}
+
 // Create holding
 export async function createHolding(formData: FormData) {
   const { supabase, user } = await getCurrentUser();
@@ -25,6 +54,16 @@ export async function createHolding(formData: FormData) {
     description: (formData.get("description") as string) || null,
     symbol_id: (formData.get("symbol_id") as string) || null,
   };
+
+  // Check for duplicate holding name
+  const isDuplicate = await checkDuplicateHoldingName(data.name, user.id);
+  if (isDuplicate) {
+    return {
+      success: false,
+      code: "DUPLICATE_NAME",
+      message: `A holding with the name "${data.name}" already exists. Please choose a different name.`,
+    };
+  }
 
   // Extract current quantity and unit value separately (for the initial record)
   const quantity = Number(formData.get("quantity"));
