@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 17.4
+-- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.5 (Homebrew)
 
 SET statement_timeout = 0;
@@ -753,7 +753,7 @@ CREATE TRIGGER records_handle_updated_at BEFORE UPDATE ON public.records FOR EAC
 -- Name: symbols symbols_handle_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
-CREATE TRIGGER symbols_handle_updated_at BEFORE UPDATE ON public.symbols FOR EACH ROW WHEN (((((((((((new.id IS DISTINCT FROM old.id) OR (new.short_name IS DISTINCT FROM old.short_name)) OR (new.long_name IS DISTINCT FROM old.long_name)) OR (new.exchange IS DISTINCT FROM old.exchange)) OR (new.sector IS DISTINCT FROM old.sector)) OR (new.industry IS DISTINCT FROM old.industry)) OR (new.created_at IS DISTINCT FROM old.created_at)) OR (new.updated_at IS DISTINCT FROM old.updated_at)) OR (new.quote_type IS DISTINCT FROM old.quote_type)) OR (new.currency IS DISTINCT FROM old.currency))) EXECUTE FUNCTION storage.update_updated_at_column();
+CREATE TRIGGER symbols_handle_updated_at BEFORE UPDATE ON public.symbols FOR EACH ROW WHEN (((new.id IS DISTINCT FROM old.id) OR (new.short_name IS DISTINCT FROM old.short_name) OR (new.long_name IS DISTINCT FROM old.long_name) OR (new.exchange IS DISTINCT FROM old.exchange) OR (new.sector IS DISTINCT FROM old.sector) OR (new.industry IS DISTINCT FROM old.industry) OR (new.created_at IS DISTINCT FROM old.created_at) OR (new.updated_at IS DISTINCT FROM old.updated_at) OR (new.quote_type IS DISTINCT FROM old.quote_type) OR (new.currency IS DISTINCT FROM old.currency))) EXECUTE FUNCTION storage.update_updated_at_column();
 
 
 --
