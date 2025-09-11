@@ -37,7 +37,7 @@ export async function calculateProjectedIncome(
       return {
         success: true,
         data: [],
-        message: "No holdings with symbols found",
+        message: "No holdings with market data found",
       };
     }
 

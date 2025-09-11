@@ -179,7 +179,8 @@ N/A
 - [ ] Optimize recalculateRecords to use batch requests
 - [x] Optimize projected income analysis
 - [x] Improve folder structure for mappings in lib
-- [ ] Prevent user from creating holdings with same name
-- [ ] Better empty messages for news and projected income
+- [x] Prevent user from creating holdings with same name
+- [x] Better empty messages for news and projected income
 - [x] Review Zod helpers in lib and make them more flexible
 - [x] Let users input their cost basis (optional) for new holdings, and then use it to create the new record
+- [ ] Foliofox AI advisor. Chat with your portfolio.
