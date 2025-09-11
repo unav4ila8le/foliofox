@@ -253,7 +253,7 @@ export function SellForm() {
           <Button type="submit" disabled={isLoading || !isDirty}>
             {isLoading ? (
               <>
-                <LoaderCircle className="mr-2 animate-spin" />
+                <LoaderCircle className="animate-spin" />
                 Creating...
               </>
             ) : (

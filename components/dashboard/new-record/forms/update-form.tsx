@@ -374,7 +374,7 @@ export function UpdateForm() {
           >
             {isLoading ? (
               <>
-                <LoaderCircle className="mr-2 animate-spin" />
+                <LoaderCircle className="animate-spin" />
                 Creating...
               </>
             ) : (

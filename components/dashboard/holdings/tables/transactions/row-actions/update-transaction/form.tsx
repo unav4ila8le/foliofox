@@ -77,7 +77,7 @@ export function UpdateTransactionForm({
       type: transaction.type,
       quantity: transaction.quantity,
       unit_value: transaction.unit_value,
-      description: transaction.description ?? undefined,
+      description: transaction.description ?? "",
     },
   });
 
