@@ -3,12 +3,12 @@ import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { HoldingHeader } from "@/components/dashboard/holdings/holding/header";
-import { RecordsTable } from "@/components/dashboard/holdings/tables/records/records-table";
+import { TransactionsTable } from "@/components/dashboard/holdings/tables/transactions/transactions-table";
 import { HoldingNews } from "@/components/dashboard/holdings/holding/news";
 import { HoldingProjectedIncome } from "@/components/dashboard/holdings/holding/projected-income";
 
 import { fetchSingleHolding } from "@/server/holdings/fetch";
-import { fetchRecords } from "@/server/records/fetch";
+import { fetchTransactions } from "@/server/transactions/fetch";
 import { fetchSymbol } from "@/server/symbols/fetch";
 import { fetchSymbolNews } from "@/server/news/fetch";
 import {
@@ -45,20 +45,22 @@ async function HoldingContent({ holdingId }: { holdingId: string }) {
   const holding = await fetchSingleHolding(holdingId);
 
   // Batch all remaining requests
-  const [records, symbol, newsResult, projectedIncome] = await Promise.all([
-    fetchRecords(holdingId),
-    // Fetch symbol and news if symbol exists
-    holding.symbol_id ? fetchSymbol(holding.symbol_id) : null,
-    holding.symbol_id
-      ? fetchSymbolNews(holding.symbol_id, 5)
-      : { success: false, data: [] },
-    holding.symbol_id
-      ? calculateSymbolProjectedIncome(
-          holding.symbol_id,
-          holding.current_quantity,
-        )
-      : { success: false, data: [] },
-  ]);
+  const [transactions, symbol, newsResult, projectedIncome] = await Promise.all(
+    [
+      fetchTransactions({ holdingId }),
+      // Fetch symbol and news if symbol exists
+      holding.symbol_id ? fetchSymbol(holding.symbol_id) : null,
+      holding.symbol_id
+        ? fetchSymbolNews(holding.symbol_id, 5)
+        : { success: false, data: [] },
+      holding.symbol_id
+        ? calculateSymbolProjectedIncome(
+            holding.symbol_id,
+            holding.current_quantity,
+          )
+        : { success: false, data: [] },
+    ],
+  );
 
   const hasSymbol = Boolean(symbol);
 
@@ -95,12 +97,12 @@ async function HoldingContent({ holdingId }: { holdingId: string }) {
 
       <Separator className="col-span-6 lg:hidden" />
 
-      {/* Records */}
+      {/* Transactions */}
       <div
         className={`col-span-6 space-y-2 ${hasSymbol ? "lg:col-span-4" : "lg:col-span-6"}`}
       >
-        <h3 className="font-semibold">Records history</h3>
-        <RecordsTable data={records} holding={holding} />
+        <h3 className="font-semibold">Transactions history</h3>
+        <TransactionsTable data={transactions} holding={holding} />
       </div>
     </div>
   );

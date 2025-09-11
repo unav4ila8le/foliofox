@@ -12,12 +12,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import { UpdateRecordDialog } from "./update-record";
-import { DeleteRecordDialog } from "./delete-dialog";
+import { UpdateTransactionDialog } from "./update-transaction";
+import { DeleteTransactionDialog } from "./delete-dialog";
 
-import type { TransformedRecord } from "@/types/global.types";
+import type { Transaction } from "@/types/global.types";
 
-export function ActionsCell({ record }: { record: TransformedRecord }) {
+export function ActionsCell({ transaction }: { transaction: Transaction }) {
   const [showUpdateDialog, setShowUpdateDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
@@ -32,7 +32,7 @@ export function ActionsCell({ record }: { record: TransformedRecord }) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onSelect={() => setShowUpdateDialog(true)}>
-            <SquarePen className="size-4" /> Edit record
+            <SquarePen className="size-4" /> Edit transaction
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onSelect={() => setShowDeleteDialog(true)}>
@@ -41,14 +41,14 @@ export function ActionsCell({ record }: { record: TransformedRecord }) {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <UpdateRecordDialog
-        record={record}
+      <UpdateTransactionDialog
+        transaction={transaction}
         open={showUpdateDialog}
         onOpenChangeAction={setShowUpdateDialog}
       />
 
-      <DeleteRecordDialog
-        records={[{ id: record.id }]} // Minimal DTO
+      <DeleteTransactionDialog
+        transactions={[{ id: transaction.id }]} // Minimal DTO
         open={showDeleteDialog}
         onOpenChangeAction={setShowDeleteDialog}
       />

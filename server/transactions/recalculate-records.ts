@@ -48,7 +48,7 @@ export async function recalculateRecordsUntilNextUpdate(
     .from("records")
     .select("*")
     .eq("holding_id", holdingId)
-    .gt("date", fromDate.toISOString())
+    .gte("date", fromDate.toISOString())
     .not("transaction_id", "is", null);
 
   // Apply boundary if we found a next UPDATE

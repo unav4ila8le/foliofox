@@ -8,32 +8,33 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import { UpdateRecordForm } from "./form";
+import { UpdateTransactionForm } from "./form";
 
-import type { Record } from "@/types/global.types";
+import type { Transaction } from "@/types/global.types";
 
-interface UpdateRecordDialogProps {
-  record: Record;
+interface UpdateTransactionDialogProps {
+  transaction: Transaction;
   open: boolean;
   onOpenChangeAction: (open: boolean) => void;
 }
 
-export function UpdateRecordDialog({
-  record,
+export function UpdateTransactionDialog({
+  transaction,
   open,
   onOpenChangeAction,
-}: UpdateRecordDialogProps) {
+}: UpdateTransactionDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChangeAction}>
       <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edit Record</DialogTitle>
+          <DialogTitle>Edit Transaction</DialogTitle>
           <DialogDescription>
-            Edit the date, quantity, value, and description for this record.
+            Edit the date, type, quantity, value, and description for this
+            transaction.
           </DialogDescription>
         </DialogHeader>
-        <UpdateRecordForm
-          record={record}
+        <UpdateTransactionForm
+          transaction={transaction}
           onSuccess={() => onOpenChangeAction(false)}
         />
       </DialogContent>

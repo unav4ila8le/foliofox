@@ -21,24 +21,35 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 
 import { cn } from "@/lib/utils";
 import { requiredNumberWithConstraints } from "@/lib/zod-helpers";
+import { getTransactionTypeLabel } from "@/lib/asset-category-mappings";
 
-import { updateRecord } from "@/server/records/update";
+import { updateTransaction } from "@/server/transactions/update";
 
-import type { Record } from "@/types/global.types";
+import type { Transaction } from "@/types/global.types";
 
-interface UpdateRecordFormProps {
-  record: Record;
+interface UpdateTransactionFormProps {
+  transaction: Transaction;
   onSuccess?: () => void;
 }
 
 const formSchema = z.object({
   date: z.date({ error: "A date is required." }),
+  type: z.enum(["buy", "sell", "update", "deposit", "withdrawal"], {
+    error: "A transaction type is required.",
+  }),
   quantity: requiredNumberWithConstraints("Quantity is required.", {
     gte: { value: 0, message: "Quantity must be 0 or greater" },
   }),
@@ -53,16 +64,20 @@ const formSchema = z.object({
     .optional(),
 });
 
-export function UpdateRecordForm({ record, onSuccess }: UpdateRecordFormProps) {
+export function UpdateTransactionForm({
+  transaction,
+  onSuccess,
+}: UpdateTransactionFormProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      date: new Date(record.date),
-      quantity: record.quantity,
-      unit_value: record.unit_value,
-      description: record.description ?? undefined,
+      date: new Date(transaction.date),
+      type: transaction.type,
+      quantity: transaction.quantity,
+      unit_value: transaction.unit_value,
+      description: transaction.description ?? undefined,
     },
   });
 
@@ -75,24 +90,25 @@ export function UpdateRecordForm({ record, onSuccess }: UpdateRecordFormProps) {
     try {
       const formData = new FormData();
       formData.append("date", format(values.date, "yyyy-MM-dd"));
+      formData.append("type", values.type);
       formData.append("quantity", values.quantity.toString());
       formData.append("unit_value", values.unit_value.toString());
       formData.append("description", values.description || "");
 
-      const result = await updateRecord(formData, record.id);
+      const result = await updateTransaction(formData, transaction.id);
 
       // Handle error response from server action
       if (!result.success) {
         throw new Error(result.message);
       }
 
-      toast.success("Record updated successfully");
+      toast.success("Transaction updated successfully");
 
       // Close the dialog
       onSuccess?.();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to update record",
+        error instanceof Error ? error.message : "Failed to update transaction",
       );
     } finally {
       setIsLoading(false);
@@ -139,6 +155,41 @@ export function UpdateRecordForm({ record, onSuccess }: UpdateRecordFormProps) {
                   />
                 </PopoverContent>
               </Popover>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="type"
+          render={({ field }) => (
+            <FormItem className="sm:w-1/2 sm:pr-1">
+              <FormLabel>Transaction type</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select transaction type" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="buy">
+                    {getTransactionTypeLabel("buy")}
+                  </SelectItem>
+                  <SelectItem value="sell">
+                    {getTransactionTypeLabel("sell")}
+                  </SelectItem>
+                  <SelectItem value="update">
+                    {getTransactionTypeLabel("update")}
+                  </SelectItem>
+                  <SelectItem value="deposit">
+                    {getTransactionTypeLabel("deposit")}
+                  </SelectItem>
+                  <SelectItem value="withdrawal">
+                    {getTransactionTypeLabel("withdrawal")}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}
@@ -198,7 +249,7 @@ export function UpdateRecordForm({ record, onSuccess }: UpdateRecordFormProps) {
               <FormLabel>Description (optional)</FormLabel>
               <FormControl>
                 <Input
-                  placeholder="Add a description of this record"
+                  placeholder="Add a description of this transaction"
                   {...field}
                 />
               </FormControl>

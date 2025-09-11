@@ -5,24 +5,21 @@ import { FileText, Trash2 } from "lucide-react";
 
 import { SearchInput } from "@/components/ui/search-input";
 import { DataTable } from "@/components/dashboard/holdings/tables/base/data-table";
-import { columns } from "@/components/dashboard/holdings/tables/records/columns";
+import { columns } from "@/components/dashboard/holdings/tables/transactions/columns";
 import { NewRecordButton } from "@/components/dashboard/new-record";
 import { BulkActionBar } from "@/components/dashboard/holdings/tables/base/bulk-action-bar";
-import { DeleteRecordDialog } from "@/components/dashboard/holdings/tables/records/row-actions/delete-dialog";
+import { DeleteTransactionDialog } from "@/components/dashboard/holdings/tables/transactions/row-actions/delete-dialog";
 
-import type {
-  TransformedRecord,
-  TransformedHolding,
-} from "@/types/global.types";
+import type { Transaction, TransformedHolding } from "@/types/global.types";
 
-interface RecordsTableProps {
-  data: TransformedRecord[];
+interface TransactionsTableProps {
+  data: Transaction[];
   holding: TransformedHolding;
 }
 
-export function RecordsTable({ data, holding }: RecordsTableProps) {
+export function TransactionsTable({ data, holding }: TransactionsTableProps) {
   const [filterValue, setFilterValue] = useState("");
-  const [selectedRows, setSelectedRows] = useState<TransformedRecord[]>([]);
+  const [selectedRows, setSelectedRows] = useState<Transaction[]>([]);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
 
   return (
@@ -32,11 +29,11 @@ export function RecordsTable({ data, holding }: RecordsTableProps) {
         {/* Search */}
         <SearchInput
           className="max-w-sm"
-          placeholder="Search records..."
+          placeholder="Search transactions..."
           value={filterValue}
           onChange={(e) => setFilterValue(e.target.value)}
         />
-        {/* New record button */}
+        {/* New transaction button */}
         {data.length > 0 && (
           <NewRecordButton variant="outline" preselectedHolding={holding} />
         )}
@@ -48,9 +45,9 @@ export function RecordsTable({ data, holding }: RecordsTableProps) {
           <div className="bg-accent rounded-lg p-2">
             <FileText className="text-muted-foreground size-4" />
           </div>
-          <p className="mt-3 font-medium">No records found</p>
+          <p className="mt-3 font-medium">No transactions found</p>
           <p className="text-muted-foreground mt-1 mb-3 text-sm">
-            Records for this holding will appear here
+            Transactions for this holding will appear here
           </p>
           <NewRecordButton variant="outline" preselectedHolding={holding} />
         </div>
@@ -68,7 +65,7 @@ export function RecordsTable({ data, holding }: RecordsTableProps) {
 
       {/* Rows count */}
       <p className="text-muted-foreground text-end text-sm">
-        {data.length} record(s)
+        {data.length} transaction(s)
       </p>
 
       {/* Floating bulk action bar */}
@@ -87,10 +84,10 @@ export function RecordsTable({ data, holding }: RecordsTableProps) {
       )}
 
       {/* Delete dialog */}
-      <DeleteRecordDialog
+      <DeleteTransactionDialog
         open={openDeleteDialog}
         onOpenChangeAction={setOpenDeleteDialog}
-        records={selectedRows.map(({ id }) => ({ id }))} // Minimal DTO
+        transactions={selectedRows.map(({ id }) => ({ id }))} // Minimal DTO
         onCompleted={() => {
           setSelectedRows([]);
         }}

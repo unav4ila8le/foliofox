@@ -16,10 +16,12 @@ import { HoldingSelector } from "./holding-selector";
 import { BuyForm } from "./forms/buy-form";
 import { SellForm } from "./forms/sell-form";
 import { UpdateForm } from "./forms/update-form";
+
 import {
   getTransactionTypesForCategory,
   getTransactionTypeLabel,
 } from "@/lib/asset-category-mappings";
+import { cn } from "@/lib/utils";
 
 import type { TransformedHolding } from "@/types/global.types";
 import type { VariantProps } from "class-variance-authority";
@@ -103,35 +105,42 @@ export function NewRecordDialogProvider({
           />
 
           {/* Tabs for transaction types */}
-          <Tabs key={defaultTab} defaultValue={defaultTab} className="gap-4">
-            <TabsList
-              className={availableTypes.length > 1 ? "w-full" : "hidden"}
-            >
-              {availableTypes.map((type) => {
-                const Icon =
-                  TRANSACTION_TYPE_ICONS[type] ?? TRANSACTION_TYPE_ICONS.update;
-                return (
-                  <TabsTrigger
-                    key={type}
-                    value={`${type}-form`}
-                    disabled={!preselectedHolding}
-                  >
-                    <Icon className="size-4" />
-                    {getTransactionTypeLabel(type)}
-                  </TabsTrigger>
-                );
-              })}
-            </TabsList>
-            <TabsContent value="buy-form">
-              <BuyForm />
-            </TabsContent>
-            <TabsContent value="sell-form">
-              <SellForm />
-            </TabsContent>
-            <TabsContent value="update-form">
-              <UpdateForm />
-            </TabsContent>
-          </Tabs>
+          <div
+            className={cn(
+              !preselectedHolding && "pointer-events-none opacity-50",
+            )}
+          >
+            <Tabs key={defaultTab} defaultValue={defaultTab} className="gap-4">
+              <TabsList
+                className={availableTypes.length > 1 ? "w-full" : "hidden"}
+              >
+                {availableTypes.map((type) => {
+                  const Icon =
+                    TRANSACTION_TYPE_ICONS[type] ??
+                    TRANSACTION_TYPE_ICONS.update;
+                  return (
+                    <TabsTrigger
+                      key={type}
+                      value={`${type}-form`}
+                      disabled={!preselectedHolding}
+                    >
+                      <Icon className="size-4" />
+                      {getTransactionTypeLabel(type)}
+                    </TabsTrigger>
+                  );
+                })}
+              </TabsList>
+              <TabsContent value="buy-form">
+                <BuyForm />
+              </TabsContent>
+              <TabsContent value="sell-form">
+                <SellForm />
+              </TabsContent>
+              <TabsContent value="update-form">
+                <UpdateForm />
+              </TabsContent>
+            </Tabs>
+          </div>
         </DialogContent>
       </Dialog>
     </NewRecordDialogContext.Provider>

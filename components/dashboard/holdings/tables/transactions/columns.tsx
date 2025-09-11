@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { ActionsCell } from "./row-actions/actions-cell";
 
 import { formatNumber } from "@/lib/number-format";
+import { getTransactionTypeLabel } from "@/lib/asset-category-mappings";
 
 import {
   Tooltip,
@@ -14,11 +15,12 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import type { TransformedRecord } from "@/types/global.types";
+import type { Transaction } from "@/types/global.types";
 
-export const columns: ColumnDef<TransformedRecord>[] = [
+export const columns: ColumnDef<Transaction>[] = [
   {
     id: "select",
     header: ({ table }) => (
@@ -63,6 +65,18 @@ export const columns: ColumnDef<TransformedRecord>[] = [
     },
   },
   {
+    accessorKey: "type",
+    header: "Type",
+    cell: ({ row }) => {
+      const type = row.getValue<string>("type");
+      return (
+        <Badge variant="secondary" className="uppercase">
+          {getTransactionTypeLabel(type)}
+        </Badge>
+      );
+    },
+  },
+  {
     accessorKey: "quantity",
     header: "Quantity",
     cell: ({ row }) => {
@@ -90,7 +104,9 @@ export const columns: ColumnDef<TransformedRecord>[] = [
     accessorKey: "total_value",
     header: "Total Value",
     cell: ({ row }) => {
-      const total_value = row.getValue<number>("total_value");
+      const quantity = row.getValue<number>("quantity");
+      const unit_value = row.getValue<number>("unit_value");
+      const total_value = quantity * unit_value;
       return (
         <div className="tabular-nums">
           {formatNumber(total_value, undefined, { maximumFractionDigits: 2 })}
@@ -129,8 +145,8 @@ export const columns: ColumnDef<TransformedRecord>[] = [
       cellClassName: "text-right",
     },
     cell: ({ row }) => {
-      const record = row.original;
-      return <ActionsCell record={record} />;
+      const transaction = row.original;
+      return <ActionsCell transaction={transaction} />;
     },
   },
 ];

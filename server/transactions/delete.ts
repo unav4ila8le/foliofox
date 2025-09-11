@@ -52,3 +52,24 @@ export async function deleteTransaction(transactionId: string) {
   revalidatePath("/dashboard", "layout");
   return { success: true };
 }
+
+// Delete multiple transactions
+export async function deleteTransactions(transactionIds: string[]) {
+  let successCount = 0;
+  const errors: string[] = [];
+
+  for (const transactionId of transactionIds) {
+    const result = await deleteTransaction(transactionId);
+    if (result.success) {
+      successCount++;
+    } else {
+      errors.push(result.message || "Unknown error");
+    }
+  }
+
+  return {
+    success: errors.length === 0,
+    count: successCount,
+    message: errors.length > 0 ? errors.join(", ") : undefined,
+  };
+}

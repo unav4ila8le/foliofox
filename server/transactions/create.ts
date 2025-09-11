@@ -38,9 +38,10 @@ export async function createTransaction(formData: FormData) {
     // BUY/SELL/DEPOSIT/WITHDRAWAL: Must be after first record
     const { data: firstRecord } = await supabase
       .from("records")
-      .select("date")
+      .select("date, created_at")
       .eq("holding_id", transactionData.holding_id)
       .order("date", { ascending: true })
+      .order("created_at", { ascending: true })
       .limit(1)
       .single();
 
@@ -52,7 +53,15 @@ export async function createTransaction(formData: FormData) {
       };
     }
 
-    if (new Date(transactionData.date) <= new Date(firstRecord.date)) {
+    const transactionDate = new Date(transactionData.date);
+    const firstRecordDate = new Date(firstRecord.date);
+
+    // Allow same-day transactions if transaction is after the record was created
+    if (
+      transactionDate < firstRecordDate ||
+      (transactionDate.toDateString() === firstRecordDate.toDateString() &&
+        new Date() <= new Date(firstRecord.created_at))
+    ) {
       return {
         success: false,
         code: "INVALID_DATE",

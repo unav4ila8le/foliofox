@@ -14,6 +14,8 @@ export const TRANSACTION_TYPE_LABELS = {
   buy: "Purchase",
   sell: "Sale",
   update: "Update",
+  deposit: "Deposit",
+  withdrawal: "Withdrawal",
 };
 
 // Utility functions
