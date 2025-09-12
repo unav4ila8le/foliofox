@@ -3,6 +3,8 @@ import { BanknoteArrowDown } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ProjectedIncomeBarChart } from "./chart";
 
+import { formatCurrency } from "@/lib/number-format";
+
 import type { ProjectedIncomeResult } from "@/server/analysis/projected-income";
 
 interface ProjectedIncomeWidgetProps {
@@ -48,10 +50,22 @@ export function ProjectedIncomeWidget({
     );
   }
 
+  // Calculate total annual projected income
+  const totalAnnualIncome = projectedIncome.data.reduce(
+    (sum, month) => sum + month.income,
+    0,
+  );
+
   return (
     <Card className="flex h-80 flex-col gap-4">
-      <CardHeader className="flex-none">
+      <CardHeader className="flex flex-none justify-between">
         <CardTitle>Projected Income</CardTitle>
+        <div className="text-right">
+          <p className="text-muted-foreground text-xs">Est. Annual</p>
+          <p className="text-sm text-green-600">
+            {formatCurrency(totalAnnualIncome, currency)}
+          </p>
+        </div>
       </CardHeader>
       <CardContent className="flex-1">
         <ProjectedIncomeBarChart
