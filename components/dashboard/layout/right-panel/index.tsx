@@ -8,6 +8,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { PanelRight } from "lucide-react";
+
 import {
   Sheet,
   SheetContent,
@@ -15,11 +17,18 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
 
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
 
-export const AI_PANEL_COOKIE_NAME = "ai_panel_state";
+const AI_PANEL_COOKIE_NAME = "ai_panel_state";
 const AI_PANEL_COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
 
 type RightPanelContext = {
@@ -145,5 +154,23 @@ export function RightPanel(): React.ReactNode | null {
         </div>
       </div>
     </div>
+  );
+}
+
+export function RightPanelToggleButton() {
+  const { toggle } = useRightPanel();
+
+  return (
+    <TooltipProvider>
+      <Tooltip delayDuration={500}>
+        <TooltipTrigger asChild>
+          <Button variant="ghost" size="icon" onClick={toggle}>
+            <PanelRight className="size-4" />
+            <span className="sr-only">Toggle AI Advisor</span>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Toggle AI Advisor</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }

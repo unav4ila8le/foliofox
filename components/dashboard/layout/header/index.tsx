@@ -10,7 +10,7 @@ import { Breadcrumb } from "./breadcrumb";
 import { NewActionButton } from "./new-action-button";
 import { FeedbackButton } from "@/components/dashboard/layout/header/feedback";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { RightPanelToggleButton } from "@/components/dashboard/layout/header/right-panel-toggle-button";
+import { RightPanelToggleButton } from "@/components/dashboard/layout/right-panel";
 
 export function Header() {
   return (

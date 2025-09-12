@@ -3,10 +3,9 @@ import { cookies } from "next/headers";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "@/components/dashboard/layout/sidebar";
 import { Header } from "@/components/dashboard/layout/header";
-import { RightPanel } from "@/components/dashboard/layout/right-panel";
 import {
   RightPanelProvider,
-  AI_PANEL_COOKIE_NAME,
+  RightPanel,
 } from "@/components/dashboard/layout/right-panel";
 import { ImportHoldingsDialogProvider } from "@/components/dashboard/holdings/import";
 import { NewHoldingDialogProvider } from "@/components/dashboard/new-holding";
@@ -27,8 +26,7 @@ export default async function Layout({
   const defaultOpen = sidebarStateCookie !== "false";
 
   // Right panel state
-  const aiPanelCookie = cookieStore.get(AI_PANEL_COOKIE_NAME)?.value;
-  console.log("AI Panel Cookie:", aiPanelCookie);
+  const aiPanelCookie = cookieStore.get("ai_panel_state")?.value;
   const aiDefaultOpen = aiPanelCookie !== "false";
 
   const { profile, email } = await fetchProfile();
