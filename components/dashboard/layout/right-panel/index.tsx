@@ -25,6 +25,8 @@ import {
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 
+import { Chat } from "./chat";
+
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
 
@@ -118,6 +120,7 @@ export function RightPanel(): React.ReactNode | null {
             <SheetTitle>Foliofox AI</SheetTitle>
             <SheetDescription>Chat interface coming soon...</SheetDescription>
           </SheetHeader>
+          <Chat />
         </SheetContent>
       </Sheet>
     );
@@ -146,11 +149,8 @@ export function RightPanel(): React.ReactNode | null {
           "group-data-[state=collapsed]:right-[calc(max(16rem,20vw)*-1)]",
         )}
       >
-        <div className="bg-sidebar flex h-full w-full flex-col px-3 py-4">
-          <h3 className="mb-2 font-semibold">Foliofox AI</h3>
-          <p className="text-muted-foreground text-sm">
-            Chat interface coming soon...
-          </p>
+        <div className="bg-sidebar flex h-full w-full flex-col px-2 py-4">
+          <Chat />
         </div>
       </div>
     </div>
