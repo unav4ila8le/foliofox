@@ -1,68 +1,95 @@
 "use client";
 
+import { useState } from "react";
 import { DefaultChatTransport } from "ai";
 import { useChat } from "@ai-sdk/react";
-import { FormEvent, KeyboardEvent, useState } from "react";
 
-import { Textarea } from "@/components/ui/textarea";
+import {
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+} from "@/components/ui/ai/conversation";
+import {
+  Message,
+  MessageContent,
+  MessageAvatar,
+} from "@/components/ui/ai/message";
+import {
+  PromptInput,
+  PromptInputTextarea,
+  PromptInputSubmit,
+  PromptInputToolbar,
+} from "@/components/ui/ai/prompt-input";
+import { Response } from "@/components/ui/ai/response";
 
 export function Chat() {
   const [input, setInput] = useState("");
-  const { messages, sendMessage } = useChat({
+
+  const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/ai/chat",
     }),
   });
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      if (input.trim().length >= 2) {
-        // Minimum 2 characters
-        sendMessage({ text: input });
-        setInput("");
-      }
-    }
-  };
-
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    if (input.trim().length >= 2) {
-      sendMessage({ text: input });
+  const handleSubmit = (message: { text?: string }) => {
+    if (message.text && message.text.trim().length >= 2) {
+      sendMessage({ text: message.text });
       setInput("");
     }
   };
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex-1 overflow-auto">
-        {messages.map((message) => (
-          <div key={message.id} className="whitespace-pre-wrap">
-            {message.role === "user" ? "User: " : "AI: "}
-            {message.parts.map((part, i) => {
-              switch (part.type) {
-                case "text":
-                  return <div key={`${message.id}-${i}`}>{part.text}</div>;
-              }
-            })}
-          </div>
-        ))}
-      </div>
-      <div className="mt-auto space-y-2">
-        <form onSubmit={handleSubmit}>
-          <Textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask Foliofox..."
-            className="max-h-32 min-h-[36px] resize-none"
-            rows={1}
+      {/* Conversation */}
+      <Conversation className="flex-1">
+        <ConversationContent>
+          {messages.map((message) => (
+            <Message key={message.id} from={message.role}>
+              <MessageAvatar
+                src={
+                  message.role === "user" ? "/user-avatar.png" : "/favicon.ico"
+                }
+                name={message.role === "user" ? "leo" : "Foliofox"}
+              />
+              <MessageContent>
+                {message.parts.map((part, i) => {
+                  switch (part.type) {
+                    case "text":
+                      return (
+                        <Response key={`${message.id}-${i}`}>
+                          {part.text}
+                        </Response>
+                      );
+                    default:
+                      return null;
+                  }
+                })}
+              </MessageContent>
+            </Message>
+          ))}
+        </ConversationContent>
+        <ConversationScrollButton />
+      </Conversation>
+
+      {/* Prompt Input */}
+      <PromptInput onSubmit={handleSubmit}>
+        <PromptInputTextarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Ask Foliofox..."
+        />
+        <PromptInputToolbar className="justify-end pt-0">
+          <PromptInputSubmit
+            disabled={input.trim().length < 2}
+            status={status === "streaming" ? "streaming" : "ready"}
           />
-        </form>
-        <p className="text-center text-xs">
-          You are responsible for your investment decisions.
-        </p>
-      </div>
+        </PromptInputToolbar>
+      </PromptInput>
+
+      {/* Dislaimer */}
+      <p className="text-muted-foreground mt-2 text-center text-xs">
+        You are responsible for your investment decisions.
+      </p>
     </div>
   );
 }

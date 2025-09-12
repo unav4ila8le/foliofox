@@ -72,13 +72,10 @@ export function User({
             <Avatar className="size-10">
               <AvatarImage
                 src={profile.avatar_url || undefined}
-                alt={profile.username.toLowerCase()}
+                alt={profile.username}
               />
-              <AvatarFallback>
-                {profile.username
-                  .split(" ")
-                  .map((n) => n[0]?.toUpperCase())
-                  .join("")}
+              <AvatarFallback className="uppercase">
+                {profile.username.slice(0, 1) || "?"}
               </AvatarFallback>
             </Avatar>
             <div className="flex flex-col">

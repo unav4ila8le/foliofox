@@ -37,8 +37,10 @@
     "react-hook-form": "^7.55.0",
     "recharts": "^3.0.2",
     "sonner": "^2.0.2",
+    "streamdown": "^1.2.0",
     "tailwind-merge": "^3.0.2",
     "use-debounce": "^10.0.5",
+    "use-stick-to-bottom": "^1.1.1",
     "vaul": "^1.1.2",
     "yahoo-finance2": "^3.6.4",
     "zod": "^4.0.0"
