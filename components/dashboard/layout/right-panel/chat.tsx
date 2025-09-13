@@ -58,6 +58,15 @@ export function Chat({ username }: { username: string }) {
                           {part.text}
                         </Response>
                       );
+                    case "tool-getPortfolioSnapshot":
+                      return (
+                        <div
+                          key={`${message.id}-${i}`}
+                          className="text-muted-foreground text-xs"
+                        >
+                          📊 Getting portfolio data...
+                        </div>
+                      );
                     default:
                       return null;
                   }

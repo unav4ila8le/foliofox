@@ -82,13 +82,13 @@ export async function calculateAssetAllocation(targetCurrency: string) {
     );
   }
 
-  const assetAllocation = Object.values(assetAllocationInUSD).map(
-    (allocation) => ({
+  const assetAllocation = Object.values(assetAllocationInUSD)
+    .map((allocation) => ({
       category_code: allocation.category_code,
       name: allocation.name,
       total_value: allocation.total_value_usd * targetRate,
-    }),
-  );
+    }))
+    .sort((a, b) => b.total_value - a.total_value); // Sort by value descending;
 
   return assetAllocation;
 }

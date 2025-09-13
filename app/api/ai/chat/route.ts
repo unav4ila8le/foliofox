@@ -1,5 +1,11 @@
 import { openai } from "@ai-sdk/openai";
-import { streamText, tool, UIMessage, convertToModelMessages } from "ai";
+import {
+  streamText,
+  tool,
+  UIMessage,
+  convertToModelMessages,
+  stepCountIs,
+} from "ai";
 import { z } from "zod";
 
 import { getPortfolioSnapshot } from "@/server/ai/tools/portfolio";
@@ -13,14 +19,20 @@ export async function POST(req: Request) {
   const result = streamText({
     model: openai("gpt-4o-mini"),
     messages: convertToModelMessages(messages),
+    stopWhen: stepCountIs(5),
     tools: {
       getPortfolioSnapshot: tool({
         description:
           "Get current portfolio overview including net worth, asset allocation, and all holdings",
         inputSchema: z.object({
-          baseCurrency: z.string().optional(),
+          baseCurrency: z
+            .string()
+            .optional()
+            .describe("Currency code for analysis (e.g., USD, EUR, GBP, etc.)"),
         }),
-        execute: ({ baseCurrency }) => getPortfolioSnapshot({ baseCurrency }),
+        execute: async ({ baseCurrency }) => {
+          return getPortfolioSnapshot({ baseCurrency });
+        },
       }),
     },
     system: `You are the Foliofox AI assistant, a financial advisor for personal portfolio insights.
@@ -44,7 +56,7 @@ GUIDELINES:
 
 BEHAVIOR:
 - When users ask about their portfolio, use getPortfolioSnapshot to get current data
-- Default to USD for analysis unless user specifies a different currency
+- Default to the user's preferred currency for analysis unless user specifies a different currency
 - Focus on actionable insights rather than just data presentation`,
   });
 

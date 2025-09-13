@@ -141,7 +141,7 @@ export function RightPanel({
       <div
         className={cn(
           "relative h-svh bg-transparent transition-[width] duration-200 ease-linear",
-          "w-[max(16rem,20vw)]",
+          "w-[max(16rem,24vw)]",
           "group-data-[state=collapsed]:w-0",
         )}
       />
@@ -149,8 +149,8 @@ export function RightPanel({
       <div
         className={cn(
           "fixed inset-y-0 right-0 z-10 hidden h-svh transition-[right] duration-200 ease-linear md:flex",
-          "w-[max(16rem,20vw)]",
-          "group-data-[state=collapsed]:right-[calc(max(16rem,20vw)*-1)]",
+          "w-[max(16rem,24vw)]",
+          "group-data-[state=collapsed]:right-[calc(max(16rem,24vw)*-1)]",
         )}
       >
         <div className="bg-sidebar flex h-full w-full flex-col p-4 ps-2">
