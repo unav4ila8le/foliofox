@@ -19,6 +19,8 @@ import {
   PromptInputTextarea,
   PromptInputSubmit,
   PromptInputToolbar,
+  PromptInputBody,
+  type PromptInputMessage,
 } from "@/components/ui/ai/prompt-input";
 import { Response } from "@/components/ui/ai/response";
 
@@ -31,11 +33,15 @@ export function Chat({ username }: { username: string }) {
     }),
   });
 
-  const handleSubmit = (message: { text?: string }) => {
-    if (message.text && message.text.trim().length >= 2) {
-      sendMessage({ text: message.text });
-      setInput("");
+  const handleSubmit = (message: PromptInputMessage) => {
+    const hasText = Boolean(message.text);
+
+    if (!hasText) {
+      return;
     }
+
+    sendMessage({ text: message.text || "" });
+    setInput("");
   };
 
   return (
@@ -58,15 +64,6 @@ export function Chat({ username }: { username: string }) {
                           {part.text}
                         </Response>
                       );
-                    case "tool-getPortfolioSnapshot":
-                      return (
-                        <div
-                          key={`${message.id}-${i}`}
-                          className="text-muted-foreground text-xs"
-                        >
-                          📊 Getting portfolio data...
-                        </div>
-                      );
                     default:
                       return null;
                   }
@@ -74,18 +71,34 @@ export function Chat({ username }: { username: string }) {
               </MessageContent>
             </Message>
           ))}
+
+          {/* General loading state */}
+          {status === "submitted" && (
+            <Message from="assistant">
+              <MessageAvatar src="/favicon.ico" name="Foliofox" />
+              <MessageContent className="flex flex-row items-center gap-2 text-sm">
+                <span className="relative flex size-2.5 items-center justify-center">
+                  <span className="bg-brand absolute inline-flex h-full w-full animate-ping rounded-full opacity-75"></span>
+                  <span className="bg-brand relative inline-flex size-2 rounded-full"></span>
+                </span>
+                Thinking...
+              </MessageContent>
+            </Message>
+          )}
         </ConversationContent>
         <ConversationScrollButton />
       </Conversation>
 
       {/* Prompt Input */}
       <PromptInput onSubmit={handleSubmit}>
-        <PromptInputTextarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask Foliofox..."
-        />
-        <PromptInputToolbar className="justify-end pt-0">
+        <PromptInputBody className="border-none">
+          <PromptInputTextarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Ask Foliofox..."
+          />
+        </PromptInputBody>
+        <PromptInputToolbar className="justify-end">
           <PromptInputSubmit
             disabled={input.trim().length < 2}
             status={status === "streaming" ? "streaming" : "ready"}
