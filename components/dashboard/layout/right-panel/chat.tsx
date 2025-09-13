@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/ai/prompt-input";
 import { Response } from "@/components/ui/ai/response";
 
-export function Chat() {
+export function Chat({ username }: { username: string }) {
   const [input, setInput] = useState("");
 
   const { messages, sendMessage, status } = useChat({
@@ -46,10 +46,8 @@ export function Chat() {
           {messages.map((message) => (
             <Message key={message.id} from={message.role}>
               <MessageAvatar
-                src={
-                  message.role === "user" ? "/user-avatar.png" : "/favicon.ico"
-                }
-                name={message.role === "user" ? "leo" : "Foliofox"}
+                src={message.role === "user" ? "" : "/favicon.ico"}
+                name={message.role === "user" ? username : "Foliofox"}
               />
               <MessageContent>
                 {message.parts.map((part, i) => {

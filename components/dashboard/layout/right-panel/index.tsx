@@ -104,7 +104,11 @@ export function RightPanelProvider({
   );
 }
 
-export function RightPanel(): React.ReactNode | null {
+export function RightPanel({
+  username,
+}: {
+  username: string;
+}): React.ReactNode | null {
   const { open, openMobile, setOpenMobile } = useRightPanel();
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
 
@@ -120,7 +124,7 @@ export function RightPanel(): React.ReactNode | null {
             <SheetTitle>Foliofox AI</SheetTitle>
             <SheetDescription>Chat interface coming soon...</SheetDescription>
           </SheetHeader>
-          <Chat />
+          <Chat username={username} />
         </SheetContent>
       </Sheet>
     );
@@ -150,7 +154,7 @@ export function RightPanel(): React.ReactNode | null {
         )}
       >
         <div className="bg-sidebar flex h-full w-full flex-col p-4 ps-2">
-          <Chat />
+          <Chat username={username} />
         </div>
       </div>
     </div>

@@ -8,8 +8,8 @@ Add a right-side collapsible chat that lets users “talk to Foliofox” about t
 
 #### Scope (MVP)
 
-- UI: Right sidebar chat revealed by shifting the dashboard layout (not a Sheet/Drawer). Toggle button lives in the header. On mobile, use a full-height right panel pushing content left.
-- Backend: One chat API route using Vercel AI SDK + AI Gateway (BYOK).
+- UI: Right sidebar chat revealed by shifting the dashboard layout (not a Sheet/Drawer). Toggle button lives in the header. On mobile, use a Sheet component for better UX.
+- Backend: One chat API route using Vercel AI SDK with direct OpenAI integration.
 - Tools: Server-side functions to fetch a user-scoped portfolio snapshot on demand (no client PII leakage).
 - Safety: Mode-driven advice intensity (see below). Persistent UI disclaimer; no per-message disclaimers.
 
@@ -25,21 +25,27 @@ Add a right-side collapsible chat that lets users “talk to Foliofox” about t
 
 #### UI
 
-- Add a toggle button in `components/dashboard/header/index.tsx` to shift the layout and reveal a right sidebar (similar to the existing left sidebar behavior in `app/dashboard/layout.tsx`).
-- Chat pane component under `components/dashboard/ai/chat.tsx`:
-  - Input box, history list, streaming response.
-  - Uses a server route for messages; no secrets in the client.
-  - The right panel presence adjusts the main `SidebarInset` width so the whole dashboard shifts, not overlays.
+- **Status**: ✅ **Implemented**
+- Toggle button in `components/dashboard/header/right-panel-toggle-button.tsx` (client component) imported into the server `Header` component.
+- Right panel layout managed by `RightPanelProvider` in `components/dashboard/layout/right-panel/index.tsx`.
+- Chat component at `components/dashboard/layout/right-panel/chat.tsx` using AI SDK Elements:
+  - `Conversation`, `Message`, `MessageContent`, `MessageAvatar` components
+  - `PromptInput`, `PromptInputTextarea`, `PromptInputSubmit` for input handling
+  - Streaming responses with status indicators
+  - Responsive design: desktop fixed panel with smooth transitions, mobile Sheet component
 
 #### API
 
-- Route: `app/api/ai/chat/route.ts` (Edge or Node runtime).
-- Use Vercel **AI SDK** (v5) with **AI Gateway**:
-  - Model example: `openai/gpt-4o-mini` (configurable).
-  - Stream responses.
-  - Enable “tools” (function calling) to fetch data server-side when the model needs it.
+- **Status**: ✅ **Implemented** (basic version without tools)
+- Route: `app/api/ai/chat/route.ts` (Node.js runtime, 30s max duration).
+- Uses Vercel **AI SDK** (v5) with **direct OpenAI integration**:
+  - Model: `gpt-4o-mini` (hardcoded for now).
+  - Streaming responses via `streamText()` and `toUIMessageStreamResponse()`.
+  - Ready for "tools" (function calling) to fetch data server-side when needed.
 
 #### Data access (tools)
+
+- **Status**: ⏳ **Pending** - next major implementation phase
 
 Implement server-side tools that enforce RLS via `supabase/server.ts`:
 
@@ -73,33 +79,47 @@ Guideline:
 
 #### Configuration
 
+**Current setup** (direct OpenAI):
+
 Add to `.env.local` and Vercel:
 
+- `OPENAI_API_KEY=...` (required)
+
+**Future consideration** (AI Gateway):
+
+For later implementation with AI Gateway:
+
 - `AI_GATEWAY_API_KEY=...`
-- Provider key (BYOK, starting with OpenAI only):
-  - `OPENAI_API_KEY=...`
-- Optional:
-  - `AI_GATEWAY_BASE_URL=https://ai-gateway.vercel.sh/v1`
-  - `AI_MODEL=openai/gpt-4o-mini`
+- `AI_GATEWAY_BASE_URL=https://ai-gateway.vercel.sh/v1`
+- `AI_MODEL=openai/gpt-4o-mini`
+
+##### Direct OpenAI vs AI Gateway trade-offs
+
+**Current approach (Direct OpenAI)**:
+
+- Pros: Simple setup, direct billing/monitoring via OpenAI dashboard, lower latency
+- Cons: No unified observability, manual provider switching, limited retry logic
+
+**Future option (AI Gateway with BYOK)**:
+
+- Pros: unified API, observability, budgets/limits, retries/fallbacks, easy provider/model switching, app attribution. With BYOK, you pay OpenAI directly; no additional per-token fees.
+- Cons: small additional network hop/latency; some provider-specific features may need mapping.
 
 References: [AI Gateway docs](https://vercel.com/docs/ai-gateway), [AI Gateway blog](https://vercel.com/blog/ai-gateway)
-
-##### AI Gateway (BYOK) vs calling OpenAI directly
-
-- Pros (Gateway with BYOK): unified API, observability, budgets/limits, retries/fallbacks, easy provider/model switching later, app attribution, and consistent auth. With BYOK, you pay OpenAI directly; the gateway does not add per-token fees. See docs: [AI Gateway](https://vercel.com/docs/ai-gateway).
-- Cons: small additional network hop/latency; some features (e.g., provider-specific knobs) may need mapping; fallbacks/load-balancing matter less while using a single provider.
 
 ---
 
 ### Implementation Phases
 
-#### Phase 1 — Skeleton
+#### Phase 1 — Skeleton ✅ **COMPLETED**
 
-- Create `app/api/ai/chat/route.ts` with AI SDK `streamText()` returning a canned response (no tools).
-- Add right sidebar in the dashboard layout that shifts content (no overlay/Sheet). Add header toggle.
-- Wire chat UI to stream from the route.
+- ✅ Created `app/api/ai/chat/route.ts` with AI SDK `streamText()` using direct OpenAI integration.
+- ✅ Added right sidebar with `RightPanelProvider` context management and smooth transitions.
+- ✅ Implemented header toggle button that respects server/client component boundaries.
+- ✅ Built chat UI using AI SDK Elements (`Conversation`, `Message`, `PromptInput`) with streaming support.
+- ✅ Added responsive design (desktop panel, mobile Sheet) and cookie-based state persistence.
 
-#### Phase 2 — Portfolio context (single tool)
+#### Phase 2 — Portfolio context (single tool) ⏳ **NEXT**
 
 - Implement `get_portfolio_snapshot()` in `server/ai/tools/portfolio.ts` using `supabase/server.ts`.
 - Add it as an AI SDK tool; update the system prompt with safety/role.
@@ -112,8 +132,9 @@ References: [AI Gateway docs](https://vercel.com/docs/ai-gateway), [AI Gateway b
 
 #### Phase 4 — UX polish
 
-- Show disclaimers and last-updated times (quotes/FX updated daily at 22:00 UTC).
-- Add quick-suggestions (chips): “Allocation”, “Winners/Losers”, “Transactions”, “Income”.
+- Add advice mode selector (Educational/Advisory/Unhinged) in chat interface.
+- Show last-updated times (quotes/FX updated daily at 22:00 UTC).
+- Add quick-suggestions (chips): "Allocation", "Winners/Losers", "Transactions", "Income".
 - Add copy-to-clipboard and basic message persistence per session.
 
 ---
@@ -137,8 +158,9 @@ References: [AI Gateway docs](https://vercel.com/docs/ai-gateway), [AI Gateway b
 
 ### Future (post‑MVP)
 
-- Vector memory (pgvector) for “ongoing” user context and explanations.
-- Scheduled “checkups” that precompute insights.
+- Vector memory (pgvector) for "ongoing" user context and explanations.
+- Scheduled "checkups" that precompute insights.
+- Migration to AI Gateway for unified observability and multi-model support.
 - Multi-model strategy (cheap default, smart fallback) via AI Gateway budgets.
 - App attribution in AI Gateway and Observability.
 
