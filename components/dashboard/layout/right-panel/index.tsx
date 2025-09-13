@@ -10,13 +10,7 @@ import {
 } from "react";
 import { PanelRight } from "lucide-react";
 
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import {
   Tooltip,
   TooltipContent,
@@ -118,12 +112,9 @@ export function RightPanel({
       <Sheet open={openMobile} onOpenChange={setOpenMobile}>
         <SheetContent
           side="right"
-          className="bg-sidebar text-sidebar-foreground w-[80vw] p-4"
+          className="bg-sidebar text-sidebar-foreground w-screen p-4"
         >
-          <SheetHeader>
-            <SheetTitle>Foliofox AI</SheetTitle>
-            <SheetDescription>Chat interface coming soon...</SheetDescription>
-          </SheetHeader>
+          <SheetTitle>Foliofox AI</SheetTitle>
           <Chat username={username} />
         </SheetContent>
       </Sheet>
