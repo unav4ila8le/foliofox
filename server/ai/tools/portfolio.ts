@@ -1,10 +1,13 @@
 "use server";
 
+import { format } from "date-fns";
+
 import { getCurrentUser } from "@/server/auth/actions";
 import { fetchProfile } from "@/server/profile/actions";
 import { fetchHoldings } from "@/server/holdings/fetch";
 import { calculateNetWorth } from "@/server/analysis/net-worth";
 import { calculateAssetAllocation } from "@/server/analysis/asset-allocation";
+import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 
 /**
  * Get current portfolio snapshot for AI analysis
@@ -19,10 +22,14 @@ export async function getPortfolioSnapshot(params?: { baseCurrency?: string }) {
     const { profile } = await fetchProfile();
     const baseCurrency = params?.baseCurrency ?? profile.display_currency;
 
+    // Use a signle date across quotes and FX for consistency
+    const date = new Date();
+    const dateKey = format(date, "yyyy-MM-dd");
+
     // Get current holdings (active only for main snapshot)
     const holdings = await fetchHoldings({
       includeArchived: false,
-      quoteDate: new Date(),
+      quoteDate: date,
     });
 
     // If no holdings, return empty state
@@ -33,36 +40,78 @@ export async function getPortfolioSnapshot(params?: { baseCurrency?: string }) {
         currency: baseCurrency,
         holdingsCount: 0,
         categories: [],
-        topHoldings: [],
+        holdings: [],
         lastUpdated: new Date().toISOString(),
       };
     }
 
     // Calculate key metrics in parallel
     const [netWorth, assetAllocation] = await Promise.all([
-      calculateNetWorth(baseCurrency),
+      calculateNetWorth(baseCurrency, date),
       calculateAssetAllocation(baseCurrency),
     ]);
 
-    // Prepare holdings for AI (sorted by value)
-    const holdingsData = holdings
-      .sort((a, b) => b.total_value - a.total_value)
-      .map((holding) => ({
-        name: holding.name,
-        symbol: holding.symbol_id || null,
-        value: holding.total_value,
-        category: holding.asset_type,
-        quantity: holding.current_quantity,
-        unitValue: holding.current_unit_value,
-        currency: holding.currency,
-      }));
+    // Collect unique holding currencies
+    const uniqueCurrencies = new Set<string>();
+    holdings.forEach((holding) => {
+      uniqueCurrencies.add(holding.currency);
+    });
+    uniqueCurrencies.add(baseCurrency);
+
+    // Bulk FX fetch
+    const exchangeRatesMap = await fetchExchangeRates(
+      Array.from(uniqueCurrencies).map((currency) => ({
+        currency,
+        date,
+      })),
+    );
+
+    const convertToBaseCurrency = (
+      amount: number,
+      sourceCurrency: string,
+    ): number => {
+      if (sourceCurrency === baseCurrency) return amount;
+      const toUSD = exchangeRatesMap.get(`${sourceCurrency}|${dateKey}`);
+      const fromUSD = exchangeRatesMap.get(`${baseCurrency}|${dateKey}`);
+      if (!toUSD || !fromUSD) {
+        return amount;
+      }
+      return (amount / toUSD) * fromUSD;
+    };
+
+    // Prepare holdings for AI (sorted by base currency value)
+    const holdingsBase = holdings
+      .map((h) => {
+        const unitValueBase = convertToBaseCurrency(
+          h.current_unit_value,
+          h.currency,
+        );
+        const totalValueBase = convertToBaseCurrency(h.total_value, h.currency);
+        return {
+          id: h.id,
+          name: h.name,
+          symbol: h.symbol_id || null,
+          category: h.asset_type,
+          categoryCode: h.category_code,
+          quantity: h.current_quantity,
+          unitValue: unitValueBase,
+          value: totalValueBase,
+          currency: baseCurrency,
+          original: {
+            currency: h.currency,
+            unitValue: h.current_unit_value,
+            value: h.total_value,
+          },
+        };
+      })
+      .sort((a, b) => b.value - a.value);
 
     // Format asset allocation for AI
     const categories = assetAllocation.map((category) => ({
       name: category.name,
       code: category.category_code,
       value: category.total_value,
-      percentage: ((category.total_value / netWorth) * 100).toFixed(1),
+      percentage: netWorth ? (category.total_value / netWorth) * 100 : 0,
     }));
 
     return {
@@ -72,7 +121,7 @@ export async function getPortfolioSnapshot(params?: { baseCurrency?: string }) {
       holdingsCount: holdings.length,
       categoriesCount: assetAllocation.length,
       categories,
-      holdings: holdingsData,
+      holdings: holdingsBase,
       lastUpdated: new Date().toISOString(),
     };
   } catch (error) {
