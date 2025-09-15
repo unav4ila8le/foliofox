@@ -25,6 +25,14 @@ import {
 } from "@/components/ui/ai/prompt-input";
 import { Response } from "@/components/ui/ai/response";
 import { Actions, Action } from "@/components/ui/ai/actions";
+import { Suggestions, Suggestion } from "@/components/ui/ai/suggestions";
+
+const suggestions = [
+  "What would happen to my portfolio if the market crashes 30% tomorrow?",
+  "How should I rebalance my portfolio to reduce risk while maintaining growth potential?",
+  "What are the biggest vulnerabilities in my current investment strategy?",
+  "Based on my holdings and portfolio history, what's my probability of reaching $1M net worth in 10 years?",
+];
 
 export function Chat() {
   const [input, setInput] = useState("");
@@ -48,6 +56,10 @@ export function Chat() {
     }, 4000);
   };
 
+  const handleSuggestionClick = (suggestion: string) => {
+    sendMessage({ text: suggestion });
+  };
+
   const handleSubmit = (message: PromptInputMessage) => {
     const hasText = Boolean(message.text);
 
@@ -60,7 +72,7 @@ export function Chat() {
   };
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col gap-2">
       {/* Conversation */}
       <Conversation className="flex-1">
         <ConversationContent>
@@ -115,6 +127,19 @@ export function Chat() {
         <ConversationScrollButton />
       </Conversation>
 
+      {/* Suggestions */}
+      {messages.length === 0 && (
+        <Suggestions>
+          {suggestions.map((suggestion) => (
+            <Suggestion
+              key={suggestion}
+              onClick={handleSuggestionClick}
+              suggestion={suggestion}
+            />
+          ))}
+        </Suggestions>
+      )}
+
       {/* Prompt Input */}
       <PromptInput onSubmit={handleSubmit}>
         <PromptInputBody className="border-none">
@@ -135,7 +160,7 @@ export function Chat() {
       </PromptInput>
 
       {/* Dislaimer */}
-      <p className="text-muted-foreground mt-2 text-center text-xs">
+      <p className="text-muted-foreground text-center text-xs">
         You are responsible for your investment decisions.
       </p>
     </div>
