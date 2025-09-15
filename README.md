@@ -47,6 +47,9 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
 # Optional (used to authorize cron invocations)
 CRON_SECRET=generate_a_strong_random_string
+
+# Optional (used for AI features)
+OPENAI_API_KEY=your_openai_api_key
 ```
 
 ### 3) Run the dev server
@@ -183,4 +186,5 @@ N/A
 - [x] Better empty messages for news and projected income
 - [x] Review Zod helpers in lib and make them more flexible
 - [x] Let users input their cost basis (optional) for new holdings, and then use it to create the new record
-- [ ] Foliofox AI advisor. Chat with your portfolio.
+- [x] Foliofox AI advisor. Chat with your portfolio.
+- [ ] Landingpage with waitlist

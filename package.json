@@ -36,6 +36,7 @@
     "react-dom": "^19.1.0",
     "react-dropzone": "^14.3.8",
     "react-hook-form": "^7.55.0",
+    "react-resizable-panels": "^3.0.6",
     "recharts": "^3.0.2",
     "sonner": "^2.0.2",
     "streamdown": "^1.2.0",
