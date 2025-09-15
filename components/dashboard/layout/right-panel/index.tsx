@@ -140,7 +140,7 @@ export function RightPanel(): React.ReactNode | null {
           "group-data-[state=collapsed]:right-[calc(max(16rem,24vw)*-1)]",
         )}
       >
-        <div className="bg-sidebar flex h-full w-full flex-col p-4 ps-2">
+        <div className="bg-sidebar flex h-full w-full flex-col p-4 ps-2 pt-0">
           <Chat />
         </div>
       </div>

@@ -2,6 +2,7 @@
 
 import { format } from "date-fns";
 
+import { fetchProfile } from "@/server/profile/actions";
 import { fetchHoldings } from "@/server/holdings/fetch";
 import { fetchQuotes } from "@/server/quotes/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
@@ -14,7 +15,7 @@ export interface NetWorthHistoryData {
 }
 
 interface FetchNetWorthHistoryParams {
-  targetCurrency: string;
+  targetCurrency?: string;
   weeksBack?: number;
 }
 
@@ -26,6 +27,12 @@ export async function fetchNetWorthHistory({
   targetCurrency,
   weeksBack = 24,
 }: FetchNetWorthHistoryParams) {
+  // Get user's preferred currency if not specified
+  if (!targetCurrency) {
+    const { profile } = await fetchProfile();
+    targetCurrency = profile.display_currency;
+  }
+
   // Generate weekly date points
   const weeklyDates = generateWeeklyDates(weeksBack);
 

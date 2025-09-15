@@ -14,8 +14,8 @@
 - Progress:
   - [x] `getPortfolioSnapshot`
   - [x] `getTransactions({ range?, holdingId? })`
-  - [ ] `getRecords({ holdingId, range? })`
-  - [ ] `getNetWorthHistory({ baseCurrency, range })`
+  - [x] `getRecords({ holdingId, range? })`
+  - [x] `getNetWorthHistory({ baseCurrency, range })`
   - [ ] `getNetWorthChange({ baseCurrency, range })`
   - [ ] `getProjectedIncome({ baseCurrency, monthsAhead? })`
   - [ ] `getHoldingsPerformance({ baseCurrency, date? })`
