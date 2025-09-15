@@ -42,7 +42,7 @@ export async function fetchTransactions(
     query.eq("holding_id", holdingId);
   }
 
-  // Inclusive range filters for DATE column
+  // Add inclusivedate range filters if provided
   if (startDate) query.gte("date", startDate.toISOString().slice(0, 10));
   if (endDate) query.lte("date", endDate.toISOString().slice(0, 10));
 

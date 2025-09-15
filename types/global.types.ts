@@ -50,6 +50,7 @@ export type Record = Tables<"records">;
 
 export type TransformedRecord = Record & {
   total_value: number;
+  currency: string;
 };
 
 // Asset Category

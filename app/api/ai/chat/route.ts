@@ -10,6 +10,7 @@ import { z } from "zod";
 
 import { getPortfolioSnapshot } from "@/server/ai/tools/portfolio-snapshot";
 import { getTransactions } from "@/server/ai/tools/transactions";
+import { getRecords } from "@/server/ai/tools/records";
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
@@ -45,7 +46,7 @@ export async function POST(req: Request) {
       }),
       getTransactions: tool({
         description:
-          "Get transactions within an optional date range and/or holding filter",
+          "Get transactions within optional date range and/or holding filtering",
         inputSchema: z.object({
           holdingId: z.string().optional(),
           startDate: z.string().optional().describe("YYYY-MM-DD format"),
@@ -57,6 +58,20 @@ export async function POST(req: Request) {
         }),
         execute: async (args) => {
           return getTransactions(args);
+        },
+      }),
+      getRecords: tool({
+        description:
+          "Get records (quantity and unit value snapshots) for a specific holding with optional date range filtering",
+        inputSchema: z.object({
+          holdingId: z
+            .string()
+            .describe("Required holding ID to get records for"),
+          startDate: z.string().optional().describe("YYYY-MM-DD format"),
+          endDate: z.string().optional().describe("YYYY-MM-DD format"),
+        }),
+        execute: async (args) => {
+          return getRecords(args);
         },
       }),
     },

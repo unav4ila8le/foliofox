@@ -4,20 +4,41 @@ import { getCurrentUser } from "@/server/auth/actions";
 
 import type { TransformedRecord } from "@/types/global.types";
 
+interface FetchRecordsParams {
+  holdingId: string;
+  startDate?: Date;
+  endDate?: Date;
+}
+
 /**
- * Fetch records for a specific holding
+ * Fetch records for a specific holding with optional date range filters
  *
- * @param holdingId - The ID of the holding to fetch records for
+ * @param options - Optional filtering options
  * @returns An array of transformed records
  */
-export async function fetchRecords(holdingId: string) {
+export async function fetchRecords(options: FetchRecordsParams) {
+  const { holdingId, startDate, endDate } = options;
   const { supabase, user } = await getCurrentUser();
 
-  const { data: records, error } = await supabase
+  const query = supabase
     .from("records")
-    .select("*")
+    .select(
+      `
+      *,
+      holdings!inner (
+        currency,
+        is_archived
+      )
+    `,
+    )
     .eq("holding_id", holdingId)
-    .eq("user_id", user.id)
+    .eq("user_id", user.id);
+
+  // Add inclusivedate range filters if provided
+  if (startDate) query.gte("date", startDate.toISOString().slice(0, 10));
+  if (endDate) query.lte("date", endDate.toISOString().slice(0, 10));
+
+  const { data: records, error } = await query
     .order("date", { ascending: false })
     .order("created_at", { ascending: false });
 
@@ -29,6 +50,7 @@ export async function fetchRecords(holdingId: string) {
   const transformedRecords: TransformedRecord[] = records.map((record) => ({
     ...record,
     total_value: record.quantity * record.unit_value,
+    currency: record.holdings?.currency as string,
   }));
 
   return transformedRecords;

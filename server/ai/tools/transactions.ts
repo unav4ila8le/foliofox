@@ -18,8 +18,8 @@ export async function getTransactions(params: GetTransactionsParams = {}) {
   const transactions = await fetchTransactions({
     holdingId,
     includeArchived,
-    startDate: startDate,
-    endDate: endDate,
+    startDate,
+    endDate,
   });
 
   const items = transactions.map((t) => ({

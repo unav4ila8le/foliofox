@@ -13,7 +13,7 @@
 - Provide deeper data only when needed by the conversation.
 - Progress:
   - [x] `getPortfolioSnapshot`
-  - [ ] `getTransactions({ range?, limit?, holdingId?, sortByCreatedAt: true })`
+  - [x] `getTransactions({ range?, holdingId? })`
   - [ ] `getRecords({ holdingId, range? })`
   - [ ] `getNetWorthHistory({ baseCurrency, range })`
   - [ ] `getNetWorthChange({ baseCurrency, range })`
