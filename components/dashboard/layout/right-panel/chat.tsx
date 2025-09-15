@@ -13,7 +13,7 @@ import {
 import {
   Message,
   MessageContent,
-  MessageAvatar,
+  MessageLoading,
 } from "@/components/ui/ai/message";
 import {
   PromptInput,
@@ -26,7 +26,7 @@ import {
 import { Response } from "@/components/ui/ai/response";
 import { Actions, Action } from "@/components/ui/ai/actions";
 
-export function Chat({ username }: { username: string }) {
+export function Chat() {
   const [input, setInput] = useState("");
   const [copiedMessages, setCopiedMessages] = useState<Set<string>>(new Set());
 
@@ -76,28 +76,24 @@ export function Chat({ username }: { username: string }) {
                     return (
                       <Fragment key={`${message.id}-${i}`}>
                         <Message from={message.role}>
-                          <MessageAvatar
-                            src={message.role === "user" ? "" : "/favicon.ico"}
-                            name={
-                              message.role === "user" ? username : "Foliofox"
-                            }
-                          />
                           <MessageContent>
                             <Response>{part.text}</Response>
                           </MessageContent>
                         </Message>
-                        {isAssistant && isLastMessage && (
+                        {isAssistant && status !== "streaming" && (
                           <Actions className="-mt-2">
-                            <Action
-                              onClick={() => regenerate()}
-                              tooltip="Regenerate response"
-                            >
-                              <RefreshCcw />
-                            </Action>
+                            {isLastMessage && (
+                              <Action
+                                onClick={() => regenerate()}
+                                tooltip="Regenerate response"
+                              >
+                                <RefreshCcw />
+                              </Action>
+                            )}
                             <Action
                               onClick={() => handleCopy(part.text, message.id)}
                               tooltip={
-                                isCopied ? "Copied!" : "Copy to clipboard"
+                                isCopied ? "Copied!" : "Copy to Clipboard"
                               }
                             >
                               {isCopied ? <Check /> : <Copy />}
@@ -112,19 +108,8 @@ export function Chat({ username }: { username: string }) {
               })}
             </Fragment>
           ))}
-
-          {/* General loading state */}
-          {status === "submitted" && (
-            <Message from="assistant">
-              <MessageAvatar src="/favicon.ico" name="Foliofox" />
-              <MessageContent className="flex flex-row items-center gap-3 text-sm">
-                <span className="relative flex size-2.5 items-center justify-center">
-                  <span className="bg-brand absolute inline-flex h-full w-full animate-ping rounded-full opacity-75"></span>
-                  <span className="bg-brand relative inline-flex size-2 rounded-full"></span>
-                </span>
-                Thinking...
-              </MessageContent>
-            </Message>
+          {(status === "submitted" || status === "streaming") && (
+            <MessageLoading status={status} className="mb-2 ps-1" />
           )}
         </ConversationContent>
         <ConversationScrollButton />

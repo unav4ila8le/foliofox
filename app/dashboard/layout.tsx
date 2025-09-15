@@ -55,7 +55,7 @@ export default async function Layout({
                 <Header />
                 <div className="p-4 pt-2">{children}</div>
               </SidebarInset>
-              <RightPanel username={profile.username} />
+              <RightPanel />
             </NewRecordDialogProvider>
           </NewHoldingDialogProvider>
         </ImportHoldingsDialogProvider>

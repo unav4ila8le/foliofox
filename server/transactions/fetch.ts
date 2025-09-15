@@ -5,6 +5,8 @@ import { getCurrentUser } from "@/server/auth/actions";
 interface FetchTransactionsOptions {
   holdingId?: string;
   includeArchived?: boolean;
+  startDate?: Date;
+  endDate?: Date;
 }
 
 /**
@@ -16,7 +18,7 @@ interface FetchTransactionsOptions {
 export async function fetchTransactions(
   options: FetchTransactionsOptions = {},
 ) {
-  const { holdingId, includeArchived = true } = options;
+  const { holdingId, includeArchived = true, startDate, endDate } = options;
   const { supabase, user } = await getCurrentUser();
 
   const query = supabase
@@ -28,6 +30,7 @@ export async function fetchTransactions(
         id,
         name,
         symbol_id,
+        currency,
         is_archived
       )
     `,
@@ -39,14 +42,18 @@ export async function fetchTransactions(
     query.eq("holding_id", holdingId);
   }
 
+  // Inclusive range filters for DATE column
+  if (startDate) query.gte("date", startDate.toISOString().slice(0, 10));
+  if (endDate) query.lte("date", endDate.toISOString().slice(0, 10));
+
   // Handle archived holdings filtering
   if (!includeArchived) {
     query.eq("holdings.is_archived", false);
   }
 
-  const { data: transactions, error } = await query.order("date", {
-    ascending: false,
-  });
+  const { data: transactions, error } = await query
+    .order("created_at", { ascending: false })
+    .order("date", { ascending: false });
 
   if (error) {
     throw new Error(`Failed to fetch transactions: ${error.message}`);

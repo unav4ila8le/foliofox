@@ -9,6 +9,7 @@ import {
 import { z } from "zod";
 
 import { getPortfolioSnapshot } from "@/server/ai/tools/portfolio-snapshot";
+import { getTransactions } from "@/server/ai/tools/transactions";
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
@@ -28,22 +29,42 @@ export async function POST(req: Request) {
           baseCurrency: z
             .string()
             .optional()
-            .describe("Currency code for analysis (e.g., USD, EUR, GBP, etc.)"),
+            .describe(
+              "Currency code for analysis (e.g., USD, EUR, GBP, etc.). Leave empty to use the user's preferred currency.",
+            ),
           date: z
             .string()
             .optional()
             .describe(
-              "Date for historical analysis in YYYY-MM-DD format (e.g., 2024-07-22)",
+              "Date for historical analysis in YYYY-MM-DD format (e.g., 2024-07-22). Leave empty to use the current date.",
             ),
         }),
-        execute: async ({ baseCurrency, date }) => {
-          return getPortfolioSnapshot({ baseCurrency, date });
+        execute: async (args) => {
+          return getPortfolioSnapshot(args);
+        },
+      }),
+      getTransactions: tool({
+        description:
+          "Get transactions within an optional date range and/or holding filter",
+        inputSchema: z.object({
+          holdingId: z.string().optional(),
+          startDate: z.string().optional().describe("YYYY-MM-DD format"),
+          endDate: z.string().optional().describe("YYYY-MM-DD format"),
+          includeArchived: z
+            .boolean()
+            .optional()
+            .describe("Include transactions from archived holdings"),
+        }),
+        execute: async (args) => {
+          return getTransactions(args);
         },
       }),
     },
     system: `You are the Foliofox AI assistant, a financial advisor for personal portfolio insights.
 
-ROLE: Help users understand their portfolio performance, allocation, and provide concrete financial planning and guidance.
+    Current date: ${new Date().toISOString().split("T")[0]} (use this for relative date calculations and tool inputs).
+
+    ROLE: Help users understand their portfolio performance, allocation, and provide concrete financial planning and guidance.
 
 CAPABILITIES:
 - Analyze portfolio composition and performance using available tools
@@ -62,7 +83,7 @@ GUIDELINES:
 
 BEHAVIOR:
 - When users ask about their portfolio, use getPortfolioSnapshot to get current data
-- Default to the user's preferred currency for analysis unless user specifies a different currency
+- Do not specify baseCurrency unless user explicitly requests a different currency - tools default to user's preferred currency
 - Focus on actionable insights rather than just data presentation`,
   });
 
