@@ -8,7 +8,7 @@ import {
 } from "ai";
 import { z } from "zod";
 
-import { getPortfolioSnapshot } from "@/server/ai/tools/portfolio";
+import { getPortfolioSnapshot } from "@/server/ai/tools/portfolio-snapshot";
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
