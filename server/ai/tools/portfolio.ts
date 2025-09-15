@@ -13,7 +13,10 @@ import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
  * Get current portfolio snapshot for AI analysis
  * Returns summarized data optimized for AI consumption
  */
-export async function getPortfolioSnapshot(params?: { baseCurrency?: string }) {
+export async function getPortfolioSnapshot(params?: {
+  baseCurrency?: string;
+  date?: string;
+}) {
   try {
     // Ensure user is authenticated (required for RLS)
     await getCurrentUser();
@@ -23,7 +26,7 @@ export async function getPortfolioSnapshot(params?: { baseCurrency?: string }) {
     const baseCurrency = params?.baseCurrency ?? profile.display_currency;
 
     // Use a signle date across quotes and FX for consistency
-    const date = new Date();
+    const date = params?.date ? new Date(params.date) : new Date();
     const dateKey = format(date, "yyyy-MM-dd");
 
     // Get current holdings (active only for main snapshot)

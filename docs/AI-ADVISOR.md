@@ -45,22 +45,27 @@ Add a right-side collapsible chat that lets users “talk to Foliofox” about t
 
 #### Data access (tools)
 
-- **Status**: ⏳ **Pending** - next major implementation phase
+- **Status**: ✅ **Phase 2 Complete**, ⏳ **Phase 3 Ready**
 
-Implement server-side tools that enforce RLS via `supabase/server.ts`:
+**Currently Implemented:**
 
-- `get_portfolio_snapshot({ baseCurrency })`
-  - Holdings (active), latest records, current value, P/L.
-  - Net worth summary, allocation by category, top movers.
-- `get_transactions({ range, limit, sortByCreatedAt: true })`
-- `get_net_worth_history({ range: '1M' | '3M' | '1Y' | 'YTD' })`
-- `get_dividends({ range })` (optional)
-- All tools return compact summaries to keep token usage low.
+- ✅ `getPortfolioSnapshot({ baseCurrency })` - Current holdings, net worth, allocation, and key P/L metrics
 
-Guideline:
+**Ready to Implement (existing analysis functions available):**
 
-- Summarize server-side (numbers, small tables); only send what’s needed to the model.
-- Never return raw secrets/PII.
+- `getHistoricalNetWorth({ baseCurrency, date })` - **FIXES CURRENT LIMITATION**: AI currently can't provide historical net worth because existing tool is hardcoded to current date
+- `getNetWorthHistory({ baseCurrency, range })` - Uses existing `fetchNetWorthHistory()` with optimized bulk API calls
+- `getNetWorthChange({ baseCurrency, range })` - Uses existing `fetchNetWorthChange()` for period comparisons
+- `getTransactions({ range, limit, holdingId?, sortByCreatedAt: true })` - Uses existing `fetchTransactions()` [[memory:7587299]]
+- `getRecords({ holdingId, range? })` - Uses existing `fetchRecords()` for historical holding snapshots
+- `getProjectedIncome({ baseCurrency, monthsAhead? })` - Uses existing `calculateProjectedIncome()` (renamed from dividends for broader scope)
+
+**Technical Notes:**
+
+- All tools enforce RLS via `supabase/server.ts` for data security
+- Existing analysis functions use bulk API optimization (2 calls regardless of time period) [[memory:3963302]]
+- All tools return compact summaries to keep token usage low
+- Server-side summarization prevents raw PII leakage to model
 
 #### Advice modes (user selectable)
 
@@ -119,16 +124,32 @@ References: [AI Gateway docs](https://vercel.com/docs/ai-gateway), [AI Gateway b
 - ✅ Built chat UI using AI SDK Elements (`Conversation`, `Message`, `PromptInput`) with streaming support.
 - ✅ Added responsive design (desktop panel, mobile Sheet) and cookie-based state persistence.
 
-#### Phase 2 — Portfolio context (single tool) ⏳ **NEXT**
+#### Phase 2 — Portfolio context (single tool) ✅ **COMPLETED**
 
-- Implement `get_portfolio_snapshot()` in `server/ai/tools/portfolio.ts` using `supabase/server.ts`.
-- Add it as an AI SDK tool; update the system prompt with safety/role.
-- Model calls tool when needed; responses summarize holdings, net worth, allocation, and key P/L.
+- ✅ Implemented `getPortfolioSnapshot()` in `server/ai/tools/portfolio.ts` using `supabase/server.ts`.
+- ✅ Added as AI SDK tool with proper schema validation and RLS compliance.
+- ✅ Updated system prompt with comprehensive role, capabilities, and guidelines.
+- ✅ Model successfully calls tool and provides portfolio analysis with holdings, net worth, allocation, and P/L.
 
-#### Phase 3 — Deeper insights (more tools)
+#### Phase 3 — Historical insights & deeper analysis ⏳ **NEXT**
 
-- Add `get_transactions()`, `get_net_worth_history()`, and (optional) `get_dividends()`.
-- Support common queries: “What changed this week?”, “Top winners/losers?”, “Allocation drift?”, “Income this month?”
+**Priority 1: Historical Data Access**
+
+- `getHistoricalNetWorth({ baseCurrency, date })` - Fix current limitation where AI can't provide historical net worth
+- `getNetWorthHistory({ baseCurrency, range })` - Performance trends over time periods
+- `getNetWorthChange({ baseCurrency, range })` - Period-over-period comparison
+
+**Priority 2: Transaction & Activity Analysis**
+
+- `getTransactions({ range, limit, holdingId? })` - Recent portfolio activity analysis [[memory:7587299]]
+- `getRecords({ holdingId, range? })` - Historical holding snapshots for performance tracking
+
+**Priority 3: Income & Growth Analysis**
+
+- `getProjectedIncome({ baseCurrency, monthsAhead? })` - Dividend and income projections (renamed from dividends for broader scope)
+- `getAssetAllocation({ baseCurrency })` - Detailed category breakdown (may already be covered by portfolio snapshot)
+
+This enables queries like: "What was my net worth on Jan 1st?", "What changed this week?", "Top winners/losers?", "Allocation drift over 6 months?", "Projected income this year?"
 
 #### Phase 4 — UX polish
 
@@ -136,6 +157,38 @@ References: [AI Gateway docs](https://vercel.com/docs/ai-gateway), [AI Gateway b
 - Show last-updated times (quotes/FX updated daily at 22:00 UTC).
 - Add quick-suggestions (chips): "Allocation", "Winners/Losers", "Transactions", "Income".
 - Add copy-to-clipboard and basic message persistence per session.
+
+---
+
+### Current Limitations & Solutions
+
+#### Why AI Says "No Historical Data Access"
+
+**Problem**: Users asking "What was my net worth on [past date]?" get told the AI doesn't have historical data access.
+
+**Root Cause**: The current `getPortfolioSnapshot` tool is hardcoded to use `new Date()` and only accepts `baseCurrency` parameter. Even though the underlying `calculateNetWorth(targetCurrency, date)` function supports historical dates, the AI tool doesn't expose this capability.
+
+**Solution**: Implement `getHistoricalNetWorth({ baseCurrency, date })` as Priority 1 in Phase 3.
+
+#### Additional Tool Opportunities
+
+Beyond the planned tools, we could add:
+
+**Advanced Analysis:**
+
+- `getHoldingPerformance({ holdingId, timeRange })` - Individual holding analysis with profit/loss
+- `getAllocationDrift({ baseCurrency, compareToDate })` - How allocation has changed over time
+- `getTopMovers({ baseCurrency, timeRange, limit? })` - Biggest winners/losers in portfolio
+
+**Comparative Analysis:**
+
+- `compareNetWorth({ baseCurrency, fromDate, toDate })` - Side-by-side comparison
+- `getRebalancingNeeds({ baseCurrency, targetAllocation? })` - Suggested rebalancing actions
+
+**Risk Analysis:**
+
+- `getCurrencyExposure({ baseCurrency })` - Foreign exchange risk analysis
+- `getConcentrationRisk()` - Identify over-concentrated positions
 
 ---
 

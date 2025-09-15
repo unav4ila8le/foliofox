@@ -29,9 +29,15 @@ export async function POST(req: Request) {
             .string()
             .optional()
             .describe("Currency code for analysis (e.g., USD, EUR, GBP, etc.)"),
+          date: z
+            .string()
+            .optional()
+            .describe(
+              "Date for historical analysis in YYYY-MM-DD format (e.g., 2024-07-22)",
+            ),
         }),
-        execute: async ({ baseCurrency }) => {
-          return getPortfolioSnapshot({ baseCurrency });
+        execute: async ({ baseCurrency, date }) => {
+          return getPortfolioSnapshot({ baseCurrency, date });
         },
       }),
     },
