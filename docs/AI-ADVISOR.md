@@ -16,8 +16,8 @@
   - [x] `getTransactions({ range?, holdingId? })`
   - [x] `getRecords({ holdingId, range? })`
   - [x] `getNetWorthHistory({ baseCurrency, range })`
-  - [ ] `getNetWorthChange({ baseCurrency, range })`
-  - [ ] `getProjectedIncome({ baseCurrency, monthsAhead? })`
+  - [x] `getNetWorthChange({ baseCurrency, range })`
+  - [x] `getProjectedIncome({ baseCurrency, monthsAhead? })`
   - [ ] `getHoldingsPerformance({ baseCurrency, date? })`
   - [ ] `getTopMovers({ baseCurrency, date?, limit? })`
   - [ ] `getAllocationDrift({ baseCurrency, compareToDate })`

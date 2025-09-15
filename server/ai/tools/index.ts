@@ -6,6 +6,7 @@ import { getTransactions } from "./transactions";
 import { getRecords } from "./records";
 import { getNetWorthHistory } from "./net-worth-history";
 import { getNetWorthChange } from "./net-worth-change";
+import { getProjectedIncome } from "./projected-income";
 
 export const aiTools = {
   getPortfolioSnapshot: tool({
@@ -101,6 +102,28 @@ export const aiTools = {
     }),
     execute: async (args) => {
       return getNetWorthChange(args);
+    },
+  }),
+
+  getProjectedIncome: tool({
+    description:
+      "Get projected dividend income over future months to analyze passive income potential. Returns: monthly income projections with dates, total projected income, dividend-paying holdings count, and success status. Useful for income planning and dividend strategy analysis.",
+    inputSchema: z.object({
+      baseCurrency: z
+        .string()
+        .optional()
+        .describe(
+          "Currency code for analysis (e.g., USD, EUR, GBP, etc.). Leave empty to use the user's preferred currency.",
+        ),
+      monthsAhead: z
+        .number()
+        .optional()
+        .describe(
+          "Number of months to project ahead (default: 12 months = 1 year)",
+        ),
+    }),
+    execute: async (args) => {
+      return getProjectedIncome(args);
     },
   }),
 };

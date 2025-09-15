@@ -2,6 +2,7 @@
 
 import { format, addMonths, startOfMonth } from "date-fns";
 
+import { fetchProfile } from "@/server/profile/actions";
 import { fetchHoldings } from "@/server/holdings/fetch";
 import { fetchDividends } from "@/server/dividends/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
@@ -23,10 +24,16 @@ export interface ProjectedIncomeResult {
  * Calculate projected monthly income for user's portfolio
  */
 export async function calculateProjectedIncome(
-  targetCurrency: string = "USD",
+  targetCurrency?: string,
   monthsAhead: number = 12,
 ) {
   try {
+    // Get user's preferred currency if not specified
+    if (!targetCurrency) {
+      const { profile } = await fetchProfile();
+      targetCurrency = profile.display_currency;
+    }
+
     const holdings = await fetchHoldings();
 
     const symbolIds = holdings
@@ -71,7 +78,7 @@ export async function calculateProjectedIncome(
         uniqueCurrencies.add(event.currency);
       });
     });
-    uniqueCurrencies.add(targetCurrency);
+    uniqueCurrencies.add(targetCurrency!);
 
     // Create exchange rate requests for unique currencies only
     const exchangeRequests = Array.from(uniqueCurrencies).map((currency) => ({
@@ -118,7 +125,7 @@ export async function calculateProjectedIncome(
         const convertedValue = convertCurrency(
           holdingDividendIncome,
           dividendCurrency,
-          targetCurrency,
+          targetCurrency!,
           exchangeRatesMap,
           format(new Date(), "yyyy-MM-dd"),
         );
@@ -137,7 +144,7 @@ export async function calculateProjectedIncome(
         date: new Date(month + "-01"),
         income,
       })),
-      currency: targetCurrency,
+      currency: targetCurrency!,
     };
   } catch (error) {
     console.error("Error calculating projected income:", error);
