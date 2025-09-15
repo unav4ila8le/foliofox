@@ -5,11 +5,12 @@ import { getPortfolioSnapshot } from "./portfolio-snapshot";
 import { getTransactions } from "./transactions";
 import { getRecords } from "./records";
 import { getNetWorthHistory } from "./net-worth-history";
+import { getNetWorthChange } from "./net-worth-change";
 
 export const aiTools = {
   getPortfolioSnapshot: tool({
     description:
-      "Get current portfolio overview including net worth, asset allocation, and all holdings",
+      "Get current portfolio overview including net worth, asset allocation, and all holdings. Returns: summary, net worth value, holdings count, asset categories with percentages, and detailed holding information with values converted to base currency.",
     inputSchema: z.object({
       baseCurrency: z
         .string()
@@ -31,7 +32,7 @@ export const aiTools = {
 
   getTransactions: tool({
     description:
-      "Get transactions within optional date range and/or holding filtering",
+      "Get transactions history with optional filtering. Returns: transaction list with type, date, quantity, unit value, holding details, and metadata. Supports filtering by holding, date range, and archived status.",
     inputSchema: z.object({
       holdingId: z.string().optional(),
       startDate: z.string().optional().describe("YYYY-MM-DD format"),
@@ -48,7 +49,7 @@ export const aiTools = {
 
   getRecords: tool({
     description:
-      "Get records (quantity and unit value snapshots) for a specific holding with optional date range filtering",
+      "Get historical records (quantity and unit value snapshots) for a specific holding. Returns: record list with date, quantity, unit value, total value, cost basis, and currency. Useful for analyzing holding performance over time.",
     inputSchema: z.object({
       holdingId: z.string().describe("Required holding ID to get records for"),
       startDate: z.string().optional().describe("YYYY-MM-DD format"),
@@ -61,7 +62,7 @@ export const aiTools = {
 
   getNetWorthHistory: tool({
     description:
-      "Get net worth history over time to analyze the user's financial trends and patterns",
+      "Get net worth history over time to analyze financial trends. Returns: chronological list of net worth values with dates, total data points, and period information. Shows portfolio growth/decline patterns.",
     inputSchema: z.object({
       baseCurrency: z
         .string()
@@ -78,6 +79,28 @@ export const aiTools = {
     }),
     execute: async (args) => {
       return getNetWorthHistory(args);
+    },
+  }),
+
+  getNetWorthChange: tool({
+    description:
+      "Get net worth change over a specified period to analyze portfolio performance. Returns: current vs previous values, absolute change amount, percentage change, and direction (positive/negative). Shows portfolio growth rate and momentum.",
+    inputSchema: z.object({
+      baseCurrency: z
+        .string()
+        .optional()
+        .describe(
+          "Currency code for analysis (e.g., USD, EUR, GBP, etc.). Leave empty to use the user's preferred currency.",
+        ),
+      weeksBack: z
+        .number()
+        .optional()
+        .describe(
+          "Number of weeks to compare back (default: 24 weeks = ~6 months)",
+        ),
+    }),
+    execute: async (args) => {
+      return getNetWorthChange(args);
     },
   }),
 };

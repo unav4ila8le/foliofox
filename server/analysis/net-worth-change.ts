@@ -1,5 +1,6 @@
 "use server";
 
+import { fetchProfile } from "@/server/profile/actions";
 import { calculateNetWorth } from "@/server/analysis/net-worth";
 
 export interface NetWorthChangeData {
@@ -10,7 +11,7 @@ export interface NetWorthChangeData {
 }
 
 interface FetchNetWorthChangeParams {
-  targetCurrency: string;
+  targetCurrency?: string;
   weeksBack?: number;
 }
 
@@ -19,6 +20,12 @@ export async function fetchNetWorthChange({
   targetCurrency,
   weeksBack = 24,
 }: FetchNetWorthChangeParams) {
+  // Get user's preferred currency if not specified
+  if (!targetCurrency) {
+    const { profile } = await fetchProfile();
+    targetCurrency = profile.display_currency;
+  }
+
   // Calculate comparison date
   const today = new Date();
   const comparisonDate = new Date(today);
