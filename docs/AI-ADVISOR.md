@@ -13,16 +13,22 @@
 - Provide deeper data only when needed by the conversation.
 - Progress:
   - [x] `getPortfolioSnapshot`
+  - [x] `getHoldings({ holdingId?, date? })`
   - [x] `getTransactions({ range?, holdingId? })`
   - [x] `getRecords({ holdingId, range? })`
-  - [x] `getHoldings({ holdingId? })`
   - [x] `getNetWorthHistory({ baseCurrency, range })`
   - [x] `getNetWorthChange({ baseCurrency, range })`
   - [x] `getProjectedIncome({ baseCurrency, monthsAhead? })`
   - [x] `getHoldingsPerformance({ baseCurrency, date? })`
-  - [ ] `getTopMovers({ baseCurrency, date?, limit? })`
+  - [x] `getTopMovers({ baseCurrency, date?, limit? })`
   - [ ] `getAllocationDrift({ baseCurrency, compareToDate })`
   - [ ] `getCurrencyExposure({ baseCurrency, date? })`
+  - [ ] `getAssetAllocation({ baseCurrency, date? })`
+  - [ ] `getNetWorthAtDate({ baseCurrency, date })`
+  - [ ] `getNews({ limit? })`
+  - [ ] `getDividends({ symbolIds? })`
+  - [ ] `searchSymbols({ query, limit? })`
+  - [ ] `validateSymbol({ symbolId })`
 
 ### Advice modes
 

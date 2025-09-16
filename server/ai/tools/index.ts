@@ -9,6 +9,7 @@ import { getNetWorthHistory } from "./net-worth-history";
 import { getNetWorthChange } from "./net-worth-change";
 import { getProjectedIncome } from "./projected-income";
 import { getHoldingsPerformance } from "./holdings-performance";
+import { getTopMovers } from "./top-movers";
 
 export const aiTools = {
   getPortfolioSnapshot: tool({
@@ -41,7 +42,7 @@ export const aiTools = {
       date: z
         .string()
         .optional()
-        .describe("YYYY-MM-DD format (defaults to today)"),
+        .describe("YYYY-MM-DD format (optional, defaults to today)"),
     }),
     execute: async (args) => getHoldings(args),
   }),
@@ -51,8 +52,8 @@ export const aiTools = {
       "Get transactions history with optional filtering. Returns: transaction list with type, date, quantity, unit value, holding details, and metadata. Supports filtering by holding, date range, and archived status.",
     inputSchema: z.object({
       holdingId: z.string().optional(),
-      startDate: z.string().optional().describe("YYYY-MM-DD format"),
-      endDate: z.string().optional().describe("YYYY-MM-DD format"),
+      startDate: z.string().optional().describe("YYYY-MM-DD format (optional)"),
+      endDate: z.string().optional().describe("YYYY-MM-DD format (optional)"),
       includeArchived: z
         .boolean()
         .optional()
@@ -68,8 +69,8 @@ export const aiTools = {
       "Get historical records (quantity and unit value snapshots) for a specific holding. Returns: record list with date, quantity, unit value, total value, cost basis, and currency. Useful for analyzing holding performance over time.",
     inputSchema: z.object({
       holdingId: z.string().describe("Required holding ID to get records for"),
-      startDate: z.string().optional().describe("YYYY-MM-DD format"),
-      endDate: z.string().optional().describe("YYYY-MM-DD format"),
+      startDate: z.string().optional().describe("YYYY-MM-DD format (optional)"),
+      endDate: z.string().optional().describe("YYYY-MM-DD format (optional)"),
     }),
     execute: async (args) => {
       return getRecords(args);
@@ -161,12 +162,29 @@ export const aiTools = {
       startDate: z
         .string()
         .optional()
-        .describe("YYYY-MM-DD format, defaults to 180 days ago"),
+        .describe("YYYY-MM-DD format (optional, defaults to 180 days ago)"),
       endDate: z
         .string()
         .optional()
-        .describe("YYYY-MM-DD format, defaults to today"),
+        .describe("YYYY-MM-DD format (optional, defaults to today)"),
     }),
     execute: async (args) => getHoldingsPerformance(args),
+  }),
+
+  getTopMovers: tool({
+    description:
+      "Find top gainers and losers over a period. Returns ranked lists by percentage (market move) and absolute change (includes flows).",
+    inputSchema: z.object({
+      baseCurrency: z
+        .string()
+        .optional()
+        .describe(
+          "Currency code for analysis (e.g., USD, EUR, GBP, etc.). Leave empty to use the user's preferred currency.",
+        ),
+      startDate: z.string().optional().describe("YYYY-MM-DD format (optional)"),
+      endDate: z.string().optional().describe("YYYY-MM-DD format (optional)"),
+      limit: z.number().optional().describe("Optional, defaults to 5"),
+    }),
+    execute: async (args) => getTopMovers(args),
   }),
 };
