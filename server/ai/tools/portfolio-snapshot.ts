@@ -1,12 +1,12 @@
 "use server";
 
-import { format } from "date-fns";
-
 import { fetchProfile } from "@/server/profile/actions";
 import { fetchHoldings } from "@/server/holdings/fetch";
 import { calculateNetWorth } from "@/server/analysis/net-worth";
 import { calculateAssetAllocation } from "@/server/analysis/asset-allocation";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
+
+import { convertCurrency } from "@/lib/currency-conversion";
 
 /**
  * Get current portfolio snapshot for AI analysis
@@ -23,7 +23,6 @@ export async function getPortfolioSnapshot(params?: {
 
     // Use a signle date across quotes and FX for consistency
     const date = params?.date ? new Date(params.date) : new Date();
-    const dateKey = format(date, "yyyy-MM-dd");
 
     // Get current holdings (active only for main snapshot)
     const holdings = await fetchHoldings({
@@ -65,27 +64,23 @@ export async function getPortfolioSnapshot(params?: {
       })),
     );
 
-    const convertToBaseCurrency = (
-      amount: number,
-      sourceCurrency: string,
-    ): number => {
-      if (sourceCurrency === baseCurrency) return amount;
-      const toUSD = exchangeRatesMap.get(`${sourceCurrency}|${dateKey}`);
-      const fromUSD = exchangeRatesMap.get(`${baseCurrency}|${dateKey}`);
-      if (!toUSD || !fromUSD) {
-        return amount;
-      }
-      return (amount / toUSD) * fromUSD;
-    };
-
     // Prepare holdings for AI (sorted by base currency value)
     const holdingsBase = holdings
       .map((h) => {
-        const unitValueBase = convertToBaseCurrency(
+        const unitValueBase = convertCurrency(
           h.current_unit_value,
           h.currency,
+          baseCurrency,
+          exchangeRatesMap,
+          date,
         );
-        const totalValueBase = convertToBaseCurrency(h.total_value, h.currency);
+        const totalValueBase = convertCurrency(
+          h.total_value,
+          h.currency,
+          baseCurrency,
+          exchangeRatesMap,
+          date,
+        );
         return {
           id: h.id,
           name: h.name,

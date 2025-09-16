@@ -6,6 +6,7 @@ import { fetchProfile } from "@/server/profile/actions";
 import { fetchHoldings } from "@/server/holdings/fetch";
 import { fetchQuotes } from "@/server/quotes/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
+import { convertCurrency } from "@/lib/currency-conversion";
 
 import type { Record, TransformedHolding } from "@/types/global.types";
 
@@ -155,18 +156,15 @@ function calculateNetWorthForDate(
 
     const holdingValue = unitValue * record.quantity;
 
-    // Convert to target currency using bulk exchange rates
-    const toUsdKey = `${holding.currency}|${format(date, "yyyy-MM-dd")}`;
-    const fromUsdKey = `${targetCurrency}|${format(date, "yyyy-MM-dd")}`;
-
-    const toUsdRate = exchangeRatesMap.get(toUsdKey);
-    const fromUsdRate = exchangeRatesMap.get(fromUsdKey);
-
-    if (toUsdRate && fromUsdRate) {
-      const valueInUsd = holdingValue / toUsdRate;
-      const convertedValue = valueInUsd * fromUsdRate;
-      netWorth += convertedValue;
-    }
+    // Convert to target currency using shared helper
+    const convertedValue = convertCurrency(
+      holdingValue,
+      holding.currency,
+      targetCurrency,
+      exchangeRatesMap,
+      date,
+    );
+    netWorth += convertedValue;
   });
 
   return netWorth;

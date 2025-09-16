@@ -6,6 +6,8 @@ import { fetchHoldings } from "@/server/holdings/fetch";
 import { fetchQuotes } from "@/server/quotes/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 
+import { convertCurrency } from "@/lib/currency-conversion";
+
 import type { Record } from "@/types/global.types";
 
 /**
@@ -103,15 +105,14 @@ export async function calculateNetWorth(
 
     const holdingValue = unitValue * record.quantity;
 
-    // Convert to target currency using bulk exchange rates
-    const toUsdKey = `${holding.currency}|${format(date, "yyyy-MM-dd")}`;
-    const fromUsdKey = `${targetCurrency}|${format(date, "yyyy-MM-dd")}`;
-
-    const toUsdRate = exchangeRatesMap.get(toUsdKey);
-    const fromUsdRate = exchangeRatesMap.get(fromUsdKey);
-
-    const valueInUsd = holdingValue / toUsdRate;
-    const convertedValue = valueInUsd * fromUsdRate;
+    // Convert to target currency using shared helper
+    const convertedValue = convertCurrency(
+      holdingValue,
+      holding.currency,
+      targetCurrency,
+      exchangeRatesMap,
+      date,
+    );
 
     netWorth += convertedValue;
   });

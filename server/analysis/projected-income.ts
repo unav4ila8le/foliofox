@@ -7,6 +7,8 @@ import { fetchHoldings } from "@/server/holdings/fetch";
 import { fetchDividends } from "@/server/dividends/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 
+import { convertCurrency } from "@/lib/currency-conversion";
+
 import type {
   Dividend,
   DividendEvent,
@@ -231,42 +233,7 @@ export async function calculateSymbolProjectedIncome(
   }
 }
 
-/**
- * Utility function
- * Convert amount from source currency to target currency using USD as base
- */
-function convertCurrency(
-  amount: number,
-  sourceCurrency: string,
-  targetCurrency: string,
-  exchangeRatesMap: Map<string, number>,
-  date: string,
-): number | null {
-  // If currencies are the same, no conversion needed
-  if (sourceCurrency === targetCurrency) {
-    return amount;
-  }
-
-  // Get exchange rates
-  const toUsdKey = `${sourceCurrency}|${date}`;
-  const fromUsdKey = `${targetCurrency}|${date}`;
-
-  const toUsdRate = exchangeRatesMap.get(toUsdKey);
-  const fromUsdRate = exchangeRatesMap.get(fromUsdKey);
-
-  if (!toUsdRate || !fromUsdRate) {
-    console.warn(
-      `Missing exchange rates for ${sourceCurrency} or ${targetCurrency} on ${date}`,
-    );
-    return null;
-  }
-
-  // Convert: source -> USD -> target
-  const valueInUsd = amount / toUsdRate;
-  const convertedValue = valueInUsd * fromUsdRate;
-
-  return convertedValue;
-}
+// Removed local convertCurrency in favor of shared helper
 
 /**
  * Calculate monthly dividend amount based on frequency

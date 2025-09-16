@@ -129,15 +129,18 @@ export function Chat() {
 
       {/* Suggestions */}
       {messages.length === 0 && (
-        <Suggestions>
-          {suggestions.map((suggestion) => (
-            <Suggestion
-              key={suggestion}
-              onClick={handleSuggestionClick}
-              suggestion={suggestion}
-            />
-          ))}
-        </Suggestions>
+        <div className="space-y-2">
+          <p className="text-muted-foreground px-2 text-sm">Suggestions</p>
+          <Suggestions>
+            {suggestions.map((suggestion) => (
+              <Suggestion
+                key={suggestion}
+                onClick={handleSuggestionClick}
+                suggestion={suggestion}
+              />
+            ))}
+          </Suggestions>
+        </div>
       )}
 
       {/* Prompt Input */}

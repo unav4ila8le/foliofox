@@ -11,7 +11,7 @@ export const Suggestions = ({
   children,
   ...props
 }: SuggestionsProps) => (
-  <div className={cn("flex flex-wrap gap-2", className)} {...props}>
+  <div className={cn("flex flex-wrap gap-1", className)} {...props}>
     {children}
   </div>
 );
@@ -25,7 +25,7 @@ export const Suggestion = ({
   suggestion,
   onClick,
   className,
-  variant = "outline",
+  variant = "ghost",
   size = "sm",
   children,
   ...props
@@ -37,7 +37,7 @@ export const Suggestion = ({
   return (
     <Button
       className={cn(
-        "h-auto max-w-full rounded-xl px-4 py-2 text-start whitespace-normal",
+        "h-auto max-w-full p-2 text-start whitespace-normal",
         className,
       )}
       onClick={handleClick}

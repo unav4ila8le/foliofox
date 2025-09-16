@@ -1,19 +1,20 @@
 "use server";
 
-import { format } from "date-fns";
-
 import { fetchHoldings } from "@/server/holdings/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
+
+import { convertCurrency } from "@/lib/currency-conversion";
 
 /**
  * Calculate asset allocation by category.
  * Uses bulk exchange rate fetching for optimal performance.
  */
 export async function calculateAssetAllocation(targetCurrency: string) {
+  const date = new Date();
   // 1. Get all holdings
   const holdings = await fetchHoldings({
     includeArchived: true,
-    quoteDate: new Date(),
+    quoteDate: date,
   });
 
   if (holdings.length === 0) {
@@ -27,66 +28,53 @@ export async function calculateAssetAllocation(targetCurrency: string) {
   // 3. Bulk fetch all exchange rates at once
   const exchangeRateRequests = allCurrencies.map((currency) => ({
     currency,
-    date: new Date(),
+    date,
   }));
 
   const exchangeRates = await fetchExchangeRates(exchangeRateRequests);
 
-  // 4. Convert all holdings to USD using bulk-fetched rates
-  const holdingsInUSD = holdings.map((holding) => {
-    const rateKey = `${holding.currency}|${format(new Date(), "yyyy-MM-dd")}`;
-    const rate = exchangeRates.get(rateKey);
+  // 4. Convert each holding value directly to target currency
+  const holdingsInTarget = holdings.map((holding) => ({
+    ...holding,
+    total_value_target: convertCurrency(
+      holding.total_value,
+      holding.currency,
+      targetCurrency,
+      exchangeRates,
+      date,
+    ),
+  }));
 
-    if (!rate) {
-      throw new Error(`Exchange rate not found for ${holding.currency}`);
-    }
-
-    return {
-      ...holding,
-      total_value_usd: holding.total_value / rate,
-    };
-  });
-
-  // 5. Group by category and sum USD values
-  const assetAllocationInUSD: Record<
+  // 5. Group by category and sum target-currency values
+  const assetAllocationInTarget: Record<
     string,
     {
       category_code: string;
       name: string;
-      total_value_usd: number;
+      total_value_target: number;
     }
   > = {};
 
-  holdingsInUSD.forEach((holding) => {
+  holdingsInTarget.forEach((holding) => {
     const category_code = holding.category_code;
 
-    if (assetAllocationInUSD[category_code]) {
-      assetAllocationInUSD[category_code].total_value_usd +=
-        holding.total_value_usd;
+    if (assetAllocationInTarget[category_code]) {
+      assetAllocationInTarget[category_code].total_value_target +=
+        holding.total_value_target;
     } else {
-      assetAllocationInUSD[category_code] = {
+      assetAllocationInTarget[category_code] = {
         category_code,
         name: holding.asset_categories.name,
-        total_value_usd: holding.total_value_usd,
+        total_value_target: holding.total_value_target,
       };
     }
   });
 
-  // 6. Convert back to target currency (only need 1 rate, not N rates)
-  const targetCurrencyRateKey = `${targetCurrency}|${format(new Date(), "yyyy-MM-dd")}`;
-  const targetRate = exchangeRates.get(targetCurrencyRateKey);
-
-  if (!targetRate) {
-    throw new Error(
-      `Exchange rate not found for target currency ${targetCurrency}`,
-    );
-  }
-
-  const assetAllocation = Object.values(assetAllocationInUSD)
+  const assetAllocation = Object.values(assetAllocationInTarget)
     .map((allocation) => ({
       category_code: allocation.category_code,
       name: allocation.name,
-      total_value: allocation.total_value_usd * targetRate,
+      total_value: allocation.total_value_target,
     }))
     .sort((a, b) => b.total_value - a.total_value); // Sort by value descending;
 
