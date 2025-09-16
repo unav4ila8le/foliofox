@@ -10,6 +10,7 @@ import { getNetWorthChange } from "./net-worth-change";
 import { getProjectedIncome } from "./projected-income";
 import { getHoldingsPerformance } from "./holdings-performance";
 import { getTopMovers } from "./top-movers";
+import { getAllocationDrift } from "./allocation-drift";
 
 export const aiTools = {
   getPortfolioSnapshot: tool({
@@ -186,5 +187,22 @@ export const aiTools = {
       limit: z.number().optional().describe("Optional, defaults to 5"),
     }),
     execute: async (args) => getTopMovers(args),
+  }),
+
+  getAllocationDrift: tool({
+    description:
+      "Compare current asset allocation vs a past date, showing percentage drift by category (rebalance insights).",
+    inputSchema: z.object({
+      baseCurrency: z
+        .string()
+        .optional()
+        .describe(
+          "Currency code for analysis (e.g., USD, EUR, GBP, etc.). Leave empty to use the user's preferred currency.",
+        ),
+      compareToDate: z
+        .string()
+        .describe("Historical date to compare against (YYYY-MM-DD format)"),
+    }),
+    execute: async (args) => getAllocationDrift(args),
   }),
 };
