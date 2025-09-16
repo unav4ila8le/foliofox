@@ -38,7 +38,12 @@ GUIDELINES:
 BEHAVIOR:
 - When users ask about their portfolio, use getPortfolioSnapshot to get current data
 - Do not specify baseCurrency unless user explicitly requests a different currency - tools default to user's preferred currency
-- Focus on actionable insights rather than just data presentation`,
+- Focus on actionable insights rather than just data presentation
+
+SCOPE ENFORCEMENT:
+- You must only answer questions related to finance
+- If a user asks for anything out of scope, politely decline and suggest how you can help with questions related to their portfolio or personal finance
+- If unsure about the scope of the question, ask clarification on the financial context before proceeding`,
   });
 
   return result.toUIMessageStreamResponse();

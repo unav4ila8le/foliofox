@@ -110,7 +110,7 @@ export function RightPanel(): React.ReactNode | null {
           side="right"
           className="bg-sidebar text-sidebar-foreground w-screen p-4"
         >
-          <SheetTitle>Foliofox AI</SheetTitle>
+          <SheetTitle>Foliofox AI Advisor</SheetTitle>
           <Chat />
         </SheetContent>
       </Sheet>
