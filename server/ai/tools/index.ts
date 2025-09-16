@@ -2,11 +2,13 @@ import { tool } from "ai";
 import { z } from "zod";
 
 import { getPortfolioSnapshot } from "./portfolio-snapshot";
+import { getHoldings } from "./holdings";
 import { getTransactions } from "./transactions";
 import { getRecords } from "./records";
 import { getNetWorthHistory } from "./net-worth-history";
 import { getNetWorthChange } from "./net-worth-change";
 import { getProjectedIncome } from "./projected-income";
+import { getHoldingsPerformance } from "./holdings-performance";
 
 export const aiTools = {
   getPortfolioSnapshot: tool({
@@ -29,6 +31,19 @@ export const aiTools = {
     execute: async (args) => {
       return getPortfolioSnapshot(args);
     },
+  }),
+
+  getHoldings: tool({
+    description:
+      "Get raw holdings in original currencies (no FX conversion). Optionally filter by holding IDs. Uses market prices as-of the given date (defaults to today) for symbol holdings.",
+    inputSchema: z.object({
+      holdingIds: z.array(z.string()).optional(),
+      date: z
+        .string()
+        .optional()
+        .describe("YYYY-MM-DD format (defaults to today)"),
+    }),
+    execute: async (args) => getHoldings(args),
   }),
 
   getTransactions: tool({
@@ -125,5 +140,33 @@ export const aiTools = {
     execute: async (args) => {
       return getProjectedIncome(args);
     },
+  }),
+
+  getHoldingsPerformance: tool({
+    description:
+      "Analyze holding(s) performance over a period. Returns price return (market move), value change (includes flows), and current unrealized P/L vs cost basis. Can analyze single holding, multiple holdings, or entire portfolio.",
+    inputSchema: z.object({
+      baseCurrency: z
+        .string()
+        .optional()
+        .describe(
+          "Currency code for analysis (e.g., USD, EUR, GBP, etc.). Leave empty to use the user's preferred currency.",
+        ),
+      holdingIds: z
+        .array(z.string())
+        .optional()
+        .describe(
+          "Specific holding IDs to analyze. If omitted, analyzes all holdings.",
+        ),
+      startDate: z
+        .string()
+        .optional()
+        .describe("YYYY-MM-DD format, defaults to 180 days ago"),
+      endDate: z
+        .string()
+        .optional()
+        .describe("YYYY-MM-DD format, defaults to today"),
+    }),
+    execute: async (args) => getHoldingsPerformance(args),
   }),
 };

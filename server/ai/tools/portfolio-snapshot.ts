@@ -2,7 +2,6 @@
 
 import { format } from "date-fns";
 
-import { getCurrentUser } from "@/server/auth/actions";
 import { fetchProfile } from "@/server/profile/actions";
 import { fetchHoldings } from "@/server/holdings/fetch";
 import { calculateNetWorth } from "@/server/analysis/net-worth";
@@ -18,9 +17,6 @@ export async function getPortfolioSnapshot(params?: {
   date?: string;
 }) {
   try {
-    // Ensure user is authenticated (required for RLS)
-    await getCurrentUser();
-
     // Get user's profile to use their preferred currency
     const { profile } = await fetchProfile();
     const baseCurrency = params?.baseCurrency ?? profile.display_currency;
@@ -31,7 +27,7 @@ export async function getPortfolioSnapshot(params?: {
 
     // Get current holdings (active only for main snapshot)
     const holdings = await fetchHoldings({
-      includeArchived: false,
+      includeArchived: true,
       quoteDate: date,
     });
 
@@ -100,6 +96,7 @@ export async function getPortfolioSnapshot(params?: {
           unitValue: unitValueBase,
           value: totalValueBase,
           currency: baseCurrency,
+          isArchived: h.is_archived,
           original: {
             currency: h.currency,
             unitValue: h.current_unit_value,

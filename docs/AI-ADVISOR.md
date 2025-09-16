@@ -15,10 +15,11 @@
   - [x] `getPortfolioSnapshot`
   - [x] `getTransactions({ range?, holdingId? })`
   - [x] `getRecords({ holdingId, range? })`
+  - [x] `getHoldings({ holdingId? })`
   - [x] `getNetWorthHistory({ baseCurrency, range })`
   - [x] `getNetWorthChange({ baseCurrency, range })`
   - [x] `getProjectedIncome({ baseCurrency, monthsAhead? })`
-  - [ ] `getHoldingsPerformance({ baseCurrency, date? })`
+  - [x] `getHoldingsPerformance({ baseCurrency, date? })`
   - [ ] `getTopMovers({ baseCurrency, date?, limit? })`
   - [ ] `getAllocationDrift({ baseCurrency, compareToDate })`
   - [ ] `getCurrencyExposure({ baseCurrency, date? })`
