@@ -18,7 +18,6 @@ export type Holding = Pick<
   | "symbol_id"
   | "currency"
   | "description"
-  | "is_archived"
   | "archived_at"
   | "created_at"
 > & {
@@ -26,6 +25,7 @@ export type Holding = Pick<
 };
 
 export type TransformedHolding = Holding & {
+  is_archived: boolean;
   asset_type: string;
   current_quantity: number;
   current_unit_value: number;

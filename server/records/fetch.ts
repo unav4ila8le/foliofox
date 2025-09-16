@@ -26,8 +26,7 @@ export async function fetchRecords(options: FetchRecordsParams) {
       `
       *,
       holdings!inner (
-        currency,
-        is_archived
+        currency
       )
     `,
     )

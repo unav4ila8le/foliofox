@@ -222,7 +222,6 @@ export type Database = {
           currency: string;
           description: string | null;
           id: string;
-          is_archived: boolean;
           name: string;
           symbol_id: string | null;
           updated_at: string;
@@ -235,7 +234,6 @@ export type Database = {
           currency: string;
           description?: string | null;
           id?: string;
-          is_archived?: boolean;
           name: string;
           symbol_id?: string | null;
           updated_at?: string;
@@ -248,7 +246,6 @@ export type Database = {
           currency?: string;
           description?: string | null;
           id?: string;
-          is_archived?: boolean;
           name?: string;
           symbol_id?: string | null;
           updated_at?: string;

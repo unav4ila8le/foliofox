@@ -10,7 +10,6 @@ export async function archiveHolding(holdingId: string) {
   const { error } = await supabase
     .from("holdings")
     .update({
-      is_archived: true,
       archived_at: new Date().toISOString(),
     })
     .eq("id", holdingId);
@@ -35,7 +34,6 @@ export async function archiveHoldings(holdingIds: string[]) {
   const { error } = await supabase
     .from("holdings")
     .update({
-      is_archived: true,
       archived_at: new Date().toISOString(),
     })
     .in("id", holdingIds);

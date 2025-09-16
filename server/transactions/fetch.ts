@@ -31,7 +31,7 @@ export async function fetchTransactions(
         name,
         symbol_id,
         currency,
-        is_archived
+        archived_at
       )
     `,
     )
@@ -48,7 +48,7 @@ export async function fetchTransactions(
 
   // Handle archived holdings filtering
   if (!includeArchived) {
-    query.eq("holdings.is_archived", false);
+    query.is("holdings.archived_at", null);
   }
 
   const { data: transactions, error } = await query

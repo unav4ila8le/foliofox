@@ -23,7 +23,7 @@ async function checkDuplicateHoldingName(
     .select("id")
     .eq("user_id", userId)
     .eq("name", holdingName)
-    .eq("is_archived", false); // Only check active holdings
+    .is("archived_at", null); // Only check active holdings
 
   // If updating an existing holding, exclude it from the duplicate check
   if (excludeHoldingId) {

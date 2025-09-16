@@ -17,7 +17,7 @@ async function checkForDuplicateNames(holdingNames: string[]) {
     .from("holdings")
     .select("name")
     .eq("user_id", user.id)
-    .eq("is_archived", false)
+    .is("archived_at", null)
     .in("name", holdingNames);
 
   if (error) {

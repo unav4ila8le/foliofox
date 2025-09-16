@@ -60,7 +60,6 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
       symbol_id,
       currency,
       description,
-      is_archived,
       archived_at,
       created_at,
       asset_categories (
@@ -78,9 +77,9 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
 
   // Handle archived holdings filtering
   if (onlyArchived) {
-    query.eq("is_archived", true);
+    query.not("archived_at", "is", null);
   } else if (!includeArchived) {
-    query.eq("is_archived", false);
+    query.is("archived_at", null);
   }
 
   const { data: holdings, error } = await query.order(
@@ -206,6 +205,7 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
 
     return {
       ...holding,
+      is_archived: holding.archived_at !== null,
       asset_type: holding.asset_categories.name,
       current_unit_value,
       current_quantity,

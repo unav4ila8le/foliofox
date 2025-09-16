@@ -230,7 +230,6 @@ CREATE TABLE public.holdings (
     description text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    is_archived boolean DEFAULT false NOT NULL,
     archived_at timestamp with time zone,
     symbol_id text
 );
@@ -596,10 +595,10 @@ CREATE INDEX idx_holdings_category_user ON public.holdings USING btree (category
 
 
 --
--- Name: idx_holdings_user_archived; Type: INDEX; Schema: public; Owner: postgres
+-- Name: idx_holdings_user_archived_at; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_holdings_user_archived ON public.holdings USING btree (user_id, is_archived);
+CREATE INDEX idx_holdings_user_archived_at ON public.holdings USING btree (user_id, archived_at);
 
 
 --

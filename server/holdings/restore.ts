@@ -10,7 +10,6 @@ export async function restoreHolding(holdingId: string) {
   const { error } = await supabase
     .from("holdings")
     .update({
-      is_archived: false,
       archived_at: null,
     })
     .eq("id", holdingId);
@@ -35,7 +34,6 @@ export async function restoreHoldings(holdingIds: string[]) {
   const { error } = await supabase
     .from("holdings")
     .update({
-      is_archived: false,
       archived_at: null,
     })
     .in("id", holdingIds);
