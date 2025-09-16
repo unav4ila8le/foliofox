@@ -22,10 +22,17 @@ import {
   PromptInputToolbar,
   PromptInputBody,
   type PromptInputMessage,
+  PromptInputSelect,
+  PromptInputSelectTrigger,
+  PromptInputSelectContent,
+  PromptInputSelectItem,
+  PromptInputSelectValue,
 } from "@/components/ui/ai/prompt-input";
 import { Response } from "@/components/ui/ai/response";
 import { Actions, Action } from "@/components/ui/ai/actions";
 import { Suggestions, Suggestion } from "@/components/ui/ai/suggestions";
+
+import type { Mode } from "@/server/ai/system-prompt";
 
 const suggestions = [
   "What would happen to my portfolio if the market crashes 30% tomorrow?",
@@ -36,11 +43,13 @@ const suggestions = [
 
 export function Chat() {
   const [input, setInput] = useState("");
+  const [mode, setMode] = useState<Mode>("advisory");
   const [copiedMessages, setCopiedMessages] = useState<Set<string>>(new Set());
 
   const { messages, sendMessage, status, stop, regenerate } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/ai/chat",
+      headers: { "x-ff-mode": mode },
     }),
   });
 
@@ -152,7 +161,26 @@ export function Chat() {
             placeholder="Ask Foliofox..."
           />
         </PromptInputBody>
-        <PromptInputToolbar className="justify-end">
+        <PromptInputToolbar>
+          <PromptInputSelect
+            value={mode}
+            onValueChange={(value) => setMode(value as Mode)}
+          >
+            <PromptInputSelectTrigger>
+              <PromptInputSelectValue />
+            </PromptInputSelectTrigger>
+            <PromptInputSelectContent>
+              <PromptInputSelectItem value="educational">
+                Educational
+              </PromptInputSelectItem>
+              <PromptInputSelectItem value="advisory">
+                Advisory
+              </PromptInputSelectItem>
+              <PromptInputSelectItem value="unhinged">
+                Unhinged
+              </PromptInputSelectItem>
+            </PromptInputSelectContent>
+          </PromptInputSelect>
           <PromptInputSubmit
             disabled={status === "streaming" ? false : input.trim().length < 2}
             type={status === "streaming" ? "button" : "submit"}

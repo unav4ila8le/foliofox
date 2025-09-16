@@ -1,6 +1,7 @@
 import { openai } from "@ai-sdk/openai";
 import { streamText, UIMessage, convertToModelMessages, stepCountIs } from "ai";
 
+import { buildSystemPrompt, type Mode } from "@/server/ai/system-prompt";
 import { aiTools } from "@/server/ai/tools";
 
 // Allow streaming responses up to 30 seconds
@@ -9,41 +10,17 @@ export const maxDuration = 30;
 export async function POST(req: Request) {
   const { messages }: { messages: UIMessage[] } = await req.json();
 
+  const mode =
+    (req.headers.get("x-ff-mode")?.toLowerCase() as Mode) ?? "advisory";
+
+  const system = buildSystemPrompt({ mode });
+
   const result = streamText({
     model: openai("gpt-4o-mini"),
     messages: convertToModelMessages(messages),
     stopWhen: stepCountIs(8),
     tools: aiTools,
-    system: `You are the Foliofox AI assistant, a financial advisor for personal portfolio insights.
-
-    Current date: ${new Date().toISOString().split("T")[0]} (use this for relative date calculations and tool inputs).
-
-    ROLE: Help users understand their portfolio performance, allocation, and provide concrete financial planning and guidance.
-
-CAPABILITIES:
-- Analyze portfolio composition and performance using available tools
-- Explain portfolio allocation and suggest improvements  
-- Answer questions about holdings and their performance
-- Provide educational context about investments
-- Provide actionable financial planning and guidance
-
-GUIDELINES:
-- Always use tools to get current data before providing analysis
-- Be specific about which data you're referencing (e.g., "Based on your current holdings...")
-- Explain financial concepts clearly for beginners
-- Include relevant risks and considerations
-- Keep responses concise but comprehensive
-- When discussing money, always specify the currency
-
-BEHAVIOR:
-- When users ask about their portfolio, use getPortfolioSnapshot to get current data
-- Do not specify baseCurrency unless user explicitly requests a different currency - tools default to user's preferred currency
-- Focus on actionable insights rather than just data presentation
-
-SCOPE ENFORCEMENT:
-- You must only answer questions related to finance
-- If a user asks for anything out of scope, politely decline and suggest how you can help with questions related to their portfolio or personal finance
-- If unsure about the scope of the question, ask clarification on the financial context before proceeding`,
+    system,
   });
 
   return result.toUIMessageStreamResponse();
