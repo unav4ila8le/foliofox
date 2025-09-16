@@ -636,20 +636,20 @@ export const PromptInputSubmit = ({
   );
 };
 
-export type PromptInputModelSelectProps = ComponentProps<typeof Select>;
+export type PromptInputSelectProps = ComponentProps<typeof Select>;
 
-export const PromptInputModelSelect = (props: PromptInputModelSelectProps) => (
+export const PromptInputSelect = (props: PromptInputSelectProps) => (
   <Select {...props} />
 );
 
-export type PromptInputModelSelectTriggerProps = ComponentProps<
+export type PromptInputSelectTriggerProps = ComponentProps<
   typeof SelectTrigger
 >;
 
-export const PromptInputModelSelectTrigger = ({
+export const PromptInputSelectTrigger = ({
   className,
   ...props
-}: PromptInputModelSelectTriggerProps) => (
+}: PromptInputSelectTriggerProps) => (
   <SelectTrigger
     className={cn(
       "text-muted-foreground border-none bg-transparent font-medium shadow-none transition-colors",
@@ -660,33 +660,31 @@ export const PromptInputModelSelectTrigger = ({
   />
 );
 
-export type PromptInputModelSelectContentProps = ComponentProps<
+export type PromptInputSelectContentProps = ComponentProps<
   typeof SelectContent
 >;
 
-export const PromptInputModelSelectContent = ({
+export const PromptInputSelectContent = ({
   className,
   ...props
-}: PromptInputModelSelectContentProps) => (
+}: PromptInputSelectContentProps) => (
   <SelectContent className={cn(className)} {...props} />
 );
 
-export type PromptInputModelSelectItemProps = ComponentProps<typeof SelectItem>;
+export type PromptInputSelectItemProps = ComponentProps<typeof SelectItem>;
 
-export const PromptInputModelSelectItem = ({
+export const PromptInputSelectItem = ({
   className,
   ...props
-}: PromptInputModelSelectItemProps) => (
+}: PromptInputSelectItemProps) => (
   <SelectItem className={cn(className)} {...props} />
 );
 
-export type PromptInputModelSelectValueProps = ComponentProps<
-  typeof SelectValue
->;
+export type PromptInputSelectValueProps = ComponentProps<typeof SelectValue>;
 
-export const PromptInputModelSelectValue = ({
+export const PromptInputSelectValue = ({
   className,
   ...props
-}: PromptInputModelSelectValueProps) => (
+}: PromptInputSelectValueProps) => (
   <SelectValue className={cn(className)} {...props} />
 );
