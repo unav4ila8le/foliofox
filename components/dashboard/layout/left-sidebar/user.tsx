@@ -21,7 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SidebarMenuButton, useSidebar } from "@/components/ui/sidebar";
-import { SettingsForm } from "@/components/dashboard/layout/sidebar/settings-form";
+import { SettingsForm } from "@/components/dashboard/layout/left-sidebar/settings-form";
 
 import { formatCurrency } from "@/lib/number-format";
 

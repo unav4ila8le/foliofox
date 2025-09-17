@@ -15,7 +15,7 @@ import { Menu } from "./menu";
 
 import type { Profile } from "@/types/global.types";
 
-export function DashboardSidebar({
+export function LeftSidebar({
   profile,
   email,
   netWorth,
@@ -25,7 +25,7 @@ export function DashboardSidebar({
   netWorth: number;
 }) {
   return (
-    <Sidebar variant="inset">
+    <Sidebar>
       <SidebarHeader>
         <UISidebarMenu>
           <SidebarMenuItem>

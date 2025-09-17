@@ -10,7 +10,6 @@ import { Breadcrumb } from "./breadcrumb";
 import { NewActionButton } from "./new-action-button";
 import { FeedbackButton } from "@/components/dashboard/layout/header/feedback";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { RightPanelToggleButton } from "@/components/dashboard/layout/right-panel";
 
 export function Header() {
   return (
@@ -34,7 +33,7 @@ export function Header() {
         <NewActionButton />
         <FeedbackButton />
         <ThemeToggle />
-        <RightPanelToggleButton />
+        <SidebarTrigger side="right" />
       </div>
     </header>
   );
