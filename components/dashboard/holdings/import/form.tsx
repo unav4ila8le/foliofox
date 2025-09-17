@@ -17,7 +17,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
@@ -159,32 +158,28 @@ export function ImportForm() {
         <p>
           <span className="text-foreground font-medium">Required columns:</span>{" "}
           name,{" "}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="text-foreground inline-block cursor-help underline-offset-4 hover:underline">
-                  category_code
-                </span>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs">
-                Available categories:{" "}
-                {categories.map((category) => category.code).join(", ")}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="text-foreground inline-block cursor-help underline-offset-4 hover:underline">
+                category_code
+              </span>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">
+              Available categories:{" "}
+              {categories.map((category) => category.code).join(", ")}
+            </TooltipContent>
+          </Tooltip>
           , currency, current_quantity, current_unit_value,{" "}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="text-foreground inline-block cursor-help underline-offset-4 hover:underline">
-                  symbol_id
-                </span>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs">
-                Use Yahoo Finance ticker symbols (e.g., AAPL, MSFT, VWCE.DE).
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="text-foreground inline-block cursor-help underline-offset-4 hover:underline">
+                symbol_id
+              </span>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">
+              Use Yahoo Finance ticker symbols (e.g., AAPL, MSFT, VWCE.DE).
+            </TooltipContent>
+          </Tooltip>
           , description.
         </p>
       </div>

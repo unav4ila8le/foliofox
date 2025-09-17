@@ -22,7 +22,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
-  TooltipProvider,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -311,18 +310,16 @@ export function UpdateForm() {
             <FormItem className="sm:w-1/2 sm:pr-1">
               <div className="flex items-center gap-1">
                 <FormLabel>Cost basis per unit (optional)</FormLabel>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="size-4" aria-label="Cost basis help" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      Enter your average price paid per unit at this date. Used
-                      for P/L. If omitted, we infer it from previous records or
-                      from the unit value.
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="size-4" aria-label="Cost basis help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Enter your average price paid per unit at this date. Used
+                    for P/L. If omitted, we infer it from previous records or
+                    from the unit value.
+                  </TooltipContent>
+                </Tooltip>
               </div>
               <FormControl>
                 <Input

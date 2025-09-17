@@ -34,6 +34,20 @@ COMMENT ON SCHEMA public IS 'standard public schema';
 
 
 --
+-- Name: conversation_role; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public.conversation_role AS ENUM (
+    'system',
+    'user',
+    'assistant',
+    'tool'
+);
+
+
+ALTER TYPE public.conversation_role OWNER TO postgres;
+
+--
 -- Name: feedback_type; Type: TYPE; Schema: public; Owner: postgres
 --
 
@@ -104,6 +118,39 @@ ALTER TABLE public.asset_categories OWNER TO postgres;
 
 COMMENT ON TABLE public.asset_categories IS 'Lookup table for categorizing financial assets.';
 
+
+--
+-- Name: conversation_messages; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.conversation_messages (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    conversation_id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    role public.conversation_role NOT NULL,
+    content text NOT NULL,
+    model text,
+    usage_tokens integer,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.conversation_messages OWNER TO postgres;
+
+--
+-- Name: conversations; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.conversations (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    title text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.conversations OWNER TO postgres;
 
 --
 -- Name: currencies; Type: TABLE; Schema: public; Owner: postgres
@@ -368,6 +415,22 @@ ALTER TABLE ONLY public.asset_categories
 
 
 --
+-- Name: conversation_messages conversation_messages_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.conversation_messages
+    ADD CONSTRAINT conversation_messages_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: conversations conversations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.conversations
+    ADD CONSTRAINT conversations_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: currencies currencies_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -574,6 +637,13 @@ CREATE INDEX holdings_user_id_idx ON public.holdings USING btree (user_id);
 
 
 --
+-- Name: idx_conversations_user_updated; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_conversations_user_updated ON public.conversations USING btree (user_id, updated_at DESC);
+
+
+--
 -- Name: idx_dividend_events_event_date_desc; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -599,6 +669,13 @@ CREATE INDEX idx_holdings_category_user ON public.holdings USING btree (category
 --
 
 CREATE INDEX idx_holdings_user_archived_at ON public.holdings USING btree (user_id, archived_at);
+
+
+--
+-- Name: idx_messages_conversation_time; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_messages_conversation_time ON public.conversation_messages USING btree (conversation_id, created_at);
 
 
 --
@@ -721,6 +798,13 @@ CREATE INDEX transactions_user_id_idx ON public.transactions USING btree (user_i
 
 
 --
+-- Name: conversations conversations_handle_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER conversations_handle_updated_at BEFORE UPDATE ON public.conversations FOR EACH ROW EXECUTE FUNCTION storage.update_updated_at_column();
+
+
+--
 -- Name: holdings holdings_handle_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
@@ -760,6 +844,30 @@ CREATE TRIGGER symbols_handle_updated_at BEFORE UPDATE ON public.symbols FOR EAC
 --
 
 CREATE TRIGGER transactions_handle_updated_at BEFORE UPDATE ON public.transactions FOR EACH ROW EXECUTE FUNCTION storage.update_updated_at_column();
+
+
+--
+-- Name: conversation_messages conversation_messages_conversation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.conversation_messages
+    ADD CONSTRAINT conversation_messages_conversation_id_fkey FOREIGN KEY (conversation_id) REFERENCES public.conversations(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: conversation_messages conversation_messages_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.conversation_messages
+    ADD CONSTRAINT conversation_messages_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: conversations conversations_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.conversations
+    ADD CONSTRAINT conversations_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
@@ -918,7 +1026,7 @@ ALTER TABLE ONLY public.transactions
 -- Name: quotes   Enable update for authenticated users; Type: POLICY; Schema: public; Owner: postgres
 --
 
-CREATE POLICY "  Enable update for authenticated users" ON public.quotes FOR UPDATE TO authenticated USING (true);
+CREATE POLICY "  Enable update for authenticated users" ON public.quotes FOR UPDATE TO authenticated, service_role USING (true);
 
 
 --
@@ -932,7 +1040,7 @@ CREATE POLICY "Enable insert for all authenticated users" ON public.quotes FOR I
 -- Name: symbols Enable insert for all authenticated users; Type: POLICY; Schema: public; Owner: postgres
 --
 
-CREATE POLICY "Enable insert for all authenticated users" ON public.symbols FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "Enable insert for all authenticated users" ON public.symbols FOR INSERT TO authenticated, service_role WITH CHECK (true);
 
 
 --
@@ -1006,6 +1114,20 @@ CREATE POLICY "Enable update for all authenticated users" ON public.symbols FOR 
 
 
 --
+-- Name: conversation_messages Users can delete their own conversation messages; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Users can delete their own conversation messages" ON public.conversation_messages FOR DELETE TO authenticated USING ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+--
+-- Name: conversations Users can delete their own conversations; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Users can delete their own conversations" ON public.conversations FOR DELETE TO authenticated USING ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+--
 -- Name: holdings Users can delete their own holdings; Type: POLICY; Schema: public; Owner: postgres
 --
 
@@ -1031,6 +1153,20 @@ CREATE POLICY "Users can delete their own transactions" ON public.transactions F
 --
 
 CREATE POLICY "Users can insert own profile" ON public.profiles FOR INSERT TO authenticated WITH CHECK ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+--
+-- Name: conversation_messages Users can insert their own conversation messages; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Users can insert their own conversation messages" ON public.conversation_messages FOR INSERT TO authenticated WITH CHECK ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+--
+-- Name: conversations Users can insert their own conversations; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Users can insert their own conversations" ON public.conversations FOR INSERT TO authenticated WITH CHECK ((user_id = ( SELECT auth.uid() AS uid)));
 
 
 --
@@ -1062,6 +1198,20 @@ CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE TO au
 
 
 --
+-- Name: conversation_messages Users can update their own conversation messages; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Users can update their own conversation messages" ON public.conversation_messages FOR UPDATE TO authenticated USING ((user_id = ( SELECT auth.uid() AS uid))) WITH CHECK ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+--
+-- Name: conversations Users can update their own conversations; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Users can update their own conversations" ON public.conversations FOR UPDATE TO authenticated USING ((user_id = ( SELECT auth.uid() AS uid))) WITH CHECK ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+--
 -- Name: holdings Users can update their own holdings; Type: POLICY; Schema: public; Owner: postgres
 --
 
@@ -1090,6 +1240,20 @@ CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT TO auth
 
 
 --
+-- Name: conversation_messages Users can view their own conversation messages; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Users can view their own conversation messages" ON public.conversation_messages FOR SELECT TO authenticated USING ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+--
+-- Name: conversations Users can view their own conversations; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Users can view their own conversations" ON public.conversations FOR SELECT TO authenticated USING ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+--
 -- Name: holdings Users can view their own holdings; Type: POLICY; Schema: public; Owner: postgres
 --
 
@@ -1115,6 +1279,18 @@ CREATE POLICY "Users can view their own transactions" ON public.transactions FOR
 --
 
 ALTER TABLE public.asset_categories ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: conversation_messages; Type: ROW SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE public.conversation_messages ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: conversations; Type: ROW SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE public.conversations ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: currencies; Type: ROW SECURITY; Schema: public; Owner: postgres
@@ -1214,6 +1390,24 @@ GRANT ALL ON FUNCTION public.handle_new_user() TO service_role;
 GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.asset_categories TO anon;
 GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.asset_categories TO authenticated;
 GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.asset_categories TO service_role;
+
+
+--
+-- Name: TABLE conversation_messages; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.conversation_messages TO anon;
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.conversation_messages TO authenticated;
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.conversation_messages TO service_role;
+
+
+--
+-- Name: TABLE conversations; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.conversations TO anon;
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.conversations TO authenticated;
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.conversations TO service_role;
 
 
 --

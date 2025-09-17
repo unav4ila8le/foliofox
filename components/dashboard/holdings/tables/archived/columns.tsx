@@ -6,7 +6,6 @@ import { format } from "date-fns";
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
@@ -61,14 +60,12 @@ export const columns: ColumnDef<TransformedHolding>[] = [
       const name = row.getValue<string>("name");
       return (
         <div className="flex w-40 sm:w-64 lg:w-80">
-          <TooltipProvider>
-            <Tooltip delayDuration={500}>
-              <TooltipTrigger asChild>
-                <div className="truncate">{name}</div>
-              </TooltipTrigger>
-              <TooltipContent>{name}</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <Tooltip delayDuration={500}>
+            <TooltipTrigger asChild>
+              <div className="truncate">{name}</div>
+            </TooltipTrigger>
+            <TooltipContent>{name}</TooltipContent>
+          </Tooltip>
         </div>
       );
     },

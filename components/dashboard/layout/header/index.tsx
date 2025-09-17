@@ -2,7 +2,6 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
@@ -15,14 +14,12 @@ export function Header() {
   return (
     <header className="flex items-center justify-between px-4 py-2">
       <div className="flex items-center gap-2">
-        <TooltipProvider>
-          <Tooltip delayDuration={500}>
-            <TooltipTrigger asChild>
-              <SidebarTrigger className="-ml-2 xl:hidden" />
-            </TooltipTrigger>
-            <TooltipContent>Toggle sidebar</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <Tooltip delayDuration={500}>
+          <TooltipTrigger asChild>
+            <SidebarTrigger className="-ml-2 xl:hidden" />
+          </TooltipTrigger>
+          <TooltipContent>Toggle sidebar</TooltipContent>
+        </Tooltip>
 
         {/* Desktop breadcrumb */}
         <div className="hidden md:block">
@@ -33,7 +30,12 @@ export function Header() {
         <NewActionButton />
         <FeedbackButton />
         <ThemeToggle />
-        <SidebarTrigger side="right" />
+        <Tooltip delayDuration={500}>
+          <TooltipTrigger asChild>
+            <SidebarTrigger side="right" />
+          </TooltipTrigger>
+          <TooltipContent>Toggle AI Chat</TooltipContent>
+        </Tooltip>
       </div>
     </header>
   );

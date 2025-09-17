@@ -16,7 +16,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import {
-  TooltipProvider,
   Tooltip,
   TooltipTrigger,
   TooltipContent,
@@ -241,17 +240,15 @@ export function ManualEntryForm() {
             <FormItem className="sm:w-1/2 sm:pr-1">
               <div className="flex items-center gap-1">
                 <FormLabel>Cost basis per unit (optional)</FormLabel>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="size-4" aria-label="Cost basis help" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      If omitted, we’ll use the unit value as your initial cost
-                      basis.
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="size-4" aria-label="Cost basis help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    If omitted, we’ll use the unit value as your initial cost
+                    basis.
+                  </TooltipContent>
+                </Tooltip>
               </div>
               <FormControl>
                 <Input

@@ -11,7 +11,6 @@ import { getTransactionTypeLabel } from "@/lib/asset-category-mappings";
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -121,20 +120,18 @@ export const columns: ColumnDef<Transaction>[] = [
     cell: ({ row }) => {
       const description = row.getValue<string | null>("description");
       return (
-        <TooltipProvider>
-          <Tooltip delayDuration={500}>
-            <TooltipTrigger>
-              <div className="max-w-60 truncate">
-                {description || (
-                  <span className="text-muted-foreground italic">
-                    No description
-                  </span>
-                )}
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>{description || "No description"}</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <Tooltip delayDuration={500}>
+          <TooltipTrigger>
+            <div className="max-w-60 truncate">
+              {description || (
+                <span className="text-muted-foreground italic">
+                  No description
+                </span>
+              )}
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>{description || "No description"}</TooltipContent>
+        </Tooltip>
       );
     },
   },

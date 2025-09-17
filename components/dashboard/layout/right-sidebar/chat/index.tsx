@@ -33,6 +33,7 @@ import { Response } from "@/components/ui/ai/response";
 import { Actions, Action } from "@/components/ui/ai/actions";
 import { Suggestions, Suggestion } from "@/components/ui/ai/suggestions";
 import { Logomark } from "@/components/ui/logos/logomark";
+import { ChatHeader } from "./header";
 
 import type { Mode } from "@/server/ai/system-prompt";
 
@@ -46,12 +47,13 @@ const suggestions = [
 export function Chat() {
   const [input, setInput] = useState("");
   const [mode, setMode] = useState<Mode>("advisory");
+  const [conversationId] = useState<string>(() => crypto.randomUUID());
   const [copiedMessages, setCopiedMessages] = useState<Set<string>>(new Set());
 
   const { messages, sendMessage, status, stop, regenerate } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/ai/chat",
-      headers: { "x-ff-mode": mode },
+      headers: { "x-ff-mode": mode, "x-ff-conversation-id": conversationId },
     }),
   });
 
@@ -84,6 +86,9 @@ export function Chat() {
 
   return (
     <div className="flex h-full flex-col p-2 pt-0">
+      {/* Header */}
+      <ChatHeader />
+
       {/* Conversation */}
       <Conversation className="-me-2">
         <ConversationContent>

@@ -35,6 +35,71 @@ export type Database = {
         };
         Relationships: [];
       };
+      conversation_messages: {
+        Row: {
+          content: string;
+          conversation_id: string;
+          created_at: string;
+          id: string;
+          model: string | null;
+          role: Database["public"]["Enums"]["conversation_role"];
+          usage_tokens: number | null;
+          user_id: string;
+        };
+        Insert: {
+          content: string;
+          conversation_id: string;
+          created_at?: string;
+          id?: string;
+          model?: string | null;
+          role: Database["public"]["Enums"]["conversation_role"];
+          usage_tokens?: number | null;
+          user_id: string;
+        };
+        Update: {
+          content?: string;
+          conversation_id?: string;
+          created_at?: string;
+          id?: string;
+          model?: string | null;
+          role?: Database["public"]["Enums"]["conversation_role"];
+          usage_tokens?: number | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "conversation_messages_conversation_id_fkey";
+            columns: ["conversation_id"];
+            isOneToOne: false;
+            referencedRelation: "conversations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      conversations: {
+        Row: {
+          created_at: string;
+          id: string;
+          title: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          title: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          title?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       currencies: {
         Row: {
           alphabetic_code: string;
@@ -537,6 +602,7 @@ export type Database = {
       [_ in never]: never;
     };
     Enums: {
+      conversation_role: "system" | "user" | "assistant" | "tool";
       feedback_type: "issue" | "idea" | "other";
       transaction_type: "buy" | "sell" | "update" | "deposit" | "withdrawal";
     };
@@ -669,6 +735,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      conversation_role: ["system", "user", "assistant", "tool"],
       feedback_type: ["issue", "idea", "other"],
       transaction_type: ["buy", "sell", "update", "deposit", "withdrawal"],
     },
