@@ -11,6 +11,7 @@ import { getProjectedIncome } from "./projected-income";
 import { getHoldingsPerformance } from "./holdings-performance";
 import { getTopMovers } from "./top-movers";
 import { getAllocationDrift } from "./allocation-drift";
+import { getCurrencyExposure } from "./currency-exposure";
 
 export const aiTools = {
   getPortfolioSnapshot: tool({
@@ -204,5 +205,23 @@ export const aiTools = {
         .describe("Historical date to compare against (YYYY-MM-DD format)"),
     }),
     execute: async (args) => getAllocationDrift(args),
+  }),
+
+  getCurrencyExposure: tool({
+    description:
+      "Calculate portfolio currency exposure by original currency as-of a date. Returns per-currency local value, base-currency value, percentage weight, FX rate used, and holdings count.",
+    inputSchema: z.object({
+      baseCurrency: z
+        .string()
+        .optional()
+        .describe(
+          "Currency code for analysis (e.g., USD, EUR, GBP). Leave empty to use the user's preferred currency.",
+        ),
+      date: z
+        .string()
+        .optional()
+        .describe("YYYY-MM-DD format (optional, defaults to today)"),
+    }),
+    execute: async (args) => getCurrencyExposure(args),
   }),
 };
