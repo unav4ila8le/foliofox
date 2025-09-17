@@ -8,6 +8,7 @@ import { Check, Copy, RefreshCcw } from "lucide-react";
 import {
   Conversation,
   ConversationContent,
+  ConversationEmptyState,
   ConversationScrollButton,
 } from "@/components/ui/ai/conversation";
 import {
@@ -31,6 +32,7 @@ import {
 import { Response } from "@/components/ui/ai/response";
 import { Actions, Action } from "@/components/ui/ai/actions";
 import { Suggestions, Suggestion } from "@/components/ui/ai/suggestions";
+import { Logomark } from "@/components/ui/logos/logomark";
 
 import type { Mode } from "@/server/ai/system-prompt";
 
@@ -85,50 +87,63 @@ export function Chat() {
       {/* Conversation */}
       <Conversation className="-me-2 flex-1">
         <ConversationContent>
-          {messages.map((message, messageIndex) => (
-            <Fragment key={message.id}>
-              {message.parts.map((part, i) => {
-                switch (part.type) {
-                  case "text":
-                    const isLastMessage = messageIndex === messages.length - 1;
-                    const isAssistant = message.role === "assistant";
-                    const isCopied = copiedMessages.has(message.id);
+          {messages.length === 0 ? (
+            <ConversationEmptyState
+              icon={
+                <Logomark width={64} className="text-muted-foreground/25" />
+              }
+              title="Foliofox AI Advisor"
+              description="Type a message below to start a conversation"
+            />
+          ) : (
+            messages.map((message, messageIndex) => (
+              <Fragment key={message.id}>
+                {message.parts.map((part, i) => {
+                  switch (part.type) {
+                    case "text":
+                      const isLastMessage =
+                        messageIndex === messages.length - 1;
+                      const isAssistant = message.role === "assistant";
+                      const isCopied = copiedMessages.has(message.id);
 
-                    return (
-                      <Fragment key={`${message.id}-${i}`}>
-                        <Message from={message.role}>
-                          <MessageContent>
-                            <Response>{part.text}</Response>
-                          </MessageContent>
-                        </Message>
-                        {isAssistant && status !== "streaming" && (
-                          <Actions className="-mt-2">
-                            {isLastMessage && (
+                      return (
+                        <Fragment key={`${message.id}-${i}`}>
+                          <Message from={message.role}>
+                            <MessageContent>
+                              <Response>{part.text}</Response>
+                            </MessageContent>
+                          </Message>
+                          {isAssistant && status !== "streaming" && (
+                            <Actions className="-mt-2">
+                              {isLastMessage && (
+                                <Action
+                                  onClick={() => regenerate()}
+                                  tooltip="Regenerate response"
+                                >
+                                  <RefreshCcw />
+                                </Action>
+                              )}
                               <Action
-                                onClick={() => regenerate()}
-                                tooltip="Regenerate response"
+                                onClick={() =>
+                                  handleCopy(part.text, message.id)
+                                }
+                                tooltip={
+                                  isCopied ? "Copied!" : "Copy to Clipboard"
+                                }
                               >
-                                <RefreshCcw />
+                                {isCopied ? <Check /> : <Copy />}
                               </Action>
-                            )}
-                            <Action
-                              onClick={() => handleCopy(part.text, message.id)}
-                              tooltip={
-                                isCopied ? "Copied!" : "Copy to Clipboard"
-                              }
-                            >
-                              {isCopied ? <Check /> : <Copy />}
-                            </Action>
-                          </Actions>
-                        )}
-                      </Fragment>
-                    );
-                  default:
-                    return null;
-                }
-              })}
-            </Fragment>
-          ))}
+                            </Actions>
+                          )}
+                        </Fragment>
+                      );
+                    default:
+                      return null;
+                  }
+                })}
+              </Fragment>
+            ))
+          )}
           {(status === "submitted" || status === "streaming") && (
             <MessageLoading status={status} className="mb-2 ps-1" />
           )}
@@ -138,7 +153,7 @@ export function Chat() {
 
       {/* Suggestions */}
       {messages.length === 0 && (
-        <div className="space-y-2">
+        <div className="mb-2 space-y-2">
           <p className="text-muted-foreground px-2 text-sm">Suggestions</p>
           <Suggestions>
             {suggestions.map((suggestion) => (
