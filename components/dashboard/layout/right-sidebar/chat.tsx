@@ -85,7 +85,7 @@ export function Chat() {
   return (
     <div className="flex h-full flex-col p-2 pt-0">
       {/* Conversation */}
-      <Conversation className="-me-2 flex-1">
+      <Conversation className="-me-2">
         <ConversationContent>
           {messages.length === 0 ? (
             <ConversationEmptyState
