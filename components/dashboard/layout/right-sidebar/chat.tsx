@@ -81,9 +81,9 @@ export function Chat() {
   };
 
   return (
-    <div className="flex h-full flex-col gap-2">
+    <div className="flex h-full flex-col p-2 pt-0">
       {/* Conversation */}
-      <Conversation className="flex-1">
+      <Conversation className="-me-2 flex-1">
         <ConversationContent>
           {messages.map((message, messageIndex) => (
             <Fragment key={message.id}>
@@ -191,7 +191,7 @@ export function Chat() {
       </PromptInput>
 
       {/* Dislaimer */}
-      <p className="text-muted-foreground text-center text-xs">
+      <p className="text-muted-foreground mt-2 text-center text-xs">
         You are responsible for your investment decisions.
       </p>
     </div>

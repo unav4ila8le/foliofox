@@ -3,7 +3,7 @@ import { Chat } from "./chat";
 
 export function RightSidebar() {
   return (
-    <Sidebar side="right">
+    <Sidebar side="right" showMobileClose>
       <Chat />
     </Sidebar>
   );
