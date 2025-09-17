@@ -167,7 +167,7 @@ export function Chat() {
             onValueChange={(value) => setMode(value as Mode)}
           >
             <PromptInputSelectTrigger>
-              <PromptInputSelectValue />
+              <PromptInputSelectValue placeholder="Mode" />
             </PromptInputSelectTrigger>
             <PromptInputSelectContent>
               <PromptInputSelectItem value="educational">
