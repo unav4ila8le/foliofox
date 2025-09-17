@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, Fragment } from "react";
-import { DefaultChatTransport } from "ai";
+import { useState, useEffect, Fragment } from "react";
+import { DefaultChatTransport, type UIMessage } from "ai";
 import { useChat } from "@ai-sdk/react";
 import { Check, Copy, RefreshCcw } from "lucide-react";
 
@@ -35,6 +35,8 @@ import { Suggestions, Suggestion } from "@/components/ui/ai/suggestions";
 import { Logomark } from "@/components/ui/logos/logomark";
 import { ChatHeader } from "./header";
 
+import { getConversations } from "@/server/ai/conversations/fetch";
+import { getConversationMessages } from "@/server/ai/conversations/messages";
 import type { Mode } from "@/server/ai/system-prompt";
 
 const suggestions = [
@@ -47,16 +49,67 @@ const suggestions = [
 export function Chat() {
   const [input, setInput] = useState("");
   const [mode, setMode] = useState<Mode>("advisory");
-  const [conversationId] = useState<string>(() => crypto.randomUUID());
+  // Current conversation identifier (used to scope/useChat state)
+  const [conversationId, setConversationId] = useState<string>(() =>
+    crypto.randomUUID(),
+  );
+  const [conversations, setConversations] = useState<
+    {
+      id: string;
+      title: string;
+      updatedAt: string;
+    }[]
+  >([]);
+  const [initialMessages, setInitialMessages] = useState<UIMessage[]>([]);
   const [copiedMessages, setCopiedMessages] = useState<Set<string>>(new Set());
 
+  // Load conversation list on mount
+  useEffect(() => {
+    let isCancelled = false;
+    (async () => {
+      try {
+        const list = await getConversations();
+        if (!isCancelled) setConversations(list);
+      } catch {
+        // Ignore load errors; header will show empty state
+      }
+    })();
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
   const { messages, sendMessage, status, stop, regenerate } = useChat({
+    id: conversationId,
+    messages: initialMessages,
     transport: new DefaultChatTransport({
       api: "/api/ai/chat",
       headers: { "x-ff-mode": mode, "x-ff-conversation-id": conversationId },
     }),
   });
 
+  // Switch to an existing conversation (loads history)
+  const handleSelectConversation = async (id: string) => {
+    const msgs = await getConversationMessages(id);
+    setConversationId(id);
+    setInitialMessages(msgs);
+    setCopiedMessages(new Set());
+  };
+
+  // Start a fresh conversation (clears history)
+  const handleNewConversation = () => {
+    const id = crypto.randomUUID();
+    setConversationId(id);
+    setInitialMessages([]);
+    setCopiedMessages(new Set());
+  };
+
+  // Quick-send a suggested prompt
+  const handleSuggestionClick = (suggestion: string) => {
+    sendMessage({ text: suggestion });
+  };
+
+  // Copy message text with a temporary visual state
   const handleCopy = async (text: string, messageId: string) => {
     await navigator.clipboard.writeText(text);
     setCopiedMessages((prev) => new Set(prev).add(messageId));
@@ -69,10 +122,7 @@ export function Chat() {
     }, 4000);
   };
 
-  const handleSuggestionClick = (suggestion: string) => {
-    sendMessage({ text: suggestion });
-  };
-
+  // Submit user input to the chat
   const handleSubmit = (message: PromptInputMessage) => {
     const hasText = Boolean(message.text);
 
@@ -87,7 +137,11 @@ export function Chat() {
   return (
     <div className="flex h-full flex-col p-2 pt-0">
       {/* Header */}
-      <ChatHeader />
+      <ChatHeader
+        conversations={conversations}
+        onSelectConversation={handleSelectConversation}
+        onNewConversation={handleNewConversation}
+      />
 
       {/* Conversation */}
       <Conversation className="-me-2">
