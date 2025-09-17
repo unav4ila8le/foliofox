@@ -22,7 +22,7 @@
   - [x] `getHoldingsPerformance({ baseCurrency, date? })`
   - [x] `getTopMovers({ baseCurrency, date?, limit? })`
   - [x] `getAllocationDrift({ baseCurrency, compareToDate })`
-  - [ ] `getCurrencyExposure({ baseCurrency, date? })`
+  - [x] `getCurrencyExposure({ baseCurrency, date? })`
   - [ ] `getAssetAllocation({ baseCurrency, date? })`
   - [ ] `getNetWorthAtDate({ baseCurrency, date })`
   - [ ] `getNews({ limit? })`

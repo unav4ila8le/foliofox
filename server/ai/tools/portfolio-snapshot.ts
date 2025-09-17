@@ -1,16 +1,20 @@
 "use server";
 
+import { format } from "date-fns";
+
 import { fetchProfile } from "@/server/profile/actions";
 import { fetchHoldings } from "@/server/holdings/fetch";
-import { calculateNetWorth } from "@/server/analysis/net-worth";
-import { calculateAssetAllocation } from "@/server/analysis/asset-allocation";
+import { fetchQuotes } from "@/server/quotes/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 
 import { convertCurrency } from "@/lib/currency-conversion";
 
 /**
- * Get current portfolio snapshot for AI analysis
- * Returns summarized data optimized for AI consumption
+ * Get portfolio snapshot for AI analysis
+ * Accurate as-of behavior when a date is provided:
+ * - Non-symbol holdings: latest record where record.date <= date
+ * - Symbol holdings: market price as-of date (fallback to record unit_value)
+ * - FX conversion as-of date
  */
 export async function getPortfolioSnapshot(params?: {
   baseCurrency?: string;
@@ -21,13 +25,14 @@ export async function getPortfolioSnapshot(params?: {
     const { profile } = await fetchProfile();
     const baseCurrency = params?.baseCurrency ?? profile.display_currency;
 
-    // Use a signle date across quotes and FX for consistency
-    const date = params?.date ? new Date(params.date) : new Date();
+    // Use a single date across quotes and FX for consistency
+    const asOfDate = params?.date ? new Date(params.date) : new Date();
+    const asOfKey = format(asOfDate, "yyyy-MM-dd");
 
-    // Get current holdings (active only for main snapshot)
-    const holdings = await fetchHoldings({
+    // Fetch holdings with full history so we can compute true "as-of" values
+    const { holdings, records: recordsByHolding } = await fetchHoldings({
       includeArchived: true,
-      quoteDate: date,
+      includeRecords: true,
     });
 
     // If no holdings, return empty state
@@ -43,78 +48,131 @@ export async function getPortfolioSnapshot(params?: {
       };
     }
 
-    // Calculate key metrics in parallel
-    const [netWorth, assetAllocation] = await Promise.all([
-      calculateNetWorth(baseCurrency, date),
-      calculateAssetAllocation(baseCurrency),
-    ]);
+    // Prepare bulk requests for quotes and FX at as-of date
+    const symbolIds = holdings
+      .filter((h) => h.symbol_id)
+      .map((h) => h.symbol_id!) as string[];
 
-    // Collect unique holding currencies
+    const quoteRequests =
+      symbolIds.length > 0
+        ? symbolIds.map((id) => ({ symbolId: id, date: asOfDate }))
+        : [];
+
     const uniqueCurrencies = new Set<string>();
-    holdings.forEach((holding) => {
-      uniqueCurrencies.add(holding.currency);
-    });
+    holdings.forEach((h) => uniqueCurrencies.add(h.currency));
     uniqueCurrencies.add(baseCurrency);
 
-    // Bulk FX fetch
-    const exchangeRatesMap = await fetchExchangeRates(
-      Array.from(uniqueCurrencies).map((currency) => ({
-        currency,
-        date,
-      })),
-    );
+    const [quotesMap, exchangeRatesMap] = await Promise.all([
+      quoteRequests.length > 0 ? fetchQuotes(quoteRequests) : new Map(),
+      fetchExchangeRates(
+        Array.from(uniqueCurrencies).map((currency) => ({
+          currency,
+          date: asOfDate,
+        })),
+      ),
+    ]);
 
-    // Prepare holdings for AI (sorted by base currency value)
+    // Compute per-holding as-of values
     const holdingsBase = holdings
       .map((h) => {
+        const recs = recordsByHolding.get(h.id) || [];
+        const latestAsOf = recs.find((r) => r.date <= asOfKey);
+        if (!latestAsOf) return null;
+
+        // Unit price as-of: use market quote for symbols, else record value
+        let unitLocal = latestAsOf.unit_value || 0;
+        if (h.symbol_id) {
+          const qKey = `${h.symbol_id}|${asOfKey}`;
+          const mkt = quotesMap.get(qKey);
+          if (mkt && mkt > 0) unitLocal = mkt;
+        }
+
+        const quantity = latestAsOf.quantity || 0;
+        const totalLocal = unitLocal * quantity;
+
+        // Convert to base currency at as-of date
         const unitValueBase = convertCurrency(
-          h.current_unit_value,
+          unitLocal,
           h.currency,
           baseCurrency,
           exchangeRatesMap,
-          date,
+          asOfDate,
         );
         const totalValueBase = convertCurrency(
-          h.total_value,
+          totalLocal,
           h.currency,
           baseCurrency,
           exchangeRatesMap,
-          date,
+          asOfDate,
         );
+
         return {
           id: h.id,
           name: h.name,
           symbol: h.symbol_id || null,
           category: h.asset_type,
           categoryCode: h.category_code,
-          quantity: h.current_quantity,
+          quantity,
           unitValue: unitValueBase,
           value: totalValueBase,
           currency: baseCurrency,
           isArchived: h.is_archived,
           original: {
             currency: h.currency,
-            unitValue: h.current_unit_value,
-            value: h.total_value,
+            unitValue: unitLocal,
+            value: totalLocal,
           },
         };
       })
+      .filter(Boolean)
+      .sort((a, b) => (b!.value as number) - (a!.value as number)) as Array<{
+      id: string;
+      name: string;
+      symbol: string | null;
+      category: string;
+      categoryCode: string;
+      quantity: number;
+      unitValue: number;
+      value: number;
+      currency: string;
+      isArchived: boolean;
+      original: { currency: string; unitValue: number; value: number };
+    }>;
+
+    // Compute net worth from computed holdings (avoid duplicate heavy calls)
+    const netWorth = holdingsBase.reduce((sum, h) => sum + h.value, 0);
+
+    // Compute asset allocation as-of (group by category using base currency values)
+    const allocationByCategory = new Map<
+      string,
+      { code: string; name: string; total_value: number }
+    >();
+
+    holdingsBase.forEach((h) => {
+      const acc = allocationByCategory.get(h.categoryCode) || {
+        code: h.categoryCode,
+        name: h.category,
+        total_value: 0,
+      };
+      acc.total_value += h.value;
+      allocationByCategory.set(h.categoryCode, acc);
+    });
+
+    const categories = Array.from(allocationByCategory.values())
+      .map((c) => ({
+        name: c.name,
+        code: c.code,
+        value: c.total_value,
+        percentage: netWorth ? (c.total_value / netWorth) * 100 : 0,
+      }))
       .sort((a, b) => b.value - a.value);
 
-    // Format asset allocation for AI
-    const categories = assetAllocation.map((category) => ({
-      name: category.name,
-      code: category.category_code,
-      value: category.total_value,
-      percentage: netWorth ? (category.total_value / netWorth) * 100 : 0,
-    }));
-
     return {
-      summary: `Portfolio contains ${holdings.length} holdings across ${assetAllocation.length} categories`,
+      summary: `Portfolio contains ${holdingsBase.length} holdings across ${categories.length} categories`,
       netWorth,
       currency: baseCurrency,
-      holdingsCount: holdings.length,
-      categoriesCount: assetAllocation.length,
+      holdingsCount: holdingsBase.length,
+      categoriesCount: categories.length,
       categories,
       holdings: holdingsBase,
       lastUpdated: new Date().toISOString(),

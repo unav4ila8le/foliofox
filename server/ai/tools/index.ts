@@ -16,7 +16,7 @@ import { getCurrencyExposure } from "./currency-exposure";
 export const aiTools = {
   getPortfolioSnapshot: tool({
     description:
-      "Get current portfolio overview including net worth, asset allocation, and all holdings. Returns: summary, net worth value, holdings count, asset categories with percentages, and detailed holding information with values converted to base currency.",
+      "Get portfolio overview including net worth, asset allocation, and all holdings. Returns: summary, net worth value, holdings count, asset categories with percentages, and detailed holding information with values converted to base currency.",
     inputSchema: z.object({
       baseCurrency: z
         .string()
