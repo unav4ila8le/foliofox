@@ -36,11 +36,14 @@ export default async function Layout({
     <SidebarProvider
       defaultOpen={defaultOpenLeft}
       defaultOpenRight={defaultOpenRight}
+      resizable={{ right: true }}
+      defaultLeftWidth="max(16rem, 14vw)"
+      defaultRightWidth="max(16rem, 20vw)"
+      minRightWidth="14rem"
+      maxRightWidth="28rem"
       style={
         {
-          "--sidebar-left-width": "max(16rem, 14vw)",
           "--sidebar-left-width-mobile": "max(18rem, 80vw)",
-          "--sidebar-right-width": "max(16rem, 20vw)",
           "--sidebar-right-width-mobile": "max(18rem, 80vw)",
         } as React.CSSProperties
       }

@@ -61,8 +61,16 @@ type SidebarContext = {
 
   isMobile: boolean;
 
-  // Optional future: enable resizable per side
+  // Resizing
   resizable: { left: boolean; right: boolean };
+  leftWidth: string;
+  rightWidth: string;
+  setLeftWidth: (width: string) => void;
+  setRightWidth: (width: string) => void;
+  minLeftWidth: string;
+  minRightWidth: string;
+  maxLeftWidth: string;
+  maxRightWidth: string;
 };
 
 const SidebarContext = React.createContext<SidebarContext | null>(null);
@@ -98,8 +106,16 @@ function SidebarProvider({
   openRight: openRightProp,
   onOpenRightChange: setOpenRightProp,
 
-  // Optional resizable flags per side (not wired yet)
+  // Resizable config
   resizable,
+  // Widths (CSS lengths; e.g., "16rem", "24rem")
+  defaultLeftWidth = SIDEBAR_WIDTH,
+  defaultRightWidth = SIDEBAR_WIDTH,
+  minLeftWidth = "14rem",
+  maxLeftWidth = "28rem",
+  minRightWidth = "14rem",
+  maxRightWidth = "28rem",
+
   className,
   style,
   children,
@@ -112,12 +128,22 @@ function SidebarProvider({
   openRight?: boolean;
   onOpenRightChange?: (open: boolean) => void;
   resizable?: Partial<Record<"left" | "right", boolean>>;
+  defaultLeftWidth?: string;
+  defaultRightWidth?: string;
+  minLeftWidth?: string;
+  maxLeftWidth?: string;
+  minRightWidth?: string;
+  maxRightWidth?: string;
 }) {
   const isMobile = useIsMobile();
 
   // Mobile open states (per side)
   const [openMobileLeft, setOpenMobileLeft] = React.useState(false);
   const [openMobileRight, setOpenMobileRight] = React.useState(false);
+
+  // Widths (desktop)
+  const [leftWidth, setLeftWidth] = React.useState(defaultLeftWidth);
+  const [rightWidth, setRightWidth] = React.useState(defaultRightWidth);
 
   // Desktop open states (per side)
   const [_openLeft, _setOpenLeft] = React.useState(defaultOpen);
@@ -131,9 +157,7 @@ function SidebarProvider({
       if (setOpenLeftProp) setOpenLeftProp(next);
       else _setOpenLeft(next);
 
-      document.cookie = `${SIDEBAR_LEFT_COOKIE_NAME}=${String(
-        next,
-      )}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
+      document.cookie = `${SIDEBAR_LEFT_COOKIE_NAME}=${String(next)}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
     },
     [openLeft, setOpenLeftProp],
   );
@@ -149,21 +173,27 @@ function SidebarProvider({
       if (setOpenRightProp) setOpenRightProp(next);
       else _setOpenRight(next);
 
-      document.cookie = `${SIDEBAR_RIGHT_COOKIE_NAME}=${String(
-        next,
-      )}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
+      document.cookie = `${SIDEBAR_RIGHT_COOKIE_NAME}=${String(next)}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
     },
     [openRight, setOpenRightProp],
+  );
+
+  const resizableNormalized = React.useMemo(
+    () => ({
+      left: Boolean(resizable?.left),
+      right: Boolean(resizable?.right),
+    }),
+    [resizable?.left, resizable?.right],
   );
 
   // Toggles per side
   const toggleLeft = React.useCallback(() => {
     return isMobile ? setOpenMobileLeft((v) => !v) : setOpenLeft((v) => !v);
-  }, [isMobile, setOpenLeft]);
+  }, [isMobile, setOpenLeft, setOpenMobileLeft]);
 
   const toggleRight = React.useCallback(() => {
     return isMobile ? setOpenMobileRight((v) => !v) : setOpenRight((v) => !v);
-  }, [isMobile, setOpenRight]);
+  }, [isMobile, setOpenRight, setOpenMobileRight]);
 
   // Keyboard shortcuts
   React.useEffect(() => {
@@ -194,14 +224,6 @@ function SidebarProvider({
   const setOpenMobile = setOpenMobileLeft;
   const toggleSidebar = toggleLeft;
 
-  const resizableNormalized = React.useMemo(
-    () => ({
-      left: Boolean(resizable?.left),
-      right: Boolean(resizable?.right),
-    }),
-    [resizable?.left, resizable?.right],
-  );
-
   const contextValue = React.useMemo<SidebarContext>(
     () => ({
       // back-compat
@@ -229,7 +251,17 @@ function SidebarProvider({
       toggleRight,
 
       isMobile,
+
+      // resizing
       resizable: resizableNormalized,
+      leftWidth,
+      rightWidth,
+      setLeftWidth,
+      setRightWidth,
+      minLeftWidth,
+      maxLeftWidth,
+      minRightWidth,
+      maxRightWidth,
     }),
     [
       state,
@@ -252,6 +284,12 @@ function SidebarProvider({
       toggleRight,
       isMobile,
       resizableNormalized,
+      leftWidth,
+      rightWidth,
+      minLeftWidth,
+      maxLeftWidth,
+      minRightWidth,
+      maxRightWidth,
     ],
   );
 
@@ -263,10 +301,10 @@ function SidebarProvider({
           style={
             {
               // Per-side CSS variables; each Sidebar instance maps these to its local --sidebar-width vars.
-              "--sidebar-left-width": SIDEBAR_WIDTH,
+              "--sidebar-left-width": leftWidth,
               "--sidebar-left-width-icon": SIDEBAR_WIDTH_ICON,
               "--sidebar-left-width-mobile": SIDEBAR_WIDTH_MOBILE,
-              "--sidebar-right-width": SIDEBAR_WIDTH,
+              "--sidebar-right-width": rightWidth,
               "--sidebar-right-width-icon": SIDEBAR_WIDTH_ICON,
               "--sidebar-right-width-mobile": SIDEBAR_WIDTH_MOBILE,
               ...style,
@@ -395,7 +433,7 @@ function Sidebar({
         {/* This is the desktop spacer/gap */}
         <div
           className={cn(
-            "relative h-svh w-[var(--sidebar-width)] bg-transparent transition-[width] duration-200 ease-linear",
+            "relative h-svh w-[var(--sidebar-width)] bg-transparent transition-[width] duration-200 ease-linear group-data-[sidebar-resizing=true]/sidebar-wrapper:transition-none",
             "group-data-[collapsible=offcanvas]:w-0",
             "group-data-[side=right]:rotate-180",
             variant === "floating" || variant === "inset"
@@ -406,7 +444,7 @@ function Sidebar({
         {/* Fixed panel */}
         <div
           className={cn(
-            "fixed inset-y-0 z-10 hidden h-svh w-[var(--sidebar-width)] transition-[left,right,width] duration-200 ease-linear md:flex",
+            "fixed inset-y-0 z-10 hidden h-svh w-[var(--sidebar-width)] transition-[left,right,width] duration-200 ease-linear group-data-[sidebar-resizing=true]/sidebar-wrapper:transition-none md:flex",
             side === "left"
               ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
               : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
@@ -465,7 +503,88 @@ function SidebarRail({
   className,
   ...props
 }: React.ComponentProps<"button"> & { side?: "left" | "right" }) {
-  const { toggleLeft, toggleRight } = useSidebar();
+  const {
+    isMobile,
+    toggleLeft,
+    toggleRight,
+    resizable,
+    setLeftWidth,
+    setRightWidth,
+    minLeftWidth,
+    maxLeftWidth,
+    minRightWidth,
+    maxRightWidth,
+  } = useSidebar();
+
+  const dragging = React.useRef(false);
+
+  // Cleanup in case the component unmounts or hot-reloads during a drag.
+  React.useEffect(() => {
+    return () => {
+      const wrapper = document.querySelector<HTMLElement>(
+        '[data-slot="sidebar-wrapper"]',
+      );
+      if (wrapper?.dataset.sidebarResizing) {
+        delete wrapper.dataset.sidebarResizing;
+      }
+      dragging.current = false;
+    };
+  }, []);
+
+  const onMouseDown = () => {
+    if (isMobile || !resizable[side]) return;
+    dragging.current = true;
+
+    // Cache the wrapper element once for the drag session.
+    const wrapper = document.querySelector<HTMLElement>(
+      '[data-slot="sidebar-wrapper"]',
+    );
+    if (!wrapper) return;
+
+    // Mark resizing on the wrapper so children can disable transitions.
+    wrapper.dataset.sidebarResizing = "true";
+
+    const onMove = (ev: MouseEvent) => {
+      if (!dragging.current) return;
+      const x = ev.clientX;
+      const vw = window.innerWidth;
+      const px = side === "left" ? Math.max(0, x) : Math.max(0, vw - x);
+      const min = side === "left" ? minLeftWidth : minRightWidth;
+      const max = side === "left" ? maxLeftWidth : maxRightWidth;
+      const next = `clamp(${min}, ${Math.round(px)}px, ${max})`;
+      // Hot path: write directly to CSS var to avoid React re-renders while dragging.
+      const varName =
+        side === "left" ? "--sidebar-left-width" : "--sidebar-right-width";
+      wrapper.style.setProperty(varName, next);
+    };
+
+    const onUp = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      // Commit final width to React state (single render), then clear the resizing flag.
+      const varName =
+        side === "left" ? "--sidebar-left-width" : "--sidebar-right-width";
+      const finalValue = wrapper.style.getPropertyValue(varName).trim();
+      if (finalValue) {
+        if (side === "left") setLeftWidth(finalValue);
+        else setRightWidth(finalValue);
+      }
+      delete wrapper.dataset.sidebarResizing;
+      setTimeout(() => (dragging.current = false), 0);
+    };
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  };
+
+  const onClick = () => {
+    if (dragging.current) return;
+    if (side === "right") {
+      toggleRight();
+    } else {
+      toggleLeft();
+    }
+  };
 
   return (
     <button
@@ -473,7 +592,8 @@ function SidebarRail({
       data-slot="sidebar-rail"
       aria-label="Toggle Sidebar"
       tabIndex={-1}
-      onClick={side === "right" ? toggleRight : toggleLeft}
+      onMouseDown={onMouseDown}
+      onClick={onClick}
       title="Toggle Sidebar"
       className={cn(
         "hover:after:bg-sidebar-border absolute inset-y-0 z-20 hidden w-4 -translate-x-1/2 transition-all ease-linear group-data-[side=left]:-right-4 group-data-[side=right]:left-0 after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] sm:flex",

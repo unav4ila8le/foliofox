@@ -1,10 +1,11 @@
-import { Sidebar } from "@/components/ui/sidebar";
+import { Sidebar, SidebarRail } from "@/components/ui/sidebar";
 import { Chat } from "./chat";
 
 export function RightSidebar() {
   return (
     <Sidebar side="right" showMobileClose>
       <Chat />
+      <SidebarRail side="right" />
     </Sidebar>
   );
 }
