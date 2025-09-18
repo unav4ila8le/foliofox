@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Clock, Plus, LoaderCircle } from "lucide-react";
+import { Clock, Plus, LoaderCircle, Trash2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -23,6 +24,8 @@ import {
 } from "@/components/ui/command";
 import { useSidebar } from "@/components/ui/sidebar";
 
+import { deleteConversation } from "@/server/ai/conversations/delete";
+
 interface ChatHeaderProps {
   conversations?: {
     id: string;
@@ -31,17 +34,36 @@ interface ChatHeaderProps {
   }[];
   onSelectConversation: (id: string) => void;
   onNewConversation: () => void;
-  isLoadingConversation: boolean;
+  onConversationDeleted?: () => void;
+  isLoadingConversation?: boolean;
 }
 
 export function ChatHeader({
   conversations = [],
   onSelectConversation,
   onNewConversation,
+  onConversationDeleted,
   isLoadingConversation,
 }: ChatHeaderProps) {
   const [open, setOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const { rightWidth } = useSidebar();
+
+  const handleDelete = async (e: React.MouseEvent, conversationId: string) => {
+    e.stopPropagation(); // Prevent selecting the conversation
+    setDeletingId(conversationId);
+    try {
+      await deleteConversation(conversationId);
+      onConversationDeleted?.(); // Refresh the conversation list
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to delete conversation",
+      );
+      setDeletingId(null);
+    }
+  };
 
   return (
     <div className="relative flex items-center justify-between p-2">
@@ -75,17 +97,29 @@ export function ChatHeader({
                       <CommandItem
                         key={c.id}
                         value={c.title}
-                        disabled={isLoadingConversation}
+                        disabled={isLoadingConversation || deletingId === c.id}
                         onSelect={() => {
                           onSelectConversation?.(c.id);
                           setOpen(false);
                         }}
-                        className="flex items-start justify-between gap-4"
+                        className="group items-start gap-2"
                       >
-                        <p className="line-clamp-3">{c.title}</p>
-                        <span className="text-muted-foreground flex-none text-xs">
-                          {formatDistanceToNow(new Date(c.updatedAt))}
-                        </span>
+                        <div className="flex flex-1 flex-col items-start gap-0">
+                          <span className="text-muted-foreground text-xs">
+                            {formatDistanceToNow(new Date(c.updatedAt))}
+                          </span>
+                          <p className="line-clamp-3">{c.title}</p>
+                        </div>
+                        <div
+                          onClick={(e) => handleDelete(e, c.id)}
+                          className="group/delete flex-none"
+                        >
+                          {deletingId === c.id ? (
+                            <LoaderCircle className="size-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="text-muted-foreground group-hover/delete:text-destructive size-3.5 opacity-0 group-hover:opacity-100" />
+                          )}
+                        </div>
                       </CommandItem>
                     ))}
                   </CommandGroup>

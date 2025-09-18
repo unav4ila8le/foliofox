@@ -35,8 +35,8 @@ import { Suggestions, Suggestion } from "@/components/ui/ai/suggestions";
 import { Logomark } from "@/components/ui/logos/logomark";
 import { ChatHeader } from "./header";
 
-import { getConversations } from "@/server/ai/conversations/fetch";
-import { getConversationMessages } from "@/server/ai/conversations/messages";
+import { fetchConversations } from "@/server/ai/conversations/fetch";
+import { fetchConversationMessages } from "@/server/ai/messages/fetch";
 import type { Mode } from "@/server/ai/system-prompt";
 
 const suggestions = [
@@ -69,7 +69,7 @@ export function Chat() {
     let isCancelled = false;
     (async () => {
       try {
-        const list = await getConversations();
+        const list = await fetchConversations();
         if (!isCancelled) setConversations(list);
       } catch {
         // Ignore load errors; header will show empty state
@@ -93,7 +93,7 @@ export function Chat() {
   const handleSelectConversation = async (id: string) => {
     setIsLoadingConversation(true);
     try {
-      const msgs = await getConversationMessages(id);
+      const msgs = await fetchConversationMessages(id);
       setConversationId(id);
       setInitialMessages(msgs);
       setCopiedMessages(new Set());
@@ -103,7 +103,7 @@ export function Chat() {
   };
 
   const refreshConversations = async () => {
-    const list = await getConversations();
+    const list = await fetchConversations();
     setConversations(list);
   };
 
@@ -153,6 +153,7 @@ export function Chat() {
         conversations={conversations}
         onSelectConversation={handleSelectConversation}
         onNewConversation={handleNewConversation}
+        onConversationDeleted={refreshConversations}
         isLoadingConversation={isLoadingConversation}
       />
 

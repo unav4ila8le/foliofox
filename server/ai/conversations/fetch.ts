@@ -2,7 +2,7 @@
 
 import { getCurrentUser } from "@/server/auth/actions";
 
-export async function getConversations(limit = 20) {
+export async function fetchConversations(limit = 20) {
   const { supabase, user } = await getCurrentUser();
 
   const { data } = await supabase

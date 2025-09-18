@@ -36,7 +36,7 @@ export async function persistConversationFromMessages(params: {
     {
       id: conversationId,
       user_id: user.id,
-      title: (lastUserText || "Conversation").slice(0, 120),
+      title: (lastUserText || "Conversation").slice(0, 240),
     },
     { onConflict: "id" },
   );

@@ -3,7 +3,7 @@
 import type { UIMessage } from "ai";
 import { getCurrentUser } from "@/server/auth/actions";
 
-export async function getConversationMessages(
+export async function fetchConversationMessages(
   conversationId: string,
   limit = 100,
 ): Promise<UIMessage[]> {
