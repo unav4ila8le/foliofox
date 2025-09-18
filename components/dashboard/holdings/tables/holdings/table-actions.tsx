@@ -35,7 +35,7 @@ export function TableActionsDropdown({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onSelect={() => setOpenImportHoldingsDialog(true)}>
-            <Upload className="size-4" /> Import from CSV
+            <Upload className="size-4" /> Import
           </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={() => setShowExportDialog(true)}

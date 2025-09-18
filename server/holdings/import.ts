@@ -85,13 +85,29 @@ export async function importHoldings(csvContent: string) {
         }
       }
 
+      // Ensure we have a finite unit value before proceeding
+      if (
+        unitValue == null ||
+        typeof unitValue !== "number" ||
+        Number.isNaN(unitValue)
+      ) {
+        return {
+          success: false,
+          error: `Missing unit value for "${holding.name}". Provide current_unit_value in CSV or use a recognizable symbol to fetch price automatically.`,
+        };
+      }
+
       // Create FormData for the existing createHolding function
       const formData = new FormData();
       formData.append("name", holding.name);
       formData.append("category_code", holding.category_code);
       formData.append("currency", holding.currency);
       formData.append("quantity", holding.current_quantity.toString());
-      formData.append("unit_value", unitValue.toString());
+      formData.append("unit_value", unitValue?.toString() || "");
+      formData.append(
+        "cost_basis_per_unit",
+        holding.cost_basis_per_unit?.toString() || "",
+      );
       formData.append("symbol_id", holding.symbol_id || "");
       formData.append("description", holding.description || "");
 

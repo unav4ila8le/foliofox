@@ -22,6 +22,7 @@ export type CanonicalHeader =
   | "currency"
   | "current_quantity"
   | "current_unit_value"
+  | "cost_basis_per_unit"
   | "symbol_id"
   | "description";
 
@@ -82,6 +83,18 @@ const HEADER_ALIASES: Record<CanonicalHeader, string[]> = {
     "market price",
     "average price",
     "avg price",
+  ],
+
+  // Cost basis per unit
+  cost_basis_per_unit: [
+    "cost_basis_per_unit",
+    "cost basis",
+    "cost_basis",
+    "basis",
+    "purchase price",
+    "avg cost",
+    "average cost",
+    "book value",
   ],
 
   // Currency code (ISO 4217 where possible)

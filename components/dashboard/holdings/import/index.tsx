@@ -12,7 +12,8 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-import { ImportForm } from "./form";
+import { CSVImportForm } from "./csv-form";
+import { AIImportForm } from "./ai-form";
 
 import type { VariantProps } from "class-variance-authority";
 
@@ -48,14 +49,16 @@ export function ImportHoldingsDialogProvider({
               <TabsTrigger value="csv-import">
                 <FileText className="size-4" /> CSV Import
               </TabsTrigger>
-              <TabsTrigger value="ai-import" disabled>
-                <Sparkles className="size-4" /> AI Import (Coming Soon)
+              <TabsTrigger value="ai-import">
+                <Sparkles className="size-4" /> AI Import
               </TabsTrigger>
             </TabsList>
             <TabsContent value="csv-import">
-              <ImportForm />
+              <CSVImportForm />
             </TabsContent>
-            <TabsContent value="ai-import">AI Import</TabsContent>
+            <TabsContent value="ai-import">
+              <AIImportForm />
+            </TabsContent>
           </Tabs>
         </DialogContent>
       </Dialog>
@@ -83,7 +86,7 @@ export function ImportHoldingsButton({
   return (
     <Button variant={variant} onClick={() => setOpen(true)}>
       <Upload className="size-4" />
-      Import from CSV
+      Import
     </Button>
   );
 }

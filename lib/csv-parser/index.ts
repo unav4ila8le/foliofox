@@ -17,7 +17,8 @@ export interface CSVHoldingRow {
   category_code: string;
   currency: string;
   current_quantity: number;
-  current_unit_value: number;
+  current_unit_value: number | null;
+  cost_basis_per_unit: number | null;
   symbol_id: string | null;
   description: string | null;
 }
@@ -111,7 +112,6 @@ function inferCategoryIfMissing(
  * are 3-letter codes present in supportedCurrencies.
  */
 function inferCurrencyColumnIndex(
-  rawHeaders: string[],
   dataRows: string[][],
   supportedCurrencies: string[],
   sampleSize = 50,
@@ -203,7 +203,6 @@ export async function parseHoldingsCSV(csvContent: string) {
     // If no explicit currency header, try to infer the column index
     if (!columnMap.has("currency")) {
       const inferredIndex = inferCurrencyColumnIndex(
-        rawHeaders,
         dataRows,
         supportedCurrencies,
       );
@@ -254,6 +253,12 @@ export async function parseHoldingsCSV(csvContent: string) {
         : "";
       const parsedUnitValue = parseNumberStrict(unitRaw);
 
+      // Optional cost basis per unit
+      const costBasisRaw = columnMap.has("cost_basis_per_unit")
+        ? values[columnMap.get("cost_basis_per_unit")!]
+        : "";
+      const parsedCostBasis = parseNumberStrict(costBasisRaw);
+
       // Build holding
       const holding: CSVHoldingRow = {
         name: nameValue,
@@ -262,7 +267,8 @@ export async function parseHoldingsCSV(csvContent: string) {
         current_quantity: parseNumberStrict(
           values[columnMap.get("current_quantity")!],
         ),
-        current_unit_value: parsedUnitValue,
+        current_unit_value: isNaN(parsedUnitValue) ? null : parsedUnitValue,
+        cost_basis_per_unit: isNaN(parsedCostBasis) ? null : parsedCostBasis,
         symbol_id: symbolRaw || null,
         description: descriptionRaw || null,
       };

@@ -58,17 +58,17 @@ export function validateHolding(
 
   // Validate unit value
   if (holding.symbol_id && holding.symbol_id.trim() !== "") {
-    // For holdings with symbols, unit value is optional (will be fetched from market)
-    if (!isNaN(holding.current_unit_value) && holding.current_unit_value < 0) {
+    // Optional if symbol provided (will be fetched from market); if present, must be >= 0
+    if (holding.current_unit_value != null && holding.current_unit_value < 0) {
       errors.push(
         `Row ${rowNumber}: Unit value must be 0 or greater (if provided)`,
       );
     }
   } else {
-    // For holdings without symbols, unit value is required
-    if (isNaN(holding.current_unit_value)) {
+    // Required when no symbol provided
+    if (holding.current_unit_value == null) {
       errors.push(
-        `Row ${rowNumber}: Unit value must be a valid number (e.g. 4420.69)`,
+        `Row ${rowNumber}: Unit value is required when no symbol is provided`,
       );
     } else if (holding.current_unit_value < 0) {
       errors.push(`Row ${rowNumber}: Unit value must be 0 or greater`);
