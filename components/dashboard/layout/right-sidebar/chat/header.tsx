@@ -21,6 +21,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { useSidebar } from "@/components/ui/sidebar";
 
 interface ChatHeaderProps {
   conversations?: {
@@ -38,9 +39,10 @@ export function ChatHeader({
   onNewConversation,
 }: ChatHeaderProps) {
   const [open, setOpen] = useState(false);
+  const { rightWidth } = useSidebar();
 
   return (
-    <div className="flex items-center justify-between px-2 py-4">
+    <div className="relative flex items-center justify-between p-2">
       <span className="text-sm font-medium">AI Chat</span>
       <div className="flex items-center gap-2">
         <Popover open={open} onOpenChange={setOpen}>
@@ -56,29 +58,35 @@ export function ChatHeader({
               Conversation history
             </TooltipContent>
           </Tooltip>
-          <PopoverContent align="end" className="w-80 p-0">
+          <PopoverContent
+            className="p-0"
+            style={{ width: `calc(${rightWidth} - 16px)`, marginRight: "8px" }}
+          >
             <Command>
               <CommandInput placeholder="Search conversation..." />
               <CommandList>
-                <CommandEmpty>No conversations found.</CommandEmpty>
-                <CommandGroup heading="Recent">
-                  {conversations.map((c) => (
-                    <CommandItem
-                      key={c.id}
-                      value={c.title}
-                      onSelect={() => {
-                        onSelectConversation?.(c.id);
-                        setOpen(false);
-                      }}
-                      className="flex items-start justify-between gap-6 text-xs"
-                    >
-                      <p className="line-clamp-3">{c.title}</p>
-                      <span className="text-muted-foreground flex-none">
-                        {formatDistanceToNow(new Date(c.updatedAt))}
-                      </span>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
+                {conversations.length === 0 ? (
+                  <CommandEmpty>No conversations found.</CommandEmpty>
+                ) : (
+                  <CommandGroup heading="Recent">
+                    {conversations.map((c) => (
+                      <CommandItem
+                        key={c.id}
+                        value={c.title}
+                        onSelect={() => {
+                          onSelectConversation?.(c.id);
+                          setOpen(false);
+                        }}
+                        className="flex items-start justify-between gap-6"
+                      >
+                        <p className="line-clamp-3">{c.title}</p>
+                        <span className="text-muted-foreground flex-none">
+                          {formatDistanceToNow(new Date(c.updatedAt))}
+                        </span>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                )}
               </CommandList>
             </Command>
           </PopoverContent>
