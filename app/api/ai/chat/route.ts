@@ -30,7 +30,7 @@ export async function POST(req: Request) {
   const result = streamText({
     model: openai(model),
     messages: convertToModelMessages(messages),
-    stopWhen: stepCountIs(8),
+    stopWhen: stepCountIs(12),
     tools: aiTools,
     system,
     onFinish: async ({ text, usage }) => {

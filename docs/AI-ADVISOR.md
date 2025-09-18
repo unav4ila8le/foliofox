@@ -23,10 +23,9 @@
   - [x] `getTopMovers({ baseCurrency, date?, limit? })`
   - [x] `getAllocationDrift({ baseCurrency, compareToDate })`
   - [x] `getCurrencyExposure({ baseCurrency, date? })`
+  - [x] `searchSymbols({ query, limit? })`
   - [x] `getNews({ limit? })`
   - [ ] `getDividends({ symbolIds? })`
-  - [ ] `searchSymbols({ query, limit? })`
-  - [ ] `validateSymbol({ symbolId })`
 
 ### Advice modes
 
@@ -105,7 +104,7 @@ Context window strategy (resume without blowing tokens):
 
 Deletion:
 
-- Support permanent delete. The UI can list, rename, delete.
+- Support permanent delete. The UI can list and delete.
 
 Security & moderation basics:
 

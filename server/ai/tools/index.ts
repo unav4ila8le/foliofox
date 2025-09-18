@@ -12,6 +12,7 @@ import { getHoldingsPerformance } from "./holdings-performance";
 import { getTopMovers } from "./top-movers";
 import { getAllocationDrift } from "./allocation-drift";
 import { getCurrencyExposure } from "./currency-exposure";
+import { searchSymbols } from "./search-symbols";
 import { getNews } from "./news";
 
 export const aiTools = {
@@ -224,6 +225,25 @@ export const aiTools = {
         .describe("YYYY-MM-DD format (optional, defaults to today)"),
     }),
     execute: async (args) => getCurrencyExposure(args),
+  }),
+
+  searchSymbols: tool({
+    description:
+      "Find the correct Yahoo Finance symbol for a company name or validate a symbol. Returns: matching symbols with company names, exchanges, and types. Use this to convert company names to valid symbols before using them in other tools like getNews. Essential for ensuring symbols work correctly in the system.",
+    inputSchema: z.object({
+      query: z
+        .string()
+        .describe(
+          "Company name (e.g., 'Apple', 'Tesla') or symbol to validate (e.g., 'AAPL', 'TSLA').",
+        ),
+      limit: z
+        .number()
+        .optional()
+        .describe(
+          "Maximum number of symbols to return (default: 10, max: 20).",
+        ),
+    }),
+    execute: async (args) => searchSymbols(args),
   }),
 
   getNews: tool({
