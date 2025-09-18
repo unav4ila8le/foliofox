@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Clock, Plus } from "lucide-react";
+import { Clock, Plus, LoaderCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 import { Button } from "@/components/ui/button";
@@ -31,12 +31,14 @@ interface ChatHeaderProps {
   }[];
   onSelectConversation: (id: string) => void;
   onNewConversation: () => void;
+  isLoadingConversation: boolean;
 }
 
 export function ChatHeader({
   conversations = [],
   onSelectConversation,
   onNewConversation,
+  isLoadingConversation,
 }: ChatHeaderProps) {
   const [open, setOpen] = useState(false);
   const { rightWidth } = useSidebar();
@@ -73,14 +75,15 @@ export function ChatHeader({
                       <CommandItem
                         key={c.id}
                         value={c.title}
+                        disabled={isLoadingConversation}
                         onSelect={() => {
                           onSelectConversation?.(c.id);
                           setOpen(false);
                         }}
-                        className="flex items-start justify-between gap-6"
+                        className="flex items-start justify-between gap-4"
                       >
                         <p className="line-clamp-3">{c.title}</p>
-                        <span className="text-muted-foreground flex-none">
+                        <span className="text-muted-foreground flex-none text-xs">
                           {formatDistanceToNow(new Date(c.updatedAt))}
                         </span>
                       </CommandItem>
@@ -94,8 +97,17 @@ export function ChatHeader({
 
         <Tooltip delayDuration={500}>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" onClick={onNewConversation}>
-              <Plus />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onNewConversation}
+              disabled={isLoadingConversation}
+            >
+              {isLoadingConversation ? (
+                <LoaderCircle className="animate-spin" />
+              ) : (
+                <Plus />
+              )}
             </Button>
           </TooltipTrigger>
           <TooltipContent showArrow={false}>New conversation</TooltipContent>

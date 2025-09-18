@@ -61,6 +61,7 @@ export function Chat() {
     }[]
   >([]);
   const [initialMessages, setInitialMessages] = useState<UIMessage[]>([]);
+  const [isLoadingConversation, setIsLoadingConversation] = useState(false);
   const [copiedMessages, setCopiedMessages] = useState<Set<string>>(new Set());
 
   // Load conversation list on mount
@@ -90,10 +91,20 @@ export function Chat() {
 
   // Switch to an existing conversation (loads history)
   const handleSelectConversation = async (id: string) => {
-    const msgs = await getConversationMessages(id);
-    setConversationId(id);
-    setInitialMessages(msgs);
-    setCopiedMessages(new Set());
+    setIsLoadingConversation(true);
+    try {
+      const msgs = await getConversationMessages(id);
+      setConversationId(id);
+      setInitialMessages(msgs);
+      setCopiedMessages(new Set());
+    } finally {
+      setIsLoadingConversation(false);
+    }
+  };
+
+  const refreshConversations = async () => {
+    const list = await getConversations();
+    setConversations(list);
   };
 
   // Start a fresh conversation (clears history)
@@ -102,6 +113,7 @@ export function Chat() {
     setConversationId(id);
     setInitialMessages([]);
     setCopiedMessages(new Set());
+    refreshConversations();
   };
 
   // Quick-send a suggested prompt
@@ -141,6 +153,7 @@ export function Chat() {
         conversations={conversations}
         onSelectConversation={handleSelectConversation}
         onNewConversation={handleNewConversation}
+        isLoadingConversation={isLoadingConversation}
       />
 
       {/* Conversation */}
