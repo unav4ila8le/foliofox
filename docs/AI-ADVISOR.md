@@ -23,9 +23,7 @@
   - [x] `getTopMovers({ baseCurrency, date?, limit? })`
   - [x] `getAllocationDrift({ baseCurrency, compareToDate })`
   - [x] `getCurrencyExposure({ baseCurrency, date? })`
-  - [ ] `getAssetAllocation({ baseCurrency, date? })`
-  - [ ] `getNetWorthAtDate({ baseCurrency, date })`
-  - [ ] `getNews({ limit? })`
+  - [x] `getNews({ limit? })`
   - [ ] `getDividends({ symbolIds? })`
   - [ ] `searchSymbols({ query, limit? })`
   - [ ] `validateSymbol({ symbolId })`

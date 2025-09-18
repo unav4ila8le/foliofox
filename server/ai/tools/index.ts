@@ -12,11 +12,12 @@ import { getHoldingsPerformance } from "./holdings-performance";
 import { getTopMovers } from "./top-movers";
 import { getAllocationDrift } from "./allocation-drift";
 import { getCurrencyExposure } from "./currency-exposure";
+import { getNews } from "./news";
 
 export const aiTools = {
   getPortfolioSnapshot: tool({
     description:
-      "Get portfolio overview including net worth, asset allocation, and all holdings. Returns: summary, net worth value, holdings count, asset categories with percentages, and detailed holding information with values converted to base currency.",
+      "Get a comprehensive portfolio overview including net worth, asset allocation, and all holdings at any given date. Returns: summary, net worth value, holdings count, asset categories with percentages, and detailed holding information with values converted to base currency. Use this for both current and historical portfolio snapshots - for deeper analysis use the other specialized tools.",
     inputSchema: z.object({
       baseCurrency: z
         .string()
@@ -223,5 +224,25 @@ export const aiTools = {
         .describe("YYYY-MM-DD format (optional, defaults to today)"),
     }),
     execute: async (args) => getCurrencyExposure(args),
+  }),
+
+  getNews: tool({
+    description:
+      "Get news articles for specific symbols or user's portfolio. Returns: news articles with title, publisher, link, published date, and related symbols. If no symbols provided, returns news for user's entire portfolio. Useful for market analysis and staying informed about holdings.",
+    inputSchema: z.object({
+      symbolIds: z
+        .array(z.string())
+        .optional()
+        .describe(
+          "Array of symbol IDs to get news for (e.g., ['AAPL', 'MSFT']). If omitted, returns news for user's entire portfolio.",
+        ),
+      limit: z
+        .number()
+        .optional()
+        .describe(
+          "Maximum number of articles to return (default: 10). Limit is distributed across symbols.",
+        ),
+    }),
+    execute: async (args) => getNews(args),
   }),
 };
