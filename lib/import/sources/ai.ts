@@ -70,9 +70,16 @@ Now analyze the attached file and extract the holdings.`;
 export async function postProcessExtractedHoldings(
   obj: z.infer<typeof ExtractionResultSchema>,
 ): Promise<ImportResult> {
-  if (!obj.success || !obj.holdings) {
+  // If no holdings extracted at all, return failure with empty holdings
+  if (!obj.holdings || obj.holdings.length === 0) {
+    const warnRaw = obj.warnings ?? [];
+    const baseWarnings = warnRaw.map((w) =>
+      typeof w === "string" ? w : w.warning,
+    );
     return {
-      success: false as const,
+      success: false,
+      holdings: [],
+      warnings: baseWarnings.length ? baseWarnings : undefined,
       errors: obj.error ? [obj.error] : ["AI extraction failed"],
     };
   }
@@ -90,19 +97,27 @@ export async function postProcessExtractedHoldings(
 
   const norm = await normalizeHoldingsArray(initial);
   const { errors } = await validateHoldingsArray(norm.holdings);
+
+  // Map raw warnings and merge with normalization warnings
   const warnRaw = obj.warnings ?? [];
-  const warnings = warnRaw.map((w) => (typeof w === "string" ? w : w.warning));
+  const baseWarnings = warnRaw.map((w) =>
+    typeof w === "string" ? w : w.warning,
+  );
+  const mergedWarnings = [...baseWarnings, ...norm.warnings];
+
   if (errors.length > 0) {
-    // Validation failed: return errors only (no holdings/warnings) to match CSV semantics
+    // Validation failed: return parsed holdings alongside errors so user can review/fix
     return {
       success: false,
+      holdings: norm.holdings,
+      warnings: mergedWarnings.length ? mergedWarnings : undefined,
       errors,
     };
   }
 
   return {
-    success: true as const,
+    success: true,
     holdings: norm.holdings,
-    warnings: [...warnings, ...norm.warnings],
+    warnings: mergedWarnings.length ? mergedWarnings : undefined,
   };
 }

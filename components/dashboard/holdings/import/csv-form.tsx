@@ -21,7 +21,8 @@ import { importHoldings } from "@/server/holdings/import";
 import type { ImportResult } from "@/lib/import/types";
 
 export function CSVImportForm() {
-  const { setOpen, open } = useImportHoldingsDialog();
+  const { setOpen, open, setReviewOpen, setReviewHoldings } =
+    useImportHoldingsDialog();
   const { categories } = useAssetCategories();
 
   // State for the entire import flow
@@ -45,6 +46,7 @@ export function CSVImportForm() {
       console.error("Error parsing CSV:", error);
       setParseResult({
         success: false,
+        holdings: [],
         errors: ["Failed to parse CSV. Please try again."],
       });
     } finally {
@@ -74,6 +76,13 @@ export function CSVImportForm() {
     } finally {
       setIsImporting(false);
     }
+  };
+
+  // Handler for reviewing the import
+  const handleReview = () => {
+    if (!parseResult) return;
+    setReviewHoldings(parseResult.holdings);
+    setReviewOpen(true);
   };
 
   // Handler for resetting the form
@@ -185,20 +194,29 @@ export function CSVImportForm() {
           Cancel
         </Button>
 
+        {parseResult && !parseResult.success && !isProcessing && (
+          <Button onClick={handleReview}>Review Errors</Button>
+        )}
+
         {parseResult?.success && !isProcessing && (
-          <Button onClick={handleImport} disabled={isImporting}>
-            {isImporting ? (
-              <>
-                <LoaderCircle className="size-4 animate-spin" />
-                Importing...
-              </>
-            ) : (
-              <>
-                <Upload className="size-4" />
-                Import {parseResult.holdings?.length} holding(s)
-              </>
-            )}
-          </Button>
+          <>
+            <Button variant="outline" onClick={handleReview}>
+              Review Import
+            </Button>
+            <Button onClick={handleImport} disabled={isImporting}>
+              {isImporting ? (
+                <>
+                  <LoaderCircle className="size-4 animate-spin" />
+                  Importing...
+                </>
+              ) : (
+                <>
+                  <Upload className="size-4" />
+                  Import {parseResult.holdings?.length} holding(s)
+                </>
+              )}
+            </Button>
+          </>
         )}
       </div>
     </div>

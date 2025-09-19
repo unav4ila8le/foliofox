@@ -14,12 +14,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { CSVImportForm } from "./csv-form";
 import { AIImportForm } from "./ai-form";
+import { ImportReviewDialog } from "./review";
 
 import type { VariantProps } from "class-variance-authority";
+import type { HoldingRow } from "@/lib/import/types";
 
 type ImportDialogContextType = {
   open: boolean;
   setOpen: (open: boolean) => void;
+  reviewOpen: boolean;
+  setReviewOpen: (open: boolean) => void;
+  reviewHoldings: HoldingRow[] | null;
+  setReviewHoldings: (holdings: HoldingRow[] | null) => void;
 };
 
 const ImportDialogContext = createContext<ImportDialogContextType | undefined>(
@@ -32,9 +38,22 @@ export function ImportHoldingsDialogProvider({
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [reviewHoldings, setReviewHoldings] = useState<HoldingRow[] | null>(
+    null,
+  );
 
   return (
-    <ImportDialogContext.Provider value={{ open, setOpen }}>
+    <ImportDialogContext.Provider
+      value={{
+        open,
+        setOpen,
+        reviewOpen,
+        setReviewOpen,
+        reviewHoldings,
+        setReviewHoldings,
+      }}
+    >
       {children}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto">
@@ -62,6 +81,7 @@ export function ImportHoldingsDialogProvider({
           </Tabs>
         </DialogContent>
       </Dialog>
+      <ImportReviewDialog />
     </ImportDialogContext.Provider>
   );
 }

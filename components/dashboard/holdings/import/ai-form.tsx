@@ -14,7 +14,8 @@ import { importHoldings } from "@/server/holdings/import";
 import type { HoldingRow, ImportResult } from "@/lib/import/types";
 
 export function AIImportForm() {
-  const { setOpen, open } = useImportHoldingsDialog();
+  const { setOpen, open, setReviewOpen, setReviewHoldings } =
+    useImportHoldingsDialog();
 
   // State for the entire import flow
   const [isProcessing, setIsProcessing] = useState(false);
@@ -95,6 +96,7 @@ export function AIImportForm() {
       console.error("Error extracting holdings:", error);
       setExtractionResult({
         success: false,
+        holdings: [],
         errors: ["Failed to process document. Please try again."],
       });
     } finally {
@@ -126,6 +128,13 @@ export function AIImportForm() {
     } finally {
       setIsImporting(false);
     }
+  };
+
+  // Handler for reviewing the import
+  const handleReview = () => {
+    if (!extractionResult) return;
+    setReviewHoldings(extractionResult.holdings);
+    setReviewOpen(true);
   };
 
   // Handler for resetting the form
@@ -193,20 +202,29 @@ export function AIImportForm() {
           Cancel
         </Button>
 
+        {extractionResult && !extractionResult.success && !isProcessing && (
+          <Button onClick={handleReview}>Review Errors</Button>
+        )}
+
         {extractionResult?.success && !isProcessing && (
-          <Button onClick={handleImport} disabled={isImporting}>
-            {isImporting ? (
-              <>
-                <LoaderCircle className="size-4 animate-spin" />
-                Importing...
-              </>
-            ) : (
-              <>
-                <Upload className="size-4" />
-                Import {extractionResult.holdings?.length} holding(s)
-              </>
-            )}
-          </Button>
+          <>
+            <Button variant="outline" onClick={handleReview}>
+              Review Import
+            </Button>
+            <Button onClick={handleImport} disabled={isImporting}>
+              {isImporting ? (
+                <>
+                  <LoaderCircle className="size-4 animate-spin" />
+                  Importing...
+                </>
+              ) : (
+                <>
+                  <Upload className="size-4" />
+                  Import {extractionResult.holdings?.length} holding(s)
+                </>
+              )}
+            </Button>
+          </>
         )}
       </div>
     </div>

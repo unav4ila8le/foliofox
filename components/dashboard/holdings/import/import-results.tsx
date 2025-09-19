@@ -8,14 +8,13 @@ interface ImportResultsProps {
 }
 
 export function ImportResults({ result }: ImportResultsProps) {
-  const success = result.success === true;
-  const holdingsCount = success ? result.holdings.length : 0;
-  const warnings = success ? (result.warnings ?? []) : [];
-  const errors = success ? [] : result.errors;
+  const { success, holdings, warnings = [], errors = [] } = result;
+  const holdingsCount = holdings.length;
 
   const hasWarnings = warnings.length > 0;
   const hasErrors = errors.length > 0;
 
+  // Early return for no content to show
   if (!success && !hasErrors) return null;
 
   return (

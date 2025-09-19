@@ -9,9 +9,12 @@ export interface HoldingRow {
   description: string | null;
 }
 
-export type ImportResult =
-  | { success: true; holdings: HoldingRow[]; warnings?: string[] }
-  | { success: false; errors: string[] };
+export interface ImportResult {
+  success: boolean;
+  holdings: HoldingRow[];
+  warnings?: string[];
+  errors?: string[];
+}
 
 export type ImportActionResult =
   | { success: true; importedCount: number }

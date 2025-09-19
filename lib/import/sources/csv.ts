@@ -165,6 +165,7 @@ export async function parseHoldingsCSV(
     if (lines.length < 2) {
       return {
         success: false,
+        holdings: [],
         errors: ["CSV file must have at least a header row and one data row"],
       };
     }
@@ -195,6 +196,7 @@ export async function parseHoldingsCSV(
     if (!requiredCheck.ok) {
       return {
         success: false,
+        holdings: [],
         errors: requiredCheck.missing.map(
           (header) => `Missing required column: ${header}`,
         ),
@@ -271,8 +273,13 @@ export async function parseHoldingsCSV(
       await validateHoldingsArray(normalized);
 
     if (validationErrors.length > 0) {
-      // Validation failed: return errors only (no data/warnings) to match unified semantics
-      return { success: false, errors: validationErrors };
+      // Validation failed: return parsed holdings alongside errors so user can review/fix
+      return {
+        success: false,
+        holdings: normalized,
+        warnings: warnings && warnings.length ? warnings : undefined,
+        errors: validationErrors,
+      };
     }
 
     return { success: true, holdings: normalized, warnings };
@@ -280,6 +287,7 @@ export async function parseHoldingsCSV(
     console.error("Unexpected error during CSV parsing:", error);
     return {
       success: false,
+      holdings: [],
       errors: [
         `Failed to parse CSV: ${error instanceof Error ? error.message : "Unknown error"}`,
       ], // Array instead of string
