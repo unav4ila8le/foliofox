@@ -7,7 +7,7 @@ import {
   validateHoldingsArray,
 } from "@/lib/import/parser/validation";
 
-import type { CSVHoldingRow } from "@/lib/import/sources/csv";
+import type { HoldingRow, ImportResult } from "../types";
 
 export const HoldingSchema = z.object({
   name: z.string(),
@@ -35,13 +35,6 @@ export const ExtractionResultSchema = z.object({
   error: z.string().nullable().optional(),
   warnings: z.array(WarningSchema).nullable().optional(),
 });
-
-export type AIExtractResult = {
-  success: boolean;
-  holdings?: CSVHoldingRow[];
-  warnings?: string[];
-  errors?: string[];
-};
 
 // Function to create prompt with dynamic categories
 export async function createExtractionPrompt(): Promise<string> {
@@ -76,16 +69,15 @@ Now analyze the attached file and extract the holdings.`;
 
 export async function postProcessExtractedHoldings(
   obj: z.infer<typeof ExtractionResultSchema>,
-): Promise<AIExtractResult> {
+): Promise<ImportResult> {
   if (!obj.success || !obj.holdings) {
     return {
-      success: false,
-      warnings: [],
+      success: false as const,
       errors: obj.error ? [obj.error] : ["AI extraction failed"],
     };
   }
 
-  const initial: CSVHoldingRow[] = obj.holdings.map((h) => ({
+  const initial: HoldingRow[] = obj.holdings.map((h) => ({
     name: h.name,
     category_code: h.category_code,
     currency: h.currency,
@@ -109,7 +101,7 @@ export async function postProcessExtractedHoldings(
   }
 
   return {
-    success: true,
+    success: true as const,
     holdings: norm.holdings,
     warnings: [...warnings, ...norm.warnings],
   };

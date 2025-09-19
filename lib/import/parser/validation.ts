@@ -3,7 +3,7 @@ import { validateSymbolsBatch } from "@/server/symbols/validate";
 
 // Categories are normalized via mapper upstream; no need to validate codes here
 
-import type { CSVHoldingRow } from "../sources/csv";
+import type { HoldingRow } from "../types";
 
 /**
  * Validates an array of holdings
@@ -11,7 +11,7 @@ import type { CSVHoldingRow } from "../sources/csv";
  * @returns Array of validation errors (empty if valid)
  */
 export async function validateHoldingsArray(
-  rows: CSVHoldingRow[],
+  rows: HoldingRow[],
 ): Promise<{ errors: string[] }> {
   const errors: string[] = [];
 
@@ -57,8 +57,8 @@ export async function validateHoldingsArray(
  * - Returns warnings describing adjustments made
  */
 export async function normalizeHoldingsArray(
-  rows: CSVHoldingRow[],
-): Promise<{ holdings: CSVHoldingRow[]; warnings: string[] }> {
+  rows: HoldingRow[],
+): Promise<{ holdings: HoldingRow[]; warnings: string[] }> {
   const warnings: string[] = [];
 
   // Clone rows to avoid mutating input
@@ -127,7 +127,7 @@ interface ValidationContext {
  * @returns Array of validation errors (empty if valid)
  */
 export function validateHolding(
-  holding: CSVHoldingRow,
+  holding: HoldingRow,
   rowNumber: number,
   context: ValidationContext,
 ): string[] {
@@ -192,7 +192,7 @@ export function validateHolding(
  * @returns Array of validation errors (empty if valid)
  */
 export function validateSymbolCurrency(
-  holding: CSVHoldingRow,
+  holding: HoldingRow,
   rowNumber: number,
   symbolCurrency: string,
 ): string[] {

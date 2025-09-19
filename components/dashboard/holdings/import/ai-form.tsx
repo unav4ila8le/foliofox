@@ -1,25 +1,17 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { Upload, AlertCircle, LoaderCircle, Sparkles } from "lucide-react";
+import { Upload, LoaderCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { FileUploadDropzone } from "@/components/ui/file-upload-dropzone";
+import { ImportResults } from "./import-results";
 import { useImportHoldingsDialog } from "./index";
 
 import { importHoldings } from "@/server/holdings/import";
 
-import type { CSVHoldingRow } from "@/lib/import/sources/csv";
-
-// Define AI extraction result type
-interface AIExtractionResult {
-  success: boolean;
-  holdings?: CSVHoldingRow[];
-  warnings?: string[];
-  errors?: string[];
-}
+import type { HoldingRow, ImportResult } from "@/lib/import/types";
 
 export function AIImportForm() {
   const { setOpen, open } = useImportHoldingsDialog();
@@ -28,8 +20,9 @@ export function AIImportForm() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [extractionResult, setExtractionResult] =
-    useState<AIExtractionResult | null>(null);
+  const [extractionResult, setExtractionResult] = useState<ImportResult | null>(
+    null,
+  );
 
   // Helper function to convert file to data URL
   const fileToDataUrl = (file: File): Promise<string> => {
@@ -42,7 +35,7 @@ export function AIImportForm() {
   };
 
   // Helper function to convert holdings to CSV format for existing import logic
-  const convertHoldingsToCSV = (holdings: CSVHoldingRow[]): string => {
+  const convertHoldingsToCSV = (holdings: HoldingRow[]): string => {
     const headers = [
       "name",
       "category_code",
@@ -111,7 +104,7 @@ export function AIImportForm() {
 
   // Handler for final import (reuse existing import logic)
   const handleImport = async () => {
-    if (!extractionResult?.holdings) return;
+    if (!extractionResult?.success) return;
 
     setIsImporting(true);
     try {
@@ -185,54 +178,9 @@ export function AIImportForm() {
         title="Drop your document here"
       />
 
-      {/* Extraction Results */}
+      {/* Extraction results */}
       {extractionResult && !isProcessing && (
-        <div className="space-y-4">
-          {/* Success summary */}
-          {extractionResult.success && (
-            <div className="space-y-3">
-              <Alert className="text-green-600">
-                <Sparkles className="size-4" />
-                <AlertTitle>File validated successfully!</AlertTitle>
-                <AlertDescription className="text-green-600">
-                  Found {extractionResult.holdings?.length} holdings ready to
-                  import.
-                </AlertDescription>
-              </Alert>
-
-              {/* Warnings, if any */}
-              {extractionResult.warnings &&
-                extractionResult.warnings.length > 0 && (
-                  <Alert variant="default">
-                    <AlertCircle className="size-4" />
-                    <AlertTitle>Warnings</AlertTitle>
-                    <AlertDescription>
-                      <ul className="ml-4 list-outside list-disc space-y-1 text-sm">
-                        {extractionResult.warnings.map((warning, index) => (
-                          <li key={index}>{warning}</li>
-                        ))}
-                      </ul>
-                    </AlertDescription>
-                  </Alert>
-                )}
-            </div>
-          )}
-
-          {/* Errors */}
-          {!extractionResult.success && extractionResult.errors && (
-            <Alert variant="destructive">
-              <AlertCircle className="size-4" />
-              <AlertTitle>Errors</AlertTitle>
-              <AlertDescription>
-                <ul className="ml-4 list-outside list-disc space-y-1 text-sm">
-                  {extractionResult.errors.map((error, index) => (
-                    <li key={index}>{error}</li>
-                  ))}
-                </ul>
-              </AlertDescription>
-            </Alert>
-          )}
-        </div>
+        <ImportResults result={extractionResult} />
       )}
 
       {/* Footer - Action buttons */}
@@ -246,10 +194,7 @@ export function AIImportForm() {
         </Button>
 
         {extractionResult?.success && !isProcessing && (
-          <Button
-            onClick={handleImport}
-            disabled={isImporting || (extractionResult.errors?.length ?? 0) > 0}
-          >
+          <Button onClick={handleImport} disabled={isImporting}>
             {isImporting ? (
               <>
                 <LoaderCircle className="size-4 animate-spin" />

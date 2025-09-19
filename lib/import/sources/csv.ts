@@ -11,26 +11,7 @@ import {
 
 import { fetchCurrencies } from "@/server/currencies/fetch";
 
-/**
- * Parse CSV content and validate it against expected holdings format
- */
-
-// Define and export the expected CSV structure (canonical)
-export interface CSVHoldingRow {
-  name: string;
-  category_code: string;
-  currency: string;
-  current_quantity: number;
-  current_unit_value: number | null;
-  cost_basis_per_unit: number | null;
-  symbol_id: string | null;
-  description: string | null;
-}
-
-// Discriminated union type for parse results
-export type ParseHoldingsCSVResult =
-  | { success: true; data: CSVHoldingRow[]; warnings?: string[] }
-  | { success: false; errors: string[] };
+import type { HoldingRow, ImportResult } from "../types";
 
 /**
  * Detect the delimiter used in the file by scoring the first line.
@@ -165,7 +146,7 @@ function inferCurrencyColumnIndex(
  */
 export async function parseHoldingsCSV(
   csvContent: string,
-): Promise<ParseHoldingsCSVResult> {
+): Promise<ImportResult> {
   try {
     // Get supported currencies and extract just the codes
     const currencies = await fetchCurrencies();
@@ -221,7 +202,7 @@ export async function parseHoldingsCSV(
     }
 
     // Parse each data row - continue even if headers are wrong to find all issues at once
-    const parsedHoldings: CSVHoldingRow[] = [];
+    const parsedHoldings: HoldingRow[] = [];
 
     for (let rowIndex = 0; rowIndex < dataRows.length; rowIndex++) {
       const values = dataRows[rowIndex];
@@ -257,7 +238,7 @@ export async function parseHoldingsCSV(
       const parsedCostBasis = parseNumberStrict(costBasisRaw);
 
       // Build holding
-      const holding: CSVHoldingRow = {
+      const holding: HoldingRow = {
         name: nameValue,
         category_code: mapCategory(categoryRaw),
         currency: (currencyRaw || "").trim().toUpperCase(),
@@ -294,7 +275,7 @@ export async function parseHoldingsCSV(
       return { success: false, errors: validationErrors };
     }
 
-    return { success: true, data: normalized, warnings };
+    return { success: true, holdings: normalized, warnings };
   } catch (error) {
     console.error("Unexpected error during CSV parsing:", error);
     return {

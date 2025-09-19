@@ -1,24 +1,24 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { Upload, AlertCircle, CheckCircle, LoaderCircle } from "lucide-react";
+import { Upload, LoaderCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { FileUploadDropzone } from "@/components/ui/file-upload-dropzone";
+import { ImportResults } from "./import-results";
 import { useImportHoldingsDialog } from "./index";
 
 import { useAssetCategories } from "@/hooks/use-asset-categories";
 import { parseHoldingsCSV } from "@/lib/import/sources/csv";
 import { importHoldings } from "@/server/holdings/import";
 
-type ParseResult = Awaited<ReturnType<typeof parseHoldingsCSV>>;
+import type { ImportResult } from "@/lib/import/types";
 
 export function CSVImportForm() {
   const { setOpen, open } = useImportHoldingsDialog();
@@ -28,7 +28,7 @@ export function CSVImportForm() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [parseResult, setParseResult] = useState<ParseResult | null>(null);
+  const [parseResult, setParseResult] = useState<ImportResult | null>(null);
   const [csvContent, setCsvContent] = useState<string>("");
 
   // Handle file drop/selection and immediate parsing
@@ -76,7 +76,7 @@ export function CSVImportForm() {
     }
   };
 
-  // Reset everything
+  // Handler for resetting the form
   const handleReset = () => {
     setSelectedFile(null);
     setParseResult(null);
@@ -159,53 +159,8 @@ export function CSVImportForm() {
         title="Drop your CSV file here"
       />
 
-      {/* Parse Results */}
-      {parseResult && !isProcessing && (
-        <div className="space-y-4">
-          {/* Success summary */}
-          {parseResult.success && (
-            <div className="space-y-3">
-              <Alert className="text-green-600">
-                <CheckCircle className="size-4" />
-                <AlertTitle>File validated successfully!</AlertTitle>
-                <AlertDescription className="text-green-600">
-                  Found {parseResult.data?.length} holdings ready to import.
-                </AlertDescription>
-              </Alert>
-
-              {/* Warnings, if any */}
-              {parseResult.warnings && parseResult.warnings.length > 0 && (
-                <Alert variant="default">
-                  <AlertCircle className="size-4" />
-                  <AlertTitle>Warnings</AlertTitle>
-                  <AlertDescription>
-                    <ul className="ml-4 list-outside list-disc space-y-1 text-sm">
-                      {parseResult.warnings.map((warning, index) => (
-                        <li key={index}>{warning}</li>
-                      ))}
-                    </ul>
-                  </AlertDescription>
-                </Alert>
-              )}
-            </div>
-          )}
-
-          {/* Errors, if any */}
-          {!parseResult.success && (
-            <Alert variant="destructive">
-              <AlertCircle className="size-4" />
-              <AlertTitle>Errors</AlertTitle>
-              <AlertDescription>
-                <ul className="ml-4 list-outside list-disc space-y-1 text-sm">
-                  {parseResult.errors.map((error, index) => (
-                    <li key={index}>{error}</li>
-                  ))}
-                </ul>
-              </AlertDescription>
-            </Alert>
-          )}
-        </div>
-      )}
+      {/* Parse results */}
+      {parseResult && !isProcessing && <ImportResults result={parseResult} />}
 
       {/* Help text */}
       <div className="text-muted-foreground text-sm">
@@ -240,7 +195,7 @@ export function CSVImportForm() {
             ) : (
               <>
                 <Upload className="size-4" />
-                Import {parseResult.data?.length} holding(s)
+                Import {parseResult.holdings?.length} holding(s)
               </>
             )}
           </Button>

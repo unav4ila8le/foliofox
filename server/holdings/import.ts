@@ -9,6 +9,8 @@ import { createHolding } from "@/server/holdings/create";
 
 import { parseHoldingsCSV } from "@/lib/import/sources/csv";
 
+import type { ImportActionResult } from "@/lib/import/types";
+
 // Helper function to check for duplicate holding names in batch
 async function checkForDuplicateNames(holdingNames: string[]) {
   const { supabase, user } = await getCurrentUser();
@@ -31,7 +33,9 @@ async function checkForDuplicateNames(holdingNames: string[]) {
  * Import holdings from CSV content
  * All-or-nothing approach: if any holding fails, entire import fails
  */
-export async function importHoldings(csvContent: string) {
+export async function importHoldings(
+  csvContent: string,
+): Promise<ImportActionResult> {
   try {
     // First, parse and validate the CSV
     const parseResult = await parseHoldingsCSV(csvContent);
@@ -43,7 +47,7 @@ export async function importHoldings(csvContent: string) {
       };
     }
 
-    const holdings = parseResult.data!;
+    const holdings = parseResult.holdings!;
 
     // Check for duplicate names upfront - abort if any exist
     const holdingNames = holdings.map((holding) => holding.name);

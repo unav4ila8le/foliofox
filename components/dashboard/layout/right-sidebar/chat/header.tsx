@@ -68,7 +68,7 @@ export function ChatHeader({
   return (
     <div className="relative flex items-center justify-between p-2">
       <span className="text-sm font-medium">AI Chat</span>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
         <Popover open={open} onOpenChange={setOpen}>
           <Tooltip delayDuration={500}>
             <TooltipTrigger asChild>
