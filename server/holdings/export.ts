@@ -1,6 +1,7 @@
 "use server";
 
 import { fetchHoldings } from "@/server/holdings/fetch";
+import { calculateProfitLoss } from "@/lib/profit-loss";
 
 /**
  * Export user's holdings to CSV format
@@ -11,12 +12,19 @@ export async function exportHoldings() {
     // Fetch all holdings with current values (default behavior)
     const holdings = await fetchHoldings({
       includeArchived: false, // Only active holdings for now
+      includeRecords: true,
     });
 
+    // Calculate cost basis for each holding
+    const holdingsWithCostBasis = calculateProfitLoss(
+      holdings.holdings,
+      holdings.records,
+    );
+
     // If no holdings, return empty CSV with headers
-    if (holdings.length === 0) {
+    if (holdingsWithCostBasis.length === 0) {
       const csvHeaders =
-        "name,category_code,currency,current_quantity,current_unit_value,symbol_id,description\n";
+        "name,category_code,currency,current_quantity,current_unit_value,cost_basis_per_unit,symbol_id,description\n";
       return {
         success: true,
         data: csvHeaders,
@@ -24,7 +32,7 @@ export async function exportHoldings() {
     }
 
     // Transform holdings to CSV format
-    const csvRows = holdings.map((holding) => {
+    const csvRows = holdingsWithCostBasis.map((holding) => {
       // Handle values that might contain commas or quotes
       const escapeCsvValue = (
         value: string | number | null | undefined,
@@ -48,6 +56,7 @@ export async function exportHoldings() {
         escapeCsvValue(holding.currency),
         escapeCsvValue(holding.current_quantity),
         escapeCsvValue(holding.current_unit_value),
+        escapeCsvValue(holding.cost_basis_per_unit),
         escapeCsvValue(holding.symbol_id),
         escapeCsvValue(holding.description),
       ].join(",");
@@ -55,7 +64,7 @@ export async function exportHoldings() {
 
     // Combine headers and rows
     const csvHeaders =
-      "name,category_code,currency,current_quantity,current_unit_value,symbol_id,description";
+      "name,category_code,currency,current_quantity,current_unit_value,cost_basis_per_unit,symbol_id,description";
     const csvContent = [csvHeaders, ...csvRows].join("\n");
 
     return {

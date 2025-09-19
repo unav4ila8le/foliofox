@@ -1,11 +1,15 @@
-import { buildCanonicalColumnMap, hasRequiredHeaders } from "./header-mapper";
-import { mapCategory } from "./category-mapper";
-import { parseNumberStrict } from "./number-parser";
-import { validateHolding, validateSymbolCurrency } from "./validation";
+import {
+  buildCanonicalColumnMap,
+  hasRequiredHeaders,
+} from "../parser/header-mapper";
+import { mapCategory } from "../parser/category-mapper";
+import { parseNumberStrict } from "../parser/number-parser";
+import {
+  normalizeHoldingsArray,
+  validateHoldingsArray,
+} from "../parser/validation";
 
-import { fetchAssetCategories } from "@/server/asset-categories/fetch";
 import { fetchCurrencies } from "@/server/currencies/fetch";
-import { validateSymbolsBatch } from "@/server/symbols/validate";
 
 /**
  * Parse CSV content and validate it against expected holdings format
@@ -22,6 +26,11 @@ export interface CSVHoldingRow {
   symbol_id: string | null;
   description: string | null;
 }
+
+// Discriminated union type for parse results
+export type ParseHoldingsCSVResult =
+  | { success: true; data: CSVHoldingRow[]; warnings?: string[] }
+  | { success: false; errors: string[] };
 
 /**
  * Detect the delimiter used in the file by scoring the first line.
@@ -154,24 +163,13 @@ function inferCurrencyColumnIndex(
  * @param csvContent - Raw CSV text from uploaded file
  * @returns Parsed holdings data or error details
  */
-export async function parseHoldingsCSV(csvContent: string) {
+export async function parseHoldingsCSV(
+  csvContent: string,
+): Promise<ParseHoldingsCSVResult> {
   try {
-    // Initialize errors array
-    const errors: string[] = [];
-
     // Get supported currencies and extract just the codes
     const currencies = await fetchCurrencies();
     const supportedCurrencies = currencies.map((c) => c.alphabetic_code);
-
-    // Get supported asset categories and extract just the codes
-    const categories = await fetchAssetCategories();
-    const supportedCategories = categories.map((c) => c.code);
-
-    // Create context for validation
-    const validationContext = {
-      supportedCategories,
-      supportedCurrencies,
-    };
 
     // Detect delimiter first
     const delimiter = detectDelimiter(csvContent);
@@ -226,7 +224,6 @@ export async function parseHoldingsCSV(csvContent: string) {
     const parsedHoldings: CSVHoldingRow[] = [];
 
     for (let rowIndex = 0; rowIndex < dataRows.length; rowIndex++) {
-      const rowNumber = rowIndex + 2; // +2 because we skip header and arrays start at 0
       const values = dataRows[rowIndex];
 
       // Safe reads for optional columns
@@ -280,69 +277,24 @@ export async function parseHoldingsCSV(csvContent: string) {
         holding.symbol_id,
       );
 
-      // Validate all required fields
-      const validationErrors = validateHolding(
-        holding,
-        rowNumber,
-        validationContext,
-      );
-      errors.push(...validationErrors);
-
       // Add holding to results
       parsedHoldings.push(holding);
     }
 
-    // Validate symbols if any are provided
-    const symbolsToValidate = parsedHoldings
-      .map((h) => h.symbol_id)
-      .filter((s) => s && s.trim() !== "") as string[];
+    // Normalize holdings using shared helper (adjust currency/symbol)
+    const { holdings: normalized, warnings } =
+      await normalizeHoldingsArray(parsedHoldings);
 
-    if (symbolsToValidate.length > 0) {
-      const symbolValidation = await validateSymbolsBatch(symbolsToValidate);
+    // Run shared validation (same path as AI import)
+    const { errors: validationErrors } =
+      await validateHoldingsArray(normalized);
 
-      if (!symbolValidation.valid) {
-        // Add symbol validation errors to the errors array
-        symbolValidation.errors.forEach((error) => errors.push(error));
-      }
-
-      // Update normalized symbols in the parsed holdings
-      parsedHoldings.forEach((holding) => {
-        if (holding.symbol_id) {
-          const validation = symbolValidation.results.get(holding.symbol_id);
-          if (validation?.valid && validation.normalized) {
-            holding.symbol_id = validation.normalized;
-          }
-        }
-      });
-
-      // Validate that symbol currencies match CSV currencies
-      parsedHoldings.forEach((holding, index) => {
-        if (holding.symbol_id) {
-          const validation = symbolValidation.results.get(holding.symbol_id);
-          if (validation?.valid && validation.currency) {
-            const currencyErrors = validateSymbolCurrency(
-              holding,
-              index + 2,
-              validation.currency,
-            );
-            errors.push(...currencyErrors);
-          }
-        }
-      });
+    if (validationErrors.length > 0) {
+      // Validation failed: return errors only (no data/warnings) to match unified semantics
+      return { success: false, errors: validationErrors };
     }
 
-    // Return all errors if any exist
-    if (errors.length > 0) {
-      return {
-        success: false,
-        errors: errors, // Return array of errors for better display
-      };
-    }
-
-    return {
-      success: true,
-      data: parsedHoldings,
-    };
+    return { success: true, data: normalized, warnings };
   } catch (error) {
     console.error("Unexpected error during CSV parsing:", error);
     return {

@@ -57,7 +57,7 @@ SCOPE ENFORCEMENT:
 - If a user asks for anything out of scope, politely decline and suggest how you can help with questions related to their portfolio or personal finance
 - If unsure about the scope of the question, ask clarification on the financial context before proceeding`;
 
-export function buildSystemPrompt(args: { mode: Mode }): string {
+export function createSystemPrompt(args: { mode: Mode }): string {
   const today = new Date().toISOString().split("T")[0];
   return `${BASE_SYSTEM}
 

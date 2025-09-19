@@ -15,7 +15,7 @@ import { FileUploadDropzone } from "@/components/ui/file-upload-dropzone";
 import { useImportHoldingsDialog } from "./index";
 
 import { useAssetCategories } from "@/hooks/use-asset-categories";
-import { parseHoldingsCSV } from "@/lib/csv-parser/index";
+import { parseHoldingsCSV } from "@/lib/import/sources/csv";
 import { importHoldings } from "@/server/holdings/import";
 
 type ParseResult = Awaited<ReturnType<typeof parseHoldingsCSV>>;
@@ -99,7 +99,20 @@ export function CSVImportForm() {
         </p>
         <p>
           <span className="text-foreground font-medium">Required columns:</span>{" "}
-          name, currency, current_quantity, current_unit_value.
+          name, currency, current_quantity,{" "}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="text-foreground inline-block cursor-help underline-offset-4 hover:underline">
+                current_unit_value
+              </span>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">
+              Current Unit Value is required unless symbol_id is present. For
+              holdings with symbol_id, the unit value will be fetched from the
+              market.
+            </TooltipContent>
+          </Tooltip>
+          .
         </p>
         <p>
           <span className="text-foreground font-medium">Optional columns:</span>{" "}
@@ -149,23 +162,42 @@ export function CSVImportForm() {
       {/* Parse Results */}
       {parseResult && !isProcessing && (
         <div className="space-y-4">
-          {parseResult.success ? (
-            // Success - Show summary
-            <Alert className="text-green-600">
-              <CheckCircle className="size-4" />
-              <AlertTitle>File validated successfully!</AlertTitle>
-              <AlertDescription className="text-green-600">
-                Found {parseResult.data?.length} holdings ready to import.
-              </AlertDescription>
-            </Alert>
-          ) : (
-            // Error - Show validation issues
+          {/* Success summary */}
+          {parseResult.success && (
+            <div className="space-y-3">
+              <Alert className="text-green-600">
+                <CheckCircle className="size-4" />
+                <AlertTitle>File validated successfully!</AlertTitle>
+                <AlertDescription className="text-green-600">
+                  Found {parseResult.data?.length} holdings ready to import.
+                </AlertDescription>
+              </Alert>
+
+              {/* Warnings, if any */}
+              {parseResult.warnings && parseResult.warnings.length > 0 && (
+                <Alert variant="default">
+                  <AlertCircle className="size-4" />
+                  <AlertTitle>Warnings</AlertTitle>
+                  <AlertDescription>
+                    <ul className="ml-4 list-outside list-disc space-y-1 text-sm">
+                      {parseResult.warnings.map((warning, index) => (
+                        <li key={index}>{warning}</li>
+                      ))}
+                    </ul>
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+          )}
+
+          {/* Errors, if any */}
+          {!parseResult.success && (
             <Alert variant="destructive">
               <AlertCircle className="size-4" />
-              <AlertTitle>Validation Error</AlertTitle>
+              <AlertTitle>Errors</AlertTitle>
               <AlertDescription>
                 <ul className="ml-4 list-outside list-disc space-y-1 text-sm">
-                  {parseResult.errors?.map((error, index) => (
+                  {parseResult.errors.map((error, index) => (
                     <li key={index}>{error}</li>
                   ))}
                 </ul>

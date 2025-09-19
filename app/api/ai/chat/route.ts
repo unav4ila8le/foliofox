@@ -1,7 +1,7 @@
 import { openai } from "@ai-sdk/openai";
 import { streamText, UIMessage, convertToModelMessages, stepCountIs } from "ai";
 
-import { buildSystemPrompt, type Mode } from "@/server/ai/system-prompt";
+import { createSystemPrompt, type Mode } from "@/server/ai/system-prompt";
 import { aiTools } from "@/server/ai/tools";
 import {
   persistConversationFromMessages,
@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const system = buildSystemPrompt({ mode });
+  const system = createSystemPrompt({ mode });
 
   const result = streamText({
     model: openai(model),

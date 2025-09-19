@@ -11,14 +11,14 @@ import { useImportHoldingsDialog } from "./index";
 
 import { importHoldings } from "@/server/holdings/import";
 
-import type { CSVHoldingRow } from "@/lib/csv-parser/index";
+import type { CSVHoldingRow } from "@/lib/import/sources/csv";
 
 // Define AI extraction result type
 interface AIExtractionResult {
   success: boolean;
   holdings?: CSVHoldingRow[];
-  error?: string;
   warnings?: string[];
+  errors?: string[];
 }
 
 export function AIImportForm() {
@@ -102,7 +102,7 @@ export function AIImportForm() {
       console.error("Error extracting holdings:", error);
       setExtractionResult({
         success: false,
-        error: "Failed to process document. Please try again.",
+        errors: ["Failed to process document. Please try again."],
       });
     } finally {
       setIsProcessing(false);
@@ -175,7 +175,6 @@ export function AIImportForm() {
             ".xlsx",
           ],
           "application/vnd.ms-excel": [".xls"],
-          "text/csv": [".csv"],
         }}
         maxSize={10 * 1024 * 1024} // 10MB for documents
         onFileSelect={handleFileSelect}
@@ -189,23 +188,24 @@ export function AIImportForm() {
       {/* Extraction Results */}
       {extractionResult && !isProcessing && (
         <div className="space-y-4">
-          {extractionResult.success ? (
+          {/* Success summary */}
+          {extractionResult.success && (
             <div className="space-y-3">
               <Alert className="text-green-600">
                 <Sparkles className="size-4" />
-                <AlertTitle>AI extraction successful!</AlertTitle>
+                <AlertTitle>File validated successfully!</AlertTitle>
                 <AlertDescription className="text-green-600">
                   Found {extractionResult.holdings?.length} holdings ready to
                   import.
                 </AlertDescription>
               </Alert>
 
-              {/* Show warnings if any */}
+              {/* Warnings, if any */}
               {extractionResult.warnings &&
                 extractionResult.warnings.length > 0 && (
                   <Alert variant="default">
                     <AlertCircle className="size-4" />
-                    <AlertTitle>Extraction Warnings</AlertTitle>
+                    <AlertTitle>Warnings</AlertTitle>
                     <AlertDescription>
                       <ul className="ml-4 list-outside list-disc space-y-1 text-sm">
                         {extractionResult.warnings.map((warning, index) => (
@@ -216,13 +216,19 @@ export function AIImportForm() {
                   </Alert>
                 )}
             </div>
-          ) : (
+          )}
+
+          {/* Errors */}
+          {!extractionResult.success && extractionResult.errors && (
             <Alert variant="destructive">
               <AlertCircle className="size-4" />
-              <AlertTitle>Extraction Failed</AlertTitle>
+              <AlertTitle>Errors</AlertTitle>
               <AlertDescription>
-                {extractionResult.error ||
-                  "Could not extract holdings from this document."}
+                <ul className="ml-4 list-outside list-disc space-y-1 text-sm">
+                  {extractionResult.errors.map((error, index) => (
+                    <li key={index}>{error}</li>
+                  ))}
+                </ul>
               </AlertDescription>
             </Alert>
           )}
@@ -240,7 +246,10 @@ export function AIImportForm() {
         </Button>
 
         {extractionResult?.success && !isProcessing && (
-          <Button onClick={handleImport} disabled={isImporting}>
+          <Button
+            onClick={handleImport}
+            disabled={isImporting || (extractionResult.errors?.length ?? 0) > 0}
+          >
             {isImporting ? (
               <>
                 <LoaderCircle className="size-4 animate-spin" />

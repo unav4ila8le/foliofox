@@ -7,7 +7,7 @@ import { createSymbol } from "@/server/symbols/create";
 import { fetchSingleQuote } from "@/server/quotes/fetch";
 import { createHolding } from "@/server/holdings/create";
 
-import { parseHoldingsCSV } from "@/lib/csv-parser/index";
+import { parseHoldingsCSV } from "@/lib/import/sources/csv";
 
 // Helper function to check for duplicate holding names in batch
 async function checkForDuplicateNames(holdingNames: string[]) {
