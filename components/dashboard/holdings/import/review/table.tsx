@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Table,
   TableBody,
@@ -58,8 +57,8 @@ export function HoldingsImportReviewTable({
     };
 
   return (
-    <div className="space-y-4">
-      <ScrollArea className="h-[100dvh] md:h-[60vh]">
+    <div className="flex min-h-0 flex-1 flex-col gap-4">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -131,7 +130,7 @@ export function HoldingsImportReviewTable({
             ))}
           </TableBody>
         </Table>
-      </ScrollArea>
+      </div>
 
       <div className="flex justify-end gap-2">
         <Button variant="outline" onClick={onCancel} disabled={isImporting}>

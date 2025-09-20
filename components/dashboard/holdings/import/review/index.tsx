@@ -28,8 +28,8 @@ export function ImportReviewDialog() {
 
   return (
     <Dialog open={reviewOpen} onOpenChange={setReviewOpen}>
-      <DialogContent className="!max-w-7xl">
-        <DialogHeader>
+      <DialogContent className="flex h-[100dvh] !max-w-7xl flex-col rounded-none border-0 md:h-[80dvh] md:rounded-lg md:border">
+        <DialogHeader className="flex-none">
           <DialogTitle>Review Import</DialogTitle>
           <DialogDescription>
             Review and edit your holdings before importing.
