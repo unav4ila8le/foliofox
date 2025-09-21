@@ -10,33 +10,57 @@ import {
 import type { ImportResult } from "../types";
 import type { HoldingRow } from "@/types/global.types";
 
-// Holding row schema
-const assetCategories = await fetchAssetCategories();
-const categoryCodes = assetCategories.map((cat) => cat.code);
-const HoldingRowSchema = z.object({
-  name: z.string().min(3).max(64),
-  category_code: z.enum(categoryCodes),
-  currency: z.string().length(3),
-  quantity: z.number().gte(0),
-  unit_value: z.number().gte(0).nullable().optional(),
-  cost_basis_per_unit: z.number().gte(0).nullable().optional(),
-  symbol_id: z.string().nullable().optional(),
-  description: z.string().max(256).nullable().optional(),
-});
+export type ExtractionResult = {
+  success: boolean;
+  holdings?: Array<{
+    name: string;
+    category_code: string;
+    currency: string;
+    quantity: number;
+    unit_value?: number | null;
+    cost_basis_per_unit?: number | null;
+    symbol_id?: string | null;
+    description?: string | null;
+  }>;
+  error?: string | null;
+  warnings?: Array<string | { warning: string }> | null;
+};
 
 // Warning schema
 const WarningSchema = z.union([z.string(), z.object({ warning: z.string() })]);
 
-// Extraction result schema
-export const ExtractionResultSchema = z.object({
-  success: z.boolean(),
-  holdings: z.array(HoldingRowSchema).optional(),
-  error: z.string().nullable().optional(),
-  warnings: z.array(WarningSchema).nullable().optional(),
-});
+// Function to create the holding row schema with dynamic categories
+async function createHoldingRowSchema() {
+  const assetCategories = await fetchAssetCategories();
+  const categoryCodes = assetCategories.map((cat) => cat.code);
+
+  return z.object({
+    name: z.string().min(3).max(64),
+    category_code: z.enum(categoryCodes),
+    currency: z.string().length(3),
+    quantity: z.number().gte(0),
+    unit_value: z.number().gte(0).nullable().optional(),
+    cost_basis_per_unit: z.number().gte(0).nullable().optional(),
+    symbol_id: z.string().nullable().optional(),
+    description: z.string().max(256).nullable().optional(),
+  });
+}
+
+// Function to create extraction result schema with dynamic categories
+export async function createExtractionResultSchema() {
+  const HoldingRowSchema = await createHoldingRowSchema();
+
+  return z.object({
+    success: z.boolean(),
+    holdings: z.array(HoldingRowSchema).optional(),
+    error: z.string().nullable().optional(),
+    warnings: z.array(WarningSchema).nullable().optional(),
+  });
+}
 
 // Function to create prompt with dynamic categories
 export async function createExtractionPrompt(): Promise<string> {
+  const assetCategories = await fetchAssetCategories();
   const categoryCodes = assetCategories.map((cat) => cat.code);
   const categoriesList = categoryCodes.join(", ");
 
@@ -56,6 +80,7 @@ Return data that strictly matches the provided JSON schema. Do not invent values
 - If a row looks like a tradable ticker (uppercase letters/numbers 1–8 chars, e.g., PLTR, NVDA, QQQ), you MUST set symbol_id to that ticker. If uncertain, set your best guess and add a warning like "symbol uncertain". Do not leave symbol_id empty for listed securities.
 - cost_basis_per_unit: if an explicit "avg cost"/"average price"/"cost basis"/etc. column exists, set it; otherwise set null. It must be in the same currency as "currency".
 - If multiple rows refer to the same symbol/name, prefer a single merged holding summing quantities. If cost basis differs across rows, set cost_basis_per_unit to null and add a warning.
+- Use full company names for the "name" field (e.g., "Ford Motor Company", "Toyota Motor Corporation"), not ticker symbols. Symbols go in "symbol_id".
 
 Output guidance:
 - Set success=false with a clear error if no holdings can be extracted.
@@ -66,7 +91,7 @@ Now analyze the attached file and extract the holdings.`;
 }
 
 export async function postProcessExtractedHoldings(
-  obj: z.infer<typeof ExtractionResultSchema>,
+  obj: ExtractionResult,
 ): Promise<ImportResult> {
   // If no holdings extracted at all, return failure with empty holdings
   if (!obj.holdings || obj.holdings.length === 0) {

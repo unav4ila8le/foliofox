@@ -2,9 +2,10 @@ import { openai } from "@ai-sdk/openai";
 import { generateObject } from "ai";
 
 import {
-  ExtractionResultSchema,
+  createExtractionResultSchema,
   createExtractionPrompt,
   postProcessExtractedHoldings,
+  type ExtractionResult,
 } from "@/lib/import/sources/ai";
 
 export const maxDuration = 30;
@@ -35,7 +36,10 @@ export async function POST(req: Request) {
     );
   }
 
-  const extractionPrompt = await createExtractionPrompt();
+  const [extractionPrompt, schema] = await Promise.all([
+    createExtractionPrompt(),
+    createExtractionResultSchema(),
+  ]);
 
   const result = await generateObject({
     model: openai("gpt-4o-mini"),
@@ -49,9 +53,11 @@ export async function POST(req: Request) {
         ],
       },
     ],
-    schema: ExtractionResultSchema,
+    schema,
   });
 
-  const processed = await postProcessExtractedHoldings(result.object);
+  const processed = await postProcessExtractedHoldings(
+    result.object as ExtractionResult,
+  );
   return Response.json(processed);
 }
