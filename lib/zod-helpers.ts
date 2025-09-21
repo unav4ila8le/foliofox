@@ -3,35 +3,35 @@ import { z } from "zod";
 export const requiredNumberWithConstraints = (
   requiredMessage: string,
   options: {
-    gt?: { value: number; message: string };
-    gte?: { value: number; message: string };
-    lt?: { value: number; message: string };
-    lte?: { value: number; message: string };
+    gt?: { value: number; error: string };
+    gte?: { value: number; error: string };
+    lt?: { value: number; error: string };
+    lte?: { value: number; error: string };
   } = {},
 ) => {
   // Start with the base coerced number schema
-  let numberSchema = z.coerce.number({ message: requiredMessage });
+  let numberSchema = z.coerce.number({ error: requiredMessage });
 
   // Apply constraints to the number schema
   if (options.gt) {
     numberSchema = numberSchema.gt(options.gt.value, {
-      message: options.gt.message,
+      error: options.gt.error,
     });
   }
   if (options.gte) {
     numberSchema = numberSchema.gte(options.gte.value, {
-      message: options.gte.message,
+      error: options.gte.error,
     });
   }
 
   if (options.lt) {
     numberSchema = numberSchema.lt(options.lt.value, {
-      message: options.lt.message,
+      error: options.lt.error,
     });
   }
   if (options.lte) {
     numberSchema = numberSchema.lte(options.lte.value, {
-      message: options.lte.message,
+      error: options.lte.error,
     });
   }
 

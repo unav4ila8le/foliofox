@@ -3,7 +3,7 @@ import { validateSymbolsBatch } from "@/server/symbols/validate";
 
 // Categories are normalized via mapper upstream; no need to validate codes here
 
-import type { HoldingRow } from "../types";
+import type { HoldingRow } from "@/types/global.types";
 
 /**
  * Validates an array of holdings
@@ -154,29 +154,29 @@ export function validateHolding(
   }
 
   // Validate quantity
-  if (isNaN(holding.current_quantity)) {
+  if (isNaN(holding.quantity)) {
     errors.push(
       `Row ${rowNumber}: Quantity must be a valid number (e.g. 16.2)`,
     );
-  } else if (holding.current_quantity < 0) {
+  } else if (holding.quantity < 0) {
     errors.push(`Row ${rowNumber}: Quantity must be 0 or greater`);
   }
 
   // Validate unit value
   if (holding.symbol_id && holding.symbol_id.trim() !== "") {
     // Optional if symbol provided (will be fetched from market); if present, must be >= 0
-    if (holding.current_unit_value != null && holding.current_unit_value < 0) {
+    if (holding.unit_value != null && holding.unit_value < 0) {
       errors.push(
         `Row ${rowNumber}: Unit value must be 0 or greater (if provided)`,
       );
     }
   } else {
     // Required when no symbol provided
-    if (holding.current_unit_value == null) {
+    if (holding.unit_value == null) {
       errors.push(
         `Row ${rowNumber}: Unit value is required when no symbol is provided`,
       );
-    } else if (holding.current_unit_value < 0) {
+    } else if (holding.unit_value < 0) {
       errors.push(`Row ${rowNumber}: Unit value must be 0 or greater`);
     }
   }

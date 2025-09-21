@@ -66,7 +66,7 @@ export async function importHoldings(
       const holding = holdings[i];
 
       // For holdings with symbols, fetch current market price
-      let unitValue = holding.current_unit_value;
+      let unitValue = holding.unit_value;
       if (holding.symbol_id && holding.symbol_id.trim() !== "") {
         try {
           // 1. Create symbol first (this ensures it exists in the database)
@@ -106,7 +106,7 @@ export async function importHoldings(
       formData.append("name", holding.name);
       formData.append("category_code", holding.category_code);
       formData.append("currency", holding.currency);
-      formData.append("quantity", holding.current_quantity.toString());
+      formData.append("quantity", holding.quantity.toString());
       formData.append("unit_value", unitValue?.toString() || "");
       formData.append(
         "cost_basis_per_unit",

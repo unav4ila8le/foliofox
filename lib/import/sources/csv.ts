@@ -11,7 +11,8 @@ import {
 
 import { fetchCurrencies } from "@/server/currencies/fetch";
 
-import type { HoldingRow, ImportResult } from "../types";
+import type { ImportResult } from "../types";
+import type { HoldingRow } from "@/types/global.types";
 
 /**
  * Detect the delimiter used in the file by scoring the first line.
@@ -228,8 +229,8 @@ export async function parseHoldingsCSV(
       if (!nameValue) nameValue = descriptionRaw || symbolRaw || "";
 
       // Optional unit value (may be missing if symbol is present)
-      const unitRaw = columnMap.has("current_unit_value")
-        ? values[columnMap.get("current_unit_value")!]
+      const unitRaw = columnMap.has("unit_value")
+        ? values[columnMap.get("unit_value")!]
         : "";
       const parsedUnitValue = parseNumberStrict(unitRaw);
 
@@ -244,10 +245,8 @@ export async function parseHoldingsCSV(
         name: nameValue,
         category_code: mapCategory(categoryRaw),
         currency: (currencyRaw || "").trim().toUpperCase(),
-        current_quantity: parseNumberStrict(
-          values[columnMap.get("current_quantity")!],
-        ),
-        current_unit_value: isNaN(parsedUnitValue) ? null : parsedUnitValue,
+        quantity: parseNumberStrict(values[columnMap.get("quantity")!]),
+        unit_value: isNaN(parsedUnitValue) ? null : parsedUnitValue,
         cost_basis_per_unit: isNaN(parsedCostBasis) ? null : parsedCostBasis,
         symbol_id: symbolRaw || null,
         description: descriptionRaw || null,

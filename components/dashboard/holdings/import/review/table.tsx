@@ -1,7 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useForm, useFieldArray } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
+import { Upload, LoaderCircle } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -12,144 +26,435 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import type { HoldingRow } from "@/lib/import/types";
-import { Upload, LoaderCircle } from "lucide-react";
+import { AssetCategorySelector } from "@/components/dashboard/asset-category-selector";
+import { CurrencySelector } from "@/components/dashboard/currency-selector";
+import { SymbolSearch } from "@/components/dashboard/new-holding/symbol-search";
 
-interface HoldingsReviewTableProps {
+import { useAssetCategories } from "@/hooks/use-asset-categories";
+import { validateSymbolsBatch } from "@/server/symbols/validate";
+
+import type { AssetCategory, HoldingRow } from "@/types/global.types";
+import type { SymbolValidationResult } from "@/server/symbols/validate";
+import type { ImportActionResult } from "@/lib/import/types";
+
+interface HoldingsImportReviewTableProps {
   initialHoldings: HoldingRow[];
   onCancel: () => void;
-  onImport: (holdings: HoldingRow[]) => void;
-  isImporting?: boolean;
+  onImport: (holdings: HoldingRow[]) => Promise<ImportActionResult>;
+  onSuccess: () => void;
 }
 
+// Table component wrapper
 export function HoldingsImportReviewTable({
   initialHoldings,
   onCancel,
   onImport,
-  isImporting = false,
-}: HoldingsReviewTableProps) {
-  const [holdings, setHoldings] = useState<HoldingRow[]>(() =>
-    structuredClone(initialHoldings),
-  );
+  onSuccess,
+}: HoldingsImportReviewTableProps) {
+  const { categories, isLoading: isLoadingCategories } = useAssetCategories();
+  const [isValidatingSymbols, setIsValidatingSymbols] = useState(true);
+  const [symbolValidation, setSymbolValidation] = useState<
+    Record<string, SymbolValidationResult>
+  >({});
 
-  const updateField =
-    (index: number, field: keyof HoldingRow) =>
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value;
-      setHoldings((prev) => {
-        const next = [...prev];
-        const row = { ...next[index] };
-
-        // Handle different field types
-        if (field === "current_unit_value" || field === "cost_basis_per_unit") {
-          row[field] = value === "" ? null : Number(value);
-        } else if (field === "symbol_id" || field === "description") {
-          row[field] = value === "" ? null : value;
-        } else if (field === "current_quantity") {
-          row[field] = Number(value);
-        } else {
-          row[field] = value;
-        }
-
-        next[index] = row;
-        return next;
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const symbols = Array.from(
+        new Set(
+          initialHoldings
+            .map((h) => h.symbol_id)
+            .filter((s): s is string => Boolean(s)),
+        ),
+      );
+      if (symbols.length === 0) {
+        if (mounted) setSymbolValidation({});
+        if (mounted) setIsValidatingSymbols(false);
+        return;
+      }
+      const result = await validateSymbolsBatch(symbols);
+      const map: Record<string, SymbolValidationResult> = {};
+      symbols.forEach((s) => {
+        const r = result.results?.get ? result.results.get(s) : undefined;
+        map[s] = r
+          ? { valid: r.valid, error: r.error }
+          : { valid: false, error: "Invalid symbol" };
       });
+      if (mounted) setSymbolValidation(map);
+      if (mounted) setIsValidatingSymbols(false);
+    })();
+    return () => {
+      mounted = false;
     };
+  }, [initialHoldings]);
+
+  if (isLoadingCategories || categories.length === 0 || isValidatingSymbols) {
+    return <Skeleton count={6} className="h-16" />;
+  }
+
+  return (
+    <HoldingsImportReviewTableInner
+      initialHoldings={initialHoldings}
+      onCancel={onCancel}
+      onImport={onImport}
+      onSuccess={onSuccess}
+      categories={categories}
+      symbolValidation={symbolValidation}
+    />
+  );
+}
+
+interface HoldingsImportReviewTableInnerProps
+  extends HoldingsImportReviewTableProps {
+  categories: AssetCategory[];
+  symbolValidation: Record<string, SymbolValidationResult>;
+}
+
+// Table component
+function HoldingsImportReviewTableInner({
+  initialHoldings,
+  onCancel,
+  onImport,
+  onSuccess,
+  categories,
+  symbolValidation,
+}: HoldingsImportReviewTableInnerProps) {
+  const [hasInitialErrors, setHasInitialErrors] = useState<boolean | null>(
+    null,
+  );
+  const [isImporting, setIsImporting] = useState(false);
+
+  // Create validation schema with dynamic categories
+  const categoryCodes = categories.map((cat) => cat.code) as [
+    string,
+    ...string[],
+  ];
+  const holdingSchema = z.object({
+    name: z
+      .string()
+      .min(3, { error: "Name must be at least 3 characters" })
+      .max(64, { error: "Name must not exceed 64 characters" }),
+    category_code: z.enum(categoryCodes, {
+      error: "Please select a valid category",
+    }),
+    currency: z.string().length(3, { error: "Currency must be 3 letters" }),
+    quantity: z.coerce
+      .number()
+      .gte(0, { error: "Quantity must be 0 or greater" }),
+    unit_value: z.coerce
+      .number()
+      .gte(0, { error: "Unit value must be 0 or greater" })
+      .nullable()
+      .optional(),
+    cost_basis_per_unit: z.coerce
+      .number()
+      .gte(0, { error: "Cost basis per unit must be 0 or greater" })
+      .nullable()
+      .optional(),
+    symbol_id: z
+      .string()
+      .nullable()
+      .optional()
+      .superRefine((val, ctx) => {
+        if (!val) return; // optional field
+        const v = symbolValidation[val];
+        if (v && !v.valid) {
+          ctx.addIssue({
+            code: "custom",
+            message: v.error || "Invalid symbol",
+          });
+        }
+      }),
+    description: z
+      .string()
+      .min(3, { error: "Description must be at least 3 characters" })
+      .max(256, { error: "Description must not exceed 256 characters" })
+      .nullable()
+      .optional(),
+  });
+
+  const formSchema = z.object({
+    holdings: z.array(holdingSchema),
+  });
+
+  const form = useForm({
+    mode: "onChange",
+    resolver: zodResolver(formSchema),
+    defaultValues: { holdings: initialHoldings },
+  });
+
+  const { fields } = useFieldArray({
+    control: form.control,
+    name: "holdings",
+  });
+
+  const { isDirty } = form.formState;
+
+  // Apply initial errors so they're visible immediately on mount
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const isValid = await form.trigger(undefined, {
+        shouldFocus: true,
+      });
+      if (mounted) {
+        setHasInitialErrors(!isValid);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [form, initialHoldings]);
+
+  const handleImport = async () => {
+    setIsImporting(true);
+    // Explicitly trigger validation
+    const isValid = await form.trigger();
+
+    if (!isValid) {
+      setIsImporting(false);
+      return;
+    }
+
+    const holdings = form.getValues().holdings as HoldingRow[];
+
+    const result = await onImport(holdings);
+
+    if (!result.success) {
+      toast.error(result.error);
+      setIsImporting(false);
+      return;
+    }
+
+    toast.success(`Successfully imported ${result.importedCount} holding(s)!`);
+    onSuccess();
+  };
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Currency</TableHead>
-              <TableHead>Quantity</TableHead>
-              <TableHead>Unit Value</TableHead>
-              <TableHead>Cost Basis</TableHead>
-              <TableHead>Symbol</TableHead>
-              <TableHead>Description</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {holdings.map((holding, index) => (
-              <TableRow key={index}>
-                <TableCell>
-                  <Input
-                    value={holding.name}
-                    onChange={updateField(index, "name")}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    value={holding.category_code}
-                    onChange={updateField(index, "category_code")}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    value={holding.currency}
-                    onChange={updateField(index, "currency")}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    type="number"
-                    value={holding.current_quantity}
-                    onChange={updateField(index, "current_quantity")}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    type="number"
-                    value={holding.current_unit_value ?? ""}
-                    onChange={updateField(index, "current_unit_value")}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    type="number"
-                    value={holding.cost_basis_per_unit ?? ""}
-                    onChange={updateField(index, "cost_basis_per_unit")}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    value={holding.symbol_id ?? ""}
-                    onChange={updateField(index, "symbol_id")}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    value={holding.description ?? ""}
-                    onChange={updateField(index, "description")}
-                  />
-                </TableCell>
+      <Form {...form}>
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Currency</TableHead>
+                <TableHead>Quantity</TableHead>
+                <TableHead>Unit Value</TableHead>
+                <TableHead>Cost Basis (Optional)</TableHead>
+                <TableHead>Symbol (Optional)</TableHead>
+                <TableHead>Description (Optional)</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody
+              className={
+                isImporting ? "pointer-events-none opacity-50" : undefined
+              }
+            >
+              {fields.map((field, index) => (
+                <TableRow key={field.id}>
+                  {/* Name */}
+                  <TableCell className="w-64 align-top">
+                    <FormField
+                      control={form.control}
+                      name={`holdings.${index}.name`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </TableCell>
 
-      <div className="flex justify-end gap-2">
-        <Button variant="outline" onClick={onCancel} disabled={isImporting}>
-          Back
-        </Button>
-        <Button onClick={() => onImport(holdings)} disabled={isImporting}>
-          {isImporting ? (
-            <>
-              <LoaderCircle className="size-4 animate-spin" />
-              Importing...
-            </>
-          ) : (
-            <>
-              <Upload className="size-4" />
-              Import {holdings.length} holding(s)
-            </>
-          )}
-        </Button>
-      </div>
+                  {/* Category */}
+                  <TableCell className="w-48 align-top">
+                    <FormField
+                      control={form.control}
+                      name={`holdings.${index}.category_code`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <AssetCategorySelector
+                              field={field}
+                              popoverWidth="w-64"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </TableCell>
+
+                  {/* Currency */}
+                  <TableCell className="align-top">
+                    <FormField
+                      control={form.control}
+                      name={`holdings.${index}.currency`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <CurrencySelector
+                              field={field}
+                              popoverWidth="w-64"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </TableCell>
+
+                  {/* Quantity */}
+                  <TableCell className="w-32 align-top">
+                    <FormField
+                      control={form.control}
+                      name={`holdings.${index}.quantity`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input
+                              placeholder="E.g., 10"
+                              type="number"
+                              inputMode="decimal"
+                              min={0}
+                              step="any"
+                              {...field}
+                              value={(field.value ?? "") as number | ""}
+                              onChange={(e) => {
+                                const v = e.target.value;
+                                field.onChange(v === "" ? null : Number(v));
+                              }}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </TableCell>
+
+                  {/* Unit Value */}
+                  <TableCell className="w-32 align-top">
+                    <FormField
+                      control={form.control}
+                      name={`holdings.${index}.unit_value`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input
+                              placeholder="E.g., 42.6"
+                              type="number"
+                              inputMode="decimal"
+                              min={0}
+                              step="any"
+                              {...field}
+                              value={(field.value ?? "") as number | ""}
+                              onChange={(e) => {
+                                const v = e.target.value;
+                                field.onChange(v === "" ? null : Number(v));
+                              }}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </TableCell>
+
+                  {/* Cost Basis */}
+                  <TableCell className="align-top">
+                    <FormField
+                      control={form.control}
+                      name={`holdings.${index}.cost_basis_per_unit`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input
+                              placeholder="E.g., 12.41"
+                              type="number"
+                              inputMode="decimal"
+                              min={0}
+                              step="any"
+                              {...field}
+                              value={(field.value ?? "") as number | ""}
+                              onChange={(e) => {
+                                const v = e.target.value;
+                                field.onChange(v === "" ? null : Number(v));
+                              }}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </TableCell>
+
+                  {/* Symbol */}
+                  <TableCell className="w-48 align-top">
+                    <FormField
+                      control={form.control}
+                      name={`holdings.${index}.symbol_id`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <SymbolSearch
+                              field={{
+                                ...field,
+                                value: field.value || "",
+                              }}
+                              popoverWidth="w-64"
+                            />
+                          </FormControl>
+                          <FormMessage className="whitespace-normal" />
+                        </FormItem>
+                      )}
+                    />
+                  </TableCell>
+
+                  {/* Description */}
+                  <TableCell className="align-top">
+                    <FormField
+                      control={form.control}
+                      name={`holdings.${index}.description`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input {...field} value={field.value ?? ""} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={onCancel} disabled={isImporting}>
+            Back
+          </Button>
+          <Button
+            onClick={handleImport}
+            disabled={isImporting || (hasInitialErrors === true && !isDirty)}
+          >
+            {isImporting ? (
+              <>
+                <LoaderCircle className="size-4 animate-spin" />
+                Importing...
+              </>
+            ) : (
+              <>
+                <Upload className="size-4" />
+                Import {initialHoldings.length} holding(s)
+              </>
+            )}
+          </Button>
+        </div>
+      </Form>
     </div>
   );
 }

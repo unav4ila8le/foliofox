@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useDebounce } from "use-debounce";
+import { useFormContext } from "react-hook-form";
 import { Check, LoaderCircle, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useFormField } from "@/components/ui/form";
 import { searchYahooFinanceSymbols } from "@/server/symbols/search";
 
 import type { SymbolSearchResult } from "@/types/global.types";
@@ -40,9 +42,17 @@ interface SymbolSearchProps {
   };
   id?: string;
   onSymbolSelect?: (symbolId: string) => void;
+  className?: string;
+  popoverWidth?: string;
 }
 
-export function SymbolSearch({ field, id, onSymbolSelect }: SymbolSearchProps) {
+export function SymbolSearch({
+  field,
+  id,
+  onSymbolSelect,
+  className,
+  popoverWidth = "w-(--radix-popover-trigger-width)",
+}: SymbolSearchProps) {
   const [open, setOpen] = useState(false);
   const [results, setResults] = useState<SymbolSearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -50,13 +60,16 @@ export function SymbolSearch({ field, id, onSymbolSelect }: SymbolSearchProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery] = useDebounce(searchQuery, 300);
   const isMobile = useIsMobile();
+  const { error, name } = useFormField();
+  const isInvalid = Boolean(error);
+  const { clearErrors } = useFormContext();
 
   // Find the selected equity
   const selectedSymbol = results.find((symbol) => symbol.id === field.value);
   const symbolName = selectedSymbol
     ? selectedSymbol.id
     : field.value || "Search symbol";
-  const hasSelectedValue = Boolean(field.value && selectedSymbol);
+  const hasSelectedValue = Boolean(field.value);
 
   useEffect(() => {
     if (!debouncedQuery) {
@@ -89,7 +102,10 @@ export function SymbolSearch({ field, id, onSymbolSelect }: SymbolSearchProps) {
   const symbolListProps = {
     setOpen,
     value: field.value,
-    onChange: field.onChange,
+    onChange: (v: string) => {
+      clearErrors(name);
+      field.onChange(v);
+    },
     onSymbolSelect,
     results,
     isLoading,
@@ -107,9 +123,12 @@ export function SymbolSearch({ field, id, onSymbolSelect }: SymbolSearchProps) {
             variant="outline"
             role="combobox"
             aria-expanded={open}
+            aria-invalid={isInvalid}
             className={cn(
               "justify-between font-normal",
+              "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
               !hasSelectedValue && "text-muted-foreground",
+              className,
             )}
           >
             {symbolName}
@@ -134,16 +153,19 @@ export function SymbolSearch({ field, id, onSymbolSelect }: SymbolSearchProps) {
           variant="outline"
           role="combobox"
           aria-expanded={open}
+          aria-invalid={isInvalid}
           className={cn(
             "justify-between font-normal",
+            "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
             !hasSelectedValue && "text-muted-foreground",
+            className,
           )}
         >
           {symbolName}
           <Search className="text-muted-foreground" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-(--radix-popover-trigger-width) p-0">
+      <PopoverContent align="start" className={cn(popoverWidth, "p-0")}>
         <SymbolList {...symbolListProps} />
       </PopoverContent>
     </Popover>

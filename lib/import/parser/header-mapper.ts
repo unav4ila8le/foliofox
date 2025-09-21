@@ -20,8 +20,8 @@ export type CanonicalHeader =
   | "name"
   | "category_code"
   | "currency"
-  | "current_quantity"
-  | "current_unit_value"
+  | "quantity"
+  | "unit_value"
   | "cost_basis_per_unit"
   | "symbol_id"
   | "description";
@@ -56,8 +56,9 @@ const HEADER_ALIASES: Record<CanonicalHeader, string[]> = {
   ],
 
   // Quantity / shares / units
-  current_quantity: [
+  quantity: [
     "current_quantity",
+    "current quantity",
     "quantity",
     "units",
     "shares",
@@ -67,8 +68,10 @@ const HEADER_ALIASES: Record<CanonicalHeader, string[]> = {
   ],
 
   // Unit price (the per-unit value; for cash/physical, users often set quantity=1)
-  current_unit_value: [
+  unit_value: [
+    "unit_value",
     "current_unit_value",
+    "current unit value",
     "price",
     "closing",
     "close",
@@ -191,7 +194,7 @@ export function buildCanonicalColumnMap(
 export const REQUIRED_HEADERS: CanonicalHeader[] = [
   "name",
   "currency",
-  "current_quantity",
+  "quantity",
 ];
 
 /**

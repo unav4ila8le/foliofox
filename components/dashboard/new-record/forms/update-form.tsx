@@ -44,10 +44,10 @@ import type { TransformedHolding } from "@/types/global.types";
 const formSchema = z.object({
   date: z.date({ error: "A date is required." }),
   quantity: requiredNumberWithConstraints("Quantity is required.", {
-    gte: { value: 0, message: "Quantity must be 0 or greater." },
+    gte: { value: 0, error: "Quantity must be 0 or greater." },
   }),
   unit_value: requiredNumberWithConstraints("Unit value is required.", {
-    gte: { value: 0, message: "Value must be 0 or greater." },
+    gte: { value: 0, error: "Value must be 0 or greater." },
   }),
   cost_basis_per_unit: z
     .string()
@@ -57,12 +57,12 @@ const formSchema = z.object({
         value === undefined ||
         value.trim() === "" ||
         !Number.isNaN(Number(value)),
-      { message: "Cost basis per unit must be a number" },
+      { error: "Cost basis per unit must be a number" },
     )
     .refine(
       (value) =>
         value === undefined || value.trim() === "" || Number(value) > 0,
-      { message: "Cost basis per unit must be greater than 0" },
+      { error: "Cost basis per unit must be greater than 0" },
     ),
   description: z
     .string()

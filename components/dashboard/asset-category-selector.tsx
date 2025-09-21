@@ -28,6 +28,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAssetCategories } from "@/hooks/use-asset-categories";
+import { useFormField } from "@/components/ui/form";
 
 import type { AssetCategory } from "@/types/global.types";
 
@@ -39,15 +40,21 @@ interface CategorySelectorProps {
   };
   id?: string;
   disabled?: boolean;
+  className?: string;
+  popoverWidth?: string;
 }
 
 export function AssetCategorySelector({
   field,
   id,
   disabled = false,
+  className,
+  popoverWidth = "w-(--radix-popover-trigger-width)",
 }: CategorySelectorProps) {
   const [open, setOpen] = useState(false);
   const isMobile = useIsMobile();
+  const { error } = useFormField();
+  const isInvalid = Boolean(error);
 
   // Get asset categories
   const { categories, isLoading } = useAssetCategories();
@@ -65,10 +72,13 @@ export function AssetCategorySelector({
             variant="outline"
             role="combobox"
             aria-expanded={open}
+            aria-invalid={isInvalid}
             disabled={disabled}
             className={cn(
               "justify-between font-normal",
+              "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
               !categoryName && "text-muted-foreground",
+              className,
             )}
           >
             {categoryName || "Select category"}
@@ -99,20 +109,20 @@ export function AssetCategorySelector({
           variant="outline"
           role="combobox"
           aria-expanded={open}
+          aria-invalid={isInvalid}
           disabled={disabled}
           className={cn(
             "justify-between font-normal",
+            "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
             !categoryName && "text-muted-foreground",
+            className,
           )}
         >
           {categoryName || "Select category"}
           <ChevronsUpDown className="text-muted-foreground" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent
-        className="w-(--radix-popover-trigger-width) p-0"
-        align="start"
-      >
+      <PopoverContent align="start" className={cn(popoverWidth, "p-0")}>
         <AssetCategoryList
           setOpen={setOpen}
           value={field.value}

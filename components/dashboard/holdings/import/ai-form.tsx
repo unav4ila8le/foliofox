@@ -10,8 +10,9 @@ import { ImportResults } from "./import-results";
 import { useImportHoldingsDialog } from "./index";
 
 import { importHoldings } from "@/server/holdings/import";
+import { holdingsToCSV } from "@/lib/import/serialize";
 
-import type { HoldingRow, ImportResult } from "@/lib/import/types";
+import type { ImportResult } from "@/lib/import/types";
 
 export function AIImportForm() {
   const { setOpen, open, setReviewOpen, setReviewHoldings } =
@@ -33,38 +34,6 @@ export function AIImportForm() {
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
-  };
-
-  // Helper function to convert holdings to CSV format for existing import logic
-  const convertHoldingsToCSV = (holdings: HoldingRow[]): string => {
-    const headers = [
-      "name",
-      "category_code",
-      "currency",
-      "current_quantity",
-      "current_unit_value",
-      "cost_basis_per_unit",
-      "symbol_id",
-      "description",
-    ];
-    const rows = holdings.map((holding) => [
-      holding.name,
-      holding.category_code,
-      holding.currency,
-      holding.current_quantity.toString(),
-      holding.current_unit_value == null || isNaN(holding.current_unit_value)
-        ? ""
-        : holding.current_unit_value.toString(),
-      holding.cost_basis_per_unit == null || isNaN(holding.cost_basis_per_unit)
-        ? ""
-        : holding.cost_basis_per_unit.toString(),
-      holding.symbol_id || "",
-      holding.description || "",
-    ]);
-
-    return [headers, ...rows]
-      .map((row) => row.map((cell) => `"${cell}"`).join(","))
-      .join("\n");
   };
 
   // Handler for file selection and AI extraction
@@ -111,7 +80,7 @@ export function AIImportForm() {
     setIsImporting(true);
     try {
       // Convert holdings to CSV format and import
-      const csvContent = convertHoldingsToCSV(extractionResult.holdings);
+      const csvContent = holdingsToCSV(extractionResult.holdings);
       const result = await importHoldings(csvContent);
 
       if (!result.success) {
@@ -208,7 +177,11 @@ export function AIImportForm() {
 
         {extractionResult?.success && !isProcessing && (
           <>
-            <Button variant="outline" onClick={handleReview}>
+            <Button
+              variant="outline"
+              onClick={handleReview}
+              disabled={isImporting}
+            >
               Review Import
             </Button>
             <Button onClick={handleImport} disabled={isImporting}>

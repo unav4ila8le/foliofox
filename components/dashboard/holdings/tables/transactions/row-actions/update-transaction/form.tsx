@@ -51,10 +51,10 @@ const formSchema = z.object({
     error: "A transaction type is required.",
   }),
   quantity: requiredNumberWithConstraints("Quantity is required.", {
-    gte: { value: 0, message: "Quantity must be 0 or greater" },
+    gte: { value: 0, error: "Quantity must be 0 or greater" },
   }),
   unit_value: requiredNumberWithConstraints("Unit value is required.", {
-    gte: { value: 0, message: "Value must be 0 or greater" },
+    gte: { value: 0, error: "Value must be 0 or greater" },
   }),
   description: z
     .string()

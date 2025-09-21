@@ -39,10 +39,10 @@ const formSchema = z.object({
   category_code: z.string().min(1, { error: "Category is required." }),
   currency: z.string().length(3),
   unit_value: requiredNumberWithConstraints("Unit value is required.", {
-    gte: { value: 0, message: "Value must be 0 or greater." },
+    gte: { value: 0, error: "Value must be 0 or greater." },
   }),
   quantity: requiredNumberWithConstraints("Quantity is required.", {
-    gte: { value: 0, message: "Quantity must be 0 or greater." },
+    gte: { value: 0, error: "Quantity must be 0 or greater." },
   }),
   cost_basis_per_unit: z
     .string()
@@ -50,11 +50,11 @@ const formSchema = z.object({
     .refine(
       (v) => v === undefined || v.trim() === "" || !Number.isNaN(Number(v)),
       {
-        message: "Cost basis per unit must be a number",
+        error: "Cost basis per unit must be a number",
       },
     )
     .refine((v) => v === undefined || v.trim() === "" || Number(v) > 0, {
-      message: "Cost basis per unit must be greater than 0",
+      error: "Cost basis per unit must be greater than 0",
     }),
   description: z
     .string()

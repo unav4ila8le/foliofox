@@ -42,6 +42,18 @@ export type HoldingWithProfitLoss = HoldingWithCostBasis & {
   profit_loss_percentage: number;
 };
 
+// Used for import/export
+export type HoldingRow = {
+  name: string;
+  category_code: string;
+  currency: string;
+  quantity: number;
+  unit_value: number | null;
+  cost_basis_per_unit: number | null;
+  symbol_id: string | null;
+  description: string | null;
+};
+
 // Transaction
 export type Transaction = Tables<"transactions">;
 

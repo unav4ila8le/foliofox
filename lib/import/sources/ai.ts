@@ -7,38 +7,36 @@ import {
   validateHoldingsArray,
 } from "@/lib/import/parser/validation";
 
-import type { HoldingRow, ImportResult } from "../types";
+import type { ImportResult } from "../types";
+import type { HoldingRow } from "@/types/global.types";
 
-export const HoldingSchema = z.object({
-  name: z.string(),
-  category_code: z.enum([
-    "cash",
-    "equity",
-    "fixed_income",
-    "real_estate",
-    "cryptocurrency",
-    "commodities",
-    "other",
-  ]),
+// Holding row schema
+const assetCategories = await fetchAssetCategories();
+const categoryCodes = assetCategories.map((cat) => cat.code);
+const HoldingRowSchema = z.object({
+  name: z.string().min(3).max(64),
+  category_code: z.enum(categoryCodes),
   currency: z.string().length(3),
-  current_quantity: z.number().min(0),
-  current_unit_value: z.number().nullable().optional(),
-  cost_basis_per_unit: z.number().nullable().optional(),
+  quantity: z.number().gte(0),
+  unit_value: z.number().gte(0).nullable().optional(),
+  cost_basis_per_unit: z.number().gte(0).nullable().optional(),
   symbol_id: z.string().nullable().optional(),
-  description: z.string().nullable().optional(),
+  description: z.string().max(256).nullable().optional(),
 });
 
+// Warning schema
 const WarningSchema = z.union([z.string(), z.object({ warning: z.string() })]);
+
+// Extraction result schema
 export const ExtractionResultSchema = z.object({
   success: z.boolean(),
-  holdings: z.array(HoldingSchema).optional(),
+  holdings: z.array(HoldingRowSchema).optional(),
   error: z.string().nullable().optional(),
   warnings: z.array(WarningSchema).nullable().optional(),
 });
 
 // Function to create prompt with dynamic categories
 export async function createExtractionPrompt(): Promise<string> {
-  const assetCategories = await fetchAssetCategories();
   const categoryCodes = assetCategories.map((cat) => cat.code);
   const categoriesList = categoryCodes.join(", ");
 
@@ -52,9 +50,9 @@ Return data that strictly matches the provided JSON schema. Do not invent values
 - Unit numbers: strip thousand separators, use "." for decimals, no currency symbols.
 - category_code must be one of: ${categoriesList}.
 - For cash balances, keep the currency exactly as shown on the statement (CHF/EUR/USD/etc.). Do not convert to USD or warn if not USD; only ensure it is a valid 3‑letter ISO 4217 code.
-- For cash balances, output a 'cash' holding (quantity 1, current_unit_value = cash amount).
+- For cash balances, output a 'cash' holding (quantity 1, unit_value = cash amount).
 - For cryptocurrencies, set symbol_id to the Yahoo Finance crypto pair with "-USD" (e.g., BTC-USD, ETH-USD, XRP-USD). If only the coin code is visible, output the "-USD" pair. Set currency to USD for cryptocurrencies.
-- For listed securities with a recognizable symbol (Yahoo Finance tickers, e.g., AAPL, VT, VWCE.DE), set symbol_id and you MAY set current_unit_value to null (it will be fetched).
+- For listed securities with a recognizable symbol (Yahoo Finance tickers, e.g., AAPL, VT, VWCE.DE), set symbol_id and you MAY set unit_value to null (it will be fetched).
 - If a row looks like a tradable ticker (uppercase letters/numbers 1–8 chars, e.g., PLTR, NVDA, QQQ), you MUST set symbol_id to that ticker. If uncertain, set your best guess and add a warning like "symbol uncertain". Do not leave symbol_id empty for listed securities.
 - cost_basis_per_unit: if an explicit "avg cost"/"average price"/"cost basis"/etc. column exists, set it; otherwise set null. It must be in the same currency as "currency".
 - If multiple rows refer to the same symbol/name, prefer a single merged holding summing quantities. If cost basis differs across rows, set cost_basis_per_unit to null and add a warning.
@@ -62,7 +60,7 @@ Return data that strictly matches the provided JSON schema. Do not invent values
 Output guidance:
 - Set success=false with a clear error if no holdings can be extracted.
 - Otherwise success=true, include holdings[], and warnings[] for any low-confidence fields.
-- Do NOT warn when current_unit_value is missing for rows with symbol_id; that value is fetched automatically.
+- Do NOT warn when unit_value is missing for rows with symbol_id; that value is fetched automatically.
 
 Now analyze the attached file and extract the holdings.`;
 }
@@ -88,8 +86,8 @@ export async function postProcessExtractedHoldings(
     name: h.name,
     category_code: h.category_code,
     currency: h.currency,
-    current_quantity: h.current_quantity,
-    current_unit_value: h.current_unit_value ?? null,
+    quantity: h.quantity,
+    unit_value: h.unit_value ?? null,
     cost_basis_per_unit: h.cost_basis_per_unit ?? null,
     symbol_id: h.symbol_id ?? null,
     description: h.description ?? null,

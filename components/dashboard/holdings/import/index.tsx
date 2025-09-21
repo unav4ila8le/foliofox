@@ -17,7 +17,7 @@ import { AIImportForm } from "./ai-form";
 import { ImportReviewDialog } from "./review";
 
 import type { VariantProps } from "class-variance-authority";
-import type { HoldingRow } from "@/lib/import/types";
+import type { HoldingRow } from "@/types/global.types";
 
 type ImportDialogContextType = {
   open: boolean;
@@ -56,7 +56,10 @@ export function ImportHoldingsDialogProvider({
     >
       {children}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto">
+        <DialogContent
+          onInteractOutside={(e) => e.preventDefault()}
+          className="max-h-[calc(100dvh-1rem)] overflow-y-auto"
+        >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Upload className="size-5" />

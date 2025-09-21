@@ -35,10 +35,10 @@ import { createTransaction } from "@/server/transactions/create";
 const formSchema = z.object({
   date: z.date({ error: "A date is required." }),
   quantity: requiredNumberWithConstraints("Quantity is required.", {
-    gt: { value: 0, message: "Quantity must be greater than 0." },
+    gt: { value: 0, error: "Quantity must be greater than 0." },
   }),
   unit_value: requiredNumberWithConstraints("Unit value is required.", {
-    gt: { value: 0, message: "Value must be greater than 0." },
+    gt: { value: 0, error: "Value must be greater than 0." },
   }),
   description: z
     .string()

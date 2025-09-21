@@ -9,26 +9,44 @@ import {
 import { HoldingsImportReviewTable } from "./table";
 import { useImportHoldingsDialog } from "../index";
 
+import { importHoldings } from "@/server/holdings/import";
+import { holdingsToCSV } from "@/lib/import/serialize";
+
+import type { HoldingRow } from "@/types/global.types";
+
 export function ImportReviewDialog() {
-  const { reviewOpen, reviewHoldings, setReviewOpen, setReviewHoldings } =
-    useImportHoldingsDialog();
+  const {
+    setOpen,
+    reviewOpen,
+    reviewHoldings,
+    setReviewOpen,
+    setReviewHoldings,
+  } = useImportHoldingsDialog();
 
   const handleCancel = () => {
     setReviewOpen(false);
     setReviewHoldings(null);
   };
 
-  const handleImport = () => {
-    // TODO: Import holdings
+  const handleImport = async (rows: HoldingRow[]) => {
+    const csv = holdingsToCSV(rows);
+    return await importHoldings(csv);
+  };
+
+  const handleSuccess = () => {
     setReviewOpen(false);
     setReviewHoldings(null);
+    setOpen(false);
   };
 
   if (!reviewOpen || !reviewHoldings) return null;
 
   return (
     <Dialog open={reviewOpen} onOpenChange={setReviewOpen}>
-      <DialogContent className="flex h-[100dvh] !max-w-7xl flex-col rounded-none border-0 md:h-[80dvh] md:rounded-lg md:border">
+      <DialogContent
+        onInteractOutside={(e) => e.preventDefault()}
+        className="flex h-[100dvh] !max-w-7xl flex-col rounded-none border-0 md:h-[80dvh] md:rounded-lg md:border"
+      >
         <DialogHeader className="flex-none">
           <DialogTitle>Review Import</DialogTitle>
           <DialogDescription>
@@ -39,6 +57,7 @@ export function ImportReviewDialog() {
           initialHoldings={reviewHoldings}
           onCancel={handleCancel}
           onImport={handleImport}
+          onSuccess={handleSuccess}
         />
       </DialogContent>
     </Dialog>

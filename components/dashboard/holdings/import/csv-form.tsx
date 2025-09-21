@@ -108,17 +108,16 @@ export function CSVImportForm() {
         </p>
         <p>
           <span className="text-foreground font-medium">Required columns:</span>{" "}
-          name, currency, current_quantity,{" "}
+          name, currency, quantity,{" "}
           <Tooltip>
             <TooltipTrigger asChild>
               <span className="text-foreground inline-block cursor-help underline-offset-4 hover:underline">
-                current_unit_value
+                unit_value
               </span>
             </TooltipTrigger>
             <TooltipContent className="max-w-xs">
-              Current Unit Value is required unless symbol_id is present. For
-              holdings with symbol_id, the unit value will be fetched from the
-              market.
+              Unit Value is required unless symbol_id is present. For holdings
+              with symbol_id, the unit value will be fetched from the market.
             </TooltipContent>
           </Tooltip>
           .
@@ -200,7 +199,11 @@ export function CSVImportForm() {
 
         {parseResult?.success && !isProcessing && (
           <>
-            <Button variant="outline" onClick={handleReview}>
+            <Button
+              variant="outline"
+              onClick={handleReview}
+              disabled={isImporting}
+            >
               Review Import
             </Button>
             <Button onClick={handleImport} disabled={isImporting}>
