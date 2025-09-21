@@ -264,12 +264,17 @@ export async function parseHoldingsCSV(
     }
 
     // Normalize holdings using shared helper (adjust currency/symbol)
-    const { holdings: normalized, warnings } =
-      await normalizeHoldingsArray(parsedHoldings);
+    const {
+      holdings: normalized,
+      warnings,
+      symbolValidationResults,
+    } = await normalizeHoldingsArray(parsedHoldings);
 
     // Run shared validation (same path as AI import)
-    const { errors: validationErrors } =
-      await validateHoldingsArray(normalized);
+    const { errors: validationErrors } = await validateHoldingsArray(
+      normalized,
+      symbolValidationResults,
+    );
 
     if (validationErrors.length > 0) {
       // Validation failed: return parsed holdings alongside errors so user can review/fix

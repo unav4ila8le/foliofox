@@ -119,7 +119,10 @@ export async function postProcessExtractedHoldings(
   }));
 
   const norm = await normalizeHoldingsArray(initial);
-  const { errors } = await validateHoldingsArray(norm.holdings);
+  const { errors } = await validateHoldingsArray(
+    norm.holdings,
+    norm.symbolValidationResults,
+  );
 
   // Map raw warnings and merge with normalization warnings
   const warnRaw = obj.warnings ?? [];

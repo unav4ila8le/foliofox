@@ -1,17 +1,22 @@
 import { fetchCurrencies } from "@/server/currencies/fetch";
-import { validateSymbolsBatch } from "@/server/symbols/validate";
+import {
+  validateSymbolsBatch,
+  type SymbolValidationResult,
+} from "@/server/symbols/validate";
 
 // Categories are normalized via mapper upstream; no need to validate codes here
 
 import type { HoldingRow } from "@/types/global.types";
 
 /**
- * Validates an array of holdings
+ * Validates an array of holdings with optional pre-validated symbol results
  * @param rows - The holdings to validate
+ * @param symbolValidationResults - Optional pre-validated symbol results to avoid duplicate API calls
  * @returns Array of validation errors (empty if valid)
  */
 export async function validateHoldingsArray(
   rows: HoldingRow[],
+  symbolValidationResults?: Map<string, SymbolValidationResult>,
 ): Promise<{ errors: string[] }> {
   const errors: string[] = [];
 
@@ -32,7 +37,24 @@ export async function validateHoldingsArray(
   const symbols = rows.map((r) => (r.symbol_id || "").trim()).filter(Boolean);
 
   if (symbols.length > 0) {
-    const batch = await validateSymbolsBatch(symbols);
+    let batch: Awaited<ReturnType<typeof validateSymbolsBatch>>;
+
+    if (symbolValidationResults) {
+      // Use pre-validated results
+      batch = {
+        valid: Array.from(symbolValidationResults.values()).every(
+          (r) => r.valid,
+        ),
+        results: symbolValidationResults,
+        errors: Array.from(symbolValidationResults.values())
+          .filter((r) => !r.valid)
+          .map((r) => r.error || "Unknown error"),
+      };
+    } else {
+      // Validate symbols now
+      batch = await validateSymbolsBatch(symbols);
+    }
+
     rows.forEach((row, idx) => {
       if (!row.symbol_id) return;
       const v = batch.results.get(row.symbol_id);
@@ -56,9 +78,11 @@ export async function validateHoldingsArray(
  * - Normalizes symbol id when possible
  * - Returns warnings describing adjustments made
  */
-export async function normalizeHoldingsArray(
-  rows: HoldingRow[],
-): Promise<{ holdings: HoldingRow[]; warnings: string[] }> {
+export async function normalizeHoldingsArray(rows: HoldingRow[]): Promise<{
+  holdings: HoldingRow[];
+  warnings: string[];
+  symbolValidationResults?: Map<string, SymbolValidationResult>;
+}> {
   const warnings: string[] = [];
 
   // Clone rows to avoid mutating input
@@ -109,7 +133,11 @@ export async function normalizeHoldingsArray(
     }
   });
 
-  return { holdings: cloned, warnings };
+  return {
+    holdings: cloned,
+    warnings,
+    symbolValidationResults: batch.results,
+  };
 }
 
 /**
