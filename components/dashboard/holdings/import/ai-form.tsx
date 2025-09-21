@@ -171,9 +171,12 @@ export function AIImportForm() {
           Cancel
         </Button>
 
-        {extractionResult && !extractionResult.success && !isProcessing && (
-          <Button onClick={handleReview}>Review Errors</Button>
-        )}
+        {extractionResult &&
+          !extractionResult.success &&
+          extractionResult.holdings.length > 0 &&
+          !isProcessing && (
+            <Button onClick={handleReview}>Review Errors</Button>
+          )}
 
         {extractionResult?.success && !isProcessing && (
           <>

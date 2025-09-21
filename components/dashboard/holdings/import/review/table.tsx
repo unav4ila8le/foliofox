@@ -208,26 +208,35 @@ function HoldingsImportReviewTableInner({
 
   const handleImport = async () => {
     setIsImporting(true);
-    // Explicitly trigger validation
-    const isValid = await form.trigger();
 
-    if (!isValid) {
+    try {
+      // Explicitly trigger validation
+      const isValid = await form.trigger();
+
+      if (!isValid) {
+        return;
+      }
+
+      const holdings = form.getValues().holdings as HoldingRow[];
+
+      const result = await onImport(holdings);
+
+      // Handle error response from server action
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+
+      toast.success(
+        `Successfully imported ${result.importedCount} holding(s)!`,
+      );
+      onSuccess();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to import holdings",
+      );
+    } finally {
       setIsImporting(false);
-      return;
     }
-
-    const holdings = form.getValues().holdings as HoldingRow[];
-
-    const result = await onImport(holdings);
-
-    if (!result.success) {
-      toast.error(result.error);
-      setIsImporting(false);
-      return;
-    }
-
-    toast.success(`Successfully imported ${result.importedCount} holding(s)!`);
-    onSuccess();
   };
 
   return (
