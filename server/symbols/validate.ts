@@ -1,9 +1,6 @@
 "use server";
 
-import {
-  fetchYahooFinanceSymbol,
-  searchYahooFinanceSymbols,
-} from "@/server/symbols/search";
+import { fetchYahooFinanceSymbol, searchYahooFinanceSymbols } from "./search";
 
 // Types for validation results
 export interface SymbolValidationResult {

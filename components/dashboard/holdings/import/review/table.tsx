@@ -32,8 +32,10 @@ import { SymbolSearch } from "@/components/dashboard/new-holding/symbol-search";
 
 import { useAssetCategories } from "@/hooks/use-asset-categories";
 import { validateSymbolsBatch } from "@/server/symbols/validate";
+import { validateCurrenciesBatch } from "@/server/currencies/validate";
 
 import type { AssetCategory, HoldingRow } from "@/types/global.types";
+import type { CurrencyValidationResult } from "@/server/currencies/validate";
 import type { SymbolValidationResult } from "@/server/symbols/validate";
 import type { ImportActionResult } from "@/lib/import/types";
 
@@ -52,6 +54,12 @@ export function HoldingsImportReviewTable({
   onSuccess,
 }: HoldingsImportReviewTableProps) {
   const { categories, isLoading: isLoadingCategories } = useAssetCategories();
+  // Currency validation
+  const [isValidatingCurrencies, setIsValidatingCurrencies] = useState(true);
+  const [currencyValidation, setCurrencyValidation] = useState<
+    Record<string, CurrencyValidationResult>
+  >({});
+  // Symbol validation
   const [isValidatingSymbols, setIsValidatingSymbols] = useState(true);
   const [symbolValidation, setSymbolValidation] = useState<
     Record<string, SymbolValidationResult>
@@ -60,6 +68,7 @@ export function HoldingsImportReviewTable({
   useEffect(() => {
     let mounted = true;
     (async () => {
+      // Validate symbols
       const symbols = Array.from(
         new Set(
           initialHoldings
@@ -70,25 +79,54 @@ export function HoldingsImportReviewTable({
       if (symbols.length === 0) {
         if (mounted) setSymbolValidation({});
         if (mounted) setIsValidatingSymbols(false);
-        return;
+      } else {
+        const symbolResult = await validateSymbolsBatch(symbols);
+        const symbolMap: Record<string, SymbolValidationResult> = {};
+        symbols.forEach((s) => {
+          const r = symbolResult.results?.get
+            ? symbolResult.results.get(s)
+            : undefined;
+          symbolMap[s] = r
+            ? { valid: r.valid, error: r.error }
+            : { valid: false, error: "Invalid symbol" };
+        });
+        if (mounted) setSymbolValidation(symbolMap);
+        if (mounted) setIsValidatingSymbols(false);
       }
-      const result = await validateSymbolsBatch(symbols);
-      const map: Record<string, SymbolValidationResult> = {};
-      symbols.forEach((s) => {
-        const r = result.results?.get ? result.results.get(s) : undefined;
-        map[s] = r
-          ? { valid: r.valid, error: r.error }
-          : { valid: false, error: "Invalid symbol" };
-      });
-      if (mounted) setSymbolValidation(map);
-      if (mounted) setIsValidatingSymbols(false);
+
+      // Validate currencies
+      const currencies = Array.from(
+        new Set(
+          initialHoldings
+            .map((h) => h.currency)
+            .filter((c): c is string => Boolean(c)),
+        ),
+      );
+      if (currencies.length === 0) {
+        if (mounted) setCurrencyValidation({});
+        if (mounted) setIsValidatingCurrencies(false);
+      } else {
+        const currencyResult = await validateCurrenciesBatch(currencies);
+        const currencyMap: Record<string, CurrencyValidationResult> = {};
+        currencies.forEach((c) => {
+          const r = currencyResult.results.get(c);
+          currencyMap[c] = r || { valid: false, error: "Invalid currency" };
+        });
+        if (mounted) setCurrencyValidation(currencyMap);
+        if (mounted) setIsValidatingCurrencies(false);
+      }
     })();
     return () => {
       mounted = false;
     };
   }, [initialHoldings]);
 
-  if (isLoadingCategories || categories.length === 0 || isValidatingSymbols) {
+  if (
+    isLoadingCategories ||
+    categories.length === 0 ||
+    isValidatingCurrencies ||
+    isValidatingSymbols
+  ) {
     return <Skeleton count={6} className="h-16" />;
   }
 
@@ -99,6 +137,7 @@ export function HoldingsImportReviewTable({
       onImport={onImport}
       onSuccess={onSuccess}
       categories={categories}
+      currencyValidation={currencyValidation}
       symbolValidation={symbolValidation}
     />
   );
@@ -107,6 +146,7 @@ export function HoldingsImportReviewTable({
 interface HoldingsImportReviewTableInnerProps
   extends HoldingsImportReviewTableProps {
   categories: AssetCategory[];
+  currencyValidation: Record<string, CurrencyValidationResult>;
   symbolValidation: Record<string, SymbolValidationResult>;
 }
 
@@ -117,6 +157,7 @@ function HoldingsImportReviewTableInner({
   onImport,
   onSuccess,
   categories,
+  currencyValidation,
   symbolValidation,
 }: HoldingsImportReviewTableInnerProps) {
   const [hasInitialErrors, setHasInitialErrors] = useState<boolean | null>(
@@ -137,7 +178,19 @@ function HoldingsImportReviewTableInner({
     category_code: z.enum(categoryCodes, {
       error: "Please select a valid category",
     }),
-    currency: z.string().length(3, { error: "Currency must be 3 letters" }),
+    currency: z
+      .string()
+      .length(3, { error: "Currency must be 3 letters" })
+      .superRefine((val, ctx) => {
+        if (!val) return; // required field
+        const v = currencyValidation[val];
+        if (v && !v.valid) {
+          ctx.addIssue({
+            code: "custom",
+            message: v.error || "Invalid currency",
+          });
+        }
+      }),
     quantity: z.coerce
       .number()
       .gte(0, { error: "Quantity must be 0 or greater" }),
@@ -206,6 +259,7 @@ function HoldingsImportReviewTableInner({
     };
   }, [form, initialHoldings]);
 
+  // Handle import
   const handleImport = async () => {
     setIsImporting(true);
 
