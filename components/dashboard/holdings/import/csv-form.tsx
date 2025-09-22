@@ -21,8 +21,14 @@ import { importHoldings } from "@/server/holdings/import";
 import type { ImportResult } from "@/lib/import/types";
 
 export function CSVImportForm() {
-  const { setOpen, open, setReviewOpen, setReviewHoldings } =
-    useImportHoldingsDialog();
+  const {
+    setOpen,
+    open,
+    setReviewOpen,
+    setReviewHoldings,
+    setReviewSymbolValidation,
+    setReviewSupportedCurrencies,
+  } = useImportHoldingsDialog();
   const { categories } = useAssetCategories();
 
   // State for the entire import flow
@@ -82,6 +88,8 @@ export function CSVImportForm() {
   const handleReview = () => {
     if (!parseResult) return;
     setReviewHoldings(parseResult.holdings);
+    setReviewSymbolValidation(parseResult.symbolValidation ?? null);
+    setReviewSupportedCurrencies(parseResult.supportedCurrencies ?? null);
     setReviewOpen(true);
   };
 

@@ -21,11 +21,17 @@ export function ImportReviewDialog() {
     reviewHoldings,
     setReviewOpen,
     setReviewHoldings,
+    reviewSymbolValidation,
+    reviewSupportedCurrencies,
+    setReviewSymbolValidation,
+    setReviewSupportedCurrencies,
   } = useImportHoldingsDialog();
 
   const handleCancel = () => {
     setReviewOpen(false);
     setReviewHoldings(null);
+    setReviewSymbolValidation(null);
+    setReviewSupportedCurrencies(null);
   };
 
   const handleImport = async (rows: HoldingRow[]) => {
@@ -36,6 +42,8 @@ export function ImportReviewDialog() {
   const handleSuccess = () => {
     setReviewOpen(false);
     setReviewHoldings(null);
+    setReviewSymbolValidation(null);
+    setReviewSupportedCurrencies(null);
     setOpen(false);
   };
 
@@ -58,6 +66,8 @@ export function ImportReviewDialog() {
           onCancel={handleCancel}
           onImport={handleImport}
           onSuccess={handleSuccess}
+          precomputedSymbolValidation={reviewSymbolValidation ?? undefined}
+          supportedCurrencies={reviewSupportedCurrencies ?? undefined}
         />
       </DialogContent>
     </Dialog>

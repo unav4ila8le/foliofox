@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { fetchAssetCategories } from "@/server/asset-categories/fetch";
+import { fetchCurrencies } from "@/server/currencies/fetch";
 
 import {
   normalizeHoldingsArray,
@@ -118,10 +119,17 @@ export async function postProcessExtractedHoldings(
     description: h.description ?? null,
   }));
 
-  const norm = await normalizeHoldingsArray(initial);
-  const { errors } = await validateHoldingsArray(
-    norm.holdings,
-    norm.symbolValidationResults,
+  // Normalize holdings using shared helper (adjust currency/symbol)
+  const {
+    holdings: normalizedHoldings,
+    warnings: normalizationWarnings,
+    symbolValidationResults,
+  } = await normalizeHoldingsArray(initial);
+
+  // Run shared validation
+  const { errors: validationErrors } = await validateHoldingsArray(
+    normalizedHoldings,
+    symbolValidationResults,
   );
 
   // Map raw warnings and merge with normalization warnings
@@ -129,21 +137,34 @@ export async function postProcessExtractedHoldings(
   const baseWarnings = warnRaw.map((w) =>
     typeof w === "string" ? w : w.warning,
   );
-  const mergedWarnings = [...baseWarnings, ...norm.warnings];
+  const mergedWarnings = [...baseWarnings, ...normalizationWarnings];
 
-  if (errors.length > 0) {
+  // Convert Map to Record for JSON-friendly shape
+  const symbolValidation = symbolValidationResults
+    ? Object.fromEntries(symbolValidationResults)
+    : undefined;
+  // Fetch supported currencies
+  const supportedCurrencies = (await fetchCurrencies()).map(
+    (c) => c.alphabetic_code,
+  );
+
+  if (validationErrors.length > 0) {
     // Validation failed: return parsed holdings alongside errors so user can review/fix
     return {
       success: false,
-      holdings: norm.holdings,
+      holdings: normalizedHoldings,
       warnings: mergedWarnings.length ? mergedWarnings : undefined,
-      errors,
+      errors: validationErrors,
+      symbolValidation,
+      supportedCurrencies,
     };
   }
 
   return {
     success: true,
-    holdings: norm.holdings,
+    holdings: normalizedHoldings,
     warnings: mergedWarnings.length ? mergedWarnings : undefined,
+    symbolValidation,
+    supportedCurrencies,
   };
 }

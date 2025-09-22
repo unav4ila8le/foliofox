@@ -1,40 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { toast } from "sonner";
-import { Upload, LoaderCircle } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
+import { useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-
-import { AssetCategorySelector } from "@/components/dashboard/asset-category-selector";
-import { CurrencySelector } from "@/components/dashboard/currency-selector";
-import { SymbolSearch } from "@/components/dashboard/new-holding/symbol-search";
 
 import { useAssetCategories } from "@/hooks/use-asset-categories";
-import { validateSymbolsBatch } from "@/server/symbols/validate";
-import { validateCurrenciesBatch } from "@/server/currencies/validate";
+import { ReviewForm } from "./form";
 
-import type { AssetCategory, HoldingRow } from "@/types/global.types";
+import type { HoldingRow } from "@/types/global.types";
 import type { CurrencyValidationResult } from "@/server/currencies/validate";
 import type { SymbolValidationResult } from "@/server/symbols/validate";
 import type { ImportActionResult } from "@/lib/import/types";
@@ -44,6 +16,9 @@ interface HoldingsImportReviewTableProps {
   onCancel: () => void;
   onImport: (holdings: HoldingRow[]) => Promise<ImportActionResult>;
   onSuccess: () => void;
+  // Optional server-computed validations to avoid re-validating on mount
+  precomputedSymbolValidation?: Record<string, SymbolValidationResult>;
+  supportedCurrencies?: string[];
 }
 
 // Table component wrapper
@@ -52,86 +27,68 @@ export function HoldingsImportReviewTable({
   onCancel,
   onImport,
   onSuccess,
+  precomputedSymbolValidation,
+  supportedCurrencies,
 }: HoldingsImportReviewTableProps) {
   const { categories, isLoading: isLoadingCategories } = useAssetCategories();
-  // Currency validation
-  const [isValidatingCurrencies, setIsValidatingCurrencies] = useState(true);
-  const [currencyValidation, setCurrencyValidation] = useState<
-    Record<string, CurrencyValidationResult>
-  >({});
-  // Symbol validation
-  const [isValidatingSymbols, setIsValidatingSymbols] = useState(true);
-  const [symbolValidation, setSymbolValidation] = useState<
-    Record<string, SymbolValidationResult>
-  >({});
 
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      // Validate symbols
-      const symbols = Array.from(
+  // Build validation maps from precomputed props (no network calls)
+  const usedSymbols = useMemo(
+    () =>
+      Array.from(
         new Set(
           initialHoldings
             .map((h) => h.symbol_id)
             .filter((s): s is string => Boolean(s)),
         ),
-      );
-      if (symbols.length === 0) {
-        if (mounted) setSymbolValidation({});
-        if (mounted) setIsValidatingSymbols(false);
-      } else {
-        const symbolResult = await validateSymbolsBatch(symbols);
-        const symbolMap: Record<string, SymbolValidationResult> = {};
-        symbols.forEach((s) => {
-          const r = symbolResult.results?.get
-            ? symbolResult.results.get(s)
-            : undefined;
-          symbolMap[s] = r
-            ? { valid: r.valid, error: r.error }
-            : { valid: false, error: "Invalid symbol" };
-        });
-        if (mounted) setSymbolValidation(symbolMap);
-        if (mounted) setIsValidatingSymbols(false);
-      }
+      ),
+    [initialHoldings],
+  );
 
-      // Validate currencies
-      const currencies = Array.from(
+  const symbolValidation = useMemo<
+    Record<string, SymbolValidationResult>
+  >(() => {
+    const map: Record<string, SymbolValidationResult> = {};
+    usedSymbols.forEach((s) => {
+      const v = precomputedSymbolValidation?.[s];
+      map[s] = v
+        ? { valid: v.valid, error: v.error }
+        : { valid: false, error: "Invalid symbol" };
+    });
+    return map;
+  }, [usedSymbols, precomputedSymbolValidation]);
+
+  const usedCurrencies = useMemo(
+    () =>
+      Array.from(
         new Set(
           initialHoldings
             .map((h) => h.currency)
             .filter((c): c is string => Boolean(c)),
         ),
-      );
-      if (currencies.length === 0) {
-        if (mounted) setCurrencyValidation({});
-        if (mounted) setIsValidatingCurrencies(false);
-      } else {
-        const currencyResult = await validateCurrenciesBatch(currencies);
-        const currencyMap: Record<string, CurrencyValidationResult> = {};
-        currencies.forEach((c) => {
-          const r = currencyResult.results.get(c);
-          currencyMap[c] = r || { valid: false, error: "Invalid currency" };
-        });
-        if (mounted) setCurrencyValidation(currencyMap);
-        if (mounted) setIsValidatingCurrencies(false);
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, [initialHoldings]);
+      ),
+    [initialHoldings],
+  );
 
-  if (
-    isLoadingCategories ||
-    categories.length === 0 ||
-    isValidatingCurrencies ||
-    isValidatingSymbols
-  ) {
+  const currencyValidation = useMemo<
+    Record<string, CurrencyValidationResult>
+  >(() => {
+    const map: Record<string, CurrencyValidationResult> = {};
+    const supportedSet = new Set(supportedCurrencies ?? []);
+    usedCurrencies.forEach((c) => {
+      map[c] = supportedSet.has(c)
+        ? { valid: true }
+        : { valid: false, error: `Currency "${c}" is not supported` };
+    });
+    return map;
+  }, [usedCurrencies, supportedCurrencies]);
+
+  if (isLoadingCategories || categories.length === 0) {
     return <Skeleton count={6} className="h-16" />;
   }
 
   return (
-    <HoldingsImportReviewTableInner
+    <ReviewForm
       initialHoldings={initialHoldings}
       onCancel={onCancel}
       onImport={onImport}
@@ -140,384 +97,5 @@ export function HoldingsImportReviewTable({
       currencyValidation={currencyValidation}
       symbolValidation={symbolValidation}
     />
-  );
-}
-
-interface HoldingsImportReviewTableInnerProps
-  extends HoldingsImportReviewTableProps {
-  categories: AssetCategory[];
-  currencyValidation: Record<string, CurrencyValidationResult>;
-  symbolValidation: Record<string, SymbolValidationResult>;
-}
-
-// Table component
-function HoldingsImportReviewTableInner({
-  initialHoldings,
-  onCancel,
-  onImport,
-  onSuccess,
-  categories,
-  currencyValidation,
-  symbolValidation,
-}: HoldingsImportReviewTableInnerProps) {
-  const [hasInitialErrors, setHasInitialErrors] = useState<boolean | null>(
-    null,
-  );
-  const [isImporting, setIsImporting] = useState(false);
-
-  // Create validation schema with dynamic categories
-  const categoryCodes = categories.map((cat) => cat.code) as [
-    string,
-    ...string[],
-  ];
-  const holdingSchema = z.object({
-    name: z
-      .string()
-      .min(3, { error: "Name must be at least 3 characters" })
-      .max(64, { error: "Name must not exceed 64 characters" }),
-    category_code: z.enum(categoryCodes, {
-      error: "Please select a valid category",
-    }),
-    currency: z
-      .string()
-      .length(3, { error: "Currency must be 3 letters" })
-      .superRefine((val, ctx) => {
-        if (!val) return; // required field
-        const v = currencyValidation[val];
-        if (v && !v.valid) {
-          ctx.addIssue({
-            code: "custom",
-            message: v.error || "Invalid currency",
-          });
-        }
-      }),
-    quantity: z.coerce
-      .number()
-      .gte(0, { error: "Quantity must be 0 or greater" }),
-    unit_value: z.coerce
-      .number()
-      .gte(0, { error: "Unit value must be 0 or greater" })
-      .nullable()
-      .optional(),
-    cost_basis_per_unit: z.coerce
-      .number()
-      .gte(0, { error: "Cost basis per unit must be 0 or greater" })
-      .nullable()
-      .optional(),
-    symbol_id: z
-      .string()
-      .nullable()
-      .optional()
-      .superRefine((val, ctx) => {
-        if (!val) return; // optional field
-        const v = symbolValidation[val];
-        if (v && !v.valid) {
-          ctx.addIssue({
-            code: "custom",
-            message: v.error || "Invalid symbol",
-          });
-        }
-      }),
-    description: z
-      .string()
-      .min(3, { error: "Description must be at least 3 characters" })
-      .max(256, { error: "Description must not exceed 256 characters" })
-      .nullable()
-      .optional(),
-  });
-
-  const formSchema = z.object({
-    holdings: z.array(holdingSchema),
-  });
-
-  const form = useForm({
-    mode: "onChange",
-    resolver: zodResolver(formSchema),
-    defaultValues: { holdings: initialHoldings },
-  });
-
-  const { fields } = useFieldArray({
-    control: form.control,
-    name: "holdings",
-  });
-
-  const { isDirty } = form.formState;
-
-  // Apply initial errors so they're visible immediately on mount
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      const isValid = await form.trigger(undefined, {
-        shouldFocus: true,
-      });
-      if (mounted) {
-        setHasInitialErrors(!isValid);
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, [form, initialHoldings]);
-
-  // Handle import
-  const handleImport = async () => {
-    setIsImporting(true);
-
-    try {
-      // Explicitly trigger validation
-      const isValid = await form.trigger();
-
-      if (!isValid) {
-        return;
-      }
-
-      const holdings = form.getValues().holdings as HoldingRow[];
-
-      const result = await onImport(holdings);
-
-      // Handle error response from server action
-      if (!result.success) {
-        throw new Error(result.error);
-      }
-
-      toast.success(
-        `Successfully imported ${result.importedCount} holding(s)!`,
-      );
-      onSuccess();
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to import holdings",
-      );
-    } finally {
-      setIsImporting(false);
-    }
-  };
-
-  return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4">
-      <Form {...form}>
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Currency</TableHead>
-                <TableHead>Quantity</TableHead>
-                <TableHead>Unit Value</TableHead>
-                <TableHead>Cost Basis (Optional)</TableHead>
-                <TableHead>Symbol (Optional)</TableHead>
-                <TableHead>Description (Optional)</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody
-              className={
-                isImporting ? "pointer-events-none opacity-50" : undefined
-              }
-            >
-              {fields.map((field, index) => (
-                <TableRow key={field.id}>
-                  {/* Name */}
-                  <TableCell className="w-64 align-top">
-                    <FormField
-                      control={form.control}
-                      name={`holdings.${index}.name`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </TableCell>
-
-                  {/* Category */}
-                  <TableCell className="w-48 align-top">
-                    <FormField
-                      control={form.control}
-                      name={`holdings.${index}.category_code`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <AssetCategorySelector
-                              field={field}
-                              popoverWidth="w-64"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </TableCell>
-
-                  {/* Currency */}
-                  <TableCell className="align-top">
-                    <FormField
-                      control={form.control}
-                      name={`holdings.${index}.currency`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <CurrencySelector
-                              field={field}
-                              popoverWidth="w-64"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </TableCell>
-
-                  {/* Quantity */}
-                  <TableCell className="w-32 align-top">
-                    <FormField
-                      control={form.control}
-                      name={`holdings.${index}.quantity`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input
-                              placeholder="E.g., 10"
-                              type="number"
-                              inputMode="decimal"
-                              min={0}
-                              step="any"
-                              {...field}
-                              value={(field.value ?? "") as number | ""}
-                              onChange={(e) => {
-                                const v = e.target.value;
-                                field.onChange(v === "" ? null : Number(v));
-                              }}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </TableCell>
-
-                  {/* Unit Value */}
-                  <TableCell className="w-32 align-top">
-                    <FormField
-                      control={form.control}
-                      name={`holdings.${index}.unit_value`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input
-                              placeholder="E.g., 42.6"
-                              type="number"
-                              inputMode="decimal"
-                              min={0}
-                              step="any"
-                              {...field}
-                              value={(field.value ?? "") as number | ""}
-                              onChange={(e) => {
-                                const v = e.target.value;
-                                field.onChange(v === "" ? null : Number(v));
-                              }}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </TableCell>
-
-                  {/* Cost Basis */}
-                  <TableCell className="align-top">
-                    <FormField
-                      control={form.control}
-                      name={`holdings.${index}.cost_basis_per_unit`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input
-                              placeholder="E.g., 12.41"
-                              type="number"
-                              inputMode="decimal"
-                              min={0}
-                              step="any"
-                              {...field}
-                              value={(field.value ?? "") as number | ""}
-                              onChange={(e) => {
-                                const v = e.target.value;
-                                field.onChange(v === "" ? null : Number(v));
-                              }}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                  </TableCell>
-
-                  {/* Symbol */}
-                  <TableCell className="w-48 align-top">
-                    <FormField
-                      control={form.control}
-                      name={`holdings.${index}.symbol_id`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <SymbolSearch
-                              field={{
-                                ...field,
-                                value: field.value || "",
-                              }}
-                              popoverWidth="w-64"
-                            />
-                          </FormControl>
-                          <FormMessage className="whitespace-normal" />
-                        </FormItem>
-                      )}
-                    />
-                  </TableCell>
-
-                  {/* Description */}
-                  <TableCell className="align-top">
-                    <FormField
-                      control={form.control}
-                      name={`holdings.${index}.description`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input {...field} value={field.value ?? ""} />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={onCancel} disabled={isImporting}>
-            Back
-          </Button>
-          <Button
-            onClick={handleImport}
-            disabled={isImporting || (hasInitialErrors === true && !isDirty)}
-          >
-            {isImporting ? (
-              <>
-                <LoaderCircle className="size-4 animate-spin" />
-                Importing...
-              </>
-            ) : (
-              <>
-                <Upload className="size-4" />
-                Import {initialHoldings.length} holding(s)
-              </>
-            )}
-          </Button>
-        </div>
-      </Form>
-    </div>
   );
 }

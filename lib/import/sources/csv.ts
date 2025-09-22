@@ -265,28 +265,41 @@ export async function parseHoldingsCSV(
 
     // Normalize holdings using shared helper (adjust currency/symbol)
     const {
-      holdings: normalized,
+      holdings: normalizedHoldings,
       warnings,
       symbolValidationResults,
     } = await normalizeHoldingsArray(parsedHoldings);
 
-    // Run shared validation (same path as AI import)
+    // Run shared validation
     const { errors: validationErrors } = await validateHoldingsArray(
-      normalized,
+      normalizedHoldings,
       symbolValidationResults,
     );
+
+    // Convert Map to Record for JSON-friendly shape
+    const symbolValidation = symbolValidationResults
+      ? Object.fromEntries(symbolValidationResults)
+      : undefined;
 
     if (validationErrors.length > 0) {
       // Validation failed: return parsed holdings alongside errors so user can review/fix
       return {
         success: false,
-        holdings: normalized,
+        holdings: normalizedHoldings,
         warnings: warnings && warnings.length ? warnings : undefined,
         errors: validationErrors,
+        symbolValidation,
+        supportedCurrencies,
       };
     }
 
-    return { success: true, holdings: normalized, warnings };
+    return {
+      success: true,
+      holdings: normalizedHoldings,
+      warnings: warnings && warnings.length ? warnings : undefined,
+      symbolValidation,
+      supportedCurrencies,
+    };
   } catch (error) {
     console.error("Unexpected error during CSV parsing:", error);
     return {

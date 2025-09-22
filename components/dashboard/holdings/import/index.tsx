@@ -18,6 +18,7 @@ import { ImportReviewDialog } from "./review";
 
 import type { VariantProps } from "class-variance-authority";
 import type { HoldingRow } from "@/types/global.types";
+import type { SymbolValidationResult } from "@/server/symbols/validate";
 
 type ImportDialogContextType = {
   open: boolean;
@@ -26,6 +27,12 @@ type ImportDialogContextType = {
   setReviewOpen: (open: boolean) => void;
   reviewHoldings: HoldingRow[] | null;
   setReviewHoldings: (holdings: HoldingRow[] | null) => void;
+  reviewSymbolValidation: Record<string, SymbolValidationResult> | null;
+  setReviewSymbolValidation: (
+    map: Record<string, SymbolValidationResult> | null,
+  ) => void;
+  reviewSupportedCurrencies: string[] | null;
+  setReviewSupportedCurrencies: (codes: string[] | null) => void;
 };
 
 const ImportDialogContext = createContext<ImportDialogContextType | undefined>(
@@ -42,6 +49,15 @@ export function ImportHoldingsDialogProvider({
   const [reviewHoldings, setReviewHoldings] = useState<HoldingRow[] | null>(
     null,
   );
+  // Symbol validation
+  const [reviewSymbolValidation, setReviewSymbolValidation] = useState<Record<
+    string,
+    SymbolValidationResult
+  > | null>(null);
+  // Supported currencies
+  const [reviewSupportedCurrencies, setReviewSupportedCurrencies] = useState<
+    string[] | null
+  >(null);
 
   return (
     <ImportDialogContext.Provider
@@ -52,6 +68,10 @@ export function ImportHoldingsDialogProvider({
         setReviewOpen,
         reviewHoldings,
         setReviewHoldings,
+        reviewSymbolValidation,
+        setReviewSymbolValidation,
+        reviewSupportedCurrencies,
+        setReviewSupportedCurrencies,
       }}
     >
       {children}

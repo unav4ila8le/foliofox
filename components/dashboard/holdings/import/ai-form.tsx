@@ -15,8 +15,14 @@ import { holdingsToCSV } from "@/lib/import/serialize";
 import type { ImportResult } from "@/lib/import/types";
 
 export function AIImportForm() {
-  const { setOpen, open, setReviewOpen, setReviewHoldings } =
-    useImportHoldingsDialog();
+  const {
+    setOpen,
+    open,
+    setReviewOpen,
+    setReviewHoldings,
+    setReviewSymbolValidation,
+    setReviewSupportedCurrencies,
+  } = useImportHoldingsDialog();
 
   // State for the entire import flow
   const [isProcessing, setIsProcessing] = useState(false);
@@ -103,6 +109,8 @@ export function AIImportForm() {
   const handleReview = () => {
     if (!extractionResult) return;
     setReviewHoldings(extractionResult.holdings);
+    setReviewSymbolValidation(extractionResult.symbolValidation ?? null);
+    setReviewSupportedCurrencies(extractionResult.supportedCurrencies ?? null);
     setReviewOpen(true);
   };
 

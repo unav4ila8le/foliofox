@@ -13,7 +13,7 @@ export function Greetings({ username }: { username: string }) {
 
   return (
     <h1 className="text-2xl font-semibold">
-      {greeting}, {username}
+      {greeting || "Welcome back"}, {username}
     </h1>
   );
 }
