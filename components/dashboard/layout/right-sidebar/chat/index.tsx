@@ -38,6 +38,7 @@ import { ChatHeader } from "./header";
 import { fetchConversations } from "@/server/ai/conversations/fetch";
 import { fetchConversationMessages } from "@/server/ai/messages/fetch";
 import type { Mode } from "@/server/ai/system-prompt";
+import { cn } from "@/lib/utils";
 
 const suggestions = [
   "What would happen to my portfolio if the market crashes 30% tomorrow?",
@@ -158,7 +159,12 @@ export function Chat() {
       />
 
       {/* Conversation */}
-      <Conversation className="-me-2">
+      <Conversation
+        className={cn(
+          "-me-2",
+          isLoadingConversation && "pointer-events-none opacity-50",
+        )}
+      >
         <ConversationContent>
           {messages.length === 0 ? (
             <ConversationEmptyState
