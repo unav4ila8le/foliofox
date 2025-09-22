@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useDebounce } from "use-debounce";
 import { useFormContext } from "react-hook-form";
-import { Check, LoaderCircle, Search } from "lucide-react";
+import { Check, LoaderCircle, Search, XIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -125,14 +125,34 @@ export function SymbolSearch({
             aria-expanded={open}
             aria-invalid={isInvalid}
             className={cn(
-              "justify-between font-normal",
+              "group relative justify-between font-normal",
               "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
               !hasSelectedValue && "text-muted-foreground",
               className,
             )}
           >
             {symbolName}
-            <Search className="text-muted-foreground" />
+            {hasSelectedValue && (
+              <div
+                className="text-muted-foreground hover:text-foreground absolute top-1/2 right-1 hidden h-7 w-7 -translate-y-1/2 group-hover:flex"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  clearErrors(name);
+                  field.onChange("");
+                  setSearchQuery("");
+                }}
+              >
+                <XIcon />
+                <span className="sr-only">Clear</span>
+              </div>
+            )}
+            <Search
+              className={cn(
+                "text-muted-foreground",
+                hasSelectedValue && "group-hover:hidden",
+              )}
+            />
           </Button>
         </DrawerTrigger>
         <DrawerContent>
@@ -155,14 +175,34 @@ export function SymbolSearch({
           aria-expanded={open}
           aria-invalid={isInvalid}
           className={cn(
-            "justify-between font-normal",
+            "group relative justify-between font-normal",
             "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
             !hasSelectedValue && "text-muted-foreground",
             className,
           )}
         >
           {symbolName}
-          <Search className="text-muted-foreground" />
+          {hasSelectedValue && (
+            <div
+              className="text-muted-foreground hover:text-foreground absolute top-1/2 right-1 hidden h-7 w-7 -translate-y-1/2 items-center justify-center group-hover:flex"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                clearErrors(name);
+                field.onChange("");
+                setSearchQuery("");
+              }}
+            >
+              <XIcon />
+              <span className="sr-only">Clear</span>
+            </div>
+          )}
+          <Search
+            className={cn(
+              "text-muted-foreground",
+              hasSelectedValue && "group-hover:hidden",
+            )}
+          />
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className={cn(popoverWidth, "p-0")}>
