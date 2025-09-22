@@ -5,7 +5,7 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { Upload, LoaderCircle, Info } from "lucide-react";
+import { Upload, LoaderCircle, Info, Trash2, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -159,7 +159,7 @@ export function ReviewForm({
     defaultValues,
   });
 
-  const { fields } = useFieldArray({
+  const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "holdings",
   });
@@ -293,6 +293,9 @@ export function ReviewForm({
                 </TableHead>
                 <TableHead>Symbol (Optional)</TableHead>
                 <TableHead>Description (Optional)</TableHead>
+                <TableHead>
+                  <span className="sr-only">Actions</span>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody
@@ -481,8 +484,48 @@ export function ReviewForm({
                       )}
                     />
                   </TableCell>
+
+                  {/* Actions */}
+                  <TableCell className="align-top">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => remove(index)}
+                      disabled={isImporting}
+                    >
+                      <Trash2 className="size-4" />
+                      <span className="sr-only">Delete holding</span>
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
+
+              {/* Add holding */}
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={100} className="text-end align-top">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() =>
+                      append({
+                        name: "",
+                        category_code: "other",
+                        currency: "USD",
+                        quantity: null,
+                        unit_value: null,
+                        cost_basis_per_unit: null,
+                        symbol_id: null,
+                        description: null,
+                      })
+                    }
+                    disabled={isImporting}
+                  >
+                    Add holding
+                    <Plus className="size-4" />
+                  </Button>
+                </TableCell>
+              </TableRow>
             </TableBody>
           </Table>
         </div>
@@ -503,7 +546,7 @@ export function ReviewForm({
             ) : (
               <>
                 <Upload className="size-4" />
-                Import {initialHoldings.length} holding(s)
+                Import {fields.length} holding(s)
               </>
             )}
           </Button>
