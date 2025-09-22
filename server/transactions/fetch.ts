@@ -43,8 +43,8 @@ export async function fetchTransactions(
   }
 
   // Add inclusivedate range filters if provided
-  if (startDate) query.gte("date", startDate.toISOString().slice(0, 10));
-  if (endDate) query.lte("date", endDate.toISOString().slice(0, 10));
+  if (startDate) query.gte("date", startDate.toISOString());
+  if (endDate) query.lte("date", endDate.toISOString());
 
   // Handle archived holdings filtering
   if (!includeArchived) {

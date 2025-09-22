@@ -7,6 +7,7 @@ import { AssetAllocationDonut } from "@/components/dashboard/charts/asset-alloca
 import { NetWorthLineChart } from "@/components/dashboard/charts/net-worth-line";
 import { NewsWidget } from "@/components/dashboard/news/widget";
 import { ProjectedIncomeWidget } from "@/components/dashboard/charts/projected-income/widget";
+import { TransactionsWidget } from "@/components/dashboard/transactions/widget";
 
 import { fetchProfile } from "@/server/profile/actions";
 import { calculateNetWorth } from "@/server/analysis/net-worth";
@@ -15,6 +16,7 @@ import { fetchNetWorthChange } from "@/server/analysis/net-worth-change";
 import { calculateAssetAllocation } from "@/server/analysis/asset-allocation";
 import { fetchPortfolioNews } from "@/server/news/fetch";
 import { calculateProjectedIncome } from "@/server/analysis/projected-income";
+import { fetchTransactions } from "@/server/transactions/fetch";
 
 // Separate components for data fetching with suspense
 async function NetWorthChartWrapper({
@@ -82,6 +84,11 @@ async function ProjectedIncomeWidgetWrapper({
   );
 }
 
+async function TransactionsWidgetWrapper() {
+  const transactions = await fetchTransactions();
+  return <TransactionsWidget transactionsData={transactions} />;
+}
+
 // Main page component
 export default async function DashboardPage() {
   const { profile } = await fetchProfile();
@@ -123,6 +130,11 @@ export default async function DashboardPage() {
             <ProjectedIncomeWidgetWrapper
               displayCurrency={profile.display_currency}
             />
+          </Suspense>
+        </div>
+        <div className="col-span-6">
+          <Suspense fallback={<Skeleton className="h-80 rounded-xl" />}>
+            <TransactionsWidgetWrapper />
           </Suspense>
         </div>
       </div>

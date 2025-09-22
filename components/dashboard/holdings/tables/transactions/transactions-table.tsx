@@ -14,7 +14,7 @@ import type { Transaction, TransformedHolding } from "@/types/global.types";
 
 interface TransactionsTableProps {
   data: Transaction[];
-  holding: TransformedHolding;
+  holding?: TransformedHolding;
 }
 
 export function TransactionsTable({ data, holding }: TransactionsTableProps) {

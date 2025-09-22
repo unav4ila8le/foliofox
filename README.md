@@ -187,4 +187,5 @@ N/A
 - [x] Review Zod helpers in lib and make them more flexible
 - [x] Let users input their cost basis (optional) for new holdings, and then use it to create the new record
 - [x] Foliofox AI advisor. Chat with your portfolio.
+- [ ] Add Transactions list on the dashboard home
 - [ ] Landingpage with waitlist
