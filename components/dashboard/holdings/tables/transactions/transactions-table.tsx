@@ -5,22 +5,34 @@ import { FileText, Trash2 } from "lucide-react";
 
 import { SearchInput } from "@/components/ui/search-input";
 import { DataTable } from "@/components/dashboard/holdings/tables/base/data-table";
-import { columns } from "@/components/dashboard/holdings/tables/transactions/columns";
+import { getTransactionColumns } from "@/components/dashboard/holdings/tables/transactions/columns";
 import { NewRecordButton } from "@/components/dashboard/new-record";
 import { BulkActionBar } from "@/components/dashboard/holdings/tables/base/bulk-action-bar";
 import { DeleteTransactionDialog } from "@/components/dashboard/holdings/tables/transactions/row-actions/delete-dialog";
 
-import type { Transaction, TransformedHolding } from "@/types/global.types";
+import type {
+  TransactionWithHolding,
+  TransformedHolding,
+} from "@/types/global.types";
 
 interface TransactionsTableProps {
-  data: Transaction[];
+  data: TransactionWithHolding[];
   holding?: TransformedHolding;
+  showHoldingColumn?: boolean;
 }
 
-export function TransactionsTable({ data, holding }: TransactionsTableProps) {
+export function TransactionsTable({
+  data,
+  holding,
+  showHoldingColumn = false,
+}: TransactionsTableProps) {
   const [filterValue, setFilterValue] = useState("");
-  const [selectedRows, setSelectedRows] = useState<Transaction[]>([]);
+  const [selectedRows, setSelectedRows] = useState<TransactionWithHolding[]>(
+    [],
+  );
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+
+  const columns = getTransactionColumns({ showHoldingColumn });
 
   return (
     <div className="space-y-4">

@@ -45,6 +45,13 @@ export type HoldingWithProfitLoss = HoldingWithCostBasis & {
 // Transaction
 export type Transaction = Tables<"transactions">;
 
+export type TransactionWithHolding = Transaction & {
+  holdings: Pick<
+    Tables<"holdings">,
+    "id" | "name" | "symbol_id" | "currency" | "archived_at"
+  >;
+};
+
 // Record
 export type Record = Tables<"records">;
 

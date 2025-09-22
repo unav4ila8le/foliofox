@@ -3,10 +3,10 @@ import { ArrowLeftRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { TransactionsTable } from "@/components/dashboard/holdings/tables/transactions/transactions-table";
 
-import type { Transaction } from "@/types/global.types";
+import type { TransactionWithHolding } from "@/types/global.types";
 
 interface TransactionsWidgetProps {
-  transactionsData: Transaction[];
+  transactionsData: TransactionWithHolding[];
 }
 
 export function TransactionsWidget({
@@ -30,5 +30,5 @@ export function TransactionsWidget({
   }
 
   // Display transactions
-  return <TransactionsTable data={transactionsData} />;
+  return <TransactionsTable data={transactionsData} showHoldingColumn />;
 }
