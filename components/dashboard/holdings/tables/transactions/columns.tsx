@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { ArrowUpDown } from "lucide-react";
 import { format } from "date-fns";
 
@@ -73,15 +74,26 @@ export function getTransactionColumns({
     header: "Holding",
     accessorFn: (row) => row.holdings?.name ?? "",
     cell: ({ row }) => {
-      const holdingName = (row.original.holdings?.name as string) ?? "";
+      const holding = row.original.holdings;
+      const holdingName = holding?.name ?? "";
+      const holdingId = holding?.id;
+      if (!holdingId) {
+        return (
+          <div className="max-w-60 truncate" title={holdingName}>
+            <span className="text-muted-foreground italic">Unknown</span>
+          </div>
+        );
+      }
       return (
-        <div className="max-w-60 truncate" title={holdingName}>
-          {holdingName || (
-            <span className="text-muted-foreground italic">
-              Unknown holding
-            </span>
-          )}
-        </div>
+        <Link
+          href={`/dashboard/holdings/${holdingId}`}
+          className="hover:text-primary max-w-60 truncate underline-offset-4 hover:underline"
+          title={holdingName}
+          onClick={(e) => e.stopPropagation()}
+          aria-label={`Open ${holdingName}`}
+        >
+          {holdingName}
+        </Link>
       );
     },
   };
