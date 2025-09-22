@@ -14,6 +14,7 @@
  *   - real_estate
  *   - cryptocurrency
  *   - commodities
+ *   - domain
  *   - other
  */
 
@@ -24,6 +25,7 @@ export type CategoryCode =
   | "real_estate"
   | "cryptocurrency"
   | "commodities"
+  | "domain"
   | "other";
 
 export const CATEGORY_CODES: CategoryCode[] = [
@@ -33,6 +35,7 @@ export const CATEGORY_CODES: CategoryCode[] = [
   "real_estate",
   "cryptocurrency",
   "commodities",
+  "domain",
   "other",
 ];
 
@@ -169,6 +172,15 @@ const CATEGORY_ALIASES: Record<CategoryCode, string[]> = {
     "commodity etf",
     "gold etf",
     "silver etf",
+  ],
+
+  domain: [
+    "domain",
+    "domain name",
+    "domain registration",
+    "domain name registration",
+    "domain address",
+    "web address",
   ],
 
   other: [

@@ -2,8 +2,10 @@
 -- PostgreSQL database dump
 --
 
+\restrict fgGFji7rzX5ypaHvN2k9TFMh19mXJi4rGuB9aeU2Rlh14YLCygOTySUbMm6Odlg
+
 -- Dumped from database version 17.6
--- Dumped by pg_dump version 17.5 (Homebrew)
+-- Dumped by pg_dump version 17.6 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -1581,4 +1583,6 @@ ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT SELECT,I
 --
 -- PostgreSQL database dump complete
 --
+
+\unrestrict fgGFji7rzX5ypaHvN2k9TFMh19mXJi4rGuB9aeU2Rlh14YLCygOTySUbMm6Odlg
 

@@ -93,6 +93,8 @@ function inferCategoryIfMissing(
   const lowerName = name.toLowerCase();
   if (lowerName.includes("cash")) return "cash";
   if (symbolId && symbolId.trim() !== "") return "equity";
+  if (lowerName.includes("domain") || lowerName.includes(".com"))
+    return "domain";
   return "other";
 }
 

@@ -6,6 +6,7 @@ export const ASSET_CATEGORY_TRANSACTION_TYPES = {
   cryptocurrency: ["buy", "sell", "update"],
   commodities: ["buy", "sell", "update"],
   cash: ["update"],
+  domain: ["update"],
   other: ["update"],
 };
 
@@ -42,6 +43,7 @@ const ASSET_CATEGORY_QUOTE_TYPES: Record<string, string[]> = {
   real_estate: [], // No specific quoteType for REITs in Yahoo Finance, usually handled as EQUITY or ETF
   commodities: ["FUTURE"],
   cryptocurrency: ["CRYPTOCURRENCY"],
+  domain: [],
   other: ["INDEX", "OPTION"], // Option and Index don’t neatly fit into the main categories
 };
 
