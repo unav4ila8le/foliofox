@@ -12,7 +12,7 @@ import { useImportHoldingsDialog } from "../index";
 import { importHoldings } from "@/server/holdings/import";
 import { holdingsToCSV } from "@/lib/import/serialize";
 
-import type { HoldingRow } from "@/types/global.types";
+import type { HoldingRow } from "@/lib/import/types";
 
 export function ImportReviewDialog() {
   const {

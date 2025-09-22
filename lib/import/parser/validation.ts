@@ -6,7 +6,7 @@ import {
 
 // Categories are normalized via mapper upstream; no need to validate codes here
 
-import type { HoldingRow } from "@/types/global.types";
+import type { HoldingRow } from "@/lib/import/types";
 
 /**
  * Validates an array of holdings with optional pre-validated symbol results

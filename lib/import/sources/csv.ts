@@ -11,8 +11,7 @@ import {
 
 import { fetchCurrencies } from "@/server/currencies/fetch";
 
-import type { ImportResult } from "../types";
-import type { HoldingRow } from "@/types/global.types";
+import type { HoldingRow, ImportResult } from "../types";
 
 /**
  * Detect the delimiter used in the file by scoring the first line.

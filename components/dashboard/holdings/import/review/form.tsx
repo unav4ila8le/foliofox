@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -29,10 +29,10 @@ import { AssetCategorySelector } from "@/components/dashboard/asset-category-sel
 import { CurrencySelector } from "@/components/dashboard/currency-selector";
 import { SymbolSearch } from "@/components/dashboard/new-holding/symbol-search";
 
-import type { AssetCategory, HoldingRow } from "@/types/global.types";
+import type { AssetCategory } from "@/types/global.types";
 import type { CurrencyValidationResult } from "@/server/currencies/validate";
 import type { SymbolValidationResult } from "@/server/symbols/validate";
-import type { ImportActionResult } from "@/lib/import/types";
+import type { HoldingRow, ImportActionResult } from "@/lib/import/types";
 
 interface ReviewFormProps {
   initialHoldings: HoldingRow[];
@@ -63,70 +63,95 @@ export function ReviewForm({
     string,
     ...string[],
   ];
-  const holdingSchema = z.object({
-    name: z
-      .string()
-      .min(3, { error: "Name must be at least 3 characters" })
-      .max(64, { error: "Name must not exceed 64 characters" }),
-    category_code: z.enum(categoryCodes, {
-      error: "Please select a valid category",
-    }),
-    currency: z
-      .string()
-      .length(3, { error: "Currency must be 3 letters" })
-      .superRefine((val, ctx) => {
-        if (!val) return;
-        const v = currencyValidation[val];
-        if (v && !v.valid) {
+  const holdingSchema = z
+    .object({
+      name: z
+        .string()
+        .min(3, { error: "Name must be at least 3 characters" })
+        .max(64, { error: "Name must not exceed 64 characters" }),
+      category_code: z.enum(categoryCodes, {
+        error: "Please select a valid category",
+      }),
+      currency: z
+        .string()
+        .length(3, { error: "Currency must be 3 letters" })
+        .superRefine((val, ctx) => {
+          if (!val) return;
+          const v = currencyValidation[val];
+          if (v && !v.valid) {
+            ctx.addIssue({
+              code: "custom",
+              message: v.error || "Invalid currency",
+            });
+          }
+        }),
+      quantity: z.coerce
+        .number()
+        .gte(0, { error: "Quantity must be 0 or greater" })
+        .nullable()
+        .refine((val) => val !== null, { message: "Quantity is required" }),
+      unit_value: z.coerce
+        .number()
+        .gte(0, { error: "Unit value must be 0 or greater" })
+        .nullable()
+        .optional(),
+      cost_basis_per_unit: z.coerce
+        .number()
+        .gte(0, { error: "Cost basis per unit must be 0 or greater" })
+        .nullable()
+        .optional(),
+      symbol_id: z
+        .string()
+        .nullable()
+        .optional()
+        .superRefine((val, ctx) => {
+          if (!val) return;
+          const v = symbolValidation[val];
+          if (v && !v.valid) {
+            ctx.addIssue({
+              code: "custom",
+              message: v.error || "Invalid symbol",
+            });
+          }
+        }),
+      description: z
+        .string()
+        .min(3, { error: "Description must be at least 3 characters" })
+        .max(256, { error: "Description must not exceed 256 characters" })
+        .nullable()
+        .optional(),
+    })
+    .superRefine((val, ctx) => {
+      const hasSymbol = !!val.symbol_id && val.symbol_id.trim() !== "";
+      if (!hasSymbol) {
+        if (val.unit_value === null || !Number.isFinite(val.unit_value)) {
           ctx.addIssue({
             code: "custom",
-            message: v.error || "Invalid currency",
+            path: ["unit_value"],
+            message: "Unit value is required when no symbol is provided",
           });
         }
-      }),
-    quantity: z.coerce
-      .number()
-      .gte(0, { error: "Quantity must be 0 or greater" }),
-    unit_value: z.coerce
-      .number()
-      .gte(0, { error: "Unit value must be 0 or greater" })
-      .nullable()
-      .optional(),
-    cost_basis_per_unit: z.coerce
-      .number()
-      .gte(0, { error: "Cost basis per unit must be 0 or greater" })
-      .nullable()
-      .optional(),
-    symbol_id: z
-      .string()
-      .nullable()
-      .optional()
-      .superRefine((val, ctx) => {
-        if (!val) return;
-        const v = symbolValidation[val];
-        if (v && !v.valid) {
-          ctx.addIssue({
-            code: "custom",
-            message: v.error || "Invalid symbol",
-          });
-        }
-      }),
-    description: z
-      .string()
-      .min(3, { error: "Description must be at least 3 characters" })
-      .max(256, { error: "Description must not exceed 256 characters" })
-      .nullable()
-      .optional(),
-  });
+      }
+    });
 
   const formSchema = z.object({
     holdings: z.array(holdingSchema),
   });
 
+  // Sanitize defaults: replace NaN quantity with null so inputs stay controlled
+  const defaultValues = useMemo(() => {
+    return {
+      holdings: initialHoldings.map((h) => ({
+        ...h,
+        quantity: Number.isFinite(h.quantity) ? h.quantity : null,
+      })),
+    };
+  }, [initialHoldings]);
+
   const form = useForm({
     mode: "onChange",
     resolver: zodResolver(formSchema),
-    defaultValues: { holdings: initialHoldings },
+    defaultValues,
   });
 
   const { fields } = useFieldArray({
@@ -158,7 +183,9 @@ export function ReviewForm({
 
     try {
       // Explicitly trigger validation
-      const isValid = await form.trigger();
+      const isValid = await form.trigger(undefined, {
+        shouldFocus: true,
+      });
       if (!isValid) {
         return;
       }
@@ -311,7 +338,7 @@ export function ReviewForm({
                               }}
                             />
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="whitespace-normal" />
                         </FormItem>
                       )}
                     />

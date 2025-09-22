@@ -171,7 +171,7 @@ N/A
 - [x] Upgrade postgres version to 17 on Supabase
 - [x] Add a feedback sharing feature
 - [x] Add a dividends tracker. It should show the user the holdings that pay dividends, and their yearly/monthly expected dividend payout
-- [ ] Allow user to review their imports and tweak them
+- [x] Allow user to review their imports and tweak them
 - [x] Add AI powered import (import from images, pdfs, excels, and more)
 - [x] Add news based on user's portfolio
 - [ ] Find a way to have a more accurate historical calculation which doesn't add much overhead. WeeksBack solution is fast but not accurate cause the date is "rounded" to match weeks and not days.

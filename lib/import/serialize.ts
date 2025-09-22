@@ -1,4 +1,4 @@
-import type { HoldingRow } from "@/types/global.types";
+import type { HoldingRow } from "@/lib/import/types";
 
 function escapeCSVCell(value: string): string {
   const v = String(value ?? "");

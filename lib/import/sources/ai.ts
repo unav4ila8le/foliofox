@@ -8,8 +8,7 @@ import {
   validateHoldingsArray,
 } from "@/lib/import/parser/validation";
 
-import type { ImportResult } from "../types";
-import type { HoldingRow } from "@/types/global.types";
+import type { HoldingRow, ImportResult } from "@/lib/import/types";
 
 export type ExtractionResult = {
   success: boolean;

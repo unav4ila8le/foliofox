@@ -6,10 +6,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAssetCategories } from "@/hooks/use-asset-categories";
 import { ReviewForm } from "./form";
 
-import type { HoldingRow } from "@/types/global.types";
 import type { CurrencyValidationResult } from "@/server/currencies/validate";
 import type { SymbolValidationResult } from "@/server/symbols/validate";
-import type { ImportActionResult } from "@/lib/import/types";
+import type { HoldingRow, ImportActionResult } from "@/lib/import/types";
 
 interface HoldingsImportReviewTableProps {
   initialHoldings: HoldingRow[];
