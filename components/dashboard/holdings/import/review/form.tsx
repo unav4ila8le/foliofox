@@ -5,7 +5,7 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { Upload, LoaderCircle } from "lucide-react";
+import { Upload, LoaderCircle, Info } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +24,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 import { AssetCategorySelector } from "@/components/dashboard/asset-category-selector";
 import { CurrencySelector } from "@/components/dashboard/currency-selector";
@@ -161,6 +166,29 @@ export function ReviewForm({
 
   const { isDirty } = form.formState;
 
+  // Watch for symbol changes and auto-update currency
+  useEffect(() => {
+    // Watch symbol changes
+    const watchedSymbols =
+      form.watch("holdings")?.map((h) => h.symbol_id) || [];
+
+    // Auto-update currency
+    watchedSymbols.forEach((symbolId, index) => {
+      if (
+        symbolId &&
+        symbolValidation[symbolId]?.valid &&
+        symbolValidation[symbolId]?.currency
+      ) {
+        const symbolCurrency = symbolValidation[symbolId].currency!;
+        const currentCurrency = form.getValues(`holdings.${index}.currency`);
+
+        if (currentCurrency !== symbolCurrency) {
+          form.setValue(`holdings.${index}.currency`, symbolCurrency);
+        }
+      }
+    });
+  }, [form, symbolValidation]);
+
   // Apply initial errors so they're visible immediately on mount
   useEffect(() => {
     let mounted = true;
@@ -219,10 +247,50 @@ export function ReviewForm({
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Category</TableHead>
-                <TableHead>Currency</TableHead>
+                <TableHead>
+                  <span className="flex items-center gap-1">
+                    Currency
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="size-4" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Currency is automatically set to the currency of the
+                        symbol if a symbol is provided.
+                      </TooltipContent>
+                    </Tooltip>
+                  </span>
+                </TableHead>
                 <TableHead>Quantity</TableHead>
-                <TableHead>Unit Value</TableHead>
-                <TableHead>Cost Basis (Optional)</TableHead>
+                <TableHead>
+                  <span className="flex items-center gap-1">
+                    Unit Value
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="size-4" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Unit value is required unless symbol is provided. For
+                        holdings with symbol, the unit value will be fetched
+                        from the market.
+                      </TooltipContent>
+                    </Tooltip>
+                  </span>
+                </TableHead>
+                <TableHead>
+                  <span className="flex items-center gap-1">
+                    Cost Basis
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="size-4" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Cost Basis per Unit is optional. If omitted, we&apos;ll
+                        use the unit value as your initial cost basis.
+                      </TooltipContent>
+                    </Tooltip>
+                  </span>
+                </TableHead>
                 <TableHead>Symbol (Optional)</TableHead>
                 <TableHead>Description (Optional)</TableHead>
               </TableRow>
@@ -274,17 +342,23 @@ export function ReviewForm({
                     <FormField
                       control={form.control}
                       name={`holdings.${index}.currency`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <CurrencySelector
-                              field={field}
-                              popoverWidth="w-64"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
+                      render={({ field }) => {
+                        const symbolId = form.getValues(
+                          `holdings.${index}.symbol_id`,
+                        );
+                        return (
+                          <FormItem>
+                            <FormControl>
+                              <CurrencySelector
+                                field={field}
+                                disabled={Boolean(symbolId?.trim())}
+                                popoverWidth="w-64"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        );
+                      }}
                     />
                   </TableCell>
 

@@ -39,6 +39,7 @@ interface CurrencySelectorProps {
     onChange: (value: string) => void;
   };
   id?: string;
+  disabled?: boolean;
   className?: string;
   popoverWidth?: string;
 }
@@ -46,6 +47,7 @@ interface CurrencySelectorProps {
 export function CurrencySelector({
   field,
   id,
+  disabled,
   className,
   popoverWidth = "w-(--radix-popover-trigger-width)",
 }: CurrencySelectorProps) {
@@ -65,6 +67,7 @@ export function CurrencySelector({
             id={id}
             variant="outline"
             role="combobox"
+            disabled={disabled}
             aria-expanded={open}
             aria-invalid={isInvalid}
             className={cn(
@@ -101,6 +104,7 @@ export function CurrencySelector({
           id={id}
           variant="outline"
           role="combobox"
+          disabled={disabled}
           aria-expanded={open}
           aria-invalid={isInvalid}
           className={cn(

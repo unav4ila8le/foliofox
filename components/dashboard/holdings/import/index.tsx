@@ -9,6 +9,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -85,6 +86,9 @@ export function ImportHoldingsDialogProvider({
               <Upload className="size-5" />
               Import Holdings
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              Import your holdings from a CSV file or AI.
+            </DialogDescription>
           </DialogHeader>
           <Tabs defaultValue="csv-import" className="gap-4">
             <TabsList className="w-full">
