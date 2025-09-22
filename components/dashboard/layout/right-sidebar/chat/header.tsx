@@ -92,7 +92,7 @@ export function ChatHeader({
                 {conversations.length === 0 ? (
                   <CommandEmpty>No conversations found.</CommandEmpty>
                 ) : (
-                  <CommandGroup heading="Recent">
+                  <CommandGroup>
                     {conversations.map((c) => (
                       <CommandItem
                         key={c.id}
@@ -106,7 +106,9 @@ export function ChatHeader({
                       >
                         <div className="flex flex-1 flex-col items-start gap-0">
                           <span className="text-muted-foreground text-xs">
-                            {formatDistanceToNow(new Date(c.updatedAt))}
+                            {formatDistanceToNow(new Date(c.updatedAt), {
+                              addSuffix: true,
+                            })}
                           </span>
                           <p className="line-clamp-3">{c.title}</p>
                         </div>
