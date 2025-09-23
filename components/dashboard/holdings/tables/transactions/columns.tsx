@@ -160,7 +160,7 @@ export function getTransactionColumns({
             <TooltipTrigger>
               <div className="max-w-60 truncate">
                 {description || (
-                  <span className="text-muted-foreground italic">
+                  <span className="text-muted-foreground pe-1 italic">
                     No description
                   </span>
                 )}

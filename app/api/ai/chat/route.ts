@@ -25,12 +25,12 @@ export async function POST(req: Request) {
     );
   }
 
-  const system = createSystemPrompt({ mode });
+  const system = createSystemPrompt({ mode, aiTools });
 
   const result = streamText({
     model: openai(model),
     messages: convertToModelMessages(messages),
-    stopWhen: stepCountIs(12),
+    stopWhen: stepCountIs(18),
     tools: aiTools,
     system,
     onFinish: async ({ text, usage }) => {
