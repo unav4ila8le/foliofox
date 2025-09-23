@@ -22,17 +22,17 @@ export const Message = ({ className, from, ...props }: MessageProps) => (
 );
 
 const messageContentVariants = cva(
-  "is-user:dark flex flex-col gap-2 overflow-hidden rounded-lg text-sm",
+  "is-user:dark flex flex-col gap-2 overflow-hidden text-sm",
   {
     variants: {
       variant: {
         contained: [
           "max-w-[90%] px-3 py-2.5",
-          "group-[.is-user]:bg-primary group-[.is-user]:text-primary-foreground",
+          "group-[.is-user]:bg-primary group-[.is-user]:text-primary-foreground group-[.is-user]:rounded-lg",
           "group-[.is-assistant]:bg-secondary group-[.is-assistant]:text-foreground",
         ],
         flat: [
-          "group-[.is-user]:max-w-[90%] group-[.is-user]:bg-primary group-[.is-user]:px-3 group-[.is-user]:py-2.5 group-[.is-user]:text-primary-foreground",
+          "group-[.is-user]:max-w-[90%] group-[.is-user]:bg-primary group-[.is-user]:px-3 group-[.is-user]:py-2.5 group-[.is-user]:text-primary-foreground group-[.is-user]:rounded-lg",
           "group-[.is-assistant]:text-foreground",
         ],
       },
