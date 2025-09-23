@@ -188,7 +188,7 @@ export function Chat() {
                       return (
                         <Fragment key={`${message.id}-${i}`}>
                           <Message from={message.role}>
-                            <MessageContent>
+                            <MessageContent variant="flat">
                               <Response>{part.text}</Response>
                             </MessageContent>
                           </Message>

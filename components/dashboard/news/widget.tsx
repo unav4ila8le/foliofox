@@ -51,7 +51,7 @@ export function NewsWidget({ newsData }: NewsWidgetProps) {
       <CardHeader className="flex-none">
         <CardTitle>Portfolio News</CardTitle>
       </CardHeader>
-      <CardContent className="custom-scrollbar flex-1 divide-y overflow-y-auto">
+      <CardContent className="flex-1 divide-y overflow-y-auto">
         {newsData.data.map((article) => (
           <a
             key={article.id}

@@ -32,7 +32,7 @@ const messageContentVariants = cva(
           "group-[.is-assistant]:bg-secondary group-[.is-assistant]:text-foreground",
         ],
         flat: [
-          "group-[.is-user]:max-w-[90%] group-[.is-user]:bg-secondary group-[.is-user]:px-4 group-[.is-user]:py-3 group-[.is-user]:text-foreground",
+          "group-[.is-user]:max-w-[90%] group-[.is-user]:bg-primary group-[.is-user]:px-3 group-[.is-user]:py-2.5 group-[.is-user]:text-primary-foreground",
           "group-[.is-assistant]:text-foreground",
         ],
       },
