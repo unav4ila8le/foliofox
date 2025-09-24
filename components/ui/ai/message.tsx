@@ -11,37 +11,32 @@ export type MessageProps = HTMLAttributes<HTMLDivElement> & {
 export const Message = ({ className, from, ...props }: MessageProps) => (
   <div
     className={cn(
-      "group flex w-full items-end justify-end gap-2 py-3",
-      from === "user"
-        ? "is-user pe-2"
-        : "is-assistant flex-row-reverse justify-end",
+      "group flex w-full items-end justify-end gap-2 px-2 py-3",
+      from === "user" ? "is-user" : "is-assistant flex-row-reverse justify-end",
       className,
     )}
     {...props}
   />
 );
 
-const messageContentVariants = cva(
-  "is-user:dark flex flex-col gap-2 overflow-hidden text-sm",
-  {
-    variants: {
-      variant: {
-        contained: [
-          "max-w-[90%] px-3 py-2.5",
-          "group-[.is-user]:bg-primary group-[.is-user]:text-primary-foreground group-[.is-user]:rounded-lg",
-          "group-[.is-assistant]:bg-secondary group-[.is-assistant]:text-foreground",
-        ],
-        flat: [
-          "group-[.is-user]:max-w-[90%] group-[.is-user]:bg-primary group-[.is-user]:px-3 group-[.is-user]:py-2.5 group-[.is-user]:text-primary-foreground group-[.is-user]:rounded-lg",
-          "group-[.is-assistant]:text-foreground",
-        ],
-      },
-    },
-    defaultVariants: {
-      variant: "contained",
+const messageContentVariants = cva("is-user:dark flex flex-col gap-2 text-sm", {
+  variants: {
+    variant: {
+      contained: [
+        "max-w-[90%] px-3 py-2.5",
+        "group-[.is-user]:bg-primary group-[.is-user]:text-primary-foreground group-[.is-user]:rounded-lg",
+        "group-[.is-assistant]:bg-secondary group-[.is-assistant]:text-foreground",
+      ],
+      flat: [
+        "group-[.is-user]:max-w-[90%] group-[.is-user]:bg-primary group-[.is-user]:px-3 group-[.is-user]:py-2.5 group-[.is-user]:text-primary-foreground group-[.is-user]:rounded-lg",
+        "group-[.is-assistant]:text-foreground",
+      ],
     },
   },
-);
+  defaultVariants: {
+    variant: "contained",
+  },
+});
 
 export type MessageContentProps = HTMLAttributes<HTMLDivElement> &
   VariantProps<typeof messageContentVariants>;

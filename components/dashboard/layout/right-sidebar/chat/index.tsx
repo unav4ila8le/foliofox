@@ -206,9 +206,7 @@ export function Chat() {
                                 onClick={() =>
                                   handleCopy(part.text, message.id)
                                 }
-                                tooltip={
-                                  isCopied ? "Copied!" : "Copy to Clipboard"
-                                }
+                                tooltip={isCopied ? "Copied!" : "Copy"}
                               >
                                 {isCopied ? <Check /> : <Copy />}
                               </Action>

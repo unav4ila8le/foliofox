@@ -66,7 +66,7 @@ export function ChatHeader({
   };
 
   return (
-    <div className="relative flex items-center justify-between p-2">
+    <div className="relative flex items-center gap-4 p-2 md:justify-between">
       <span className="text-sm font-medium">AI Chat</span>
       <div className="flex items-center gap-1">
         <Popover open={open} onOpenChange={setOpen}>

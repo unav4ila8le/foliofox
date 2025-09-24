@@ -189,3 +189,4 @@ N/A
 - [x] Foliofox AI advisor. Chat with your portfolio.
 - [ ] Add Transactions list on the dashboard home
 - [ ] Landingpage with waitlist
+- [ ] Add privacy mode (blur/hide net worth numbers)
