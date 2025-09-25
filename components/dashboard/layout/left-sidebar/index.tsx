@@ -25,7 +25,7 @@ export function LeftSidebar({
   netWorth: number;
 }) {
   return (
-    <Sidebar>
+    <Sidebar collapsible="icon">
       <SidebarHeader>
         <UISidebarMenu>
           <SidebarMenuItem>

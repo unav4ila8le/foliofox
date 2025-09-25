@@ -1,4 +1,14 @@
-export function Logo({ width, height }: { width?: number; height?: number }) {
+import { cn } from "@/lib/utils";
+
+export function Logo({
+  width,
+  height,
+  className,
+}: {
+  width?: number;
+  height?: number;
+  className?: string;
+}) {
   // Ensure at least one dimension is provided
   if (!width && !height) {
     height = 24; // Default height if neither is provided
@@ -10,7 +20,7 @@ export function Logo({ width, height }: { width?: number; height?: number }) {
       viewBox="0 0 152 38"
       height={height}
       width={width}
-      className="text-foreground"
+      className={cn("text-foreground", className)}
       preserveAspectRatio="xMidYMid meet"
     >
       <path

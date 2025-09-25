@@ -69,7 +69,7 @@ export function User({
             size="lg"
             className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground flex items-center gap-2"
           >
-            <Avatar className="size-10">
+            <Avatar className="size-10 group-data-[state=collapsed]:size-8">
               <AvatarImage
                 src={profile.avatar_url || undefined}
                 alt={profile.username}
