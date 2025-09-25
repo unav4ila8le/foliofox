@@ -47,11 +47,11 @@ export function NewsWidget({ newsData }: NewsWidgetProps) {
 
   // Display news articles
   return (
-    <Card className="flex h-80 flex-col gap-4">
+    <Card className="relative flex h-80 flex-col gap-4 overflow-hidden pb-0">
       <CardHeader className="flex-none">
         <CardTitle>Portfolio News</CardTitle>
       </CardHeader>
-      <CardContent className="flex-1 divide-y overflow-y-auto">
+      <CardContent className="flex-1 divide-y overflow-y-auto pb-6">
         {newsData.data.map((article) => (
           <a
             key={article.id}
@@ -80,6 +80,7 @@ export function NewsWidget({ newsData }: NewsWidgetProps) {
           </a>
         ))}
       </CardContent>
+      <div className="from-card absolute right-6 bottom-0 left-0 h-8 bg-gradient-to-t" />
     </Card>
   );
 }
