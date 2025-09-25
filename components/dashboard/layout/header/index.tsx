@@ -16,7 +16,7 @@ export function Header() {
       <div className="flex items-center gap-2">
         <Tooltip delayDuration={500}>
           <TooltipTrigger asChild>
-            <SidebarTrigger className="-ml-2 xl:hidden" />
+            <SidebarTrigger className="-ml-2" />
           </TooltipTrigger>
           <TooltipContent>Toggle sidebar</TooltipContent>
         </Tooltip>
@@ -32,7 +32,7 @@ export function Header() {
         <ThemeToggle />
         <Tooltip delayDuration={500}>
           <TooltipTrigger asChild>
-            <SidebarTrigger side="right" />
+            <SidebarTrigger side="right" className="-mr-2" />
           </TooltipTrigger>
           <TooltipContent>Toggle AI Chat</TooltipContent>
         </Tooltip>

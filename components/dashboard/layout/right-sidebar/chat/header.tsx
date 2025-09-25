@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Clock, Plus, LoaderCircle, Trash2 } from "lucide-react";
+import { History, Plus, LoaderCircle, Trash2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 
@@ -66,7 +66,7 @@ export function ChatHeader({
   };
 
   return (
-    <div className="relative flex items-center gap-4 p-2 md:justify-between">
+    <div className="relative flex items-center gap-4 p-2 xl:justify-between">
       <span className="text-sm font-medium">AI Chat</span>
       <div className="flex items-center gap-1">
         <Popover open={open} onOpenChange={setOpen}>
@@ -74,7 +74,7 @@ export function ChatHeader({
             <TooltipTrigger asChild>
               <PopoverTrigger asChild>
                 <Button variant="ghost" size="icon">
-                  <Clock />
+                  <History />
                 </Button>
               </PopoverTrigger>
             </TooltipTrigger>
@@ -83,6 +83,7 @@ export function ChatHeader({
             </TooltipContent>
           </Tooltip>
           <PopoverContent
+            align="start"
             className="p-0"
             style={{ width: `calc(${rightWidth} - 16px)`, marginRight: "8px" }}
           >

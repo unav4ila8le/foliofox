@@ -6,6 +6,7 @@ import { VariantProps, cva } from "class-variance-authority";
 import { PanelLeftIcon, PanelRightIcon } from "lucide-react";
 
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -79,6 +80,15 @@ const SidebarContext = React.createContext<SidebarContext | null>(null);
 const SidebarSectionContext = React.createContext<"left" | "right" | null>(
   null,
 );
+
+// Instance-level context: conveys per-Sidebar instance state like sheet mode
+const SidebarInstanceContext = React.createContext<{
+  isSheetMobile: boolean;
+} | null>(null);
+
+function useSidebarInstance(): { isSheetMobile: boolean } {
+  return React.useContext(SidebarInstanceContext) ?? { isSheetMobile: false };
+}
 
 function useSidebar() {
   const context = React.useContext(SidebarContext);
@@ -328,6 +338,7 @@ function Sidebar({
   variant = "sidebar",
   collapsible = "offcanvas",
   showMobileClose = false,
+  mobileBreakpoint,
   className,
   children,
   style,
@@ -337,6 +348,7 @@ function Sidebar({
   variant?: "sidebar" | "floating" | "inset";
   collapsible?: "offcanvas" | "icon" | "none";
   showMobileClose?: boolean;
+  mobileBreakpoint?: string;
 }) {
   const {
     isMobile,
@@ -346,13 +358,41 @@ function Sidebar({
     openMobileRight,
     setOpenMobileLeft,
     setOpenMobileRight,
+    setOpenLeft,
+    setOpenRight,
   } = useSidebar();
+
+  // Check if the mobile breakpoint is set
+  const isMobileCustom = useMediaQuery(
+    mobileBreakpoint ?? "(max-width: 767px)",
+  );
+  const isSheetMobile = mobileBreakpoint ? isMobileCustom : isMobile;
 
   const open = side === "right" ? openRight : openLeft;
   const openMobile = side === "right" ? openMobileRight : openMobileLeft;
   const setOpenMobile =
     side === "right" ? setOpenMobileRight : setOpenMobileLeft;
   const state = open ? "expanded" : "collapsed";
+
+  // Sync the active open state with the current render mode (sheet vs desktop)
+  const setOpen = side === "right" ? setOpenRight : setOpenLeft;
+
+  React.useEffect(() => {
+    if (isSheetMobile) {
+      // If we’re in sheet mode but desktop state was toggled, move it to mobile state
+      if (open && !openMobile) {
+        setOpenMobile(true);
+        setOpen(false);
+      }
+    } else {
+      // If we’re in desktop mode but mobile state was toggled, move it to desktop state
+      if (openMobile && !open) {
+        setOpen(true);
+        setOpenMobile(false);
+      }
+    }
+    // We intentionally depend on all to catch toggles
+  }, [isSheetMobile, open, openMobile, setOpen, setOpenMobile]);
 
   // Map per-side width vars to the shared --sidebar-width vars for this instance
   const widthVars =
@@ -377,23 +417,25 @@ function Sidebar({
 
   if (collapsible === "none") {
     return (
-      <SidebarSectionContext.Provider value={side}>
-        <div
-          data-slot="sidebar"
-          className={cn(
-            "bg-sidebar text-sidebar-foreground flex h-full w-[var(--sidebar-width)] flex-col",
-            className,
-          )}
-          style={{ ...widthVars, ...style }}
-          {...props}
-        >
-          {children}
-        </div>
-      </SidebarSectionContext.Provider>
+      <SidebarInstanceContext.Provider value={{ isSheetMobile }}>
+        <SidebarSectionContext.Provider value={side}>
+          <div
+            data-slot="sidebar"
+            className={cn(
+              "bg-sidebar text-sidebar-foreground flex h-full w-[var(--sidebar-width)] flex-col",
+              className,
+            )}
+            style={{ ...widthVars, ...style }}
+            {...props}
+          >
+            {children}
+          </div>
+        </SidebarSectionContext.Provider>
+      </SidebarInstanceContext.Provider>
     );
   }
 
-  if (isMobile) {
+  if (isSheetMobile) {
     return (
       <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
         <SheetHeader className="sr-only">
@@ -411,59 +453,63 @@ function Sidebar({
           style={widthVarsMobile}
           side={side}
         >
-          <SidebarSectionContext.Provider value={side}>
-            <div className="flex h-full w-full flex-col">{children}</div>
-          </SidebarSectionContext.Provider>
+          <SidebarInstanceContext.Provider value={{ isSheetMobile }}>
+            <SidebarSectionContext.Provider value={side}>
+              <div className="flex h-full w-full flex-col">{children}</div>
+            </SidebarSectionContext.Provider>
+          </SidebarInstanceContext.Provider>
         </SheetContent>
       </Sheet>
     );
   }
 
   return (
-    <SidebarSectionContext.Provider value={side}>
-      <div
-        className="group peer text-sidebar-foreground hidden md:block"
-        data-state={state}
-        data-collapsible={state === "collapsed" ? collapsible : ""}
-        data-variant={variant}
-        data-side={side}
-        data-slot="sidebar"
-        style={{ ...widthVars, ...style }}
-      >
-        {/* This is the desktop spacer/gap */}
+    <SidebarInstanceContext.Provider value={{ isSheetMobile }}>
+      <SidebarSectionContext.Provider value={side}>
         <div
-          className={cn(
-            "relative h-svh w-[var(--sidebar-width)] bg-transparent transition-[width] duration-200 ease-linear group-data-[sidebar-resizing=true]/sidebar-wrapper:transition-none",
-            "group-data-[collapsible=offcanvas]:w-0",
-            "group-data-[side=right]:rotate-180",
-            variant === "floating" || variant === "inset"
-              ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+theme(spacing.4))]"
-              : "group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)]",
-          )}
-        />
-        {/* Fixed panel */}
-        <div
-          className={cn(
-            "fixed inset-y-0 z-10 hidden h-svh w-[var(--sidebar-width)] transition-[left,right,width] duration-200 ease-linear group-data-[sidebar-resizing=true]/sidebar-wrapper:transition-none md:flex",
-            side === "left"
-              ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
-              : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
-            variant === "floating" || variant === "inset"
-              ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]"
-              : "group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)] group-data-[side=left]:border-r group-data-[side=right]:border-l",
-            className,
-          )}
-          {...props}
+          className="group peer text-sidebar-foreground hidden md:block"
+          data-state={state}
+          data-collapsible={state === "collapsed" ? collapsible : ""}
+          data-variant={variant}
+          data-side={side}
+          data-slot="sidebar"
+          style={{ ...widthVars, ...style }}
         >
+          {/* This is the desktop spacer/gap */}
           <div
-            data-sidebar="sidebar"
-            className="bg-sidebar group-data-[variant=floating]:border-sidebar-border flex h-full w-full flex-col group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:shadow-sm"
+            className={cn(
+              "relative h-svh w-[var(--sidebar-width)] bg-transparent transition-[width] duration-200 ease-linear group-data-[sidebar-resizing=true]/sidebar-wrapper:transition-none",
+              "group-data-[collapsible=offcanvas]:w-0",
+              "group-data-[side=right]:rotate-180",
+              variant === "floating" || variant === "inset"
+                ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+theme(spacing.4))]"
+                : "group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)]",
+            )}
+          />
+          {/* Fixed panel */}
+          <div
+            className={cn(
+              "fixed inset-y-0 z-10 hidden h-svh w-[var(--sidebar-width)] transition-[left,right,width] duration-200 ease-linear group-data-[sidebar-resizing=true]/sidebar-wrapper:transition-none md:flex",
+              side === "left"
+                ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
+                : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
+              variant === "floating" || variant === "inset"
+                ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]"
+                : "group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)] group-data-[side=left]:border-r group-data-[side=right]:border-l",
+              className,
+            )}
+            {...props}
           >
-            {children}
+            <div
+              data-sidebar="sidebar"
+              className="bg-sidebar group-data-[variant=floating]:border-sidebar-border flex h-full w-full flex-col group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:shadow-sm"
+            >
+              {children}
+            </div>
           </div>
         </div>
-      </div>
-    </SidebarSectionContext.Provider>
+      </SidebarSectionContext.Provider>
+    </SidebarInstanceContext.Provider>
   );
 }
 
@@ -515,6 +561,7 @@ function SidebarRail({
     minRightWidth,
     maxRightWidth,
   } = useSidebar();
+  const { isSheetMobile } = useSidebarInstance();
 
   const dragging = React.useRef(false);
 
@@ -532,7 +579,8 @@ function SidebarRail({
   }, []);
 
   const onMouseDown = () => {
-    if (isMobile || !resizable[side]) return;
+    if (isMobile || isSheetMobile || !resizable[side]) return;
+
     dragging.current = true;
 
     // Cache the wrapper element once for the drag session.
