@@ -64,15 +64,13 @@ export function TransactionsTable({
           <NewRecordButton variant="outline" preselectedHolding={holding} />
         </div>
       ) : (
-        <div className="rounded-md border">
-          <DataTable
-            columns={columns}
-            data={data}
-            filterValue={filterValue}
-            filterColumnId="description"
-            onSelectedRowsChange={setSelectedRows}
-          />
-        </div>
+        <DataTable
+          columns={columns}
+          data={data}
+          filterValue={filterValue}
+          filterColumnId="description"
+          onSelectedRowsChange={setSelectedRows}
+        />
       )}
 
       {/* Rows count */}

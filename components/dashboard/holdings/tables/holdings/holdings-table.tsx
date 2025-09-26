@@ -62,17 +62,15 @@ export function HoldingsTable({ data }: HoldingsTableProps) {
           </p>
         </div>
       ) : (
-        <div className="rounded-md border">
-          <DataTable
-            columns={columns}
-            data={data}
-            filterValue={filterValue}
-            onRowClick={handleRowClick}
-            onSelectedRowsChange={setSelectedRows}
-            enableGrouping={true}
-            groupBy={["category_code"]}
-          />
-        </div>
+        <DataTable
+          columns={columns}
+          data={data}
+          filterValue={filterValue}
+          onRowClick={handleRowClick}
+          onSelectedRowsChange={setSelectedRows}
+          enableGrouping={true}
+          groupBy={["category_code"]}
+        />
       )}
 
       {/* Rows count */}

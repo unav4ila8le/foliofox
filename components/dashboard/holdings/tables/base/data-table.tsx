@@ -123,109 +123,116 @@ export function DataTable<TData extends DataWithId, TValue>({
   );
 
   return (
-    <Table>
-      <TableHeader className="bg-muted/50">
-        {table.getHeaderGroups().map((headerGroup) => (
-          <TableRow key={headerGroup.id}>
-            {headerGroup.headers.map((header) => {
-              return (
-                <TableHead
-                  key={header.id}
-                  style={{
-                    width: header.column.columnDef.size,
-                    minWidth: header.column.columnDef.minSize,
-                    maxWidth: header.column.columnDef.maxSize,
-                  }}
-                  className={cn(
-                    "text-muted-foreground",
-                    header.column.columnDef.meta?.headerClassName,
-                  )}
-                >
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
+    <div className="overflow-hidden rounded-md border">
+      <Table>
+        <TableHeader className="bg-muted/50">
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id}>
+              {headerGroup.headers.map((header) => {
+                return (
+                  <TableHead
+                    key={header.id}
+                    style={{
+                      width: header.column.columnDef.size,
+                      minWidth: header.column.columnDef.minSize,
+                      maxWidth: header.column.columnDef.maxSize,
+                    }}
+                    className={cn(
+                      "text-muted-foreground",
+                      header.column.columnDef.meta?.headerClassName,
+                    )}
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
+                  </TableHead>
+                );
+              })}
+            </TableRow>
+          ))}
+        </TableHeader>
+        <TableBody>
+          {table.getRowModel().rows?.length ? (
+            table.getRowModel().rows.map((row) => {
+              if (row.getIsGrouped()) {
+                // Default group row rendering - can be customized via column definitions
+                const visibleCells = row.getVisibleCells();
+                const selectCell = visibleCells[0];
+                const nameCell = visibleCells[1];
+
+                return (
+                  <TableRow
+                    key={row.id}
+                    data-state={false}
+                    className="bg-accent/50"
+                  >
+                    {/* Select cell */}
+                    <TableCell
+                      style={{
+                        width: selectCell.column.columnDef.size,
+                        minWidth: selectCell.column.columnDef.minSize,
+                        maxWidth: selectCell.column.columnDef.maxSize,
+                      }}
+                      className={
+                        selectCell.column.columnDef.meta?.cellClassName
+                      }
+                    >
+                      {flexRender(
+                        selectCell.column.columnDef.cell,
+                        selectCell.getContext(),
                       )}
-                </TableHead>
-              );
-            })}
-          </TableRow>
-        ))}
-      </TableHeader>
-      <TableBody>
-        {table.getRowModel().rows?.length ? (
-          table.getRowModel().rows.map((row) => {
-            if (row.getIsGrouped()) {
-              // Default group row rendering - can be customized via column definitions
-              const visibleCells = row.getVisibleCells();
-              const selectCell = visibleCells[0];
-              const nameCell = visibleCells[1];
+                    </TableCell>
+                    {/* Name cell */}
+                    <TableCell colSpan={visibleCells.length - 1}>
+                      {flexRender(
+                        nameCell.column.columnDef.cell,
+                        nameCell.getContext(),
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              }
 
               return (
                 <TableRow
                   key={row.id}
-                  data-state={false}
-                  className="bg-accent/50"
+                  data-state={row.getIsSelected() && "selected"}
+                  onClick={
+                    onRowClick ? () => handleRowClick(row.original) : undefined
+                  }
+                  className={cn(onRowClick && "cursor-pointer")}
                 >
-                  {/* Select cell */}
-                  <TableCell
-                    style={{
-                      width: selectCell.column.columnDef.size,
-                      minWidth: selectCell.column.columnDef.minSize,
-                      maxWidth: selectCell.column.columnDef.maxSize,
-                    }}
-                    className={selectCell.column.columnDef.meta?.cellClassName}
-                  >
-                    {flexRender(
-                      selectCell.column.columnDef.cell,
-                      selectCell.getContext(),
-                    )}
-                  </TableCell>
-                  {/* Name cell */}
-                  <TableCell colSpan={visibleCells.length - 1}>
-                    {flexRender(
-                      nameCell.column.columnDef.cell,
-                      nameCell.getContext(),
-                    )}
-                  </TableCell>
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell
+                      key={cell.id}
+                      style={{
+                        width: cell.column.columnDef.size,
+                        minWidth: cell.column.columnDef.minSize,
+                        maxWidth: cell.column.columnDef.maxSize,
+                      }}
+                      className={cell.column.columnDef.meta?.cellClassName}
+                    >
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
+                    </TableCell>
+                  ))}
                 </TableRow>
               );
-            }
-
-            return (
-              <TableRow
-                key={row.id}
-                data-state={row.getIsSelected() && "selected"}
-                onClick={
-                  onRowClick ? () => handleRowClick(row.original) : undefined
-                }
-                className={cn(onRowClick && "cursor-pointer")}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell
-                    key={cell.id}
-                    style={{
-                      width: cell.column.columnDef.size,
-                      minWidth: cell.column.columnDef.minSize,
-                      maxWidth: cell.column.columnDef.maxSize,
-                    }}
-                    className={cell.column.columnDef.meta?.cellClassName}
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            );
-          })
-        ) : (
-          <TableRow>
-            <TableCell colSpan={columns.length} className="h-16 text-center">
-              No results.
-            </TableCell>
-          </TableRow>
-        )}
-      </TableBody>
-    </Table>
+            })
+          ) : (
+            <TableRow>
+              <TableCell colSpan={columns.length} className="h-16 text-center">
+                No results.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
   );
 }

@@ -67,15 +67,13 @@ export function ArchivedTable({ data }: ArchivedTableProps) {
       />
 
       {/* Table */}
-      <div className="rounded-md border">
-        <DataTable
-          columns={columns}
-          data={data}
-          filterValue={filterValue}
-          onRowClick={handleRowClick}
-          onSelectedRowsChange={setSelectedRows}
-        />
-      </div>
+      <DataTable
+        columns={columns}
+        data={data}
+        filterValue={filterValue}
+        onRowClick={handleRowClick}
+        onSelectedRowsChange={setSelectedRows}
+      />
 
       {/* Rows count */}
       <p className="text-muted-foreground text-end text-sm">
