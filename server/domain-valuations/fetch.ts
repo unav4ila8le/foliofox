@@ -21,10 +21,12 @@ interface DomainValuation {
  * Fetch multiple domain valuations for different domains and dates in bulk.
  *
  * @param requests - Array of {domain, date} pairs to fetch
- * @returns Map where key is "domainId|date" and value is the valuation
+ * @param upsert - Whether to cache results in database (defaults to true)
+ * @returns Map where key is "domain|date" and value is the valuation
  */
 export async function fetchDomainValuations(
   requests: Array<{ domain: string; date: Date }>,
+  upsert: boolean = true,
 ) {
   // Early return if no requests
   if (!requests.length) return new Map();
@@ -172,8 +174,8 @@ export async function fetchDomainValuations(
       });
     });
 
-    // 4. Store new valuations in database
-    if (successfulFetches.length > 0) {
+    // 4. Store new valuations in database only if upsert is enabled
+    if (upsert && successfulFetches.length > 0) {
       const { error: insertError } = await supabase
         .from("domain_valuations")
         .upsert(
@@ -205,11 +207,12 @@ export async function fetchSingleDomainValuation(
   domain: string,
   options: {
     date?: Date;
+    upsert?: boolean;
   } = {},
 ): Promise<number> {
-  const { date = new Date() } = options;
+  const { date = new Date(), upsert = true } = options;
 
-  const valuations = await fetchDomainValuations([{ domain, date }]);
+  const valuations = await fetchDomainValuations([{ domain, date }], upsert);
   const key = `${domain}|${format(date, "yyyy-MM-dd")}`;
   return valuations.get(key) || 0;
 }

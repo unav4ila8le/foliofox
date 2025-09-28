@@ -85,7 +85,9 @@ export function DomainForm() {
 
     setIsCheckingValuation(true);
     try {
-      const apiValuation = await fetchSingleDomainValuation(domain);
+      const apiValuation = await fetchSingleDomainValuation(domain, {
+        upsert: false,
+      });
       if (apiValuation > 0) {
         form.setValue("valuation", apiValuation);
       }

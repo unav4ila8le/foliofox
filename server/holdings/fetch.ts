@@ -176,7 +176,7 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
   const domainHoldings = holdings.filter(
     (holding) => holding.category_code === "domain",
   );
-  const domainIds = domainHoldings.map((holding) => holding.domain_id!);
+  const domains = domainHoldings.map((holding) => holding.domain_id!);
 
   let quotesMap = new Map<string, number>();
   let domainValuationsMap = new Map<string, number>();
@@ -192,8 +192,8 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
 
   // Fetch valuations for domain holdings
   if (domainHoldings.length > 0 && quoteDate !== null) {
-    const domainRequests = domainIds.map((domainId) => ({
-      domainId,
+    const domainRequests = domains.map((domain) => ({
+      domain,
       date: quoteDate,
     }));
     domainValuationsMap = await fetchDomainValuations(domainRequests);

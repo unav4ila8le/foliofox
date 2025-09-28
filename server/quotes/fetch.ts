@@ -31,33 +31,29 @@ export async function fetchQuotes(
     cacheKey: `${symbolId}|${format(date, "yyyy-MM-dd")}`,
   }));
 
-  let missingRequests = cacheQueries;
+  // 1. Always check database cache
+  const supabase = await createServiceClient();
 
-  // 1. Check database cache only if upsert is enabled
-  if (upsert) {
-    const supabase = await createServiceClient();
+  // Get unique symbolIds and dateStrings for efficient query
+  const symbolIds = [...new Set(cacheQueries.map((q) => q.symbolId))];
+  const dateStrings = [...new Set(cacheQueries.map((q) => q.dateString))];
 
-    // Get unique symbolIds and dateStrings for efficient query
-    const symbolIds = [...new Set(cacheQueries.map((q) => q.symbolId))];
-    const dateStrings = [...new Set(cacheQueries.map((q) => q.dateString))];
+  const { data: cachedQuotes } = await supabase
+    .from("quotes")
+    .select("symbol_id, date, price")
+    .in("symbol_id", symbolIds)
+    .in("date", dateStrings);
 
-    const { data: cachedQuotes } = await supabase
-      .from("quotes")
-      .select("symbol_id, date, price")
-      .in("symbol_id", symbolIds)
-      .in("date", dateStrings);
+  // Store cached results
+  cachedQuotes?.forEach((quote) => {
+    const cacheKey = `${quote.symbol_id}|${quote.date}`;
+    results.set(cacheKey, quote.price);
+  });
 
-    // Store cached results
-    cachedQuotes?.forEach((quote) => {
-      const cacheKey = `${quote.symbol_id}|${quote.date}`;
-      results.set(cacheKey, quote.price);
-    });
-
-    // Find what's missing from cache
-    missingRequests = cacheQueries.filter(
-      ({ cacheKey }) => !results.has(cacheKey),
-    );
-  }
+  // Find what's missing from cache
+  const missingRequests = cacheQueries.filter(
+    ({ cacheKey }) => !results.has(cacheKey),
+  );
 
   // 2. Fetch missing quotes from Yahoo Finance in parallel
   if (missingRequests.length > 0) {
