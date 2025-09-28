@@ -4,6 +4,7 @@ import { format } from "date-fns";
 
 import { getCurrentUser } from "@/server/auth/actions";
 import { fetchQuotes } from "@/server/quotes/fetch";
+import { fetchDomainValuations } from "@/server/domain-valuations/fetch";
 
 import type {
   TransformedHolding,
@@ -58,6 +59,7 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
       name,
       category_code,
       symbol_id,
+      domain_id,
       currency,
       description,
       archived_at,
@@ -167,17 +169,34 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
     });
   }
 
-  // Identify holdings with symbols and fetch their latest quotes
+  // Identify holdings with market data and fetch their latest quotes/valuations
   const holdingsWithSymbols = holdings.filter((holding) => holding.symbol_id);
   const symbolIds = holdingsWithSymbols.map((holding) => holding.symbol_id!);
 
+  const domainHoldings = holdings.filter(
+    (holding) => holding.category_code === "domain",
+  );
+  const domainIds = domainHoldings.map((holding) => holding.domain_id!);
+
   let quotesMap = new Map<string, number>();
+  let domainValuationsMap = new Map<string, number>();
+
+  // Fetch quotes for holdings with symbols
   if (symbolIds.length > 0 && quoteDate !== null) {
     const quoteRequests = symbolIds.map((symbolId) => ({
       symbolId,
       date: quoteDate,
     }));
     quotesMap = await fetchQuotes(quoteRequests);
+  }
+
+  // Fetch valuations for domain holdings
+  if (domainHoldings.length > 0 && quoteDate !== null) {
+    const domainRequests = domainIds.map((domainId) => ({
+      domainId,
+      date: quoteDate,
+    }));
+    domainValuationsMap = await fetchDomainValuations(domainRequests);
   }
 
   // Transform the holdings data
@@ -188,13 +207,19 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
     // Get the latest record (first one, since they're sorted by date descending)
     const latestRecord = holdingRecords[0];
 
-    // Determine current_unit_value based on whether holding has a symbol
+    // Determine current_unit_value based on holding type
     let current_unit_value: number;
+
     if (holding.symbol_id && quoteDate !== null) {
       // For holdings with symbols, use the quote for the specified date
       const quoteKey = `${holding.symbol_id}|${format(quoteDate, "yyyy-MM-dd")}`;
       current_unit_value =
         quotesMap.get(quoteKey) || latestRecord?.unit_value || 0;
+    } else if (holding.category_code === "domain" && quoteDate !== null) {
+      // For domain holdings, use the domain valuation
+      const domainKey = `${holding.domain_id}|${format(quoteDate, "yyyy-MM-dd")}`;
+      current_unit_value =
+        domainValuationsMap.get(domainKey) || latestRecord?.unit_value || 0;
     } else {
       // For holdings without symbols or when quotes are skipped, use the latest record
       current_unit_value = latestRecord?.unit_value || 0;

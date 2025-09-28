@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict fgGFji7rzX5ypaHvN2k9TFMh19mXJi4rGuB9aeU2Rlh14YLCygOTySUbMm6Odlg
+\restrict XwiOzhfRSalKuuL7IltqTBgt5jaJcpg1aFmOhENfsLG5GEEipcAYYsrLkbghdDw
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.6 (Homebrew)
@@ -235,6 +235,20 @@ CREATE TABLE public.dividends (
 ALTER TABLE public.dividends OWNER TO postgres;
 
 --
+-- Name: domain_valuations; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.domain_valuations (
+    id text DEFAULT gen_random_uuid() NOT NULL,
+    date date NOT NULL,
+    price numeric NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.domain_valuations OWNER TO postgres;
+
+--
 -- Name: exchange_rates; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -280,7 +294,8 @@ CREATE TABLE public.holdings (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     archived_at timestamp with time zone,
-    symbol_id text
+    symbol_id text,
+    domain_id text
 );
 
 
@@ -465,6 +480,14 @@ ALTER TABLE ONLY public.dividends
 
 
 --
+-- Name: domain_valuations domain_valuations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.domain_valuations
+    ADD CONSTRAINT domain_valuations_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: symbols equities_symbol_exchange_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -561,6 +584,14 @@ ALTER TABLE ONLY public.transactions
 
 
 --
+-- Name: domain_valuations unique_domain_date; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.domain_valuations
+    ADD CONSTRAINT unique_domain_date UNIQUE (id, date);
+
+
+--
 -- Name: quotes unique_symbol_date; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -625,6 +656,13 @@ CREATE INDEX holdings_currency_idx ON public.holdings USING btree (currency);
 
 
 --
+-- Name: holdings_domain_id_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX holdings_domain_id_idx ON public.holdings USING btree (domain_id);
+
+
+--
 -- Name: holdings_equity_id_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -657,6 +695,13 @@ CREATE INDEX idx_dividend_events_event_date_desc ON public.dividend_events USING
 --
 
 CREATE INDEX idx_dividend_events_symbol_date_desc ON public.dividend_events USING btree (symbol_id, event_date DESC);
+
+
+--
+-- Name: idx_domain_valuations_date_desc; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_domain_valuations_date_desc ON public.domain_valuations USING btree (date DESC);
 
 
 --
@@ -1028,14 +1073,21 @@ ALTER TABLE ONLY public.transactions
 -- Name: quotes   Enable update for authenticated users; Type: POLICY; Schema: public; Owner: postgres
 --
 
-CREATE POLICY "  Enable update for authenticated users" ON public.quotes FOR UPDATE TO authenticated, service_role USING (true);
+CREATE POLICY "  Enable update for authenticated users" ON public.quotes FOR UPDATE TO authenticated USING (true);
+
+
+--
+-- Name: domain_valuations Enable insert for all authenticated users; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Enable insert for all authenticated users" ON public.domain_valuations FOR INSERT TO authenticated WITH CHECK (true);
 
 
 --
 -- Name: quotes Enable insert for all authenticated users; Type: POLICY; Schema: public; Owner: postgres
 --
 
-CREATE POLICY "Enable insert for all authenticated users" ON public.quotes FOR INSERT TO authenticated, service_role WITH CHECK (true);
+CREATE POLICY "Enable insert for all authenticated users" ON public.quotes FOR INSERT TO authenticated WITH CHECK (true);
 
 
 --
@@ -1081,6 +1133,13 @@ CREATE POLICY "Enable read access for all authenticated users" ON public.dividen
 
 
 --
+-- Name: domain_valuations Enable read access for all authenticated users; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Enable read access for all authenticated users" ON public.domain_valuations FOR SELECT TO authenticated USING (true);
+
+
+--
 -- Name: exchange_rates Enable read access for all authenticated users; Type: POLICY; Schema: public; Owner: postgres
 --
 
@@ -1113,6 +1172,13 @@ CREATE POLICY "Enable read access for all authenticated users" ON public.symbols
 --
 
 CREATE POLICY "Enable update for all authenticated users" ON public.symbols FOR UPDATE TO authenticated USING (true);
+
+
+--
+-- Name: domain_valuations Enable update for authenticated users; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Enable update for authenticated users" ON public.domain_valuations FOR UPDATE TO authenticated USING (true);
 
 
 --
@@ -1313,6 +1379,12 @@ ALTER TABLE public.dividend_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.dividends ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: domain_valuations; Type: ROW SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE public.domain_valuations ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: exchange_rates; Type: ROW SECURITY; Schema: public; Owner: postgres
 --
 
@@ -1437,6 +1509,15 @@ GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.di
 GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.dividends TO anon;
 GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.dividends TO authenticated;
 GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.dividends TO service_role;
+
+
+--
+-- Name: TABLE domain_valuations; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.domain_valuations TO anon;
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.domain_valuations TO authenticated;
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.domain_valuations TO service_role;
 
 
 --
@@ -1584,5 +1665,5 @@ ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT SELECT,I
 -- PostgreSQL database dump complete
 --
 
-\unrestrict fgGFji7rzX5ypaHvN2k9TFMh19mXJi4rGuB9aeU2Rlh14YLCygOTySUbMm6Odlg
+\unrestrict XwiOzhfRSalKuuL7IltqTBgt5jaJcpg1aFmOhENfsLG5GEEipcAYYsrLkbghdDw
 

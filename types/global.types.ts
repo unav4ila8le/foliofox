@@ -16,6 +16,7 @@ export type Holding = Pick<
   | "name"
   | "category_code"
   | "symbol_id"
+  | "domain_id"
   | "currency"
   | "description"
   | "archived_at"

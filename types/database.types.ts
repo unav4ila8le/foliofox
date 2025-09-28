@@ -210,6 +210,27 @@ export type Database = {
           },
         ];
       };
+      domain_valuations: {
+        Row: {
+          created_at: string;
+          date: string;
+          id: string;
+          price: number;
+        };
+        Insert: {
+          created_at?: string;
+          date: string;
+          id?: string;
+          price: number;
+        };
+        Update: {
+          created_at?: string;
+          date?: string;
+          id?: string;
+          price?: number;
+        };
+        Relationships: [];
+      };
       exchange_rates: {
         Row: {
           base_currency: string;
@@ -286,6 +307,7 @@ export type Database = {
           created_at: string;
           currency: string;
           description: string | null;
+          domain_id: string | null;
           id: string;
           name: string;
           symbol_id: string | null;
@@ -298,6 +320,7 @@ export type Database = {
           created_at?: string;
           currency: string;
           description?: string | null;
+          domain_id?: string | null;
           id?: string;
           name: string;
           symbol_id?: string | null;
@@ -310,6 +333,7 @@ export type Database = {
           created_at?: string;
           currency?: string;
           description?: string | null;
+          domain_id?: string | null;
           id?: string;
           name?: string;
           symbol_id?: string | null;
