@@ -6,7 +6,8 @@ import { createServiceClient } from "@/supabase/service";
 
 // Replicate API configuration
 const REPLICATE_API = "https://api.replicate.com/v1/predictions";
-const MODEL_VERSION = "humbleworth/price-predict-v1";
+const MODEL_VERSION =
+  "humbleworth/price-predict-v1:a925db842c707850e4ca7b7e86b217692b0353a9ca05eb028802c4a85db93843";
 
 interface DomainValuation {
   domain: string;
@@ -19,11 +20,11 @@ interface DomainValuation {
 /**
  * Fetch multiple domain valuations for different domains and dates in bulk.
  *
- * @param requests - Array of {domainId, date} pairs to fetch
+ * @param requests - Array of {domain, date} pairs to fetch
  * @returns Map where key is "domainId|date" and value is the valuation
  */
 export async function fetchDomainValuations(
-  requests: Array<{ domainId: string; date: Date }>,
+  requests: Array<{ domain: string; date: Date }>,
 ) {
   // Early return if no requests
   if (!requests.length) return new Map();
@@ -32,20 +33,20 @@ export async function fetchDomainValuations(
   const supabase = createServiceClient();
 
   // Prepare cache queries for all requests
-  const cacheQueries = requests.map(({ domainId, date }) => ({
-    domainId,
+  const cacheQueries = requests.map(({ domain, date }) => ({
+    domain,
     dateString: format(date, "yyyy-MM-dd"),
-    cacheKey: `${domainId}|${format(date, "yyyy-MM-dd")}`,
+    cacheKey: `${domain}|${format(date, "yyyy-MM-dd")}`,
   }));
 
   // 1. Check database cache
-  const domainIds = [...new Set(cacheQueries.map((q) => q.domainId))];
+  const domains = [...new Set(cacheQueries.map((q) => q.domain))];
   const dateStrings = [...new Set(cacheQueries.map((q) => q.dateString))];
 
   const { data: cachedValuations } = await supabase
     .from("domain_valuations")
     .select("id, date, price")
-    .in("id", domainIds)
+    .in("id", domains)
     .in("date", dateStrings);
 
   // Store cached results
@@ -64,19 +65,19 @@ export async function fetchDomainValuations(
     // Group domains by date for batching
     const batchesByDate = new Map<string, string[]>();
 
-    missingRequests.forEach(({ domainId, dateString }) => {
+    missingRequests.forEach(({ domain, dateString }) => {
       const existing = batchesByDate.get(dateString) || [];
-      existing.push(domainId);
+      existing.push(domain);
       batchesByDate.set(dateString, existing);
     });
 
     const fetchPromises = Array.from(batchesByDate.entries()).map(
-      async ([dateString, domainIds]) => {
+      async ([dateString, domains]) => {
         try {
           // Create batches of up to 2560 domains
           const batches = [];
-          for (let i = 0; i < domainIds.length; i += 2560) {
-            batches.push(domainIds.slice(i, i + 2560));
+          for (let i = 0; i < domains.length; i += 2560) {
+            batches.push(domains.slice(i, i + 2560));
           }
 
           const batchResults = [];
@@ -86,8 +87,9 @@ export async function fetchDomainValuations(
             const response = await fetch(REPLICATE_API, {
               method: "POST",
               headers: {
-                Authorization: `Token ${process.env.REPLICATE_API_TOKEN}`,
+                Authorization: `Bearer ${process.env.REPLICATE_API_TOKEN}`,
                 "Content-Type": "application/json",
+                Prefer: "wait",
               },
               body: JSON.stringify({
                 version: MODEL_VERSION,
@@ -144,7 +146,7 @@ export async function fetchDomainValuations(
 
     // 3. Process results and store in database
     const successfulFetches: {
-      domainId: string;
+      domain: string;
       dateString: string;
       price: number;
     }[] = [];
@@ -154,14 +156,14 @@ export async function fetchDomainValuations(
         if (valuation.domain && !valuation.error) {
           // Use marketplace price as the default valuation
           const price =
-            valuation.marketplace || valuation.brokerage || valuation.auction;
+            valuation.brokerage || valuation.marketplace || valuation.auction;
 
           if (price && price > 0) {
             const cacheKey = `${valuation.domain}|${dateString}`;
             results.set(cacheKey, price);
 
             successfulFetches.push({
-              domainId: valuation.domain,
+              domain: valuation.domain,
               dateString,
               price,
             });
@@ -175,12 +177,12 @@ export async function fetchDomainValuations(
       const { error: insertError } = await supabase
         .from("domain_valuations")
         .upsert(
-          successfulFetches.map(({ domainId, dateString, price }) => ({
-            domain_id: domainId,
+          successfulFetches.map(({ domain, dateString, price }) => ({
+            id: domain,
             date: dateString,
             price: price,
           })),
-          { onConflict: "domain_id,date" },
+          { onConflict: "id,date" },
         );
 
       if (insertError) {
@@ -195,19 +197,19 @@ export async function fetchDomainValuations(
 /**
  * Fetch a single domain valuation for a specific domain and date.
  *
- * @param domainId - The domain to fetch the valuation for
+ * @param domain - The domain to fetch the valuation for
  * @param options - Optional configuration
  * @returns The domain valuation
  */
 export async function fetchSingleDomainValuation(
-  domainId: string,
+  domain: string,
   options: {
     date?: Date;
   } = {},
 ): Promise<number> {
   const { date = new Date() } = options;
 
-  const valuations = await fetchDomainValuations([{ domainId, date }]);
-  const key = `${domainId}|${format(date, "yyyy-MM-dd")}`;
+  const valuations = await fetchDomainValuations([{ domain, date }]);
+  const key = `${domain}|${format(date, "yyyy-MM-dd")}`;
   return valuations.get(key) || 0;
 }

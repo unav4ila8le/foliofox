@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState } from "react";
-import { Plus, Search, PencilLine } from "lucide-react";
+import { Plus, Search, PencilLine, Globe } from "lucide-react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SymbolSearchForm } from "./forms/symbol-search-form";
+import { DomainForm } from "./forms/domain-form";
 import { ManualEntryForm } from "./forms/manual-entry-form";
 
 import type { Profile } from "@/types/global.types";
@@ -52,6 +53,10 @@ export function NewHoldingDialogProvider({
                 <Search className="size-4" />
                 Search by Symbol
               </TabsTrigger>
+              <TabsTrigger value="domain-form">
+                <Globe className="size-4" />
+                Enter Domain
+              </TabsTrigger>
               <TabsTrigger value="manual-entry-form">
                 <PencilLine className="size-4" />
                 Enter Manually
@@ -59,6 +64,9 @@ export function NewHoldingDialogProvider({
             </TabsList>
             <TabsContent value="symbol-search-form">
               <SymbolSearchForm />
+            </TabsContent>
+            <TabsContent value="domain-form">
+              <DomainForm />
             </TabsContent>
             <TabsContent value="manual-entry-form">
               <ManualEntryForm />

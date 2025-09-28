@@ -46,13 +46,19 @@ export async function createHolding(formData: FormData) {
   // Extract and validate data from formData
   const data: Pick<
     Holding,
-    "name" | "category_code" | "currency" | "description" | "symbol_id"
+    | "name"
+    | "category_code"
+    | "currency"
+    | "description"
+    | "symbol_id"
+    | "domain_id"
   > = {
     name: formData.get("name") as string,
     category_code: formData.get("category_code") as string,
     currency: formData.get("currency") as string,
     description: (formData.get("description") as string) || null,
     symbol_id: (formData.get("symbol_id") as string) || null,
+    domain_id: (formData.get("domain_id") as string) || null,
   };
 
   // Check for duplicate holding name
