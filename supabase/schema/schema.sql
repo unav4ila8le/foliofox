@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict aiFpRUkKboJE7QEbSFxeKoRTEUQSQaCHBlfgbhokQ9NekGvJRgsWwA8Xj5LN64j
+\restrict 2dSRB0c3HWoyIWycDRxe9QTb6xsdTbCaQzSFOGUcFwYJQucRzbL7ZKW9wjdaCH8
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.6 (Homebrew)
@@ -239,7 +239,7 @@ ALTER TABLE public.dividends OWNER TO postgres;
 --
 
 CREATE TABLE public.domain_valuations (
-    id text DEFAULT gen_random_uuid() NOT NULL,
+    id text NOT NULL,
     date date NOT NULL,
     price numeric NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL
@@ -484,7 +484,7 @@ ALTER TABLE ONLY public.dividends
 --
 
 ALTER TABLE ONLY public.domain_valuations
-    ADD CONSTRAINT domain_valuations_pkey PRIMARY KEY (id);
+    ADD CONSTRAINT domain_valuations_pkey PRIMARY KEY (id, date);
 
 
 --
@@ -1665,5 +1665,5 @@ ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT SELECT,I
 -- PostgreSQL database dump complete
 --
 
-\unrestrict aiFpRUkKboJE7QEbSFxeKoRTEUQSQaCHBlfgbhokQ9NekGvJRgsWwA8Xj5LN64j
+\unrestrict 2dSRB0c3HWoyIWycDRxe9QTb6xsdTbCaQzSFOGUcFwYJQucRzbL7ZKW9wjdaCH8
 
