@@ -4,9 +4,8 @@ import { format } from "date-fns";
 
 import { fetchProfile } from "@/server/profile/actions";
 import { fetchHoldings } from "@/server/holdings/fetch";
-import { fetchQuotes } from "@/server/quotes/fetch";
-import { fetchDomainValuations } from "@/server/domain-valuations/fetch";
-import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
+import { fetchMarketData } from "@/server/market-data/fetch";
+import { calculateAssetAllocation } from "@/server/analysis/asset-allocation";
 
 import { convertCurrency } from "@/lib/currency-conversion";
 
@@ -48,43 +47,12 @@ export async function getPortfolioSnapshot(params?: {
         lastUpdated: new Date().toISOString(),
       };
 
-    // Prepare bulk requests for market data at as-of date
-    const quoteRequests: Array<{ symbolId: string; date: Date }> = [];
-    const domainRequests: Array<{ domain: string; date: Date }> = [];
-
-    holdings.forEach((holding) => {
-      if (holding.symbol_id) {
-        quoteRequests.push({ symbolId: holding.symbol_id, date: asOfDate });
-      }
-      if (holding.domain_id) {
-        domainRequests.push({ domain: holding.domain_id, date: asOfDate });
-      }
-    });
-
-    // Collect unique currencies we need exchange rates for
-    const uniqueCurrencies = new Set<string>();
-    holdings.forEach((holding) => uniqueCurrencies.add(holding.currency));
-    uniqueCurrencies.add(baseCurrency);
-
-    // Make bulk requests in parallel
-    const [quotesMap, domainValuationsMap, exchangeRatesMap] =
-      await Promise.all([
-        // Bulk fetch all quotes
-        quoteRequests.length > 0 ? fetchQuotes(quoteRequests) : new Map(),
-
-        // Bulk fetch all domain valuations
-        domainRequests.length > 0
-          ? fetchDomainValuations(domainRequests)
-          : new Map(),
-
-        // Bulk fetch all exchange rates
-        fetchExchangeRates(
-          Array.from(uniqueCurrencies).map((currency) => ({
-            currency,
-            date: asOfDate,
-          })),
-        ),
-      ]);
+    // Fetch market data for the as-of date using centralized aggregator
+    const {
+      quotes: quotesMap,
+      domainValuations: domainValuationsMap,
+      exchangeRates: exchangeRatesMap,
+    } = await fetchMarketData(holdings, asOfDate, baseCurrency);
 
     // Compute per-holding as-of values
     const holdingsBase = holdings
@@ -162,28 +130,14 @@ export async function getPortfolioSnapshot(params?: {
     // Compute net worth from computed holdings (avoid duplicate heavy calls)
     const netWorth = holdingsBase.reduce((sum, h) => sum + h.value, 0);
 
-    // Compute asset allocation as-of (group by category using base currency values)
-    const allocationByCategory = new Map<
-      string,
-      { code: string; name: string; total_value: number }
-    >();
-
-    holdingsBase.forEach((h) => {
-      const acc = allocationByCategory.get(h.categoryCode) || {
-        code: h.categoryCode,
-        name: h.category,
-        total_value: 0,
-      };
-      acc.total_value += h.value;
-      allocationByCategory.set(h.categoryCode, acc);
-    });
-
-    const categories = Array.from(allocationByCategory.values())
-      .map((c) => ({
-        name: c.name,
-        code: c.code,
-        value: c.total_value,
-        percentage: netWorth ? (c.total_value / netWorth) * 100 : 0,
+    // Compute asset allocation via centralized analysis util
+    const allocation = await calculateAssetAllocation(baseCurrency, asOfDate);
+    const categories = allocation
+      .map((a) => ({
+        name: a.name,
+        code: a.category_code,
+        value: a.total_value,
+        percentage: netWorth ? (a.total_value / netWorth) * 100 : 0,
       }))
       .sort((a, b) => b.value - a.value);
 

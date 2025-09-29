@@ -176,7 +176,7 @@ N/A
 - [x] Add news based on user's portfolio
 - [ ] Find a way to have a more accurate historical calculation which doesn't add much overhead. WeeksBack solution is fast but not accurate cause the date is "rounded" to match weeks and not days.
 - [ ] Add a way for the user to "share" their portfolio. Ideally, after agreeing, they get a public sharable link which leads to a single public page view of all their holdings and relevant performance charts.
-- [ ] Add domains tracking support
+- [x] Add domains tracking support
 - [ ] Add crypto wallet address sync
 - [x] Review params for holdings fetch, especially quoteDate
 - [ ] Optimize recalculateRecords to use batch requests
@@ -187,6 +187,8 @@ N/A
 - [x] Review Zod helpers in lib and make them more flexible
 - [x] Let users input their cost basis (optional) for new holdings, and then use it to create the new record
 - [x] Foliofox AI advisor. Chat with your portfolio.
-- [ ] Add Transactions list on the dashboard home
+- [x] Add Transactions list on the dashboard home
 - [ ] Landingpage with waitlist
 - [ ] Add privacy mode (blur/hide net worth numbers)
+- [ ] New UX for adding new holdings (one form per holding type)
+- [ ] Add optional pagination to data table (for transactions)

@@ -33,7 +33,7 @@ export async function fetchExchangeRates(
 
   if (nonUsdRequests.length === 0) return results;
 
-  const supabase = createServiceClient();
+  const supabase = await createServiceClient();
 
   // 1. Check what's already cached in database
   const cacheQueries = nonUsdRequests.map(({ currency, date }) => ({

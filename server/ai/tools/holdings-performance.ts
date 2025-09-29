@@ -4,8 +4,7 @@ import { format, subDays } from "date-fns";
 
 import { fetchProfile } from "@/server/profile/actions";
 import { fetchHoldings } from "@/server/holdings/fetch";
-import { fetchQuotes } from "@/server/quotes/fetch";
-import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
+import { fetchMarketData } from "@/server/market-data/fetch";
 
 import { calculateProfitLoss } from "@/lib/profit-loss";
 import { convertCurrency } from "@/lib/currency-conversion";
@@ -102,30 +101,20 @@ export async function getHoldingsPerformance(
       };
     }
 
-    // Collect all currency and quote requests
-    const uniqueCurrencies = new Set<string>();
-    const quoteRequests: Array<{ symbolId: string; date: Date }> = [];
+    // Fetch market data for both dates using centralized aggregator
+    const [startData, endData] = await Promise.all([
+      fetchMarketData(targetHoldings, startDate, baseCurrency),
+      fetchMarketData(targetHoldings, endDate, baseCurrency),
+    ]);
 
-    targetHoldings.forEach((holding) => {
-      uniqueCurrencies.add(holding.currency);
-      if (holding.symbol_id) {
-        quoteRequests.push(
-          { symbolId: holding.symbol_id, date: startDate },
-          { symbolId: holding.symbol_id, date: endDate },
-        );
-      }
-    });
-    uniqueCurrencies.add(baseCurrency);
-
-    // Bulk fetch exchange rates and quotes
-    const [exchangeRatesMap, quotesMap] = await Promise.all([
-      fetchExchangeRates(
-        Array.from(uniqueCurrencies).flatMap((currency) => [
-          { currency, date: startDate },
-          { currency, date: endDate },
-        ]),
-      ),
-      quoteRequests.length > 0 ? fetchQuotes(quoteRequests) : new Map(),
+    // Merge maps for quick lookup
+    const quotesMap = new Map<string, number>([
+      ...(startData.quotes ?? new Map()),
+      ...(endData.quotes ?? new Map()),
+    ]);
+    const exchangeRatesMap = new Map<string, number>([
+      ...(startData.exchangeRates ?? new Map()),
+      ...(endData.exchangeRates ?? new Map()),
     ]);
 
     // Calculate unrealized P/L for current positions

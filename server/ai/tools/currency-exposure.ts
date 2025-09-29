@@ -4,8 +4,7 @@ import { format } from "date-fns";
 
 import { fetchProfile } from "@/server/profile/actions";
 import { fetchHoldings } from "@/server/holdings/fetch";
-import { fetchQuotes } from "@/server/quotes/fetch";
-import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
+import { fetchMarketData } from "@/server/market-data/fetch";
 
 import { convertCurrency } from "@/lib/currency-conversion";
 
@@ -34,8 +33,8 @@ interface CurrencyExposureResult {
 
 /**
  * Currency exposure as-of a date:
- * - Non-symbol holdings: latest record <= date
- * - Symbol holdings: market price at date (fallback to record unit_value)
+ * - Standard holdings: latest record <= date
+ * - Market backed holdings: market price at date (fallback to record unit_value)
  * - Bulk FX conversion to baseCurrency at date
  */
 export async function getCurrencyExposure(
@@ -64,27 +63,9 @@ export async function getCurrencyExposure(
       };
     }
 
-    // Prepare bulk requests
-    const symbolIds = holdings
-      .filter((h) => h.symbol_id)
-      .map((h) => h.symbol_id!) as string[];
-
-    const quoteRequests =
-      symbolIds.length > 0
-        ? symbolIds.map((id) => ({ symbolId: id, date }))
-        : [];
-
-    const uniqueCurrencies = new Set<string>();
-    holdings.forEach((h) => uniqueCurrencies.add(h.currency));
-    uniqueCurrencies.add(baseCurrency);
-
-    // Fetch quotes and FX in parallel
-    const [quotesMap, exchangeRatesMap] = await Promise.all([
-      quoteRequests.length > 0 ? fetchQuotes(quoteRequests) : new Map(),
-      fetchExchangeRates(
-        Array.from(uniqueCurrencies).map((currency) => ({ currency, date })),
-      ),
-    ]);
+    // Fetch market data using centralized aggregator
+    const { quotes: quotesMap, exchangeRates: exchangeRatesMap } =
+      await fetchMarketData(holdings, date, baseCurrency);
 
     // Aggregate by original holding currency using as-of record + quote
     const byCurrency = new Map<

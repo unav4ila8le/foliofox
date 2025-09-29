@@ -3,11 +3,7 @@
 import { format } from "date-fns";
 
 import { fetchProfile } from "@/server/profile/actions";
-import { fetchHoldings } from "@/server/holdings/fetch";
-import { fetchQuotes } from "@/server/quotes/fetch";
-import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
-
-import { convertCurrency } from "@/lib/currency-conversion";
+import { calculateAssetAllocation } from "@/server/analysis/asset-allocation";
 
 interface GetAllocationDriftParams {
   baseCurrency?: string;
@@ -37,13 +33,14 @@ export async function getAllocationDrift(params: GetAllocationDriftParams) {
     const compareKey = format(compareDate, "yyyy-MM-dd");
     const currentKey = format(currentDate, "yyyy-MM-dd");
 
-    // Fetch holdings with full record history; skip quote injection (we fetch our own)
-    const { holdings, records: recordsByHolding } = await fetchHoldings({
-      includeArchived: true,
-      includeRecords: true,
-    });
+    // Get asset allocations for both dates using centralized function
+    const [previousAllocation, currentAllocation] = await Promise.all([
+      calculateAssetAllocation(baseCurrency, compareDate),
+      calculateAssetAllocation(baseCurrency, currentDate),
+    ]);
 
-    if (!holdings?.length) {
+    // If no allocations, return empty state
+    if (!previousAllocation.length && !currentAllocation.length) {
       return {
         baseCurrency,
         compareToDate: compareKey,
@@ -57,151 +54,48 @@ export async function getAllocationDrift(params: GetAllocationDriftParams) {
       };
     }
 
-    // Build bulk requests (quotes + FX) for both dates
-    const symbolIds = holdings
-      .filter((h) => h.symbol_id)
-      .map((h) => h.symbol_id!) as string[];
-
-    const quoteRequests =
-      symbolIds.length > 0
-        ? [
-            ...symbolIds.map((id) => ({ symbolId: id, date: compareDate })),
-            ...symbolIds.map((id) => ({ symbolId: id, date: currentDate })),
-          ]
-        : [];
-
-    const uniqueCurrencies = new Set<string>();
-    holdings.forEach((h) => uniqueCurrencies.add(h.currency));
-    uniqueCurrencies.add(baseCurrency);
-
-    const exchangeRequests = Array.from(uniqueCurrencies).flatMap(
-      (currency) => [
-        { currency, date: compareDate },
-        { currency, date: currentDate },
-      ],
-    );
-
-    const [quotesMap, exchangeRatesMap] = await Promise.all([
-      quoteRequests.length > 0
-        ? fetchQuotes(quoteRequests)
-        : new Map<string, number>(),
-      exchangeRequests.length > 0
-        ? fetchExchangeRates(exchangeRequests)
-        : new Map<string, number>(),
-    ]);
-
-    // Helper: get holding value in base currency at a date
-    const valueInBaseAtDate = (
-      holdingId: string,
-      holdingCurrency: string,
-      date: Date,
-      dateKey: string,
-      symbolId: string | null,
-    ): number => {
-      const records = recordsByHolding.get(holdingId) || [];
-      if (records.length === 0) return 0;
-
-      // Sort records once (desc by date, then created_at)
-      const sorted = [...records].sort((a, b) => {
-        const d = new Date(b.date).getTime() - new Date(a.date).getTime();
-        if (d !== 0) return d;
-        return (
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
-      });
-
-      const latestAsOf = sorted.find((r) => r.date <= dateKey);
-      if (!latestAsOf) return 0;
-
-      let unitValue = latestAsOf.unit_value || 0;
-      if (symbolId) {
-        const qKey = `${symbolId}|${dateKey}`;
-        const mkt = quotesMap.get(qKey);
-        if (mkt && mkt > 0) unitValue = mkt;
-      }
-
-      const rawValue = unitValue * latestAsOf.quantity;
-      return convertCurrency(
-        rawValue,
-        holdingCurrency,
-        baseCurrency,
-        exchangeRatesMap,
-        date,
-      );
-    };
-
-    // Aggregate values by category for previous and current dates
-    const prevByCategory = new Map<
-      string,
-      { code: string; name: string; value: number }
-    >();
-    const currByCategory = new Map<
-      string,
-      { code: string; name: string; value: number }
-    >();
-
-    holdings.forEach((h) => {
-      const prevVal = valueInBaseAtDate(
-        h.id,
-        h.currency,
-        compareDate,
-        compareKey,
-        h.symbol_id || null,
-      );
-      const currVal = valueInBaseAtDate(
-        h.id,
-        h.currency,
-        currentDate,
-        currentKey,
-        h.symbol_id || null,
-      );
-
-      const code = h.category_code;
-      const name = h.asset_type;
-
-      const prevAcc = prevByCategory.get(code) || { code, name, value: 0 };
-      prevAcc.value += prevVal;
-      prevByCategory.set(code, prevAcc);
-
-      const currAcc = currByCategory.get(code) || { code, name, value: 0 };
-      currAcc.value += currVal;
-      currByCategory.set(code, currAcc);
-    });
-
-    const previousTotal = Array.from(prevByCategory.values()).reduce(
-      (s, c) => s + c.value,
+    // Calculate totals
+    const previousTotal = previousAllocation.reduce(
+      (sum, cat) => sum + cat.total_value,
       0,
     );
-    const currentTotal = Array.from(currByCategory.values()).reduce(
-      (s, c) => s + c.value,
+    const currentTotal = currentAllocation.reduce(
+      (sum, cat) => sum + cat.total_value,
       0,
     );
 
-    // Build category drift list (union of categories present in either map)
-    const allCodes = new Set<string>([
-      ...Array.from(prevByCategory.keys()),
-      ...Array.from(currByCategory.keys()),
+    // Create maps for easy lookup
+    const prevByCode = new Map(
+      previousAllocation.map((cat) => [cat.category_code, cat]),
+    );
+    const currByCode = new Map(
+      currentAllocation.map((cat) => [cat.category_code, cat]),
+    );
+
+    // Get all unique category codes
+    const allCodes = new Set([
+      ...previousAllocation.map((cat) => cat.category_code),
+      ...currentAllocation.map((cat) => cat.category_code),
     ]);
 
+    // Build category drift list
     const categories: CategoryDrift[] = Array.from(allCodes).map((code) => {
-      const prev = prevByCategory.get(code) || { code, name: "", value: 0 };
-      const curr = currByCategory.get(code) || {
-        code,
-        name: prev.name,
-        value: 0,
-      };
+      const prev = prevByCode.get(code);
+      const curr = currByCode.get(code);
 
+      const previousValue = prev?.total_value || 0;
+      const currentValue = curr?.total_value || 0;
       const previousPct =
-        previousTotal > 0 ? (prev.value / previousTotal) * 100 : 0;
+        previousTotal > 0 ? (previousValue / previousTotal) * 100 : 0;
       const currentPct =
-        currentTotal > 0 ? (curr.value / currentTotal) * 100 : 0;
+        currentTotal > 0 ? (currentValue / currentTotal) * 100 : 0;
       const deltaPct = currentPct - previousPct;
 
       return {
         code,
-        name: curr.name || prev.name,
-        previousValue: prev.value,
-        currentValue: curr.value,
+        name: curr?.name || prev?.name || "",
+        previousValue,
+        currentValue,
         previousPct,
         currentPct,
         deltaPct,
