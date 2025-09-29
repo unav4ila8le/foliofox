@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict kZB46XqJM9a0mlcrvSjfqlo3Ls16JyuGIgejx7AHPQvq8Zl65HJJZdfb6Bi9jqG
+\restrict BDXPgI4Z7un0AMNbE2sWQekNrwbwW4U0rkXQK7bbaS6QjBhQMtCSdC8Ul1k95JP
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.6 (Homebrew)
@@ -1086,7 +1086,7 @@ CREATE POLICY "Enable insert for all authenticated users" ON public.quotes FOR I
 -- Name: symbols Enable insert for all authenticated users; Type: POLICY; Schema: public; Owner: postgres
 --
 
-CREATE POLICY "Enable insert for all authenticated users" ON public.symbols FOR INSERT TO authenticated, service_role WITH CHECK (true);
+CREATE POLICY "Enable insert for all authenticated users" ON public.symbols FOR INSERT TO authenticated WITH CHECK (true);
 
 
 --
@@ -1156,7 +1156,7 @@ CREATE POLICY "Enable read access for all authenticated users" ON public.quotes 
 -- Name: symbols Enable read access for all authenticated users; Type: POLICY; Schema: public; Owner: postgres
 --
 
-CREATE POLICY "Enable read access for all authenticated users" ON public.symbols FOR SELECT TO authenticated, service_role USING (true);
+CREATE POLICY "Enable read access for all authenticated users" ON public.symbols FOR SELECT TO authenticated USING (true);
 
 
 --
@@ -1657,5 +1657,5 @@ ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT SELECT,I
 -- PostgreSQL database dump complete
 --
 
-\unrestrict kZB46XqJM9a0mlcrvSjfqlo3Ls16JyuGIgejx7AHPQvq8Zl65HJJZdfb6Bi9jqG
+\unrestrict BDXPgI4Z7un0AMNbE2sWQekNrwbwW4U0rkXQK7bbaS6QjBhQMtCSdC8Ul1k95JP
 

@@ -174,17 +174,13 @@ N/A
 - [x] Allow user to review their imports and tweak them
 - [x] Add AI powered import (import from images, pdfs, excels, and more)
 - [x] Add news based on user's portfolio
-- [ ] Find a way to have a more accurate historical calculation which doesn't add much overhead. WeeksBack solution is fast but not accurate cause the date is "rounded" to match weeks and not days.
-- [ ] Add a way for the user to "share" their portfolio. Ideally, after agreeing, they get a public sharable link which leads to a single public page view of all their holdings and relevant performance charts.
 - [x] Add domains tracking support
-- [ ] Add crypto wallet address sync
 - [x] Replace `quoteDate` with `asOfDate` across holdings APIs
 - [x] Add `asOfDate` behavior: market-backed holdings (symbols/domains) use market data as-of with record fallback; basic holdings use latest record ≤ date
 - [x] Centralize market data in `server/market-data/fetch.ts` with include flags:
   - `marketPrices` (quotes + domain valuations, defaults ON)
   - `exchangeRates` (FX, defaults ON)
   - Pass `{ include: { marketPrices: false } }` for FX-only scenarios
-- [ ] Optimize recalculateRecords to use batch requests
 - [x] Optimize projected income analysis
 - [x] Improve folder structure for mappings in lib
 - [x] Prevent user from creating holdings with same name
@@ -197,3 +193,7 @@ N/A
 - [ ] Add privacy mode (blur/hide net worth numbers)
 - [ ] New UX for adding new holdings (one form per holding type)
 - [ ] Add optional pagination to data table (for transactions)
+- [ ] Find a way to have a more accurate historical calculation which doesn't add much overhead. WeeksBack solution is fast but not accurate cause the date is "rounded" to match weeks and not days.
+- [ ] Add a way for the user to "share" their portfolio. Ideally, after agreeing, they get a public sharable link which leads to a single public page view of all their holdings and relevant performance charts.
+- [ ] Optimize recalculateRecords to use batch requests
+- [ ] Add crypto wallet address sync
