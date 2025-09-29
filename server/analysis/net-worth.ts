@@ -4,6 +4,7 @@ import { format } from "date-fns";
 
 import { fetchHoldings } from "@/server/holdings/fetch";
 import { fetchQuotes } from "@/server/quotes/fetch";
+import { fetchDomainValuations } from "@/server/domain-valuations/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 
 import { convertCurrency } from "@/lib/currency-conversion";
@@ -18,23 +19,28 @@ export async function calculateNetWorth(
   targetCurrency: string,
   date: Date = new Date(),
 ) {
-  const result = await fetchHoldings({
+  const { holdings, records: recordsByHolding } = await fetchHoldings({
     includeArchived: true,
     includeRecords: true,
   });
 
-  const { holdings, records: recordsByHolding } = result;
-
+  // If no holdings, return 0
   if (!holdings?.length) return 0;
 
   // 1. Collect all requests we need to make
   const quoteRequests: Array<{ symbolId: string; date: Date }> = [];
+  const domainRequests: Array<{ domain: string; date: Date }> = [];
 
-  // Collect quote requests (only for holdings with symbols)
   holdings.forEach((holding) => {
     if (holding.symbol_id) {
       quoteRequests.push({
         symbolId: holding.symbol_id,
+        date: date,
+      });
+    }
+    if (holding.domain_id) {
+      domainRequests.push({
+        domain: holding.domain_id,
         date: date,
       });
     }
@@ -54,9 +60,14 @@ export async function calculateNetWorth(
   }));
 
   // 2. Make bulk requests in parallel
-  const [quotesMap, exchangeRatesMap] = await Promise.all([
+  const [quotesMap, domainValuationsMap, exchangeRatesMap] = await Promise.all([
     // Bulk fetch all quotes
     quoteRequests.length > 0 ? fetchQuotes(quoteRequests) : new Map(),
+
+    // Bulk fetch all domain valuations
+    domainRequests.length > 0
+      ? fetchDomainValuations(domainRequests)
+      : new Map(),
 
     // Bulk fetch all exchange rates
     exchangeRequests.length > 0
@@ -94,12 +105,20 @@ export async function calculateNetWorth(
 
     let unitValue = record.unit_value;
 
-    // Use market quote if available
+    // Use market data if available
     if (holding.symbol_id) {
       const quoteKey = `${holding.symbol_id}|${format(date, "yyyy-MM-dd")}`;
       const marketPrice = quotesMap.get(quoteKey);
       if (marketPrice) {
         unitValue = marketPrice;
+      }
+    }
+
+    if (holding.domain_id) {
+      const domainKey = `${holding.domain_id}|${format(date, "yyyy-MM-dd")}`;
+      const domainValuation = domainValuationsMap.get(domainKey);
+      if (domainValuation) {
+        unitValue = domainValuation;
       }
     }
 

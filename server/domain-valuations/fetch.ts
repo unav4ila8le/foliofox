@@ -156,7 +156,7 @@ export async function fetchDomainValuations(
     fetchResults.forEach(({ dateString, valuations }) => {
       valuations.forEach((valuation: DomainValuation) => {
         if (valuation.domain && !valuation.error) {
-          // Use marketplace price as the default valuation
+          // Use brokerage price as the default valuation
           const price =
             valuation.brokerage || valuation.marketplace || valuation.auction;
 

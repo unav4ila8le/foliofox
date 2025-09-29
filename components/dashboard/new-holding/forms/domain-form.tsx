@@ -112,7 +112,7 @@ export function DomainForm() {
       formData.append("category_code", "domain");
       formData.append("currency", "USD");
       formData.append("quantity", "1");
-      formData.append("valuation", values.valuation.toString());
+      formData.append("unit_value", values.valuation.toString());
 
       // Only append description if it exists
       if (values.description) {
@@ -153,6 +153,7 @@ export function DomainForm() {
               <FormControl>
                 <div className="relative">
                   <Input
+                    disabled={isCheckingValuation}
                     placeholder="E.g., foliofox.ai"
                     {...field}
                     onChange={(e) => {

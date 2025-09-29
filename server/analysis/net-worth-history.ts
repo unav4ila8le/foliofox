@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { fetchProfile } from "@/server/profile/actions";
 import { fetchHoldings } from "@/server/holdings/fetch";
 import { fetchQuotes } from "@/server/quotes/fetch";
+import { fetchDomainValuations } from "@/server/domain-valuations/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 import { convertCurrency } from "@/lib/currency-conversion";
 
@@ -49,8 +50,10 @@ export async function fetchNetWorthHistory({
     return weeklyDates.map((date) => ({ date, value: 0 }));
   }
 
-  // 2. Collect ALL quote requests for ALL dates
+  // 2. Collect all requests we need to make
   const allQuoteRequests: Array<{ symbolId: string; date: Date }> = [];
+  const allDomainRequests: Array<{ domain: string; date: Date }> = [];
+
   holdings.forEach((holding) => {
     if (holding.symbol_id) {
       weeklyDates.forEach((date) => {
@@ -60,9 +63,17 @@ export async function fetchNetWorthHistory({
         });
       });
     }
+    if (holding.domain_id) {
+      weeklyDates.forEach((date) => {
+        allDomainRequests.push({
+          domain: holding.domain_id!,
+          date: date,
+        });
+      });
+    }
   });
 
-  // 3. Collect ALL exchange rate requests for ALL dates
+  // Collect unique currencies we need exchange rates for
   const uniqueCurrencies = new Set<string>();
   holdings.forEach((holding) => {
     uniqueCurrencies.add(holding.currency);
@@ -76,15 +87,24 @@ export async function fetchNetWorthHistory({
     });
   });
 
-  // 4. Make 2 bulk requests for ALL data needed
-  const [allQuotesMap, allExchangeRatesMap] = await Promise.all([
-    allQuoteRequests.length > 0 ? fetchQuotes(allQuoteRequests) : new Map(),
-    allExchangeRequests.length > 0
-      ? fetchExchangeRates(allExchangeRequests)
-      : new Map(),
-  ]);
+  // 3. Make bulk requests in parallel
+  const [allQuotesMap, allDomainValuationsMap, allExchangeRatesMap] =
+    await Promise.all([
+      // Bulk fetch all quotes
+      allQuoteRequests.length > 0 ? fetchQuotes(allQuoteRequests) : new Map(),
 
-  // 5. Process each date using the bulk data
+      // Bulk fetch all domain valuations
+      allDomainRequests.length > 0
+        ? fetchDomainValuations(allDomainRequests)
+        : new Map(),
+
+      // Bulk fetch all exchange rates
+      allExchangeRequests.length > 0
+        ? fetchExchangeRates(allExchangeRequests)
+        : new Map(),
+    ]);
+
+  // 4. Process each date using the bulk data
   const history = weeklyDates.map((date) => {
     const netWorth = calculateNetWorthForDate(
       date,
@@ -92,6 +112,7 @@ export async function fetchNetWorthHistory({
       holdings,
       recordsByHolding,
       allQuotesMap,
+      allDomainValuationsMap,
       allExchangeRatesMap,
     );
 
@@ -114,6 +135,7 @@ function calculateNetWorthForDate(
   holdings: TransformedHolding[],
   recordsByHolding: Map<string, Record[]>,
   quotesMap: Map<string, number>,
+  domainValuationsMap: Map<string, number>,
   exchangeRatesMap: Map<string, number>,
 ): number {
   // 1. Process historical records for this specific date
@@ -151,6 +173,15 @@ function calculateNetWorthForDate(
       const marketPrice = quotesMap.get(quoteKey);
       if (marketPrice) {
         unitValue = marketPrice;
+      }
+    }
+
+    // Use domain valuation if available
+    if (holding.domain_id) {
+      const domainKey = `${holding.domain_id}|${format(date, "yyyy-MM-dd")}`;
+      const domainValuation = domainValuationsMap.get(domainKey);
+      if (domainValuation) {
+        unitValue = domainValuation;
       }
     }
 

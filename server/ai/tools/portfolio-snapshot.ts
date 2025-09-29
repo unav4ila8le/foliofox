@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { fetchProfile } from "@/server/profile/actions";
 import { fetchHoldings } from "@/server/holdings/fetch";
 import { fetchQuotes } from "@/server/quotes/fetch";
+import { fetchDomainValuations } from "@/server/domain-valuations/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 
 import { convertCurrency } from "@/lib/currency-conversion";
@@ -36,7 +37,7 @@ export async function getPortfolioSnapshot(params?: {
     });
 
     // If no holdings, return empty state
-    if (holdings.length === 0) {
+    if (!holdings?.length)
       return {
         summary: "No holdings found in portfolio",
         netWorth: 0,
@@ -46,44 +47,63 @@ export async function getPortfolioSnapshot(params?: {
         holdings: [],
         lastUpdated: new Date().toISOString(),
       };
-    }
 
-    // Prepare bulk requests for quotes and FX at as-of date
-    const symbolIds = holdings
-      .filter((h) => h.symbol_id)
-      .map((h) => h.symbol_id!) as string[];
+    // Prepare bulk requests for market data at as-of date
+    const quoteRequests: Array<{ symbolId: string; date: Date }> = [];
+    const domainRequests: Array<{ domain: string; date: Date }> = [];
 
-    const quoteRequests =
-      symbolIds.length > 0
-        ? symbolIds.map((id) => ({ symbolId: id, date: asOfDate }))
-        : [];
+    holdings.forEach((holding) => {
+      if (holding.symbol_id) {
+        quoteRequests.push({ symbolId: holding.symbol_id, date: asOfDate });
+      }
+      if (holding.domain_id) {
+        domainRequests.push({ domain: holding.domain_id, date: asOfDate });
+      }
+    });
 
+    // Collect unique currencies we need exchange rates for
     const uniqueCurrencies = new Set<string>();
-    holdings.forEach((h) => uniqueCurrencies.add(h.currency));
+    holdings.forEach((holding) => uniqueCurrencies.add(holding.currency));
     uniqueCurrencies.add(baseCurrency);
 
-    const [quotesMap, exchangeRatesMap] = await Promise.all([
-      quoteRequests.length > 0 ? fetchQuotes(quoteRequests) : new Map(),
-      fetchExchangeRates(
-        Array.from(uniqueCurrencies).map((currency) => ({
-          currency,
-          date: asOfDate,
-        })),
-      ),
-    ]);
+    // Make bulk requests in parallel
+    const [quotesMap, domainValuationsMap, exchangeRatesMap] =
+      await Promise.all([
+        // Bulk fetch all quotes
+        quoteRequests.length > 0 ? fetchQuotes(quoteRequests) : new Map(),
+
+        // Bulk fetch all domain valuations
+        domainRequests.length > 0
+          ? fetchDomainValuations(domainRequests)
+          : new Map(),
+
+        // Bulk fetch all exchange rates
+        fetchExchangeRates(
+          Array.from(uniqueCurrencies).map((currency) => ({
+            currency,
+            date: asOfDate,
+          })),
+        ),
+      ]);
 
     // Compute per-holding as-of values
     const holdingsBase = holdings
-      .map((h) => {
-        const recs = recordsByHolding.get(h.id) || [];
+      .map((holding) => {
+        const recs = recordsByHolding.get(holding.id) || [];
         const latestAsOf = recs.find((r) => r.date <= asOfKey);
         if (!latestAsOf) return null;
 
-        // Unit price as-of: use market quote for symbols, else record value
+        // Unit price as-of: use market quote for symbols, domain valuation for domains, else record value
         let unitLocal = latestAsOf.unit_value || 0;
-        if (h.symbol_id) {
-          const qKey = `${h.symbol_id}|${asOfKey}`;
+        if (holding.symbol_id) {
+          const qKey = `${holding.symbol_id}|${asOfKey}`;
           const mkt = quotesMap.get(qKey);
+          if (mkt && mkt > 0) unitLocal = mkt;
+        }
+
+        if (holding.domain_id) {
+          const dKey = `${holding.domain_id}|${asOfKey}`;
+          const mkt = domainValuationsMap.get(dKey);
           if (mkt && mkt > 0) unitLocal = mkt;
         }
 
@@ -93,32 +113,32 @@ export async function getPortfolioSnapshot(params?: {
         // Convert to base currency at as-of date
         const unitValueBase = convertCurrency(
           unitLocal,
-          h.currency,
+          holding.currency,
           baseCurrency,
           exchangeRatesMap,
           asOfDate,
         );
         const totalValueBase = convertCurrency(
           totalLocal,
-          h.currency,
+          holding.currency,
           baseCurrency,
           exchangeRatesMap,
           asOfDate,
         );
 
         return {
-          id: h.id,
-          name: h.name,
-          symbol: h.symbol_id || null,
-          category: h.asset_type,
-          categoryCode: h.category_code,
+          id: holding.id,
+          name: holding.name,
+          symbol: holding.symbol_id || null,
+          category: holding.asset_type,
+          categoryCode: holding.category_code,
           quantity,
           unitValue: unitValueBase,
           value: totalValueBase,
           currency: baseCurrency,
-          isArchived: h.is_archived,
+          isArchived: holding.is_archived,
           original: {
-            currency: h.currency,
+            currency: holding.currency,
             unitValue: unitLocal,
             value: totalLocal,
           },
