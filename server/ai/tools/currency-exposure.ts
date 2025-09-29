@@ -33,9 +33,8 @@ interface CurrencyExposureResult {
 
 /**
  * Currency exposure as-of a date:
- * - Standard holdings: latest record <= date
- * - Market backed holdings: market price at date (fallback to record unit_value)
- * - Bulk FX conversion to baseCurrency at date
+ * - Uses holdings valued as-of (records/market-backed handled upstream)
+ * - Converts local totals to baseCurrency using FX as-of date
  */
 export async function getCurrencyExposure(
   params: GetCurrencyExposureParams = {},
@@ -47,11 +46,10 @@ export async function getCurrencyExposure(
     const date = params.date ? new Date(params.date) : new Date();
     const dateKey = format(date, "yyyy-MM-dd");
 
-    // Fetch all holdings with full record history; we will compute "as-of" ourselves
-    const { holdings, records: recordsByHolding } = await fetchHoldings({
+    // Fetch holdings valued as-of the date
+    const holdings = await fetchHoldings({
       includeArchived: true,
-      includeRecords: true,
-      // no quoteDate here; we fetch quotes separately for the as-of date
+      asOfDate: date,
     });
 
     if (!holdings?.length) {
@@ -63,31 +61,22 @@ export async function getCurrencyExposure(
       };
     }
 
-    // Fetch market data using centralized aggregator
-    const { quotes: quotesMap, exchangeRates: exchangeRatesMap } =
-      await fetchMarketData(holdings, date, baseCurrency);
+    // Fetch only FX for conversion
+    const { exchangeRates: exchangeRatesMap } = await fetchMarketData(
+      holdings,
+      date,
+      baseCurrency,
+      { include: { marketPrices: false } },
+    );
 
-    // Aggregate by original holding currency using as-of record + quote
+    // Aggregate by original holding currency using as-of local totals
     const byCurrency = new Map<
       string,
       { valueLocal: number; holdingsCount: number }
     >();
 
     holdings.forEach((h) => {
-      const holdingRecords = recordsByHolding.get(h.id) || [];
-      // holdingRecords are globally ordered by date desc, created_at desc
-      const latestAsOf = holdingRecords.find((r) => r.date <= dateKey);
-      if (!latestAsOf) return;
-
-      // Determine unit price as-of date
-      let unitPrice = latestAsOf.unit_value || 0;
-      if (h.symbol_id) {
-        const qKey = `${h.symbol_id}|${dateKey}`;
-        const mkt = quotesMap.get(qKey);
-        if (mkt && mkt > 0) unitPrice = mkt;
-      }
-
-      const localValue = unitPrice * latestAsOf.quantity;
+      const localValue = h.total_value || 0;
 
       const acc = byCurrency.get(h.currency) || {
         valueLocal: 0,

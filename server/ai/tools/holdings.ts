@@ -14,11 +14,11 @@ interface GetHoldingsParams {
  * - Non-symbol holdings use latest record unit_value
  */
 export async function getHoldings(params: GetHoldingsParams = {}) {
-  const quoteDate = params.date ? new Date(params.date) : new Date();
+  const asOfDate = params.date ? new Date(params.date) : new Date();
 
   const all = await fetchHoldings({
     includeArchived: true,
-    quoteDate, // ensures symbol holdings use up-to-date market prices
+    asOfDate, // ensures market-backed holdings use market prices at date
   });
 
   const ids = params.holdingIds ? new Set(params.holdingIds) : undefined;
@@ -44,7 +44,7 @@ export async function getHoldings(params: GetHoldingsParams = {}) {
     total: filtered.length,
     returned: items.length,
     holdingIds: params.holdingIds ?? null,
-    date: quoteDate.toISOString().split("T")[0],
+    date: asOfDate.toISOString().split("T")[0],
     items,
   };
 }

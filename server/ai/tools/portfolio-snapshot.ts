@@ -1,7 +1,5 @@
 "use server";
 
-import { format } from "date-fns";
-
 import { fetchProfile } from "@/server/profile/actions";
 import { fetchHoldings } from "@/server/holdings/fetch";
 import { fetchMarketData } from "@/server/market-data/fetch";
@@ -27,12 +25,11 @@ export async function getPortfolioSnapshot(params?: {
 
     // Use a single date across quotes and FX for consistency
     const asOfDate = params?.date ? new Date(params.date) : new Date();
-    const asOfKey = format(asOfDate, "yyyy-MM-dd");
 
-    // Fetch holdings with full history so we can compute true "as-of" values
-    const { holdings, records: recordsByHolding } = await fetchHoldings({
+    // Fetch holdings valued as-of the target date
+    const holdings = await fetchHoldings({
       includeArchived: true,
-      includeRecords: true,
+      asOfDate: asOfDate,
     });
 
     // If no holdings, return empty state
@@ -47,38 +44,21 @@ export async function getPortfolioSnapshot(params?: {
         lastUpdated: new Date().toISOString(),
       };
 
-    // Fetch market data for the as-of date using centralized aggregator
-    const {
-      quotes: quotesMap,
-      domainValuations: domainValuationsMap,
-      exchangeRates: exchangeRatesMap,
-    } = await fetchMarketData(holdings, asOfDate, baseCurrency);
+    // Fetch only FX for the as-of date using centralized aggregator
+    const { exchangeRates: exchangeRatesMap } = await fetchMarketData(
+      holdings,
+      asOfDate,
+      baseCurrency,
+      { include: { marketPrices: false } },
+    );
 
     // Compute per-holding as-of values
     const holdingsBase = holdings
       .map((holding) => {
-        const recs = recordsByHolding.get(holding.id) || [];
-        const latestAsOf = recs.find((r) => r.date <= asOfKey);
-        if (!latestAsOf) return null;
+        const unitLocal = holding.current_unit_value || 0;
+        const quantity = holding.current_quantity || 0;
+        const totalLocal = holding.total_value || unitLocal * quantity;
 
-        // Unit price as-of: use market quote for symbols, domain valuation for domains, else record value
-        let unitLocal = latestAsOf.unit_value || 0;
-        if (holding.symbol_id) {
-          const qKey = `${holding.symbol_id}|${asOfKey}`;
-          const mkt = quotesMap.get(qKey);
-          if (mkt && mkt > 0) unitLocal = mkt;
-        }
-
-        if (holding.domain_id) {
-          const dKey = `${holding.domain_id}|${asOfKey}`;
-          const mkt = domainValuationsMap.get(dKey);
-          if (mkt && mkt > 0) unitLocal = mkt;
-        }
-
-        const quantity = latestAsOf.quantity || 0;
-        const totalLocal = unitLocal * quantity;
-
-        // Convert to base currency at as-of date
         const unitValueBase = convertCurrency(
           unitLocal,
           holding.currency,

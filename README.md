@@ -178,7 +178,12 @@ N/A
 - [ ] Add a way for the user to "share" their portfolio. Ideally, after agreeing, they get a public sharable link which leads to a single public page view of all their holdings and relevant performance charts.
 - [x] Add domains tracking support
 - [ ] Add crypto wallet address sync
-- [x] Review params for holdings fetch, especially quoteDate
+- [x] Replace `quoteDate` with `asOfDate` across holdings APIs
+- [x] Add `asOfDate` behavior: market-backed holdings (symbols/domains) use market data as-of with record fallback; basic holdings use latest record ≤ date
+- [x] Centralize market data in `server/market-data/fetch.ts` with include flags:
+  - `marketPrices` (quotes + domain valuations, defaults ON)
+  - `exchangeRates` (FX, defaults ON)
+  - Pass `{ include: { marketPrices: false } }` for FX-only scenarios
 - [ ] Optimize recalculateRecords to use batch requests
 - [x] Optimize projected income analysis
 - [x] Improve folder structure for mappings in lib

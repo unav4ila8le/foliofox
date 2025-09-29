@@ -160,7 +160,7 @@ export async function recalculateRecordsUntilNextUpdate(
     let marketPrice: number;
     try {
       const holding = await fetchSingleHolding(holdingId, {
-        quoteDate: new Date(record.date),
+        asOfDate: new Date(record.date),
       });
       marketPrice = holding.current_unit_value;
     } catch {

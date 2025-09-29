@@ -1,13 +1,9 @@
 "use server";
 
-import { format } from "date-fns";
-
 import { fetchProfile } from "@/server/profile/actions";
 import { fetchHoldings } from "@/server/holdings/fetch";
 import { fetchMarketData } from "@/server/market-data/fetch";
 import { convertCurrency } from "@/lib/currency-conversion";
-
-import type { Record, TransformedHolding } from "@/types/global.types";
 
 export interface NetWorthHistoryData {
   date: Date;
@@ -36,123 +32,42 @@ export async function fetchNetWorthHistory({
   // Generate weekly date points
   const weeklyDates = generateWeeklyDates(weeksBack);
 
-  // 1. Fetch holdings data once
-  const result = await fetchHoldings({
-    includeArchived: true,
-    includeRecords: true,
-  });
-
-  const { holdings, records: recordsByHolding } = result;
-
-  if (!holdings?.length) {
-    return weeklyDates.map((date) => ({ date, value: 0 }));
-  }
-
-  // 2. Fetch market data per date using the centralized aggregator and compute values
+  // 1. For each date, fetch holdings valued as-of and only FX; compute net worth
   const history = await Promise.all(
     weeklyDates.map(async (date) => {
-      // Fetch market data
-      const { quotes, domainValuations, exchangeRates } = await fetchMarketData(
-        holdings,
+      const holdingsAsOf = await fetchHoldings({
+        includeArchived: true,
+        asOfDate: date,
+      });
+
+      if (!holdingsAsOf?.length) {
+        return { date, value: 0 };
+      }
+
+      const { exchangeRates } = await fetchMarketData(
+        holdingsAsOf,
         date,
         targetCurrency,
+        { include: { marketPrices: false } },
       );
 
-      // Calculate net worth
-      const netWorth = calculateNetWorthForDate(
-        date,
-        targetCurrency,
-        holdings,
-        recordsByHolding,
-        quotes,
-        domainValuations,
-        exchangeRates,
-      );
+      let total = 0;
+      holdingsAsOf.forEach((h) => {
+        const converted = convertCurrency(
+          h.total_value,
+          h.currency,
+          targetCurrency!,
+          exchangeRates,
+          date,
+        );
+        total += converted;
+      });
 
-      return {
-        date: date,
-        value: netWorth,
-      };
+      return { date, value: total };
     }),
   );
 
   return history;
-}
-
-/**
- * Calculate net worth for a specific date using pre-fetched bulk data.
- * Avoids redundant API calls by reusing quotes and exchange rates.
- */
-function calculateNetWorthForDate(
-  date: Date,
-  targetCurrency: string,
-  holdings: TransformedHolding[],
-  recordsByHolding: Map<string, Record[]>,
-  quotesMap: Map<string, number>,
-  domainValuationsMap: Map<string, number>,
-  exchangeRatesMap: Map<string, number>,
-): number {
-  // 1. Process historical records for this specific date
-  const latestRecords = new Map<
-    string,
-    Pick<
-      Record,
-      "holding_id" | "unit_value" | "quantity" | "date" | "created_at"
-    >
-  >();
-
-  holdings.forEach((holding) => {
-    const holdingRecords = recordsByHolding.get(holding.id) || [];
-    const recordsForDate = holdingRecords.filter(
-      (record: Record) => record.date <= format(date, "yyyy-MM-dd"),
-    );
-
-    if (recordsForDate.length > 0) {
-      latestRecords.set(holding.id, recordsForDate[0]);
-    }
-  });
-
-  // 2. Calculate net worth using bulk data
-  let netWorth = 0;
-
-  holdings.forEach((holding) => {
-    const record = latestRecords.get(holding.id);
-    if (!record) return;
-
-    let unitValue = record.unit_value;
-
-    // Use market quote if available
-    if (holding.symbol_id) {
-      const quoteKey = `${holding.symbol_id}|${format(date, "yyyy-MM-dd")}`;
-      const marketPrice = quotesMap.get(quoteKey);
-      if (marketPrice) {
-        unitValue = marketPrice;
-      }
-    }
-
-    // Use domain valuation if available
-    if (holding.domain_id) {
-      const domainKey = `${holding.domain_id}|${format(date, "yyyy-MM-dd")}`;
-      const domainValuation = domainValuationsMap.get(domainKey);
-      if (domainValuation) {
-        unitValue = domainValuation;
-      }
-    }
-
-    const holdingValue = unitValue * record.quantity;
-
-    // Convert to target currency using shared helper
-    const convertedValue = convertCurrency(
-      holdingValue,
-      holding.currency,
-      targetCurrency,
-      exchangeRatesMap,
-      date,
-    );
-    netWorth += convertedValue;
-  });
-
-  return netWorth;
 }
 
 // Helper function to generate weekly dates

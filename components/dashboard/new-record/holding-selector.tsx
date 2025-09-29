@@ -58,7 +58,7 @@ export function HoldingSelector({
   const getHoldings = async () => {
     try {
       const data = await fetchHoldings({
-        quoteDate: new Date(),
+        asOfDate: new Date(),
       });
       setHoldings(data);
     } catch (error) {

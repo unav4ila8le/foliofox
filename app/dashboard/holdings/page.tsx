@@ -11,7 +11,7 @@ async function HoldingsTableWrapper() {
   // Fetch all holdings with their complete record history and current quotes
   const { holdings, records } = await fetchHoldings({
     includeRecords: true,
-    quoteDate: new Date(),
+    asOfDate: new Date(),
   });
   // Transform data to add P/L calculations (no additional queries)
   const holdingsWithProfitLoss = calculateProfitLoss(holdings, records);

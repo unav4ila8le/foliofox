@@ -78,14 +78,17 @@ export async function getHoldingsPerformance(
     const startDateKey = format(startDate, "yyyy-MM-dd");
     const endDateKey = format(endDate, "yyyy-MM-dd");
 
-    // Get holdings to analyze
-    const allHoldings = await fetchHoldings({
-      includeArchived: true,
-      includeRecords: true,
-      quoteDate: endDate,
-    });
+    // Fetch end-date holdings (with records for P/L) and start-date holdings (no records needed)
+    const [endSnapshot, startHoldings] = await Promise.all([
+      fetchHoldings({
+        includeArchived: true,
+        includeRecords: true,
+        asOfDate: endDate,
+      }),
+      fetchHoldings({ includeArchived: true, asOfDate: startDate }),
+    ]);
 
-    const { holdings, records: recordsByHolding } = allHoldings;
+    const { holdings, records: recordsByHolding } = endSnapshot;
 
     // Filter holdings if specific IDs provided
     const targetHoldings = params.holdingIds
@@ -101,21 +104,22 @@ export async function getHoldingsPerformance(
       };
     }
 
-    // Fetch market data for both dates using centralized aggregator
-    const [startData, endData] = await Promise.all([
-      fetchMarketData(targetHoldings, startDate, baseCurrency),
-      fetchMarketData(targetHoldings, endDate, baseCurrency),
-    ]);
-
-    // Merge maps for quick lookup
-    const quotesMap = new Map<string, number>([
-      ...(startData.quotes ?? new Map()),
-      ...(endData.quotes ?? new Map()),
+    // Fetch FX for start and end dates (no market prices needed)
+    const [startFx, endFx] = await Promise.all([
+      fetchMarketData(startHoldings, startDate, baseCurrency, {
+        include: { marketPrices: false },
+      }),
+      fetchMarketData(holdings, endDate, baseCurrency, {
+        include: { marketPrices: false },
+      }),
     ]);
     const exchangeRatesMap = new Map<string, number>([
-      ...(startData.exchangeRates ?? new Map()),
-      ...(endData.exchangeRates ?? new Map()),
+      ...(startFx.exchangeRates ?? new Map()),
+      ...(endFx.exchangeRates ?? new Map()),
     ]);
+
+    // Build quick lookup for start snapshot by holding id
+    const startById = new Map(startHoldings.map((h) => [h.id, h]));
 
     // Calculate unrealized P/L for current positions
     const holdingsWithPL = calculateProfitLoss(
@@ -127,53 +131,18 @@ export async function getHoldingsPerformance(
     const performanceData: HoldingPerformanceData[] = [];
 
     for (const holding of targetHoldings) {
-      const holdingRecords = recordsByHolding.get(holding.id) || [];
+      // Get start/end snapshots
+      const startSnap = startById.get(holding.id);
+      const endSnap = holding; // from end snapshot
 
-      // Get quantities at start and end dates
-      const startRecord = holdingRecords
-        .filter((r) => r.date <= startDateKey)
-        .sort((a, b) => {
-          const dateDiff =
-            new Date(b.date).getTime() - new Date(a.date).getTime();
-          if (dateDiff !== 0) return dateDiff;
-          return (
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-          );
-        })[0];
+      // Partial period if no start snapshot or start date is after requested start
+      const partialPeriod = !startSnap;
 
-      const endRecord = holdingRecords
-        .filter((r) => r.date <= endDateKey)
-        .sort((a, b) => {
-          const dateDiff =
-            new Date(b.date).getTime() - new Date(a.date).getTime();
-          if (dateDiff !== 0) return dateDiff;
-          return (
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-          );
-        })[0];
+      const startQuantity = startSnap?.current_quantity || 0;
+      const endQuantity = endSnap?.current_quantity || 0;
 
-      // Check if we have partial period coverage
-      const partialPeriod =
-        !startRecord || new Date(startRecord.date) > startDate;
-
-      const startQuantity = startRecord?.quantity || 0;
-      const endQuantity = endRecord?.quantity || 0;
-
-      // Get unit prices (market quotes or record values)
-      let startPrice: number;
-      let endPrice: number;
-
-      if (holding.symbol_id) {
-        const startQuoteKey = `${holding.symbol_id}|${startDateKey}`;
-        const endQuoteKey = `${holding.symbol_id}|${endDateKey}`;
-
-        startPrice =
-          quotesMap.get(startQuoteKey) || startRecord?.unit_value || 0;
-        endPrice = quotesMap.get(endQuoteKey) || endRecord?.unit_value || 0;
-      } else {
-        startPrice = startRecord?.unit_value || 0;
-        endPrice = endRecord?.unit_value || 0;
-      }
+      const startPrice = startSnap?.current_unit_value || 0;
+      const endPrice = endSnap?.current_unit_value || 0;
 
       // Convert prices to base currency
       const startPriceBase = convertCurrency(
@@ -192,8 +161,20 @@ export async function getHoldingsPerformance(
       );
 
       // Calculate values
-      const startValueBase = startQuantity * startPriceBase;
-      const endValueBase = endQuantity * endPriceBase;
+      const startValueBase = convertCurrency(
+        startSnap?.total_value || startQuantity * startPrice,
+        holding.currency,
+        baseCurrency,
+        exchangeRatesMap,
+        startDate,
+      );
+      const endValueBase = convertCurrency(
+        endSnap?.total_value || endQuantity * endPrice,
+        holding.currency,
+        baseCurrency,
+        exchangeRatesMap,
+        endDate,
+      );
 
       // Performance calculations
       const priceReturnPct =

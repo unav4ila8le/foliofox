@@ -3,8 +3,7 @@
 import { format } from "date-fns";
 
 import { getCurrentUser } from "@/server/auth/actions";
-import { fetchQuotes } from "@/server/quotes/fetch";
-import { fetchDomainValuations } from "@/server/domain-valuations/fetch";
+import { fetchMarketData } from "@/server/market-data/fetch";
 
 import type {
   TransformedHolding,
@@ -16,21 +15,28 @@ interface FetchHoldingsOptions {
   includeArchived?: boolean;
   onlyArchived?: boolean;
   holdingId?: string;
-  quoteDate?: Date | null;
+  /**
+   * As-of valuation date. When provided, all holdings are valued as-of this date:
+   * - Market-backed (symbols/domains): use market data at this date, fallback to record
+   * - Non-market: use latest record where record.date <= asOfDate
+   */
+  asOfDate?: Date | null;
   includeRecords?: boolean;
 }
 
 interface FetchSingleHoldingOptions {
   includeRecords?: boolean;
   includeArchived?: boolean;
-  quoteDate?: Date | null;
+  asOfDate?: Date | null;
 }
 
 /**
  * Fetch holdings with optional filtering for archived holdings.
  *
- * @param options - Optional filtering options
- * @returns Array of transformed holdings
+ * If asOfDate is provided, `current_unit_value`, `current_quantity`, and
+ * `total_value` are computed as-of that date using market data for
+ * market-backed holdings (symbols/domains) with record fallback; basic
+ * holdings use the latest record ≤ asOfDate.
  */
 export async function fetchHoldings(
   options: FetchHoldingsOptions & { includeRecords: true },
@@ -45,7 +51,7 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
     holdingId, // Used in fetchSingleHolding
     includeArchived = false,
     onlyArchived = false,
-    quoteDate = null,
+    asOfDate = null,
     includeRecords = false,
   } = options;
 
@@ -137,7 +143,7 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
     });
   } else {
     // Bulk fetch LATEST records only for all holdings at once (for TransformedHolding)
-    const { data: latestRecords, error: recordsError } = await supabase
+    let recordsQuery = supabase
       .from("records")
       .select("*")
       .in("holding_id", holdingIds)
@@ -145,6 +151,12 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
       .order("holding_id")
       .order("date", { ascending: false })
       .order("created_at", { ascending: false });
+
+    if (asOfDate) {
+      recordsQuery = recordsQuery.lte("date", format(asOfDate, "yyyy-MM-dd"));
+    }
+
+    const { data: latestRecords, error: recordsError } = await recordsQuery;
 
     if (recordsError) {
       throw new Error(
@@ -169,34 +181,27 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
     });
   }
 
-  // Identify holdings with market data and fetch their latest quotes/valuations
-  const holdingsWithSymbols = holdings.filter((holding) => holding.symbol_id);
-  const symbolIds = holdingsWithSymbols.map((holding) => holding.symbol_id!);
-
-  const domainHoldings = holdings.filter(
-    (holding) => holding.category_code === "domain",
-  );
-  const domains = domainHoldings.map((holding) => holding.domain_id!);
-
+  // Fetch market-backed data (quotes/domains) via centralized aggregator when as-of date is provided
   let quotesMap = new Map<string, number>();
   let domainValuationsMap = new Map<string, number>();
+  if (asOfDate !== null) {
+    // Build a minimal shape for market data collection without requiring full TransformedHolding
+    const marketDataHoldings: TransformedHolding[] = holdings.map(
+      (holding) => ({
+        symbol_id: holding.symbol_id,
+        domain_id: holding.domain_id,
+        currency: holding.currency,
+      }),
+    ) as TransformedHolding[];
 
-  // Fetch quotes for holdings with symbols
-  if (symbolIds.length > 0 && quoteDate !== null) {
-    const quoteRequests = symbolIds.map((symbolId) => ({
-      symbolId,
-      date: quoteDate,
-    }));
-    quotesMap = await fetchQuotes(quoteRequests);
-  }
-
-  // Fetch valuations for domain holdings
-  if (domainHoldings.length > 0 && quoteDate !== null) {
-    const domainRequests = domains.map((domain) => ({
-      domain,
-      date: quoteDate,
-    }));
-    domainValuationsMap = await fetchDomainValuations(domainRequests);
+    const { quotes, domainValuations } = await fetchMarketData(
+      marketDataHoldings,
+      asOfDate,
+      undefined,
+      { include: { exchangeRates: false } },
+    );
+    quotesMap = quotes;
+    domainValuationsMap = domainValuations;
   }
 
   // Transform the holdings data
@@ -204,29 +209,35 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
     // Get the records for this specific holding
     const holdingRecords = recordsByHolding.get(holding.id) || [];
 
-    // Get the latest record (first one, since they're sorted by date descending)
-    const latestRecord = holdingRecords[0];
+    // Choose the appropriate record: latest overall, or latest at/before as-of date
+    let baseRecord: Record | undefined = undefined;
+    if (asOfDate) {
+      const asOfKey = format(asOfDate, "yyyy-MM-dd");
+      baseRecord = holdingRecords.find((r) => r.date <= asOfKey);
+    } else {
+      baseRecord = holdingRecords[0];
+    }
 
     // Determine current_unit_value based on holding type
     let current_unit_value: number;
 
-    if (holding.symbol_id && quoteDate !== null) {
-      // For holdings with symbols, use the quote for the specified date
-      const quoteKey = `${holding.symbol_id}|${format(quoteDate, "yyyy-MM-dd")}`;
+    if (holding.symbol_id && asOfDate !== null) {
+      // For holdings with symbols, use the quote for the as-of date
+      const quoteKey = `${holding.symbol_id}|${format(asOfDate, "yyyy-MM-dd")}`;
       current_unit_value =
-        quotesMap.get(quoteKey) || latestRecord?.unit_value || 0;
-    } else if (holding.category_code === "domain" && quoteDate !== null) {
-      // For domain holdings, use the domain valuation
-      const domainKey = `${holding.domain_id}|${format(quoteDate, "yyyy-MM-dd")}`;
+        quotesMap.get(quoteKey) || baseRecord?.unit_value || 0;
+    } else if (holding.category_code === "domain" && asOfDate !== null) {
+      // For domain holdings, use the domain valuation at the as-of date
+      const domainKey = `${holding.domain_id}|${format(asOfDate, "yyyy-MM-dd")}`;
       current_unit_value =
-        domainValuationsMap.get(domainKey) || latestRecord?.unit_value || 0;
+        domainValuationsMap.get(domainKey) || baseRecord?.unit_value || 0;
     } else {
-      // For holdings without symbols or when quotes are skipped, use the latest record
-      current_unit_value = latestRecord?.unit_value || 0;
+      // For non-market holdings or when as-of date not provided, use the appropriate record
+      current_unit_value = baseRecord?.unit_value || 0;
     }
 
     // Get the current quantity from the latest record
-    const current_quantity = latestRecord?.quantity || 0;
+    const current_quantity = baseRecord?.quantity || 0;
 
     return {
       ...holding,
@@ -271,7 +282,7 @@ export async function fetchSingleHolding(
   const {
     includeRecords = false,
     includeArchived = true,
-    quoteDate = null,
+    asOfDate = null,
   } = options;
 
   if (includeRecords) {
@@ -279,7 +290,7 @@ export async function fetchSingleHolding(
       holdingId,
       includeRecords: true,
       includeArchived,
-      quoteDate,
+      asOfDate,
     });
     return {
       holding: holdings[0],
@@ -289,7 +300,7 @@ export async function fetchSingleHolding(
     const holdings = await fetchHoldings({
       holdingId,
       includeArchived,
-      quoteDate,
+      asOfDate,
     });
     return holdings[0];
   }
