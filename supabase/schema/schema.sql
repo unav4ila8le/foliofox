@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 2dSRB0c3HWoyIWycDRxe9QTb6xsdTbCaQzSFOGUcFwYJQucRzbL7ZKW9wjdaCH8
+\restrict kZB46XqJM9a0mlcrvSjfqlo3Ls16JyuGIgejx7AHPQvq8Zl65HJJZdfb6Bi9jqG
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.6 (Homebrew)
@@ -581,14 +581,6 @@ ALTER TABLE ONLY public.symbols
 
 ALTER TABLE ONLY public.transactions
     ADD CONSTRAINT transactions_pkey PRIMARY KEY (id);
-
-
---
--- Name: domain_valuations unique_domain_date; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.domain_valuations
-    ADD CONSTRAINT unique_domain_date UNIQUE (id, date);
 
 
 --
@@ -1665,5 +1657,5 @@ ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT SELECT,I
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 2dSRB0c3HWoyIWycDRxe9QTb6xsdTbCaQzSFOGUcFwYJQucRzbL7ZKW9wjdaCH8
+\unrestrict kZB46XqJM9a0mlcrvSjfqlo3Ls16JyuGIgejx7AHPQvq8Zl65HJJZdfb6Bi9jqG
 
