@@ -17,6 +17,11 @@ import { formatNumber, formatPercentage } from "@/lib/number-format";
 
 import { HoldingWithProfitLoss } from "@/types/global.types";
 
+// Treat holdings with symbol_id or domain_id as market-backed
+const holdingHasMarketData = (
+  holding: Pick<HoldingWithProfitLoss, "symbol_id" | "domain_id">,
+): boolean => Boolean(holding.symbol_id || holding.domain_id);
+
 export const columns: ColumnDef<HoldingWithProfitLoss>[] = [
   {
     id: "select",
@@ -137,7 +142,7 @@ export const columns: ColumnDef<HoldingWithProfitLoss>[] = [
     accessorKey: "cost_basis_per_unit",
     header: "Cost basis",
     cell: ({ row }) => {
-      const hasMarketData = !!row.original.symbol_id;
+      const hasMarketData = holdingHasMarketData(row.original);
       if (!hasMarketData) {
         return <span className="text-muted-foreground">-</span>;
       }
@@ -166,7 +171,7 @@ export const columns: ColumnDef<HoldingWithProfitLoss>[] = [
       );
     },
     cell: ({ row }) => {
-      const hasMarketData = !!row.original.symbol_id;
+      const hasMarketData = holdingHasMarketData(row.original);
       if (!hasMarketData) {
         return <span className="text-muted-foreground">-</span>;
       }
@@ -201,7 +206,7 @@ export const columns: ColumnDef<HoldingWithProfitLoss>[] = [
       );
     },
     cell: ({ row }) => {
-      const hasMarketData = !!row.original.symbol_id;
+      const hasMarketData = holdingHasMarketData(row.original);
       if (!hasMarketData) {
         return <span className="text-muted-foreground">-</span>;
       }
