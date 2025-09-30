@@ -120,7 +120,7 @@ export async function fetchDomainValuations(
                 `${REPLICATE_API}/${result.id}`,
                 {
                   headers: {
-                    Authorization: `Token ${process.env.REPLICATE_API_TOKEN}`,
+                    Authorization: `Bearer ${process.env.REPLICATE_API_TOKEN}`,
                   },
                 },
               );
