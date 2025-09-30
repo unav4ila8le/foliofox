@@ -185,14 +185,20 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
   let quotesMap = new Map<string, number>();
   let domainValuationsMap = new Map<string, number>();
   if (asOfDate !== null) {
+    // Determine which holdings actually existed as-of the date (have a record <= asOfDate)
+    const activeHoldingIds = new Set<string>();
+    recordsByHolding.forEach((recs, holdingId) => {
+      if (recs && recs.length > 0) activeHoldingIds.add(holdingId);
+    });
+
     // Build a minimal shape for market data collection without requiring full TransformedHolding
-    const marketDataHoldings: TransformedHolding[] = holdings.map(
-      (holding) => ({
+    const marketDataHoldings: TransformedHolding[] = holdings
+      .filter((holding) => activeHoldingIds.has(holding.id))
+      .map((holding) => ({
         symbol_id: holding.symbol_id,
         domain_id: holding.domain_id,
         currency: holding.currency,
-      }),
-    ) as TransformedHolding[];
+      })) as TransformedHolding[];
 
     const { quotes, domainValuations } = await fetchMarketData(
       marketDataHoldings,
