@@ -134,11 +134,11 @@ export async function fetchDomainValuations(
 
           return { dateString, valuations: batchResults };
         } catch (error) {
-          console.warn(
-            `Failed to fetch valuations for date ${dateString}:`,
-            error,
+          throw new Error(
+            error instanceof Error
+              ? `Failed to fetch domain valuations for date ${dateString}: ${error.message}`
+              : `Failed to fetch domain valuations for date ${dateString}`,
           );
-          return { dateString, valuations: [] };
         }
       },
     );

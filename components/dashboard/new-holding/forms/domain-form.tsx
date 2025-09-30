@@ -95,7 +95,7 @@ export function DomainForm() {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Failed to fetch domain valuation. Please enter a custom valuation.",
+          : "Failed to fetch domain valuation. Please try again.",
       );
     } finally {
       setIsCheckingValuation(false);
