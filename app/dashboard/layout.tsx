@@ -5,6 +5,7 @@ import { LeftSidebar } from "@/components/dashboard/layout/left-sidebar";
 import { RightSidebar } from "@/components/dashboard/layout/right-sidebar";
 import { Header } from "@/components/dashboard/layout/header";
 
+import { PrivacyModeProvider } from "@/components/dashboard/privacy-mode-provider";
 import { ImportHoldingsDialogProvider } from "@/components/dashboard/holdings/import";
 import { NewHoldingDialogProvider } from "@/components/dashboard/new-holding";
 import { NewRecordDialogProvider } from "@/components/dashboard/new-record";
@@ -48,23 +49,29 @@ export default async function Layout({
         } as React.CSSProperties
       }
     >
-      <ImportHoldingsDialogProvider>
-        <NewHoldingDialogProvider profile={profile}>
-          <NewRecordDialogProvider>
-            {/* Left sidebar */}
-            <LeftSidebar profile={profile} email={email} netWorth={netWorth} />
+      <PrivacyModeProvider>
+        <ImportHoldingsDialogProvider>
+          <NewHoldingDialogProvider profile={profile}>
+            <NewRecordDialogProvider>
+              {/* Left sidebar */}
+              <LeftSidebar
+                profile={profile}
+                email={email}
+                netWorth={netWorth}
+              />
 
-            {/* Main content */}
-            <SidebarInset className="min-w-0">
-              <Header />
-              <div className="p-4 pt-2">{children}</div>
-            </SidebarInset>
+              {/* Main content */}
+              <SidebarInset className="min-w-0">
+                <Header />
+                <div className="p-4 pt-2">{children}</div>
+              </SidebarInset>
 
-            {/* Right sidebar */}
-            <RightSidebar />
-          </NewRecordDialogProvider>
-        </NewHoldingDialogProvider>
-      </ImportHoldingsDialogProvider>
+              {/* Right sidebar */}
+              <RightSidebar />
+            </NewRecordDialogProvider>
+          </NewHoldingDialogProvider>
+        </ImportHoldingsDialogProvider>
+      </PrivacyModeProvider>
     </SidebarProvider>
   );
 }

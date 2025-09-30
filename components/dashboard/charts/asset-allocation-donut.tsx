@@ -12,6 +12,7 @@ import {
 import { ChartPie } from "lucide-react";
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { usePrivacyMode } from "@/components/dashboard/privacy-mode-provider";
 
 import {
   formatCompactCurrency,
@@ -41,6 +42,8 @@ export function AssetAllocationDonut({
     total_value: number;
   }>;
 }) {
+  const { isPrivacyMode } = usePrivacyMode();
+
   // Calculate total value for percentage calculation
   const totalHoldingsValue = useMemo(() => {
     return assetAllocation.reduce((sum, item) => sum + item.total_value, 0);
@@ -86,7 +89,11 @@ export function AssetAllocationDonut({
                       />
                     ))}
                     <Label
-                      value={formatCompactCurrency(netWorth, currency)}
+                      value={
+                        isPrivacyMode
+                          ? "* * * * * * * *"
+                          : formatCompactCurrency(netWorth, currency)
+                      }
                       position="center"
                       style={{
                         fontSize: "16px",

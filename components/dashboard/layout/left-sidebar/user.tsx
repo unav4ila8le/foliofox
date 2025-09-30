@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SidebarMenuButton, useSidebar } from "@/components/ui/sidebar";
+import { usePrivacyMode } from "@/components/dashboard/privacy-mode-provider";
 import { SettingsForm } from "@/components/dashboard/layout/left-sidebar/settings-form";
 
 import { formatCurrency } from "@/lib/number-format";
@@ -42,6 +43,7 @@ export function User({
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const { isMobile } = useSidebar();
+  const { isPrivacyMode } = usePrivacyMode();
 
   // Sign out
   async function handleSignOut() {
@@ -81,7 +83,9 @@ export function User({
             <div className="flex flex-col">
               <p className="text truncate font-semibold">{profile.username}</p>
               <span className="text-muted-foreground truncate text-xs tabular-nums">
-                {formatCurrency(netWorth, profile.display_currency)}
+                {isPrivacyMode
+                  ? "* * * * * * * *"
+                  : formatCurrency(netWorth, profile.display_currency)}
               </span>
             </div>
             <MoreVertical className="ml-auto size-4" />

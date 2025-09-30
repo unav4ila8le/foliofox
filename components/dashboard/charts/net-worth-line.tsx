@@ -37,6 +37,10 @@ import {
 } from "@/components/ui/select";
 import { NewHoldingButton } from "@/components/dashboard/new-holding";
 import { ImportHoldingsButton } from "@/components/dashboard/holdings/import";
+import {
+  usePrivacyMode,
+  PrivacyModeButton,
+} from "@/components/dashboard/privacy-mode-provider";
 
 import {
   formatCompactNumber,
@@ -61,6 +65,8 @@ export function NetWorthLineChart({
     change: NetWorthChangeData;
   } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const { isPrivacyMode } = usePrivacyMode();
 
   // Display custom time range data or fall back to default initial data (6 months)
   const history = customTimeRange?.history ?? initialHistory;
@@ -135,9 +141,14 @@ export function NetWorthLineChart({
               <div>
                 <CardDescription>Net Worth</CardDescription>
                 <div className="flex flex-col md:flex-row md:items-baseline-last md:gap-3">
-                  <h2 className="text-xl font-semibold">
-                    {formatCurrency(netWorth, currency)}
-                  </h2>
+                  <div className="flex items-center gap-1">
+                    <h2 className="text-xl font-semibold">
+                      {isPrivacyMode
+                        ? "* * * * * * * *"
+                        : formatCurrency(netWorth, currency)}
+                    </h2>
+                    <PrivacyModeButton className="text-muted-foreground size-6" />
+                  </div>
                   <div className="flex items-center gap-1 text-sm">
                     <div
                       className={cn(
