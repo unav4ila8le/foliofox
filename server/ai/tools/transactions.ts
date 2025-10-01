@@ -30,7 +30,6 @@ export async function getTransactions(params: GetTransactionsParams = {}) {
     holding: {
       id: t.holding_id as string,
       name: t.holdings?.name as string,
-      symbol_id: (t.holdings?.symbol_id as string | null) ?? null,
     },
     quantity: (t.quantity as number) ?? 0,
     unit_value: (t.unit_value as number) ?? 0,

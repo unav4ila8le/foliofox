@@ -17,6 +17,8 @@ export type Holding = Tables<"holdings"> & {
 export type TransformedHolding = Holding & {
   is_archived: boolean;
   asset_type: string;
+  symbol_id: string | null;
+  domain_id: string | null;
   current_quantity: number;
   current_unit_value: number;
   total_value: number;
@@ -38,7 +40,7 @@ export type Transaction = Tables<"transactions">;
 export type TransactionWithHolding = Transaction & {
   holdings: Pick<
     Tables<"holdings">,
-    "id" | "name" | "symbol_id" | "currency" | "archived_at"
+    "id" | "name" | "currency" | "archived_at"
   >;
 };
 

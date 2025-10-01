@@ -345,21 +345,21 @@ const transformedHoldings = holdings.map(holding => {
 - [x] Create `holding_source` enum
 - [x] Add `source` column with default `'custom'`
 - [x] Backfill based on symbol_id/domain_id
-- [ ] Create extension tables (`symbol_holdings`, `domain_holdings`)
-- [ ] Migrate data to extensions
-- [ ] Drop old FKs from main table
+- [x] Create extension tables (`symbol_holdings`, `domain_holdings`)
+- [x] Migrate data to extensions
+- [x] Drop old FKs from main table
 
 **Server:**
 
-- [ ] Update `fetchHoldings()` to LEFT JOIN extensions
-- [ ] Update `createHolding()` to insert into extensions
+- [x] Update `fetchHoldings()` to prefer extension tables
+- [x] Update `createHolding()` to insert into extensions
 - [x] Update TypeScript types
 
 **Testing:**
 
-- [ ] Verify holdings load correctly
-- [ ] Verify valuations unchanged
-- [ ] Check import/export works
+- [x] Verify holdings load correctly
+- [x] Verify valuations unchanged
+- [x] Check import/export works
 
 ---
 

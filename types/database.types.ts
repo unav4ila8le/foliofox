@@ -210,6 +210,32 @@ export type Database = {
           },
         ];
       };
+      domain_holdings: {
+        Row: {
+          created_at: string;
+          domain_id: string;
+          holding_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          domain_id: string;
+          holding_id: string;
+        };
+        Update: {
+          created_at?: string;
+          domain_id?: string;
+          holding_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "domain_holdings_holding_id_fkey";
+            columns: ["holding_id"];
+            isOneToOne: true;
+            referencedRelation: "holdings";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       domain_valuations: {
         Row: {
           created_at: string;
@@ -307,11 +333,9 @@ export type Database = {
           created_at: string;
           currency: string;
           description: string | null;
-          domain_id: string | null;
           id: string;
           name: string;
           source: Database["public"]["Enums"]["holding_source"];
-          symbol_id: string | null;
           updated_at: string;
           user_id: string;
         };
@@ -321,11 +345,9 @@ export type Database = {
           created_at?: string;
           currency: string;
           description?: string | null;
-          domain_id?: string | null;
           id?: string;
           name: string;
           source?: Database["public"]["Enums"]["holding_source"];
-          symbol_id?: string | null;
           updated_at?: string;
           user_id?: string;
         };
@@ -335,11 +357,9 @@ export type Database = {
           created_at?: string;
           currency?: string;
           description?: string | null;
-          domain_id?: string | null;
           id?: string;
           name?: string;
           source?: Database["public"]["Enums"]["holding_source"];
-          symbol_id?: string | null;
           updated_at?: string;
           user_id?: string;
         };
@@ -357,13 +377,6 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "currencies";
             referencedColumns: ["alphabetic_code"];
-          },
-          {
-            foreignKeyName: "holdings_symbol_id_fkey";
-            columns: ["symbol_id"];
-            isOneToOne: false;
-            referencedRelation: "symbols";
-            referencedColumns: ["id"];
           },
         ];
       };
@@ -523,6 +536,39 @@ export type Database = {
             columns: ["transaction_id"];
             isOneToOne: false;
             referencedRelation: "transactions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      symbol_holdings: {
+        Row: {
+          created_at: string;
+          holding_id: string;
+          symbol_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          holding_id: string;
+          symbol_id: string;
+        };
+        Update: {
+          created_at?: string;
+          holding_id?: string;
+          symbol_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "symbol_holdings_holding_id_fkey";
+            columns: ["holding_id"];
+            isOneToOne: true;
+            referencedRelation: "holdings";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "symbol_holdings_symbol_id_fkey";
+            columns: ["symbol_id"];
+            isOneToOne: false;
+            referencedRelation: "symbols";
             referencedColumns: ["id"];
           },
         ];

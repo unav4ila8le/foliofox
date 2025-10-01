@@ -110,6 +110,41 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
 
   const recordsByHolding = new Map<string, Record[]>();
 
+  // Prefer extension tables for symbol/domain identifiers
+  const symbolIdByHolding = new Map<string, string>();
+  const domainIdByHolding = new Map<string, string>();
+
+  // Fetch extension table mappings (read-only path; keep legacy columns for fallback)
+  {
+    const { data: symbolExtensionRows, error: symbolExtensionError } =
+      await supabase
+        .from("symbol_holdings")
+        .select("holding_id, symbol_id")
+        .in("holding_id", holdingIds);
+    if (symbolExtensionError) {
+      throw new Error(
+        `Failed to fetch symbol extensions: ${symbolExtensionError.message}`,
+      );
+    }
+    symbolExtensionRows?.forEach((row) => {
+      if (row.symbol_id) symbolIdByHolding.set(row.holding_id, row.symbol_id);
+    });
+
+    const { data: domainExtensionRows, error: domainExtensionError } =
+      await supabase
+        .from("domain_holdings")
+        .select("holding_id, domain_id")
+        .in("holding_id", holdingIds);
+    if (domainExtensionError) {
+      throw new Error(
+        `Failed to fetch domain extensions: ${domainExtensionError.message}`,
+      );
+    }
+    domainExtensionRows?.forEach((row) => {
+      if (row.domain_id) domainIdByHolding.set(row.holding_id, row.domain_id);
+    });
+  }
+
   // Bulk fetch ALL records for all holdings at once (only if includeRecords is true)
   if (includeRecords) {
     const { data: allRecords, error: recordsError } = await supabase
@@ -187,8 +222,8 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
     const marketDataHoldings: TransformedHolding[] = holdings
       .filter((holding) => activeHoldingIds.has(holding.id))
       .map((holding) => ({
-        symbol_id: holding.symbol_id,
-        domain_id: holding.domain_id,
+        symbol_id: symbolIdByHolding.get(holding.id),
+        domain_id: domainIdByHolding.get(holding.id),
         currency: holding.currency,
       })) as TransformedHolding[];
 
@@ -219,14 +254,21 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
     // Determine current_unit_value based on holding type
     let current_unit_value: number;
 
-    if (holding.symbol_id && asOfDate !== null) {
+    const effectiveSymbolId = symbolIdByHolding.get(holding.id);
+    const effectiveDomainId = domainIdByHolding.get(holding.id);
+
+    if (holding.source === "symbol" && asOfDate !== null && effectiveSymbolId) {
       // For holdings with symbols, use the quote for the as-of date
-      const quoteKey = `${holding.symbol_id}|${format(asOfDate, "yyyy-MM-dd")}`;
+      const quoteKey = `${effectiveSymbolId}|${format(asOfDate, "yyyy-MM-dd")}`;
       current_unit_value =
         quotesMap.get(quoteKey) || baseRecord?.unit_value || 0;
-    } else if (holding.category_code === "domain" && asOfDate !== null) {
+    } else if (
+      holding.source === "domain" &&
+      asOfDate !== null &&
+      effectiveDomainId
+    ) {
       // For domain holdings, use the domain valuation at the as-of date
-      const domainKey = `${holding.domain_id}|${format(asOfDate, "yyyy-MM-dd")}`;
+      const domainKey = `${effectiveDomainId}|${format(asOfDate, "yyyy-MM-dd")}`;
       current_unit_value =
         domainValuationsMap.get(domainKey) || baseRecord?.unit_value || 0;
     } else {
@@ -239,6 +281,9 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
 
     return {
       ...holding,
+      // Prefer extension table identifiers for downstream consumers
+      symbol_id: effectiveSymbolId ?? null,
+      domain_id: effectiveDomainId ?? null,
       is_archived: holding.archived_at !== null,
       asset_type: holding.asset_categories.name,
       current_unit_value,

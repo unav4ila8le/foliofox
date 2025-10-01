@@ -29,7 +29,6 @@ export async function fetchTransactions(
       holdings!inner (
         id,
         name,
-        symbol_id,
         currency,
         archived_at
       )

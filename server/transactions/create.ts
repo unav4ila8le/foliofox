@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/server/auth/actions";
 import { createRecord } from "@/server/records/create";
 import { recalculateRecordsUntilNextUpdate } from "@/server/transactions/recalculate-records";
 import { fetchSingleQuote } from "@/server/quotes/fetch";
+import { fetchSingleDomainValuation } from "@/server/domain-valuations/fetch";
 
 import type { Transaction } from "@/types/global.types";
 
@@ -88,29 +89,65 @@ export async function createTransaction(formData: FormData) {
     };
   }
 
-  // Helper to resolve record unit value (market for symbols; user input for manual holdings)
+  // Helper to resolve record unit value (market for symbol/domain; user input for custom)
   const getMarketPriceForRecord = async () => {
-    // Check if holding has a symbol
-    const { data: holdingMeta } = await supabase
+    // Determine holding source
+    const { data: holdingRow } = await supabase
       .from("holdings")
-      .select("symbol_id")
+      .select("source")
       .eq("id", transactionData.holding_id)
       .maybeSingle();
 
-    if (!holdingMeta?.symbol_id) {
-      // Manual asset: use user's provided unit_value
-      return transactionData.unit_value;
+    const holdingSource = holdingRow?.source as
+      | "custom"
+      | "symbol"
+      | "domain"
+      | null;
+
+    // Symbol-backed: fetch quote as-of the transaction date
+    if (holdingSource === "symbol") {
+      const { data: symbolExtensionRow } = await supabase
+        .from("symbol_holdings")
+        .select("symbol_id")
+        .eq("holding_id", transactionData.holding_id)
+        .maybeSingle();
+
+      if (!symbolExtensionRow?.symbol_id) return transactionData.unit_value;
+
+      try {
+        const price = await fetchSingleQuote(symbolExtensionRow.symbol_id, {
+          date: new Date(transactionData.date),
+          upsert: false,
+        });
+        return price || transactionData.unit_value;
+      } catch {
+        return transactionData.unit_value;
+      }
     }
 
-    try {
-      const price = await fetchSingleQuote(holdingMeta.symbol_id, {
-        date: new Date(transactionData.date),
-        upsert: false,
-      });
-      return price || transactionData.unit_value;
-    } catch {
-      return transactionData.unit_value;
+    // Domain-backed: fetch valuation as-of the transaction date
+    if (holdingSource === "domain") {
+      const { data: domainExtensionRow } = await supabase
+        .from("domain_holdings")
+        .select("domain_id")
+        .eq("holding_id", transactionData.holding_id)
+        .maybeSingle();
+
+      if (!domainExtensionRow?.domain_id) return transactionData.unit_value;
+
+      try {
+        const price = await fetchSingleDomainValuation(
+          domainExtensionRow.domain_id,
+          { date: new Date(transactionData.date), upsert: false },
+        );
+        return price || transactionData.unit_value;
+      } catch {
+        return transactionData.unit_value;
+      }
     }
+
+    // Custom or unknown source: rely on user's provided unit value
+    return transactionData.unit_value;
   };
 
   // Helper function to cleanup orphaned transaction

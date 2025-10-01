@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict ZDZBHxATKn1pZVJ0MEbPS8GxX6G0idfOr19g3ldcamFFHr6eUMB5wBIxfPYfDiu
+\restrict P3pFd1uIlImLKhcyOOsLKlyN8PvPhdLTM2bKsXBDrCGe0Ra3NHZ6DxWi96t8Ihs
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.6 (Homebrew)
@@ -248,6 +248,19 @@ CREATE TABLE public.dividends (
 ALTER TABLE public.dividends OWNER TO postgres;
 
 --
+-- Name: domain_holdings; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.domain_holdings (
+    holding_id uuid NOT NULL,
+    domain_id text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.domain_holdings OWNER TO postgres;
+
+--
 -- Name: domain_valuations; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -307,8 +320,6 @@ CREATE TABLE public.holdings (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     archived_at timestamp with time zone,
-    symbol_id text,
-    domain_id text,
     source public.holding_source DEFAULT 'custom'::public.holding_source NOT NULL
 );
 
@@ -386,6 +397,19 @@ CREATE TABLE public.records (
 
 
 ALTER TABLE public.records OWNER TO postgres;
+
+--
+-- Name: symbol_holdings; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.symbol_holdings (
+    holding_id uuid NOT NULL,
+    symbol_id text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.symbol_holdings OWNER TO postgres;
 
 --
 -- Name: symbols; Type: TABLE; Schema: public; Owner: postgres
@@ -494,6 +518,14 @@ ALTER TABLE ONLY public.dividends
 
 
 --
+-- Name: domain_holdings domain_holdings_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.domain_holdings
+    ADD CONSTRAINT domain_holdings_pkey PRIMARY KEY (holding_id);
+
+
+--
 -- Name: domain_valuations domain_valuations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -571,6 +603,14 @@ ALTER TABLE ONLY public.profiles
 
 ALTER TABLE ONLY public.records
     ADD CONSTRAINT records_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: symbol_holdings symbol_holdings_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.symbol_holdings
+    ADD CONSTRAINT symbol_holdings_pkey PRIMARY KEY (holding_id);
 
 
 --
@@ -662,20 +702,6 @@ CREATE INDEX holdings_currency_idx ON public.holdings USING btree (currency);
 
 
 --
--- Name: holdings_domain_id_idx; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX holdings_domain_id_idx ON public.holdings USING btree (domain_id);
-
-
---
--- Name: holdings_equity_id_idx; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX holdings_equity_id_idx ON public.holdings USING btree (symbol_id);
-
-
---
 -- Name: holdings_source_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -708,6 +734,13 @@ CREATE INDEX idx_dividend_events_event_date_desc ON public.dividend_events USING
 --
 
 CREATE INDEX idx_dividend_events_symbol_date_desc ON public.dividend_events USING btree (symbol_id, event_date DESC);
+
+
+--
+-- Name: idx_domain_holdings_domain; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_domain_holdings_domain ON public.domain_holdings USING btree (domain_id);
 
 
 --
@@ -771,6 +804,13 @@ CREATE INDEX idx_records_holding_user_date_created ON public.records USING btree
 --
 
 CREATE INDEX idx_records_transaction_id ON public.records USING btree (transaction_id);
+
+
+--
+-- Name: idx_symbol_holdings_symbol; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_symbol_holdings_symbol ON public.symbol_holdings USING btree (symbol_id);
 
 
 --
@@ -955,6 +995,14 @@ ALTER TABLE ONLY public.dividends
 
 
 --
+-- Name: domain_holdings domain_holdings_holding_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.domain_holdings
+    ADD CONSTRAINT domain_holdings_holding_id_fkey FOREIGN KEY (holding_id) REFERENCES public.holdings(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
 -- Name: exchange_rates exchange_rates_base_currency_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -995,14 +1043,6 @@ ALTER TABLE ONLY public.holdings
 
 
 --
--- Name: holdings holdings_symbol_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.holdings
-    ADD CONSTRAINT holdings_symbol_id_fkey FOREIGN KEY (symbol_id) REFERENCES public.symbols(id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-
---
 -- Name: holdings holdings_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1040,6 +1080,22 @@ ALTER TABLE ONLY public.records
 
 ALTER TABLE ONLY public.records
     ADD CONSTRAINT records_transaction_id_fkey FOREIGN KEY (transaction_id) REFERENCES public.transactions(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: symbol_holdings symbol_holdings_holding_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.symbol_holdings
+    ADD CONSTRAINT symbol_holdings_holding_id_fkey FOREIGN KEY (holding_id) REFERENCES public.holdings(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: symbol_holdings symbol_holdings_symbol_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.symbol_holdings
+    ADD CONSTRAINT symbol_holdings_symbol_id_fkey FOREIGN KEY (symbol_id) REFERENCES public.symbols(id) ON UPDATE CASCADE;
 
 
 --
@@ -1209,6 +1265,15 @@ CREATE POLICY "Users can delete their own conversations" ON public.conversations
 
 
 --
+-- Name: domain_holdings Users can delete their own domain holdings; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Users can delete their own domain holdings" ON public.domain_holdings FOR DELETE TO authenticated USING ((EXISTS ( SELECT 1
+   FROM public.holdings h
+  WHERE ((h.id = domain_holdings.holding_id) AND (h.user_id = ( SELECT auth.uid() AS uid))))));
+
+
+--
 -- Name: holdings Users can delete their own holdings; Type: POLICY; Schema: public; Owner: postgres
 --
 
@@ -1220,6 +1285,15 @@ CREATE POLICY "Users can delete their own holdings" ON public.holdings FOR DELET
 --
 
 CREATE POLICY "Users can delete their own records" ON public.records FOR DELETE TO authenticated USING ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+--
+-- Name: symbol_holdings Users can delete their own symbol holdings; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Users can delete their own symbol holdings" ON public.symbol_holdings FOR DELETE TO authenticated USING ((EXISTS ( SELECT 1
+   FROM public.holdings h
+  WHERE ((h.id = symbol_holdings.holding_id) AND (h.user_id = ( SELECT auth.uid() AS uid))))));
 
 
 --
@@ -1251,6 +1325,15 @@ CREATE POLICY "Users can insert their own conversations" ON public.conversations
 
 
 --
+-- Name: domain_holdings Users can insert their own domain holdings; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Users can insert their own domain holdings" ON public.domain_holdings FOR INSERT TO authenticated WITH CHECK ((EXISTS ( SELECT 1
+   FROM public.holdings h
+  WHERE ((h.id = domain_holdings.holding_id) AND (h.user_id = ( SELECT auth.uid() AS uid))))));
+
+
+--
 -- Name: holdings Users can insert their own holdings; Type: POLICY; Schema: public; Owner: postgres
 --
 
@@ -1262,6 +1345,15 @@ CREATE POLICY "Users can insert their own holdings" ON public.holdings FOR INSER
 --
 
 CREATE POLICY "Users can insert their own records" ON public.records FOR INSERT TO authenticated WITH CHECK ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+--
+-- Name: symbol_holdings Users can insert their own symbol holdings; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Users can insert their own symbol holdings" ON public.symbol_holdings FOR INSERT TO authenticated WITH CHECK ((EXISTS ( SELECT 1
+   FROM public.holdings h
+  WHERE ((h.id = symbol_holdings.holding_id) AND (h.user_id = ( SELECT auth.uid() AS uid))))));
 
 
 --
@@ -1293,6 +1385,17 @@ CREATE POLICY "Users can update their own conversations" ON public.conversations
 
 
 --
+-- Name: domain_holdings Users can update their own domain holdings; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Users can update their own domain holdings" ON public.domain_holdings FOR UPDATE TO authenticated USING ((EXISTS ( SELECT 1
+   FROM public.holdings h
+  WHERE ((h.id = domain_holdings.holding_id) AND (h.user_id = ( SELECT auth.uid() AS uid)))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM public.holdings h
+  WHERE ((h.id = domain_holdings.holding_id) AND (h.user_id = ( SELECT auth.uid() AS uid))))));
+
+
+--
 -- Name: holdings Users can update their own holdings; Type: POLICY; Schema: public; Owner: postgres
 --
 
@@ -1304,6 +1407,17 @@ CREATE POLICY "Users can update their own holdings" ON public.holdings FOR UPDAT
 --
 
 CREATE POLICY "Users can update their own records" ON public.records FOR UPDATE TO authenticated USING ((user_id = ( SELECT auth.uid() AS uid))) WITH CHECK ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+--
+-- Name: symbol_holdings Users can update their own symbol holdings; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Users can update their own symbol holdings" ON public.symbol_holdings FOR UPDATE TO authenticated USING ((EXISTS ( SELECT 1
+   FROM public.holdings h
+  WHERE ((h.id = symbol_holdings.holding_id) AND (h.user_id = ( SELECT auth.uid() AS uid)))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM public.holdings h
+  WHERE ((h.id = symbol_holdings.holding_id) AND (h.user_id = ( SELECT auth.uid() AS uid))))));
 
 
 --
@@ -1335,6 +1449,15 @@ CREATE POLICY "Users can view their own conversations" ON public.conversations F
 
 
 --
+-- Name: domain_holdings Users can view their own domain holdings; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Users can view their own domain holdings" ON public.domain_holdings FOR SELECT TO authenticated USING ((EXISTS ( SELECT 1
+   FROM public.holdings h
+  WHERE ((h.id = domain_holdings.holding_id) AND (h.user_id = ( SELECT auth.uid() AS uid))))));
+
+
+--
 -- Name: holdings Users can view their own holdings; Type: POLICY; Schema: public; Owner: postgres
 --
 
@@ -1346,6 +1469,15 @@ CREATE POLICY "Users can view their own holdings" ON public.holdings FOR SELECT 
 --
 
 CREATE POLICY "Users can view their own records" ON public.records FOR SELECT TO authenticated USING ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+--
+-- Name: symbol_holdings Users can view their own symbol holdings; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Users can view their own symbol holdings" ON public.symbol_holdings FOR SELECT TO authenticated USING ((EXISTS ( SELECT 1
+   FROM public.holdings h
+  WHERE ((h.id = symbol_holdings.holding_id) AND (h.user_id = ( SELECT auth.uid() AS uid))))));
 
 
 --
@@ -1390,6 +1522,12 @@ ALTER TABLE public.dividend_events ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE public.dividends ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: domain_holdings; Type: ROW SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE public.domain_holdings ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: domain_valuations; Type: ROW SECURITY; Schema: public; Owner: postgres
@@ -1438,6 +1576,12 @@ ALTER TABLE public.quotes ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE public.records ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: symbol_holdings; Type: ROW SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE public.symbol_holdings ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: symbols; Type: ROW SECURITY; Schema: public; Owner: postgres
@@ -1525,6 +1669,15 @@ GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.di
 
 
 --
+-- Name: TABLE domain_holdings; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.domain_holdings TO anon;
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.domain_holdings TO authenticated;
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.domain_holdings TO service_role;
+
+
+--
 -- Name: TABLE domain_valuations; Type: ACL; Schema: public; Owner: postgres
 --
 
@@ -1594,6 +1747,15 @@ GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.qu
 GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.records TO anon;
 GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.records TO authenticated;
 GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.records TO service_role;
+
+
+--
+-- Name: TABLE symbol_holdings; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.symbol_holdings TO anon;
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.symbol_holdings TO authenticated;
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.symbol_holdings TO service_role;
 
 
 --
@@ -1678,5 +1840,5 @@ ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT SELECT,I
 -- PostgreSQL database dump complete
 --
 
-\unrestrict ZDZBHxATKn1pZVJ0MEbPS8GxX6G0idfOr19g3ldcamFFHr6eUMB5wBIxfPYfDiu
+\unrestrict P3pFd1uIlImLKhcyOOsLKlyN8PvPhdLTM2bKsXBDrCGe0Ra3NHZ6DxWi96t8Ihs
 

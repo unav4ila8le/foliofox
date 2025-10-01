@@ -46,20 +46,17 @@ export async function createHolding(formData: FormData) {
   // Extract and validate data from formData
   const data: Pick<
     Holding,
-    | "name"
-    | "category_code"
-    | "currency"
-    | "description"
-    | "symbol_id"
-    | "domain_id"
+    "name" | "category_code" | "currency" | "description"
   > = {
     name: formData.get("name") as string,
     category_code: formData.get("category_code") as string,
     currency: formData.get("currency") as string,
     description: (formData.get("description") as string) || null,
-    symbol_id: (formData.get("symbol_id") as string) || null,
-    domain_id: (formData.get("domain_id") as string) || null,
   };
+
+  // Extension identifiers
+  const symbolId = (formData.get("symbol_id") as string) || null;
+  const domainId = (formData.get("domain_id") as string) || null;
 
   // Check for duplicate holding name
   const isDuplicate = await checkDuplicateHoldingName(data.name, user.id);
@@ -80,8 +77,8 @@ export async function createHolding(formData: FormData) {
     Number(formData.get("cost_basis_per_unit")) || unit_value;
 
   // Upsert symbol
-  if (data.symbol_id) {
-    const symbolResult = await createSymbol(data.symbol_id);
+  if (symbolId) {
+    const symbolResult = await createSymbol(symbolId);
     if (!symbolResult.success) {
       return {
         success: false,
@@ -92,11 +89,7 @@ export async function createHolding(formData: FormData) {
   }
 
   // Determine holding source for consistent typing on creation
-  const source = data.symbol_id
-    ? "symbol"
-    : data.domain_id
-      ? "domain"
-      : "custom";
+  const source = symbolId ? "symbol" : domainId ? "domain" : "custom";
 
   // Insert into holdings table
   const { data: holding, error: holdingError } = await supabase
@@ -116,6 +109,33 @@ export async function createHolding(formData: FormData) {
       code: holdingError?.code || "UNKNOWN",
       message: holdingError?.message || "Failed to create holding",
     };
+  }
+
+  // Also write to extension tables for market-backed sources (non-breaking; we keep legacy columns for now)
+  if (symbolId) {
+    const { error: symbolHoldingInsertError } = await supabase
+      .from("symbol_holdings")
+      .insert({ holding_id: holding.id, symbol_id: symbolId });
+    if (symbolHoldingInsertError) {
+      return {
+        success: false,
+        code: symbolHoldingInsertError.code,
+        message: symbolHoldingInsertError.message,
+      };
+    }
+  }
+
+  if (domainId) {
+    const { error: domainHoldingInsertError } = await supabase
+      .from("domain_holdings")
+      .insert({ holding_id: holding.id, domain_id: domainId });
+    if (domainHoldingInsertError) {
+      return {
+        success: false,
+        code: domainHoldingInsertError.code,
+        message: domainHoldingInsertError.message,
+      };
+    }
   }
 
   // Create initial record using the existing createRecord function (convert to formData first)
