@@ -10,18 +10,7 @@ export type Profile = Pick<
 export type Currency = Pick<Tables<"currencies">, "alphabetic_code" | "name">;
 
 // Holding
-export type Holding = Pick<
-  Tables<"holdings">,
-  | "id"
-  | "name"
-  | "category_code"
-  | "symbol_id"
-  | "domain_id"
-  | "currency"
-  | "description"
-  | "archived_at"
-  | "created_at"
-> & {
+export type Holding = Tables<"holdings"> & {
   asset_categories: Pick<Tables<"asset_categories">, "name" | "display_order">;
 };
 

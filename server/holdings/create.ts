@@ -91,12 +91,20 @@ export async function createHolding(formData: FormData) {
     }
   }
 
+  // Determine holding source for consistent typing on creation
+  const source = data.symbol_id
+    ? "symbol"
+    : data.domain_id
+      ? "domain"
+      : "custom";
+
   // Insert into holdings table
   const { data: holding, error: holdingError } = await supabase
     .from("holdings")
     .insert({
       user_id: user.id,
       ...data,
+      source,
     })
     .select("id")
     .single();

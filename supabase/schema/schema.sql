@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict BDXPgI4Z7un0AMNbE2sWQekNrwbwW4U0rkXQK7bbaS6QjBhQMtCSdC8Ul1k95JP
+\restrict ZDZBHxATKn1pZVJ0MEbPS8GxX6G0idfOr19g3ldcamFFHr6eUMB5wBIxfPYfDiu
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.6 (Homebrew)
@@ -61,6 +61,19 @@ CREATE TYPE public.feedback_type AS ENUM (
 
 
 ALTER TYPE public.feedback_type OWNER TO postgres;
+
+--
+-- Name: holding_source; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public.holding_source AS ENUM (
+    'custom',
+    'symbol',
+    'domain'
+);
+
+
+ALTER TYPE public.holding_source OWNER TO postgres;
 
 --
 -- Name: transaction_type; Type: TYPE; Schema: public; Owner: postgres
@@ -295,7 +308,8 @@ CREATE TABLE public.holdings (
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     archived_at timestamp with time zone,
     symbol_id text,
-    domain_id text
+    domain_id text,
+    source public.holding_source DEFAULT 'custom'::public.holding_source NOT NULL
 );
 
 
@@ -659,6 +673,13 @@ CREATE INDEX holdings_domain_id_idx ON public.holdings USING btree (domain_id);
 --
 
 CREATE INDEX holdings_equity_id_idx ON public.holdings USING btree (symbol_id);
+
+
+--
+-- Name: holdings_source_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX holdings_source_idx ON public.holdings USING btree (source);
 
 
 --
@@ -1657,5 +1678,5 @@ ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT SELECT,I
 -- PostgreSQL database dump complete
 --
 
-\unrestrict BDXPgI4Z7un0AMNbE2sWQekNrwbwW4U0rkXQK7bbaS6QjBhQMtCSdC8Ul1k95JP
+\unrestrict ZDZBHxATKn1pZVJ0MEbPS8GxX6G0idfOr19g3ldcamFFHr6eUMB5wBIxfPYfDiu
 

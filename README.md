@@ -190,10 +190,16 @@ N/A
 - [x] Foliofox AI advisor. Chat with your portfolio.
 - [x] Add Transactions list on the dashboard home
 - [x] Add privacy mode (blur/hide net worth numbers)
+- [ ] Find a way to have a more accurate historical calculation which doesn't add much overhead. WeeksBack solution is fast but not accurate cause the date is "rounded" to match weeks and not days.
 - [ ] Landingpage with waitlist
 - [ ] New UX for adding new holdings (one form per holding type)
+- [ ] Add Plaid for user holding sync
+
+---
+
+### Post launch
+
 - [ ] Add optional pagination to data table (for transactions)
-- [ ] Find a way to have a more accurate historical calculation which doesn't add much overhead. WeeksBack solution is fast but not accurate cause the date is "rounded" to match weeks and not days.
 - [ ] Add a way for the user to "share" their portfolio. Ideally, after agreeing, they get a public sharable link which leads to a single public page view of all their holdings and relevant performance charts.
 - [ ] Optimize recalculateRecords to use batch requests
 - [ ] Add crypto wallet address sync

@@ -61,15 +61,7 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
     .from("holdings")
     .select(
       `
-      id,
-      name,
-      category_code,
-      symbol_id,
-      domain_id,
-      currency,
-      description,
-      archived_at,
-      created_at,
+      *,
       asset_categories (
         name,
         display_order

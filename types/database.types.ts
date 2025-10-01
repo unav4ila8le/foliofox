@@ -310,6 +310,7 @@ export type Database = {
           domain_id: string | null;
           id: string;
           name: string;
+          source: Database["public"]["Enums"]["holding_source"];
           symbol_id: string | null;
           updated_at: string;
           user_id: string;
@@ -323,6 +324,7 @@ export type Database = {
           domain_id?: string | null;
           id?: string;
           name: string;
+          source?: Database["public"]["Enums"]["holding_source"];
           symbol_id?: string | null;
           updated_at?: string;
           user_id?: string;
@@ -336,6 +338,7 @@ export type Database = {
           domain_id?: string | null;
           id?: string;
           name?: string;
+          source?: Database["public"]["Enums"]["holding_source"];
           symbol_id?: string | null;
           updated_at?: string;
           user_id?: string;
@@ -628,6 +631,7 @@ export type Database = {
     Enums: {
       conversation_role: "system" | "user" | "assistant" | "tool";
       feedback_type: "issue" | "idea" | "other";
+      holding_source: "custom" | "symbol" | "domain";
       transaction_type: "buy" | "sell" | "update" | "deposit" | "withdrawal";
     };
     CompositeTypes: {
@@ -761,6 +765,7 @@ export const Constants = {
     Enums: {
       conversation_role: ["system", "user", "assistant", "tool"],
       feedback_type: ["issue", "idea", "other"],
+      holding_source: ["custom", "symbol", "domain"],
       transaction_type: ["buy", "sell", "update", "deposit", "withdrawal"],
     },
   },
