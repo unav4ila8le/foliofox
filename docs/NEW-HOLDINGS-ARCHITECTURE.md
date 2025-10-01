@@ -369,12 +369,12 @@ const transformedHoldings = holdings.map(holding => {
 
 **Create Handler System:**
 
-- [ ] Define `MarketDataHandler` interface
-- [ ] Create `symbol-handler.ts` with existing quote logic
-- [ ] Create `domain-handler.ts` with existing domain logic
-- [ ] Create `registry.ts` to collect all handlers
-- [ ] Refactor `fetchMarketData()` to use registry
-- [ ] Update `fetchHoldings()` to use unified market data map
+- [x] Define `MarketDataHandler` interface
+- [x] Create `symbol-handler.ts` with existing quote logic
+- [x] Create `domain-handler.ts` with existing domain logic
+- [x] Create `registry.ts` to collect all handlers
+- [x] Refactor `fetchMarketData()` to use registry
+- [x] Update `fetchHoldings()` to use unified market data map
 
 **Testing:**
 
@@ -391,16 +391,17 @@ const transformedHoldings = holdings.map(holding => {
 **Flow:**
 
 ```
-[New Holding] → Selection Screen (cards for each source)
-              → Form (with back button to selection)
+[New Holding] → Selection Dialog (cards for each source) → Form Dialog (stacked dialog for better UX)
 ```
 
 **Implementation:**
 
-- Single dialog with state: `{ step: 'selection' } | { step: 'form', source }`
-- Selection screen shows clickable cards per source type
-- Form renderer switches based on selected source
+- Selection dialog with clickable cards per source type
+- When card clicked, open form dialog on top (selection dialog stays open underneath)
+- Form dialog renders source-specific form based on selected source
 - Each form appends `source` to FormData
+- Stacked dialog pattern: if user closes form dialog, selection dialog is still available
+- Best UX: users can easily switch between source types or go back to selection
 
 ---
 

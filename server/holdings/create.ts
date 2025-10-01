@@ -111,7 +111,7 @@ export async function createHolding(formData: FormData) {
     };
   }
 
-  // Also write to extension tables for market-backed sources (non-breaking; we keep legacy columns for now)
+  // Also write to extension tables for market-backed sources
   if (symbolId) {
     const { error: symbolHoldingInsertError } = await supabase
       .from("symbol_holdings")

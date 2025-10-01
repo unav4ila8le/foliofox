@@ -82,6 +82,7 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
     query.is("archived_at", null);
   }
 
+  // Run the query and order by category display order
   const { data: holdings, error } = await query.order(
     "asset_categories(display_order)",
     { ascending: true },
@@ -114,7 +115,7 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
   const symbolIdByHolding = new Map<string, string>();
   const domainIdByHolding = new Map<string, string>();
 
-  // Fetch extension table mappings (read-only path; keep legacy columns for fallback)
+  // Fetch extension table mappings
   {
     const { data: symbolExtensionRows, error: symbolExtensionError } =
       await supabase
@@ -222,8 +223,9 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
     const marketDataHoldings: TransformedHolding[] = holdings
       .filter((holding) => activeHoldingIds.has(holding.id))
       .map((holding) => ({
-        symbol_id: symbolIdByHolding.get(holding.id),
-        domain_id: domainIdByHolding.get(holding.id),
+        source: holding.source,
+        symbol_id: symbolIdByHolding.get(holding.id) ?? null,
+        domain_id: domainIdByHolding.get(holding.id) ?? null,
         currency: holding.currency,
       })) as TransformedHolding[];
 
@@ -281,7 +283,6 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
 
     return {
       ...holding,
-      // Prefer extension table identifiers for downstream consumers
       symbol_id: effectiveSymbolId ?? null,
       domain_id: effectiveDomainId ?? null,
       is_archived: holding.archived_at !== null,
