@@ -65,7 +65,7 @@ async function AssetAllocationChartWrapper({
 }
 
 async function NewsWidgetWrapper() {
-  const newsResult = await fetchPortfolioNews(8);
+  const newsResult = await fetchPortfolioNews(12);
   return <NewsWidget newsData={newsResult} />;
 }
 

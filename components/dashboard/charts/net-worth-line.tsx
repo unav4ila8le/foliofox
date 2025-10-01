@@ -226,7 +226,11 @@ export function NetWorthLineChart({
                   tickFormatter={formatYAxisValue}
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
+                  tick={{
+                    fontSize: 12,
+                    fill: "var(--muted-foreground)",
+                    opacity: isPrivacyMode ? 0 : 1,
+                  }}
                   domain={["auto", "auto"]}
                   width={40}
                 />

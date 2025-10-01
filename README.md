@@ -189,8 +189,8 @@ N/A
 - [x] Let users input their cost basis (optional) for new holdings, and then use it to create the new record
 - [x] Foliofox AI advisor. Chat with your portfolio.
 - [x] Add Transactions list on the dashboard home
-- [ ] Landingpage with waitlist
 - [x] Add privacy mode (blur/hide net worth numbers)
+- [ ] Landingpage with waitlist
 - [ ] New UX for adding new holdings (one form per holding type)
 - [ ] Add optional pagination to data table (for transactions)
 - [ ] Find a way to have a more accurate historical calculation which doesn't add much overhead. WeeksBack solution is fast but not accurate cause the date is "rounded" to match weeks and not days.
