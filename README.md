@@ -204,3 +204,4 @@ N/A
 - [ ] Optimize recalculateRecords to use batch requests
 - [ ] Add crypto wallet address sync
 - [ ] Add cron job for domain valuations (after upgrading Vercel account)
+- [ ] Parallelize extension fetching in fetchHoldings when multiple handlers

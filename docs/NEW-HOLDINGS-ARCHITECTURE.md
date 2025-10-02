@@ -146,32 +146,30 @@ export function isSymbolHolding(h: Holding): h is SymbolHolding {
 
 ## Market Data Architecture (CRITICAL)
 
-### Current Problem
+### ✅ COMPLETED: Pluggable Source Handlers
 
-`fetchMarketData()` uses if/else logic for each source:
-
-```typescript
-// ❌ Need to edit this file for every new source
-if (holding.symbol_id) {
-  /* fetch quotes */
-}
-if (holding.domain_id) {
-  /* fetch domains */
-}
-// Adding crypto = edit this file again
-```
-
-### New: Pluggable Source Handlers
-
-**Strategy Pattern** - Each source handles its own market data:
+**Strategy Pattern** - Each source handles its own market data and extensions:
 
 ```typescript
 // server/market-data/sources/types.ts
-export interface MarketDataHandler<T = any> {
-  source: HoldingSource;
-  collectRequests: (holdings: TransformedHolding[], date: Date) => T[];
-  fetchData: (requests: T[], options?: any) => Promise<Map<string, number>>;
-  getKey: (holding: TransformedHolding, date: Date) => string;
+export interface MarketDataHandler {
+  source: string;
+
+  // NEW: Handlers fetch their own extension data
+  fetchExtensions?(
+    holdingIds: string[],
+    supabase: SupabaseClient,
+  ): Promise<Map<string, string>>;
+
+  // Fetch market data for holdings
+  fetchForHoldings(
+    holdings: TransformedHolding[],
+    date: Date,
+    options?: { upsert?: boolean },
+  ): Promise<Map<string, number>>;
+
+  // Generate lookup key for price retrieval
+  getKey(holding: TransformedHolding, date: Date): string | null;
 }
 ```
 
@@ -179,22 +177,33 @@ export interface MarketDataHandler<T = any> {
 
 ```typescript
 // server/market-data/sources/symbol-handler.ts
-import { fetchQuotes } from "@/server/quotes/fetch";
-
 export const symbolHandler: MarketDataHandler = {
   source: "symbol",
 
-  collectRequests: (holdings, date) => {
-    return holdings
+  // NEW: Fetch symbol extensions from database
+  async fetchExtensions(holdingIds, supabase) {
+    const { data } = await supabase
+      .from("symbol_holdings")
+      .select("holding_id, symbol_id")
+      .in("holding_id", holdingIds);
+
+    const map = new Map();
+    data?.forEach((row) => map.set(row.holding_id, row.symbol_id));
+    return map;
+  },
+
+  // Fetch market data for symbol holdings
+  async fetchForHoldings(holdings, date, options) {
+    const requests = holdings
       .filter((h) => h.source === "symbol" && h.symbol_id)
       .map((h) => ({ symbolId: h.symbol_id!, date }));
+
+    if (requests.length === 0) return new Map();
+    return await fetchQuotes(requests, options?.upsert);
   },
 
-  fetchData: async (requests, options) => {
-    return fetchQuotes(requests, options?.upsert);
-  },
-
-  getKey: (holding, date) => {
+  getKey(holding, date) {
+    if (holding.source !== "symbol" || !holding.symbol_id) return null;
     return `${holding.symbol_id}|${format(date, "yyyy-MM-dd")}`;
   },
 };
@@ -204,22 +213,33 @@ export const symbolHandler: MarketDataHandler = {
 
 ```typescript
 // server/market-data/sources/domain-handler.ts
-import { fetchDomainValuations } from "@/server/domain-valuations/fetch";
-
 export const domainHandler: MarketDataHandler = {
   source: "domain",
 
-  collectRequests: (holdings, date) => {
-    return holdings
+  // NEW: Fetch domain extensions from database
+  async fetchExtensions(holdingIds, supabase) {
+    const { data } = await supabase
+      .from("domain_holdings")
+      .select("holding_id, domain_id")
+      .in("holding_id", holdingIds);
+
+    const map = new Map();
+    data?.forEach((row) => map.set(row.holding_id, row.domain_id));
+    return map;
+  },
+
+  // Fetch market data for domain holdings
+  async fetchForHoldings(holdings, date, options) {
+    const requests = holdings
       .filter((h) => h.source === "domain" && h.domain_id)
       .map((h) => ({ domain: h.domain_id!, date }));
+
+    if (requests.length === 0) return new Map();
+    return await fetchDomainValuations(requests, options?.upsert ?? true);
   },
 
-  fetchData: async (requests, options) => {
-    return fetchDomainValuations(requests, options?.upsert);
-  },
-
-  getKey: (holding, date) => {
+  getKey(holding, date) {
+    if (holding.source !== "domain" || !holding.domain_id) return null;
     return `${holding.domain_id}|${format(date, "yyyy-MM-dd")}`;
   },
 };
@@ -240,82 +260,103 @@ export const MARKET_DATA_HANDLERS: MarketDataHandler[] = [
 ];
 ```
 
-**Updated `fetchMarketData()` (no more edits needed):**
+**Updated `fetchMarketData()` (fully dynamic, no edits needed for new sources):**
 
 ```typescript
 // server/market-data/fetch.ts
-import { MARKET_DATA_HANDLERS } from "./sources/registry";
-
 export async function fetchMarketData(
   holdings: TransformedHolding[],
   date: Date,
-  targetCurrency?: string,
-  options: { upsert?: boolean; include?: IncludeOptions } = {},
-) {
-  const { include = {} } = options;
+  options: { upsert?: boolean } = {},
+): Promise<Map<string, number>> {
+  // Dynamic import to avoid circular dependencies
+  const { MARKET_DATA_HANDLERS } = await import("./sources/registry");
 
-  // Fetch market prices from all registered handlers
-  const marketDataPromises =
-    include.marketPrices === false
-      ? []
-      : MARKET_DATA_HANDLERS.map((handler) => {
-          const requests = handler.collectRequests(holdings, date);
-          return requests.length > 0
-            ? handler.fetchData(requests, options)
-            : Promise.resolve(new Map());
-        });
-
-  // Fetch exchange rates
-  const exchangeRatesPromise =
-    include.exchangeRates === false
-      ? Promise.resolve(new Map())
-      : fetchExchangeRates(/* ... */);
-
-  const results = await Promise.all([
-    ...marketDataPromises,
-    exchangeRatesPromise,
-  ]);
-
-  // Merge all market data maps into one
   const marketDataMap = new Map<string, number>();
-  results.slice(0, -1).forEach((map) => {
-    map.forEach((value, key) => marketDataMap.set(key, value));
-  });
 
-  return {
-    marketData: marketDataMap, // Single unified map
-    exchangeRates: results[results.length - 1],
-  };
+  // Call each handler and merge results
+  for (const handler of MARKET_DATA_HANDLERS) {
+    const resultMap = await handler.fetchForHoldings(holdings, date, {
+      upsert: options.upsert ?? true,
+    });
+
+    // Merge into unified map
+    resultMap.forEach((value, key) => {
+      marketDataMap.set(key, value);
+    });
+  }
+
+  return marketDataMap; // Single unified map
 }
 ```
 
-**Updated `fetchHoldings()` valuation logic:**
+**Updated `fetchHoldings()` (fully dynamic extension fetching):**
 
 ```typescript
 // server/holdings/fetch.ts
 
-// After fetching market data
-const { marketData, exchangeRates } = await fetchMarketData(holdings, asOfDate, ...);
+// 1. Dynamic extension fetching - handlers fetch their own data
+const { MARKET_DATA_HANDLERS } = await import("./sources/registry");
+const extensionsBySource = new Map<string, Map<string, string>>();
 
-// In transformation loop
-const transformedHoldings = holdings.map(holding => {
-  const baseRecord = /* ... */;
+for (const handler of MARKET_DATA_HANDLERS) {
+  if (handler.fetchExtensions) {
+    const extensionMap = await handler.fetchExtensions(holdingIds, supabase);
+    extensionsBySource.set(handler.source, extensionMap);
+  }
+}
+
+// 2. Market data fetching (only when asOfDate provided)
+let marketDataMap = new Map<string, number>();
+if (asOfDate !== null) {
+  const marketDataHoldings = holdings
+    .filter((holding) => activeHoldingIds.has(holding.id))
+    .map((holding) => {
+      const sourceExtensions = extensionsBySource.get(holding.source);
+      const sourceId = sourceExtensions?.get(holding.id) ?? null;
+
+      // Dynamic field setting based on source
+      const result = { source: holding.source, currency: holding.currency };
+      setSourceId(result, holding.source, sourceId);
+      return result as TransformedHolding;
+    });
+
+  marketDataMap = await fetchMarketData(marketDataHoldings, asOfDate);
+}
+
+// 3. Transformation with dynamic handler lookup
+const transformedHoldings = holdings.map((holding) => {
+  const sourceExtensions = extensionsBySource.get(holding.source);
+  const sourceId = sourceExtensions?.get(holding.id) ?? null;
 
   let current_unit_value: number;
 
-  // Find the handler for this source
-  const handler = MARKET_DATA_HANDLERS.find(h => h.source === holding.source);
+  if (asOfDate !== null) {
+    const handler = MARKET_DATA_HANDLERS.find(
+      (h) => h.source === holding.source,
+    );
 
-  if (handler && asOfDate !== null) {
-    // Get value from market data using handler's key function
-    const marketKey = handler.getKey(holding, asOfDate);
-    current_unit_value = marketData.get(marketKey) || baseRecord?.unit_value || 0;
+    if (handler) {
+      const holdingForKey = { source: holding.source };
+      setSourceId(holdingForKey, holding.source, sourceId);
+
+      const marketKey = handler.getKey(
+        holdingForKey as TransformedHolding,
+        asOfDate,
+      );
+      current_unit_value =
+        marketDataMap.get(marketKey) || baseRecord?.unit_value || 0;
+    } else {
+      current_unit_value = baseRecord?.unit_value || 0;
+    }
   } else {
-    // Manual holding or no market data
     current_unit_value = baseRecord?.unit_value || 0;
   }
 
-  // ...
+  // Build final holding with dynamic source ID
+  const transformed = { ...holding, current_unit_value /* ... */ };
+  setSourceId(transformed, holding.source, sourceId);
+  return transformed as TransformedHolding;
 });
 ```
 
@@ -323,14 +364,16 @@ const transformedHoldings = holdings.map(holding => {
 
 ✅ **Adding crypto wallet:**
 
-1. Create `crypto-handler.ts` with the 4 functions
+1. Create `crypto-handler.ts` with `fetchExtensions`, `fetchForHoldings`, `getKey`
 2. Add to registry: `import { cryptoHandler } from './crypto-handler'`
-3. **That's it!** No changes to `fetchMarketData()`, `fetchHoldings()`, or anywhere else
+3. Update `setSourceId` helper in `fetchHoldings` (3 lines)
+4. **That's it!** No changes to `fetchMarketData()`, core logic, or anywhere else
 
-✅ **Fully modular** - each source is self-contained  
+✅ **Fully modular** - each source is self-contained and fetches its own extensions  
 ✅ **Type-safe** - TypeScript ensures all handlers implement the interface  
 ✅ **Testable** - test each handler in isolation  
-✅ **Discoverable** - registry shows all sources at a glance
+✅ **Discoverable** - registry shows all sources at a glance  
+✅ **Dynamic** - extension fetching and market data fetching are completely pluggable
 
 ---
 
@@ -363,24 +406,27 @@ const transformedHoldings = holdings.map(holding => {
 
 ---
 
-### Phase 2: Refactor Market Data (Week 3)
+### Phase 2: Refactor Market Data ✅ COMPLETED
 
 **Goal:** Make market data system pluggable
 
 **Create Handler System:**
 
-- [x] Define `MarketDataHandler` interface
-- [x] Create `symbol-handler.ts` with existing quote logic
-- [x] Create `domain-handler.ts` with existing domain logic
+- [x] Define `MarketDataHandler` interface with `fetchExtensions` method
+- [x] Create `symbol-handler.ts` with extension fetching and quote logic
+- [x] Create `domain-handler.ts` with extension fetching and domain logic
 - [x] Create `registry.ts` to collect all handlers
-- [x] Refactor `fetchMarketData()` to use registry
-- [x] Update `fetchHoldings()` to use unified market data map
+- [x] Refactor `fetchMarketData()` to use dynamic handler registry
+- [x] Update `fetchHoldings()` to use dynamic extension fetching
+- [x] Add `setSourceId` helper for dynamic field mapping
+- [x] Remove all hardcoded source references from `fetchHoldings`
 
 **Testing:**
 
-- [ ] Verify all holdings still valued correctly
-- [ ] Test with different as-of dates
-- [ ] Ensure backwards compatibility
+- [x] Verify all holdings still valued correctly
+- [x] Test with different as-of dates
+- [x] Ensure backwards compatibility
+- [x] No linter errors
 
 ---
 
@@ -462,21 +508,35 @@ CREATE TABLE crypto_wallet_holdings (
 export const cryptoHandler: MarketDataHandler = {
   source: "crypto_wallet",
 
-  collectRequests: (holdings, date) => {
-    return holdings
-      .filter((h) => h.source === "crypto_wallet")
+  // NEW: Fetch crypto extensions from database
+  async fetchExtensions(holdingIds, supabase) {
+    const { data } = await supabase
+      .from("crypto_wallet_holdings")
+      .select("holding_id, wallet_address")
+      .in("holding_id", holdingIds);
+
+    const map = new Map();
+    data?.forEach((row) => map.set(row.holding_id, row.wallet_address));
+    return map;
+  },
+
+  // Fetch market data for crypto holdings
+  async fetchForHoldings(holdings, date, options) {
+    const requests = holdings
+      .filter((h) => h.source === "crypto_wallet" && h.wallet_address)
       .map((h) => ({
-        walletAddress: h.wallet_address,
+        walletAddress: h.wallet_address!,
         blockchain: h.blockchain,
         date,
       }));
+
+    if (requests.length === 0) return new Map();
+    return await fetchCryptoBalances(requests, options?.upsert);
   },
 
-  fetchData: async (requests, options) => {
-    return fetchCryptoBalances(requests); // Your API call
-  },
-
-  getKey: (holding, date) => {
+  getKey(holding, date) {
+    if (holding.source !== "crypto_wallet" || !holding.wallet_address)
+      return null;
     return `${holding.wallet_address}|${format(date, "yyyy-MM-dd")}`;
   },
 };
@@ -495,7 +555,26 @@ export const MARKET_DATA_HANDLERS = [
 ];
 ```
 
-**4. Types:**
+**4. Update `setSourceId` Helper (3 lines in `fetchHoldings`):**
+
+```typescript
+const setSourceId = (target, source, sourceId) => {
+  target.symbol_id = null;
+  target.domain_id = null;
+  target.crypto_wallet_address = null; // NEW
+
+  if (source === "symbol") {
+    target.symbol_id = sourceId;
+  } else if (source === "domain") {
+    target.domain_id = sourceId;
+  } else if (source === "crypto_wallet") {
+    // NEW
+    target.crypto_wallet_address = sourceId; // NEW
+  }
+};
+```
+
+**5. Types:**
 
 ```typescript
 export interface CryptoWalletHolding extends Holding {
@@ -505,14 +584,14 @@ export interface CryptoWalletHolding extends Holding {
 }
 ```
 
-**5. UI:**
+**6. UI:**
 
 - Add card to selection screen
 - Create form component
 
-**That's it!** No changes to `fetchMarketData()`, `fetchHoldings()`, or core analysis functions.
+**That's it!** No changes to `fetchMarketData()`, core analysis functions, or extension fetching logic.
 
-**Time:** 1 day (was 1-2 days before handler refactor)
+**Time:** 1 day (down from 1-2 days before handler refactor)
 
 ---
 
@@ -546,8 +625,10 @@ Phase 1: Delete + recreate. Phase 2 (future): Add "Convert" action.
 - ✅ Extension tables → scalable, no NULL bloat
 - ✅ Unified `records` → analysis unchanged
 - ✅ Type-safe TypeScript → discriminated unions
-- ✅ **Pluggable market data** → add sources without touching core files
+- ✅ **Fully pluggable market data** → add sources without touching core files
+- ✅ **Dynamic extension fetching** → handlers fetch their own data
+- ✅ **Single point of change** → only `setSourceId` helper needs updates
 - ✅ 1 day per new source type (down from 1-2 days)
 
-**Timeline:** 6 weeks for Phases 1-5 (added Phase 2 for handler refactor)  
-**Next:** Review → Start Phase 1 migration
+**Timeline:** 6 weeks for Phases 1-5 (Phase 2 completed)  
+**Status:** Phase 2 ✅ COMPLETED - Market data system is fully modular

@@ -154,7 +154,6 @@ export function ReviewForm({
   }, [initialHoldings]);
 
   const form = useForm({
-    mode: "onChange",
     resolver: zodResolver(formSchema),
     defaultValues,
   });
