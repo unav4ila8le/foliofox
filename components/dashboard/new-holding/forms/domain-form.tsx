@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { HumbleWorthLogo } from "@/components/ui/logos/humbleworth-logo";
 
 import { useNewHoldingDialog } from "../index";
 
@@ -53,7 +54,7 @@ const formSchema = z.object({
 
 export function DomainForm() {
   // Props destructuring and context hooks
-  const { setOpen } = useNewHoldingDialog();
+  const { setOpenFormDialog, setOpenSelectionDialog } = useNewHoldingDialog();
 
   // State declarations
   const [isLoading, setIsLoading] = useState(false);
@@ -128,7 +129,8 @@ export function DomainForm() {
 
       toast.success("Holding created successfully");
       form.reset();
-      setOpen(false);
+      setOpenFormDialog(false);
+      setOpenSelectionDialog(false);
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -149,7 +151,10 @@ export function DomainForm() {
           name="domain"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Domain</FormLabel>
+              <FormLabel className="flex items-center justify-between gap-2">
+                Domain
+                <HumbleWorthLogo height={14} />
+              </FormLabel>
               <FormControl>
                 <div className="relative">
                   <Input
@@ -232,7 +237,7 @@ export function DomainForm() {
         {/* Footer - Action buttons */}
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Button
-            onClick={() => setOpen(false)}
+            onClick={() => setOpenFormDialog(false)}
             disabled={isLoading}
             type="button"
             variant="secondary"

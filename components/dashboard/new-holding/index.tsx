@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState } from "react";
-import { Plus, Search, PencilLine, Globe } from "lucide-react";
+import { Plus } from "lucide-react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -11,17 +11,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { SymbolSearchForm } from "./forms/symbol-search-form";
-import { DomainForm } from "./forms/domain-form";
-import { ManualEntryForm } from "./forms/manual-entry-form";
+import { SelectionDialog } from "./selection-dialog";
 
 import type { Profile } from "@/types/global.types";
 import type { VariantProps } from "class-variance-authority";
 
+export type SelectionType = "symbol" | "domain" | "custom";
+
 type NewHoldingDialogContextType = {
-  open: boolean;
-  setOpen: (open: boolean) => void;
+  openSelectionDialog: boolean;
+  setOpenSelectionDialog: (open: boolean) => void;
+  openFormDialog: boolean;
+  setOpenFormDialog: (open: boolean) => void;
+  selectedType: SelectionType;
+  setSelectedType: (type: SelectionType) => void;
   profile: Profile;
 };
 
@@ -36,42 +39,32 @@ export function NewHoldingDialogProvider({
   children: React.ReactNode;
   profile: Profile;
 }) {
-  const [open, setOpen] = useState(false);
+  const [openSelectionDialog, setOpenSelectionDialog] = useState(false);
+  const [openFormDialog, setOpenFormDialog] = useState(false);
+  const [selectedType, setSelectedType] = useState<SelectionType>("custom");
 
   return (
-    <NewHoldingDialogContext.Provider value={{ open, setOpen, profile }}>
+    <NewHoldingDialogContext.Provider
+      value={{
+        openSelectionDialog,
+        setOpenSelectionDialog,
+        openFormDialog,
+        setOpenFormDialog,
+        selectedType,
+        setSelectedType,
+        profile,
+      }}
+    >
       {children}
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={openSelectionDialog} onOpenChange={setOpenSelectionDialog}>
         <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>New Holding</DialogTitle>
-            <DialogDescription>Add a new holding.</DialogDescription>
+            <DialogDescription>
+              Select a method to add a new holding
+            </DialogDescription>
           </DialogHeader>
-          <Tabs defaultValue="symbol-search-form" className="gap-4">
-            <TabsList className="w-full">
-              <TabsTrigger value="symbol-search-form">
-                <Search className="size-4" />
-                Search by Symbol
-              </TabsTrigger>
-              <TabsTrigger value="domain-form">
-                <Globe className="size-4" />
-                Enter Domain
-              </TabsTrigger>
-              <TabsTrigger value="manual-entry-form">
-                <PencilLine className="size-4" />
-                Enter Manually
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="symbol-search-form">
-              <SymbolSearchForm />
-            </TabsContent>
-            <TabsContent value="domain-form">
-              <DomainForm />
-            </TabsContent>
-            <TabsContent value="manual-entry-form">
-              <ManualEntryForm />
-            </TabsContent>
-          </Tabs>
+          <SelectionDialog />
         </DialogContent>
       </Dialog>
     </NewHoldingDialogContext.Provider>
@@ -93,10 +86,10 @@ export function NewHoldingButton({
 }: {
   variant?: VariantProps<typeof buttonVariants>["variant"];
 }) {
-  const { setOpen } = useNewHoldingDialog();
+  const { setOpenSelectionDialog } = useNewHoldingDialog();
 
   return (
-    <Button variant={variant} onClick={() => setOpen(true)}>
+    <Button variant={variant} onClick={() => setOpenSelectionDialog(true)}>
       <Plus />
       New Holding
     </Button>

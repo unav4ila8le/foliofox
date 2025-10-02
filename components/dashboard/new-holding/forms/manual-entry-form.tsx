@@ -66,7 +66,8 @@ const formSchema = z.object({
 
 export function ManualEntryForm() {
   // Props destructuring and context hooks
-  const { setOpen, profile } = useNewHoldingDialog();
+  const { setOpenFormDialog, setOpenSelectionDialog, profile } =
+    useNewHoldingDialog();
 
   // State declarations
   const [isLoading, setIsLoading] = useState(false);
@@ -121,7 +122,8 @@ export function ManualEntryForm() {
 
       toast.success("Holding created successfully");
       form.reset();
-      setOpen(false);
+      setOpenFormDialog(false);
+      setOpenSelectionDialog(false);
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -287,7 +289,7 @@ export function ManualEntryForm() {
         {/* Footer - Action buttons */}
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Button
-            onClick={() => setOpen(false)}
+            onClick={() => setOpenFormDialog(false)}
             disabled={isLoading}
             type="button"
             variant="secondary"

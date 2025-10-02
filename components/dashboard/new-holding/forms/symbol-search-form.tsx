@@ -72,7 +72,7 @@ const formSchema = z.object({
 
 export function SymbolSearchForm() {
   // Props destructuring and context hooks
-  const { setOpen } = useNewHoldingDialog();
+  const { setOpenFormDialog, setOpenSelectionDialog } = useNewHoldingDialog();
 
   // State declarations
   const [isLoading, setIsLoading] = useState(false);
@@ -180,7 +180,8 @@ export function SymbolSearchForm() {
 
       toast.success("Holding created successfully");
       form.reset(); // Clear form
-      setOpen(false);
+      setOpenFormDialog(false);
+      setOpenSelectionDialog(false);
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -331,7 +332,7 @@ export function SymbolSearchForm() {
         {/* Footer - Action buttons */}
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Button
-            onClick={() => setOpen(false)}
+            onClick={() => setOpenFormDialog(false)}
             disabled={isLoading}
             type="button"
             variant="secondary"
