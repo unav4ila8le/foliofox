@@ -430,24 +430,46 @@ const transformedHoldings = holdings.map((holding) => {
 
 ---
 
-### Phase 3: Selection Screen UI (Week 4)
+### Phase 3: Selection Screen UI (Week 4) - NEXT
 
-**Goal:** Replace tabs with card-based selection (like Kubera)
+**Goal:** Replace tabs with card-based selection for better UX and modularity
 
 **Flow:**
 
 ```
-[New Holding] → Selection Dialog (cards for each source) → Form Dialog (stacked dialog for better UX)
+[New Holding] → Selection Dialog (4 cards) → Form Dialog
 ```
 
-**Implementation:**
+**Selection Cards (User-Facing Categories):**
 
-- Selection dialog with clickable cards per source type
-- When card clicked, open form dialog on top (selection dialog stays open underneath)
-- Form dialog renders source-specific form based on selected source
-- Each form appends `source` to FormData
-- Stacked dialog pattern: if user closes form dialog, selection dialog is still available
-- Best UX: users can easily switch between source types or go back to selection
+1. **📈 Ticker Symbol** → `source: 'symbol'`
+   - Stocks, ETFs, mutual funds
+   - Shows symbol search form with automatic market pricing
+
+2. **🌐 Domain Name** → `source: 'domain'`
+   - Website valuations
+   - Shows domain entry form with automatic pricing
+
+3. **💵 Cash & Equivalents** → `source: 'custom'` + simplified UX
+   - Bank accounts, savings, broker cash
+   - Simplified form: just name, currency, and amount (no qty/unit_value breakdown)
+   - Maps to: `quantity=1, unit_value=amount`
+   - Default category: "cash" (user can change)
+
+4. **✏️ Custom Holding** → `source: 'custom'` + full UX
+   - Real estate, art, collectibles, private equity
+   - Full form: name, category, currency, quantity, unit_value, cost_basis
+
+**Implementation Details:**
+
+- Single dialog with card selection screen
+- When card clicked, show corresponding form in the same dialog
+- Back button to return to selection
+- Each form appends `source` to FormData (cash and custom both append `'custom'`)
+- Cash flow logic: `quantity=1, unit_value=amount` computed before submission
+
+**Key Design Decision:**
+Cash is NOT a separate source type in the database—it's `source='custom'` with simplified UX. This keeps the architecture clean while providing optimal UX for common use cases.
 
 ---
 

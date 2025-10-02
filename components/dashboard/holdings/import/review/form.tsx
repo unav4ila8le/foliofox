@@ -32,7 +32,7 @@ import {
 
 import { AssetCategorySelector } from "@/components/dashboard/asset-category-selector";
 import { CurrencySelector } from "@/components/dashboard/currency-selector";
-import { SymbolSearch } from "@/components/dashboard/new-holding/symbol-search";
+import { SymbolSearch } from "@/components/dashboard/symbol-search";
 
 import type { AssetCategory } from "@/types/global.types";
 import type { CurrencyValidationResult } from "@/server/currencies/validate";

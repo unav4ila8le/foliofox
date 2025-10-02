@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { YahooFinanceLogo } from "@/components/ui/logos/yahoo-finance-logo";
-import { SymbolSearch } from "../symbol-search";
+import { SymbolSearch } from "../../symbol-search";
 import { AssetCategorySelector } from "@/components/dashboard/asset-category-selector";
 
 import { useNewHoldingDialog } from "../index";

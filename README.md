@@ -205,3 +205,5 @@ N/A
 - [ ] Add crypto wallet address sync
 - [ ] Add cron job for domain valuations (after upgrading Vercel account)
 - [ ] Parallelize extension fetching in fetchHoldings when multiple handlers
+- [ ] Add real estate market estimate
+- [ ] Add private equity valuation
