@@ -2,7 +2,7 @@
 
 import { fetchProfile } from "@/server/profile/actions";
 import { fetchHoldings } from "@/server/holdings/fetch";
-import { fetchMarketData } from "@/server/market-data/fetch";
+import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 import { calculateAssetAllocation } from "@/server/analysis/asset-allocation";
 
 import { convertCurrency } from "@/lib/currency-conversion";
@@ -44,13 +44,17 @@ export async function getPortfolioSnapshot(params?: {
         lastUpdated: new Date().toISOString(),
       };
 
-    // Fetch only FX for the as-of date using centralized aggregator
-    const { exchangeRates: exchangeRatesMap } = await fetchMarketData(
-      holdings,
-      asOfDate,
-      baseCurrency,
-      { include: { marketPrices: false } },
-    );
+    // Fetch FX rates for the as-of date
+    const uniqueCurrencies = new Set<string>();
+    holdings.forEach((h) => uniqueCurrencies.add(h.currency));
+    uniqueCurrencies.add(baseCurrency);
+
+    const exchangeRequests = Array.from(uniqueCurrencies).map((currency) => ({
+      currency,
+      date: asOfDate,
+    }));
+
+    const exchangeRates = await fetchExchangeRates(exchangeRequests);
 
     // Compute per-holding as-of values
     const holdingsBase = holdings
@@ -63,14 +67,14 @@ export async function getPortfolioSnapshot(params?: {
           unitLocal,
           holding.currency,
           baseCurrency,
-          exchangeRatesMap,
+          exchangeRates,
           asOfDate,
         );
         const totalValueBase = convertCurrency(
           totalLocal,
           holding.currency,
           baseCurrency,
-          exchangeRatesMap,
+          exchangeRates,
           asOfDate,
         );
 

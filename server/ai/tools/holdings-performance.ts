@@ -4,7 +4,7 @@ import { format, subDays } from "date-fns";
 
 import { fetchProfile } from "@/server/profile/actions";
 import { fetchHoldings } from "@/server/holdings/fetch";
-import { fetchMarketData } from "@/server/market-data/fetch";
+import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 
 import { calculateProfitLoss } from "@/lib/profit-loss";
 import { convertCurrency } from "@/lib/currency-conversion";
@@ -69,11 +69,11 @@ export async function getHoldingsPerformance(
     const { profile } = await fetchProfile();
     const baseCurrency = params.baseCurrency ?? profile.display_currency;
 
-    // Set date range (default to 180 days)
+    // Set date range (default to 90 days)
     const endDate = params.endDate ? new Date(params.endDate) : new Date();
     const startDate = params.startDate
       ? new Date(params.startDate)
-      : subDays(endDate, 180);
+      : subDays(endDate, 90);
 
     const startDateKey = format(startDate, "yyyy-MM-dd");
     const endDateKey = format(endDate, "yyyy-MM-dd");
@@ -104,19 +104,37 @@ export async function getHoldingsPerformance(
       };
     }
 
-    // Fetch FX for start and end dates (no market prices needed)
+    // Fetch FX rates for start and end dates in parallel
+    // Build requests for start date
+    const startCurrencies = new Set<string>();
+    startHoldings.forEach((h) => startCurrencies.add(h.currency));
+    startCurrencies.add(baseCurrency);
+
+    const startExchangeRequests = Array.from(startCurrencies).map(
+      (currency) => ({
+        currency,
+        date: startDate,
+      }),
+    );
+
+    // Build requests for end date
+    const endCurrencies = new Set<string>();
+    holdings.forEach((h) => endCurrencies.add(h.currency));
+    endCurrencies.add(baseCurrency);
+
+    const endExchangeRequests = Array.from(endCurrencies).map((currency) => ({
+      currency,
+      date: endDate,
+    }));
+
+    // Fetch both in parallel
     const [startFx, endFx] = await Promise.all([
-      fetchMarketData(startHoldings, startDate, baseCurrency, {
-        include: { marketPrices: false },
-      }),
-      fetchMarketData(holdings, endDate, baseCurrency, {
-        include: { marketPrices: false },
-      }),
+      fetchExchangeRates(startExchangeRequests),
+      fetchExchangeRates(endExchangeRequests),
     ]);
-    const exchangeRatesMap = new Map<string, number>([
-      ...(startFx.exchangeRates ?? new Map()),
-      ...(endFx.exchangeRates ?? new Map()),
-    ]);
+
+    // Merge the maps
+    const exchangeRatesMap = new Map<string, number>([...startFx, ...endFx]);
 
     // Build quick lookup for start snapshot by holding id
     const startById = new Map(startHoldings.map((h) => [h.id, h]));

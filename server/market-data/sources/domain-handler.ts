@@ -2,24 +2,49 @@ import { format } from "date-fns";
 
 import { fetchDomainValuations } from "@/server/domain-valuations/fetch";
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type { TransformedHolding } from "@/types/global.types";
-import type { DomainMarketDataHandler, DomainRequest } from "./types";
+import type { MarketDataHandler, DomainRequest } from "./types";
 
-export const domainHandler: DomainMarketDataHandler = {
+export const domainHandler: MarketDataHandler = {
   source: "domain",
 
-  collectRequests(holdings: TransformedHolding[], date: Date) {
+  async fetchExtensions(holdingIds: string[], supabase: SupabaseClient) {
+    const { data, error } = await supabase
+      .from("domain_holdings")
+      .select("holding_id, domain_id")
+      .in("holding_id", holdingIds);
+
+    if (error) {
+      throw new Error(`Failed to fetch domain extensions: ${error.message}`);
+    }
+
+    const extensionMap = new Map<string, string>();
+    data?.forEach((row) => {
+      if (row.domain_id) {
+        extensionMap.set(row.holding_id, row.domain_id);
+      }
+    });
+
+    return extensionMap;
+  },
+
+  async fetchForHoldings(
+    holdings: TransformedHolding[],
+    date: Date,
+    options?: { upsert?: boolean },
+  ) {
+    // Collect requests for domain holdings
     const requests: DomainRequest[] = [];
     for (const h of holdings) {
       if (h.source === "domain" && h.domain_id) {
         requests.push({ domain: h.domain_id, date });
       }
     }
-    return requests;
-  },
 
-  async fetchData(requests: DomainRequest[], options?: { upsert?: boolean }) {
+    // Fetch valuations if we have any requests
     if (requests.length === 0) return new Map();
+
     try {
       return await fetchDomainValuations(requests, options?.upsert ?? true);
     } catch {

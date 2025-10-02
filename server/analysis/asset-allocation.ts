@@ -1,7 +1,7 @@
 "use server";
 
 import { fetchHoldings } from "@/server/holdings/fetch";
-import { fetchMarketData } from "@/server/market-data/fetch";
+import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 
 import { convertCurrency } from "@/lib/currency-conversion";
 
@@ -23,13 +23,17 @@ export async function calculateAssetAllocation(
     return [];
   }
 
-  // 2. Fetch only FX for conversion
-  const { exchangeRates: exchangeRatesMap } = await fetchMarketData(
-    holdings,
+  // 2. Fetch FX rates for conversion
+  const uniqueCurrencies = new Set<string>();
+  holdings.forEach((h) => uniqueCurrencies.add(h.currency));
+  uniqueCurrencies.add(targetCurrency);
+
+  const exchangeRequests = Array.from(uniqueCurrencies).map((currency) => ({
+    currency,
     date,
-    targetCurrency,
-    { include: { marketPrices: false } },
-  );
+  }));
+
+  const exchangeRates = await fetchExchangeRates(exchangeRequests);
 
   // 3. Convert each holding's local total value to target currency
   const holdingsInTarget = holdings.map((holding) => ({
@@ -38,7 +42,7 @@ export async function calculateAssetAllocation(
       holding.total_value,
       holding.currency,
       targetCurrency,
-      exchangeRatesMap,
+      exchangeRates,
       date,
     ),
   }));

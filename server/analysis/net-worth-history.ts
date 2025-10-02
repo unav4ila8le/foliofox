@@ -2,7 +2,7 @@
 
 import { fetchProfile } from "@/server/profile/actions";
 import { fetchHoldings } from "@/server/holdings/fetch";
-import { fetchMarketData } from "@/server/market-data/fetch";
+import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 import { convertCurrency } from "@/lib/currency-conversion";
 
 export interface NetWorthHistoryData {
@@ -32,7 +32,7 @@ export async function fetchNetWorthHistory({
   // Generate weekly date points
   const weeklyDates = generateWeeklyDates(weeksBack);
 
-  // 1. For each date, fetch holdings valued as-of and only FX; compute net worth
+  // 1. For each date, fetch holdings valued as-of and FX rates; compute net worth
   const history = await Promise.all(
     weeklyDates.map(async (date) => {
       const holdingsAsOf = await fetchHoldings({
@@ -44,13 +44,19 @@ export async function fetchNetWorthHistory({
         return { date, value: 0 };
       }
 
-      const { exchangeRates } = await fetchMarketData(
-        holdingsAsOf,
-        date,
-        targetCurrency,
-        { include: { marketPrices: false } },
-      );
+      // Fetch exchange rates for this date
+      const uniqueCurrencies = new Set<string>();
+      holdingsAsOf.forEach((h) => uniqueCurrencies.add(h.currency));
+      uniqueCurrencies.add(targetCurrency!);
 
+      const exchangeRequests = Array.from(uniqueCurrencies).map((currency) => ({
+        currency,
+        date,
+      }));
+
+      const exchangeRates = await fetchExchangeRates(exchangeRequests);
+
+      // Sum converted values
       let total = 0;
       holdingsAsOf.forEach((h) => {
         const converted = convertCurrency(

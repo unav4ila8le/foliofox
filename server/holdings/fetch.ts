@@ -111,40 +111,41 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
 
   const recordsByHolding = new Map<string, Record[]>();
 
-  // Prefer extension tables for symbol/domain identifiers
-  const symbolIdByHolding = new Map<string, string>();
-  const domainIdByHolding = new Map<string, string>();
+  // Import market data handlers for dynamic extension fetching
+  const { MARKET_DATA_HANDLERS } = await import(
+    "@/server/market-data/sources/registry"
+  );
 
-  // Fetch extension table mappings
-  {
-    const { data: symbolExtensionRows, error: symbolExtensionError } =
-      await supabase
-        .from("symbol_holdings")
-        .select("holding_id, symbol_id")
-        .in("holding_id", holdingIds);
-    if (symbolExtensionError) {
-      throw new Error(
-        `Failed to fetch symbol extensions: ${symbolExtensionError.message}`,
-      );
-    }
-    symbolExtensionRows?.forEach((row) => {
-      if (row.symbol_id) symbolIdByHolding.set(row.holding_id, row.symbol_id);
-    });
+  // Dynamically fetch extension data for all source types
+  // Structure: Map<source, Map<holdingId, sourceId>>
+  const extensionsBySource = new Map<string, Map<string, string>>();
 
-    const { data: domainExtensionRows, error: domainExtensionError } =
-      await supabase
-        .from("domain_holdings")
-        .select("holding_id, domain_id")
-        .in("holding_id", holdingIds);
-    if (domainExtensionError) {
-      throw new Error(
-        `Failed to fetch domain extensions: ${domainExtensionError.message}`,
-      );
+  for (const handler of MARKET_DATA_HANDLERS) {
+    if (handler.fetchExtensions) {
+      const extensionMap = await handler.fetchExtensions(holdingIds, supabase);
+      extensionsBySource.set(handler.source, extensionMap);
     }
-    domainExtensionRows?.forEach((row) => {
-      if (row.domain_id) domainIdByHolding.set(row.holding_id, row.domain_id);
-    });
   }
+
+  // Helper: Set source-specific ID on a holding object
+  // This mapping is the ONLY place we need to add code when adding new sources
+  const setSourceId = (
+    target: Partial<TransformedHolding>,
+    source: string,
+    sourceId: string | null,
+  ) => {
+    // Reset all source ID fields to null first
+    target.symbol_id = null;
+    target.domain_id = null;
+
+    // Set the appropriate field based on source
+    if (source === "symbol") {
+      target.symbol_id = sourceId;
+    } else if (source === "domain") {
+      target.domain_id = sourceId;
+    }
+    // Add new sources here: else if (source === "crypto_wallet") { target.crypto_wallet_id = sourceId; }
+  };
 
   // Bulk fetch ALL records for all holdings at once (only if includeRecords is true)
   if (includeRecords) {
@@ -210,8 +211,7 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
   }
 
   // Fetch market-backed data (quotes/domains) via centralized aggregator when as-of date is provided
-  let quotesMap = new Map<string, number>();
-  let domainValuationsMap = new Map<string, number>();
+  let marketDataMap = new Map<string, number>();
   if (asOfDate !== null) {
     // Determine which holdings actually existed as-of the date (have a record <= asOfDate)
     const activeHoldingIds = new Set<string>();
@@ -219,24 +219,26 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
       if (recs && recs.length > 0) activeHoldingIds.add(holdingId);
     });
 
-    // Build a minimal shape for market data collection without requiring full TransformedHolding
+    // Build holdings with source-specific IDs for market data fetching
     const marketDataHoldings: TransformedHolding[] = holdings
       .filter((holding) => activeHoldingIds.has(holding.id))
-      .map((holding) => ({
-        source: holding.source,
-        symbol_id: symbolIdByHolding.get(holding.id) ?? null,
-        domain_id: domainIdByHolding.get(holding.id) ?? null,
-        currency: holding.currency,
-      })) as TransformedHolding[];
+      .map((holding) => {
+        const sourceExtensions = extensionsBySource.get(holding.source);
+        const sourceId = sourceExtensions?.get(holding.id) ?? null;
 
-    const { quotes, domainValuations } = await fetchMarketData(
-      marketDataHoldings,
-      asOfDate,
-      undefined,
-      { include: { exchangeRates: false } },
-    );
-    quotesMap = quotes;
-    domainValuationsMap = domainValuations;
+        // Build a minimal shape for market data collection
+        const result: Partial<TransformedHolding> = {
+          source: holding.source,
+          currency: holding.currency,
+        };
+
+        // Dynamically set the source-specific ID field
+        setSourceId(result, holding.source, sourceId);
+
+        return result as TransformedHolding;
+      });
+
+    marketDataMap = await fetchMarketData(marketDataHoldings, asOfDate);
   }
 
   // Transform the holdings data
@@ -253,44 +255,64 @@ export async function fetchHoldings(options: FetchHoldingsOptions = {}) {
       baseRecord = holdingRecords[0];
     }
 
+    // Get source-specific ID from extension map
+    const sourceExtensions = extensionsBySource.get(holding.source);
+    const sourceId = sourceExtensions?.get(holding.id) ?? null;
+
     // Determine current_unit_value based on holding type
     let current_unit_value: number;
 
-    const effectiveSymbolId = symbolIdByHolding.get(holding.id);
-    const effectiveDomainId = domainIdByHolding.get(holding.id);
+    // Use handler registry to get the price key
+    if (asOfDate !== null) {
+      const handler = MARKET_DATA_HANDLERS.find(
+        (h) => h.source === holding.source,
+      );
 
-    if (holding.source === "symbol" && asOfDate !== null && effectiveSymbolId) {
-      // For holdings with symbols, use the quote for the as-of date
-      const quoteKey = `${effectiveSymbolId}|${format(asOfDate, "yyyy-MM-dd")}`;
-      current_unit_value =
-        quotesMap.get(quoteKey) || baseRecord?.unit_value || 0;
-    } else if (
-      holding.source === "domain" &&
-      asOfDate !== null &&
-      effectiveDomainId
-    ) {
-      // For domain holdings, use the domain valuation at the as-of date
-      const domainKey = `${effectiveDomainId}|${format(asOfDate, "yyyy-MM-dd")}`;
-      current_unit_value =
-        domainValuationsMap.get(domainKey) || baseRecord?.unit_value || 0;
+      if (handler) {
+        // Build a minimal holding shape for getKey with source-specific ID
+        const holdingForKey: Partial<TransformedHolding> = {
+          source: holding.source,
+        };
+
+        // Dynamically set the source-specific ID field
+        setSourceId(holdingForKey, holding.source, sourceId);
+
+        const marketKey = handler.getKey(
+          holdingForKey as TransformedHolding,
+          asOfDate,
+        );
+        if (marketKey) {
+          current_unit_value =
+            marketDataMap.get(marketKey) || baseRecord?.unit_value || 0;
+        } else {
+          current_unit_value = baseRecord?.unit_value || 0;
+        }
+      } else {
+        // No handler for this source (custom holdings)
+        current_unit_value = baseRecord?.unit_value || 0;
+      }
     } else {
-      // For non-market holdings or when as-of date not provided, use the appropriate record
+      // No as-of date, use record value
       current_unit_value = baseRecord?.unit_value || 0;
     }
 
     // Get the current quantity from the latest record
     const current_quantity = baseRecord?.quantity || 0;
 
-    return {
+    // Build transformed holding with source-specific ID
+    const transformed: Partial<TransformedHolding> = {
       ...holding,
-      symbol_id: effectiveSymbolId ?? null,
-      domain_id: effectiveDomainId ?? null,
       is_archived: holding.archived_at !== null,
       asset_type: holding.asset_categories.name,
       current_unit_value,
       current_quantity,
       total_value: current_unit_value * current_quantity,
     };
+
+    // Dynamically set source-specific ID fields
+    setSourceId(transformed, holding.source, sourceId);
+
+    return transformed as TransformedHolding;
   });
 
   if (includeRecords) {

@@ -62,7 +62,9 @@ export const columns: ColumnDef<TransformedHolding>[] = [
         <div className="flex w-40 sm:w-64 lg:w-80">
           <Tooltip delayDuration={500}>
             <TooltipTrigger asChild>
-              <div className="truncate">{name}</div>
+              <div className="truncate underline-offset-4 hover:underline">
+                {name}
+              </div>
             </TooltipTrigger>
             <TooltipContent>{name}</TooltipContent>
           </Tooltip>

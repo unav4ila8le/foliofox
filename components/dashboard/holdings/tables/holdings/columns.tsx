@@ -92,7 +92,7 @@ export const columns: ColumnDef<HoldingWithProfitLoss>[] = [
         <div className="flex w-40 sm:w-64 lg:w-80">
           <Tooltip delayDuration={500}>
             <TooltipTrigger asChild>
-              <div className="hover:text-primary truncate underline-offset-4 hover:underline">
+              <div className="truncate underline-offset-4 hover:underline">
                 {name}
               </div>
             </TooltipTrigger>

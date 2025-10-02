@@ -4,7 +4,7 @@ import { format } from "date-fns";
 
 import { fetchProfile } from "@/server/profile/actions";
 import { fetchHoldings } from "@/server/holdings/fetch";
-import { fetchMarketData } from "@/server/market-data/fetch";
+import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 
 import { convertCurrency } from "@/lib/currency-conversion";
 
@@ -61,13 +61,17 @@ export async function getCurrencyExposure(
       };
     }
 
-    // Fetch only FX for conversion
-    const { exchangeRates: exchangeRatesMap } = await fetchMarketData(
-      holdings,
+    // Fetch FX rates for conversion
+    const uniqueCurrencies = new Set<string>();
+    holdings.forEach((h) => uniqueCurrencies.add(h.currency));
+    uniqueCurrencies.add(baseCurrency);
+
+    const exchangeRequests = Array.from(uniqueCurrencies).map((currency) => ({
+      currency,
       date,
-      baseCurrency,
-      { include: { marketPrices: false } },
-    );
+    }));
+
+    const exchangeRates = await fetchExchangeRates(exchangeRequests);
 
     // Aggregate by original holding currency using as-of local totals
     const byCurrency = new Map<
@@ -94,14 +98,14 @@ export async function getCurrencyExposure(
           data.valueLocal,
           currency,
           baseCurrency,
-          exchangeRatesMap,
+          exchangeRates,
           date,
         );
         const fx = convertCurrency(
           1,
           currency,
           baseCurrency,
-          exchangeRatesMap,
+          exchangeRates,
           date,
         );
         return {
