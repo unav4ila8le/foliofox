@@ -17,10 +17,9 @@ import { formatNumber, formatPercentage } from "@/lib/number-format";
 
 import { HoldingWithProfitLoss } from "@/types/global.types";
 
-// Treat holdings with symbol_id or domain_id as market-backed
-const holdingHasMarketData = (
-  holding: Pick<HoldingWithProfitLoss, "symbol_id" | "domain_id">,
-): boolean => Boolean(holding.symbol_id || holding.domain_id);
+// Check if the holding has market data
+const holdingHasMarketData = (holding: HoldingWithProfitLoss): boolean =>
+  holding.source !== "custom";
 
 export const columns: ColumnDef<HoldingWithProfitLoss>[] = [
   {

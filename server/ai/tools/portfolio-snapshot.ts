@@ -10,8 +10,8 @@ import { convertCurrency } from "@/lib/currency-conversion";
 /**
  * Get portfolio snapshot for AI analysis
  * Accurate as-of behavior when a date is provided:
- * - Non-symbol holdings: latest record where record.date <= date
- * - Symbol holdings: market price as-of date (fallback to record unit_value)
+ * - Custom holdings: latest record where record.date <= date
+ * - Market-backed holdings: market price as-of date (fallback to record unit_value)
  * - FX conversion as-of date
  */
 export async function getPortfolioSnapshot(params?: {

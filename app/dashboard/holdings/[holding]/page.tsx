@@ -49,13 +49,13 @@ async function HoldingContent({ holdingId }: { holdingId: string }) {
     [
       fetchTransactions({ holdingId }),
       // Fetch symbol and news if symbol exists
-      holding.symbol_id ? fetchSymbol(holding.symbol_id) : null,
-      holding.symbol_id
-        ? fetchSymbolNews(holding.symbol_id)
+      holding.source === "symbol" ? fetchSymbol(holding.symbol_id!) : null,
+      holding.source === "symbol"
+        ? fetchSymbolNews(holding.symbol_id!)
         : { success: false, data: [] },
-      holding.symbol_id
+      holding.source === "symbol"
         ? calculateSymbolProjectedIncome(
-            holding.symbol_id,
+            holding.symbol_id!,
             holding.current_quantity,
           )
         : { success: false, data: [] },
