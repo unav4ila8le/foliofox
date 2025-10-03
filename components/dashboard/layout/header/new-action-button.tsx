@@ -15,7 +15,7 @@ import { useNewHoldingDialog } from "@/components/dashboard/new-holding";
 
 export function NewActionButton() {
   const { setOpen: setOpenRecord } = useNewRecordDialog();
-  const { setOpen: setOpenHolding } = useNewHoldingDialog();
+  const { setOpenSelectionDialog: setOpenHolding } = useNewHoldingDialog();
 
   return (
     <DropdownMenu>

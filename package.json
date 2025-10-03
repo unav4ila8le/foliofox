@@ -9,7 +9,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit",
+    "type": "tsc --noEmit",
     "types:supabase": "supabase gen types typescript --project-id icnvjrvkdjtbnldhootf > types/database.types.ts"
   },
   "dependencies": {

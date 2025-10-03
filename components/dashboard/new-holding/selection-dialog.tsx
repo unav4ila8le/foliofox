@@ -22,7 +22,7 @@ function SelectionCard({
 
   return (
     <div
-      className="bg-card hover:bg-muted cursor-pointer space-y-3 rounded-md border p-4"
+      className="bg-card hover:bg-muted cursor-default space-y-3 rounded-md border p-4"
       onClick={onClick}
     >
       <div className="flex items-center justify-between gap-2">
