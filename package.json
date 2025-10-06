@@ -10,7 +10,9 @@
     "format:check": "prettier --check .",
     "lint": "eslint .",
     "type": "tsc --noEmit",
-    "types:supabase": "supabase gen types typescript --project-id icnvjrvkdjtbnldhootf > types/database.types.ts"
+    "types:supabase": "supabase gen types typescript --project-id icnvjrvkdjtbnldhootf > types/database.types.ts",
+    "shadcn:update": "node scripts/update-shadcn.mjs",
+    "shadcn:update-safe": "node scripts/update-shadcn.mjs --safe"
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.28",
@@ -42,7 +44,6 @@
     "lucide-react": "^0.544.0",
     "next": "^15.5.0",
     "next-themes": "^0.4.6",
-    "radix-ui": "^1.4.2",
     "react": "^19.1.0",
     "react-day-picker": "^9.11.0",
     "react-dom": "^19.1.0",
