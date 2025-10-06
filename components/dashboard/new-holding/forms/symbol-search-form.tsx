@@ -4,7 +4,7 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { LoaderCircle, Info } from "lucide-react";
+import { Info } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -22,6 +22,7 @@ import {
   TooltipContent,
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { YahooFinanceLogo } from "@/components/ui/logos/yahoo-finance-logo";
 import { SymbolSearch } from "../../symbol-search";
 import { AssetCategorySelector } from "@/components/dashboard/asset-category-selector";
@@ -345,7 +346,7 @@ export function SymbolSearchForm() {
           >
             {isLoading ? (
               <>
-                <LoaderCircle className="animate-spin" />
+                <Spinner />
                 Saving...
               </>
             ) : (

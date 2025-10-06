@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { Upload, LoaderCircle } from "lucide-react";
+import { Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { FileUploadDropzone } from "@/components/ui/file-upload-dropzone";
 import { ImportResults } from "./import-results";
 import { useImportHoldingsDialog } from "./index";
@@ -198,7 +199,7 @@ export function AIImportForm() {
             <Button onClick={handleImport} disabled={isImporting}>
               {isImporting ? (
                 <>
-                  <LoaderCircle className="size-4 animate-spin" />
+                  <Spinner />
                   Importing...
                 </>
               ) : (

@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
-import { LoaderCircle, Archive, Info } from "lucide-react";
+import { Archive, Info } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -107,7 +108,7 @@ export function ArchiveHoldingDialog({
           <Button disabled={isLoading} onClick={handleArchive}>
             {isLoading ? (
               <>
-                <LoaderCircle className="size-4 animate-spin" /> Archiving...
+                <Spinner /> Archiving...
               </>
             ) : (
               <>

@@ -4,7 +4,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { LoaderCircle } from "lucide-react";
 
 import {
   Form,
@@ -17,6 +16,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 
 import { createFeedback } from "@/server/feedback/create";
 
@@ -122,7 +122,7 @@ export function FeedbackForm({ onSuccess }: { onSuccess: () => void }) {
         <Button type="submit" disabled={isSubmitting || !isDirty}>
           {isSubmitting ? (
             <>
-              <LoaderCircle className="size-4 animate-spin" />
+              <Spinner />
               Sending...
             </>
           ) : (

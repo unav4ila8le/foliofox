@@ -1,7 +1,6 @@
 "use client";
 
 import { toast } from "sonner";
-import { LoaderCircle } from "lucide-react";
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -17,6 +16,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { AssetCategorySelector } from "@/components/dashboard/asset-category-selector";
 
 import { updateHolding } from "@/server/holdings/update";
@@ -156,7 +156,7 @@ export function UpdateHoldingForm({
           >
             {isLoading ? (
               <>
-                <LoaderCircle className="animate-spin" />
+                <Spinner />
                 Updating...
               </>
             ) : (

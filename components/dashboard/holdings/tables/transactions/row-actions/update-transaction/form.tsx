@@ -1,7 +1,7 @@
 "use client";
 
 import { toast } from "sonner";
-import { CalendarIcon, LoaderCircle } from "lucide-react";
+import { CalendarIcon } from "lucide-react";
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { Calendar } from "@/components/ui/calendar";
 
 import { cn } from "@/lib/utils";
@@ -276,7 +277,7 @@ export function UpdateTransactionForm({
           >
             {isLoading ? (
               <>
-                <LoaderCircle className="animate-spin" />
+                <Spinner />
                 Updating...
               </>
             ) : (

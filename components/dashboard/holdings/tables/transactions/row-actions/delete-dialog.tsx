@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -88,7 +89,7 @@ export function DeleteTransactionDialog({
           <Button disabled={isLoading} onClick={handleDelete}>
             {isLoading ? (
               <>
-                <Loader2 className="size-4 animate-spin" /> Deleting...
+                <Spinner /> Deleting...
               </>
             ) : (
               "Delete"

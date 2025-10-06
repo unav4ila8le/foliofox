@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { Upload, LoaderCircle } from "lucide-react";
+import { Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import {
   Tooltip,
   TooltipContent,
@@ -217,7 +218,7 @@ export function CSVImportForm() {
             <Button onClick={handleImport} disabled={isImporting}>
               {isImporting ? (
                 <>
-                  <LoaderCircle className="size-4 animate-spin" />
+                  <Spinner />
                   Importing...
                 </>
               ) : (

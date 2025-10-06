@@ -5,9 +5,10 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { Upload, LoaderCircle, Info, Trash2, Plus } from "lucide-react";
+import { Upload, Info, Trash2, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import {
   Form,
   FormControl,
@@ -539,7 +540,7 @@ export function ReviewForm({
           >
             {isImporting ? (
               <>
-                <LoaderCircle className="size-4 animate-spin" />
+                <Spinner />
                 Importing...
               </>
             ) : (

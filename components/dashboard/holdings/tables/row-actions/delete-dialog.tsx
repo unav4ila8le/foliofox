@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { AlertCircle, Info, LoaderCircle, Trash2 } from "lucide-react";
+import { AlertCircle, Info, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -108,7 +109,7 @@ export function DeleteHoldingDialog({
           >
             {isLoading ? (
               <>
-                <LoaderCircle className="size-4 animate-spin" /> Deleting...
+                <Spinner /> Deleting...
               </>
             ) : (
               <>

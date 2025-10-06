@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { format } from "date-fns";
-import { CalendarIcon, LoaderCircle, Info } from "lucide-react";
+import { CalendarIcon, Info } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -29,6 +29,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
+import { Spinner } from "@/components/ui/spinner";
 
 import { useNewRecordDialog } from "../index";
 
@@ -371,7 +372,7 @@ export function UpdateForm() {
           >
             {isLoading ? (
               <>
-                <LoaderCircle className="animate-spin" />
+                <Spinner />
                 Creating...
               </>
             ) : (

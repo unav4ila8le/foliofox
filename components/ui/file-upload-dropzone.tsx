@@ -6,8 +6,11 @@ import {
   type FileRejection,
   type DropzoneOptions,
 } from "react-dropzone";
-import { Upload, FileText, LoaderCircle, X } from "lucide-react";
+import { Upload, FileText, X } from "lucide-react";
 import { toast } from "sonner";
+
+import { Spinner } from "@/components/ui/spinner";
+
 import { cn } from "@/lib/utils";
 
 interface FileUploadDropzoneProps {
@@ -126,8 +129,8 @@ export function FileUploadDropzone({
         <input {...getInputProps()} />
 
         {isProcessing ? (
-          <div className="flex items-center justify-center py-4">
-            <LoaderCircle className="mr-2 size-4 animate-spin" />
+          <div className="flex items-center justify-center gap-2 py-4">
+            <Spinner />
             <span>Processing file...</span>
           </div>
         ) : selectedFile ? (

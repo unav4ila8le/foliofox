@@ -4,7 +4,7 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { LoaderCircle, Info } from "lucide-react";
+import { Info } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { AssetCategorySelector } from "@/components/dashboard/asset-category-selector";
 import { CurrencySelector } from "@/components/dashboard/currency-selector";
 
@@ -299,7 +300,7 @@ export function ManualEntryForm() {
           <Button disabled={isLoading || !isDirty} type="submit">
             {isLoading ? (
               <>
-                <LoaderCircle className="animate-spin" />
+                <Spinner />
                 Saving...
               </>
             ) : (

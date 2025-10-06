@@ -1,7 +1,6 @@
 "use client";
 
 import { toast } from "sonner";
-import { LoaderCircle } from "lucide-react";
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -19,6 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { CurrencySelector } from "@/components/dashboard/currency-selector";
 
 import { updateProfile } from "@/server/profile/actions";
@@ -151,7 +151,7 @@ export function SettingsForm({ profile, onSuccess, email }: SettingsFormProps) {
           >
             {isLoading ? (
               <>
-                <LoaderCircle className="animate-spin" />
+                <Spinner />
                 Saving...
               </>
             ) : (

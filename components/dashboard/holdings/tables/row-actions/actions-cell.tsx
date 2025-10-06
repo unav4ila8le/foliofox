@@ -9,10 +9,10 @@ import {
   ArchiveRestore,
   Plus,
   SquarePen,
-  LoaderCircle,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -87,7 +87,7 @@ export function ActionsCell({ holding }: { holding: TransformedHolding }) {
           {holding.is_archived ? (
             <DropdownMenuItem onSelect={handleRestore} disabled={isRestoring}>
               {isRestoring ? (
-                <LoaderCircle className="size-4 animate-spin" />
+                <Spinner />
               ) : (
                 <ArchiveRestore className="size-4" />
               )}{" "}

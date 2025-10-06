@@ -1,8 +1,8 @@
 "use client";
 
-import { LoaderCircle } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
+
 import { cn } from "@/lib/utils";
 
 export interface BulkAction {
@@ -42,11 +42,7 @@ export function BulkActionBar({
           onClick={action.onClick}
           disabled={action.disabled}
         >
-          {action.loading ? (
-            <LoaderCircle className="size-4 animate-spin" />
-          ) : (
-            action.icon
-          )}
+          {action.loading ? <Spinner /> : action.icon}
           <span className={cn(action.icon && "sr-only md:not-sr-only")}>
             {action.label}
           </span>

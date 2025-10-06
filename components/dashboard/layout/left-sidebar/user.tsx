@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { LoaderCircle, LogOut, MoreVertical, Settings } from "lucide-react";
+import { LogOut, MoreVertical, Settings } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -20,6 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Spinner } from "@/components/ui/spinner";
 import { SidebarMenuButton, useSidebar } from "@/components/ui/sidebar";
 import { usePrivacyMode } from "@/components/dashboard/privacy-mode-provider";
 import { SettingsForm } from "@/components/dashboard/layout/left-sidebar/settings-form";
@@ -113,11 +114,16 @@ export function User({
             disabled={isLoading}
           >
             {isLoading ? (
-              <LoaderCircle className="size-4 animate-spin" />
+              <>
+                <Spinner />
+                Signing out...
+              </>
             ) : (
-              <LogOut className="size-4" />
+              <>
+                <LogOut className="size-4" />
+                Log out
+              </>
             )}
-            {isLoading ? "Signing out..." : "Log out"}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

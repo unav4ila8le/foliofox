@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { History, Plus, LoaderCircle, Trash2 } from "lucide-react";
+import { History, Plus, Trash2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import {
   Popover,
   PopoverContent,
@@ -116,7 +117,7 @@ export function ChatHeader({
                           className="group/delete flex-none"
                         >
                           {deletingId === c.id ? (
-                            <LoaderCircle className="size-3.5 animate-spin" />
+                            <Spinner className="size-3.5" />
                           ) : (
                             <Trash2 className="text-muted-foreground group-hover/delete:text-destructive size-3.5 opacity-0 group-hover:opacity-100" />
                           )}
@@ -138,11 +139,7 @@ export function ChatHeader({
               onClick={onNewConversation}
               disabled={isLoadingConversation}
             >
-              {isLoadingConversation ? (
-                <LoaderCircle className="animate-spin" />
-              ) : (
-                <Plus />
-              )}
+              {isLoadingConversation ? <Spinner /> : <Plus />}
             </Button>
           </TooltipTrigger>
           <TooltipContent>New conversation</TooltipContent>

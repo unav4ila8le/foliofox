@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { format } from "date-fns";
-import { Download, LoaderCircle, FileText, Info } from "lucide-react";
+import { Download, FileText, Info } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import {
   Dialog,
   DialogContent,
@@ -117,7 +118,7 @@ export function ExportDialog({
           <Button onClick={handleExport} disabled={isLoading}>
             {isLoading ? (
               <>
-                <LoaderCircle className="size-4 animate-spin" />
+                <Spinner />
                 Exporting...
               </>
             ) : (
