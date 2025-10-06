@@ -11,8 +11,7 @@
     "lint": "eslint .",
     "type": "tsc --noEmit",
     "types:supabase": "supabase gen types typescript --project-id icnvjrvkdjtbnldhootf > types/database.types.ts",
-    "shadcn:update": "node scripts/update-shadcn.mjs",
-    "shadcn:update-safe": "node scripts/update-shadcn.mjs --safe"
+    "shadcn:update": "node scripts/update-shadcn.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.28",

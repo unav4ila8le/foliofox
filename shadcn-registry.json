@@ -1,32 +1,3 @@
 {
-  "components": [
-    "accordion",
-    "alert-dialog",
-    "alert",
-    "avatar",
-    "badge",
-    "breadcrumb",
-    "button",
-    "calendar",
-    "card",
-    "checkbox",
-    "collapsible",
-    "command",
-    "dialog",
-    "drawer",
-    "dropdown-menu",
-    "form",
-    "input",
-    "input-group",
-    "label",
-    "popover",
-    "radio-group",
-    "select",
-    "separator",
-    "sheet",
-    "table",
-    "tabs",
-    "textarea",
-    "tooltip"
-  ]
+  "exclude": ["file-upload-dropzone", "sidebar", "skeleton"]
 }

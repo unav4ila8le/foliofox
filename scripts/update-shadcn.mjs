@@ -11,47 +11,46 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const registryPath = path.join(__dirname, "../shadcn-registry.json");
 const registry = JSON.parse(fs.readFileSync(registryPath, "utf8"));
 
-// Parse arguments
-const args = process.argv.slice(2);
-const isSafeMode = args.includes("--safe");
-const forceOverwrite = args.includes("-o") || args.includes("--overwrite");
+// Get all .tsx files in components/ui (excluding subdirectories like ai/ and logos/)
+const uiPath = path.join(__dirname, "../components/ui");
+const allFiles = fs.readdirSync(uiPath);
 
-const componentsToUpdate = registry.components;
+// Filter to only .tsx files and extract component names (without extension)
+const allComponents = allFiles
+  .filter(
+    (file) =>
+      file.endsWith(".tsx") && fs.statSync(path.join(uiPath, file)).isFile(),
+  )
+  .map((file) => file.replace(".tsx", ""));
 
-console.log(`📦 Updating ${componentsToUpdate.length} shadcn components...\n`);
+// Filter out excluded components
+const componentsToUpdate = allComponents.filter(
+  (component) => !registry.exclude.includes(component),
+);
 
-if (isSafeMode) {
-  console.log("⚠️  Running in SAFE mode - will skip if file exists\n");
-}
+console.log(`📦 Found ${allComponents.length} components in ui/`);
+console.log(
+  `🔒 Excluding ${registry.exclude.length}: ${registry.exclude.join(", ")}`,
+);
+console.log(`✅ Updating ${componentsToUpdate.length} components...\n`);
 
 let successCount = 0;
-let skippedCount = 0;
 let errorCount = 0;
 
 for (const component of componentsToUpdate) {
   try {
-    const overwriteFlag = forceOverwrite || !isSafeMode ? "-y -o" : "-y";
-    const command = `npx shadcn@latest add ${overwriteFlag} ${component}`;
+    const command = `npx shadcn@latest add -y -o ${component}`;
 
     console.log(`Updating ${component}...`);
     execSync(command, { stdio: "pipe" });
 
     successCount++;
-  } catch (error) {
-    if (
-      error.message.includes("already exists") ||
-      error.message.includes("Skipped")
-    ) {
-      console.log(`⏭️  Skipped ${component} (already exists)`);
-      skippedCount++;
-    } else {
-      console.error(`❌ Error updating ${component}:`, error.message);
-      errorCount++;
-    }
+  } catch {
+    console.error(`❌ Error updating ${component}`);
+    errorCount++;
   }
 }
 
 console.log("\n✅ Update complete!");
 console.log(`Updated: ${successCount}`);
-console.log(`Skipped: ${skippedCount}`);
 console.log(`Errors: ${errorCount}`);
