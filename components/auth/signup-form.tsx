@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -25,6 +24,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 
 import { signUp } from "@/server/auth/sign-up";
 
@@ -173,7 +173,7 @@ export function SignupForm() {
             <Button disabled={isLoading} type="submit">
               {isLoading ? (
                 <>
-                  <Loader2 className="animate-spin" />
+                  <Spinner />
                   Signing up...
                 </>
               ) : (

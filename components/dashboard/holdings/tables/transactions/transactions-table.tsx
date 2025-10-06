@@ -1,9 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { FileText, Trash2 } from "lucide-react";
+import { FileText, Trash2, Search } from "lucide-react";
 
-import { SearchInput } from "@/components/ui/search-input";
+import {
+  InputGroup,
+  InputGroupInput,
+  InputGroupAddon,
+} from "@/components/ui/input-group";
 import { DataTable } from "@/components/dashboard/holdings/tables/base/data-table";
 import { getTransactionColumns } from "@/components/dashboard/holdings/tables/transactions/columns";
 import { NewRecordButton } from "@/components/dashboard/new-record";
@@ -39,12 +43,16 @@ export function TransactionsTable({
       {/* Toolbar */}
       <div className="flex items-center justify-between gap-2">
         {/* Search */}
-        <SearchInput
-          className="max-w-sm"
-          placeholder="Search transactions..."
-          value={filterValue}
-          onChange={(e) => setFilterValue(e.target.value)}
-        />
+        <InputGroup className="max-w-sm">
+          <InputGroupInput
+            placeholder="Search transactions..."
+            value={filterValue}
+            onChange={(e) => setFilterValue(e.target.value)}
+          />
+          <InputGroupAddon>
+            <Search />
+          </InputGroupAddon>
+        </InputGroup>
         {/* New transaction button */}
         {data.length > 0 && (
           <NewRecordButton variant="outline" preselectedHolding={holding} />

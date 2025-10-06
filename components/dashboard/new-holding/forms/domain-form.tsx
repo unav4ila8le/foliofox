@@ -5,7 +5,7 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { LoaderCircle, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -18,7 +18,14 @@ import {
   FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  InputGroup,
+  InputGroupInput,
+  InputGroupAddon,
+  InputGroupButton,
+} from "@/components/ui/input-group";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { HumbleWorthLogo } from "@/components/ui/logos/humbleworth-logo";
 
 import { useNewHoldingDialog } from "../index";
@@ -156,8 +163,8 @@ export function DomainForm() {
                 <HumbleWorthLogo height={14} />
               </FormLabel>
               <FormControl>
-                <div className="relative">
-                  <Input
+                <InputGroup>
+                  <InputGroupInput
                     disabled={isCheckingValuation}
                     placeholder="E.g., foliofox.ai"
                     {...field}
@@ -166,22 +173,17 @@ export function DomainForm() {
                       field.onChange(cleaned);
                     }}
                   />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={checkDomainValuation}
-                    disabled={!isDomainValid || isCheckingValuation}
-                    className="absolute top-1/2 right-1 h-7 -translate-y-1/2 rounded-sm text-xs"
-                  >
-                    {isCheckingValuation ? (
-                      <LoaderCircle className="size-3 animate-spin" />
-                    ) : (
-                      <Search className="size-3" />
-                    )}
-                    Check valuation
-                  </Button>
-                </div>
+                  <InputGroupAddon align="inline-end">
+                    <InputGroupButton
+                      variant="secondary"
+                      onClick={checkDomainValuation}
+                      disabled={!isDomainValid || isCheckingValuation}
+                    >
+                      {isCheckingValuation ? <Spinner /> : <Search />}
+                      Check valuation
+                    </InputGroupButton>
+                  </InputGroupAddon>
+                </InputGroup>
               </FormControl>
               <FormDescription>
                 Do not include the &quot;https://&quot; or &quot;www.&quot;
@@ -250,7 +252,7 @@ export function DomainForm() {
           >
             {isLoading ? (
               <>
-                <LoaderCircle className="animate-spin" />
+                <Spinner />
                 Saving...
               </>
             ) : (

@@ -51,9 +51,7 @@ export const Action = ({
     return (
       <Tooltip delayDuration={500}>
         <TooltipTrigger asChild>{button}</TooltipTrigger>
-        <TooltipContent side="bottom" showArrow={false}>
-          {tooltip}
-        </TooltipContent>
+        <TooltipContent side="bottom">{tooltip}</TooltipContent>
       </Tooltip>
     );
   }

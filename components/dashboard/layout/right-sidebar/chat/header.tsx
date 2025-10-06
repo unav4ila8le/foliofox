@@ -78,9 +78,7 @@ export function ChatHeader({
                 </Button>
               </PopoverTrigger>
             </TooltipTrigger>
-            <TooltipContent showArrow={false}>
-              Conversation history
-            </TooltipContent>
+            <TooltipContent>Conversation history</TooltipContent>
           </Tooltip>
           <PopoverContent
             align="start"
@@ -147,7 +145,7 @@ export function ChatHeader({
               )}
             </Button>
           </TooltipTrigger>
-          <TooltipContent showArrow={false}>New conversation</TooltipContent>
+          <TooltipContent>New conversation</TooltipContent>
         </Tooltip>
       </div>
     </div>

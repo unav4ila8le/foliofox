@@ -3,9 +3,13 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Trash2, ArchiveRestore } from "lucide-react";
+import { Trash2, ArchiveRestore, Search } from "lucide-react";
 
-import { SearchInput } from "@/components/ui/search-input";
+import {
+  InputGroup,
+  InputGroupInput,
+  InputGroupAddon,
+} from "@/components/ui/input-group";
 import { BulkActionBar } from "@/components/dashboard/holdings/tables/base/bulk-action-bar";
 import { DeleteHoldingDialog } from "@/components/dashboard/holdings/tables/row-actions/delete-dialog";
 import { DataTable } from "../base/data-table";
@@ -59,12 +63,16 @@ export function ArchivedTable({ data }: ArchivedTableProps) {
   return (
     <div className="flex flex-col gap-4">
       {/* Search */}
-      <SearchInput
-        className="max-w-sm"
-        placeholder="Search archived holdings..."
-        value={filterValue}
-        onChange={(e) => setFilterValue(e.target.value)}
-      />
+      <InputGroup className="max-w-sm">
+        <InputGroupInput
+          placeholder="Search archived holdings..."
+          value={filterValue}
+          onChange={(e) => setFilterValue(e.target.value)}
+        />
+        <InputGroupAddon>
+          <Search />
+        </InputGroupAddon>
+      </InputGroup>
 
       {/* Table */}
       <DataTable

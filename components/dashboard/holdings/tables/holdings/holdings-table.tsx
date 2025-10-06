@@ -2,9 +2,13 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Archive, Package, Trash2 } from "lucide-react";
+import { Archive, Package, Trash2, Search } from "lucide-react";
 
-import { SearchInput } from "@/components/ui/search-input";
+import {
+  InputGroup,
+  InputGroupInput,
+  InputGroupAddon,
+} from "@/components/ui/input-group";
 import { NewHoldingButton } from "@/components/dashboard/new-holding";
 import { TableActionsDropdown } from "@/components/dashboard/holdings/tables/holdings/table-actions";
 import { BulkActionBar } from "@/components/dashboard/holdings/tables/base/bulk-action-bar";
@@ -40,14 +44,20 @@ export function HoldingsTable({ data }: HoldingsTableProps) {
     <div className="flex flex-col gap-4">
       {/* Toolbar */}
       <div className="flex items-center justify-between gap-2">
-        <SearchInput
-          className="max-w-sm"
-          placeholder="Search holdings..."
-          value={filterValue}
-          onChange={(e) => setFilterValue(e.target.value)}
-        />
-        <NewHoldingButton variant="outline" />
-        <TableActionsDropdown holdingsCount={data.length} />
+        <InputGroup className="max-w-sm">
+          <InputGroupInput
+            placeholder="Search holdings..."
+            value={filterValue}
+            onChange={(e) => setFilterValue(e.target.value)}
+          />
+          <InputGroupAddon>
+            <Search />
+          </InputGroupAddon>
+        </InputGroup>
+        <div className="flex items-center gap-2">
+          <NewHoldingButton variant="outline" />
+          <TableActionsDropdown holdingsCount={data.length} />
+        </div>
       </div>
 
       {/* Table */}

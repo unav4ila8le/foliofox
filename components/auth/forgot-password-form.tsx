@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -25,6 +24,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 
 import { resetPassword } from "@/server/auth/reset-password";
 
@@ -95,7 +95,7 @@ export function ResetPasswordForm() {
             <Button disabled={isLoading} type="submit">
               {isLoading ? (
                 <>
-                  <Loader2 className="animate-spin" />
+                  <Spinner />
                   Sending...
                 </>
               ) : (

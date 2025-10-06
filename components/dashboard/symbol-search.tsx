@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useDebounce } from "use-debounce";
 import { useFormContext } from "react-hook-form";
-import { Check, LoaderCircle, Search, XIcon } from "lucide-react";
+import { Check, Search, XIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -26,6 +26,7 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
+import { Spinner } from "@/components/ui/spinner";
 
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -300,7 +301,7 @@ function SymbolList({
                   </span>
                 </div>
                 {isLoadingQuote && value === symbol.id ? (
-                  <LoaderCircle className="size-4 animate-spin" />
+                  <Spinner />
                 ) : (
                   <Check
                     className={cn(
