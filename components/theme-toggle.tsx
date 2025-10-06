@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Moon, Sun, MonitorSmartphone } from "lucide-react";
 import { useTheme } from "next-themes";
+import { Moon, Sun, MonitorSmartphone } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -13,32 +12,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  // useEffect only runs on the client, so now we can safely show the UI
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Don't render anything until mounted on client
-  // This prevents hydration mismatch
-  if (!mounted) {
-    return (
-      <Button variant="outline" size="icon">
-        <span className="sr-only">Toggle theme</span>
-      </Button>
-    );
-  }
+  const { theme = "system", setTheme } = useTheme();
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon">
+        <Button variant="outline" size="icon" aria-label="Toggle theme">
           {theme === "light" && <Sun />}
           {theme === "dark" && <Moon />}
           {theme === "system" && <MonitorSmartphone />}
-          <span className="sr-only">Toggle theme</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
