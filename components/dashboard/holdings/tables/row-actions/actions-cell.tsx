@@ -99,8 +99,11 @@ export function ActionsCell({ holding }: { holding: TransformedHolding }) {
             </DropdownMenuItem>
           )}
           <DropdownMenuSeparator />
-          <DropdownMenuItem onSelect={() => setShowDeleteDialog(true)}>
-            <Trash2 className="text-destructive size-4" /> Delete
+          <DropdownMenuItem
+            onSelect={() => setShowDeleteDialog(true)}
+            variant="destructive"
+          >
+            <Trash2 /> Delete
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
