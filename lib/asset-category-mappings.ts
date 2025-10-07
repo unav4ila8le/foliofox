@@ -1,7 +1,7 @@
 // Transaction type labels
 export const TRANSACTION_TYPE_LABELS = {
-  buy: "Purchase",
-  sell: "Sale",
+  buy: "Buy",
+  sell: "Sell",
   update: "Update",
   deposit: "Deposit",
   withdrawal: "Withdrawal",

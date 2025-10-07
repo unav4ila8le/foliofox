@@ -114,14 +114,14 @@ export function SellForm() {
         throw new Error(result.message);
       }
 
-      toast.success("Sale transaction created successfully");
+      toast.success("Sell transaction created successfully");
       form.reset();
       setOpen(false);
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Failed to create sale transaction. Please try again.",
+          : "Failed to create sell transaction. Please try again.",
       );
     } finally {
       setIsLoading(false);

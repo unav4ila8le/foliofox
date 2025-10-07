@@ -7,8 +7,9 @@ import {
   Trash2,
   Archive,
   ArchiveRestore,
-  Plus,
   SquarePen,
+  CircleMinus,
+  CirclePlus,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { useNewRecordDialog } from "@/components/dashboard/new-record";
-import { UpdateHoldingDialog } from "@/components/dashboard/holdings/tables/row-actions/update-holding";
 import { ArchiveHoldingDialog } from "./archive-dialog";
 import { DeleteHoldingDialog } from "./delete-dialog";
 
@@ -31,15 +31,40 @@ import { restoreHolding } from "@/server/holdings/restore";
 import type { TransformedHolding } from "@/types/global.types";
 
 export function ActionsCell({ holding }: { holding: TransformedHolding }) {
-  const { setOpen, setPreselectedHolding } = useNewRecordDialog();
+  const { setOpen, setPreselectedHolding, setInitialTab } =
+    useNewRecordDialog();
   const [isRestoring, setIsRestoring] = useState(false);
-  const [showUpdateDialog, setShowUpdateDialog] = useState(false);
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  // New record
-  const handleNewRecord = () => {
+  // Get available transaction types based on holding source
+  const getAvailableTransactionTypes = () => {
+    if (holding.source === "symbol") return ["buy", "sell", "update"];
+    if (holding.source === "domain") return [];
+    // Custom (no source): only update
+    return ["update"];
+  };
+
+  const availableTypes = getAvailableTransactionTypes();
+
+  // New update record
+  const handleNewUpdateRecord = () => {
     setPreselectedHolding(holding);
+    setInitialTab("update-form");
+    setOpen(true);
+  };
+
+  // New buy record
+  const handleNewBuyRecord = () => {
+    setPreselectedHolding(holding);
+    setInitialTab("buy-form");
+    setOpen(true);
+  };
+
+  // New sell record
+  const handleNewSellRecord = () => {
+    setPreselectedHolding(holding);
+    setInitialTab("sell-form");
     setOpen(true);
   };
 
@@ -72,18 +97,35 @@ export function ActionsCell({ holding }: { holding: TransformedHolding }) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          {/* New update record */}
           <DropdownMenuItem
-            onSelect={handleNewRecord}
+            onSelect={handleNewUpdateRecord}
             disabled={holding.is_archived}
           >
-            <Plus className="size-4" /> New record
+            <SquarePen className="size-4" /> Update value
           </DropdownMenuItem>
-          <DropdownMenuItem
-            onSelect={() => setShowUpdateDialog(true)}
-            disabled={holding.is_archived}
-          >
-            <SquarePen className="size-4" /> Edit holding
-          </DropdownMenuItem>
+
+          {/* New buy record */}
+          {availableTypes.includes("buy") && (
+            <DropdownMenuItem
+              onSelect={handleNewBuyRecord}
+              disabled={holding.is_archived}
+            >
+              <CirclePlus className="size-4" /> Buy record
+            </DropdownMenuItem>
+          )}
+
+          {/* New sell record */}
+          {availableTypes.includes("sell") && (
+            <DropdownMenuItem
+              onSelect={handleNewSellRecord}
+              disabled={holding.is_archived}
+            >
+              <CircleMinus className="size-4" /> Sell record
+            </DropdownMenuItem>
+          )}
+
+          {/* Archive/restore holding */}
           {holding.is_archived ? (
             <DropdownMenuItem onSelect={handleRestore} disabled={isRestoring}>
               {isRestoring ? (
@@ -99,6 +141,8 @@ export function ActionsCell({ holding }: { holding: TransformedHolding }) {
             </DropdownMenuItem>
           )}
           <DropdownMenuSeparator />
+
+          {/* Delete holding */}
           <DropdownMenuItem
             onSelect={() => setShowDeleteDialog(true)}
             variant="destructive"
@@ -107,12 +151,6 @@ export function ActionsCell({ holding }: { holding: TransformedHolding }) {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-
-      <UpdateHoldingDialog
-        holding={holding}
-        open={showUpdateDialog}
-        onOpenChangeAction={setShowUpdateDialog}
-      />
 
       <ArchiveHoldingDialog
         holdings={[{ id: holding.id, name: holding.name }]} // Minimal DTO

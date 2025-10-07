@@ -35,6 +35,7 @@ type NewRecordDialogContextType = {
   setOpen: (open: boolean) => void;
   preselectedHolding: TransformedHolding | null;
   setPreselectedHolding: (holding: TransformedHolding | null) => void;
+  setInitialTab: (tab: string | undefined) => void;
 };
 
 const NewRecordDialogContext = createContext<
@@ -49,6 +50,7 @@ export function NewRecordDialogProvider({
   const [open, setOpen] = useState(false);
   const [preselectedHolding, setPreselectedHolding] =
     useState<TransformedHolding | null>(null);
+  const [initialTab, setInitialTab] = useState<string | undefined>(undefined);
 
   // Handle dialog open/close and reset state when closing
   const handleOpenChange = (isOpen: boolean) => {
@@ -57,6 +59,7 @@ export function NewRecordDialogProvider({
     // Clear preselected holding when dialog closes
     if (!isOpen) {
       setPreselectedHolding(null);
+      setInitialTab(undefined);
     }
   };
 
@@ -72,7 +75,8 @@ export function NewRecordDialogProvider({
 
   const availableTypes = getAvailableTransactionTypes();
   const defaultTab =
-    availableTypes.length > 0 ? availableTypes[0] + "-form" : undefined;
+    initialTab ??
+    (availableTypes.length > 0 ? availableTypes[0] + "-form" : undefined);
 
   return (
     <NewRecordDialogContext.Provider
@@ -81,6 +85,7 @@ export function NewRecordDialogProvider({
         setOpen,
         preselectedHolding,
         setPreselectedHolding,
+        setInitialTab,
       }}
     >
       {children}

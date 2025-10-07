@@ -100,14 +100,14 @@ export function BuyForm() {
         throw new Error(result.message);
       }
 
-      toast.success("Purchase transaction created successfully");
+      toast.success("Buy transaction created successfully");
       form.reset();
       setOpen(false);
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Failed to create purchase transaction. Please try again.",
+          : "Failed to create buy transaction. Please try again.",
       );
     } finally {
       setIsLoading(false);

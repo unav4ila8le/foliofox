@@ -95,6 +95,7 @@ const HEADER_ALIASES: Record<CanonicalHeader, string[]> = {
     "cost_basis",
     "basis",
     "purchase price",
+    "buy price",
     "avg cost",
     "average cost",
     "book value",
