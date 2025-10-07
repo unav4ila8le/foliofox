@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useDebounce } from "use-debounce";
 import { useFormContext } from "react-hook-form";
-import { Check, Search, XIcon } from "lucide-react";
+import { Search, XIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -74,7 +74,39 @@ export function SymbolSearch({
 
   useEffect(() => {
     if (!debouncedQuery) {
-      setResults([]);
+      // Show popular symbols when no search query
+      setResults([
+        {
+          id: "AAPL",
+          nameDisp: "Apple Inc.",
+          exchange: "NMS",
+          typeDisp: "Equity",
+        },
+        {
+          id: "MSFT",
+          nameDisp: "Microsoft Corporation",
+          exchange: "NMS",
+          typeDisp: "Equity",
+        },
+        {
+          id: "GOOGL",
+          nameDisp: "Alphabet Inc.",
+          exchange: "NMS",
+          typeDisp: "Equity",
+        },
+        {
+          id: "AMZN",
+          nameDisp: "Amazon.com Inc.",
+          exchange: "NMS",
+          typeDisp: "Equity",
+        },
+        {
+          id: "TSLA",
+          nameDisp: "Tesla Inc.",
+          exchange: "NMS",
+          typeDisp: "Equity",
+        },
+      ]);
       return;
     }
 
@@ -102,7 +134,6 @@ export function SymbolSearch({
   // SymbolList props
   const symbolListProps = {
     setOpen,
-    value: field.value,
     onChange: (v: string) => {
       clearErrors(name);
       field.onChange(v);
@@ -148,12 +179,16 @@ export function SymbolSearch({
                 <span className="sr-only">Clear</span>
               </div>
             )}
-            <Search
-              className={cn(
-                "text-muted-foreground",
-                hasSelectedValue && "group-hover:hidden",
-              )}
-            />
+            {isLoadingQuote ? (
+              <Spinner />
+            ) : (
+              <Search
+                className={cn(
+                  "text-muted-foreground",
+                  hasSelectedValue && "group-hover:hidden",
+                )}
+              />
+            )}
           </Button>
         </DrawerTrigger>
         <DrawerContent>
@@ -198,12 +233,16 @@ export function SymbolSearch({
               <span className="sr-only">Clear</span>
             </div>
           )}
-          <Search
-            className={cn(
-              "text-muted-foreground",
-              hasSelectedValue && "group-hover:hidden",
-            )}
-          />
+          {isLoadingQuote ? (
+            <Spinner />
+          ) : (
+            <Search
+              className={cn(
+                "text-muted-foreground",
+                hasSelectedValue && "group-hover:hidden",
+              )}
+            />
+          )}
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className={cn(popoverWidth, "p-0")}>
@@ -215,7 +254,6 @@ export function SymbolSearch({
 
 interface SymbolListProps {
   setOpen: (open: boolean) => void;
-  value: string;
   onChange: (value: string) => void;
   onSymbolSelect?: (symbolId: string) => void;
   results: SymbolSearchResult[];
@@ -227,7 +265,6 @@ interface SymbolListProps {
 
 function SymbolList({
   setOpen,
-  value,
   onChange,
   onSymbolSelect,
   results,
@@ -240,13 +277,13 @@ function SymbolList({
   const handleSymbolSelect = async (symbol: SymbolSearchResult) => {
     try {
       setIsLoadingQuote(true);
-      onChange(symbol.id);
 
       // Call the async onSymbolSelect if provided
       if (onSymbolSelect) {
         await onSymbolSelect(symbol.id);
       }
 
+      onChange(symbol.id);
       setOpen(false);
     } catch (error) {
       console.error("Error selecting symbol:", error);
@@ -300,16 +337,6 @@ function SymbolList({
                     {symbol.typeDisp}
                   </span>
                 </div>
-                {isLoadingQuote && value === symbol.id ? (
-                  <Spinner />
-                ) : (
-                  <Check
-                    className={cn(
-                      "size-4",
-                      value === symbol.id ? "opacity-100" : "opacity-0",
-                    )}
-                  />
-                )}
               </div>
             </CommandItem>
           ))}
