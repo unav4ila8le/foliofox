@@ -194,8 +194,6 @@ N/A
 - [ ] Landingpage with waitlist
 - [x] New UX for adding new holdings (one form per holding type)
 - [ ] Add Plaid for user holding sync
-- [ ] New forms for editing holdings based on holding source
-- [ ] New forms for creating transactions based on holding source
 
 ---
 
