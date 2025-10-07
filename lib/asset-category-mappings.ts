@@ -1,15 +1,3 @@
-// Transaction types supported for each asset category
-export const ASSET_CATEGORY_TRANSACTION_TYPES = {
-  equity: ["buy", "sell", "update"],
-  fixed_income: ["buy", "sell", "update"],
-  real_estate: ["update"],
-  cryptocurrency: ["buy", "sell", "update"],
-  commodities: ["buy", "sell", "update"],
-  cash: ["update"],
-  domain: ["update"],
-  other: ["update"],
-};
-
 // Transaction type labels
 export const TRANSACTION_TYPE_LABELS = {
   buy: "Purchase",
@@ -19,15 +7,7 @@ export const TRANSACTION_TYPE_LABELS = {
   withdrawal: "Withdrawal",
 };
 
-// Utility functions
-export function getTransactionTypesForCategory(categoryCode: string): string[] {
-  return (
-    ASSET_CATEGORY_TRANSACTION_TYPES[
-      categoryCode as keyof typeof ASSET_CATEGORY_TRANSACTION_TYPES
-    ] || ["update"]
-  );
-}
-
+// Get transaction type label
 export function getTransactionTypeLabel(type: string): string {
   return (
     TRANSACTION_TYPE_LABELS[type as keyof typeof TRANSACTION_TYPE_LABELS] ||

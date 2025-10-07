@@ -192,8 +192,10 @@ N/A
 - [x] Add privacy mode (blur/hide net worth numbers)
 - [ ] Find a way to have a more accurate historical calculation which doesn't add much overhead. WeeksBack solution is fast but not accurate cause the date is "rounded" to match weeks and not days.
 - [ ] Landingpage with waitlist
-- [ ] New UX for adding new holdings (one form per holding type)
+- [x] New UX for adding new holdings (one form per holding type)
 - [ ] Add Plaid for user holding sync
+- [ ] New forms for editing holdings based on holding source
+- [ ] New forms for creating transactions based on holding source
 
 ---
 

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { createContext, useContext, useState } from "react";
 import { CircleArrowDown, CircleArrowUp, PencilLine, Plus } from "lucide-react";
 
@@ -17,10 +18,7 @@ import { BuyForm } from "./forms/buy-form";
 import { SellForm } from "./forms/sell-form";
 import { UpdateForm } from "./forms/update-form";
 
-import {
-  getTransactionTypesForCategory,
-  getTransactionTypeLabel,
-} from "@/lib/asset-category-mappings";
+import { getTransactionTypeLabel } from "@/lib/asset-category-mappings";
 import { cn } from "@/lib/utils";
 
 import type { TransformedHolding } from "@/types/global.types";
@@ -62,14 +60,19 @@ export function NewRecordDialogProvider({
     }
   };
 
-  // Get available transaction types based on selected holding
+  // Get available transaction types based on holding source
   const getAvailableTransactionTypes = () => {
-    if (!preselectedHolding) return ["buy", "sell", "update"];
-    return getTransactionTypesForCategory(preselectedHolding.category_code);
+    if (!preselectedHolding) return [] as string[];
+    if (preselectedHolding.source === "symbol")
+      return ["buy", "sell", "update"];
+    if (preselectedHolding.source === "domain") return [] as string[];
+    // Custom (no source): only update
+    return ["update"];
   };
 
   const availableTypes = getAvailableTransactionTypes();
-  const defaultTab = availableTypes[0] + "-form";
+  const defaultTab =
+    availableTypes.length > 0 ? availableTypes[0] + "-form" : undefined;
 
   return (
     <NewRecordDialogContext.Provider
@@ -110,36 +113,66 @@ export function NewRecordDialogProvider({
               !preselectedHolding && "pointer-events-none opacity-50",
             )}
           >
-            <Tabs key={defaultTab} defaultValue={defaultTab} className="gap-4">
-              <TabsList
-                className={availableTypes.length > 1 ? "w-full" : "hidden"}
+            {preselectedHolding && availableTypes.length === 0 ? (
+              <p className="text-sm">
+                Domains are priced automatically, manual records aren&apos;t
+                needed.
+                <br />
+                Domain valuations are provided by{" "}
+                <Link
+                  href="https://humbleworth.com"
+                  target="_blank"
+                  className="hover:text-primary underline underline-offset-2"
+                >
+                  HumbleWorth
+                </Link>
+                .
+                <br />
+                If you prefer, you can add a new custom holding to manually
+                enter your own valuation instead.
+              </p>
+            ) : availableTypes.length > 0 ? (
+              <Tabs
+                key={defaultTab}
+                defaultValue={defaultTab}
+                className="gap-4"
               >
-                {availableTypes.map((type) => {
-                  const Icon =
-                    TRANSACTION_TYPE_ICONS[type] ??
-                    TRANSACTION_TYPE_ICONS.update;
-                  return (
-                    <TabsTrigger
-                      key={type}
-                      value={`${type}-form`}
-                      disabled={!preselectedHolding}
-                    >
-                      <Icon className="size-4" />
-                      {getTransactionTypeLabel(type)}
-                    </TabsTrigger>
-                  );
-                })}
-              </TabsList>
-              <TabsContent value="buy-form">
-                <BuyForm />
-              </TabsContent>
-              <TabsContent value="sell-form">
-                <SellForm />
-              </TabsContent>
-              <TabsContent value="update-form">
-                <UpdateForm />
-              </TabsContent>
-            </Tabs>
+                <TabsList
+                  className={availableTypes.length > 1 ? "w-full" : "hidden"}
+                >
+                  {availableTypes.map((type) => {
+                    const Icon =
+                      TRANSACTION_TYPE_ICONS[type] ??
+                      TRANSACTION_TYPE_ICONS.update;
+                    return (
+                      <TabsTrigger
+                        key={type}
+                        value={`${type}-form`}
+                        disabled={!preselectedHolding}
+                      >
+                        <Icon className="size-4" />
+                        {getTransactionTypeLabel(type)}
+                      </TabsTrigger>
+                    );
+                  })}
+                </TabsList>
+                {availableTypes.includes("buy") && (
+                  <TabsContent value="buy-form">
+                    <BuyForm />
+                  </TabsContent>
+                )}
+                {availableTypes.includes("sell") && (
+                  <TabsContent value="sell-form">
+                    <SellForm />
+                  </TabsContent>
+                )}
+                {availableTypes.includes("update") && (
+                  <TabsContent value="update-form">
+                    <UpdateForm />
+                  </TabsContent>
+                )}
+              </Tabs>
+            ) : null}
           </div>
         </DialogContent>
       </Dialog>

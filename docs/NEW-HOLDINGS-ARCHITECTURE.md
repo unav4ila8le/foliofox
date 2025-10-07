@@ -430,59 +430,59 @@ const transformedHoldings = holdings.map((holding) => {
 
 ---
 
-### Phase 3: Selection Screen UI (Week 4) - NEXT
+### Phase 3: Selection Screen UI ✅ COMPLETED
 
 **Goal:** Replace tabs with card-based selection for better UX and modularity
 
 **Flow:**
 
 ```
-[New Holding] → Selection Dialog (4 cards) → Form Dialog
+[New Holding] → Selection Dialog → Form Dialog
 ```
 
 **Selection Cards (User-Facing Categories):**
 
 1. **📈 Ticker Symbol** → `source: 'symbol'`
-   - Stocks, ETFs, mutual funds
-   - Shows symbol search form with automatic market pricing
+   - Stocks, ETFs, mutual funds, crypto supported via symbol search
+   - Pre-fills category, currency, and today's unit value from Yahoo Finance
 
 2. **🌐 Domain Name** → `source: 'domain'`
-   - Website valuations
-   - Shows domain entry form with automatic pricing
+   - Website valuations via HumbleWorth
+   - Sets category to `domain`, currency to `USD`, `quantity=1`, and `unit_value` from valuation
 
-3. **💵 Cash & Equivalents** → `source: 'custom'` + simplified UX
-   - Bank accounts, savings, broker cash
-   - Simplified form: just name, currency, and amount (no qty/unit_value breakdown)
-   - Maps to: `quantity=1, unit_value=amount`
-   - Default category: "cash" (user can change)
-
-4. **✏️ Custom Holding** → `source: 'custom'` + full UX
-   - Real estate, art, collectibles, private equity
+3. **✏️ Custom Holding** → `source: 'custom'`
+   - Manual assets (cash, real estate, collectibles, private equity, etc.)
    - Full form: name, category, currency, quantity, unit_value, cost_basis
+
+4. **🪄 Import CSV/AI**
+   - Opens the import dialog; supports CSV and AI extraction flows
 
 **Implementation Details:**
 
 - Single dialog with card selection screen
-- When card clicked, show corresponding form in the same dialog
-- Back button to return to selection
-- Each form appends `source` to FormData (cash and custom both append `'custom'`)
-- Cash flow logic: `quantity=1, unit_value=amount` computed before submission
+- When a card is clicked, the corresponding form opens in the same dialog
+- The server infers `source` based on presence of extension identifiers:
+  - Symbol form appends `symbol_id` plus holding fields
+  - Domain form appends `domain_id` and sets `currency=USD`, `quantity=1`
+  - Custom form appends manual fields only (no extension ID)
+- Symbol form auto-fills category/currency/unit value from Yahoo Finance; Domain form can auto-fill valuation
 
 **Key Design Decision:**
-Cash is NOT a separate source type in the database—it's `source='custom'` with simplified UX. This keeps the architecture clean while providing optimal UX for common use cases.
+Cash is treated as `source='custom'` for now. A dedicated "Cash quick add" UX can be added later as a thin wrapper over the manual form (default `category='cash'`, `quantity=1`, `unit_value=amount`) without schema changes.
 
 ---
 
-### Phase 4: Source-Specific Edit Forms (Week 5)
+### Phase 4: Edit Holding Form (Unified)
 
-**Goal:** Edit forms respect source constraints
+**Goal:** Keep editing simple and consistent for all sources
 
-**Strategy:**
+**Decision:** Use a single edit form for all holdings with only:
 
-- Route to different edit forms based on `holding.source`
-- Symbol holdings: can't change symbol_id (show read-only)
-- Manual holdings: can change currency
-- Domain holdings: can't change domain_id
+- Name
+- Category
+- Description
+
+Currency editing is deferred (records are currency-agnostic, so we can add later without schema changes). Source-specific identifiers (e.g., `symbol_id`, `domain_id`) remain immutable and are not exposed in the edit form.
 
 ---
 
@@ -641,6 +641,16 @@ Phase 1: Delete + recreate. Phase 2 (future): Add "Convert" action.
 
 ## Summary
 
+### Transactions behavior
+
+- UI gating by source:
+  - `symbol`: buy, sell, update
+  - `domain`: no manual transactions (valuations fetched automatically)
+  - `custom`: update only
+- UPDATE acts as a reset point. Recalculations start from a date and stop at the next UPDATE, replaying only non-UPDATE transactions in that window.
+- Market data: symbols/domains resolve unit_value automatically as-of date; custom relies on user input.
+- Same-day transactions are allowed; ordering uses `created_at`.
+
 **This delivers:**
 
 - ✅ Explicit `source` → reliable routing to forms/logic
@@ -652,5 +662,5 @@ Phase 1: Delete + recreate. Phase 2 (future): Add "Convert" action.
 - ✅ **Single point of change** → only `setSourceId` helper needs updates
 - ✅ 1 day per new source type (down from 1-2 days)
 
-**Timeline:** 6 weeks for Phases 1-5 (Phase 2 completed)  
-**Status:** Phase 2 ✅ COMPLETED - Market data system is fully modular
+**Timeline:** 6 weeks for Phases 1-5 (Phases 1–3 completed)  
+**Status:** Phase 3 ✅ COMPLETED - New holding selection/forms shipped; market data system fully modular

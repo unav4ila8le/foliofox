@@ -57,12 +57,8 @@ export async function createTransaction(formData: FormData) {
     const transactionDate = new Date(transactionData.date);
     const firstRecordDate = new Date(firstRecord.date);
 
-    // Allow same-day transactions if transaction is after the record was created
-    if (
-      transactionDate < firstRecordDate ||
-      (transactionDate.toDateString() === firstRecordDate.toDateString() &&
-        new Date() <= new Date(firstRecord.created_at))
-    ) {
+    // Disallow transactions before the first record date; allow same-day
+    if (transactionDate < firstRecordDate) {
       return {
         success: false,
         code: "INVALID_DATE",
