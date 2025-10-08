@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { Check, ChevronsUpDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
+  CommandSeparator,
 } from "@/components/ui/command";
 import {
   Popover,
@@ -172,6 +173,22 @@ function HoldingList({
   holdings,
   isLoading,
 }: HoldingListProps) {
+  // Group by category (sorted by display_order), and holdings by name
+  const grouped = [...holdings]
+    .sort(
+      (a, b) =>
+        a.asset_categories.display_order - b.asset_categories.display_order,
+    )
+    .reduce<Record<string, TransformedHolding[]>>((acc, h) => {
+      const key = h.asset_categories.name;
+      (acc[key] ||= []).push(h);
+      return acc;
+    }, {});
+
+  Object.values(grouped).forEach((arr) =>
+    arr.sort((a, b) => a.name.localeCompare(b.name)),
+  );
+
   return (
     <Command>
       <CommandInput placeholder="Search holding..." className="h-9" />
@@ -179,27 +196,32 @@ function HoldingList({
         <CommandEmpty>
           {isLoading ? "Loading holdings..." : "No holdings found."}
         </CommandEmpty>
-        <CommandGroup>
-          {holdings.map((holding) => (
-            <CommandItem
-              key={holding.id}
-              onSelect={() => {
-                onChange(holding.id);
-                onHoldingSelect?.(holding);
-                setOpen(false);
-              }}
-              value={holding.name}
-            >
-              {holding.name}
-              <Check
-                className={cn(
-                  "ml-auto",
-                  value === holding.id ? "opacity-100" : "opacity-0",
-                )}
-              />
-            </CommandItem>
-          ))}
-        </CommandGroup>
+        {Object.entries(grouped).map(([categoryName, items]) => (
+          <Fragment key={categoryName}>
+            <CommandGroup heading={categoryName}>
+              {items.map((holding) => (
+                <CommandItem
+                  key={holding.id}
+                  onSelect={() => {
+                    onChange(holding.id);
+                    onHoldingSelect?.(holding);
+                    setOpen(false);
+                  }}
+                  value={holding.name}
+                >
+                  {holding.name}
+                  <Check
+                    className={cn(
+                      "ml-auto",
+                      value === holding.id ? "opacity-100" : "opacity-0",
+                    )}
+                  />
+                </CommandItem>
+              ))}
+            </CommandGroup>
+            <CommandSeparator className="last:hidden" />
+          </Fragment>
+        ))}
       </CommandList>
     </Command>
   );

@@ -2,7 +2,13 @@
 
 import Link from "next/link";
 import { createContext, useContext, useState } from "react";
-import { CircleArrowDown, CircleArrowUp, PencilLine, Plus } from "lucide-react";
+import {
+  CircleArrowDown,
+  CircleArrowUp,
+  PencilLine,
+  Plus,
+  Info,
+} from "lucide-react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -13,6 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { HoldingSelector } from "./holding-selector";
 import { BuyForm } from "./forms/buy-form";
 import { SellForm } from "./forms/sell-form";
@@ -119,23 +126,29 @@ export function NewRecordDialogProvider({
             )}
           >
             {preselectedHolding && availableTypes.length === 0 ? (
-              <p className="text-sm">
-                Domains are priced automatically, manual records aren&apos;t
-                needed.
-                <br />
-                Domain valuations are provided by{" "}
-                <Link
-                  href="https://humbleworth.com"
-                  target="_blank"
-                  className="hover:text-primary underline underline-offset-2"
-                >
-                  HumbleWorth
-                </Link>
-                .
-                <br />
-                If you prefer, you can add a new custom holding to manually
-                enter your own valuation instead.
-              </p>
+              <Alert>
+                <Info className="size-4" />
+                <AlertTitle className="line-clamp-none">
+                  Domain values are updated automatically. Manual records
+                  aren&apos;t needed.
+                </AlertTitle>
+                <AlertDescription>
+                  <p>
+                    Domain valuations are provided by{" "}
+                    <Link
+                      href="https://humbleworth.com"
+                      target="_blank"
+                      className="hover:text-primary underline underline-offset-2"
+                    >
+                      HumbleWorth
+                    </Link>
+                    .
+                    <br />
+                    If you prefer, you can add a new custom holding to manually
+                    enter your own valuation instead.
+                  </p>
+                </AlertDescription>
+              </Alert>
             ) : availableTypes.length > 0 ? (
               <Tabs
                 key={defaultTab}
