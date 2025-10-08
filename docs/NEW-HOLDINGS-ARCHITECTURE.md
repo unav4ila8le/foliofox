@@ -488,21 +488,22 @@ Currency editing is deferred (records are currency-agnostic, so we can add later
 
 ### Phase 5: Import/Export (Week 6)
 
-**Goal:** CSV/AI import handles `source` column
+**Goal:** CSV/AI import supports symbol and custom holdings without a `source` column
 
-**CSV format:**
+**CSV format (no `source` column):**
 
 ```csv
-name,source,category,currency,quantity,unit_value,symbol_id,domain_id
-"Apple",symbol,equity,USD,10,150.50,AAPL,
-"Savings",custom,cash,USD,1,10000,,
+name,category,currency,quantity,unit_value,cost_basis_per_unit,symbol_id,description
+"Apple",equity,USD,10,,,"AAPL",""
+"Savings",cash,USD,1,10000,,,
 ```
 
 **Validation:**
 
-- `source=symbol` requires `symbol_id`
-- `source=domain` requires `domain_id`
-- `source=custom` ignores both
+- If `symbol_id` is present: `unit_value` is optional (fetched automatically); currency auto-aligned to the symbol.
+- If `symbol_id` is absent: `unit_value` is required and must be ≥ 0.
+- `cost_basis_per_unit` is optional; if omitted, we use `unit_value` as initial cost basis.
+- Domains are not imported via CSV at this time (use the UI domain form).
 
 ---
 

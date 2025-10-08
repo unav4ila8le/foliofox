@@ -97,7 +97,7 @@ export async function importHoldings(
       ) {
         return {
           success: false,
-          error: `Missing unit value for "${holding.name}". Provide current_unit_value in CSV or use a recognizable symbol to fetch price automatically.`,
+          error: `Missing unit value for "${holding.name}". Provide unit_value in CSV or use a recognizable symbol to fetch price automatically.`,
         };
       }
 
