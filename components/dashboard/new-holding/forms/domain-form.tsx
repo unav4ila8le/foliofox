@@ -33,8 +33,6 @@ import { useNewHoldingDialog } from "../index";
 import { fetchSingleDomainValuation } from "@/server/domain-valuations/fetch";
 import { createHolding } from "@/server/holdings/create";
 
-import { requiredNumberWithConstraints } from "@/lib/zod-helpers";
-
 // Helper function to clean domain
 function cleanDomain(domain: string): string {
   return domain
@@ -48,9 +46,7 @@ function cleanDomain(domain: string): string {
 
 const formSchema = z.object({
   domain: z.string().regex(z.regexes.domain, { error: "Invalid domain name." }),
-  valuation: requiredNumberWithConstraints("Valuation is required.", {
-    gt: { value: 0, error: "Valuation must be greater than 0." },
-  }),
+  valuation: z.number().gte(0).optional(),
   description: z
     .string()
     .max(256, {
@@ -72,7 +68,7 @@ export function DomainForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       domain: "",
-      valuation: "",
+      valuation: undefined,
       description: "",
     },
   });
@@ -80,9 +76,6 @@ export function DomainForm() {
   // Watch form values
   const domain = form.watch("domain");
   const valuation = form.watch("valuation") as number;
-
-  // Get isDirty state from formState
-  const { isDirty } = form.formState;
 
   // Check if domain is valid for API call
   const isDomainValid = domain && z.regexes.domain.test(domain);
@@ -114,13 +107,23 @@ export function DomainForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
+      let finalValuation = values.valuation;
+
+      if (!finalValuation || finalValuation <= 0) {
+        await checkDomainValuation();
+        finalValuation = form.getValues("valuation") as number;
+        if (!finalValuation || finalValuation <= 0) {
+          throw new Error("Domain valuation could not be determined.");
+        }
+      }
+
       const formData = new FormData();
       formData.append("name", values.domain);
       formData.append("domain_id", values.domain);
       formData.append("category_code", "domain");
       formData.append("currency", "USD");
       formData.append("quantity", "1");
-      formData.append("unit_value", values.valuation.toString());
+      formData.append("unit_value", finalValuation.toString());
 
       // Only append description if it exists
       if (values.description) {
@@ -246,10 +249,7 @@ export function DomainForm() {
           >
             Cancel
           </Button>
-          <Button
-            disabled={isLoading || !isDirty || !isDomainValid}
-            type="submit"
-          >
+          <Button disabled={isLoading || !isDomainValid} type="submit">
             {isLoading ? (
               <>
                 <Spinner />
