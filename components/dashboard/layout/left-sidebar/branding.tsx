@@ -14,7 +14,8 @@ export function Branding() {
         />
       </Link>
       <p className="text-muted-foreground truncate text-center text-xs group-data-[state=collapsed]:hidden">
-        Copyright © {new Date().getFullYear()}. All rights reserved.
+        {/* Copyright © {new Date().getFullYear()}. All rights reserved. */}
+        v0.1.0-beta
       </p>
     </div>
   );
