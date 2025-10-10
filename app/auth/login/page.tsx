@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
-import { AuthToastHandler } from "@/components/auth/auth-toast-handler";
+import { AuthToastHandler } from "@/components/features/auth/auth-toast-handler";
 import { Logo } from "@/components/ui/logos/logo";
-import { LoginForm } from "@/components/auth/login-form";
+import { LoginForm } from "@/components/features/auth/login-form";
 
 import { createClient } from "@/supabase/server";
 

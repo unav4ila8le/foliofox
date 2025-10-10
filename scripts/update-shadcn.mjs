@@ -7,10 +7,6 @@ import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Read registry
-const registryPath = path.join(__dirname, "../shadcn-registry.json");
-const registry = JSON.parse(fs.readFileSync(registryPath, "utf8"));
-
 // Get all .tsx files in components/ui (excluding subdirectories like ai/ and logos/)
 const uiPath = path.join(__dirname, "../components/ui");
 const allFiles = fs.readdirSync(uiPath);
@@ -23,15 +19,9 @@ const allComponents = allFiles
   )
   .map((file) => file.replace(".tsx", ""));
 
-// Filter out excluded components
-const componentsToUpdate = allComponents.filter(
-  (component) => !registry.exclude.includes(component),
-);
+const componentsToUpdate = allComponents;
 
 console.log(`📦 Found ${allComponents.length} components in ui/`);
-console.log(
-  `🔒 Excluding ${registry.exclude.length}: ${registry.exclude.join(", ")}`,
-);
 console.log(`✅ Updating ${componentsToUpdate.length} components...\n`);
 
 let successCount = 0;

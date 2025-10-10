@@ -18,3 +18,12 @@ export async function getCurrentUser() {
   // Return supabase client and user
   return { supabase, user: data.user };
 }
+
+export async function getOptionalUser() {
+  const supabase = await createClient();
+
+  const { data } = await supabase.auth.getUser();
+
+  // Return supabase client and user
+  return { supabase, user: data?.user ?? null };
+}

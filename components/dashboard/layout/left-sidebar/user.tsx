@@ -1,33 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { LogOut, MoreVertical, Settings } from "lucide-react";
-import { toast } from "sonner";
+import { MoreVertical } from "lucide-react";
 
-import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Spinner } from "@/components/ui/spinner";
-import { SidebarMenuButton, useSidebar } from "@/components/ui/sidebar";
+import { SidebarMenuButton, useSidebar } from "@/components/ui/custom/sidebar";
+import { UserMenu } from "@/components/features/user/user-menu";
 import { usePrivacyMode } from "@/components/dashboard/privacy-mode-provider";
-import { SettingsForm } from "@/components/dashboard/layout/left-sidebar/settings-form";
 
 import { formatCurrency } from "@/lib/number-format";
-
-import { signOut } from "@/server/auth/sign-out";
 
 import type { Profile } from "@/types/global.types";
 
@@ -40,106 +20,38 @@ export function User({
   email: string;
   netWorth: number;
 }) {
-  const [isLoading, setIsLoading] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
-
   const { isMobile } = useSidebar();
   const { isPrivacyMode } = usePrivacyMode();
 
-  // Sign out
-  async function handleSignOut() {
-    setIsLoading(true);
-
-    const result = await signOut("local");
-
-    // Handle expected auth errors
-    if (!result.success) {
-      toast.error("Logout failed", {
-        description: result.message,
-      });
-      setIsLoading(false);
-      return;
-    }
-
-    toast.success("You have been logged out successfully");
-  }
+  const avatarUrl = profile?.avatar_url || undefined;
+  const username = profile?.username || "User";
+  const initial = username.slice(0, 1);
 
   return (
-    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <SidebarMenuButton
-            size="lg"
-            className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground flex items-center gap-2"
-          >
-            <Avatar className="size-10 group-data-[state=collapsed]:size-8">
-              <AvatarImage
-                src={profile.avatar_url || undefined}
-                alt={profile.username}
-              />
-              <AvatarFallback className="uppercase">
-                {profile.username.slice(0, 1) || "?"}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col">
-              <p className="text truncate font-semibold">{profile.username}</p>
-              <span className="text-muted-foreground truncate text-xs tabular-nums">
-                {isPrivacyMode
-                  ? "* * * * * * * *"
-                  : formatCurrency(netWorth, profile.display_currency)}
-              </span>
-            </div>
-            <MoreVertical className="ml-auto size-4" />
-          </SidebarMenuButton>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
-          className="w-[var(--radix-dropdown-menu-trigger-width)] md:w-auto md:min-w-56"
-          side={isMobile ? "bottom" : "right"}
-          align="end"
-          sideOffset={4}
-        >
-          <DropdownMenuItem disabled>{email}</DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DialogTrigger asChild>
-            <DropdownMenuItem>
-              <Settings className="size-4" />
-              Settings
-            </DropdownMenuItem>
-          </DialogTrigger>
-          <DropdownMenuItem
-            onSelect={(event) => {
-              event.preventDefault(); // This keeps the dropdown open
-              handleSignOut();
-            }}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <>
-                <Spinner />
-                Signing out...
-              </>
-            ) : (
-              <>
-                <LogOut className="size-4" />
-                Log out
-              </>
-            )}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-      <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
-        <DialogHeader>
-          <DialogTitle>Settings</DialogTitle>
-          <DialogDescription>
-            Change here your profile information
-          </DialogDescription>
-        </DialogHeader>
-        <SettingsForm
-          profile={profile}
-          email={email}
-          onSuccess={() => setDialogOpen(false)}
-        />
-      </DialogContent>
-    </Dialog>
+    <UserMenu
+      profile={profile}
+      email={email}
+      menuSide={isMobile ? "bottom" : "right"}
+      menuAlign="end"
+    >
+      <SidebarMenuButton
+        size="lg"
+        className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground flex items-center gap-2"
+      >
+        <Avatar className="size-10 group-data-[state=collapsed]:size-8">
+          <AvatarImage src={avatarUrl} alt={username} />
+          <AvatarFallback className="uppercase">{initial}</AvatarFallback>
+        </Avatar>
+        <div className="flex flex-col">
+          <p className="text truncate font-semibold">{username}</p>
+          <span className="text-muted-foreground truncate text-xs tabular-nums">
+            {isPrivacyMode
+              ? "* * * * * * * *"
+              : formatCurrency(netWorth, profile.display_currency)}
+          </span>
+        </div>
+        <MoreVertical className="ml-auto size-4" />
+      </SidebarMenuButton>
+    </UserMenu>
   );
 }

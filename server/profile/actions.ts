@@ -2,11 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 
-import { getCurrentUser } from "@/server/auth/actions";
+import { getCurrentUser, getOptionalUser } from "@/server/auth/actions";
 
 import type { Profile } from "@/types/global.types";
 
-// Fetch profile
+// Fetch current user profile
 export async function fetchProfile() {
   const { supabase, user } = await getCurrentUser();
 
@@ -25,6 +25,21 @@ export async function fetchProfile() {
     profile,
     email: user.email ?? "",
   };
+}
+
+// Fetch optional user profile
+export async function fetchOptionalProfile() {
+  const { supabase, user } = await getOptionalUser();
+  if (!user) return null;
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("username, display_currency, avatar_url")
+    .eq("user_id", user.id)
+    .single();
+
+  if (!profile) return null;
+  return { profile, email: user.email ?? "" };
 }
 
 // Update profile

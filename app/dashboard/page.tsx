@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@/components/ui/custom/skeleton";
 import { Greetings } from "@/components/dashboard/greetings";
 import { MarketDataDisclaimer } from "@/components/dashboard/market-data-disclaimer";
 import { AssetAllocationDonut } from "@/components/dashboard/charts/asset-allocation-donut";

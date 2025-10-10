@@ -8,7 +8,7 @@ import {
   SidebarHeader,
   SidebarMenu as UISidebarMenu,
   SidebarMenuItem,
-} from "@/components/ui/sidebar";
+} from "@/components/ui/custom/sidebar";
 import { User } from "./user";
 import { Branding } from "./branding";
 import { Menu } from "./menu";

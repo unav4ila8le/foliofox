@@ -23,7 +23,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { useSidebar } from "@/components/ui/sidebar";
+import { useSidebar } from "@/components/ui/custom/sidebar";
 
 import { deleteConversation } from "@/server/ai/conversations/delete";
 

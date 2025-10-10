@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@/components/ui/custom/skeleton";
 import { ArchivedTable } from "@/components/dashboard/holdings/tables/archived/archived-table";
 
 import { fetchHoldings } from "@/server/holdings/fetch";

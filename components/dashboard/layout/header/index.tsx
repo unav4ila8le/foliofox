@@ -1,4 +1,4 @@
-import { SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarTrigger } from "@/components/ui/custom/sidebar";
 import {
   Tooltip,
   TooltipContent,
@@ -8,7 +8,7 @@ import {
 import { Breadcrumb } from "./breadcrumb";
 import { NewActionButton } from "./new-action-button";
 import { FeedbackButton } from "@/components/dashboard/layout/header/feedback";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { ThemeToggle } from "@/components/features/theme/theme-toggle";
 
 export function Header() {
   return (

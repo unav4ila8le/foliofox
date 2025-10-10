@@ -11,7 +11,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { FileUploadDropzone } from "@/components/ui/file-upload-dropzone";
+import { FileUploadDropzone } from "@/components/ui/custom/file-upload-dropzone";
 import { ImportResults } from "./import-results";
 import { useImportHoldingsDialog } from "./index";
 

@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/breadcrumb";
 
 import { fetchSingleHolding } from "@/server/holdings/fetch";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@/components/ui/custom/skeleton";
 
 // Separate component for holding name fetching
 function HoldingName({ holdingId }: { holdingId: string }) {

@@ -1,4 +1,4 @@
-import { Sidebar, SidebarRail } from "@/components/ui/sidebar";
+import { Sidebar, SidebarRail } from "@/components/ui/custom/sidebar";
 import { Chat } from "./chat";
 
 export function RightSidebar() {

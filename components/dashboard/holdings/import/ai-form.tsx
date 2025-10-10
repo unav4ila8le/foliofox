@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { FileUploadDropzone } from "@/components/ui/file-upload-dropzone";
+import { FileUploadDropzone } from "@/components/ui/custom/file-upload-dropzone";
 import { ImportResults } from "./import-results";
 import { useImportHoldingsDialog } from "./index";
 

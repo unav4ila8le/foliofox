@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@/components/ui/custom/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { HoldingHeader } from "@/components/dashboard/holdings/holding/header";
 import { TransactionsTable } from "@/components/dashboard/holdings/tables/transactions/transactions-table";

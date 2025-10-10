@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@/components/ui/custom/skeleton";
 
 import { useAssetCategories } from "@/hooks/use-asset-categories";
 import { ReviewForm } from "./form";

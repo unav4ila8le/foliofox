@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarInset, SidebarProvider } from "@/components/ui/custom/sidebar";
 import { LeftSidebar } from "@/components/dashboard/layout/left-sidebar";
 import { RightSidebar } from "@/components/dashboard/layout/right-sidebar";
 import { Header } from "@/components/dashboard/layout/header";

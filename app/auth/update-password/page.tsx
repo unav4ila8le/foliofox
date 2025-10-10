@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 
 import { Logo } from "@/components/ui/logos/logo";
-import { UpdatePasswordForm } from "@/components/auth/update-password-form";
+import { UpdatePasswordForm } from "@/components/features/auth/update-password-form";
 
 import { createClient } from "@/supabase/server";
 
