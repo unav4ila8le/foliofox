@@ -50,6 +50,9 @@ CRON_SECRET=generate_a_strong_random_string
 
 # Optional (used for AI features)
 OPENAI_API_KEY=your_openai_api_key
+
+# Optional (used for domain valuations)
+REPLICATE_API_TOKEN=your_replicate_api_token
 ```
 
 ### 3) Run the dev server
@@ -112,11 +115,7 @@ npx supabase gen types typescript --project-id <your-project-ref> > types/databa
 ### 6) (Optional) Deploying to Vercel
 
 - Import the repo into Vercel
-- Set the same environment variables in Vercel (Project Settings → Environment Variables):
-  - `NEXT_PUBLIC_SUPABASE_URL`
-  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-  - `SUPABASE_SERVICE_ROLE_KEY` (optional, required for cron jobs)
-  - `CRON_SECRET`
+- Set the same environment variables in Vercel (Project Settings → Environment Variables)
 - This repo includes `vercel.json` with daily cron jobs at 22:00 UTC for quotes and FX updates. The cron endpoints expect an `Authorization: Bearer <CRON_SECRET>` header. If supported in your Vercel plan, you can add headers directly in `vercel.json` like this:
 
 ```json
@@ -191,7 +190,7 @@ N/A
 - [x] Add Transactions list on the dashboard home
 - [x] Add privacy mode (blur/hide net worth numbers)
 - [ ] Find a way to have a more accurate historical calculation which doesn't add much overhead. WeeksBack solution is fast but not accurate cause the date is "rounded" to match weeks and not days.
-- [ ] Landingpage with waitlist
+- [x] Landingpage
 - [x] New UX for adding new holdings (one form per holding type)
 - [ ] Add Plaid for user holding sync
 
