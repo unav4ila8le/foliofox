@@ -1,21 +1,21 @@
-import { type NextRequest } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/supabase/middleware";
 
 export async function middleware(request: NextRequest) {
+  const maintenanceEnabled = process.env.MAINTENANCE_MODE === "true";
+
+  // If maintenance is enabled, redirect to the maintenance page
+  if (maintenanceEnabled) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/maintenance";
+    return NextResponse.rewrite(url, { status: 503 });
+  }
+
+  // Normal flow: attach Supabase session
   return await updateSession(request);
 }
 
 export const config = {
   runtime: "nodejs",
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * Feel free to modify this pattern to include more paths.
-     */
-    "/dashboard/:path*",
-    "/auth/update-password",
-  ],
+  matcher: ["/dashboard/:path*", "/auth/update-password", "/api/((?!cron/).*)"],
 };
