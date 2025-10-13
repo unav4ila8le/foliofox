@@ -206,3 +206,7 @@ N/A
 - [ ] Parallelize extension fetching in fetchHoldings when multiple handlers
 - [ ] Add real estate market estimate
 - [ ] Add private equity valuation
+
+## License
+
+MIT © 2025 주식회사 파운더스레어. See `LICENSE` for details.
