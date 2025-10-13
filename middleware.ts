@@ -17,5 +17,5 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   runtime: "nodejs",
-  matcher: ["/dashboard/:path*", "/auth/update-password", "/api/((?!cron/).*)"],
+  matcher: ["/dashboard/:path*", "/auth/update-password"],
 };
