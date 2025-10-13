@@ -66,7 +66,7 @@ export function SelectionDialog() {
         />
         <SelectionCard
           title="Import CSV/AI"
-          description="Import your holdings from a files or screenshots"
+          description="Import your holdings from files or screenshots"
           icon={Sparkles}
           onClick={() => setOpenImportDialog(true)}
         />
