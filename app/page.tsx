@@ -14,7 +14,7 @@ export default async function HomePage() {
       <div className="container mx-auto max-w-5xl">
         <Header profile={data?.profile} email={data?.email} />
       </div>
-      <div className="container mx-auto mt-16 max-w-xl text-center">
+      <main className="container mx-auto mt-16 max-w-xl text-center">
         <h1 className="text-5xl tracking-tight text-balance md:text-6xl">
           Meet Your Personal Financial Advisor
         </h1>
@@ -33,7 +33,7 @@ export default async function HomePage() {
             <Link href="/auth/login">Get started</Link>
           )}
         </Button>
-      </div>
+      </main>
       <div className="container mx-auto mt-12 mask-b-from-60%">
         <HeroImage priority={true} />
       </div>

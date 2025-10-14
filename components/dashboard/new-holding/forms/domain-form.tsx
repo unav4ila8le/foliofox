@@ -163,7 +163,13 @@ export function DomainForm() {
             <FormItem>
               <FormLabel className="flex items-center justify-between gap-2">
                 Domain
-                <HumbleWorthLogo height={14} />
+                <Link
+                  href="https://humbleworth.com"
+                  target="_blank"
+                  aria-label="Go to HumbleWorth website"
+                >
+                  <HumbleWorthLogo height={14} />
+                </Link>
               </FormLabel>
               <FormControl>
                 <InputGroup>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -208,7 +209,13 @@ export function SymbolSearchForm() {
             <FormItem>
               <FormLabel className="flex items-center justify-between gap-2">
                 Symbol
-                <YahooFinanceLogo height={14} />
+                <Link
+                  href="https://finance.yahoo.com/lookup/"
+                  target="_blank"
+                  aria-label="Go to Yahoo Finance website"
+                >
+                  <YahooFinanceLogo height={14} />
+                </Link>
               </FormLabel>
               <FormControl>
                 <SymbolSearch

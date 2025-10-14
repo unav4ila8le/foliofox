@@ -7,7 +7,11 @@ export function Branding() {
   return (
     <div className="flex flex-col items-center gap-2">
       <Link href="/">
-        <Logo height={24} className="group-data-[state=collapsed]:hidden" />
+        <Logo
+          height={24}
+          className="group-data-[state=collapsed]:hidden"
+          aria-label="Foliofox - Go to homepage"
+        />
         <Logomark
           height={24}
           className="hidden group-data-[state=collapsed]:block"
