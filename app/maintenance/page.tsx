@@ -5,7 +5,7 @@ import { Logomark } from "@/components/ui/logos/logomark";
 export default function MaintenancePage() {
   return (
     <main className="flex min-h-svh flex-col items-center justify-center p-4 text-center">
-      <Link href="/">
+      <Link href="/" aria-label="Foliofox - Go to homepage">
         <Logomark
           height={40}
           className="hover:text-brand/70 transition-colors"

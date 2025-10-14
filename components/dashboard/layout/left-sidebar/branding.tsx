@@ -6,7 +6,7 @@ import { Logomark } from "@/components/ui/logos/logomark";
 export function Branding() {
   return (
     <div className="flex flex-col items-center gap-2">
-      <Link href="/">
+      <Link href="/" aria-label="Foliofox - Go to homepage">
         <Logo height={24} className="group-data-[state=collapsed]:hidden" />
         <Logomark
           height={24}
