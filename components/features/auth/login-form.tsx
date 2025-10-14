@@ -128,18 +128,16 @@ export function LoginForm() {
                         {...field}
                         type={showPassword ? "text" : "password"}
                       />
-                      {field.value && (
-                        <InputGroupAddon align="inline-end">
-                          <InputGroupButton
-                            onClick={() => setShowPassword(!showPassword)}
-                            aria-label={
-                              showPassword ? "Hide password" : "Show password"
-                            }
-                          >
-                            {showPassword ? <EyeOff /> : <Eye />}
-                          </InputGroupButton>
-                        </InputGroupAddon>
-                      )}
+                      <InputGroupAddon align="inline-end">
+                        <InputGroupButton
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? <EyeOff /> : <Eye />}
+                          <span className="sr-only">
+                            {showPassword ? "Hide password" : "Show password"}
+                          </span>
+                        </InputGroupButton>
+                      </InputGroupAddon>
                     </InputGroup>
                   </FormControl>
                   <FormMessage />
