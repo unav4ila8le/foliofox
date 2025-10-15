@@ -18,7 +18,7 @@ import { getNews } from "./news";
 export const aiTools = {
   getPortfolioSnapshot: tool({
     description:
-      "Get a comprehensive portfolio overview including net worth, asset allocation, and all holdings at any given date. Returns: summary, net worth value, holdings count, asset categories with percentages, and detailed holding information with values converted to base currency. Use this for both current and historical portfolio snapshots - for deeper analysis use the other specialized tools.",
+      "Get a comprehensive portfolio overview including net worth, asset allocation, and all holdings at any given date. Returns: summary, net worth value, holdings count, asset categories with percentages, and detailed holding information with values converted to base currency. Use this for both current and historical portfolio snapshots - for deeper analysis also use the other specialized tools.",
     inputSchema: z.object({
       baseCurrency: z
         .string()
