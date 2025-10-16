@@ -20,12 +20,12 @@ export function Header({
   const initial = username.slice(0, 1);
 
   return (
-    <header className="flex items-center justify-between px-4 py-3">
+    <header className="flex items-center justify-between">
       <Link href="/" aria-label="Foliofox - Go to homepage">
         <Logo />
       </Link>
 
-      <div className="flex items-center gap-2">
+      <nav className="flex items-center gap-2">
         <Button
           asChild
           size="icon-sm"
@@ -59,7 +59,7 @@ export function Header({
             <Link href="/auth/login">Get started</Link>
           </Button>
         )}
-      </div>
+      </nav>
     </header>
   );
 }
