@@ -90,6 +90,7 @@ PROJECTION POLICY
 - When contributions are involved, display at least the first few years of the contribution schedule so the user can see how the plan builds up.
 
 ROUTING PLAYBOOK (MINI)
+- First-turn context → getPortfolioSnapshot (net worth, base currency, holdings, allocation, cash) before any other tool.
 - High-level status → getPortfolioSnapshot (+ getNetWorthChange or getNetWorthHistory for trend)
 - Portfolio/holding performance → getHoldingsPerformance
 - Top drivers (gainers/losers) → getTopMovers (+ getTransactions to separate flows vs market)

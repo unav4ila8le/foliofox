@@ -8,8 +8,8 @@ import {
   persistAssistantMessage,
 } from "@/server/ai/conversations/persist";
 
-// Allow streaming responses up to 30 seconds
-export const maxDuration = 30;
+// Allow streaming responses up to 45 seconds
+export const maxDuration = 45;
 
 export async function POST(req: Request) {
   const { messages }: { messages: UIMessage[] } = await req.json();
@@ -27,12 +27,32 @@ export async function POST(req: Request) {
 
   const system = createSystemPrompt({ mode, aiTools });
 
+  const firstAssistantTurn = !messages.some((m) => m.role === "assistant");
+
   const result = streamText({
     model: openai(model),
     messages: convertToModelMessages(messages),
-    stopWhen: stepCountIs(18),
     tools: aiTools,
     system,
+    stopWhen: stepCountIs(24),
+
+    // Force portfolio snapshot on very first assistant step
+    prepareStep: async ({ stepNumber }) => {
+      if (firstAssistantTurn && stepNumber === 0) {
+        return {
+          toolChoice: { type: "tool", toolName: "getPortfolioSnapshot" },
+          // Limit available tools to avoid accidental picks or schema failures
+          activeTools: ["getPortfolioSnapshot"],
+        };
+      }
+      // Otherwise, default behavior (no forced tools)
+      return {};
+    },
+
+    onError: (err) => {
+      console.error("AI chat error:", err);
+    },
+
     onFinish: async ({ text, usage }) => {
       if (!conversationId || !text) return;
       await persistAssistantMessage({
