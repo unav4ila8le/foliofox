@@ -192,6 +192,8 @@ N/A
 - [ ] Find a way to have a more accurate historical calculation which doesn't add much overhead. WeeksBack solution is fast but not accurate cause the date is "rounded" to match weeks and not days.
 - [x] Landingpage
 - [x] New UX for adding new holdings (one form per holding type)
+- [ ] Add tool for fetching historical quotes for symbols
+- [ ] Add tool for getting dividend yield given symbol
 - [ ] Add Plaid for user holding sync
 
 ---
@@ -199,6 +201,7 @@ N/A
 ### Post launch
 
 - [ ] Add optional pagination to data table (for transactions)
+- [ ] Look at generative UI for AI chat: https://ai-sdk.dev/docs/ai-sdk-ui/generative-user-interfaces
 - [ ] Add a way for the user to "share" their portfolio. Ideally, after agreeing, they get a public sharable link which leads to a single public page view of all their holdings and relevant performance charts.
 - [ ] Optimize recalculateRecords to use batch requests
 - [ ] Add crypto wallet address sync
