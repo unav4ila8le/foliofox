@@ -8,10 +8,10 @@ import {
   InputGroupInput,
   InputGroupAddon,
 } from "@/components/ui/input-group";
-import { DataTable } from "@/components/dashboard/holdings/tables/base/data-table";
+import { DataTable } from "@/components/dashboard/tables/base/data-table";
 import { getPortfolioRecordColumns } from "@/components/dashboard/portfolio-records/table/columns";
-import { NewRecordButton } from "@/components/dashboard/new-portfolio-record";
-import { BulkActionBar } from "@/components/dashboard/holdings/tables/base/bulk-action-bar";
+import { NewPortfolioRecordButton } from "@/components/dashboard/new-portfolio-record";
+import { BulkActionBar } from "@/components/dashboard/tables/base/bulk-action-bar";
 import { DeletePortfolioRecordDialog } from "@/components/dashboard/portfolio-records/table/row-actions/delete-dialog";
 
 import type {
@@ -55,7 +55,10 @@ export function PortfolioRecordsTable({
         </InputGroup>
         {/* New record button */}
         {data.length > 0 && (
-          <NewRecordButton variant="outline" preselectedPosition={position} />
+          <NewPortfolioRecordButton
+            variant="outline"
+            preselectedPosition={position}
+          />
         )}
       </div>
 
@@ -69,7 +72,10 @@ export function PortfolioRecordsTable({
           <p className="text-muted-foreground mt-1 mb-3 text-sm">
             Records for this position will appear here
           </p>
-          <NewRecordButton variant="outline" preselectedPosition={position} />
+          <NewPortfolioRecordButton
+            variant="outline"
+            preselectedPosition={position}
+          />
         </div>
       ) : (
         <DataTable

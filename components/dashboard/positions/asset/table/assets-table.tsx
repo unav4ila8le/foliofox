@@ -34,7 +34,7 @@ export function AssetsTable({ data }: AssetsTableProps) {
 
   const router = useRouter();
 
-  // Handle row click to navigate to holding page
+  // Handle row click to navigate to asset page
   const handleRowClick = useCallback(
     (position: PositionWithProfitLoss) => {
       router.push(`/dashboard/assets/${position.id}`);
@@ -48,7 +48,7 @@ export function AssetsTable({ data }: AssetsTableProps) {
       <div className="flex items-center justify-between gap-2">
         <InputGroup className="max-w-sm">
           <InputGroupInput
-            placeholder="Search holdings..."
+            placeholder="Search assets..."
             value={filterValue}
             onChange={(e) => setFilterValue(e.target.value)}
           />
@@ -58,7 +58,7 @@ export function AssetsTable({ data }: AssetsTableProps) {
         </InputGroup>
         <div className="flex items-center gap-2">
           <NewAssetButton variant="outline" />
-          <TableActionsDropdown holdingsCount={data.length} />
+          <TableActionsDropdown positionsCount={data.length} />
         </div>
       </div>
 
@@ -68,9 +68,9 @@ export function AssetsTable({ data }: AssetsTableProps) {
           <div className="bg-accent rounded-lg p-2">
             <Package className="text-muted-foreground size-4" />
           </div>
-          <p className="mt-3 font-medium">No holdings found</p>
+          <p className="mt-3 font-medium">No assets found</p>
           <p className="text-muted-foreground mt-1 text-sm">
-            Start building your portfolio by adding your first holding
+            Start building your portfolio by adding your first asset
           </p>
         </div>
       ) : (
@@ -81,13 +81,13 @@ export function AssetsTable({ data }: AssetsTableProps) {
           onRowClick={handleRowClick}
           onSelectedRowsChange={setSelectedRows}
           enableGrouping={true}
-          groupBy={["category_code"]}
+          groupBy={["category_id"]}
         />
       )}
 
       {/* Rows count */}
       <p className="text-muted-foreground text-end text-sm">
-        {data.length} holding(s)
+        {data.length} asset(s)
       </p>
 
       {/* Floating bulk action bar */}
