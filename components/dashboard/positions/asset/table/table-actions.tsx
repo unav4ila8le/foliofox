@@ -11,14 +11,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ExportDialog } from "@/components/dashboard/holdings/export/dialog";
+import { ExportAssetsDialog } from "@/components/dashboard/positions/asset/export/dialog";
 
 import { useImportHoldingsDialog } from "@/components/dashboard/holdings/import";
 
 export function TableActionsDropdown({
-  holdingsCount,
+  positionsCount,
 }: {
-  holdingsCount?: number;
+  positionsCount?: number;
 }) {
   const [showExportDialog, setShowExportDialog] = useState(false);
 
@@ -39,23 +39,23 @@ export function TableActionsDropdown({
           </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={() => setShowExportDialog(true)}
-            disabled={!holdingsCount || holdingsCount === 0}
+            disabled={!positionsCount || positionsCount === 0}
           >
             <Download className="size-4" /> Export
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link href="/dashboard/holdings/archived">
+            <Link href="/dashboard/assets/archived">
               <Archive className="size-4" /> View archived
             </Link>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* Export Dialog */}
-      <ExportDialog
+      {/* Export Assets Dialog */}
+      <ExportAssetsDialog
         open={showExportDialog}
         onOpenChange={setShowExportDialog}
-        holdingsCount={holdingsCount}
+        positionsCount={positionsCount}
       />
     </>
   );

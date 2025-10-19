@@ -17,29 +17,29 @@ import {
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-import { exportHoldings } from "@/server/holdings/export";
+import { exportPositions } from "@/server/positions/export";
 
-interface ExportDialogProps {
+interface ExportAssetsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  holdingsCount?: number;
+  positionsCount?: number;
 }
 
-export function ExportDialog({
+export function ExportAssetsDialog({
   open,
   onOpenChange,
-  holdingsCount,
-}: ExportDialogProps) {
+  positionsCount,
+}: ExportAssetsDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleExport = async () => {
     try {
       setIsLoading(true);
 
-      const result = await exportHoldings();
+      const result = await exportPositions("asset");
 
       if (!result.success) {
-        throw new Error(result.message || "Failed to export holdings");
+        throw new Error(result.message || "Failed to export assets");
       }
 
       // Create and download the file
@@ -49,7 +49,7 @@ export function ExportDialog({
       // Create temporary link and trigger download
       const link = document.createElement("a");
       link.href = url;
-      link.download = `foliofox-holdings-${format(new Date(), "yyyy-MM-dd")}.csv`;
+      link.download = `foliofox-assets-${format(new Date(), "yyyy-MM-dd")}.csv`;
       link.style.display = "none";
       document.body.appendChild(link);
       link.click();
@@ -58,12 +58,12 @@ export function ExportDialog({
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      toast.success("Holdings exported successfully!");
+      toast.success("Assets exported successfully!");
       onOpenChange(false);
     } catch (error) {
       console.error("Export failed:", error);
       toast.error(
-        error instanceof Error ? error.message : "Failed to export holdings",
+        error instanceof Error ? error.message : "Failed to export assets",
       );
     } finally {
       setIsLoading(false);
@@ -76,11 +76,11 @@ export function ExportDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="size-5" />
-            Export Holdings
+            Export Assets
           </DialogTitle>
           <DialogDescription>
-            Export your current holdings to a CSV file. This will include all
-            active holdings with their current market values and quantities.
+            Export your current assets to a CSV file. This will include all
+            active assets with their current market values and quantities.
           </DialogDescription>
         </DialogHeader>
 
@@ -90,9 +90,10 @@ export function ExportDialog({
             <AlertTitle>Export summary</AlertTitle>
             <AlertDescription>
               <ul className="list-inside list-disc text-sm">
-                <li>Holding name, category, and currency</li>
+                <li>Asset name, category, and currency</li>
                 <li>Current quantity and market value</li>
-                <li>Symbol information (if applicable)</li>
+                <li>Cost basis and profit/loss (if applicable)</li>
+                <li>Market data information (if applicable)</li>
                 <li>Description and notes</li>
               </ul>
             </AlertDescription>
@@ -102,7 +103,7 @@ export function ExportDialog({
             <span className="font-medium">File format:</span> CSV (Comma
             Separated Values)
             <br />
-            <span className="font-medium">Filename:</span> foliofox-holdings-
+            <span className="font-medium">Filename:</span> foliofox-assets-
             {format(new Date(), "yyyy-MM-dd")}.csv
           </div>
         </div>
@@ -124,7 +125,7 @@ export function ExportDialog({
             ) : (
               <>
                 <Download className="size-4" />
-                Export {holdingsCount || 0} holding(s)
+                Export {positionsCount || 0} asset(s)
               </>
             )}
           </Button>
