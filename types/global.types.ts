@@ -98,7 +98,9 @@ export type ProjectedIncomeData = {
 };
 
 // Positions (new model)
-export type Position = Tables<"positions">;
+export type Position = Tables<"positions"> & {
+  category: Pick<Tables<"position_categories">, "name" | "display_order">;
+};
 export type PositionCategory = Tables<"position_categories">;
 export type PositionSnapshot = Tables<"position_snapshots">;
 export type PortfolioRecord = Tables<"portfolio_records">;
@@ -109,7 +111,7 @@ export type SourceSymbol = Tables<"source_symbols">;
 export type SourceDomain = Tables<"source_domains">;
 export type PositionSourcesFlat = Tables<"position_sources_flat">;
 
-// UI-friendly transformed position shape (successor of TransformedHolding)
+// Transformed position shape
 export type TransformedPosition = Position & {
   is_archived: boolean;
   category_name?: string;
@@ -118,10 +120,17 @@ export type TransformedPosition = Position & {
   total_value: number;
   symbol_id: string | null;
   domain_id: string | null;
+  cost_basis_per_unit?: number | null;
 };
 
 // Portfolio record enriched for UI (successor of TransformedRecord)
 export type TransformedPortfolioRecord = PortfolioRecord & {
   total_value: number;
   currency: string;
+};
+
+export type PositionWithProfitLoss = TransformedPosition & {
+  profit_loss: number;
+  profit_loss_percentage: number;
+  total_cost_basis: number;
 };

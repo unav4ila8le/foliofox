@@ -99,33 +99,6 @@ pg_dump "postgresql://postgres.<your-project-ref>:<password>@aws-0-<region>.pool
 - The dump includes DDL, RLS, indexes, and functions from the `public` schema.
 - PostgreSQL 17+ is required for generating/importing the schema
 
-## Refactor Checkpoint (Database)
-
-The database refactor to a position-centric model is complete.
-
-- New tables: `positions`, `portfolio_records`, `position_snapshots`, `position_categories`, `position_sources`, `source_symbols`, `source_domains`.
-- Backfills done: `holdings → positions`, `transactions → portfolio_records`, `records → position_snapshots`.
-- RLS: user-scoped on `positions`, `portfolio_records`, `position_snapshots` using `(select auth.uid())` for optimal plans. Catalogs (`position_sources`, `source_symbols`, `source_domains`, `position_categories`) are read-only to `authenticated`.
-- View: `position_sources_flat` is security invoker + barrier; SELECT-only granted to `authenticated`.
-- Indexes: pragmatic coverage for timelines and history (e.g., `idx_pr_pos_date_created`, `idx_position_snapshots_user_date_desc`, `idx_position_snapshots_position_date_created_desc`, `idx_positions_user_archived`).
-
-Next steps:
-
-1. Regenerate database types from your project
-
-```bash
-npx supabase login
-npx supabase link --project-ref <your-project-ref>
-npm run types:supabase
-```
-
-2. Begin code refactor (modules, imports, UI copy):
-
-- `server/holdings → server/positions`
-- `server/transactions → server/portfolio-records`
-- `server/records → server/position-snapshots`
-- Update usages to `positions.source_id` and join via `position_sources_flat` where needed
-
 ### 5) (Optional) Generate database types from Supabase
 
 If you use your own Supabase project, regenerate `types/database.types.ts`:

@@ -555,6 +555,7 @@ export type Database = {
           category_id: string;
           created_at: string;
           currency: string;
+          description: string | null;
           id: string;
           name: string;
           source_id: string | null;
@@ -567,6 +568,7 @@ export type Database = {
           category_id?: string;
           created_at?: string;
           currency: string;
+          description?: string | null;
           id?: string;
           name: string;
           source_id?: string | null;
@@ -579,6 +581,7 @@ export type Database = {
           category_id?: string;
           created_at?: string;
           currency?: string;
+          description?: string | null;
           id?: string;
           name?: string;
           source_id?: string | null;

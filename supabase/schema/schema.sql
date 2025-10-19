@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 8aUpwYxBzaAIlvvy7yZgdrSddghtj2hOmJYgeJsR4mbbDk2czhGx2zo2ILVHDCp
+\restrict fmvnnHKAlExzPPiX6JRjmmd6Y61K2TmUd5einLR9eUbiTO6dXEdaOMuXaXAoAvI
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.6 (Homebrew)
@@ -503,7 +503,8 @@ CREATE TABLE public.positions (
     category_id text DEFAULT 'other'::text NOT NULL,
     archived_at timestamp with time zone,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    description text
 );
 
 
@@ -2468,5 +2469,5 @@ ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT SELECT,I
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 8aUpwYxBzaAIlvvy7yZgdrSddghtj2hOmJYgeJsR4mbbDk2czhGx2zo2ILVHDCp
+\unrestrict fmvnnHKAlExzPPiX6JRjmmd6Y61K2TmUd5einLR9eUbiTO6dXEdaOMuXaXAoAvI
 

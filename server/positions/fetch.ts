@@ -14,6 +14,8 @@ interface FetchPositionsOptions {
   includeArchived?: boolean;
   onlyArchived?: boolean;
   positionId?: string;
+  /** Filter by position type */
+  positionType?: "asset" | "liability";
   /**
    * As-of valuation date. When provided, builds current quantity/unit value
    * from position_snapshots at/before the date; otherwise uses latest.
@@ -43,6 +45,7 @@ export async function fetchPositions(options: FetchPositionsOptions = {}) {
     positionId,
     includeArchived = false,
     onlyArchived = false,
+    positionType = "asset",
     asOfDate = null,
     includeSnapshots = false,
   } = options;
@@ -72,6 +75,9 @@ export async function fetchPositions(options: FetchPositionsOptions = {}) {
 
   // If a positionId is provided, filter for that specific position
   if (positionId) baseQuery.eq("id", positionId);
+
+  // Optional type filter
+  if (positionType) baseQuery.eq("type", positionType);
 
   // Handle archived positions filtering
   if (onlyArchived) baseQuery.not("archived_at", "is", null);

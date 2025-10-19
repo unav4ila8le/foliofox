@@ -89,6 +89,47 @@ Position sources (Symbols/Domains/Properties/etc.) migration specifics
   - server/records → server/position-snapshots
 - Update imports in analysis, AI tools, and components; ensure UI copy consistency.
 
+### Milestones & Checkpoints
+
+- [ ] Assets table completion
+
+- Implement positions columns (name, currency, quantity, unit_value, total_value)
+- Group by `category_name`; plug columns into `components/dashboard/positions/tables/positions-table.tsx`
+
+- [ ] Positions actions (server)
+
+- Add `server/positions/{archive,restore,delete,update}.ts`
+
+- [ ] UI actions wiring
+
+- Port row action dialogs for positions and bulk toolbar actions
+
+- [ ] New position flows
+
+- Replace new holding flows with new position flows using `createPosition` and `createPositionSnapshot`
+- Use `PositionCategorySelector` and `category_id`
+
+- [ ] Analysis sanity
+
+- Verify analysis pages against positions; adjust as needed
+
+- [ ] AI tools and imports (phase 1)
+
+- Update AI tools to read from positions where read-only
+
+- [ ] Portfolio records (phase 2)
+
+- Implement `server/portfolio-records/{create,update,delete}.ts` and wire UI
+
+- [ ] Remove legacy holdings
+
+- Delete holdings routes/components and server modules
+
+- [ ] Final sweep & docs
+
+- Replace lingering `category_code`/`asset_categories` references
+- Update README and this document with completion notes
+
 ### RLS, Indexing, Ordering
 
 - RLS consistently enforced via user_id on positions, portfolio_records, position_snapshots.
