@@ -1,30 +1,30 @@
 import { Archive } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { EditHoldingButton } from "@/components/dashboard/holdings/edit-holding-button";
+import { EditAssetButton } from "./edit-asset-button";
 
-import type { TransformedHolding, Symbol } from "@/types/global.types";
+import type { TransformedPosition, Symbol } from "@/types/global.types";
 
-export async function HoldingHeader({
-  holding,
+export async function AssetHeader({
+  position,
   symbol,
 }: {
-  holding: TransformedHolding;
+  position: TransformedPosition;
   symbol: Symbol | null;
 }) {
   return (
     <div className="space-y-2">
-      {/* Holding name and type */}
+      {/* Asset name and type */}
       <div className="flex flex-col flex-wrap items-start gap-2 md:flex-row md:items-center">
-        <h1 className="text-2xl font-semibold">{holding.name}</h1>
+        <h1 className="text-2xl font-semibold">{position.name}</h1>
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="secondary">{holding.asset_type}</Badge>
-          {holding.is_archived && (
+          <Badge variant="secondary">{position.category_name}</Badge>
+          {position.is_archived && (
             <Badge variant="secondary">
               <Archive className="size-4" /> Archived
             </Badge>
           )}
-          <EditHoldingButton holding={holding} />
+          <EditAssetButton position={position} />
         </div>
       </div>
 
@@ -56,9 +56,9 @@ export async function HoldingHeader({
         </div>
       )}
 
-      {/* Holding description */}
-      {holding.description && (
-        <p className="text-muted-foreground">{holding.description}</p>
+      {/* Position description */}
+      {position.description && (
+        <p className="text-muted-foreground">{position.description}</p>
       )}
     </div>
   );

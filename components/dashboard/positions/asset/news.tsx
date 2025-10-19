@@ -5,11 +5,11 @@ import { Badge } from "@/components/ui/badge";
 
 import type { NewsSearchResult } from "@/server/news/fetch";
 
-interface HoldingNewsProps {
+interface AssetNewsProps {
   newsData: NewsSearchResult;
 }
 
-export function HoldingNews({ newsData }: HoldingNewsProps) {
+export function AssetNews({ newsData }: AssetNewsProps) {
   // Handle error state
   if (!newsData.success) {
     return (
@@ -32,7 +32,7 @@ export function HoldingNews({ newsData }: HoldingNewsProps) {
           <Newspaper className="text-muted-foreground size-4" />
         </div>
         <p className="text-muted-foreground mt-3 text-sm">
-          There is no news for this holding yet
+          There is no news for this asset yet
         </p>
       </div>
     );

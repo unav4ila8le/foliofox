@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/input-group";
 import { DataTable } from "@/components/dashboard/holdings/tables/base/data-table";
 import { getTransactionColumns } from "@/components/dashboard/holdings/tables/transactions/columns";
-import { NewRecordButton } from "@/components/dashboard/new-record";
+import { NewRecordButton } from "@/components/dashboard/new-portfolio-record";
 import { BulkActionBar } from "@/components/dashboard/holdings/tables/base/bulk-action-bar";
 import { DeleteTransactionDialog } from "@/components/dashboard/holdings/tables/transactions/row-actions/delete-dialog";
 

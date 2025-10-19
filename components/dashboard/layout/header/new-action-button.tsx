@@ -10,11 +10,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 
-import { useNewRecordDialog } from "@/components/dashboard/new-record";
+import { useNewPortfolioRecordDialog } from "@/components/dashboard/new-portfolio-record";
 import { useNewAssetDialog } from "@/components/dashboard/new-asset";
 
 export function NewActionButton() {
-  const { setOpen: setOpenNewRecord } = useNewRecordDialog();
+  const { setOpen: setOpenNewPortfolioRecord } = useNewPortfolioRecordDialog();
   const { setOpenSelectionDialog: setOpenNewAsset } = useNewAssetDialog();
 
   return (
@@ -26,7 +26,7 @@ export function NewActionButton() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-32">
-        <DropdownMenuItem onSelect={() => setOpenNewRecord(true)}>
+        <DropdownMenuItem onSelect={() => setOpenNewPortfolioRecord(true)}>
           New Record
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={() => setOpenNewAsset(true)}>

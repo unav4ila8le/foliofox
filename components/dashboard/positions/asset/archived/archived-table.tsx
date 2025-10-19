@@ -10,50 +10,50 @@ import {
   InputGroupInput,
   InputGroupAddon,
 } from "@/components/ui/input-group";
-import { BulkActionBar } from "@/components/dashboard/holdings/tables/base/bulk-action-bar";
-import { DeleteHoldingDialog } from "@/components/dashboard/holdings/tables/row-actions/delete-dialog";
+import { BulkActionBar } from "@/components/dashboard/tables/base/bulk-action-bar";
+import { DeletePositionDialog } from "@/components/dashboard/positions/asset/row-actions/delete-dialog";
 import { DataTable } from "@/components/dashboard/tables/base/data-table";
 import { columns } from "./columns";
 
-import { restoreHoldings } from "@/server/holdings/restore";
+import { restorePositions } from "@/server/positions/restore";
 
-import type { TransformedHolding } from "@/types/global.types";
+import type { TransformedPosition } from "@/types/global.types";
 
 interface ArchivedTableProps {
-  data: TransformedHolding[];
+  data: TransformedPosition[];
 }
 
-export function ArchivedTable({ data }: ArchivedTableProps) {
+export function ArchivedAssetsTable({ data }: ArchivedTableProps) {
   const [isRestoring, setIsRestoring] = useState(false);
   const [filterValue, setFilterValue] = useState("");
-  const [selectedRows, setSelectedRows] = useState<TransformedHolding[]>([]);
+  const [selectedRows, setSelectedRows] = useState<TransformedPosition[]>([]);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
 
   const router = useRouter();
 
-  // Handle row click to navigate to holding page
+  // Handle row click to navigate to asset page
   const handleRowClick = useCallback(
-    (holding: TransformedHolding) => {
-      router.push(`/dashboard/holdings/${holding.id}`);
+    (position: TransformedPosition) => {
+      router.push(`/dashboard/assets/${position.id}`);
     },
     [router],
   );
 
-  // Restore holdings
+  // Restore positions
   const handleRestore = async () => {
     setIsRestoring(true);
     try {
-      const holdingIds = selectedRows.map((row) => row.id);
-      const result = await restoreHoldings(holdingIds);
+      const positionIds = selectedRows.map((row) => row.id);
+      const result = await restorePositions(positionIds);
       if (!result.success) {
-        throw new Error(result.message || "Failed to restore holding(s)");
+        throw new Error(result.message || "Failed to restore asset(s)");
       }
-      toast.success(`${result.count} holding(s) restored successfully`);
+      toast.success(`${result.count} asset(s) restored successfully`);
       // Reset selection state
       setSelectedRows([]);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to restore holding(s)",
+        error instanceof Error ? error.message : "Failed to restore asset(s)",
       );
     } finally {
       setIsRestoring(false);
@@ -65,7 +65,7 @@ export function ArchivedTable({ data }: ArchivedTableProps) {
       {/* Search */}
       <InputGroup className="max-w-sm">
         <InputGroupInput
-          placeholder="Search archived holdings..."
+          placeholder="Search archived assets..."
           value={filterValue}
           onChange={(e) => setFilterValue(e.target.value)}
         />
@@ -85,7 +85,7 @@ export function ArchivedTable({ data }: ArchivedTableProps) {
 
       {/* Rows count */}
       <p className="text-muted-foreground text-end text-sm">
-        {data.length} archived holding(s)
+        {data.length} archived asset(s)
       </p>
 
       {/* Floating bulk action bar */}
@@ -112,10 +112,10 @@ export function ArchivedTable({ data }: ArchivedTableProps) {
       )}
 
       {/* Delete dialog */}
-      <DeleteHoldingDialog
+      <DeletePositionDialog
         open={openDeleteDialog}
         onOpenChangeAction={setOpenDeleteDialog}
-        holdings={selectedRows.map(({ id, name }) => ({ id, name }))} // Minimal DTO
+        positions={selectedRows.map(({ id, name }) => ({ id, name }))} // Minimal DTO
         onCompleted={() => {
           setSelectedRows([]);
         }}

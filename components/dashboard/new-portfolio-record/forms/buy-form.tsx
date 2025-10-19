@@ -26,43 +26,35 @@ import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import { Spinner } from "@/components/ui/spinner";
 
-import { useNewRecordDialog } from "../index";
+import { useNewPortfolioRecordDialog } from "../index";
 
 import { cn } from "@/lib/utils";
 import { requiredNumberWithConstraints } from "@/lib/zod-helpers";
 
-import { createTransaction } from "@/server/transactions/create";
+import { createPortfolioRecord } from "@/server/portfolio-records/create";
 
-export function SellForm() {
-  // Get dialog context (preselected holding and close function)
-  const { setOpen, preselectedHolding } = useNewRecordDialog();
+const formSchema = z.object({
+  date: z.date({ error: "A date is required." }),
+  quantity: requiredNumberWithConstraints("Quantity is required.", {
+    gt: { value: 0, error: "Quantity must be greater than 0." },
+  }),
+  unit_value: requiredNumberWithConstraints("Unit value is required.", {
+    gt: { value: 0, error: "Value must be greater than 0." },
+  }),
+  description: z
+    .string()
+    .max(256, {
+      error: "Description must not exceed 256 characters.",
+    })
+    .optional(),
+});
+
+export function BuyForm() {
+  // Get dialog context (preselected position and close function)
+  const { setOpen, preselectedPosition } = useNewPortfolioRecordDialog();
 
   // Local state
   const [isLoading, setIsLoading] = useState(false);
-
-  // Get current holding quantity for validation
-  const currentQuantity = preselectedHolding?.current_quantity || 0;
-
-  // Create dynamic schema based on current quantity
-  const formSchema = z.object({
-    date: z.date({ error: "A date is required." }),
-    quantity: requiredNumberWithConstraints("Quantity is required.", {
-      gt: { value: 0, error: "Quantity must be greater than 0." },
-      lte: {
-        value: currentQuantity,
-        error: `You currently have ${currentQuantity} units.`,
-      },
-    }),
-    unit_value: requiredNumberWithConstraints("Unit value is required.", {
-      gt: { value: 0, error: "Value must be greater than 0." },
-    }),
-    description: z
-      .string()
-      .max(256, {
-        error: "Description must not exceed 256 characters.",
-      })
-      .optional(),
-  });
 
   // Initialize form with React Hook Form
   const form = useForm({
@@ -80,14 +72,8 @@ export function SellForm() {
 
   // Handle form submission
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!preselectedHolding) {
-      toast.error("No holding selected!");
-      return;
-    }
-
-    // Check quantity validation
-    if (values.quantity > currentQuantity) {
-      toast.error(`Cannot sell more than ${currentQuantity} units`);
+    if (!preselectedPosition) {
+      toast.error("No position selected!");
       return;
     }
 
@@ -96,8 +82,8 @@ export function SellForm() {
     try {
       // Prepare form data for server action
       const formData = new FormData();
-      formData.append("type", "sell"); // Transaction type
-      formData.append("holding_id", preselectedHolding.id);
+      formData.append("type", "buy");
+      formData.append("position_id", preselectedPosition.id);
       formData.append("date", format(values.date, "yyyy-MM-dd"));
       formData.append("quantity", values.quantity.toString());
       formData.append("unit_value", values.unit_value.toString());
@@ -107,21 +93,21 @@ export function SellForm() {
         formData.append("description", values.description);
       }
 
-      // Create transaction using server action
-      const result = await createTransaction(formData);
+      // Create portfolio record using server action
+      const result = await createPortfolioRecord(formData);
 
       if (!result.success) {
         throw new Error(result.message);
       }
 
-      toast.success("Sell transaction created successfully");
+      toast.success("Record created successfully");
       form.reset();
       setOpen(false);
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Failed to create sell transaction. Please try again.",
+          : "Failed to create buy transaction. Please try again.",
       );
     } finally {
       setIsLoading(false);
@@ -185,7 +171,7 @@ export function SellForm() {
             name="quantity"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Quantity sold</FormLabel>
+                <FormLabel>Quantity purchased</FormLabel>
                 <FormControl>
                   <Input
                     placeholder="E.g., 10"
@@ -208,7 +194,7 @@ export function SellForm() {
             name="unit_value"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Sale price per unit</FormLabel>
+                <FormLabel>Purchase price per unit</FormLabel>
                 <FormControl>
                   <Input
                     placeholder="E.g., 420.69"
@@ -234,14 +220,17 @@ export function SellForm() {
             <FormItem>
               <FormLabel>Description (optional)</FormLabel>
               <FormControl>
-                <Input placeholder="Add any notes about this sale" {...field} />
+                <Input
+                  placeholder="Add any notes about this purchase"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        {/* Action */}
+        {/* Actions */}
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Button
             onClick={() => setOpen(false)}

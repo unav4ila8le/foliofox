@@ -31,15 +31,15 @@ import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import { Spinner } from "@/components/ui/spinner";
 
-import { useNewRecordDialog } from "../index";
+import { useNewPortfolioRecordDialog } from "../index";
 
 import { cn } from "@/lib/utils";
 import { requiredNumberWithConstraints } from "@/lib/zod-helpers";
 
-import { createTransaction } from "@/server/transactions/create";
+import { createPortfolioRecord } from "@/server/portfolio-records/create";
 import { fetchSingleQuote } from "@/server/quotes/fetch";
 
-import type { TransformedHolding } from "@/types/global.types";
+import type { TransformedPosition } from "@/types/global.types";
 
 // Form validation schema using Zod
 const formSchema = z.object({
@@ -74,23 +74,23 @@ const formSchema = z.object({
 });
 
 export function UpdateForm() {
-  // Get dialog context (preselected holding and close function)
-  const { setOpen, preselectedHolding } = useNewRecordDialog();
+  // Get dialog context (preselected position and close function)
+  const { setOpen, preselectedPosition } = useNewPortfolioRecordDialog();
 
   // Local state for loading and quote fetching
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingQuote, setIsFetchingQuote] = useState(false);
 
-  // Check if current holding has a symbol (for automatic price fetching)
-  const hasSymbol = !!preselectedHolding?.symbol_id;
+  // Check if current position has a symbol (for automatic price fetching)
+  const hasSymbol = !!preselectedPosition?.symbol_id;
 
   // Initialize form with React Hook Form
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       date: new Date(),
-      quantity: preselectedHolding?.current_quantity || "",
-      unit_value: preselectedHolding?.current_unit_value || "",
+      quantity: preselectedPosition?.current_quantity || "",
+      unit_value: preselectedPosition?.current_unit_value || "",
       cost_basis_per_unit: "",
       description: "",
     },
@@ -99,14 +99,14 @@ export function UpdateForm() {
   // Get form state for validation
   const { isDirty } = form.formState;
 
-  // Fetch current market price (quote) for symbol-based holdings
-  const fetchQuoteForHolding = useCallback(
-    async (holding: TransformedHolding, date: Date) => {
-      if (!holding.symbol_id) return;
+  // Fetch current market price (quote) for symbol-based positions
+  const fetchQuoteForPosition = useCallback(
+    async (position: TransformedPosition, date: Date) => {
+      if (!position.symbol_id) return;
 
       setIsFetchingQuote(true);
       try {
-        const quote = await fetchSingleQuote(holding.symbol_id, {
+        const quote = await fetchSingleQuote(position.symbol_id, {
           date: date,
           upsert: false, // Don't cache this quote
         });
@@ -127,35 +127,35 @@ export function UpdateForm() {
     [form],
   );
 
-  // Pre-populate form when holding is selected
+  // Pre-populate form when position is selected
   useEffect(() => {
-    if (preselectedHolding) {
+    if (preselectedPosition) {
       // Reset form first, then set new values
       form.reset({
         date: new Date(),
-        quantity: preselectedHolding.current_quantity || "",
-        unit_value: preselectedHolding.current_unit_value || "",
+        quantity: preselectedPosition.current_quantity || "",
+        unit_value: preselectedPosition.current_unit_value || "",
         description: "",
       });
 
-      if (preselectedHolding.symbol_id) {
-        fetchQuoteForHolding(preselectedHolding, new Date());
+      if (preselectedPosition.symbol_id) {
+        fetchQuoteForPosition(preselectedPosition, new Date());
       }
     }
-  }, [preselectedHolding, form, fetchQuoteForHolding]);
+  }, [preselectedPosition, form, fetchQuoteForPosition]);
 
   // Re-fetch quote when date changes (for historical prices)
   const watchedDate = form.watch("date");
   useEffect(() => {
-    if (preselectedHolding?.symbol_id && watchedDate) {
-      fetchQuoteForHolding(preselectedHolding, watchedDate);
+    if (preselectedPosition?.symbol_id && watchedDate) {
+      fetchQuoteForPosition(preselectedPosition, watchedDate);
     }
-  }, [watchedDate, preselectedHolding, fetchQuoteForHolding]);
+  }, [watchedDate, preselectedPosition, fetchQuoteForPosition]);
 
   // Submit handler
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!preselectedHolding) {
-      toast.error("No holding selected!");
+    if (!preselectedPosition) {
+      toast.error("No position selected!");
       return;
     }
 
@@ -165,7 +165,7 @@ export function UpdateForm() {
       // Prepare form data for server action
       const formData = new FormData();
       formData.append("type", "update"); // Transaction type
-      formData.append("holding_id", preselectedHolding.id);
+      formData.append("position_id", preselectedPosition.id);
       formData.append("date", format(values.date, "yyyy-MM-dd"));
       formData.append("quantity", values.quantity.toString());
       formData.append("unit_value", values.unit_value.toString());
@@ -183,8 +183,8 @@ export function UpdateForm() {
         );
       }
 
-      // Create transaction using server action
-      const result = await createTransaction(formData);
+      // Create portfolio record using server action
+      const result = await createPortfolioRecord(formData);
 
       if (!result.success) {
         throw new Error(result.message);

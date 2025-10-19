@@ -2,13 +2,13 @@ import { Suspense } from "react";
 
 import { Skeleton } from "@/components/ui/custom/skeleton";
 import { Separator } from "@/components/ui/separator";
-import { HoldingHeader } from "@/components/dashboard/holdings/holding/header";
-import { TransactionsTable } from "@/components/dashboard/holdings/tables/transactions/transactions-table";
-import { HoldingNews } from "@/components/dashboard/holdings/holding/news";
-import { HoldingProjectedIncome } from "@/components/dashboard/holdings/holding/projected-income";
+import { AssetHeader } from "@/components/dashboard/positions/asset/header";
+import { PortfolioRecordsTable } from "@/components/dashboard/portfolio-records/table/portfolio-records-table";
+import { AssetNews } from "@/components/dashboard/positions/asset/news";
+import { AssetProjectedIncome } from "@/components/dashboard/positions/asset/projected-income";
 
-import { fetchSingleHolding } from "@/server/holdings/fetch";
-import { fetchTransactions } from "@/server/transactions/fetch";
+import { fetchPositions } from "@/server/positions/fetch";
+import { fetchPortfolioRecords } from "@/server/portfolio-records/fetch";
 import { fetchSymbol } from "@/server/symbols/fetch";
 import { fetchSymbolNews } from "@/server/news/fetch";
 import {
@@ -17,9 +17,9 @@ import {
 } from "@/server/analysis/projected-income";
 
 // Only needed for dynamic routes
-interface HoldingPageProps {
+interface AssetPageProps {
   params: Promise<{
-    holding: string;
+    asset: string;
   }>;
 }
 
@@ -41,37 +41,43 @@ function PageSkeleton() {
   );
 }
 
-async function HoldingContent({ holdingId }: { holdingId: string }) {
-  const holding = await fetchSingleHolding(holdingId);
+async function AssetContent({ positionId }: { positionId: string }) {
+  const { positions } = await fetchPositions({
+    positionId,
+    includeSnapshots: true,
+  });
+  const position = positions[0];
 
-  // Batch all remaining requests
-  const [transactions, symbol, newsResult, projectedIncome] = await Promise.all(
-    [
-      fetchTransactions({ holdingId }),
-      // Fetch symbol and news if symbol exists
-      holding.source === "symbol" ? fetchSymbol(holding.symbol_id!) : null,
-      holding.source === "symbol"
-        ? fetchSymbolNews(holding.symbol_id!)
-        : { success: false, data: [] },
-      holding.source === "symbol"
-        ? calculateSymbolProjectedIncome(
-            holding.symbol_id!,
-            holding.current_quantity,
-          )
-        : { success: false, data: [] },
-    ],
-  );
+  // Batch remaining requests
+  const [portfolioRecords, symbol, newsResult] = await Promise.all([
+    fetchPortfolioRecords({ positionId }),
+    position.symbol_id
+      ? fetchSymbol(position.symbol_id)
+      : Promise.resolve(null),
+    position.symbol_id
+      ? fetchSymbolNews(position.symbol_id)
+      : Promise.resolve({ success: false, data: [] }),
+  ]);
 
   const hasSymbol = Boolean(symbol);
 
+  const projectedIncome = hasSymbol
+    ? await calculateSymbolProjectedIncome(
+        symbol!.id,
+        position.current_quantity,
+      )
+    : { success: true, data: [], currency: position.currency };
+
   const dividendCurrency =
-    (projectedIncome as ProjectedIncomeResult)?.currency || holding.currency;
+    (projectedIncome as ProjectedIncomeResult)?.currency || position.currency;
+
+  // const positionSnapshots = snapshotsByPosition.get(position.id) || [];
 
   return (
     <div className="grid grid-cols-6 gap-4">
       {/* Header */}
       <div className="col-span-6">
-        <HoldingHeader holding={holding} symbol={symbol} />
+        <AssetHeader position={position} symbol={symbol} />
       </div>
 
       <Separator className="col-span-6" />
@@ -81,13 +87,13 @@ async function HoldingContent({ holdingId }: { holdingId: string }) {
           {/* News */}
           <div className="space-y-2">
             <h3 className="font-semibold">News</h3>
-            <HoldingNews newsData={newsResult} />
+            <AssetNews newsData={newsResult} />
           </div>
           <Separator />
           {/* Projected Income */}
           <div className="space-y-3">
             <h3 className="font-semibold">Projected Income</h3>
-            <HoldingProjectedIncome
+            <AssetProjectedIncome
               projectedIncome={projectedIncome}
               dividendCurrency={dividendCurrency}
             />
@@ -97,24 +103,24 @@ async function HoldingContent({ holdingId }: { holdingId: string }) {
 
       <Separator className="col-span-6 lg:hidden" />
 
-      {/* Transactions */}
+      {/* Portfolio Records */}
       <div
         className={`col-span-6 space-y-2 ${hasSymbol ? "lg:col-span-4" : "lg:col-span-6"}`}
       >
-        <h3 className="font-semibold">Transactions history</h3>
-        <TransactionsTable data={transactions} holding={holding} />
+        <h3 className="font-semibold">Records history</h3>
+        <PortfolioRecordsTable data={portfolioRecords} position={position} />
       </div>
     </div>
   );
 }
 
 // Main page component
-export default async function HoldingPage({ params }: HoldingPageProps) {
-  const { holding: holdingId } = await params;
+export default async function AssetPage({ params }: AssetPageProps) {
+  const { asset: positionId } = await params;
 
   return (
     <Suspense fallback={<PageSkeleton />}>
-      <HoldingContent holdingId={holdingId} />
+      <AssetContent positionId={positionId} />
     </Suspense>
   );
 }

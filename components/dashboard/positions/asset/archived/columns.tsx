@@ -10,14 +10,14 @@ import {
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ActionsCell } from "@/components/dashboard/holdings/tables/row-actions/actions-cell";
+import { ActionsCell } from "@/components/dashboard/positions/asset/row-actions/actions-cell";
 
 import { formatNumber } from "@/lib/number-format";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import type { TransformedHolding } from "@/types/global.types";
+import type { TransformedPosition } from "@/types/global.types";
 
-export const columns: ColumnDef<TransformedHolding>[] = [
+export const columns: ColumnDef<TransformedPosition>[] = [
   {
     id: "select",
     header: ({ table }) => (
@@ -147,8 +147,8 @@ export const columns: ColumnDef<TransformedHolding>[] = [
       cellClassName: "text-right",
     },
     cell: ({ row }) => {
-      const holding = row.original;
-      return <ActionsCell holding={holding} />;
+      const position = row.original;
+      return <ActionsCell position={position} />;
     },
   },
 ];

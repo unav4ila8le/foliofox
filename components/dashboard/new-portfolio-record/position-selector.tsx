@@ -29,39 +29,39 @@ import {
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-import { fetchHoldings } from "@/server/holdings/fetch";
+import { fetchPositions } from "@/server/positions/fetch";
 
-import type { TransformedHolding } from "@/types/global.types";
+import type { TransformedPosition } from "@/types/global.types";
 
 // Props interface for react-hook-form integration
-interface HoldingSelectorProps {
+interface PositionSelectorProps {
   field: {
     value: string;
     onChange: (value: string) => void;
   };
-  onHoldingSelect?: (holding: TransformedHolding | null) => void;
+  onPositionSelect?: (position: TransformedPosition | null) => void;
   id?: string;
-  preselectedHolding?: TransformedHolding | null;
+  preselectedPosition?: TransformedPosition | null;
 }
 
-export function HoldingSelector({
+export function PositionSelector({
   field,
-  onHoldingSelect,
+  onPositionSelect,
   id,
-  preselectedHolding,
-}: HoldingSelectorProps) {
+  preselectedPosition,
+}: PositionSelectorProps) {
   const [open, setOpen] = useState(false);
-  const [holdings, setHoldings] = useState<TransformedHolding[]>([]);
+  const [positions, setPositions] = useState<TransformedPosition[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const isMobile = useIsMobile();
 
   // Load holdings when the selector opens
-  const getHoldings = async () => {
+  const getPositions = async () => {
     try {
-      const data = await fetchHoldings({
+      const data = await fetchPositions({
         asOfDate: new Date(),
       });
-      setHoldings(data);
+      setPositions(data);
     } catch (error) {
       console.error("Error loading holdings:", error);
     } finally {
@@ -71,11 +71,11 @@ export function HoldingSelector({
 
   // Find the selected holding name
   // If a preselected holding is provided, use it if it matches the field value
-  const selectedHolding =
-    preselectedHolding && preselectedHolding.id === field.value
-      ? preselectedHolding
-      : holdings.find((h) => h.id === field.value);
-  const holdingName = selectedHolding ? selectedHolding.name : field.value;
+  const selectedPosition =
+    preselectedPosition && preselectedPosition.id === field.value
+      ? preselectedPosition
+      : positions.find((p) => p.id === field.value);
+  const positionName = selectedPosition ? selectedPosition.name : field.value;
 
   if (isMobile) {
     return (
@@ -88,28 +88,28 @@ export function HoldingSelector({
             aria-expanded={open}
             className={cn(
               "justify-between font-normal",
-              !holdingName && "text-muted-foreground",
+              !positionName && "text-muted-foreground",
             )}
             onClick={() => {
               if (open) return;
               setIsLoading(true);
-              getHoldings();
+              getPositions();
             }}
           >
-            {holdingName || "Select holding"}
+            {positionName || "Select position"}
             <ChevronsUpDown className="text-muted-foreground" />
           </Button>
         </DrawerTrigger>
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle>Holding</DrawerTitle>
+            <DrawerTitle>Position</DrawerTitle>
           </DrawerHeader>
-          <HoldingList
+          <PositionList
             setOpen={setOpen}
             value={field.value}
             onChange={field.onChange}
-            onHoldingSelect={onHoldingSelect}
-            holdings={holdings}
+            onPositionSelect={onPositionSelect}
+            positions={positions}
             isLoading={isLoading}
           />
         </DrawerContent>
@@ -127,15 +127,15 @@ export function HoldingSelector({
           aria-expanded={open}
           className={cn(
             "justify-between font-normal",
-            !holdingName && "text-muted-foreground",
+            !positionName && "text-muted-foreground",
           )}
           onClick={() => {
             if (open) return;
             setIsLoading(true);
-            getHoldings();
+            getPositions();
           }}
         >
-          {holdingName || "Select holding"}
+          {positionName || "Select position"}
           <ChevronsUpDown className="text-muted-foreground" />
         </Button>
       </PopoverTrigger>
@@ -143,12 +143,12 @@ export function HoldingSelector({
         className="w-(--radix-popover-trigger-width) p-0"
         align="start"
       >
-        <HoldingList
+        <PositionList
           setOpen={setOpen}
           value={field.value}
           onChange={field.onChange}
-          onHoldingSelect={onHoldingSelect}
-          holdings={holdings}
+          onPositionSelect={onPositionSelect}
+          positions={positions}
           isLoading={isLoading}
         />
       </PopoverContent>
@@ -156,34 +156,32 @@ export function HoldingSelector({
   );
 }
 
-interface HoldingListProps {
+interface PositionListProps {
   setOpen: (open: boolean) => void;
   value: string;
   onChange: (value: string) => void;
-  onHoldingSelect?: (holding: TransformedHolding | null) => void;
-  holdings: TransformedHolding[];
+  onPositionSelect?: (position: TransformedPosition | null) => void;
+  positions: TransformedPosition[];
   isLoading: boolean;
 }
 
-function HoldingList({
+function PositionList({
   setOpen,
   value,
   onChange,
-  onHoldingSelect,
-  holdings,
+  onPositionSelect,
+  positions,
   isLoading,
-}: HoldingListProps) {
-  // Group by category (sorted by display_order), and holdings by name
-  const grouped = [...holdings]
-    .sort(
-      (a, b) =>
-        a.asset_categories.display_order - b.asset_categories.display_order,
-    )
-    .reduce<Record<string, TransformedHolding[]>>((acc, h) => {
-      const key = h.asset_categories.name;
-      (acc[key] ||= []).push(h);
+}: PositionListProps) {
+  // Group by category name (server already orders by category display_order)
+  const grouped = [...positions].reduce<Record<string, TransformedPosition[]>>(
+    (acc, p) => {
+      const key = p.category_name || "Other";
+      (acc[key] ||= []).push(p);
       return acc;
-    }, {});
+    },
+    {},
+  );
 
   Object.values(grouped).forEach((arr) =>
     arr.sort((a, b) => a.name.localeCompare(b.name)),
@@ -191,29 +189,29 @@ function HoldingList({
 
   return (
     <Command>
-      <CommandInput placeholder="Search holding..." className="h-9" />
+      <CommandInput placeholder="Search position..." className="h-9" />
       <CommandList>
         <CommandEmpty>
-          {isLoading ? "Loading holdings..." : "No holdings found."}
+          {isLoading ? "Loading positions..." : "No positions found."}
         </CommandEmpty>
         {Object.entries(grouped).map(([categoryName, items]) => (
           <Fragment key={categoryName}>
             <CommandGroup heading={categoryName}>
-              {items.map((holding) => (
+              {items.map((position) => (
                 <CommandItem
-                  key={holding.id}
+                  key={position.id}
                   onSelect={() => {
-                    onChange(holding.id);
-                    onHoldingSelect?.(holding);
+                    onChange(position.id);
+                    onPositionSelect?.(position);
                     setOpen(false);
                   }}
-                  value={holding.name}
+                  value={position.name}
                 >
-                  {holding.name}
+                  {position.name}
                   <Check
                     className={cn(
                       "ml-auto",
-                      value === holding.id ? "opacity-100" : "opacity-0",
+                      value === position.id ? "opacity-100" : "opacity-0",
                     )}
                   />
                 </CommandItem>

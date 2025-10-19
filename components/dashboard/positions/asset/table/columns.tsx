@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ActionsCell } from "@/components/dashboard/positions/tables/row-actions/actions-cell";
+import { ActionsCell } from "@/components/dashboard/positions/asset/row-actions/actions-cell";
 
 import { cn } from "@/lib/utils";
 import { formatNumber, formatPercentage } from "@/lib/number-format";

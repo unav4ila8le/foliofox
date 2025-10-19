@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 
 import { Skeleton } from "@/components/ui/custom/skeleton";
-import { AssetsTable } from "@/components/dashboard/positions/tables/assets/assets-table";
+import { AssetsTable } from "@/components/dashboard/positions/asset/table/assets-table";
 
 import { fetchPositions } from "@/server/positions/fetch";
 import { calculateProfitLoss } from "@/lib/profit-loss";

@@ -4,15 +4,15 @@ import { ProjectedIncomeBarChart } from "@/components/dashboard/charts/projected
 
 import type { ProjectedIncomeResult } from "@/server/analysis/projected-income";
 
-interface HoldingProjectedIncomeProps {
+interface AssetProjectedIncomeProps {
   projectedIncome: ProjectedIncomeResult;
   dividendCurrency: string;
 }
 
-export function HoldingProjectedIncome({
+export function AssetProjectedIncome({
   projectedIncome,
   dividendCurrency,
-}: HoldingProjectedIncomeProps) {
+}: AssetProjectedIncomeProps) {
   // Handle error state
   if (!projectedIncome.success) {
     return (

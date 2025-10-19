@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { HoldingSelector } from "./holding-selector";
+import { PositionSelector } from "./position-selector";
 import { BuyForm } from "./forms/buy-form";
 import { SellForm } from "./forms/sell-form";
 import { UpdateForm } from "./forms/update-form";
@@ -28,7 +28,7 @@ import { UpdateForm } from "./forms/update-form";
 import { getTransactionTypeLabel } from "@/lib/position-category-mappings";
 import { cn } from "@/lib/utils";
 
-import type { TransformedHolding } from "@/types/global.types";
+import type { TransformedPosition } from "@/types/global.types";
 import type { VariantProps } from "class-variance-authority";
 
 const TRANSACTION_TYPE_ICONS: Record<string, React.ElementType> = {
@@ -37,45 +37,44 @@ const TRANSACTION_TYPE_ICONS: Record<string, React.ElementType> = {
   update: PencilLine,
 };
 
-type NewRecordDialogContextType = {
+type NewPortfolioRecordDialogContextType = {
   open: boolean;
   setOpen: (open: boolean) => void;
-  preselectedHolding: TransformedHolding | null;
-  setPreselectedHolding: (holding: TransformedHolding | null) => void;
+  preselectedPosition: TransformedPosition | null;
+  setPreselectedPosition: (position: TransformedPosition | null) => void;
   setInitialTab: (tab: string | undefined) => void;
 };
 
-const NewRecordDialogContext = createContext<
-  NewRecordDialogContextType | undefined
+const NewPortfolioRecordDialogContext = createContext<
+  NewPortfolioRecordDialogContextType | undefined
 >(undefined);
 
-export function NewRecordDialogProvider({
+export function NewPortfolioRecordDialogProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
-  const [preselectedHolding, setPreselectedHolding] =
-    useState<TransformedHolding | null>(null);
+  const [preselectedPosition, setPreselectedPosition] =
+    useState<TransformedPosition | null>(null);
   const [initialTab, setInitialTab] = useState<string | undefined>(undefined);
 
   // Handle dialog open/close and reset state when closing
   const handleOpenChange = (isOpen: boolean) => {
     setOpen(isOpen);
 
-    // Clear preselected holding when dialog closes
+    // Clear preselected position when dialog closes
     if (!isOpen) {
-      setPreselectedHolding(null);
+      setPreselectedPosition(null);
       setInitialTab(undefined);
     }
   };
 
-  // Get available transaction types based on holding source
+  // Get available transaction types based on position source
   const getAvailableTransactionTypes = () => {
-    if (!preselectedHolding) return [] as string[];
-    if (preselectedHolding.source === "symbol")
-      return ["buy", "sell", "update"];
-    if (preselectedHolding.source === "domain") return [] as string[];
+    if (!preselectedPosition) return [] as string[];
+    if (preselectedPosition.symbol_id) return ["buy", "sell", "update"];
+    if (preselectedPosition.domain_id) return [] as string[];
     // Custom (no source): only update
     return ["update"];
   };
@@ -86,12 +85,12 @@ export function NewRecordDialogProvider({
     (availableTypes.length > 0 ? availableTypes[0] + "-form" : undefined);
 
   return (
-    <NewRecordDialogContext.Provider
+    <NewPortfolioRecordDialogContext.Provider
       value={{
         open,
         setOpen,
-        preselectedHolding,
-        setPreselectedHolding,
+        preselectedPosition,
+        setPreselectedPosition,
         setInitialTab,
       }}
     >
@@ -100,21 +99,21 @@ export function NewRecordDialogProvider({
         <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {preselectedHolding
-                ? `New Record for ${preselectedHolding.name}`
+              {preselectedPosition
+                ? `New Record for ${preselectedPosition.name}`
                 : "New Record"}
             </DialogTitle>
             <DialogDescription>
-              Update the value and quantity of your holdings.
+              Update the value and quantity of your positions.
             </DialogDescription>
           </DialogHeader>
 
-          {/* Holding selector */}
-          <HoldingSelector
-            onHoldingSelect={setPreselectedHolding}
-            preselectedHolding={preselectedHolding}
+          {/* position selector */}
+          <PositionSelector
+            onPositionSelect={setPreselectedPosition}
+            preselectedPosition={preselectedPosition}
             field={{
-              value: preselectedHolding?.id || "",
+              value: preselectedPosition?.id || "",
               onChange: () => {},
             }}
           />
@@ -122,10 +121,10 @@ export function NewRecordDialogProvider({
           {/* Tabs for transaction types */}
           <div
             className={cn(
-              !preselectedHolding && "pointer-events-none opacity-50",
+              !preselectedPosition && "pointer-events-none opacity-50",
             )}
           >
-            {preselectedHolding && availableTypes.length === 0 ? (
+            {preselectedPosition && availableTypes.length === 0 ? (
               <Alert>
                 <Info className="size-4" />
                 <AlertTitle className="line-clamp-none">
@@ -144,7 +143,7 @@ export function NewRecordDialogProvider({
                     </Link>
                     .
                     <br />
-                    If you prefer, you can add a new custom holding to manually
+                    If you prefer, you can add a new custom position to manually
                     enter your own valuation instead.
                   </p>
                 </AlertDescription>
@@ -166,7 +165,7 @@ export function NewRecordDialogProvider({
                       <TabsTrigger
                         key={type}
                         value={`${type}-form`}
-                        disabled={!preselectedHolding}
+                        disabled={!preselectedPosition}
                       >
                         <Icon className="size-4" />
                         {getTransactionTypeLabel(type)}
@@ -194,32 +193,32 @@ export function NewRecordDialogProvider({
           </div>
         </DialogContent>
       </Dialog>
-    </NewRecordDialogContext.Provider>
+    </NewPortfolioRecordDialogContext.Provider>
   );
 }
 
-export function useNewRecordDialog() {
-  const context = useContext(NewRecordDialogContext);
+export function useNewPortfolioRecordDialog() {
+  const context = useContext(NewPortfolioRecordDialogContext);
   if (!context) {
     throw new Error(
-      "useNewRecordDialog must be used within a NewRecordDialogProvider",
+      "useNewPortfolioRecordDialog must be used within a NewPortfolioRecordDialogProvider",
     );
   }
   return context;
 }
 
-export function NewRecordButton({
+export function NewPortfolioRecordButton({
   variant = "default",
-  preselectedHolding,
+  preselectedPosition,
 }: {
   variant?: VariantProps<typeof buttonVariants>["variant"];
-  preselectedHolding?: TransformedHolding;
+  preselectedPosition?: TransformedPosition;
 }) {
-  const { setOpen, setPreselectedHolding } = useNewRecordDialog();
+  const { setOpen, setPreselectedPosition } = useNewPortfolioRecordDialog();
 
   const handleClick = () => {
-    if (preselectedHolding) {
-      setPreselectedHolding(preselectedHolding ?? null);
+    if (preselectedPosition) {
+      setPreselectedPosition(preselectedPosition);
     }
     setOpen(true);
   };

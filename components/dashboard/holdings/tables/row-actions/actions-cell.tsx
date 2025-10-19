@@ -22,7 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import { useNewRecordDialog } from "@/components/dashboard/new-record";
+import { useNewRecordDialog } from "@/components/dashboard/new-portfolio-record";
 import { ArchiveHoldingDialog } from "./archive-dialog";
 import { DeleteHoldingDialog } from "./delete-dialog";
 
