@@ -120,7 +120,7 @@ export function DomainForm() {
       const formData = new FormData();
       formData.append("name", values.domain);
       formData.append("domain_id", values.domain);
-      formData.append("category_code", "domain");
+      formData.append("category_id", "domain");
       formData.append("currency", "USD");
       formData.append("quantity", "1");
       formData.append("unit_value", finalValuation.toString());

@@ -43,6 +43,7 @@ export async function createPosition(formData: FormData) {
   const currency = (formData.get("currency") as string) || "";
   const category_id = (formData.get("category_id") as string) || "other";
   const type = (formData.get("type") as Position["type"]) || "asset";
+  const description = (formData.get("description") as string) || null;
 
   if (!name || !currency) {
     return {
@@ -148,6 +149,7 @@ export async function createPosition(formData: FormData) {
       name,
       currency,
       category_id,
+      description,
       source_id: sourceId,
     })
     .select("id")

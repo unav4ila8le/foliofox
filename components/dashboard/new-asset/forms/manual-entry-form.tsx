@@ -37,7 +37,7 @@ const formSchema = z.object({
     .string()
     .min(3, { error: "Name must be at least 3 characters." })
     .max(64, { error: "Name must not exceed 64 characters." }),
-  category_code: z.string().min(1, { error: "Category is required." }),
+  category_id: z.string().min(1, { error: "Category is required." }),
   currency: z.string().length(3),
   unit_value: requiredNumberWithConstraints("Unit value is required.", {
     gte: { value: 0, error: "Value must be 0 or greater." },
@@ -78,7 +78,7 @@ export function ManualEntryForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      category_code: "",
+      category_id: "",
       currency: profile.display_currency,
       unit_value: "",
       quantity: "",
@@ -96,7 +96,7 @@ export function ManualEntryForm() {
     try {
       const formData = new FormData();
       formData.append("name", values.name);
-      formData.append("category_code", values.category_code);
+      formData.append("category_id", values.category_id);
       formData.append("currency", values.currency);
       formData.append("unit_value", values.unit_value.toString());
       formData.append("quantity", values.quantity.toString());
@@ -158,7 +158,7 @@ export function ManualEntryForm() {
         {/* Category */}
         <FormField
           control={form.control}
-          name="category_code"
+          name="category_id"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Category</FormLabel>
