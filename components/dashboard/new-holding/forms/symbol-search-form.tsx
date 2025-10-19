@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { YahooFinanceLogo } from "@/components/ui/logos/yahoo-finance-logo";
 import { SymbolSearch } from "../../symbol-search";
-import { AssetCategorySelector } from "@/components/dashboard/asset-category-selector";
+import { PositionCategorySelector } from "@/components/dashboard/position-category-selector";
 
 import { useNewHoldingDialog } from "../index";
 
@@ -36,7 +36,7 @@ import { fetchYahooFinanceSymbol } from "@/server/symbols/search";
 import { fetchSingleQuote } from "@/server/quotes/fetch";
 import { createHolding } from "@/server/holdings/create";
 
-import { getCategoryFromQuoteType } from "@/lib/asset-category-mappings";
+import { getPositionCategoryKeyFromQuoteType } from "@/lib/position-category-mappings";
 
 const formSchema = z.object({
   symbol_id: z.string().min(1, { error: "Symbol is required." }),
@@ -44,7 +44,7 @@ const formSchema = z.object({
     .string()
     .min(3, { error: "Name must be at least 3 characters." })
     .max(64, { error: "Name must not exceed 64 characters." }),
-  category_code: z.string().min(1, { error: "Category is required." }),
+  category_id: z.string().min(1, { error: "Category is required." }),
   currency: z.string().length(3),
   unit_value: requiredNumberWithConstraints("Unit value is required.", {
     gte: { value: 0, error: "Value must be 0 or greater" },
@@ -85,7 +85,7 @@ export function SymbolSearchForm() {
     defaultValues: {
       symbol_id: "",
       name: "",
-      category_code: "",
+      category_id: "",
       currency: "",
       unit_value: "",
       quantity: "",
@@ -118,9 +118,11 @@ export function SymbolSearchForm() {
       const symbolData = yahooFinanceSymbol.data;
 
       // Category
-      const category = getCategoryFromQuoteType(symbolData.quote_type || "");
-      if (category) {
-        form.setValue("category_code", category);
+      const categoryKey = getPositionCategoryKeyFromQuoteType(
+        symbolData.quote_type || "",
+      );
+      if (categoryKey) {
+        form.setValue("category_id", categoryKey);
       }
 
       // Currency
@@ -155,7 +157,7 @@ export function SymbolSearchForm() {
       const formData = new FormData();
       formData.append("symbol_id", values.symbol_id);
       formData.append("name", values.name);
-      formData.append("category_code", values.category_code);
+      formData.append("category_id", values.category_id);
       formData.append("currency", values.currency);
       formData.append("unit_value", values.unit_value.toString());
       formData.append("quantity", values.quantity.toString());
@@ -250,12 +252,15 @@ export function SymbolSearchForm() {
         {/* Category */}
         <FormField
           control={form.control}
-          name="category_code"
+          name="category_id"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Category</FormLabel>
               <FormControl>
-                <AssetCategorySelector field={field} disabled={!isFormReady} />
+                <PositionCategorySelector
+                  field={field}
+                  disabled={!isFormReady}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

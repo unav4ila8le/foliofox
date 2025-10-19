@@ -23,7 +23,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { AssetCategorySelector } from "@/components/dashboard/asset-category-selector";
+import { AssetCategorySelector } from "@/components/dashboard/position-category-selector";
 import { CurrencySelector } from "@/components/dashboard/currency-selector";
 
 import { useNewHoldingDialog } from "../index";

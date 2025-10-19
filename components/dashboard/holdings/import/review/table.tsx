@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { Skeleton } from "@/components/ui/custom/skeleton";
 
-import { useAssetCategories } from "@/hooks/use-asset-categories";
+import { usePositionCategories } from "@/hooks/use-position-categories";
 import { ReviewForm } from "./form";
 
 import type { CurrencyValidationResult } from "@/server/currencies/validate";
@@ -29,7 +29,8 @@ export function HoldingsImportReviewTable({
   precomputedSymbolValidation,
   supportedCurrencies,
 }: HoldingsImportReviewTableProps) {
-  const { categories, isLoading: isLoadingCategories } = useAssetCategories();
+  const { categories, isLoading: isLoadingCategories } =
+    usePositionCategories();
 
   // Build validation maps from precomputed props (no network calls)
   const usedSymbols = useMemo(

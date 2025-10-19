@@ -15,7 +15,7 @@ import { FileUploadDropzone } from "@/components/ui/custom/file-upload-dropzone"
 import { ImportResults } from "./import-results";
 import { useImportHoldingsDialog } from "./index";
 
-import { useAssetCategories } from "@/hooks/use-asset-categories";
+import { usePositionCategories } from "@/hooks/use-position-categories";
 import { parseHoldingsCSV } from "@/lib/import/sources/csv";
 import { importHoldings } from "@/server/holdings/import";
 
@@ -30,7 +30,7 @@ export function CSVImportForm() {
     setReviewSymbolValidation,
     setReviewSupportedCurrencies,
   } = useImportHoldingsDialog();
-  const { categories } = useAssetCategories();
+  const { categories } = usePositionCategories();
 
   // State for the entire import flow
   const [isProcessing, setIsProcessing] = useState(false);
@@ -136,12 +136,12 @@ export function CSVImportForm() {
           <Tooltip>
             <TooltipTrigger asChild>
               <span className="text-foreground inline-block cursor-help underline-offset-4 hover:underline">
-                category_code
+                category_id
               </span>
             </TooltipTrigger>
             <TooltipContent className="max-w-xs">
               Available categories:{" "}
-              {categories.map((category) => category.code).join(", ")}
+              {categories.map((category) => category.id).join(", ")}
             </TooltipContent>
           </Tooltip>
           , cost_basis_per_unit,{" "}

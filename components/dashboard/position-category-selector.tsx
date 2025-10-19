@@ -27,10 +27,10 @@ import {
 
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useAssetCategories } from "@/hooks/use-asset-categories";
+import { usePositionCategories } from "@/hooks/use-position-categories";
 import { useFormField } from "@/components/ui/form";
 
-import type { AssetCategory } from "@/types/global.types";
+import type { PositionCategory } from "@/types/global.types";
 
 // Props interface for react-hook-form integration
 interface CategorySelectorProps {
@@ -44,7 +44,7 @@ interface CategorySelectorProps {
   popoverWidth?: string;
 }
 
-export function AssetCategorySelector({
+export function PositionCategorySelector({
   field,
   id,
   disabled = false,
@@ -57,10 +57,10 @@ export function AssetCategorySelector({
   const isInvalid = Boolean(error);
 
   // Get asset categories
-  const { categories, isLoading } = useAssetCategories();
+  const { categories, isLoading } = usePositionCategories();
 
   // Find the selected category name
-  const selectedCategory = categories.find((cat) => cat.code === field.value);
+  const selectedCategory = categories.find((cat) => cat.id === field.value);
   const categoryName = selectedCategory ? selectedCategory.name : field.value;
 
   if (isMobile) {
@@ -139,7 +139,7 @@ interface CategoryListProps {
   setOpen: (open: boolean) => void;
   value: string;
   onChange: (value: string) => void;
-  categories: AssetCategory[];
+  categories: PositionCategory[];
   isLoading: boolean;
 }
 
@@ -160,18 +160,18 @@ function AssetCategoryList({
         <CommandGroup>
           {categories.map((category) => (
             <CommandItem
-              key={category.code}
+              key={category.id}
               onSelect={() => {
-                onChange(category.code);
+                onChange(category.id);
                 setOpen(false);
               }}
-              value={category.code}
+              value={category.id}
             >
               {category.name}
               <Check
                 className={cn(
                   "ml-auto",
-                  value === category.code ? "opacity-100" : "opacity-0",
+                  value === category.id ? "opacity-100" : "opacity-0",
                 )}
               />
             </CommandItem>

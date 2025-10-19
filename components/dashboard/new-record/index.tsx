@@ -25,7 +25,7 @@ import { BuyForm } from "./forms/buy-form";
 import { SellForm } from "./forms/sell-form";
 import { UpdateForm } from "./forms/update-form";
 
-import { getTransactionTypeLabel } from "@/lib/asset-category-mappings";
+import { getTransactionTypeLabel } from "@/lib/position-category-mappings";
 import { cn } from "@/lib/utils";
 
 import type { TransformedHolding } from "@/types/global.types";

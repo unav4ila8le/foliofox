@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { fetchAssetCategories } from "@/server/asset-categories/fetch";
+import { fetchPositionCategories } from "@/server/position-categories/fetch";
 import { fetchCurrencies } from "@/server/currencies/fetch";
 
 import {
@@ -31,12 +31,12 @@ const WarningSchema = z.union([z.string(), z.object({ warning: z.string() })]);
 
 // Function to create the holding row schema with dynamic categories
 async function createHoldingRowSchema() {
-  const assetCategories = await fetchAssetCategories();
-  const categoryCodes = assetCategories.map((cat) => cat.code);
+  const positionCategories = await fetchPositionCategories("asset");
+  const categoryIds = positionCategories.map((cat) => cat.id);
 
   return z.object({
     name: z.string().min(3).max(64),
-    category_code: z.enum(categoryCodes),
+    category_id: z.enum(categoryIds),
     currency: z.string().length(3),
     quantity: z.number().gte(0),
     unit_value: z.number().gte(0).nullable().optional(),
@@ -60,9 +60,9 @@ export async function createExtractionResultSchema() {
 
 // Function to create prompt with dynamic categories
 export async function createExtractionPrompt(): Promise<string> {
-  const assetCategories = await fetchAssetCategories();
-  const categoryCodes = assetCategories.map((cat) => cat.code);
-  const categoriesList = categoryCodes.join(", ");
+  const positionCategories = await fetchPositionCategories("asset");
+  const categoryIds = positionCategories.map((cat) => cat.id);
+  const categoriesList = categoryIds.join(", ");
 
   return `You are a precise financial document parser. Extract ONLY portfolio holdings/positions, not transactions, totals, or P/L.
 
@@ -72,7 +72,7 @@ Return data that strictly matches the provided JSON schema. Do not invent values
 - When symbol_id is present, set currency to the symbol's native trading currency from Yahoo Finance, never the page's base/portfolio currency.
 - Quantity can be fractional, must be >= 0.
 - Unit numbers: strip thousand separators, use "." for decimals, no currency symbols.
-- category_code must be one of: ${categoriesList}.
+- category_id must be one of: ${categoriesList}.
 - For cash balances, keep the currency exactly as shown on the statement (CHF/EUR/USD/etc.). Do not convert to USD or warn if not USD; only ensure it is a valid 3‑letter ISO 4217 code.
 - For cash balances, output a 'cash' holding (quantity 1, unit_value = cash amount).
 - For cryptocurrencies, set symbol_id to the Yahoo Finance crypto pair with "-USD" (e.g., BTC-USD, ETH-USD, XRP-USD). If only the coin code is visible, output the "-USD" pair. Set currency to USD for cryptocurrencies.

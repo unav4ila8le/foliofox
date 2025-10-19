@@ -35,7 +35,7 @@ import { Calendar } from "@/components/ui/calendar";
 
 import { cn } from "@/lib/utils";
 import { requiredNumberWithConstraints } from "@/lib/zod-helpers";
-import { getTransactionTypeLabel } from "@/lib/asset-category-mappings";
+import { getTransactionTypeLabel } from "@/lib/position-category-mappings";
 
 import { updateTransaction } from "@/server/transactions/update";
 

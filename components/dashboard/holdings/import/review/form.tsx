@@ -31,7 +31,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-import { AssetCategorySelector } from "@/components/dashboard/asset-category-selector";
+import { AssetCategorySelector } from "@/components/dashboard/position-category-selector";
 import { CurrencySelector } from "@/components/dashboard/currency-selector";
 import { SymbolSearch } from "@/components/dashboard/symbol-search";
 

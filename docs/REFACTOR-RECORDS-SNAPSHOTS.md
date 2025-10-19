@@ -1,6 +1,6 @@
 ## Database Refactor Plan (Concise) — Position-Centric Model
 
-This plan supersedes the details below. It is the authoritative, simplified blueprint for the refactor. No code or SQL here—just a clear plan.
+This plan is the authoritative, simplified blueprint for the refactor. No code or SQL here—just a clear plan.
 
 ### Objectives
 
@@ -10,19 +10,19 @@ This plan supersedes the details below. It is the authoritative, simplified blue
 
 ### Target Data Model
 
-- positions: id, user_id, type ('asset' | 'liability'), name, currency, entity_id (nullable), archived_at, created_at, updated_at
+- positions: id, user_id, type ('asset' | 'liability'), name, currency, source_id (nullable), archived_at, created_at, updated_at
 - portfolio_records: unified action log (buy, sell, update, borrow, repay, interest, fee, etc.); order timelines by created_at
 - position_snapshots: unified value history by date; record_id is nullable (initial/synthetic snapshots)
-- portfolio_entities (hub): id, type ('symbol' | 'domain' | 'property' | 'account' | 'loan' | 'custom'), created_at
+- position_sources (hub): id, type ('symbol' | 'domain' | 'property' | 'account' | 'loan' | 'custom'), created_at
   -- per-type detail tables (only for current needs):
-  - entity_symbols: id (PK/FK to portfolio_entities.id), symbol_id (FK to symbols.id)
-  - entity_domains: id (PK/FK to portfolio_entities.id), domain_id (text)
-  - entity_properties: id (PK/FK to portfolio_entities.id), external_id, ... (future)
+  - source_symbols: id (PK/FK to position_sources.id), symbol_id (FK to symbols.id)
+  - source_domains: id (PK/FK to position_sources.id), domain_id (text)
+  - source_properties: id (PK/FK to position_sources.id), external_id, ... (future)
 
 ### Categories
 
-- position_categories: code (PK), name, description, display_order, position_type ('asset' | 'liability')
-- positions.category_code → position_categories.code (FK)
+- position_categories: id (PK), name, description, display_order, position_type ('asset' | 'liability')
+- positions.category_id → position_categories.id (FK)
 - Migrate: asset_categories → position_categories (position_type='asset'); add liability categories
 - Views (for UX/back-compat): asset_categories = position_categories WHERE position_type='asset'; liability_categories = position_categories WHERE position_type='liability'
 
@@ -31,12 +31,12 @@ This plan supersedes the details below. It is the authoritative, simplified blue
 - [x] Create GitHub branches: `development` (staging), protect `main` (production)
 - [x] Set up CI/CD: PRs → staging preview; merge to `development` → staging deploy; merge to `main` → production deploy
 - [x] Turn on maintenance mode
-- [ ] Full production DB backup and schema export
-- [ ] Create new DB tables: positions, portfolio_records, position_snapshots, position_categories, portfolio_entities, entity_symbols, entity_domains (keep existing tables for backfill)
-- [ ] Replace `symbol_holdings`/`domain_holdings` with `portfolio_entities` hub + `positions.entity_id`
-- [ ] Backfill data: holdings → positions (type='asset'); transactions → portfolio_records; records → position_snapshots
+- [x] Full production DB backup and schema export
+- [x] Create new DB tables: positions, portfolio_records, position_snapshots, position_categories, position_sources, source_symbols, source_domains (kept existing tables for backfill)
+- [x] Replace `symbol_holdings`/`domain_holdings` with `position_sources` hub + `positions.source_id` for active reads/writes (legacy tables remain read-only until decommission)
+- [x] Backfill data: holdings → positions (type='asset'); transactions → portfolio_records; records → position_snapshots
 - [ ] Create compatibility views: holdings, transactions, records (optional if maintenance mode covers full cutover)
-- [ ] Add RLS policies and essential indexes; verify with EXPLAIN where relevant
+- [x] Add RLS policies and essential indexes; verified and optimized policies using (select auth.uid()) per advisor guidance
 - [ ] Regenerate TypeScript types and update type aliases (avoid TS `Record`)
 - [ ] Refactor server modules: holdings→positions, transactions→portfolio-records, records→position-snapshots
 - [ ] Update components, routes, and AI tools to new imports/types and copy
@@ -65,21 +65,21 @@ Categories migration specifics
 
 - Create position_categories; copy rows from asset_categories with position_type='asset'
 - Add liability categories (credit_card, personal_loan, mortgage, auto_loan, student_loan, line_of_credit, tax, other)
-- Add positions.category_code and backfill from holdings.category_code
-- Update selectors and server actions to use positions.category_code and filter options by positions.type
+- Add positions.category_id and backfill from holdings.category_code
+- Update selectors and server actions to use positions.category_id and filter options by positions.type
 
-Portfolio entities (Symbols/Domains/Properties/etc.) migration specifics
+Position sources (Symbols/Domains/Properties/etc.) migration specifics
 
--- Introduce neutral hub: `portfolio_entities` with columns: id, type ('symbol' | 'domain' | 'property' | 'account' | 'loan' | 'custom'), created_at.
--- Add `positions.entity_id` (nullable) referencing `portfolio_entities.id`.
+-- Introduce neutral hub: `position_sources` with columns: id, type ('symbol' | 'domain' | 'property' | 'account' | 'loan' | 'custom'), created_at.
+-- Add `positions.source_id` (nullable) referencing `position_sources.id`.
 -- Add per-type tables for current types:
 
-- `entity_symbols(id, symbol_id)` with FK to `symbols.id`
-- `entity_domains(id, domain_id)`
-- Backfill: for each holding→position, create a `portfolio_entities` row of the appropriate type, insert into the matching per-type table, then set `positions.entity_id`.
+- `source_symbols(id, symbol_id)` with FK to `symbols.id`
+- `source_domains(id, domain_id)`
+- Backfill: for each holding→position, create a `position_sources` row of the appropriate type, insert into the matching per-type table, then set `positions.source_id`.
 - Notes:
-  - Custom/manual positions can leave `entity_id` null.
-  - Remove `positions.source`; derive branch logic from `portfolio_entities.type`. Optionally cache as a read-only `positions.entity_type` if needed.
+  - Custom/manual positions can leave `source_id` null.
+  - Derive branch logic from `position_sources.type`. Optionally cache as a read-only `positions.source_type` if needed.
 
 ### Code Refactor Scope
 
@@ -95,21 +95,23 @@ Portfolio entities (Symbols/Domains/Properties/etc.) migration specifics
 - Prefer created_at for ordering/tie‑breakers; date is the user/event date.
 - Add pragmatic indexes to support common queries (e.g., per position/user timelines).
 
-Portfolio Entities
+Position Sources
 
 -- Add indexes:
 
-- `portfolio_entities(type)`
-- `entity_symbols(symbol_id)`
-- `entity_domains(domain_id)`
-- RLS: `portfolio_entities`, `entity_symbols`, `entity_domains` are global catalogs (no `user_id`). Access is indirect via `positions.entity_id`. Keep all user scoping on `positions`, `portfolio_records`, `position_snapshots`.
+- `position_sources(type)`
+- `source_symbols(symbol_id)`
+- `source_domains(domain_id)`
+- RLS: `position_sources`, `source_symbols`, `source_domains` are global catalogs (no `user_id`). Access is indirect via `positions.source_id`. Keep all user scoping on `positions`, `portfolio_records`, `position_snapshots`.
+  - View `position_sources_flat` is configured as security invoker + security barrier; grants limited to SELECT for `authenticated`.
 
 Flattened View for reads (recommended)
 
-- Create a normal read-only view `portfolio_entities_flat` that flattens hub + per-type identifiers:
-  - columns: id, type, symbol_id, domain_id
-  - Recommended default read path: `positions LEFT JOIN portfolio_entities_flat` (single join in app queries).
-  - Join per-type tables directly only when you need fields not projected by the view.
+-- Create a normal read-only view `position_sources_flat` that flattens hub + per-type identifiers:
+
+- columns: id, type, symbol_id, domain_id
+- Recommended default read path: `positions LEFT JOIN position_sources_flat` (single join in app queries).
+- Join per-type tables directly only when you need fields not projected by the view.
 
 ### Testing Focus
 
@@ -128,7 +130,7 @@ Flattened View for reads (recommended)
 
 - Chosen “positions” as the unified concept (covers assets/liabilities cleanly).
 - `positions.type` (not “kind”) with enum 'asset' | 'liability'.
-- Adopt neutral `portfolio_entities` hub with `type` instead of "kind".
+- Adopt neutral `position_sources` hub with `type` instead of "kind".
 - `position_snapshots.record_id` stays nullable by design.
 - Excluded a generic details jsonb for now; add later only if needed.
 - Avoid TS `Record` naming; use PortfolioRecord types in code.
