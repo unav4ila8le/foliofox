@@ -34,12 +34,42 @@ export type HoldingWithProfitLoss = HoldingWithCostBasis & {
   profit_loss_percentage: number;
 };
 
+// Positions
+export type Position = Tables<"positions">;
+
+export type TransformedPosition = Position & {
+  is_archived: boolean;
+  category_name?: string;
+  current_quantity: number;
+  current_unit_value: number;
+  total_value: number;
+  symbol_id: string | null;
+  domain_id: string | null;
+  cost_basis_per_unit?: number | null;
+};
+
+export type PositionWithProfitLoss = TransformedPosition & {
+  profit_loss: number;
+  profit_loss_percentage: number;
+  total_cost_basis: number;
+};
+
 // Transaction
 export type Transaction = Tables<"transactions">;
 
 export type TransactionWithHolding = Transaction & {
   holdings: Pick<
     Tables<"holdings">,
+    "id" | "name" | "currency" | "archived_at"
+  >;
+};
+
+// Portfolio Record
+export type PortfolioRecord = Tables<"portfolio_records">;
+
+export type PortfolioRecordWithPosition = PortfolioRecord & {
+  positions: Pick<
+    Tables<"positions">,
     "id" | "name" | "currency" | "archived_at"
   >;
 };
@@ -97,40 +127,14 @@ export type ProjectedIncomeData = {
   income: number;
 };
 
-// Positions (new model)
-export type Position = Tables<"positions"> & {
-  category: Pick<Tables<"position_categories">, "name" | "display_order">;
-};
+// Position Categories
 export type PositionCategory = Tables<"position_categories">;
+
+// Position Snapshots
 export type PositionSnapshot = Tables<"position_snapshots">;
-export type PortfolioRecord = Tables<"portfolio_records">;
 
 // Position Sources (hub + per-type)
 export type PositionSource = Tables<"position_sources">;
 export type SourceSymbol = Tables<"source_symbols">;
 export type SourceDomain = Tables<"source_domains">;
 export type PositionSourcesFlat = Tables<"position_sources_flat">;
-
-// Transformed position shape
-export type TransformedPosition = Position & {
-  is_archived: boolean;
-  category_name?: string;
-  current_quantity: number;
-  current_unit_value: number;
-  total_value: number;
-  symbol_id: string | null;
-  domain_id: string | null;
-  cost_basis_per_unit?: number | null;
-};
-
-// Portfolio record enriched for UI (successor of TransformedRecord)
-export type TransformedPortfolioRecord = PortfolioRecord & {
-  total_value: number;
-  currency: string;
-};
-
-export type PositionWithProfitLoss = TransformedPosition & {
-  profit_loss: number;
-  profit_loss_percentage: number;
-  total_cost_basis: number;
-};

@@ -7,7 +7,7 @@ import { AssetAllocationDonut } from "@/components/dashboard/charts/asset-alloca
 import { NetWorthLineChart } from "@/components/dashboard/charts/net-worth-line";
 import { NewsWidget } from "@/components/dashboard/news/widget";
 import { ProjectedIncomeWidget } from "@/components/dashboard/charts/projected-income/widget";
-import { TransactionsWidget } from "@/components/dashboard/transactions/widget";
+import { PortfolioRecordsWidget } from "@/components/dashboard/portfolio-records/widget";
 
 import { fetchProfile } from "@/server/profile/actions";
 import { calculateNetWorth } from "@/server/analysis/net-worth";
@@ -16,7 +16,7 @@ import { fetchNetWorthChange } from "@/server/analysis/net-worth-change";
 import { calculateAssetAllocation } from "@/server/analysis/asset-allocation";
 import { fetchPortfolioNews } from "@/server/news/fetch";
 import { calculateProjectedIncome } from "@/server/analysis/projected-income";
-import { fetchTransactions } from "@/server/transactions/fetch";
+import { fetchPortfolioRecords } from "@/server/portfolio-records/fetch";
 
 // Separate components for data fetching with suspense
 async function NetWorthChartWrapper({
@@ -84,9 +84,9 @@ async function ProjectedIncomeWidgetWrapper({
   );
 }
 
-async function TransactionsWidgetWrapper() {
-  const transactions = await fetchTransactions();
-  return <TransactionsWidget transactionsData={transactions} />;
+async function PortfolioRecordsWidgetWrapper() {
+  const portfolioRecords = await fetchPortfolioRecords();
+  return <PortfolioRecordsWidget portfolioRecordsData={portfolioRecords} />;
 }
 
 // Main page component
@@ -134,7 +134,7 @@ export default async function DashboardPage() {
         </div>
         <div className="col-span-6">
           <Suspense fallback={<Skeleton className="h-80 rounded-xl" />}>
-            <TransactionsWidgetWrapper />
+            <PortfolioRecordsWidgetWrapper />
           </Suspense>
         </div>
       </div>
