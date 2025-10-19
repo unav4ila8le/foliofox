@@ -18,7 +18,7 @@ import type { VariantProps } from "class-variance-authority";
 
 export type SelectionType = "symbol" | "domain" | "custom";
 
-type NewHoldingDialogContextType = {
+type NewAssetDialogContextType = {
   openSelectionDialog: boolean;
   setOpenSelectionDialog: (open: boolean) => void;
   openFormDialog: boolean;
@@ -28,11 +28,11 @@ type NewHoldingDialogContextType = {
   profile: Profile;
 };
 
-const NewHoldingDialogContext = createContext<
-  NewHoldingDialogContextType | undefined
+const NewAssetDialogContext = createContext<
+  NewAssetDialogContextType | undefined
 >(undefined);
 
-export function NewHoldingDialogProvider({
+export function NewAssetDialogProvider({
   children,
   profile,
 }: {
@@ -44,7 +44,7 @@ export function NewHoldingDialogProvider({
   const [selectedType, setSelectedType] = useState<SelectionType>("custom");
 
   return (
-    <NewHoldingDialogContext.Provider
+    <NewAssetDialogContext.Provider
       value={{
         openSelectionDialog,
         setOpenSelectionDialog,
@@ -59,39 +59,39 @@ export function NewHoldingDialogProvider({
       <Dialog open={openSelectionDialog} onOpenChange={setOpenSelectionDialog}>
         <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>New Holding</DialogTitle>
+            <DialogTitle>New Asset</DialogTitle>
             <DialogDescription>
-              Select a method to add a new holding
+              Select a method to add a new asset
             </DialogDescription>
           </DialogHeader>
           <SelectionDialog />
         </DialogContent>
       </Dialog>
-    </NewHoldingDialogContext.Provider>
+    </NewAssetDialogContext.Provider>
   );
 }
 
-export function useNewHoldingDialog() {
-  const context = useContext(NewHoldingDialogContext);
+export function useNewAssetDialog() {
+  const context = useContext(NewAssetDialogContext);
   if (!context) {
     throw new Error(
-      "useNewHoldingDialog must be used within a NewHoldingDialogProvider",
+      "useNewAssetDialog must be used within a NewAssetDialogProvider",
     );
   }
   return context;
 }
 
-export function NewHoldingButton({
+export function NewAssetButton({
   variant = "default",
 }: {
   variant?: VariantProps<typeof buttonVariants>["variant"];
 }) {
-  const { setOpenSelectionDialog } = useNewHoldingDialog();
+  const { setOpenSelectionDialog } = useNewAssetDialog();
 
   return (
     <Button variant={variant} onClick={() => setOpenSelectionDialog(true)}>
       <Plus />
-      New Holding
+      New Asset
     </Button>
   );
 }

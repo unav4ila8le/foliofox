@@ -9,7 +9,7 @@ import {
   InputGroupInput,
   InputGroupAddon,
 } from "@/components/ui/input-group";
-import { NewHoldingButton } from "@/components/dashboard/new-holding";
+import { NewAssetButton } from "@/components/dashboard/new-asset";
 import { TableActionsDropdown } from "./table-actions";
 import { DeletePositionDialog } from "@/components/dashboard/positions/tables/row-actions/delete-dialog";
 import { ArchivePositionDialog } from "@/components/dashboard/positions/tables/row-actions/archive-dialog";
@@ -57,7 +57,7 @@ export function AssetsTable({ data }: AssetsTableProps) {
           </InputGroupAddon>
         </InputGroup>
         <div className="flex items-center gap-2">
-          <NewHoldingButton variant="outline" />
+          <NewAssetButton variant="outline" />
           <TableActionsDropdown holdingsCount={data.length} />
         </div>
       </div>

@@ -204,7 +204,7 @@ N/A
 - [ ] Add optional pagination to data table (for transactions)
 - [ ] Look at generative UI for AI chat: https://ai-sdk.dev/docs/ai-sdk-ui/generative-user-interfaces
 - [ ] Add a way for the user to "share" their portfolio. Ideally, after agreeing, they get a public sharable link which leads to a single public page view of all their holdings and relevant performance charts.
-- [ ] Optimize recalculateRecords to use batch requests
+- [x] Optimize recalculateRecords to use batch requests
 - [ ] Add crypto wallet address sync
 - [ ] Add cron job for domain valuations (after upgrading Vercel account)
 - [ ] Parallelize extension fetching in fetchHoldings when multiple handlers

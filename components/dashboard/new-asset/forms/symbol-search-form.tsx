@@ -28,13 +28,13 @@ import { YahooFinanceLogo } from "@/components/ui/logos/yahoo-finance-logo";
 import { SymbolSearch } from "../../symbol-search";
 import { PositionCategorySelector } from "@/components/dashboard/position-category-selector";
 
-import { useNewHoldingDialog } from "../index";
+import { useNewAssetDialog } from "../index";
 
 import { requiredNumberWithConstraints } from "@/lib/zod-helpers";
 
 import { fetchYahooFinanceSymbol } from "@/server/symbols/search";
 import { fetchSingleQuote } from "@/server/quotes/fetch";
-import { createHolding } from "@/server/holdings/create";
+import { createPosition } from "@/server/positions/create";
 
 import { getPositionCategoryKeyFromQuoteType } from "@/lib/position-category-mappings";
 
@@ -74,7 +74,7 @@ const formSchema = z.object({
 
 export function SymbolSearchForm() {
   // Props destructuring and context hooks
-  const { setOpenFormDialog, setOpenSelectionDialog } = useNewHoldingDialog();
+  const { setOpenFormDialog, setOpenSelectionDialog } = useNewAssetDialog();
 
   // State declarations
   const [isLoading, setIsLoading] = useState(false);
@@ -175,22 +175,20 @@ export function SymbolSearchForm() {
         formData.append("description", values.description);
       }
 
-      const result = await createHolding(formData);
+      const result = await createPosition(formData);
 
       // Handle error response from server action
       if (!result.success) {
         throw new Error(result.message);
       }
 
-      toast.success("Holding created successfully");
+      toast.success("Asset created successfully");
       form.reset(); // Clear form
       setOpenFormDialog(false);
       setOpenSelectionDialog(false);
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to create a new holding",
+        error instanceof Error ? error.message : "Failed to create a new asset",
       );
     } finally {
       setIsLoading(false);
@@ -333,7 +331,7 @@ export function SymbolSearchForm() {
               <FormLabel>Description (optional)</FormLabel>
               <FormControl>
                 <Input
-                  placeholder="Add a description of this holding"
+                  placeholder="Add a description of this asset"
                   {...field}
                 />
               </FormControl>
@@ -362,7 +360,7 @@ export function SymbolSearchForm() {
                 Saving...
               </>
             ) : (
-              "Add holding"
+              "Add asset"
             )}
           </Button>
         </div>

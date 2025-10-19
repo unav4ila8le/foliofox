@@ -23,14 +23,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { AssetCategorySelector } from "@/components/dashboard/position-category-selector";
+import { PositionCategorySelector } from "@/components/dashboard/position-category-selector";
 import { CurrencySelector } from "@/components/dashboard/currency-selector";
 
-import { useNewHoldingDialog } from "../index";
+import { useNewAssetDialog } from "../index";
 
 import { requiredNumberWithConstraints } from "@/lib/zod-helpers";
 
-import { createHolding } from "@/server/holdings/create";
+import { createPosition } from "@/server/positions/create";
 
 const formSchema = z.object({
   name: z
@@ -68,7 +68,7 @@ const formSchema = z.object({
 export function ManualEntryForm() {
   // Props destructuring and context hooks
   const { setOpenFormDialog, setOpenSelectionDialog, profile } =
-    useNewHoldingDialog();
+    useNewAssetDialog();
 
   // State declarations
   const [isLoading, setIsLoading] = useState(false);
@@ -114,22 +114,20 @@ export function ManualEntryForm() {
         formData.append("description", values.description);
       }
 
-      const result = await createHolding(formData);
+      const result = await createPosition(formData);
 
       // Handle error response from server action
       if (!result.success) {
         throw new Error(result.message);
       }
 
-      toast.success("Holding created successfully");
+      toast.success("Asset created successfully");
       form.reset();
       setOpenFormDialog(false);
       setOpenSelectionDialog(false);
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to create a new holding",
+        error instanceof Error ? error.message : "Failed to create a new asset",
       );
     } finally {
       setIsLoading(false);
@@ -165,7 +163,7 @@ export function ManualEntryForm() {
             <FormItem>
               <FormLabel>Category</FormLabel>
               <FormControl>
-                <AssetCategorySelector field={field} />
+                <PositionCategorySelector field={field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -278,7 +276,7 @@ export function ManualEntryForm() {
               <FormLabel>Description (optional)</FormLabel>
               <FormControl>
                 <Input
-                  placeholder="Add a description of this holding"
+                  placeholder="Add a description of this asset"
                   {...field}
                 />
               </FormControl>
@@ -304,7 +302,7 @@ export function ManualEntryForm() {
                 Saving...
               </>
             ) : (
-              "Add holding"
+              "Add asset"
             )}
           </Button>
         </div>

@@ -28,10 +28,10 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { HumbleWorthLogo } from "@/components/ui/logos/humbleworth-logo";
 
-import { useNewHoldingDialog } from "../index";
+import { useNewAssetDialog } from "../index";
 
 import { fetchSingleDomainValuation } from "@/server/domain-valuations/fetch";
-import { createHolding } from "@/server/holdings/create";
+import { createPosition } from "@/server/positions/create";
 
 // Helper function to clean domain
 function cleanDomain(domain: string): string {
@@ -57,7 +57,7 @@ const formSchema = z.object({
 
 export function DomainForm() {
   // Props destructuring and context hooks
-  const { setOpenFormDialog, setOpenSelectionDialog } = useNewHoldingDialog();
+  const { setOpenFormDialog, setOpenSelectionDialog } = useNewAssetDialog();
 
   // State declarations
   const [isLoading, setIsLoading] = useState(false);
@@ -130,22 +130,20 @@ export function DomainForm() {
         formData.append("description", values.description);
       }
 
-      const result = await createHolding(formData);
+      const result = await createPosition(formData);
 
       // Handle error response from server action
       if (!result.success) {
         throw new Error(result.message);
       }
 
-      toast.success("Holding created successfully");
+      toast.success("Asset created successfully");
       form.reset();
       setOpenFormDialog(false);
       setOpenSelectionDialog(false);
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to create a new holding",
+        error instanceof Error ? error.message : "Failed to create a new asset",
       );
     } finally {
       setIsLoading(false);
@@ -221,7 +219,7 @@ export function DomainForm() {
               </Link>
               .
               <br />
-              If you prefer, you can add a new custom holding to manually enter
+              If you prefer, you can add a new custom asset to manually enter
               your own valuation instead.
             </p>
           </div>
@@ -236,7 +234,7 @@ export function DomainForm() {
               <FormLabel>Description (optional)</FormLabel>
               <FormControl>
                 <Input
-                  placeholder="Add a description of this holding"
+                  placeholder="Add a description of this asset"
                   {...field}
                 />
               </FormControl>
@@ -262,7 +260,7 @@ export function DomainForm() {
                 Saving...
               </>
             ) : (
-              "Add holding"
+              "Add asset"
             )}
           </Button>
         </div>

@@ -11,11 +11,11 @@ import {
 import { Button } from "@/components/ui/button";
 
 import { useNewRecordDialog } from "@/components/dashboard/new-record";
-import { useNewHoldingDialog } from "@/components/dashboard/new-holding";
+import { useNewAssetDialog } from "@/components/dashboard/new-asset";
 
 export function NewActionButton() {
-  const { setOpen: setOpenRecord } = useNewRecordDialog();
-  const { setOpenSelectionDialog: setOpenHolding } = useNewHoldingDialog();
+  const { setOpen: setOpenNewRecord } = useNewRecordDialog();
+  const { setOpenSelectionDialog: setOpenNewAsset } = useNewAssetDialog();
 
   return (
     <DropdownMenu>
@@ -26,11 +26,11 @@ export function NewActionButton() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-32">
-        <DropdownMenuItem onSelect={() => setOpenRecord(true)}>
+        <DropdownMenuItem onSelect={() => setOpenNewRecord(true)}>
           New Record
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => setOpenHolding(true)}>
-          New Holding
+        <DropdownMenuItem onSelect={() => setOpenNewAsset(true)}>
+          New Asset
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

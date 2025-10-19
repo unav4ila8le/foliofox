@@ -1,7 +1,7 @@
 import { ChartLine, Globe, PencilLine, Sparkles } from "lucide-react";
 
 import { FormDialog } from "./form-dialog";
-import { useNewHoldingDialog } from "./index";
+import { useNewAssetDialog } from "./index";
 import { useImportHoldingsDialog } from "@/components/dashboard/holdings/import";
 
 import type { ComponentType } from "react";
@@ -35,7 +35,7 @@ function SelectionCard({
 }
 
 export function SelectionDialog() {
-  const { setOpenFormDialog, setSelectedType } = useNewHoldingDialog();
+  const { setOpenFormDialog, setSelectedType } = useNewAssetDialog();
   const { setOpen: setOpenImportDialog } = useImportHoldingsDialog();
 
   const handleSelect = (type: SelectionType) => {
@@ -60,13 +60,13 @@ export function SelectionDialog() {
         />
         <SelectionCard
           title="Custom"
-          description="Enter quantity and value to add a custom holding to your portfolio"
+          description="Enter quantity and value to add a custom asset to your portfolio"
           icon={PencilLine}
           onClick={() => handleSelect("custom")}
         />
         <SelectionCard
           title="Import CSV/AI"
-          description="Import your holdings from files or screenshots"
+          description="Import your assets from files or screenshots"
           icon={Sparkles}
           onClick={() => setOpenImportDialog(true)}
         />

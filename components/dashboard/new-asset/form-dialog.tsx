@@ -9,11 +9,11 @@ import { SymbolSearchForm } from "./forms/symbol-search-form";
 import { DomainForm } from "./forms/domain-form";
 import { ManualEntryForm } from "./forms/manual-entry-form";
 
-import { useNewHoldingDialog } from "./index";
+import { useNewAssetDialog } from "./index";
 
 export function FormDialog() {
   const { openFormDialog, setOpenFormDialog, selectedType } =
-    useNewHoldingDialog();
+    useNewAssetDialog();
 
   if (!openFormDialog) return null;
 
@@ -21,8 +21,8 @@ export function FormDialog() {
     <Dialog open={openFormDialog} onOpenChange={setOpenFormDialog}>
       <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>New Holding</DialogTitle>
-          <DialogDescription>Add a new holding</DialogDescription>
+          <DialogTitle>New Asset</DialogTitle>
+          <DialogDescription>Add a new asset</DialogDescription>
         </DialogHeader>
         {selectedType === "symbol" && <SymbolSearchForm />}
         {selectedType === "domain" && <DomainForm />}

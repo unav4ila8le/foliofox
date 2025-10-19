@@ -9,7 +9,7 @@ import {
   InputGroupInput,
   InputGroupAddon,
 } from "@/components/ui/input-group";
-import { NewHoldingButton } from "@/components/dashboard/new-holding";
+import { NewAssetButton } from "@/components/dashboard/new-asset";
 import { TableActionsDropdown } from "@/components/dashboard/holdings/tables/holdings/table-actions";
 import { BulkActionBar } from "@/components/dashboard/holdings/tables/base/bulk-action-bar";
 import { DeleteHoldingDialog } from "@/components/dashboard/holdings/tables/row-actions/delete-dialog";
@@ -55,7 +55,7 @@ export function HoldingsTable({ data }: HoldingsTableProps) {
           </InputGroupAddon>
         </InputGroup>
         <div className="flex items-center gap-2">
-          <NewHoldingButton variant="outline" />
+          <NewAssetButton variant="outline" />
           <TableActionsDropdown holdingsCount={data.length} />
         </div>
       </div>
