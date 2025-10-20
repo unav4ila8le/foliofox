@@ -301,7 +301,7 @@ export function SymbolSearchForm() {
                     <Info className="size-4" aria-label="Cost basis help" />
                   </TooltipTrigger>
                   <TooltipContent>
-                    If omitted, we’ll use the unit value as your initial cost
+                    If omitted, we'll use the unit value as your initial cost
                     basis.
                   </TooltipContent>
                 </Tooltip>

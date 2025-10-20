@@ -19,7 +19,7 @@ export async function POST(req: Request) {
   const conversationId = req.headers.get("x-ff-conversation-id") ?? undefined;
 
   if (conversationId) {
-    // Non-blocking; don’t fail the request if persistence errors
+    // Non-blocking; don't fail the request if persistence errors
     persistConversationFromMessages({ conversationId, messages }).catch(
       () => {},
     );

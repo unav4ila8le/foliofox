@@ -529,6 +529,13 @@ export type Database = {
             referencedRelation: "portfolio_records";
             referencedColumns: ["id"];
           },
+          {
+            foreignKeyName: "position_snapshots_position_id_fkey";
+            columns: ["position_id"];
+            isOneToOne: false;
+            referencedRelation: "positions";
+            referencedColumns: ["id"];
+          },
         ];
       };
       position_sources: {

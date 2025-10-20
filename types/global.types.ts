@@ -82,6 +82,14 @@ export type TransformedRecord = Record & {
   currency: string;
 };
 
+// Position Snapshots
+export type PositionSnapshot = Tables<"position_snapshots">;
+
+export type TransformedPositionSnapshot = PositionSnapshot & {
+  total_value: number;
+  currency: string;
+};
+
 // Asset Category
 export type AssetCategory = Tables<"asset_categories">;
 
@@ -129,9 +137,6 @@ export type ProjectedIncomeData = {
 
 // Position Categories
 export type PositionCategory = Tables<"position_categories">;
-
-// Position Snapshots
-export type PositionSnapshot = Tables<"position_snapshots">;
 
 // Position Sources (hub + per-type)
 export type PositionSource = Tables<"position_sources">;

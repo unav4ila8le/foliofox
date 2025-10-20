@@ -24,7 +24,7 @@ const POSITION_CATEGORY_QUOTE_TYPES: Record<string, string[]> = {
   commodities: ["FUTURE"],
   cryptocurrency: ["CRYPTOCURRENCY"],
   domain: [],
-  other: ["INDEX", "OPTION"], // Option and Index don’t neatly fit into main categories
+  other: ["INDEX", "OPTION"], // Option and Index don't neatly fit into main categories
 };
 
 // Get position category key from Yahoo Finance quote type (reverse lookup)

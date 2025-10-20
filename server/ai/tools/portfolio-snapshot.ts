@@ -1,17 +1,15 @@
 "use server";
 
 import { fetchProfile } from "@/server/profile/actions";
-import { fetchHoldings } from "@/server/holdings/fetch";
+import { fetchPositions } from "@/server/positions/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 import { calculateAssetAllocation } from "@/server/analysis/asset-allocation";
-
 import { convertCurrency } from "@/lib/currency-conversion";
 
 /**
- * Get portfolio snapshot for AI analysis
+ * Get portfolio snapshot for AI analysis (positions model)
  * Accurate as-of behavior when a date is provided:
- * - Custom holdings: latest record where record.date <= date
- * - Market-backed holdings: market price as-of date (fallback to record unit_value)
+ * - Positions valued via latest snapshot at/before date
  * - FX conversion as-of date
  */
 export async function getPortfolioSnapshot(params?: {
@@ -26,27 +24,27 @@ export async function getPortfolioSnapshot(params?: {
     // Use a single date across quotes and FX for consistency
     const asOfDate = params?.date ? new Date(params.date) : new Date();
 
-    // Fetch holdings valued as-of the target date
-    const holdings = await fetchHoldings({
+    // Fetch positions valued as-of the target date
+    const positions = await fetchPositions({
       includeArchived: true,
       asOfDate: asOfDate,
     });
 
-    // If no holdings, return empty state
-    if (!holdings?.length)
+    // If no positions, return empty state
+    if (!positions?.length)
       return {
-        summary: "No holdings found in portfolio",
+        summary: "No positions found in portfolio",
         netWorth: 0,
         currency: baseCurrency,
-        holdingsCount: 0,
+        positionsCount: 0,
         categories: [],
-        holdings: [],
+        positions: [],
         lastUpdated: new Date().toISOString(),
       };
 
     // Fetch FX rates for the as-of date
     const uniqueCurrencies = new Set<string>();
-    holdings.forEach((h) => uniqueCurrencies.add(h.currency));
+    positions.forEach((position) => uniqueCurrencies.add(position.currency));
     uniqueCurrencies.add(baseCurrency);
 
     const exchangeRequests = Array.from(uniqueCurrencies).map((currency) => ({
@@ -56,41 +54,41 @@ export async function getPortfolioSnapshot(params?: {
 
     const exchangeRates = await fetchExchangeRates(exchangeRequests);
 
-    // Compute per-holding as-of values
-    const holdingsBase = holdings
-      .map((holding) => {
-        const unitLocal = holding.current_unit_value || 0;
-        const quantity = holding.current_quantity || 0;
-        const totalLocal = holding.total_value || unitLocal * quantity;
+    // Compute per-position as-of values
+    const positionsBase = positions
+      .map((position) => {
+        const unitLocal = position.current_unit_value || 0;
+        const quantity = position.current_quantity || 0;
+        const totalLocal = position.total_value || unitLocal * quantity;
 
         const unitValueBase = convertCurrency(
           unitLocal,
-          holding.currency,
+          position.currency,
           baseCurrency,
           exchangeRates,
           asOfDate,
         );
         const totalValueBase = convertCurrency(
           totalLocal,
-          holding.currency,
+          position.currency,
           baseCurrency,
           exchangeRates,
           asOfDate,
         );
 
         return {
-          id: holding.id,
-          name: holding.name,
-          symbol: holding.symbol_id || null,
-          category: holding.asset_type,
-          categoryCode: holding.category_code,
+          id: position.id,
+          name: position.name,
+          symbol: position.symbol_id || null,
+          category: position.category_name!,
+          categoryId: position.category_id,
           quantity,
           unitValue: unitValueBase,
           value: totalValueBase,
           currency: baseCurrency,
-          isArchived: holding.is_archived,
+          isArchived: position.is_archived,
           original: {
-            currency: holding.currency,
+            currency: position.currency,
             unitValue: unitLocal,
             value: totalLocal,
           },
@@ -102,7 +100,7 @@ export async function getPortfolioSnapshot(params?: {
       name: string;
       symbol: string | null;
       category: string;
-      categoryCode: string;
+      categoryId: string;
       quantity: number;
       unitValue: number;
       value: number;
@@ -111,28 +109,28 @@ export async function getPortfolioSnapshot(params?: {
       original: { currency: string; unitValue: number; value: number };
     }>;
 
-    // Compute net worth from computed holdings (avoid duplicate heavy calls)
-    const netWorth = holdingsBase.reduce((sum, h) => sum + h.value, 0);
+    // Compute net worth from computed positions (avoid duplicate heavy calls)
+    const netWorth = positionsBase.reduce((sum, h) => sum + h.value, 0);
 
-    // Compute asset allocation via centralized analysis util
+    // Compute allocation via centralized analysis util to mirror previous logic
     const allocation = await calculateAssetAllocation(baseCurrency, asOfDate);
     const categories = allocation
       .map((a) => ({
         name: a.name,
-        code: a.category_code,
+        id: a.categoryId,
         value: a.total_value,
         percentage: netWorth ? (a.total_value / netWorth) * 100 : 0,
       }))
       .sort((a, b) => b.value - a.value);
 
     return {
-      summary: `Portfolio contains ${holdingsBase.length} holdings across ${categories.length} categories`,
+      summary: `Portfolio contains ${positionsBase.length} positions across ${categories.length} categories`,
       netWorth,
       currency: baseCurrency,
-      holdingsCount: holdingsBase.length,
+      positionsCount: positionsBase.length,
       categoriesCount: categories.length,
       categories,
-      holdings: holdingsBase,
+      positions: positionsBase,
       lastUpdated: new Date().toISOString(),
     };
   } catch (error) {

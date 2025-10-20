@@ -51,7 +51,7 @@ Notes
 
 - Use DB table names: positions, portfolio_records, position_snapshots.
 - TypeScript types: Position, PortfolioRecord, PortfolioRecordWithPosition, PositionSnapshot (avoid TS `Record`).
-- UI remains user‑friendly: “Record” as the action term; list/history can say “Activity” or “Records”.
+- UI remains user‑friendly: "Record" as the action term; list/history can say "Activity" or "Records".
 
 ### Migration Strategy (High‑Level)
 
@@ -169,8 +169,8 @@ Flattened View for reads (recommended)
 
 ### Decision Log
 
-- Chosen “positions” as the unified concept (covers assets/liabilities cleanly).
-- `positions.type` (not “kind”) with enum 'asset' | 'liability'.
+- Chosen "positions" as the unified concept (covers assets/liabilities cleanly).
+- `positions.type` (not "kind") with enum 'asset' | 'liability'.
 - Adopt neutral `position_sources` hub with `type` instead of "kind".
 - `position_snapshots.record_id` stays nullable by design.
 - Excluded a generic details jsonb for now; add later only if needed.

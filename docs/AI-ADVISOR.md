@@ -114,7 +114,7 @@ Security & moderation basics:
 Relationship to vector memory:
 
 - Conversation history = per-thread transcript so the model stays in-context when a user resumes the same chat.
-- Vector memory (e.g., pgvector) = cross-thread, long-term facts and user profile details retrievable via embeddings. It’s optional and orthogonal. Start with conversation persistence; add vector memory later if you need durable knowledge across conversations.
+- Vector memory (e.g., pgvector) = cross-thread, long-term facts and user profile details retrievable via embeddings. It's optional and orthogonal. Start with conversation persistence; add vector memory later if you need durable knowledge across conversations.
 
 ### Future considerations
 

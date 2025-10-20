@@ -43,7 +43,7 @@ const HEADER_ALIASES: Record<CanonicalHeader, string[]> = {
     "description",
   ],
 
-  // Symbol or ISIN (we’ll validate/normalize later)
+  // Symbol or ISIN (we'll validate/normalize later)
   symbol_id: [
     "symbol_id",
     "symbol",

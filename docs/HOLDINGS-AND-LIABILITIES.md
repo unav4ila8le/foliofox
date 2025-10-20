@@ -3,21 +3,21 @@
 ### Context
 
 - Today, the database and server logic consistently model user-owned items as `holdings` (table: `holdings`).
-- The UI now uses the term “Holdings” for user positions. “Asset Allocation” and “Asset Categories” remain valid for classification/instrument views.
+- The UI now uses the term "Holdings" for user positions. "Asset Allocation" and "Asset Categories" remain valid for classification/instrument views.
 - We will likely add liabilities (credit cards, loans, mortgages) in the future. This document captures the recommended domain model and an incremental plan.
 
 ### Canonical terminology (user-facing and internal)
 
-- **Holding**: A user’s position or balance they track in their portfolio (e.g., stock position, cash account, loan balance).
-- **Asset**: An instrument/classification concept (e.g., symbol, asset category). Assets are not “owned amounts” by themselves.
+- **Holding**: A user's position or balance they track in their portfolio (e.g., stock position, cash account, loan balance).
+- **Asset**: An instrument/classification concept (e.g., symbol, asset category). Assets are not "owned amounts" by themselves.
 - **Portfolio**: Collection of holdings owned by the user.
-- Keep “Asset Allocation” and “Asset Categories” naming (charts and taxonomy).
+- Keep "Asset Allocation" and "Asset Categories" naming (charts and taxonomy).
 
 ### Current state (after recent refactors)
 
-- UI routes and labels use “Holdings” (e.g., `/dashboard/holdings`).
+- UI routes and labels use "Holdings" (e.g., `/dashboard/holdings`).
 - Tables and charts already consume data shaped around holdings.
-- Column label recommendation: use “Name” (or “Holding”) instead of “Asset name” to remain neutral and future‑proof for liabilities.
+- Column label recommendation: use "Name" (or "Holding") instead of "Asset name" to remain neutral and future‑proof for liabilities.
 
 ---
 
@@ -107,7 +107,7 @@ RLS: no changes required if policies are already scoped by `user_id`.
 
 ### 4) UI
 
-- Keep the main page as “Holdings” (assets). Add a “Liabilities” page later by filtering `type='liability'` and reusing tables.
+- Keep the main page as "Holdings" (assets). Add a "Liabilities" page later by filtering `type='liability'` and reusing tables.
 - Ensure charts and summaries:
   - Dashboard net worth subtracts liabilities.
   - Asset Allocation chart remains asset-only; add a separate liabilities breakdown later (optional).
@@ -140,5 +140,5 @@ RLS: no changes required if policies are already scoped by `user_id`.
 ## Summary
 
 - Use one canonical `holdings` table with a `type` enum for assets and liabilities.
-- Keep user‑facing “Holdings” for positions; “Asset Allocation” remains classification‑focused.
+- Keep user‑facing "Holdings" for positions; "Asset Allocation" remains classification‑focused.
 - This approach minimizes duplication, keeps analytics straightforward, and allows optional detail tables later if liabilities need additional domain fields.

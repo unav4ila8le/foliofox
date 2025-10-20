@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict fmvnnHKAlExzPPiX6JRjmmd6Y61K2TmUd5einLR9eUbiTO6dXEdaOMuXaXAoAvI
+\restrict GgVf6uZPj6vfkztmTLKjhH645bhsAtDLaM6ySTACd4iXNsumgEtO3k1rowpaM2U
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.6 (Homebrew)
@@ -1400,6 +1400,14 @@ ALTER TABLE ONLY public.position_snapshots
 
 
 --
+-- Name: position_snapshots position_snapshots_position_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.position_snapshots
+    ADD CONSTRAINT position_snapshots_position_id_fkey FOREIGN KEY (position_id) REFERENCES public.positions(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
 -- Name: positions positions_category_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2469,5 +2477,5 @@ ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT SELECT,I
 -- PostgreSQL database dump complete
 --
 
-\unrestrict fmvnnHKAlExzPPiX6JRjmmd6Y61K2TmUd5einLR9eUbiTO6dXEdaOMuXaXAoAvI
+\unrestrict GgVf6uZPj6vfkztmTLKjhH645bhsAtDLaM6ySTACd4iXNsumgEtO3k1rowpaM2U
 

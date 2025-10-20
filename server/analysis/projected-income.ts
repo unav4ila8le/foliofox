@@ -3,7 +3,7 @@
 import { format, addMonths, startOfMonth } from "date-fns";
 
 import { fetchProfile } from "@/server/profile/actions";
-import { fetchHoldings } from "@/server/holdings/fetch";
+import { fetchPositions } from "@/server/positions/fetch";
 import { fetchDividends } from "@/server/dividends/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 
@@ -36,17 +36,20 @@ export async function calculateProjectedIncome(
       targetCurrency = profile.display_currency;
     }
 
-    const holdings = await fetchHoldings();
+    const positions = await fetchPositions({
+      positionType: "asset",
+      includeArchived: true,
+    });
 
-    const symbolIds = holdings
-      .filter((holding) => holding.symbol_id)
-      .map((holding) => holding.symbol_id!);
+    const symbolIds = positions
+      .filter((position) => position.symbol_id)
+      .map((position) => position.symbol_id!);
 
     if (symbolIds.length === 0) {
       return {
         success: true,
         data: [],
-        message: "No holdings with market data found",
+        message: "No positions with market data found",
       };
     }
 
@@ -54,25 +57,25 @@ export async function calculateProjectedIncome(
       symbolIds.map((symbolId) => ({ symbolId })),
     );
 
-    // Check if any holdings have dividend data
-    const holdingsWithDividends = holdings.filter((holding) => {
-      if (!holding.symbol_id) return false;
-      const dividendData = dividendsMap.get(holding.symbol_id);
+    // Check if any positions have dividend data
+    const positionsWithDividends = positions.filter((position) => {
+      if (!position.symbol_id) return false;
+      const dividendData = dividendsMap.get(position.symbol_id);
       return dividendData?.summary && dividendData.events.length > 0;
     });
 
-    if (holdingsWithDividends.length === 0) {
+    if (positionsWithDividends.length === 0) {
       return {
         success: true,
         data: [],
-        message: "No dividend-paying holdings found in your portfolio",
+        message: "No dividend-paying positions found in your portfolio",
       };
     }
 
     // Collect unique currencies we need exchange rates for
     const uniqueCurrencies = new Set<string>();
-    holdings.forEach((holding) => {
-      uniqueCurrencies.add(holding.currency);
+    positions.forEach((position) => {
+      uniqueCurrencies.add(position.currency);
     });
     // Add dividend event currencies (from dividend_events table)
     dividendsMap.forEach(({ events }) => {
@@ -100,10 +103,10 @@ export async function calculateProjectedIncome(
       const monthKey = format(monthStart, "yyyy-MM");
       let monthTotal = 0;
 
-      holdings.forEach((holding) => {
-        if (!holding.symbol_id) return;
+      positions.forEach((position) => {
+        if (!position.symbol_id) return;
 
-        const dividendData = dividendsMap.get(holding.symbol_id);
+        const dividendData = dividendsMap.get(position.symbol_id);
         if (!dividendData?.summary) return;
 
         const { summary } = dividendData;
@@ -114,18 +117,18 @@ export async function calculateProjectedIncome(
           monthStart,
           dividendData.events,
         );
-        const holdingDividendIncome =
-          monthlyDividend * holding.current_quantity;
+        const positionDividendIncome =
+          monthlyDividend * position.current_quantity;
 
         // Get the currency from dividend events (use most recent event's currency)
         const dividendCurrency =
           dividendData.events.length > 0
             ? dividendData.events[0].currency
-            : holding.currency;
+            : position.currency;
 
         // Handle currency conversion
         const convertedValue = convertCurrency(
-          holdingDividendIncome,
+          positionDividendIncome,
           dividendCurrency,
           targetCurrency!,
           exchangeRatesMap,

@@ -3,21 +3,21 @@
 import { format, subDays } from "date-fns";
 
 import { fetchProfile } from "@/server/profile/actions";
-import { fetchHoldings } from "@/server/holdings/fetch";
+import { fetchPositions } from "@/server/positions/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 
 import { calculateProfitLoss } from "@/lib/profit-loss";
 import { convertCurrency } from "@/lib/currency-conversion";
 
-interface GetHoldingsPerformanceParams {
+interface GetAssetsPerformanceParams {
   baseCurrency?: string;
-  holdingIds?: string[];
+  positionIds?: string[];
   startDate?: string;
   endDate?: string;
 }
 
-interface HoldingPerformanceData {
-  holding: {
+interface AssetPerformanceData {
+  asset: {
     id: string;
     name: string;
     symbol: string | null;
@@ -58,48 +58,54 @@ interface HoldingPerformanceData {
 }
 
 /**
- * Analyze holding(s) performance over a period
+ * Analyze asset(s) performance over a period
  * Returns price return, value change, and unrealized P/L data
  */
-export async function getHoldingsPerformance(
-  params: GetHoldingsPerformanceParams = {},
+export async function getAssetsPerformance(
+  params: GetAssetsPerformanceParams = {},
 ) {
   try {
     // Get user's profile for default currency
     const { profile } = await fetchProfile();
     const baseCurrency = params.baseCurrency ?? profile.display_currency;
 
-    // Set date range (default to 90 days)
+    // Set date range (default to 180 days)
     const endDate = params.endDate ? new Date(params.endDate) : new Date();
     const startDate = params.startDate
       ? new Date(params.startDate)
-      : subDays(endDate, 90);
+      : subDays(endDate, 180);
 
     const startDateKey = format(startDate, "yyyy-MM-dd");
     const endDateKey = format(endDate, "yyyy-MM-dd");
 
-    // Fetch end-date holdings (with records for P/L) and start-date holdings (no records needed)
-    const [endSnapshot, startHoldings] = await Promise.all([
-      fetchHoldings({
+    // Fetch end-date positions (with snapshots for P/L) and start-date positions (no snapshots needed)
+    const [endSnapshot, startPositions] = await Promise.all([
+      fetchPositions({
+        positionType: "asset",
         includeArchived: true,
-        includeRecords: true,
+        includeSnapshots: true,
         asOfDate: endDate,
       }),
-      fetchHoldings({ includeArchived: true, asOfDate: startDate }),
+      fetchPositions({
+        positionType: "asset",
+        includeArchived: true,
+        asOfDate: startDate,
+      }),
     ]);
 
-    const { holdings, records: recordsByHolding } = endSnapshot;
+    const { positions: endPositions, snapshots: snapshotsByPosition } =
+      endSnapshot;
 
-    // Filter holdings if specific IDs provided
-    const targetHoldings = params.holdingIds
-      ? holdings.filter((h) => params.holdingIds!.includes(h.id))
-      : holdings;
+    // Filter assets if specific position IDs provided
+    const targetPositions = params.positionIds
+      ? endPositions.filter((p) => params.positionIds!.includes(p.id))
+      : endPositions;
 
-    if (targetHoldings.length === 0) {
+    if (targetPositions.length === 0) {
       return {
-        summary: "No holdings found to analyze",
+        summary: "No assets found to analyze",
         period: { startDate: startDateKey, endDate: endDateKey, baseCurrency },
-        holdings: [],
+        assets: [],
         aggregated: null,
       };
     }
@@ -107,7 +113,7 @@ export async function getHoldingsPerformance(
     // Fetch FX rates for start and end dates in parallel
     // Build requests for start date
     const startCurrencies = new Set<string>();
-    startHoldings.forEach((h) => startCurrencies.add(h.currency));
+    startPositions.forEach((p) => startCurrencies.add(p.currency));
     startCurrencies.add(baseCurrency);
 
     const startExchangeRequests = Array.from(startCurrencies).map(
@@ -119,7 +125,7 @@ export async function getHoldingsPerformance(
 
     // Build requests for end date
     const endCurrencies = new Set<string>();
-    holdings.forEach((h) => endCurrencies.add(h.currency));
+    endPositions.forEach((p) => endCurrencies.add(p.currency));
     endCurrencies.add(baseCurrency);
 
     const endExchangeRequests = Array.from(endCurrencies).map((currency) => ({
@@ -136,22 +142,22 @@ export async function getHoldingsPerformance(
     // Merge the maps
     const exchangeRatesMap = new Map<string, number>([...startFx, ...endFx]);
 
-    // Build quick lookup for start snapshot by holding id
-    const startById = new Map(startHoldings.map((h) => [h.id, h]));
+    // Build quick lookup for start snapshot by position id
+    const startById = new Map(startPositions.map((p) => [p.id, p]));
 
-    // Calculate unrealized P/L for current positions
-    const holdingsWithPL = calculateProfitLoss(
-      targetHoldings,
-      recordsByHolding,
+    // Calculate unrealized P/L for current assets
+    const positionsWithPL = calculateProfitLoss(
+      targetPositions,
+      snapshotsByPosition,
     );
 
-    // Analyze each holding
-    const performanceData: HoldingPerformanceData[] = [];
+    // Analyze each asset
+    const performanceData: AssetPerformanceData[] = [];
 
-    for (const holding of targetHoldings) {
+    for (const position of targetPositions) {
       // Get start/end snapshots
-      const startSnap = startById.get(holding.id);
-      const endSnap = holding; // from end snapshot
+      const startSnap = startById.get(position.id);
+      const endSnap = position; // from end snapshot
 
       // Partial period if no start snapshot or start date is after requested start
       const partialPeriod = !startSnap;
@@ -165,14 +171,14 @@ export async function getHoldingsPerformance(
       // Convert prices to base currency
       const startPriceBase = convertCurrency(
         startPrice,
-        holding.currency,
+        position.currency,
         baseCurrency,
         exchangeRatesMap,
         startDate,
       );
       const endPriceBase = convertCurrency(
         endPrice,
-        holding.currency,
+        position.currency,
         baseCurrency,
         exchangeRatesMap,
         endDate,
@@ -181,14 +187,14 @@ export async function getHoldingsPerformance(
       // Calculate values
       const startValueBase = convertCurrency(
         startSnap?.total_value || startQuantity * startPrice,
-        holding.currency,
+        position.currency,
         baseCurrency,
         exchangeRatesMap,
         startDate,
       );
       const endValueBase = convertCurrency(
         endSnap?.total_value || endQuantity * endPrice,
-        holding.currency,
+        position.currency,
         baseCurrency,
         exchangeRatesMap,
         endDate,
@@ -205,33 +211,33 @@ export async function getHoldingsPerformance(
         startValueBase > 0 ? (valueChangeAbs / startValueBase) * 100 : 0;
 
       // Get unrealized P/L data
-      const holdingWithPL = holdingsWithPL.find((h) => h.id === holding.id);
+      const positionWithPL = positionsWithPL.find((p) => p.id === position.id);
       const unrealized = {
         totalCostBasis: convertCurrency(
-          holdingWithPL?.total_cost_basis || 0,
-          holding.currency,
+          positionWithPL?.total_cost_basis || 0,
+          position.currency,
           baseCurrency,
           exchangeRatesMap,
           endDate,
         ),
         profitLoss: convertCurrency(
-          holdingWithPL?.profit_loss || 0,
-          holding.currency,
+          positionWithPL?.profit_loss || 0,
+          position.currency,
           baseCurrency,
           exchangeRatesMap,
           endDate,
         ),
-        profitLossPct: holdingWithPL?.profit_loss_percentage || 0,
+        profitLossPct: positionWithPL?.profit_loss_percentage || 0,
       };
 
       performanceData.push({
-        holding: {
-          id: holding.id,
-          name: holding.name,
-          symbol: holding.symbol_id,
-          category: holding.asset_type,
-          currency: holding.currency,
-          isArchived: holding.is_archived,
+        asset: {
+          id: position.id,
+          name: position.name,
+          symbol: position.symbol_id ?? null,
+          category: position.category_name ?? position.category_id,
+          currency: position.currency,
+          isArchived: position.is_archived,
         },
         period: {
           startDate: startDateKey,
@@ -262,16 +268,16 @@ export async function getHoldingsPerformance(
       });
     }
 
-    // Calculate aggregated metrics for multiple holdings
+    // Calculate aggregated metrics for multiple assets
     const aggregated =
       performanceData.length > 1
         ? (() => {
             const totalStartValue = performanceData.reduce(
-              (sum, h) => sum + h.value.startBase,
+              (sum, a) => sum + a.value.startBase,
               0,
             );
             const totalEndValue = performanceData.reduce(
-              (sum, h) => sum + h.value.endBase,
+              (sum, a) => sum + a.value.endBase,
               0,
             );
             const totalValueChange = totalEndValue - totalStartValue;
@@ -285,25 +291,25 @@ export async function getHoldingsPerformance(
                   ? (totalValueChange / totalStartValue) * 100
                   : 0,
               // Winners and losers by both metrics
-              bestByPct: performanceData.reduce((best, h) =>
-                h.performance.valueChangePct > best.performance.valueChangePct
-                  ? h
+              bestByPct: performanceData.reduce((best, a) =>
+                a.performance.valueChangePct > best.performance.valueChangePct
+                  ? a
                   : best,
               ),
-              bestByAbs: performanceData.reduce((best, h) =>
-                h.performance.valueChangeAbs > best.performance.valueChangeAbs
-                  ? h
+              bestByAbs: performanceData.reduce((best, a) =>
+                a.performance.valueChangeAbs > best.performance.valueChangeAbs
+                  ? a
                   : best,
               ),
 
-              worstByPct: performanceData.reduce((worst, h) =>
-                h.performance.valueChangePct < worst.performance.valueChangePct
-                  ? h
+              worstByPct: performanceData.reduce((worst, a) =>
+                a.performance.valueChangePct < worst.performance.valueChangePct
+                  ? a
                   : worst,
               ),
-              worstByAbs: performanceData.reduce((worst, h) =>
-                h.performance.valueChangeAbs < worst.performance.valueChangeAbs
-                  ? h
+              worstByAbs: performanceData.reduce((worst, a) =>
+                a.performance.valueChangeAbs < worst.performance.valueChangeAbs
+                  ? a
                   : worst,
               ),
             };
@@ -313,8 +319,8 @@ export async function getHoldingsPerformance(
     return {
       summary:
         performanceData.length === 1
-          ? `Performance analysis for ${performanceData[0].holding.name}`
-          : `Performance analysis for ${performanceData.length} holdings`,
+          ? `Performance analysis for ${performanceData[0].asset.name}`
+          : `Performance analysis for ${performanceData.length} assets`,
       period: {
         startDate: startDateKey,
         endDate: endDateKey,
@@ -323,15 +329,15 @@ export async function getHoldingsPerformance(
           (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
         ),
       },
-      holdings: performanceData.sort(
+      assets: performanceData.sort(
         (a, b) => b.performance.valueChangePct - a.performance.valueChangePct,
       ),
       aggregated,
     };
   } catch (error) {
-    console.error("Error analyzing holdings performance:", error);
+    console.error("Error analyzing assets performance:", error);
     throw new Error(
-      `Failed to analyze holdings performance: ${error instanceof Error ? error.message : "Unknown error"}`,
+      `Failed to analyze assets performance: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
   }
 }
