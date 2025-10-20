@@ -9,7 +9,7 @@ function escapeCSVCell(value: string): string {
 export function positionsToCSV(rows: PositionImportRow[]): string {
   const headers = [
     "name",
-    "category_code",
+    "category_id",
     "currency",
     "quantity",
     "unit_value",
@@ -34,7 +34,7 @@ export function positionsToCSV(rows: PositionImportRow[]): string {
 
     const cells = [
       p.name,
-      p.category_code,
+      p.category_id,
       p.currency,
       qty,
       unit,

@@ -77,12 +77,12 @@ Return data that strictly matches the provided JSON schema. Do not invent values
 - Unit numbers: strip thousand separators, use "." for decimals, no currency symbols.
 - category_id must be one of: ${categoriesList}.
 - For cash balances, keep the currency exactly as shown on the statement (CHF/EUR/USD/etc.). Do not convert to USD or warn if not USD; only ensure it is a valid 3‑letter ISO 4217 code.
-- For cash balances, output a 'cash' holding (quantity 1, unit_value = cash amount).
+- For cash balances, output a 'cash' position with quantity set to the cash amount and unit_value set to 1.
 - For cryptocurrencies, set symbol_id to the Yahoo Finance crypto pair with "-USD" (e.g., BTC-USD, ETH-USD, XRP-USD). If only the coin code is visible, output the "-USD" pair. Set currency to USD for cryptocurrencies.
 - For listed securities with a recognizable symbol (Yahoo Finance tickers, e.g., AAPL, VT, VWCE.DE), set symbol_id and you MAY set unit_value to null (it will be fetched).
 - If a row looks like a tradable ticker (uppercase letters/numbers 1–8 chars, e.g., PLTR, NVDA, QQQ), you MUST set symbol_id to that ticker. If uncertain, set your best guess and add a warning like "symbol uncertain". Do not leave symbol_id empty for listed securities.
 - cost_basis_per_unit: if an explicit "avg cost"/"average price"/"cost basis"/etc. column exists, set it; otherwise set null. It must be in the same currency as "currency".
-- If multiple rows refer to the same symbol/name, prefer a single merged holding summing quantities. If cost basis differs across rows, set cost_basis_per_unit to null and add a warning.
+ - If multiple rows refer to the same symbol/name, prefer a single merged position summing quantities. If cost basis differs across rows, set cost_basis_per_unit to null and add a warning.
 - Use full company names for the "name" field (e.g., "Ford Motor Company", "Toyota Motor Corporation"), not ticker symbols. Symbols go in "symbol_id".
 
 Output guidance:

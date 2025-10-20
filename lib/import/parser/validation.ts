@@ -93,7 +93,7 @@ export async function normalizePositionsArray(
   // Normalize plain crypto codes to "-USD" and force USD currency
   cloned.forEach((h) => {
     if (
-      h.category_code === "cryptocurrency" &&
+      h.category_id === "cryptocurrency" &&
       h.symbol_id &&
       !h.symbol_id.includes("-")
     ) {
