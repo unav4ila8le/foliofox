@@ -29,8 +29,9 @@ import { cn } from "@/lib/utils";
 
 import type { TransformedPosition } from "@/types/global.types";
 import type { VariantProps } from "class-variance-authority";
+import { PORTFOLIO_RECORD_TYPES } from "@/types/enums";
 
-const TRANSACTION_TYPE_ICONS: Record<string, React.ElementType> = {
+const RECORD_TYPE_ICONS: Record<string, React.ElementType> = {
   buy: CircleArrowUp,
   sell: CircleArrowDown,
   update: PencilLine,
@@ -69,16 +70,16 @@ export function NewPortfolioRecordDialogProvider({
     }
   };
 
-  // Get available transaction types based on position source
-  const getAvailableTransactionTypes = () => {
-    if (!preselectedPosition) return [] as string[];
-    if (preselectedPosition.symbol_id) return ["buy", "sell", "update"];
-    if (preselectedPosition.domain_id) return [] as string[];
+  // Get available record types based on position source
+  const getAvailableRecordTypes = () => {
+    if (!preselectedPosition) return [];
+    if (preselectedPosition.symbol_id) return PORTFOLIO_RECORD_TYPES;
+    if (preselectedPosition.domain_id) return [];
     // Custom (no source): only update
     return ["update"];
   };
 
-  const availableTypes = getAvailableTransactionTypes();
+  const availableTypes = getAvailableRecordTypes();
   const defaultTab =
     initialTab ??
     (availableTypes.length > 0 ? availableTypes[0] + "-form" : undefined);
@@ -117,7 +118,7 @@ export function NewPortfolioRecordDialogProvider({
             }}
           />
 
-          {/* Tabs for transaction types */}
+          {/* Tabs for record types */}
           <div
             className={cn(
               !preselectedPosition && "pointer-events-none opacity-50",
@@ -157,9 +158,7 @@ export function NewPortfolioRecordDialogProvider({
                   className={availableTypes.length > 1 ? "w-full" : "hidden"}
                 >
                   {availableTypes.map((type) => {
-                    const Icon =
-                      TRANSACTION_TYPE_ICONS[type] ??
-                      TRANSACTION_TYPE_ICONS.update;
+                    const Icon = RECORD_TYPE_ICONS[type];
                     return (
                       <TabsTrigger
                         key={type}

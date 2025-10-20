@@ -6,6 +6,7 @@ import { createClient } from "@/supabase/server";
 import { recalculateSnapshotsUntilNextUpdate } from "@/server/position-snapshots/recalculate";
 
 import type { PortfolioRecord } from "@/types/global.types";
+import { PORTFOLIO_RECORD_TYPES } from "@/types/enums";
 
 // Update a single portfolio record and recalculate snapshots for the affected window
 export async function updatePortfolioRecord(
@@ -19,7 +20,7 @@ export async function updatePortfolioRecord(
     PortfolioRecord,
     "type" | "date" | "quantity" | "unit_value" | "description"
   > = {
-    type: formData.get("type") as "buy" | "sell" | "update",
+    type: formData.get("type") as (typeof PORTFOLIO_RECORD_TYPES)[number],
     date: formData.get("date") as string,
     quantity: Number(formData.get("quantity")),
     unit_value: Number(formData.get("unit_value")),

@@ -7,6 +7,8 @@ import { recalculateSnapshotsUntilNextUpdate } from "@/server/position-snapshots
 
 import type { PortfolioRecord } from "@/types/global.types";
 
+import { PORTFOLIO_RECORD_TYPES } from "@/types/enums";
+
 /**
  * Create a new portfolio record for a position.
  * After insertion, recalculate position snapshots starting at the record date
@@ -21,7 +23,7 @@ export async function createPortfolioRecord(formData: FormData) {
     "position_id" | "type" | "date" | "quantity" | "unit_value" | "description"
   > = {
     position_id: formData.get("position_id") as string,
-    type: formData.get("type") as "buy" | "sell" | "update",
+    type: formData.get("type") as (typeof PORTFOLIO_RECORD_TYPES)[number],
     date: formData.get("date") as string,
     quantity: Number(formData.get("quantity")),
     unit_value: Number(formData.get("unit_value")),

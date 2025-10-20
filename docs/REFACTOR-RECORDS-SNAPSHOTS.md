@@ -175,7 +175,7 @@ Flattened View for reads (recommended)
 - `position_snapshots.record_id` stays nullable by design.
 - Excluded a generic details jsonb for now; add later only if needed.
 - Avoid TS `Record` naming; use PortfolioRecord types in code.
-- No separate `mode` column in `portfolio_records`. Semantics are derived from `event_type` (e.g., `update` acts as a reset boundary; buy/sell/deposit/withdrawal are deltas). This mirrors current logic and simplifies the schema.
+- No separate `mode` column in `portfolio_records`. Semantics are derived from `event_type` (e.g., `update` acts as a reset boundary; buy/sell are deltas). This mirrors current logic and simplifies the schema.
 
 Maintenance Window
 

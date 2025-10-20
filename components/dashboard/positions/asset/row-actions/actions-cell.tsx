@@ -22,30 +22,31 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import { useNewRecordDialog } from "@/components/dashboard/new-portfolio-record";
+import { useNewPortfolioRecordDialog } from "@/components/dashboard/new-portfolio-record";
 import { ArchivePositionDialog } from "./archive-dialog";
 import { DeletePositionDialog } from "./delete-dialog";
 
 import { restorePosition } from "@/server/positions/restore";
 
 import type { TransformedPosition } from "@/types/global.types";
+import { PORTFOLIO_RECORD_TYPES } from "@/types/enums";
 
 export function ActionsCell({ position }: { position: TransformedPosition }) {
   const { setOpen, setPreselectedPosition, setInitialTab } =
-    useNewRecordDialog();
+    useNewPortfolioRecordDialog();
   const [isRestoring, setIsRestoring] = useState(false);
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  // Get available transaction types based on position source
-  const getAvailableTransactionTypes = () => {
-    if (position.symbol_id) return ["buy", "sell", "update"];
+  // Get available record types based on position source
+  const getAvailableRecordTypes = () => {
+    if (position.symbol_id) return PORTFOLIO_RECORD_TYPES;
     if (position.domain_id) return [];
     // Custom (no source): only update
     return ["update"];
   };
 
-  const availableTypes = getAvailableTransactionTypes();
+  const availableTypes = getAvailableRecordTypes();
 
   // New update record
   const handleNewUpdateRecord = () => {

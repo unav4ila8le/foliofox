@@ -40,6 +40,8 @@ import { updatePortfolioRecord } from "@/server/portfolio-records/update";
 
 import type { PortfolioRecordWithPosition } from "@/types/global.types";
 
+import { PORTFOLIO_RECORD_TYPES } from "@/types/enums";
+
 interface UpdatePortfolioRecordFormProps {
   portfolioRecord: PortfolioRecordWithPosition;
   onSuccess?: () => void;
@@ -47,8 +49,8 @@ interface UpdatePortfolioRecordFormProps {
 
 const formSchema = z.object({
   date: z.date({ error: "A date is required." }),
-  type: z.enum(["buy", "sell", "update", "deposit", "withdrawal"], {
-    error: "A transaction type is required.",
+  type: z.enum(PORTFOLIO_RECORD_TYPES, {
+    error: "A record type is required.",
   }),
   quantity: requiredNumberWithConstraints("Quantity is required.", {
     gte: { value: 0, error: "Quantity must be 0 or greater" },
@@ -173,9 +175,11 @@ export function UpdatePortfolioRecordForm({
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="buy">Buy</SelectItem>
-                  <SelectItem value="sell">Sell</SelectItem>
-                  <SelectItem value="update">Update</SelectItem>
+                  {PORTFOLIO_RECORD_TYPES.map((type) => (
+                    <SelectItem key={type} value={type} className="capitalize">
+                      {type}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <FormMessage />
