@@ -11,7 +11,7 @@ interface FetchPositionSnapshotsParams {
 }
 
 /**
- * Fetch records for a specific holding with optional date range filters
+ * Fetch snapshots for a specific position with optional date range filters
  *
  * @param options - Optional filtering options
  * @returns An array of transformed records

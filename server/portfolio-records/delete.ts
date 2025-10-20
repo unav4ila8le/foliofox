@@ -24,21 +24,6 @@ export async function deletePortfolioRecord(portfolioRecordId: string) {
     } as const;
   }
 
-  // Recalculate snapshots from this date forward excluding this record
-  const recalculationResult = await recalculateSnapshotsUntilNextUpdate({
-    positionId: record.position_id,
-    fromDate: new Date(record.date),
-    excludePortfolioRecordId: portfolioRecordId,
-  });
-
-  if (!recalculationResult.success) {
-    return {
-      success: false,
-      code: "RECALCULATION_FAILED",
-      message: "Failed to recalculate snapshots after record deletion",
-    } as const;
-  }
-
   // Delete the record
   const { error } = await supabase
     .from("portfolio_records")
@@ -50,6 +35,20 @@ export async function deletePortfolioRecord(portfolioRecordId: string) {
       success: false,
       code: error.code,
       message: error.message,
+    } as const;
+  }
+
+  // Recalculate snapshots from this date forward (post-deletion)
+  const recalculationResult = await recalculateSnapshotsUntilNextUpdate({
+    positionId: record.position_id,
+    fromDate: new Date(record.date),
+  });
+
+  if (!recalculationResult.success) {
+    return {
+      success: false,
+      code: "RECALCULATION_FAILED",
+      message: "Failed to recalculate snapshots after record deletion",
     } as const;
   }
 

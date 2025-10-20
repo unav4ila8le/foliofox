@@ -1,19 +1,19 @@
 "use server";
 
-import type { TransformedHolding } from "@/types/global.types";
+import type { MarketDataPosition } from "./sources/types";
 
 /**
- * Fetch market prices in bulk for a given set of holdings and date.
+ * Fetch market prices in bulk for a given set of positions and date.
  *
  * Automatically discovers and calls all registered market data handlers.
  * Returns a unified map where keys are handler-specific (e.g., "AAPL|2024-01-15").
  *
- * @param holdings - Holdings to fetch market data for
+ * @param positions - Positions to fetch market data for
  * @param date - Date to fetch prices for
  * @param options.upsert - Whether to cache results in database (default: true)
  */
 export async function fetchMarketData(
-  holdings: TransformedHolding[],
+  positions: MarketDataPosition[],
   date: Date,
   options: { upsert?: boolean } = {},
 ): Promise<Map<string, number>> {
@@ -23,12 +23,16 @@ export async function fetchMarketData(
 
   // Call each handler and merge results
   for (const handler of MARKET_DATA_HANDLERS) {
-    const resultMap = await handler.fetchForHoldings(holdings, date, {
-      upsert: options.upsert ?? true,
-    });
+    const resultMap: Map<string, number> = await handler.fetchForPositions(
+      positions,
+      date,
+      {
+        upsert: options.upsert ?? true,
+      },
+    );
 
     // Merge into unified map
-    resultMap.forEach((value, key) => {
+    resultMap.forEach((value: number, key: string) => {
       marketDataMap.set(key, value);
     });
   }

@@ -3,17 +3,20 @@ import { format } from "date-fns";
 import { fetchDomainValuations } from "@/server/domain-valuations/fetch";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { TransformedHolding } from "@/types/global.types";
-import type { MarketDataHandler, DomainRequest } from "./types";
+import type {
+  MarketDataHandler,
+  DomainRequest,
+  MarketDataPosition,
+} from "./types";
 
 export const domainHandler: MarketDataHandler = {
   source: "domain",
 
-  async fetchExtensions(holdingIds: string[], supabase: SupabaseClient) {
+  async fetchExtensions(positionIds: string[], supabase: SupabaseClient) {
     const { data, error } = await supabase
-      .from("domain_holdings")
-      .select("holding_id, domain_id")
-      .in("holding_id", holdingIds);
+      .from("source_domains")
+      .select("id, domain_id")
+      .in("id", positionIds);
 
     if (error) {
       throw new Error(`Failed to fetch domain extensions: ${error.message}`);
@@ -22,23 +25,23 @@ export const domainHandler: MarketDataHandler = {
     const extensionMap = new Map<string, string>();
     data?.forEach((row) => {
       if (row.domain_id) {
-        extensionMap.set(row.holding_id, row.domain_id);
+        extensionMap.set(row.id, row.domain_id);
       }
     });
 
     return extensionMap;
   },
 
-  async fetchForHoldings(
-    holdings: TransformedHolding[],
+  async fetchForPositions(
+    positions: MarketDataPosition[],
     date: Date,
     options?: { upsert?: boolean },
   ) {
-    // Collect requests for domain holdings
+    // Collect requests for domain positions
     const requests: DomainRequest[] = [];
-    for (const h of holdings) {
-      if (h.source === "domain" && h.domain_id) {
-        requests.push({ domain: h.domain_id, date });
+    for (const p of positions) {
+      if (p.domain_id) {
+        requests.push({ domain: p.domain_id, date });
       }
     }
 
@@ -52,8 +55,8 @@ export const domainHandler: MarketDataHandler = {
     }
   },
 
-  getKey(holding: TransformedHolding, date: Date) {
-    if (holding.source !== "domain" || !holding.domain_id) return null;
-    return `${holding.domain_id}|${format(date, "yyyy-MM-dd")}`;
+  getKey(position: MarketDataPosition, date: Date) {
+    if (!position.domain_id) return null;
+    return `${position.domain_id}|${format(date, "yyyy-MM-dd")}`;
   },
 };

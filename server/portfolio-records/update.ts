@@ -42,32 +42,6 @@ export async function updatePortfolioRecord(
     } as const;
   }
 
-  // Determine earliest affected date
-  const originalDate = new Date(current.date);
-  const newDate = new Date(updateData.date);
-  const fromDate = originalDate < newDate ? originalDate : newDate;
-
-  // Recalculate snapshots from earliest affected date forward
-  const recalculationResult = await recalculateSnapshotsUntilNextUpdate({
-    positionId: current.position_id,
-    fromDate,
-    excludePortfolioRecordId: portfolioRecordId,
-    newPortfolioRecordData: {
-      type: updateData.type,
-      quantity: updateData.quantity,
-      unit_value: updateData.unit_value,
-      date: updateData.date,
-    },
-  });
-
-  if (!recalculationResult.success) {
-    return {
-      success: false,
-      code: "RECALCULATION_FAILED",
-      message: "Failed to recalculate snapshots after record update",
-    } as const;
-  }
-
   // Update portfolio record
   const { error } = await supabase
     .from("portfolio_records")
@@ -79,6 +53,25 @@ export async function updatePortfolioRecord(
       success: false,
       code: error.code,
       message: error.message,
+    } as const;
+  }
+
+  // Determine earliest affected date
+  const originalDate = new Date(current.date);
+  const newDate = new Date(updateData.date);
+  const fromDate = originalDate < newDate ? originalDate : newDate;
+
+  // Recalculate snapshots from earliest affected date forward (post-update)
+  const recalculationResult = await recalculateSnapshotsUntilNextUpdate({
+    positionId: current.position_id,
+    fromDate,
+  });
+
+  if (!recalculationResult.success) {
+    return {
+      success: false,
+      code: "RECALCULATION_FAILED",
+      message: "Failed to recalculate snapshots after record update",
     } as const;
   }
 

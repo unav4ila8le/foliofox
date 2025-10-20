@@ -4,6 +4,7 @@ import { format } from "date-fns";
 
 import { createServiceClient } from "@/supabase/service";
 import { fetchMarketData } from "@/server/market-data/fetch";
+import type { MarketDataPosition } from "@/server/market-data/sources/types";
 import { MARKET_DATA_HANDLERS } from "@/server/market-data/sources/registry";
 
 import type { PortfolioRecord } from "@/types/global.types";
@@ -207,24 +208,21 @@ export async function recalculateSnapshotsUntilNextUpdate(
 
     const date = new Date(dateString);
     // Build minimal payload compatible with handlers
-    const minimalHolding = {
-      source: sourceType,
+    const minimalPosition: MarketDataPosition = {
       currency,
       symbol_id: symbolId ?? null,
       domain_id: domainId ?? null,
-    } as Partial<
-      import("@/types/global.types").TransformedHolding
-    > as import("@/types/global.types").TransformedHolding;
+    };
 
     try {
-      const marketDataMap = await fetchMarketData([minimalHolding], date, {
+      const marketDataMap = await fetchMarketData([minimalPosition], date, {
         upsert: false,
       });
 
       const handler = MARKET_DATA_HANDLERS.find((h) => h.source === sourceType);
       if (!handler) return fallback;
 
-      const key = handler.getKey(minimalHolding, date);
+      const key = handler.getKey(minimalPosition, date);
       if (!key) return fallback;
       return marketDataMap.get(key) || fallback;
     } catch {
@@ -242,10 +240,15 @@ export async function recalculateSnapshotsUntilNextUpdate(
 
   let recordIndex = 0;
   for (const record of affectedRecords) {
-    // Advance through allRecords up to current record.date
+    // Advance through allRecords up to current (date, created_at)
+    const recordDate = record.date as string;
+    const recordCreatedAt = record.created_at as string;
     while (
       recordIndex < allRecordsTyped.length &&
-      (allRecordsTyped[recordIndex].date as string) <= (record.date as string)
+      ((allRecordsTyped[recordIndex].date as string) < recordDate ||
+        ((allRecordsTyped[recordIndex].date as string) === recordDate &&
+          (allRecordsTyped[recordIndex].created_at as string) <=
+            recordCreatedAt))
     ) {
       const recordSlice = allRecordsTyped[recordIndex];
       const isExcluded =
@@ -266,6 +269,15 @@ export async function recalculateSnapshotsUntilNextUpdate(
       new Date(newPortfolioRecordData.date) <= new Date(record.date)
     ) {
       applyRecord(newPortfolioRecordData);
+    }
+
+    // If the current record is an UPDATE, apply it now (it's excluded from allRecords)
+    if (record.type === "update") {
+      applyRecord({
+        type: "update",
+        quantity: record.quantity as number,
+        unit_value: record.unit_value as number,
+      });
     }
 
     // Decide unit value for snapshot on this date
