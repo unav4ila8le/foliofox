@@ -200,10 +200,7 @@ export async function recalculateSnapshotsUntilNextUpdate(
   };
 
   // Helper: get market price for a given date (as-of) via aggregator
-  const getMarketPriceForDate = async (
-    dateString: string,
-    fallback: number,
-  ) => {
+  async function getMarketPriceForDate(dateString: string, fallback: number) {
     if (sourceType === "custom") return fallback;
 
     const date = new Date(dateString);
@@ -226,7 +223,7 @@ export async function recalculateSnapshotsUntilNextUpdate(
     } catch {
       return fallback;
     }
-  };
+  }
 
   // Iterate over affected records with a single pass over allRecords
   type PortfolioRecordSlice = Pick<

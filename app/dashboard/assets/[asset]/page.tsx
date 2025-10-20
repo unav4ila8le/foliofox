@@ -7,7 +7,7 @@ import { PortfolioRecordsTable } from "@/components/dashboard/portfolio-records/
 import { AssetNews } from "@/components/dashboard/positions/asset/news";
 import { AssetProjectedIncome } from "@/components/dashboard/positions/asset/projected-income";
 
-import { fetchPositions } from "@/server/positions/fetch";
+import { fetchSinglePosition } from "@/server/positions/fetch";
 import { fetchPortfolioRecords } from "@/server/portfolio-records/fetch";
 import { fetchSymbol } from "@/server/symbols/fetch";
 import { fetchSymbolNews } from "@/server/news/fetch";
@@ -42,11 +42,7 @@ function PageSkeleton() {
 }
 
 async function AssetContent({ positionId }: { positionId: string }) {
-  const { positions } = await fetchPositions({
-    positionId,
-    includeSnapshots: true,
-  });
-  const position = positions[0];
+  const position = await fetchSinglePosition(positionId);
 
   // Batch remaining requests
   const [portfolioRecords, symbol, newsResult] = await Promise.all([

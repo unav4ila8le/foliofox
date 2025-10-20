@@ -4,14 +4,15 @@ globs:
 alwaysApply: true
 ---
 
-# Foliofox - Global Development Rules
+# Foliofox - Global Development Rules (Positions Model)
 
 ## Project Context
 
-- Next.js 15 App Router application for net worth tracking
+- Next.js 15 App Router application for portfolio intelligence and net worth tracking
 - Stack: TypeScript, Supabase, Shadcn UI, Tailwind CSS
 - Deployment: Vercel
 - Data Strategy: Daily cron refreshes for market/FX and manual updates (no WebSocket)
+- Canonical data model: positions (assets and liabilities), portfolio_records, position_snapshots, position_sources (+ source_symbols, + source_domains)
 
 ## Development Principles
 
@@ -22,6 +23,10 @@ alwaysApply: true
    - Split complex features into modular components
    - Keep server actions in `server/` with `"use server"`
    - Supabase: use user-scoped client from `supabase/server.ts`; reserve service-role client from `supabase/service.ts` for cron/admin only (bypasses RLS)
+   - Modules and directories use the positions schema:
+     - `server/positions/*`
+     - `server/portfolio-records/*`
+     - `server/position-snapshots/*`
 
 2. **TypeScript & Code Style**
    - Use TypeScript for all code with strict type checking
@@ -32,20 +37,23 @@ alwaysApply: true
    - Avoid unnecessary class usage
    - Prefer maps or objects over enums
    - Avoid wrapping async functions in explicit `new Promise`
-   - Prefer explicit named boolean flags (e.g., `includeRecords: true`) over positional booleans
+   - Prefer explicit named boolean flags (e.g., `includeSnapshots: true`) over positional booleans
+   - Centralize runtime enums in `types/enums.ts` and import where needed
 
 3. **File Structure**
 
    ```
    components/
      ├── ui/          # Shadcn components (do not modify)
-     └── feature/     # Feature-specific components
+     ├── feature/     # Feature-specific components
+     └── page/        # Page-specific components
    app/
      └── (routes)/    # Next.js App Router pages
-   lib/              # Core utilities and configurations
-   types/            # TypeScript interfaces and types
-   hooks/            # React hooks
-   utils/            # Helper functions
+   lib/               # Core utilities and configurations
+   types/             # TypeScript interfaces and types
+   hooks/             # React hooks
+   utils/             # Helper functions
+   server/            # Server actions & data access grouped by feature (positions, portfolio-records, position-snapshots, market-data)
    ```
 
 4. **Import Order**
@@ -65,7 +73,7 @@ alwaysApply: true
    import { useCurrencies } from "@/hooks/use-currencies";
 
    // 5. Local Files and Types
-   import type { Holding } from "@/types/global.types";
+   import type { Position } from "@/types/global.types";
    ```
 
 5. **Component Structure**
@@ -91,8 +99,10 @@ alwaysApply: true
    - We mostly use ISO currency codes (USD, EUR) - unless explicitly requested
    - Store all dates in UTC
    - Handle all monetary values as numbers, format only for display
-   - Use Zod for data validation
-   - Fetch quotes/FX in bulk and cache in DB; avoid N+1 network calls
+   - Use Zod for data validation; for AI tool schemas use `.nullish().transform(v => v ?? undefined)`
+   - Market data: use the aggregator `server/market-data/fetch.fetchMarketData()` (handlers registry). Default to `upsert: true` so DB cache is populated.
+   - Valuation: `fetchPositions({ asOfDate })` uses snapshot quantity and market price at as-of date for unit value (fallback to snapshot value for custom positions).
+   - Profit/Loss: compute basis from latest relevant snapshot; do not derive from current market price.
 
 7. **Performance**
    - Implement Suspense boundaries for loading states
@@ -100,6 +110,7 @@ alwaysApply: true
    - Optimize images with next/image
    - Monitor and optimize Core Web Vitals
    - Batch external/database calls; reuse cached results (quotes, FX)
+   - Avoid N+1 by bulk fetching snapshots and market data
 
 8. **File Naming**
    - Use kebab-case for files and directories
@@ -113,3 +124,14 @@ alwaysApply: true
 - Collaboration: You build functional components, user enhances UI/UX
 
 ALWAYS begin your response by telling me what AI model you are using. Just say the name of the model like (claude-3.5-sonnet or gemini-2.5-pro)
+
+## Positions Fetching Guidelines
+
+- Prefer `fetchPositions(options)` for lists. If `includeSnapshots: true`, it returns `{ positions, snapshots }`; otherwise it returns `TransformedPosition[]`.
+- Prefer `fetchSinglePosition(positionId, options?)` for detail pages. With `includeSnapshots: true` it returns `{ position, snapshots }`; otherwise it returns a single `TransformedPosition`.
+- For dashboard and assets table: pass `asOfDate: new Date()` to value positions using market prices.
+
+## Routing Conventions
+
+- Assets live under `/dashboard/assets`; future liabilities under `/dashboard/liabilities`.
+- When linking from shared tables (e.g., portfolio records), derive the path from `position.type === 'liability' ? 'liabilities' : 'assets'`.

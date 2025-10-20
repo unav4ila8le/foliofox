@@ -163,7 +163,7 @@ export function ManualEntryForm() {
             <FormItem>
               <FormLabel>Category</FormLabel>
               <FormControl>
-                <PositionCategorySelector field={field} />
+                <PositionCategorySelector field={field} positionType="asset" />
               </FormControl>
               <FormMessage />
             </FormItem>

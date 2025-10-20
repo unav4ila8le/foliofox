@@ -13,7 +13,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 
-import { fetchPositions } from "@/server/positions/fetch";
+import { fetchSinglePosition } from "@/server/positions/fetch";
 import { Skeleton } from "@/components/ui/custom/skeleton";
 
 // Separate component for position name fetching
@@ -21,8 +21,8 @@ function PositionName({ positionId }: { positionId: string }) {
   const [name, setName] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchPositions({ positionId })
-      .then((positions) => setName(positions[0].name))
+    fetchSinglePosition(positionId)
+      .then((position) => setName(position.name))
       .catch(() => setName("Unknown Position"));
   }, [positionId]);
 

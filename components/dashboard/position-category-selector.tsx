@@ -39,6 +39,7 @@ interface CategorySelectorProps {
     onChange: (value: string) => void;
   };
   id?: string;
+  positionType?: "asset" | "liability";
   disabled?: boolean;
   className?: string;
   popoverWidth?: string;
@@ -47,6 +48,7 @@ interface CategorySelectorProps {
 export function PositionCategorySelector({
   field,
   id,
+  positionType = "asset",
   disabled = false,
   className,
   popoverWidth = "w-(--radix-popover-trigger-width)",
@@ -57,7 +59,7 @@ export function PositionCategorySelector({
   const isInvalid = Boolean(error);
 
   // Get position categories
-  const { categories, isLoading } = usePositionCategories();
+  const { categories, isLoading } = usePositionCategories(positionType);
 
   // Find the selected category name
   const selectedCategory = categories.find((cat) => cat.id === field.value);

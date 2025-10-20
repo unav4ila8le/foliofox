@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { format } from "date-fns";
 
 import { getCurrentUser } from "@/server/auth/actions";
+import { createServiceClient } from "@/supabase/service";
 import { createSymbol } from "@/server/symbols/create";
 import { createPositionSnapshot } from "@/server/position-snapshots/create";
 
@@ -37,6 +38,7 @@ async function checkDuplicatePositionName(
  */
 export async function createPosition(formData: FormData) {
   const { supabase, user } = await getCurrentUser();
+  const serviceRoleClient = await createServiceClient();
 
   // Required fields
   const name = (formData.get("name") as string) || "";
@@ -97,7 +99,7 @@ export async function createPosition(formData: FormData) {
   let sourceId: string | null = null;
   if (symbolId || domainId) {
     const sourceType: "symbol" | "domain" = symbolId ? "symbol" : "domain";
-    const { data: sourceRow, error: sourceError } = await supabase
+    const { data: sourceRow, error: sourceError } = await serviceRoleClient
       .from("position_sources")
       .insert({ type: sourceType })
       .select("id")
@@ -114,7 +116,7 @@ export async function createPosition(formData: FormData) {
     sourceId = sourceRow.id;
 
     if (symbolId) {
-      const { error: linkError } = await supabase
+      const { error: linkError } = await serviceRoleClient
         .from("source_symbols")
         .insert({ id: sourceId, symbol_id: symbolId });
       if (linkError) {
@@ -127,7 +129,7 @@ export async function createPosition(formData: FormData) {
     }
 
     if (domainId) {
-      const { error: linkError } = await supabase
+      const { error: linkError } = await serviceRoleClient
         .from("source_domains")
         .insert({ id: sourceId, domain_id: domainId });
       if (linkError) {

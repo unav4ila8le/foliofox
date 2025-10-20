@@ -257,6 +257,7 @@ export function SymbolSearchForm() {
               <FormControl>
                 <PositionCategorySelector
                   field={field}
+                  positionType="asset"
                   disabled={!isFormReady}
                 />
               </FormControl>

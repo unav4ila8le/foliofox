@@ -94,6 +94,11 @@ export async function fetchPositions(options: FetchPositionsOptions = {}) {
 
   if (error) throw new Error(error.message);
 
+  if (!positions?.length) {
+    if (!includeSnapshots) return [];
+    return { positions: [], snapshots: new Map<string, PositionSnapshot[]>() };
+  }
+
   if (positionId && (!positions || positions.length === 0)) {
     throw new Error("Position not found");
   }
@@ -191,4 +196,60 @@ export async function fetchPositions(options: FetchPositionsOptions = {}) {
   });
 
   return { positions: transformed, snapshots: groupedSnapshots };
+}
+
+/**
+ * Fetch a single position by ID.
+ * Throws if position not found.
+ *
+ * @param positionId - The ID of the position to fetch
+ * @param options - Optional fetch options (same as fetchPositions)
+ * @returns Single position or position with snapshots (based on includeSnapshots)
+ */
+export async function fetchSinglePosition(
+  positionId: string,
+  options: Omit<FetchPositionsOptions, "positionId"> & {
+    includeSnapshots: true;
+  },
+): Promise<{
+  position: TransformedPosition;
+  snapshots: PositionSnapshot[];
+}>;
+
+export async function fetchSinglePosition(
+  positionId: string,
+  options?: Omit<FetchPositionsOptions, "positionId">,
+): Promise<TransformedPosition>;
+
+export async function fetchSinglePosition(
+  positionId: string,
+  options: Omit<FetchPositionsOptions, "positionId"> = {},
+) {
+  if (options.includeSnapshots) {
+    const { positions, snapshots } = await fetchPositions({
+      ...options,
+      positionId,
+      includeSnapshots: true,
+    });
+
+    if (!positions || positions.length === 0) {
+      throw new Error(`Position not found: ${positionId}`);
+    }
+
+    return {
+      position: positions[0],
+      snapshots: snapshots.get(positions[0].id) || [],
+    };
+  }
+
+  const positions = await fetchPositions({
+    ...options,
+    positionId,
+  });
+
+  if (!positions || positions.length === 0) {
+    throw new Error(`Position not found: ${positionId}`);
+  }
+
+  return positions[0];
 }
