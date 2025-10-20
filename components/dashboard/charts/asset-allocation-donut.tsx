@@ -45,7 +45,7 @@ export function AssetAllocationDonut({
   const { isPrivacyMode } = usePrivacyMode();
 
   // Calculate total value for percentage calculation
-  const totalHoldingsValue = useMemo(() => {
+  const totalAssetsValue = useMemo(() => {
     return assetAllocation.reduce((sum, item) => sum + item.total_value, 0);
   }, [assetAllocation]);
 
@@ -58,7 +58,7 @@ export function AssetAllocationDonut({
           </div>
           <p className="mt-3 font-medium">Asset Allocation</p>
           <p className="text-muted-foreground mt-1 text-sm">
-            Your holdings will appear here once you add them
+            Your assets will appear here once you add them
           </p>
         </CardContent>
       ) : (
@@ -155,7 +155,7 @@ export function AssetAllocationDonut({
                           {item.name}{" "}
                           <span className="text-muted-foreground">
                             {formatPercentage(
-                              item.total_value / totalHoldingsValue,
+                              item.total_value / totalAssetsValue,
                             )}
                           </span>
                         </span>

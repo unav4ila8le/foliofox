@@ -69,7 +69,7 @@ export function ActionsCell({ position }: { position: TransformedPosition }) {
     setOpen(true);
   };
 
-  // Restore holding
+  // Restore position
   const handleRestore = async () => {
     setIsRestoring(true);
     try {

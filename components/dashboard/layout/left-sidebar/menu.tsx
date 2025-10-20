@@ -19,8 +19,8 @@ const items = [
     icon: Home,
   },
   {
-    title: "Holdings",
-    url: "/dashboard/holdings",
+    title: "Assets",
+    url: "/dashboard/assets",
     icon: TrendingUp,
   },
 ];

@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ExportAssetsDialog } from "@/components/dashboard/positions/asset/export/dialog";
 
-import { useImportHoldingsDialog } from "@/components/dashboard/holdings/import";
+import { useImportPositionsDialog } from "@/components/dashboard/positions/import";
 
 export function TableActionsDropdown({
   positionsCount,
@@ -22,7 +22,7 @@ export function TableActionsDropdown({
 }) {
   const [showExportDialog, setShowExportDialog] = useState(false);
 
-  const { setOpen: setOpenImportHoldingsDialog } = useImportHoldingsDialog();
+  const { setOpen: setOpenImportPositionsDialog } = useImportPositionsDialog();
 
   return (
     <>
@@ -34,7 +34,7 @@ export function TableActionsDropdown({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={() => setOpenImportHoldingsDialog(true)}>
+          <DropdownMenuItem onSelect={() => setOpenImportPositionsDialog(true)}>
             <Upload className="size-4" /> Import
           </DropdownMenuItem>
           <DropdownMenuItem

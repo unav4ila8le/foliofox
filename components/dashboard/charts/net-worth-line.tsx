@@ -36,7 +36,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { NewAssetButton } from "@/components/dashboard/new-asset";
-import { ImportHoldingsButton } from "@/components/dashboard/holdings/import";
+import { ImportPositionsButton } from "@/components/dashboard/positions/import";
 import {
   usePrivacyMode,
   PrivacyModeButton,
@@ -127,11 +127,11 @@ export function NetWorthLineChart({
           </div>
           <p className="mt-3 font-medium">Net Worth History</p>
           <p className="text-muted-foreground mt-1 mb-3 text-sm">
-            Add your holdings to start tracking your net worth
+            Add your assets to start tracking your net worth
           </p>
           <div className="flex items-center justify-center gap-2">
             <NewAssetButton variant="outline" />
-            <ImportHoldingsButton variant="outline" />
+            <ImportPositionsButton variant="outline" />
           </div>
         </CardContent>
       ) : (

@@ -13,18 +13,18 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 
-import { fetchSingleHolding } from "@/server/holdings/fetch";
+import { fetchPositions } from "@/server/positions/fetch";
 import { Skeleton } from "@/components/ui/custom/skeleton";
 
-// Separate component for holding name fetching
-function HoldingName({ holdingId }: { holdingId: string }) {
+// Separate component for position name fetching
+function PositionName({ positionId }: { positionId: string }) {
   const [name, setName] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchSingleHolding(holdingId)
-      .then((holding) => setName(holding.name))
-      .catch(() => setName("Unknown Holding"));
-  }, [holdingId]);
+    fetchPositions({ positionId })
+      .then((positions) => setName(positions[0].name))
+      .catch(() => setName("Unknown Position"));
+  }, [positionId]);
 
   if (!name) {
     return <Skeleton className="h-4 w-24" />;
@@ -38,10 +38,10 @@ export function Breadcrumb() {
   const pathname = usePathname();
   const segments = pathname.split("/").filter(Boolean).slice(1);
 
-  // Check if we're on a holding page
-  const isHoldingPage =
-    segments[0] === "holdings" && segments[1] && segments[1] !== "archived";
-  const holdingId = isHoldingPage ? segments[1] : null;
+  // Check if we're on a position page
+  const isPositionPage =
+    segments[0] === "assets" && segments[1] && segments[1] !== "archived";
+  const positionId = isPositionPage ? segments[1] : null;
 
   return (
     <BreadcrumbUI>
@@ -60,15 +60,15 @@ export function Breadcrumb() {
           segments.map((segment, index) => {
             const href = `/dashboard/${segments.slice(0, index + 1).join("/")}`;
             const isLast = index === segments.length - 1;
-            const isHoldingSegment = segment === holdingId;
+            const isPositionSegment = segment === positionId;
 
             return (
               <React.Fragment key={href}>
                 <BreadcrumbItem>
                   {isLast ? (
                     <BreadcrumbPage>
-                      {isHoldingSegment && holdingId ? (
-                        <HoldingName holdingId={holdingId} />
+                      {isPositionSegment && positionId ? (
+                        <PositionName positionId={positionId} />
                       ) : (
                         segment.charAt(0).toUpperCase() + segment.slice(1)
                       )}
@@ -76,8 +76,8 @@ export function Breadcrumb() {
                   ) : (
                     <BreadcrumbLink asChild>
                       <Link href={href}>
-                        {isHoldingSegment && holdingId ? (
-                          <HoldingName holdingId={holdingId} />
+                        {isPositionSegment && positionId ? (
+                          <PositionName positionId={positionId} />
                         ) : (
                           segment.charAt(0).toUpperCase() + segment.slice(1)
                         )}

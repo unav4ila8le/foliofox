@@ -32,7 +32,7 @@ export async function fetchNetWorthHistory({
   // Generate weekly date points
   const weeklyDates = generateWeeklyDates(weeksBack);
 
-  // 1. For each date, fetch holdings valued as-of and FX rates; compute net worth
+  // 1. For each date, fetch positions valued as-of and FX rates; compute net worth
   const history = await Promise.all(
     weeklyDates.map(async (date) => {
       const positionsAsOf = await fetchPositions({

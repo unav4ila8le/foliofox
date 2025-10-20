@@ -56,7 +56,7 @@ export function PositionCategorySelector({
   const { error } = useFormField();
   const isInvalid = Boolean(error);
 
-  // Get asset categories
+  // Get position categories
   const { categories, isLoading } = usePositionCategories();
 
   // Find the selected category name
@@ -87,9 +87,9 @@ export function PositionCategorySelector({
         </DrawerTrigger>
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle>Asset category</DrawerTitle>
+            <DrawerTitle>Position category</DrawerTitle>
           </DrawerHeader>
-          <AssetCategoryList
+          <PositionCategoryList
             setOpen={setOpen}
             value={field.value}
             onChange={field.onChange}
@@ -123,7 +123,7 @@ export function PositionCategorySelector({
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className={cn(popoverWidth, "p-0")}>
-        <AssetCategoryList
+        <PositionCategoryList
           setOpen={setOpen}
           value={field.value}
           onChange={field.onChange}
@@ -143,7 +143,7 @@ interface CategoryListProps {
   isLoading: boolean;
 }
 
-function AssetCategoryList({
+function PositionCategoryList({
   setOpen,
   value,
   onChange,

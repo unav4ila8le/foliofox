@@ -55,7 +55,7 @@ export function PositionSelector({
   const [isLoading, setIsLoading] = useState(true);
   const isMobile = useIsMobile();
 
-  // Load holdings when the selector opens
+  // Load positions when the selector opens
   const getPositions = async () => {
     try {
       const data = await fetchPositions({
@@ -63,14 +63,14 @@ export function PositionSelector({
       });
       setPositions(data);
     } catch (error) {
-      console.error("Error loading holdings:", error);
+      console.error("Error loading positions:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Find the selected holding name
-  // If a preselected holding is provided, use it if it matches the field value
+  // Find the selected position name
+  // If a preselected position is provided, use it if it matches the field value
   const selectedPosition =
     preselectedPosition && preselectedPosition.id === field.value
       ? preselectedPosition

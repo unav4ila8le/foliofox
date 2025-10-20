@@ -2,7 +2,7 @@ import { ChartLine, Globe, PencilLine, Sparkles } from "lucide-react";
 
 import { FormDialog } from "./form-dialog";
 import { useNewAssetDialog } from "./index";
-import { useImportHoldingsDialog } from "@/components/dashboard/holdings/import";
+import { useImportPositionsDialog } from "@/components/dashboard/positions/import";
 
 import type { ComponentType } from "react";
 import type { SelectionType } from "./index";
@@ -36,7 +36,7 @@ function SelectionCard({
 
 export function SelectionDialog() {
   const { setOpenFormDialog, setSelectedType } = useNewAssetDialog();
-  const { setOpen: setOpenImportDialog } = useImportHoldingsDialog();
+  const { setOpen: setOpenImportDialog } = useImportPositionsDialog();
 
   const handleSelect = (type: SelectionType) => {
     setSelectedType(type);

@@ -17,7 +17,7 @@ import { formatNumber, formatPercentage } from "@/lib/number-format";
 
 import type { PositionWithProfitLoss } from "@/types/global.types";
 
-// Check if the holding has market data
+// Check if the position has market data
 const positionHasMarketData = (position: PositionWithProfitLoss): boolean =>
   position.source_id !== null;
 
@@ -73,7 +73,7 @@ export const columns: ColumnDef<PositionWithProfitLoss>[] = [
     },
     cell: ({ row }) => {
       if (row.getIsGrouped()) {
-        // group row → show category name and number of holdings aligned under Name column
+        // group row → show category name and number of positions aligned under Name column
         const firstLeaf = row.getLeafRows()[0];
         const categoryName = firstLeaf?.original.category_name;
         return (

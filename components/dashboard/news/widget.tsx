@@ -38,7 +38,7 @@ export function NewsWidget({ newsData }: NewsWidgetProps) {
           </div>
           <p className="mt-3 font-medium">Portfolio News</p>
           <p className="text-muted-foreground mt-1 text-sm">
-            Add holdings to start receiving news related to your portfolio
+            Add assets to start receiving news related to your portfolio
           </p>
         </CardContent>
       </Card>

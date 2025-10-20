@@ -28,7 +28,7 @@ export type CanonicalHeader =
 
 // Common aliases from brokers and spreadsheets (DEGIRO, IBKR, Trading212, Fidelity, Vanguard, Schwab, eToro, etc.)
 const HEADER_ALIASES: Record<CanonicalHeader, string[]> = {
-  // Holding name/title
+  // Position name/title
   name: [
     "name",
     "product",
@@ -41,6 +41,8 @@ const HEADER_ALIASES: Record<CanonicalHeader, string[]> = {
     "instrument name",
     "holding",
     "description",
+    "position",
+    "position name",
   ],
 
   // Symbol or ISIN (we'll validate/normalize later)
@@ -109,6 +111,7 @@ const HEADER_ALIASES: Record<CanonicalHeader, string[]> = {
     "portfolio currency",
     "trade currency",
     "holding currency",
+    "position currency",
     "base currency",
     "instrument currency",
     "currency code",
