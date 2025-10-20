@@ -58,14 +58,14 @@ export async function calculateAssetAllocation(
   } = {};
 
   positionsInTarget.forEach((position) => {
-    const categoryId = position.category_id;
+    const category_id = position.category_id;
 
-    if (assetAllocationInTarget[categoryId]) {
-      assetAllocationInTarget[categoryId].total_value_target +=
+    if (assetAllocationInTarget[category_id]) {
+      assetAllocationInTarget[category_id].total_value_target +=
         position.total_value_target;
     } else {
-      assetAllocationInTarget[categoryId] = {
-        category_id: categoryId,
+      assetAllocationInTarget[category_id] = {
+        category_id: category_id,
         name: (position as { category_name?: string }).category_name || "",
         total_value_target: position.total_value_target,
       };
@@ -74,7 +74,7 @@ export async function calculateAssetAllocation(
 
   const assetAllocation = Object.values(assetAllocationInTarget)
     .map((allocation) => ({
-      categoryId: allocation.category_id,
+      category_id: allocation.category_id,
       name: allocation.name,
       total_value: allocation.total_value_target,
     }))

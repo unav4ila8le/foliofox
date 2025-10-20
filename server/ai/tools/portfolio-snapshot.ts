@@ -117,7 +117,7 @@ export async function getPortfolioSnapshot(params?: {
     const categories = allocation
       .map((a) => ({
         name: a.name,
-        id: a.categoryId,
+        id: a.category_id,
         value: a.total_value,
         percentage: netWorth ? (a.total_value / netWorth) * 100 : 0,
       }))

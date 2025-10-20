@@ -66,16 +66,16 @@ export async function getAllocationDrift(params: GetAllocationDriftParams) {
 
     // Create maps for easy lookup
     const prevById = new Map(
-      previousAllocation.map((cat) => [cat.categoryId, cat]),
+      previousAllocation.map((cat) => [cat.category_id, cat]),
     );
     const currById = new Map(
-      currentAllocation.map((cat) => [cat.categoryId, cat]),
+      currentAllocation.map((cat) => [cat.category_id, cat]),
     );
 
     // Get all unique category codes
     const allIds = new Set([
-      ...previousAllocation.map((cat) => cat.categoryId),
-      ...currentAllocation.map((cat) => cat.categoryId),
+      ...previousAllocation.map((cat) => cat.category_id),
+      ...currentAllocation.map((cat) => cat.category_id),
     ]);
 
     // Build category drift list

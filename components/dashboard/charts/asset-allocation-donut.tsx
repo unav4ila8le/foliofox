@@ -37,7 +37,7 @@ export function AssetAllocationDonut({
   netWorth: number;
   currency: string;
   assetAllocation: Array<{
-    category_code: string;
+    category_id: string;
     name: string;
     total_value: number;
   }>;
