@@ -28,6 +28,7 @@ export async function fetchPortfolioRecords(
         id,
         name,
         currency,
+        type,
         archived_at
       )
     `,

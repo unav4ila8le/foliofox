@@ -3,7 +3,10 @@
 import { format } from "date-fns";
 
 import { getCurrentUser } from "@/server/auth/actions";
+import { fetchMarketData } from "@/server/market-data/fetch";
+import { MARKET_DATA_HANDLERS } from "@/server/market-data/sources/registry";
 
+import type { MarketDataPosition } from "@/server/market-data/sources/types";
 import type {
   Position,
   PositionSnapshot,
@@ -126,31 +129,54 @@ export async function fetchPositions(options: FetchPositionsOptions = {}) {
     }
   });
 
+  // Fetch market data prices when asOfDate is provided
+  let priceMap = new Map<string, number>();
+  if (asOfDate !== null) {
+    const activePositionIds = new Set(latestSnapshotByPositionId.keys());
+    const marketPositions: MarketDataPosition[] = positions
+      .filter((p) => activePositionIds.has(p.id))
+      .map((p) => ({
+        currency: p.currency,
+        symbol_id: p.position_sources_flat?.symbol_id ?? null,
+        domain_id: p.position_sources_flat?.domain_id ?? null,
+      }));
+
+    priceMap = await fetchMarketData(marketPositions, asOfDate);
+  }
+
   // Transform into UI-friendly shape
   const transformed: TransformedPosition[] = positions.map((position) => {
     const latestSnapshot = latestSnapshotByPositionId.get(position.id);
     const current_quantity = latestSnapshot?.quantity ?? 0;
-    const current_unit_value = latestSnapshot?.unit_value ?? 0;
-    const total_value = current_quantity * current_unit_value;
 
-    // Read identifiers from flattened view if available
-    const positionWithJoins = position as Position & {
-      position_sources_flat?: {
-        symbol_id: string | null;
-        domain_id: string | null;
-      } | null;
-      position_categories: { name: string };
-    };
+    // Use market price if available, otherwise fallback to snapshot unit value
+    let current_unit_value = latestSnapshot?.unit_value ?? 0;
+    if (asOfDate !== null && position.position_sources_flat?.type) {
+      const handler = MARKET_DATA_HANDLERS.find(
+        (h) => h.source === position.position_sources_flat?.type,
+      );
+      if (handler) {
+        const key = handler.getKey(
+          {
+            currency: position.currency,
+            symbol_id: position.position_sources_flat?.symbol_id ?? null,
+            domain_id: position.position_sources_flat?.domain_id ?? null,
+          },
+          asOfDate,
+        );
+        current_unit_value = priceMap.get(key ?? "") ?? current_unit_value;
+      }
+    }
 
     return {
       ...(position as Position),
       is_archived: position.archived_at !== null,
-      category_name: positionWithJoins.position_categories?.name,
-      symbol_id: positionWithJoins.position_sources_flat?.symbol_id ?? null,
-      domain_id: positionWithJoins.position_sources_flat?.domain_id ?? null,
+      category_name: position.position_categories?.name,
+      symbol_id: position.position_sources_flat?.symbol_id ?? null,
+      domain_id: position.position_sources_flat?.domain_id ?? null,
       current_quantity,
       current_unit_value,
-      total_value,
+      total_value: current_quantity * current_unit_value,
     };
   });
 

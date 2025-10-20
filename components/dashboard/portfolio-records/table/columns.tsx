@@ -85,7 +85,7 @@ export function getPortfolioRecordColumns({
       }
       return (
         <Link
-          href={`/dashboard/positions/${positionId}`}
+          href={`/dashboard/${position.type === "liability" ? "liabilities" : "assets"}/${positionId}`}
           className="hover:text-primary max-w-60 truncate underline-offset-4 hover:underline"
           title={positionName}
           onClick={(e) => e.stopPropagation()}

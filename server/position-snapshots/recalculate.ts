@@ -215,9 +215,7 @@ export async function recalculateSnapshotsUntilNextUpdate(
     };
 
     try {
-      const marketDataMap = await fetchMarketData([minimalPosition], date, {
-        upsert: false,
-      });
+      const marketDataMap = await fetchMarketData([minimalPosition], date);
 
       const handler = MARKET_DATA_HANDLERS.find((h) => h.source === sourceType);
       if (!handler) return fallback;

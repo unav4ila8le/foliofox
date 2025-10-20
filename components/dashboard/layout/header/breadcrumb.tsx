@@ -40,7 +40,9 @@ export function Breadcrumb() {
 
   // Check if we're on a position page
   const isPositionPage =
-    segments[0] === "assets" && segments[1] && segments[1] !== "archived";
+    (segments[0] === "assets" || segments[0] === "liabilities") &&
+    segments[1] &&
+    segments[1] !== "archived";
   const positionId = isPositionPage ? segments[1] : null;
 
   return (

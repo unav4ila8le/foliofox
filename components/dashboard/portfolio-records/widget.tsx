@@ -30,5 +30,7 @@ export function PortfolioRecordsWidget({
   }
 
   // Display portfolio records
-  return <PortfolioRecordsTable data={portfolioRecordsData} />;
+  return (
+    <PortfolioRecordsTable data={portfolioRecordsData} showPositionColumn />
+  );
 }
