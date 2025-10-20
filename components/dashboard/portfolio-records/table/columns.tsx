@@ -7,7 +7,6 @@ import { format } from "date-fns";
 import { ActionsCell } from "./row-actions/actions-cell";
 
 import { formatNumber } from "@/lib/number-format";
-import { getTransactionTypeLabel } from "@/lib/position-category-mappings";
 
 import {
   Tooltip,
@@ -106,7 +105,7 @@ export function getPortfolioRecordColumns({
         const type = row.getValue<string>("type");
         return (
           <Badge variant="secondary" className="uppercase">
-            {getTransactionTypeLabel(type)}
+            {type}
           </Badge>
         );
       },

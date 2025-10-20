@@ -5,10 +5,10 @@ import type {
 } from "@/types/global.types";
 
 /**
- * Calculate unrealized P/L using latest record's cost basis and current values.
- * - cost_basis_per_unit: from latest record (fallback to unit_value)
+ * Calculate unrealized P/L using latest snapshot's cost basis and current values.
+ * - cost_basis_per_unit: from latest snapshot with basis (fallback to unit_value)
  * - total_cost_basis: cost_basis_per_unit * current_quantity
- * - profit_loss: holding.total_value - total_cost_basis
+ * - profit_loss: position.total_value - total_cost_basis
  * - profit_loss_percentage: profit_loss / total_cost_basis (0 if basis is 0)
  */
 export function calculateProfitLoss(
@@ -28,16 +28,18 @@ export function calculateProfitLoss(
       };
     }
 
-    // sort once
+    // Sort once: most recent by date, then by created_at for tie-breakers
     const sorted = [...positionSnapshots].sort((a, b) => {
-      const dDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
-      if (dDiff !== 0) return dDiff;
+      const dateDifferenceMs =
+        new Date(b.date).getTime() - new Date(a.date).getTime();
+      if (dateDifferenceMs !== 0) return dateDifferenceMs;
       return (
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
     });
 
-    // Prefer latest transactional record with basis; then any record with basis; else latest
+    // Prefer latest snapshot linked to a portfolio record with basis;
+    // then any snapshot with basis; else fall back to the latest snapshot
     const basisSnapshot =
       sorted.find(
         (s) => s.portfolio_record_id && s.cost_basis_per_unit != null,

@@ -1,20 +1,3 @@
-// Transaction type labels
-export const TRANSACTION_TYPE_LABELS = {
-  buy: "Buy",
-  sell: "Sell",
-  update: "Update",
-  deposit: "Deposit",
-  withdrawal: "Withdrawal",
-};
-
-// Get transaction type label
-export function getTransactionTypeLabel(type: string): string {
-  return (
-    TRANSACTION_TYPE_LABELS[type as keyof typeof TRANSACTION_TYPE_LABELS] ||
-    type
-  );
-}
-
 // Simple mapping of position categories to Yahoo Finance quote types
 const POSITION_CATEGORY_QUOTE_TYPES: Record<string, string[]> = {
   cash: ["CURRENCY", "MONEYMARKET"],

@@ -25,7 +25,6 @@ import { BuyForm } from "./forms/buy-form";
 import { SellForm } from "./forms/sell-form";
 import { UpdateForm } from "./forms/update-form";
 
-import { getTransactionTypeLabel } from "@/lib/position-category-mappings";
 import { cn } from "@/lib/utils";
 
 import type { TransformedPosition } from "@/types/global.types";
@@ -166,9 +165,10 @@ export function NewPortfolioRecordDialogProvider({
                         key={type}
                         value={`${type}-form`}
                         disabled={!preselectedPosition}
+                        className="capitalize"
                       >
                         <Icon className="size-4" />
-                        {getTransactionTypeLabel(type)}
+                        {type}
                       </TabsTrigger>
                     );
                   })}

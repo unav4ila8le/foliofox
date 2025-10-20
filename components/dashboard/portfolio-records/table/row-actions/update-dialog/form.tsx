@@ -35,7 +35,6 @@ import { Calendar } from "@/components/ui/calendar";
 
 import { cn } from "@/lib/utils";
 import { requiredNumberWithConstraints } from "@/lib/zod-helpers";
-import { getTransactionTypeLabel } from "@/lib/position-category-mappings";
 
 import { updatePortfolioRecord } from "@/server/portfolio-records/update";
 
@@ -174,15 +173,9 @@ export function UpdatePortfolioRecordForm({
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="buy">
-                    {getTransactionTypeLabel("buy")}
-                  </SelectItem>
-                  <SelectItem value="sell">
-                    {getTransactionTypeLabel("sell")}
-                  </SelectItem>
-                  <SelectItem value="update">
-                    {getTransactionTypeLabel("update")}
-                  </SelectItem>
+                  <SelectItem value="buy">Buy</SelectItem>
+                  <SelectItem value="sell">Sell</SelectItem>
+                  <SelectItem value="update">Update</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
