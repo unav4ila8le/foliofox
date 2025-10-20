@@ -6,7 +6,7 @@ import { RightSidebar } from "@/components/dashboard/layout/right-sidebar";
 import { Header } from "@/components/dashboard/layout/header";
 
 import { PrivacyModeProvider } from "@/components/dashboard/privacy-mode-provider";
-import { ImportHoldingsDialogProvider } from "@/components/dashboard/holdings/import";
+import { ImportPositionsDialogProvider } from "@/components/dashboard/positions/import";
 import { NewAssetDialogProvider } from "@/components/dashboard/new-asset";
 import { NewPortfolioRecordDialogProvider } from "@/components/dashboard/new-portfolio-record";
 
@@ -50,7 +50,7 @@ export default async function Layout({
       }
     >
       <PrivacyModeProvider>
-        <ImportHoldingsDialogProvider>
+        <ImportPositionsDialogProvider>
           <NewAssetDialogProvider profile={profile}>
             <NewPortfolioRecordDialogProvider>
               {/* Left sidebar */}
@@ -70,7 +70,7 @@ export default async function Layout({
               <RightSidebar />
             </NewPortfolioRecordDialogProvider>
           </NewAssetDialogProvider>
-        </ImportHoldingsDialogProvider>
+        </ImportPositionsDialogProvider>
       </PrivacyModeProvider>
     </SidebarProvider>
   );

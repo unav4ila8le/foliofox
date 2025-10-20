@@ -4,7 +4,7 @@ import { generateObject } from "ai";
 import {
   createExtractionResultSchema,
   createExtractionPrompt,
-  postProcessExtractedHoldings,
+  postProcessExtractedPositions,
   type ExtractionResult,
 } from "@/lib/import/sources/ai";
 
@@ -56,7 +56,7 @@ export async function POST(req: Request) {
     schema,
   });
 
-  const processed = await postProcessExtractedHoldings(
+  const processed = await postProcessExtractedPositions(
     result.object as ExtractionResult,
   );
   return Response.json(processed);

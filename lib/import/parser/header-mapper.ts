@@ -8,7 +8,7 @@
  *
  * Canonical headers used by our importer:
  *   - name
- *   - category_code
+ *   - category_id
  *   - currency
  *   - current_quantity
  *   - current_unit_value
@@ -18,7 +18,7 @@
 
 export type CanonicalHeader =
   | "name"
-  | "category_code"
+  | "category_id"
   | "currency"
   | "quantity"
   | "unit_value"
@@ -118,8 +118,11 @@ const HEADER_ALIASES: Record<CanonicalHeader, string[]> = {
   description: ["description", "notes", "comment", "memo", "details"],
 
   // Optional category hints (not required; we can infer later)
-  category_code: [
+  category_id: [
+    "category_id",
     "category_code",
+    "category code",
+    "category name",
     "category",
     "asset class",
     "asset type",
@@ -189,7 +192,7 @@ export function buildCanonicalColumnMap(
 /**
  * Minimal required canonical headers.
  * Note:
- * - We do NOT require `category_code`.
+ * - We do NOT require `category_id`.
  * - For cash/physical/manual items, users typically set quantity=1 and put the total into unit value.
  */
 export const REQUIRED_HEADERS: CanonicalHeader[] = [

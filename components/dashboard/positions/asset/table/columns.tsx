@@ -49,7 +49,7 @@ export const columns: ColumnDef<PositionWithProfitLoss>[] = [
   },
   // Category header - hidden
   {
-    accessorKey: "category_code",
+    accessorKey: "category_id",
     header: () => null,
     cell: () => null,
     enableSorting: false,

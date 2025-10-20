@@ -1,8 +1,8 @@
 import type { SymbolValidationResult } from "@/server/symbols/validate";
 
-export type HoldingRow = {
+export type PositionImportRow = {
   name: string;
-  category_code: string;
+  category_id: string;
   currency: string;
   quantity: number;
   unit_value: number | null;
@@ -11,9 +11,9 @@ export type HoldingRow = {
   description: string | null;
 };
 
-export interface ImportResult {
+export interface PositionImportResult {
   success: boolean;
-  holdings: HoldingRow[];
+  positions: PositionImportRow[];
   warnings?: string[];
   errors?: string[];
   symbolValidation?: Record<string, SymbolValidationResult>;
