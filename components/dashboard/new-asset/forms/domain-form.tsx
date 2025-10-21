@@ -260,7 +260,7 @@ export function DomainForm() {
                 Saving...
               </>
             ) : (
-              "Add asset"
+              "Add Asset"
             )}
           </Button>
         </div>

@@ -361,7 +361,7 @@ export function SymbolSearchForm() {
                 Saving...
               </>
             ) : (
-              "Add asset"
+              "Add Asset"
             )}
           </Button>
         </div>

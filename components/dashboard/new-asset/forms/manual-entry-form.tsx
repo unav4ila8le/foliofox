@@ -302,7 +302,7 @@ export function ManualEntryForm() {
                 Saving...
               </>
             ) : (
-              "Add asset"
+              "Add Asset"
             )}
           </Button>
         </div>

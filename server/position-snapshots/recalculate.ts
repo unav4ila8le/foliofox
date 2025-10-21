@@ -287,7 +287,7 @@ export async function recalculateSnapshotsUntilNextUpdate(
       record.id as string,
     );
     if (existingSnapshotId) {
-      await supabase
+      const { error: updateError } = await supabase
         .from("position_snapshots")
         .update({
           quantity: runningQuantity,
@@ -296,16 +296,34 @@ export async function recalculateSnapshotsUntilNextUpdate(
           date: record.date,
         })
         .eq("id", existingSnapshotId);
+
+      if (updateError) {
+        return {
+          success: false,
+          code: updateError.code ?? "SNAPSHOT_UPDATE_FAILED",
+          message: updateError.message ?? "Failed to update position snapshot",
+        } as const;
+      }
     } else {
-      await supabase.from("position_snapshots").insert({
-        user_id: userId,
-        position_id: positionId,
-        date: record.date,
-        quantity: runningQuantity,
-        unit_value: snapshotUnitValue,
-        cost_basis_per_unit: runningCostBasis,
-        portfolio_record_id: record.id,
-      });
+      const { error: insertError } = await supabase
+        .from("position_snapshots")
+        .insert({
+          user_id: userId,
+          position_id: positionId,
+          date: record.date,
+          quantity: runningQuantity,
+          unit_value: snapshotUnitValue,
+          cost_basis_per_unit: runningCostBasis,
+          portfolio_record_id: record.id,
+        });
+
+      if (insertError) {
+        return {
+          success: false,
+          code: insertError.code ?? "SNAPSHOT_INSERT_FAILED",
+          message: insertError.message ?? "Failed to insert position snapshot",
+        } as const;
+      }
     }
   }
 
