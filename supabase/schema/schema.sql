@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict ouLDv43bASX3eVKBWGa12IG9qi77aJhL9l654e1QIl1U1zpzcJSOIDoHacLqD6K
+\restrict TZyUIT9juCRh5vcByYKFcpegSc4bejGPdezYNwbAxjp1qHSplriqLAucciuCr0N
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.6 (Homebrew)
@@ -2348,6 +2348,7 @@ GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.so
 --
 
 GRANT SELECT ON TABLE public.position_sources_flat TO authenticated;
+GRANT SELECT ON TABLE public.position_sources_flat TO service_role;
 
 
 --
@@ -2477,5 +2478,5 @@ ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT SELECT,I
 -- PostgreSQL database dump complete
 --
 
-\unrestrict ouLDv43bASX3eVKBWGa12IG9qi77aJhL9l654e1QIl1U1zpzcJSOIDoHacLqD6K
+\unrestrict TZyUIT9juCRh5vcByYKFcpegSc4bejGPdezYNwbAxjp1qHSplriqLAucciuCr0N
 

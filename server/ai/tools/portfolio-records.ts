@@ -3,19 +3,18 @@
 import { fetchPortfolioRecords } from "@/server/portfolio-records/fetch";
 
 interface GetPortfolioRecordsParams {
-  startDate?: string;
-  endDate?: string;
-  positionId?: string;
-  includeArchived?: boolean;
+  startDate: string | null;
+  endDate: string | null;
+  positionId: string | null;
+  includeArchived: boolean | null;
 }
 
-export async function getPortfolioRecords(
-  params: GetPortfolioRecordsParams = {},
-) {
-  const { positionId, includeArchived } = params;
+export async function getPortfolioRecords(params: GetPortfolioRecordsParams) {
+  const positionId = params.positionId ?? undefined;
+  const includeArchived = params.includeArchived ?? undefined;
 
-  const startDate = params?.startDate ? new Date(params.startDate) : undefined;
-  const endDate = params?.endDate ? new Date(params.endDate) : undefined;
+  const startDate = params.startDate ? new Date(params.startDate) : undefined;
+  const endDate = params.endDate ? new Date(params.endDate) : undefined;
 
   const portfolioRecords = await fetchPortfolioRecords({
     positionId,
@@ -45,8 +44,8 @@ export async function getPortfolioRecords(
       start: startDate ?? null,
       end: endDate ?? null,
     },
-    positionId: positionId ?? null,
-    includeArchived: includeArchived ?? true,
+    positionId: params.positionId,
+    includeArchived: params.includeArchived ?? true,
     items,
   };
 }

@@ -9,8 +9,8 @@ import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 import { convertCurrency } from "@/lib/currency-conversion";
 
 interface GetCurrencyExposureParams {
-  baseCurrency?: string;
-  date?: string; // YYYY-MM-DD (optional). Defaults to today.
+  baseCurrency: string | null;
+  date: string | null; // YYYY-MM-DD (optional). Defaults to today.
 }
 
 interface CurrencyExposureItem {
@@ -37,7 +37,7 @@ interface CurrencyExposureResult {
  * - Converts local totals to baseCurrency using FX as-of date
  */
 export async function getCurrencyExposure(
-  params: GetCurrencyExposureParams = {},
+  params: GetCurrencyExposureParams,
 ): Promise<CurrencyExposureResult> {
   try {
     const { profile } = await fetchProfile();

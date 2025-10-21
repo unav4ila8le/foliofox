@@ -22,15 +22,13 @@ export const aiTools = {
     inputSchema: z.object({
       baseCurrency: z
         .string()
-        .nullish()
-        .transform((v) => v ?? undefined)
+        .nullable()
         .describe(
           "Currency code for analysis (e.g., USD, EUR, GBP, etc.). Leave empty to use the user's preferred currency.",
         ),
       date: z
         .string()
-        .nullish()
-        .transform((v) => v ?? undefined)
+        .nullable()
         .describe(
           "Date for historical analysis in YYYY-MM-DD format (e.g., 2024-07-22). Leave empty to use the current date.",
         ),
@@ -44,14 +42,10 @@ export const aiTools = {
     description:
       "Get raw positions in original currencies (no FX conversion). Optionally filter by position IDs. Uses market prices as-of the given date (defaults to today) for market-backed positions (e.g., securities, domains, etc.).",
     inputSchema: z.object({
-      positionIds: z
-        .array(z.string())
-        .nullish()
-        .transform((v) => v ?? undefined),
+      positionIds: z.array(z.string()).nullable(),
       date: z
         .string()
-        .nullish()
-        .transform((v) => v ?? undefined)
+        .nullable()
         .describe("YYYY-MM-DD format (optional, defaults to today)"),
     }),
     execute: async (args) => getPositions(args),
@@ -61,24 +55,12 @@ export const aiTools = {
     description:
       "Get portfolio records history with optional filtering. Returns: record list with type, date, quantity, unit value, position details, and metadata. Supports filtering by position, date range, and archived status.",
     inputSchema: z.object({
-      positionId: z
-        .string()
-        .nullish()
-        .transform((v) => v ?? undefined),
-      startDate: z
-        .string()
-        .nullish()
-        .transform((v) => v ?? undefined)
-        .describe("YYYY-MM-DD format (optional)"),
-      endDate: z
-        .string()
-        .nullish()
-        .transform((v) => v ?? undefined)
-        .describe("YYYY-MM-DD format (optional)"),
+      positionId: z.string().nullable(),
+      startDate: z.string().nullable().describe("YYYY-MM-DD format (optional)"),
+      endDate: z.string().nullable().describe("YYYY-MM-DD format (optional)"),
       includeArchived: z
         .boolean()
-        .nullish()
-        .transform((v) => v ?? undefined)
+        .nullable()
         .describe("Include records from archived positions"),
     }),
     execute: async (args) => {
@@ -93,16 +75,8 @@ export const aiTools = {
       positionId: z
         .string()
         .describe("Required position ID to get snapshots for"),
-      startDate: z
-        .string()
-        .nullish()
-        .transform((v) => v ?? undefined)
-        .describe("YYYY-MM-DD format (optional)"),
-      endDate: z
-        .string()
-        .nullish()
-        .transform((v) => v ?? undefined)
-        .describe("YYYY-MM-DD format (optional)"),
+      startDate: z.string().nullable().describe("YYYY-MM-DD format (optional)"),
+      endDate: z.string().nullable().describe("YYYY-MM-DD format (optional)"),
     }),
     execute: async (args) => {
       return getPositionSnapshots(args);
@@ -115,15 +89,13 @@ export const aiTools = {
     inputSchema: z.object({
       baseCurrency: z
         .string()
-        .nullish()
-        .transform((v) => v ?? undefined)
+        .nullable()
         .describe(
           "Currency code for analysis (e.g., USD, EUR, GBP, etc.). Leave empty to use the user's preferred currency.",
         ),
       weeksBack: z
         .number()
-        .nullish()
-        .transform((v) => v ?? undefined)
+        .nullable()
         .describe(
           "Number of weeks to look back (default: 24 weeks = ~6 months)",
         ),
@@ -139,15 +111,13 @@ export const aiTools = {
     inputSchema: z.object({
       baseCurrency: z
         .string()
-        .nullish()
-        .transform((v) => v ?? undefined)
+        .nullable()
         .describe(
           "Currency code for analysis (e.g., USD, EUR, GBP, etc.). Leave empty to use the user's preferred currency.",
         ),
       weeksBack: z
         .number()
-        .nullish()
-        .transform((v) => v ?? undefined)
+        .nullable()
         .describe(
           "Number of weeks to compare back (default: 24 weeks = ~6 months)",
         ),
@@ -163,15 +133,13 @@ export const aiTools = {
     inputSchema: z.object({
       baseCurrency: z
         .string()
-        .nullish()
-        .transform((v) => v ?? undefined)
+        .nullable()
         .describe(
           "Currency code for analysis (e.g., USD, EUR, GBP, etc.). Leave empty to use the user's preferred currency.",
         ),
       monthsAhead: z
         .number()
-        .nullish()
-        .transform((v) => v ?? undefined)
+        .nullable()
         .describe(
           "Number of months to project ahead (default: 12 months = 1 year)",
         ),
@@ -187,27 +155,23 @@ export const aiTools = {
     inputSchema: z.object({
       baseCurrency: z
         .string()
-        .nullish()
-        .transform((v) => v ?? undefined)
+        .nullable()
         .describe(
           "Currency code for analysis (e.g., USD, EUR, GBP, etc.). Leave empty to use the user's preferred currency.",
         ),
       positionIds: z
         .array(z.string())
-        .nullish()
-        .transform((v) => v ?? undefined)
+        .nullable()
         .describe(
           "Specific position IDs to analyze (assets only). If omitted, analyzes all assets. Get IDs via getPortfolioSnapshot or getPositions.",
         ),
       startDate: z
         .string()
-        .nullish()
-        .transform((v) => v ?? undefined)
+        .nullable()
         .describe("YYYY-MM-DD format (optional, defaults to 180 days ago)"),
       endDate: z
         .string()
-        .nullish()
-        .transform((v) => v ?? undefined)
+        .nullable()
         .describe("YYYY-MM-DD format (optional, defaults to today)"),
     }),
     execute: async (args) => getAssetsPerformance(args),
@@ -219,26 +183,13 @@ export const aiTools = {
     inputSchema: z.object({
       baseCurrency: z
         .string()
-        .nullish()
-        .transform((v) => v ?? undefined)
+        .nullable()
         .describe(
           "Currency code for analysis (e.g., USD, EUR, GBP, etc.). Leave empty to use the user's preferred currency.",
         ),
-      startDate: z
-        .string()
-        .nullish()
-        .transform((v) => v ?? undefined)
-        .describe("YYYY-MM-DD format (optional)"),
-      endDate: z
-        .string()
-        .nullish()
-        .transform((v) => v ?? undefined)
-        .describe("YYYY-MM-DD format (optional)"),
-      limit: z
-        .number()
-        .nullish()
-        .transform((v) => v ?? undefined)
-        .describe("Optional, defaults to 5"),
+      startDate: z.string().nullable().describe("YYYY-MM-DD format (optional)"),
+      endDate: z.string().nullable().describe("YYYY-MM-DD format (optional)"),
+      limit: z.number().nullable().describe("Optional, defaults to 5"),
     }),
     execute: async (args) => getTopMovers(args),
   }),
@@ -249,8 +200,7 @@ export const aiTools = {
     inputSchema: z.object({
       baseCurrency: z
         .string()
-        .nullish()
-        .transform((v) => v ?? undefined)
+        .nullable()
         .describe(
           "Currency code for analysis (e.g., USD, EUR, GBP, etc.). Leave empty to use the user's preferred currency.",
         ),
@@ -267,15 +217,13 @@ export const aiTools = {
     inputSchema: z.object({
       baseCurrency: z
         .string()
-        .nullish()
-        .transform((v) => v ?? undefined)
+        .nullable()
         .describe(
           "Currency code for analysis (e.g., USD, EUR, GBP). Leave empty to use the user's preferred currency.",
         ),
       date: z
         .string()
-        .nullish()
-        .transform((v) => v ?? undefined)
+        .nullable()
         .describe("YYYY-MM-DD format (optional, defaults to today)"),
     }),
     execute: async (args) => getCurrencyExposure(args),
@@ -292,8 +240,7 @@ export const aiTools = {
         ),
       limit: z
         .number()
-        .nullish()
-        .transform((v) => v ?? undefined)
+        .nullable()
         .describe(
           "Maximum number of symbols to return (default: 10, max: 20).",
         ),
@@ -307,15 +254,13 @@ export const aiTools = {
     inputSchema: z.object({
       symbolIds: z
         .array(z.string())
-        .nullish()
-        .transform((v) => v ?? undefined)
+        .nullable()
         .describe(
           "Array of symbol IDs to get news for (e.g., ['AAPL', 'MSFT']). If omitted, returns news for user's entire portfolio.",
         ),
       limit: z
         .number()
-        .nullish()
-        .transform((v) => v ?? undefined)
+        .nullable()
         .describe(
           "Maximum number of articles to return (default: 10). Limit is distributed across symbols.",
         ),

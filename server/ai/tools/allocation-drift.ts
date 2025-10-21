@@ -6,7 +6,7 @@ import { fetchProfile } from "@/server/profile/actions";
 import { calculateAssetAllocation } from "@/server/analysis/asset-allocation";
 
 interface GetAllocationDriftParams {
-  baseCurrency?: string;
+  baseCurrency: string | null;
   compareToDate: string; // YYYY-MM-DD
 }
 

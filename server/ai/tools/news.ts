@@ -3,12 +3,13 @@
 import { fetchPortfolioNews, fetchNewsForSymbols } from "@/server/news/fetch";
 
 interface GetNewsParams {
-  symbolIds?: string[];
-  limit?: number;
+  symbolIds: string[] | null;
+  limit: number | null;
 }
 
-export async function getNews(params: GetNewsParams = {}) {
-  const { symbolIds, limit = 10 } = params;
+export async function getNews(params: GetNewsParams) {
+  const symbolIds = params.symbolIds ?? undefined;
+  const limit = params.limit ?? 10;
 
   // If no symbols provided, default to portfolio news
   if (!symbolIds || symbolIds.length === 0) {

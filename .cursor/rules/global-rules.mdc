@@ -99,7 +99,7 @@ alwaysApply: true
    - We mostly use ISO currency codes (USD, EUR) - unless explicitly requested
    - Store all dates in UTC
    - Handle all monetary values as numbers, format only for display
-   - Use Zod for data validation; for AI tool schemas use `.nullish().transform(v => v ?? undefined)`
+   - Use Zod for data validation; for AI tool schemas use `.nullable()` for optional fields (https://ai-sdk.dev/docs/ai-sdk-core/prompt-engineering#optional-parameters)
    - Market data: use the aggregator `server/market-data/fetch.fetchMarketData()` (handlers registry). Default to `upsert: true` so DB cache is populated.
    - Valuation: `fetchPositions({ asOfDate })` uses snapshot quantity and market price at as-of date for unit value (fallback to snapshot value for custom positions).
    - Profit/Loss: compute basis from latest relevant snapshot; do not derive from current market price.

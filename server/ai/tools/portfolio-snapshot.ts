@@ -12,17 +12,17 @@ import { convertCurrency } from "@/lib/currency-conversion";
  * - Positions valued via latest snapshot at/before date
  * - FX conversion as-of date
  */
-export async function getPortfolioSnapshot(params?: {
-  baseCurrency?: string;
-  date?: string;
+export async function getPortfolioSnapshot(params: {
+  baseCurrency: string | null;
+  date: string | null;
 }) {
   try {
     // Get user's profile to use their preferred currency
     const { profile } = await fetchProfile();
-    const baseCurrency = params?.baseCurrency ?? profile.display_currency;
+    const baseCurrency = params.baseCurrency ?? profile.display_currency;
 
     // Use a single date across quotes and FX for consistency
-    const asOfDate = params?.date ? new Date(params.date) : new Date();
+    const asOfDate = params.date ? new Date(params.date) : new Date();
 
     // Fetch positions valued as-of the target date
     const positions = await fetchPositions({

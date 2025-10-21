@@ -10,10 +10,10 @@ import { calculateProfitLoss } from "@/lib/profit-loss";
 import { convertCurrency } from "@/lib/currency-conversion";
 
 interface GetAssetsPerformanceParams {
-  baseCurrency?: string;
-  positionIds?: string[];
-  startDate?: string;
-  endDate?: string;
+  baseCurrency: string | null;
+  positionIds: string[] | null;
+  startDate: string | null;
+  endDate: string | null;
 }
 
 interface AssetPerformanceData {
@@ -61,9 +61,7 @@ interface AssetPerformanceData {
  * Analyze asset(s) performance over a period
  * Returns price return, value change, and unrealized P/L data
  */
-export async function getAssetsPerformance(
-  params: GetAssetsPerformanceParams = {},
-) {
+export async function getAssetsPerformance(params: GetAssetsPerformanceParams) {
   try {
     // Get user's profile for default currency
     const { profile } = await fetchProfile();

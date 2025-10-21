@@ -4,15 +4,15 @@ import { fetchPositionSnapshots } from "@/server/position-snapshots/fetch";
 
 interface GetPositionSnapshotsParams {
   positionId: string; // Required - position snapshots are always for a specific position
-  startDate?: string;
-  endDate?: string;
+  startDate: string | null;
+  endDate: string | null;
 }
 
 export async function getPositionSnapshots(params: GetPositionSnapshotsParams) {
   const { positionId } = params;
 
-  const startDate = params?.startDate ? new Date(params.startDate) : undefined;
-  const endDate = params?.endDate ? new Date(params.endDate) : undefined;
+  const startDate = params.startDate ? new Date(params.startDate) : undefined;
+  const endDate = params.endDate ? new Date(params.endDate) : undefined;
 
   const snapshots = await fetchPositionSnapshots({
     positionId,

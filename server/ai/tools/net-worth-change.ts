@@ -3,12 +3,13 @@
 import { fetchNetWorthChange } from "@/server/analysis/net-worth-change";
 
 interface GetNetWorthChangeParams {
-  baseCurrency?: string;
-  weeksBack?: number;
+  baseCurrency: string | null;
+  weeksBack: number | null;
 }
 
-export async function getNetWorthChange(params: GetNetWorthChangeParams = {}) {
-  const { baseCurrency, weeksBack = 24 } = params;
+export async function getNetWorthChange(params: GetNetWorthChangeParams) {
+  const baseCurrency = params.baseCurrency ?? undefined;
+  const weeksBack = params.weeksBack ?? 24;
 
   const change = await fetchNetWorthChange({
     targetCurrency: baseCurrency,

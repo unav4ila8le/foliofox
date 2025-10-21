@@ -3,8 +3,8 @@
 import { fetchPositions } from "@/server/positions/fetch";
 
 interface GetPositionsParams {
-  positionIds?: string[];
-  date?: string; // YYYY-MM-DD (optional). Defaults to today.
+  positionIds: string[] | null;
+  date: string | null; // YYYY-MM-DD (optional). Defaults to today.
 }
 
 /**
@@ -12,7 +12,7 @@ interface GetPositionsParams {
  * - Includes archived positions by default (AI decides relevance)
  * - Values are as-of the provided date (or today) via latest snapshots/market-backed pricing
  */
-export async function getPositions(params: GetPositionsParams = {}) {
+export async function getPositions(params: GetPositionsParams) {
   const asOfDate = params.date ? new Date(params.date) : new Date();
 
   const all = await fetchPositions({
@@ -42,7 +42,7 @@ export async function getPositions(params: GetPositionsParams = {}) {
   return {
     total: filtered.length,
     returned: items.length,
-    positionIds: params.positionIds ?? null,
+    positionIds: params.positionIds,
     date: asOfDate.toISOString().split("T")[0],
     items,
   };

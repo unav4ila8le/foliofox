@@ -4,14 +4,14 @@ import { searchYahooFinanceSymbols } from "@/server/symbols/search";
 
 interface SearchSymbolsParams {
   query: string;
-  limit?: number;
+  limit: number | null;
 }
 
 export async function searchSymbols(params: SearchSymbolsParams) {
-  const { query, limit = 10 } = params;
+  const limit = params.limit ?? 10;
 
   const result = await searchYahooFinanceSymbols({
-    query,
+    query: params.query,
     limit,
   });
 
@@ -20,7 +20,7 @@ export async function searchSymbols(params: SearchSymbolsParams) {
   }
 
   return {
-    query,
+    query: params.query,
     total: result.data?.length || 0,
     symbols: result.data || [],
   };

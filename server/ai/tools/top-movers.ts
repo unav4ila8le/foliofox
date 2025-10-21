@@ -3,16 +3,21 @@
 import { getAssetsPerformance } from "./assets-performance";
 
 interface GetTopMoversParams {
-  baseCurrency?: string;
-  startDate?: string;
-  endDate?: string;
-  limit?: number; // defaults to 5
+  baseCurrency: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  limit: number | null; // defaults to 5
 }
 
-export async function getTopMovers(params: GetTopMoversParams = {}) {
-  const { baseCurrency, startDate, endDate, limit = 5 } = params;
+export async function getTopMovers(params: GetTopMoversParams) {
+  const limit = params.limit ?? 5;
 
-  const perf = await getAssetsPerformance({ baseCurrency, startDate, endDate });
+  const perf = await getAssetsPerformance({
+    baseCurrency: params.baseCurrency,
+    positionIds: null, // Not filtering by specific positions
+    startDate: params.startDate,
+    endDate: params.endDate,
+  });
 
   const assets = perf.assets;
 
