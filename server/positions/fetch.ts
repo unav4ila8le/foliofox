@@ -4,7 +4,7 @@ import { format } from "date-fns";
 
 import { getCurrentUser } from "@/server/auth/actions";
 import { fetchMarketData } from "@/server/market-data/fetch";
-import { MARKET_DATA_HANDLERS } from "@/server/market-data/sources/registry";
+import { resolveMarketDataForPositions } from "@/server/market-data/sources/resolver";
 
 import type { MarketDataPosition } from "@/server/market-data/sources/types";
 import type {
@@ -101,6 +101,15 @@ export async function fetchPositions(options: FetchPositionsOptions = {}) {
 
   const positionIds = positions.map((position) => position.id);
 
+  const marketDataPositionsAll: MarketDataPosition[] = positions.map(
+    (position) => ({
+      id: position.id,
+      currency: position.currency,
+      symbol_id: position.symbol_id ?? null,
+      domain_id: position.domain_id ?? null,
+    }),
+  );
+
   // Build snapshot query for as-of valuation or latest
   let snapshotsQuery = supabase
     .from("position_snapshots")
@@ -128,19 +137,30 @@ export async function fetchPositions(options: FetchPositionsOptions = {}) {
     }
   });
 
+  const { MARKET_DATA_HANDLERS } = await import(
+    "@/server/market-data/sources/registry"
+  );
+
+  const resolutionDate = asOfDate ?? new Date();
+  const allResolutions = resolveMarketDataForPositions(
+    MARKET_DATA_HANDLERS,
+    marketDataPositionsAll,
+    resolutionDate,
+  );
+
   // Fetch market data prices when asOfDate is provided
   let priceMap = new Map<string, number>();
   if (asOfDate !== null) {
     const activePositionIds = new Set(latestSnapshotByPositionId.keys());
-    const marketPositions: MarketDataPosition[] = positions
-      .filter((position) => activePositionIds.has(position.id))
-      .map((position) => ({
-        currency: position.currency,
-        symbol_id: position.symbol_id ?? null,
-        domain_id: position.domain_id ?? null,
-      }));
+    const positionsForMarketData = marketDataPositionsAll.filter((position) =>
+      activePositionIds.has(position.id),
+    );
 
-    priceMap = await fetchMarketData(marketPositions, asOfDate as Date);
+    const marketData = await fetchMarketData(
+      positionsForMarketData,
+      asOfDate as Date,
+    );
+    priceMap = marketData.prices;
   }
 
   // Transform into UI-friendly shape
@@ -150,27 +170,14 @@ export async function fetchPositions(options: FetchPositionsOptions = {}) {
 
     // Use market price if available, otherwise fallback to snapshot unit value
     let current_unit_value = latestSnapshot?.unit_value ?? 0;
-    if (
-      asOfDate !== null &&
-      (position.symbol_id !== null || position.domain_id !== null)
-    ) {
-      const handler = MARKET_DATA_HANDLERS.find(
-        (h) => h.source === (position.symbol_id ? "symbol" : "domain"),
-      );
-      if (handler) {
-        const key = handler.getKey(
-          {
-            currency: position.currency,
-            symbol_id: position.symbol_id ?? null,
-            domain_id: position.domain_id ?? null,
-          },
-          asOfDate as Date,
-        );
-        current_unit_value = priceMap.get(key ?? "") ?? current_unit_value;
+    if (asOfDate !== null) {
+      const price = priceMap.get(position.id);
+      if (price !== undefined) {
+        current_unit_value = price;
       }
     }
 
-    const has_market_data = Boolean(position.symbol_id || position.domain_id);
+    const has_market_data = allResolutions.has(position.id);
 
     return {
       ...(position as Position),

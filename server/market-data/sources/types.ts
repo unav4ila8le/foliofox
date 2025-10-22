@@ -7,7 +7,7 @@ import type { TransformedPosition } from "@/types/global.types";
  * - Market data fetching for its source type
  * - Key generation for price lookups
  */
-export type MarketDataPosition = Pick<TransformedPosition, "currency"> &
+export type MarketDataPosition = Pick<TransformedPosition, "id" | "currency"> &
   Partial<Pick<TransformedPosition, "symbol_id" | "domain_id">>;
 
 export interface MarketDataHandler {

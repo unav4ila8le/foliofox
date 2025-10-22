@@ -192,11 +192,11 @@ N/A
 - [ ] Find a way to have a more accurate historical calculation which doesn't add much overhead. WeeksBack solution is fast but not accurate cause the date is "rounded" to match weeks and not days.
 - [x] Landingpage
 - [x] New UX for adding new positions (one form per position source)
-- [ ] Add tool for fetching historical quotes for symbols
-- [ ] Add tool for getting dividend yield given symbol
+- [ ] Add ai tool for fetching historical quotes for symbols
+- [ ] Add ai tool for getting dividend yield given symbol
 - [ ] Add Plaid for user positions sync
 - [ ] Add currency using InputGroup to currency inputs in forms
-- [ ] Let users reset the cost basis for a position
+- [ ] Let users intuitively reset the cost basis for a position
 
 ---
 
@@ -208,7 +208,6 @@ N/A
 - [x] Optimize recalculateRecords to use batch requests
 - [ ] Add crypto wallet address sync
 - [ ] Add cron job for domain valuations (after upgrading Vercel account)
-- [ ] Parallelize extension fetching in fetchPositions when multiple handlers
 - [ ] Add real estate market estimate
 - [ ] Add private equity valuation
 
