@@ -3,14 +3,14 @@
 import { format } from "date-fns";
 
 import { fetchProfile } from "@/server/profile/actions";
-import { fetchHoldings } from "@/server/holdings/fetch";
+import { fetchPositions } from "@/server/positions/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 
 import { convertCurrency } from "@/lib/currency-conversion";
 
 interface GetCurrencyExposureParams {
-  baseCurrency?: string;
-  date?: string; // YYYY-MM-DD (optional). Defaults to today.
+  baseCurrency: string | null;
+  date: string | null; // YYYY-MM-DD (optional). Defaults to today.
 }
 
 interface CurrencyExposureItem {
@@ -19,7 +19,7 @@ interface CurrencyExposureItem {
   valueBase: number;
   pct: number;
   fx: number; // 1 unit of currency -> baseCurrency
-  holdingsCount: number;
+  assetsCount: number;
 }
 
 interface CurrencyExposureResult {
@@ -33,11 +33,11 @@ interface CurrencyExposureResult {
 
 /**
  * Currency exposure as-of a date:
- * - Uses holdings valued as-of (records/market-backed handled upstream)
+ * - Uses positions (assets) valued as-of (market-backed handled upstream)
  * - Converts local totals to baseCurrency using FX as-of date
  */
 export async function getCurrencyExposure(
-  params: GetCurrencyExposureParams = {},
+  params: GetCurrencyExposureParams,
 ): Promise<CurrencyExposureResult> {
   try {
     const { profile } = await fetchProfile();
@@ -46,13 +46,14 @@ export async function getCurrencyExposure(
     const date = params.date ? new Date(params.date) : new Date();
     const dateKey = format(date, "yyyy-MM-dd");
 
-    // Fetch holdings valued as-of the date
-    const holdings = await fetchHoldings({
+    // Fetch positions (assets) valued as-of the date
+    const positions = await fetchPositions({
+      positionType: "asset",
       includeArchived: true,
       asOfDate: date,
     });
 
-    if (!holdings?.length) {
+    if (!positions?.length) {
       return {
         baseCurrency,
         date: dateKey,
@@ -63,7 +64,7 @@ export async function getCurrencyExposure(
 
     // Fetch FX rates for conversion
     const uniqueCurrencies = new Set<string>();
-    holdings.forEach((h) => uniqueCurrencies.add(h.currency));
+    positions.forEach((p) => uniqueCurrencies.add(p.currency));
     uniqueCurrencies.add(baseCurrency);
 
     const exchangeRequests = Array.from(uniqueCurrencies).map((currency) => ({
@@ -73,22 +74,22 @@ export async function getCurrencyExposure(
 
     const exchangeRates = await fetchExchangeRates(exchangeRequests);
 
-    // Aggregate by original holding currency using as-of local totals
+    // Aggregate by original position currency using as-of local totals
     const byCurrency = new Map<
       string,
-      { valueLocal: number; holdingsCount: number }
+      { valueLocal: number; assetsCount: number }
     >();
 
-    holdings.forEach((h) => {
-      const localValue = h.total_value || 0;
+    positions.forEach((p) => {
+      const localValue = p.total_value || 0;
 
-      const acc = byCurrency.get(h.currency) || {
+      const acc = byCurrency.get(p.currency) || {
         valueLocal: 0,
-        holdingsCount: 0,
+        assetsCount: 0,
       };
       acc.valueLocal += localValue;
-      acc.holdingsCount += 1;
-      byCurrency.set(h.currency, acc);
+      acc.assetsCount += 1;
+      byCurrency.set(p.currency, acc);
     });
 
     // Map to result items with conversion and pct computation
@@ -114,7 +115,7 @@ export async function getCurrencyExposure(
           valueBase,
           pct: 0, // set after total
           fx,
-          holdingsCount: data.holdingsCount,
+          assetsCount: data.assetsCount,
         };
       },
     );

@@ -1,6 +1,6 @@
 "use server";
 
-import { fetchHoldings } from "@/server/holdings/fetch";
+import { fetchPositions } from "@/server/positions/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 
 import { convertCurrency } from "@/lib/currency-conversion";
@@ -13,19 +13,20 @@ export async function calculateAssetAllocation(
   targetCurrency: string,
   date: Date = new Date(),
 ) {
-  // 1. Fetch holdings valued as-of date (no records required)
-  const holdings = await fetchHoldings({
+  // 1. Fetch positions valued as-of date (no snapshots histories needed)
+  const positions = await fetchPositions({
+    positionType: "asset",
     includeArchived: true,
     asOfDate: date,
   });
 
-  if (!holdings?.length) {
+  if (!positions?.length) {
     return [];
   }
 
   // 2. Fetch FX rates for conversion
   const uniqueCurrencies = new Set<string>();
-  holdings.forEach((h) => uniqueCurrencies.add(h.currency));
+  positions.forEach((p) => uniqueCurrencies.add(p.currency));
   uniqueCurrencies.add(targetCurrency);
 
   const exchangeRequests = Array.from(uniqueCurrencies).map((currency) => ({
@@ -35,49 +36,49 @@ export async function calculateAssetAllocation(
 
   const exchangeRates = await fetchExchangeRates(exchangeRequests);
 
-  // 3. Convert each holding's local total value to target currency
-  const holdingsInTarget = holdings.map((holding) => ({
-    ...holding,
+  // 3. Convert each position's local total value to target currency
+  const positionsInTarget = positions.map((position) => ({
+    ...position,
     total_value_target: convertCurrency(
-      holding.total_value,
-      holding.currency,
+      position.total_value,
+      position.currency,
       targetCurrency,
       exchangeRates,
       date,
     ),
   }));
 
-  // 5. Group by category and sum target-currency values
+  // 4. Group by category and sum target-currency values
   const assetAllocationInTarget: {
     [key: string]: {
-      category_code: string;
+      category_id: string;
       name: string;
       total_value_target: number;
     };
   } = {};
 
-  holdingsInTarget.forEach((holding) => {
-    const category_code = holding.category_code;
+  positionsInTarget.forEach((position) => {
+    const category_id = position.category_id;
 
-    if (assetAllocationInTarget[category_code]) {
-      assetAllocationInTarget[category_code].total_value_target +=
-        holding.total_value_target;
+    if (assetAllocationInTarget[category_id]) {
+      assetAllocationInTarget[category_id].total_value_target +=
+        position.total_value_target;
     } else {
-      assetAllocationInTarget[category_code] = {
-        category_code,
-        name: holding.asset_categories.name,
-        total_value_target: holding.total_value_target,
+      assetAllocationInTarget[category_id] = {
+        category_id: category_id,
+        name: (position as { category_name?: string }).category_name || "",
+        total_value_target: position.total_value_target,
       };
     }
   });
 
   const assetAllocation = Object.values(assetAllocationInTarget)
     .map((allocation) => ({
-      category_code: allocation.category_code,
+      category_id: allocation.category_id,
       name: allocation.name,
       total_value: allocation.total_value_target,
     }))
-    .sort((a, b) => b.total_value - a.total_value); // Sort by value descending
+    .sort((a, b) => b.total_value - a.total_value);
 
   return assetAllocation;
 }

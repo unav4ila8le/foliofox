@@ -1,4 +1,4 @@
-import type { HoldingRow } from "@/lib/import/types";
+import type { PositionImportRow } from "@/lib/import/types";
 
 function escapeCSVCell(value: string): string {
   const v = String(value ?? "");
@@ -6,10 +6,10 @@ function escapeCSVCell(value: string): string {
   return `"${escaped}"`;
 }
 
-export function holdingsToCSV(rows: HoldingRow[]): string {
+export function positionsToCSV(rows: PositionImportRow[]): string {
   const headers = [
     "name",
-    "category_code",
+    "category_id",
     "currency",
     "quantity",
     "unit_value",
@@ -21,26 +21,26 @@ export function holdingsToCSV(rows: HoldingRow[]): string {
   const lines: string[] = [];
   lines.push(headers.join(","));
 
-  for (const h of rows) {
-    const qty = Number.isFinite(h.quantity) ? String(h.quantity) : "";
+  for (const p of rows) {
+    const qty = Number.isFinite(p.quantity) ? String(p.quantity) : "";
     const unit =
-      h.unit_value != null && Number.isFinite(h.unit_value)
-        ? String(h.unit_value)
+      p.unit_value != null && Number.isFinite(p.unit_value)
+        ? String(p.unit_value)
         : "";
     const cost =
-      h.cost_basis_per_unit != null && Number.isFinite(h.cost_basis_per_unit)
-        ? String(h.cost_basis_per_unit)
+      p.cost_basis_per_unit != null && Number.isFinite(p.cost_basis_per_unit)
+        ? String(p.cost_basis_per_unit)
         : "";
 
     const cells = [
-      h.name,
-      h.category_code,
-      h.currency,
+      p.name,
+      p.category_id,
+      p.currency,
       qty,
       unit,
       cost,
-      h.symbol_id ?? "",
-      h.description ?? "",
+      p.symbol_id ?? "",
+      p.description ?? "",
     ].map(escapeCSVCell);
 
     lines.push(cells.join(","));

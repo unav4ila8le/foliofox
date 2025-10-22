@@ -1,40 +1,41 @@
 "use server";
 
-import { getHoldingsPerformance } from "./holdings-performance";
+import { getAssetsPerformance } from "./assets-performance";
 
 interface GetTopMoversParams {
-  baseCurrency?: string;
-  startDate?: string;
-  endDate?: string;
-  limit?: number; // defaults to 5
+  baseCurrency: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  limit: number | null; // defaults to 5
 }
 
-export async function getTopMovers(params: GetTopMoversParams = {}) {
-  const { baseCurrency, startDate, endDate, limit = 5 } = params;
+export async function getTopMovers(params: GetTopMoversParams) {
+  const limit = params.limit ?? 5;
 
-  const perf = await getHoldingsPerformance({
-    baseCurrency,
-    startDate,
-    endDate,
+  const perf = await getAssetsPerformance({
+    baseCurrency: params.baseCurrency,
+    positionIds: null, // Not filtering by specific positions
+    startDate: params.startDate,
+    endDate: params.endDate,
   });
 
-  const holdings = perf.holdings;
+  const assets = perf.assets;
 
-  const byPct = [...holdings].sort(
+  const byPct = [...assets].sort(
     (a, b) => b.performance.priceReturnPct - a.performance.priceReturnPct,
   );
-  const byAbs = [...holdings].sort(
+  const byAbs = [...assets].sort(
     (a, b) => b.performance.valueChangeAbs - a.performance.valueChangeAbs,
   );
 
-  const mapItem = (h: (typeof holdings)[number]) => ({
-    holding: h.holding,
-    startValue: h.value.startBase,
-    endValue: h.value.endBase,
-    priceReturnPct: h.performance.priceReturnPct,
-    valueChangeAbs: h.performance.valueChangeAbs,
-    valueChangePct: h.performance.valueChangePct,
-    partialPeriod: h.period.partialPeriod,
+  const mapItem = (a: (typeof assets)[number]) => ({
+    asset: a.asset,
+    startValue: a.value.startBase,
+    endValue: a.value.endBase,
+    priceReturnPct: a.performance.priceReturnPct,
+    valueChangeAbs: a.performance.valueChangeAbs,
+    valueChangePct: a.performance.valueChangePct,
+    partialPeriod: a.period.partialPeriod,
   });
 
   const gainersByPct = byPct.slice(0, limit).map(mapItem);
@@ -43,13 +44,13 @@ export async function getTopMovers(params: GetTopMoversParams = {}) {
   const gainersByAbs = byAbs.slice(0, limit).map(mapItem);
   const losersByAbs = byAbs.slice(-limit).reverse().map(mapItem);
 
-  const partialCount = holdings.reduce(
-    (acc, h) => acc + (h.period.partialPeriod ? 1 : 0),
+  const partialCount = assets.reduce(
+    (acc, a) => acc + (a.period.partialPeriod ? 1 : 0),
     0,
   );
 
   return {
-    summary: `Top movers among ${holdings.length} holdings`,
+    summary: `Top movers among ${assets.length} assets`,
     baseCurrency: perf.period.baseCurrency,
     period: {
       startDate: perf.period.startDate,
@@ -57,7 +58,7 @@ export async function getTopMovers(params: GetTopMoversParams = {}) {
       daysCount: perf.period.daysCount,
     },
     limit,
-    analyzed: holdings.length,
+    analyzed: assets.length,
     partialPeriodCount: partialCount,
     topByPct: {
       gainers: gainersByPct,

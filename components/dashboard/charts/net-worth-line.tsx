@@ -14,12 +14,12 @@ import {
 } from "@/server/analysis/net-worth-change";
 
 import {
+  ResponsiveContainer,
   AreaChart,
   Area,
   XAxis,
   YAxis,
   CartesianGrid,
-  ResponsiveContainer,
   Tooltip,
 } from "recharts";
 import {
@@ -35,8 +35,8 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { NewHoldingButton } from "@/components/dashboard/new-holding";
-import { ImportHoldingsButton } from "@/components/dashboard/holdings/import";
+import { NewAssetButton } from "@/components/dashboard/new-asset";
+import { ImportPositionsButton } from "@/components/dashboard/positions/import";
 import {
   usePrivacyMode,
   PrivacyModeButton,
@@ -127,11 +127,11 @@ export function NetWorthLineChart({
           </div>
           <p className="mt-3 font-medium">Net Worth History</p>
           <p className="text-muted-foreground mt-1 mb-3 text-sm">
-            Add your holdings to start tracking your net worth
+            Add your assets to start tracking your net worth
           </p>
           <div className="flex items-center justify-center gap-2">
-            <NewHoldingButton variant="outline" />
-            <ImportHoldingsButton variant="outline" />
+            <NewAssetButton variant="outline" />
+            <ImportPositionsButton variant="outline" />
           </div>
         </CardContent>
       ) : (

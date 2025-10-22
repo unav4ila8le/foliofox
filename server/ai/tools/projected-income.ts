@@ -3,14 +3,13 @@
 import { calculateProjectedIncome } from "@/server/analysis/projected-income";
 
 interface GetProjectedIncomeParams {
-  baseCurrency?: string;
-  monthsAhead?: number;
+  baseCurrency: string | null;
+  monthsAhead: number | null;
 }
 
-export async function getProjectedIncome(
-  params: GetProjectedIncomeParams = {},
-) {
-  const { baseCurrency, monthsAhead = 12 } = params;
+export async function getProjectedIncome(params: GetProjectedIncomeParams) {
+  const baseCurrency = params.baseCurrency ?? undefined;
+  const monthsAhead = params.monthsAhead ?? 12;
 
   const result = await calculateProjectedIncome(baseCurrency, monthsAhead);
 

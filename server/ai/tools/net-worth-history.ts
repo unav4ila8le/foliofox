@@ -3,14 +3,13 @@
 import { fetchNetWorthHistory } from "@/server/analysis/net-worth-history";
 
 interface GetNetWorthHistoryParams {
-  baseCurrency?: string;
-  weeksBack?: number;
+  baseCurrency: string | null;
+  weeksBack: number | null;
 }
 
-export async function getNetWorthHistory(
-  params: GetNetWorthHistoryParams = {},
-) {
-  const { baseCurrency, weeksBack = 24 } = params;
+export async function getNetWorthHistory(params: GetNetWorthHistoryParams) {
+  const baseCurrency = params.baseCurrency ?? undefined;
+  const weeksBack = params.weeksBack ?? 24;
 
   const history = await fetchNetWorthHistory({
     targetCurrency: baseCurrency,

@@ -2,10 +2,10 @@
 
 import { format } from "date-fns";
 import {
+  ResponsiveContainer,
   Bar,
   BarChart,
   CartesianGrid,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,

@@ -379,13 +379,13 @@ function Sidebar({
 
   React.useEffect(() => {
     if (isSheetMobile) {
-      // If we’re in sheet mode but desktop state was toggled, move it to mobile state
+      // If we're in sheet mode but desktop state was toggled, move it to mobile state
       if (open && !openMobile) {
         setOpenMobile(true);
         setOpen(false);
       }
     } else {
-      // If we’re in desktop mode but mobile state was toggled, move it to desktop state
+      // If we're in desktop mode but mobile state was toggled, move it to desktop state
       if (openMobile && !open) {
         setOpen(true);
         setOpenMobile(false);

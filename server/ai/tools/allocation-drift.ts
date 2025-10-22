@@ -6,12 +6,12 @@ import { fetchProfile } from "@/server/profile/actions";
 import { calculateAssetAllocation } from "@/server/analysis/asset-allocation";
 
 interface GetAllocationDriftParams {
-  baseCurrency?: string;
+  baseCurrency: string | null;
   compareToDate: string; // YYYY-MM-DD
 }
 
 interface CategoryDrift {
-  code: string;
+  id: string;
   name: string;
   previousValue: number;
   currentValue: number;
@@ -65,23 +65,23 @@ export async function getAllocationDrift(params: GetAllocationDriftParams) {
     );
 
     // Create maps for easy lookup
-    const prevByCode = new Map(
-      previousAllocation.map((cat) => [cat.category_code, cat]),
+    const prevById = new Map(
+      previousAllocation.map((cat) => [cat.category_id, cat]),
     );
-    const currByCode = new Map(
-      currentAllocation.map((cat) => [cat.category_code, cat]),
+    const currById = new Map(
+      currentAllocation.map((cat) => [cat.category_id, cat]),
     );
 
     // Get all unique category codes
-    const allCodes = new Set([
-      ...previousAllocation.map((cat) => cat.category_code),
-      ...currentAllocation.map((cat) => cat.category_code),
+    const allIds = new Set([
+      ...previousAllocation.map((cat) => cat.category_id),
+      ...currentAllocation.map((cat) => cat.category_id),
     ]);
 
     // Build category drift list
-    const categories: CategoryDrift[] = Array.from(allCodes).map((code) => {
-      const prev = prevByCode.get(code);
-      const curr = currByCode.get(code);
+    const categories: CategoryDrift[] = Array.from(allIds).map((id) => {
+      const prev = prevById.get(id);
+      const curr = currById.get(id);
 
       const previousValue = prev?.total_value || 0;
       const currentValue = curr?.total_value || 0;
@@ -92,7 +92,7 @@ export async function getAllocationDrift(params: GetAllocationDriftParams) {
       const deltaPct = currentPct - previousPct;
 
       return {
-        code,
+        id,
         name: curr?.name || prev?.name || "",
         previousValue,
         currentValue,

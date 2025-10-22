@@ -9,51 +9,57 @@ export type Profile = Pick<
 // Currency
 export type Currency = Pick<Tables<"currencies">, "alphabetic_code" | "name">;
 
-// Holding
-export type Holding = Tables<"holdings"> & {
-  asset_categories: Pick<Tables<"asset_categories">, "name" | "display_order">;
-};
+// Positions
+export type Position = Tables<"positions">;
 
-export type TransformedHolding = Holding & {
+export type TransformedPosition = Position & {
   is_archived: boolean;
-  asset_type: string;
-  symbol_id: string | null;
-  domain_id: string | null;
+  category_name?: string;
   current_quantity: number;
   current_unit_value: number;
   total_value: number;
+  has_market_data: boolean;
+  cost_basis_per_unit?: number | null;
 };
 
-export type HoldingWithCostBasis = TransformedHolding & {
-  cost_basis_per_unit: number;
+export type PositionWithProfitLoss = TransformedPosition & {
+  profit_loss: number;
+  profit_loss_percentage: number;
   total_cost_basis: number;
 };
 
-export type HoldingWithProfitLoss = HoldingWithCostBasis & {
-  profit_loss: number;
-  profit_loss_percentage: number;
-};
+// Portfolio Record
+export type PortfolioRecord = Tables<"portfolio_records">;
 
-// Transaction
-export type Transaction = Tables<"transactions">;
-
-export type TransactionWithHolding = Transaction & {
-  holdings: Pick<
-    Tables<"holdings">,
-    "id" | "name" | "currency" | "archived_at"
+export type PortfolioRecordWithPosition = PortfolioRecord & {
+  positions: Pick<
+    Tables<"positions">,
+    "id" | "name" | "currency" | "type" | "archived_at"
   >;
+  position_snapshots?:
+    | Pick<
+        Tables<"position_snapshots">,
+        "id" | "cost_basis_per_unit" | "date" | "created_at"
+      >
+    | Array<
+        Pick<
+          Tables<"position_snapshots">,
+          "id" | "cost_basis_per_unit" | "date" | "created_at"
+        >
+      >
+    | null;
 };
 
-// Record
-export type Record = Tables<"records">;
+// Position Snapshots
+export type PositionSnapshot = Tables<"position_snapshots">;
 
-export type TransformedRecord = Record & {
+export type TransformedPositionSnapshot = PositionSnapshot & {
   total_value: number;
   currency: string;
 };
 
-// Asset Category
-export type AssetCategory = Tables<"asset_categories">;
+// Position Categories
+export type PositionCategory = Tables<"position_categories">;
 
 // Exchange Rate
 export type ExchangeRate = Tables<"exchange_rates">;

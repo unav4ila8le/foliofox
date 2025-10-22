@@ -14,27 +14,6 @@ export type Database = {
   };
   public: {
     Tables: {
-      asset_categories: {
-        Row: {
-          code: string;
-          description: string | null;
-          display_order: number;
-          name: string;
-        };
-        Insert: {
-          code: string;
-          description?: string | null;
-          display_order: number;
-          name: string;
-        };
-        Update: {
-          code?: string;
-          description?: string | null;
-          display_order?: number;
-          name?: string;
-        };
-        Relationships: [];
-      };
       conversation_messages: {
         Row: {
           content: string;
@@ -210,32 +189,6 @@ export type Database = {
           },
         ];
       };
-      domain_holdings: {
-        Row: {
-          created_at: string;
-          domain_id: string;
-          holding_id: string;
-        };
-        Insert: {
-          created_at?: string;
-          domain_id: string;
-          holding_id: string;
-        };
-        Update: {
-          created_at?: string;
-          domain_id?: string;
-          holding_id?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "domain_holdings_holding_id_fkey";
-            columns: ["holding_id"];
-            isOneToOne: true;
-            referencedRelation: "holdings";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
       domain_valuations: {
         Row: {
           created_at: string;
@@ -326,60 +279,6 @@ export type Database = {
         };
         Relationships: [];
       };
-      holdings: {
-        Row: {
-          archived_at: string | null;
-          category_code: string;
-          created_at: string;
-          currency: string;
-          description: string | null;
-          id: string;
-          name: string;
-          source: Database["public"]["Enums"]["holding_source"];
-          updated_at: string;
-          user_id: string;
-        };
-        Insert: {
-          archived_at?: string | null;
-          category_code?: string;
-          created_at?: string;
-          currency: string;
-          description?: string | null;
-          id?: string;
-          name: string;
-          source?: Database["public"]["Enums"]["holding_source"];
-          updated_at?: string;
-          user_id?: string;
-        };
-        Update: {
-          archived_at?: string | null;
-          category_code?: string;
-          created_at?: string;
-          currency?: string;
-          description?: string | null;
-          id?: string;
-          name?: string;
-          source?: Database["public"]["Enums"]["holding_source"];
-          updated_at?: string;
-          user_id?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "holdings_category_code_fkey";
-            columns: ["category_code"];
-            isOneToOne: false;
-            referencedRelation: "asset_categories";
-            referencedColumns: ["code"];
-          },
-          {
-            foreignKeyName: "holdings_currency_fkey";
-            columns: ["currency"];
-            isOneToOne: false;
-            referencedRelation: "currencies";
-            referencedColumns: ["alphabetic_code"];
-          },
-        ];
-      };
       news: {
         Row: {
           created_at: string;
@@ -415,6 +314,198 @@ export type Database = {
           yahoo_uuid?: string;
         };
         Relationships: [];
+      };
+      portfolio_records: {
+        Row: {
+          created_at: string;
+          date: string;
+          description: string | null;
+          id: string;
+          position_id: string;
+          quantity: number;
+          type: Database["public"]["Enums"]["portfolio_record_type"];
+          unit_value: number;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          date?: string;
+          description?: string | null;
+          id?: string;
+          position_id: string;
+          quantity: number;
+          type: Database["public"]["Enums"]["portfolio_record_type"];
+          unit_value: number;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          date?: string;
+          description?: string | null;
+          id?: string;
+          position_id?: string;
+          quantity?: number;
+          type?: Database["public"]["Enums"]["portfolio_record_type"];
+          unit_value?: number;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "portfolio_records_position_id_fkey";
+            columns: ["position_id"];
+            isOneToOne: false;
+            referencedRelation: "positions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      position_categories: {
+        Row: {
+          description: string | null;
+          display_order: number;
+          id: string;
+          name: string;
+          position_type: Database["public"]["Enums"]["position_type"];
+        };
+        Insert: {
+          description?: string | null;
+          display_order: number;
+          id: string;
+          name: string;
+          position_type: Database["public"]["Enums"]["position_type"];
+        };
+        Update: {
+          description?: string | null;
+          display_order?: number;
+          id?: string;
+          name?: string;
+          position_type?: Database["public"]["Enums"]["position_type"];
+        };
+        Relationships: [];
+      };
+      position_snapshots: {
+        Row: {
+          cost_basis_per_unit: number | null;
+          created_at: string;
+          date: string;
+          id: string;
+          portfolio_record_id: string | null;
+          position_id: string;
+          quantity: number;
+          unit_value: number;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          cost_basis_per_unit?: number | null;
+          created_at?: string;
+          date: string;
+          id?: string;
+          portfolio_record_id?: string | null;
+          position_id: string;
+          quantity: number;
+          unit_value: number;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          cost_basis_per_unit?: number | null;
+          created_at?: string;
+          date?: string;
+          id?: string;
+          portfolio_record_id?: string | null;
+          position_id?: string;
+          quantity?: number;
+          unit_value?: number;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "position_snapshots_portfolio_record_id_fkey";
+            columns: ["portfolio_record_id"];
+            isOneToOne: true;
+            referencedRelation: "portfolio_records";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "position_snapshots_position_id_fkey";
+            columns: ["position_id"];
+            isOneToOne: false;
+            referencedRelation: "positions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      positions: {
+        Row: {
+          archived_at: string | null;
+          category_id: string;
+          created_at: string;
+          currency: string;
+          description: string | null;
+          domain_id: string | null;
+          id: string;
+          name: string;
+          symbol_id: string | null;
+          type: Database["public"]["Enums"]["position_type"];
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          archived_at?: string | null;
+          category_id?: string;
+          created_at?: string;
+          currency: string;
+          description?: string | null;
+          domain_id?: string | null;
+          id?: string;
+          name: string;
+          symbol_id?: string | null;
+          type: Database["public"]["Enums"]["position_type"];
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          archived_at?: string | null;
+          category_id?: string;
+          created_at?: string;
+          currency?: string;
+          description?: string | null;
+          domain_id?: string | null;
+          id?: string;
+          name?: string;
+          symbol_id?: string | null;
+          type?: Database["public"]["Enums"]["position_type"];
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "positions_category_id_fkey";
+            columns: ["category_id"];
+            isOneToOne: false;
+            referencedRelation: "position_categories";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "positions_currency_fkey";
+            columns: ["currency"];
+            isOneToOne: false;
+            referencedRelation: "currencies";
+            referencedColumns: ["alphabetic_code"];
+          },
+          {
+            foreignKeyName: "positions_symbol_id_fkey";
+            columns: ["symbol_id"];
+            isOneToOne: false;
+            referencedRelation: "symbols";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       profiles: {
         Row: {
@@ -483,96 +574,6 @@ export type Database = {
           },
         ];
       };
-      records: {
-        Row: {
-          cost_basis_per_unit: number | null;
-          created_at: string;
-          date: string;
-          description: string | null;
-          holding_id: string;
-          id: string;
-          quantity: number;
-          transaction_id: string | null;
-          unit_value: number;
-          updated_at: string;
-          user_id: string;
-        };
-        Insert: {
-          cost_basis_per_unit?: number | null;
-          created_at?: string;
-          date?: string;
-          description?: string | null;
-          holding_id: string;
-          id?: string;
-          quantity: number;
-          transaction_id?: string | null;
-          unit_value: number;
-          updated_at?: string;
-          user_id: string;
-        };
-        Update: {
-          cost_basis_per_unit?: number | null;
-          created_at?: string;
-          date?: string;
-          description?: string | null;
-          holding_id?: string;
-          id?: string;
-          quantity?: number;
-          transaction_id?: string | null;
-          unit_value?: number;
-          updated_at?: string;
-          user_id?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "records_holding_id_fkey";
-            columns: ["holding_id"];
-            isOneToOne: false;
-            referencedRelation: "holdings";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "records_transaction_id_fkey";
-            columns: ["transaction_id"];
-            isOneToOne: false;
-            referencedRelation: "transactions";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
-      symbol_holdings: {
-        Row: {
-          created_at: string;
-          holding_id: string;
-          symbol_id: string;
-        };
-        Insert: {
-          created_at?: string;
-          holding_id: string;
-          symbol_id: string;
-        };
-        Update: {
-          created_at?: string;
-          holding_id?: string;
-          symbol_id?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "symbol_holdings_holding_id_fkey";
-            columns: ["holding_id"];
-            isOneToOne: true;
-            referencedRelation: "holdings";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "symbol_holdings_symbol_id_fkey";
-            columns: ["symbol_id"];
-            isOneToOne: false;
-            referencedRelation: "symbols";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
       symbols: {
         Row: {
           created_at: string;
@@ -620,53 +621,6 @@ export type Database = {
           },
         ];
       };
-      transactions: {
-        Row: {
-          created_at: string | null;
-          date: string;
-          description: string | null;
-          holding_id: string;
-          id: string;
-          quantity: number;
-          type: Database["public"]["Enums"]["transaction_type"];
-          unit_value: number;
-          updated_at: string | null;
-          user_id: string;
-        };
-        Insert: {
-          created_at?: string | null;
-          date: string;
-          description?: string | null;
-          holding_id: string;
-          id?: string;
-          quantity: number;
-          type: Database["public"]["Enums"]["transaction_type"];
-          unit_value: number;
-          updated_at?: string | null;
-          user_id: string;
-        };
-        Update: {
-          created_at?: string | null;
-          date?: string;
-          description?: string | null;
-          holding_id?: string;
-          id?: string;
-          quantity?: number;
-          type?: Database["public"]["Enums"]["transaction_type"];
-          unit_value?: number;
-          updated_at?: string | null;
-          user_id?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "transactions_holding_id_fkey";
-            columns: ["holding_id"];
-            isOneToOne: false;
-            referencedRelation: "holdings";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
     };
     Views: {
       [_ in never]: never;
@@ -677,8 +631,8 @@ export type Database = {
     Enums: {
       conversation_role: "system" | "user" | "assistant" | "tool";
       feedback_type: "issue" | "idea" | "other";
-      holding_source: "custom" | "symbol" | "domain";
-      transaction_type: "buy" | "sell" | "update" | "deposit" | "withdrawal";
+      portfolio_record_type: "buy" | "sell" | "update";
+      position_type: "asset" | "liability";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -811,8 +765,8 @@ export const Constants = {
     Enums: {
       conversation_role: ["system", "user", "assistant", "tool"],
       feedback_type: ["issue", "idea", "other"],
-      holding_source: ["custom", "symbol", "domain"],
-      transaction_type: ["buy", "sell", "update", "deposit", "withdrawal"],
+      portfolio_record_type: ["buy", "sell", "update"],
+      position_type: ["asset", "liability"],
     },
   },
 } as const;

@@ -3,7 +3,7 @@
 import YahooFinance from "yahoo-finance2";
 
 import { createServiceClient } from "@/supabase/service";
-import { fetchHoldings } from "@/server/holdings/fetch";
+import { fetchPositions } from "@/server/positions/fetch";
 
 import type { NewsArticle } from "@/types/global.types";
 import type { TablesInsert } from "@/types/database.types";
@@ -198,10 +198,10 @@ export async function fetchNewsForSymbols(
  */
 export async function fetchPortfolioNews(limit: number = 10) {
   try {
-    const holdings = await fetchHoldings();
-    const symbolIds = holdings
-      .filter((holding) => holding.symbol_id)
-      .map((holding) => holding.symbol_id!);
+    const positions = await fetchPositions({ positionType: "asset" });
+    const symbolIds = positions
+      .filter((p) => p.symbol_id)
+      .map((p) => p.symbol_id!);
 
     if (symbolIds.length === 0) {
       return { success: true, data: [] };
@@ -231,7 +231,7 @@ export async function fetchPortfolioNews(limit: number = 10) {
 }
 
 /**
- * Fetch news for a specific symbol (for individual holding pages)
+ * Fetch news for a specific symbol (for individual position pages)
  * @param symbolId - The symbol to fetch news for
  * @param limit - Maximum articles to return
  * @returns News articles for the symbol

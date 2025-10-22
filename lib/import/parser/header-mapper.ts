@@ -8,7 +8,7 @@
  *
  * Canonical headers used by our importer:
  *   - name
- *   - category_code
+ *   - category_id
  *   - currency
  *   - current_quantity
  *   - current_unit_value
@@ -18,7 +18,7 @@
 
 export type CanonicalHeader =
   | "name"
-  | "category_code"
+  | "category_id"
   | "currency"
   | "quantity"
   | "unit_value"
@@ -28,7 +28,7 @@ export type CanonicalHeader =
 
 // Common aliases from brokers and spreadsheets (DEGIRO, IBKR, Trading212, Fidelity, Vanguard, Schwab, eToro, etc.)
 const HEADER_ALIASES: Record<CanonicalHeader, string[]> = {
-  // Holding name/title
+  // Position name/title
   name: [
     "name",
     "product",
@@ -41,9 +41,11 @@ const HEADER_ALIASES: Record<CanonicalHeader, string[]> = {
     "instrument name",
     "holding",
     "description",
+    "position",
+    "position name",
   ],
 
-  // Symbol or ISIN (we’ll validate/normalize later)
+  // Symbol or ISIN (we'll validate/normalize later)
   symbol_id: [
     "symbol_id",
     "symbol",
@@ -109,6 +111,7 @@ const HEADER_ALIASES: Record<CanonicalHeader, string[]> = {
     "portfolio currency",
     "trade currency",
     "holding currency",
+    "position currency",
     "base currency",
     "instrument currency",
     "currency code",
@@ -118,8 +121,11 @@ const HEADER_ALIASES: Record<CanonicalHeader, string[]> = {
   description: ["description", "notes", "comment", "memo", "details"],
 
   // Optional category hints (not required; we can infer later)
-  category_code: [
+  category_id: [
+    "category_id",
     "category_code",
+    "category code",
+    "category name",
     "category",
     "asset class",
     "asset type",
@@ -189,7 +195,7 @@ export function buildCanonicalColumnMap(
 /**
  * Minimal required canonical headers.
  * Note:
- * - We do NOT require `category_code`.
+ * - We do NOT require `category_id`.
  * - For cash/physical/manual items, users typically set quantity=1 and put the total into unit value.
  */
 export const REQUIRED_HEADERS: CanonicalHeader[] = [

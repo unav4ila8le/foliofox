@@ -20,7 +20,7 @@ A modern net worth tracking app built with Next.js, Supabase, Shadcn UI, and Tai
 
 ### Prerequisites
 
-- Node.js 20+
+- Node.js 22+
 - PostgreSQL 17+ (for database schema operations)
 - A Supabase project (get your Project URL and anon key)
 - Optional: Vercel account (for one-click deploy and scheduled cron jobs)
@@ -159,54 +159,55 @@ N/A
 - [x] Add financial data API to allow users to add financial instruments like stocks and other equities ( https://github.com/gadicc/node-yahoo-finance2 )
 - [x] Add disclaimer about the fact that exchange rates and market prices are not updated in real-time but rather updated daily (10PM UTC)
 - [x] Allow users to import CSV files
-- [x] Allow users to export their holdings
+- [x] Allow users to export their positions
 - [x] Change primary button in navbar to "New" with dropdown
-- [x] Change order of new holding fields
+- [x] Change order of new position fields
 - [x] Dynamic quantity fields
-- [x] Holding current value should be the latest quote if holding has a symbol_id
+- [x] position current value should be the latest quote if position has a symbol_id
 - [x] Prevent users from adding a symbol with a currency not in the database (currency not supported yet)
-- [x] Add P/L in the holdings table (basic change from first record, no cost basis)
+- [x] Add P/L in the assets table
 - [x] Start migrating to the new JWT signing key https://supabase.com/blog/jwt-signing-keys
 - [x] Upgrade postgres version to 17 on Supabase
 - [x] Add a feedback sharing feature
-- [x] Add a dividends tracker. It should show the user the holdings that pay dividends, and their yearly/monthly expected dividend payout
+- [x] Add a dividends tracker. It should show the user the positions that pay dividends, and their yearly/monthly expected dividend payout
 - [x] Allow user to review their imports and tweak them
 - [x] Add AI powered import (import from images, pdfs, excels, and more)
 - [x] Add news based on user's portfolio
 - [x] Add domains tracking support
-- [x] Replace `quoteDate` with `asOfDate` across holdings APIs
-- [x] Add `asOfDate` behavior: market-backed holdings (symbols/domains) use market data as-of with record fallback; basic holdings use latest record ≤ date
+- [x] Replace `quoteDate` with `asOfDate` across positions APIs
+- [x] Add `asOfDate` behavior: market-backed positions (symbols/domains) use market data as-of with record fallback; basic positions use latest record ≤ date
 - [x] Centralize market data in `server/market-data/fetch.ts` with include flags:
   - `marketPrices` (quotes + domain valuations, defaults ON)
   - `exchangeRates` (FX, defaults ON)
   - Pass `{ include: { marketPrices: false } }` for FX-only scenarios
 - [x] Optimize projected income analysis
 - [x] Improve folder structure for mappings in lib
-- [x] Prevent user from creating holdings with same name
+- [x] Prevent user from creating positions with same name
 - [x] Better empty messages for news and projected income
 - [x] Review Zod helpers in lib and make them more flexible
-- [x] Let users input their cost basis (optional) for new holdings, and then use it to create the new record
+- [x] Let users input their cost basis (optional) for new positions, and then use it to create the new record
 - [x] Foliofox AI advisor. Chat with your portfolio.
 - [x] Add Transactions list on the dashboard home
 - [x] Add privacy mode (blur/hide net worth numbers)
 - [ ] Find a way to have a more accurate historical calculation which doesn't add much overhead. WeeksBack solution is fast but not accurate cause the date is "rounded" to match weeks and not days.
 - [x] Landingpage
-- [x] New UX for adding new holdings (one form per holding type)
-- [ ] Add tool for fetching historical quotes for symbols
-- [ ] Add tool for getting dividend yield given symbol
-- [ ] Add Plaid for user holding sync
+- [x] New UX for adding new positions (one form per position source)
+- [ ] Add ai tool for fetching historical quotes for symbols
+- [ ] Add ai tool for getting dividend yield given symbol
+- [ ] Add Plaid for user positions sync
+- [ ] Add currency using InputGroup to currency inputs in forms
+- [ ] Let users intuitively reset the cost basis for a position
 
 ---
 
 ### Post launch
 
-- [ ] Add optional pagination to data table (for transactions)
+- [ ] Add optional pagination to data table (for portfolio records)
 - [ ] Look at generative UI for AI chat: https://ai-sdk.dev/docs/ai-sdk-ui/generative-user-interfaces
-- [ ] Add a way for the user to "share" their portfolio. Ideally, after agreeing, they get a public sharable link which leads to a single public page view of all their holdings and relevant performance charts.
-- [ ] Optimize recalculateRecords to use batch requests
+- [ ] Add a way for the user to "share" their portfolio. Ideally, after agreeing, they get a public sharable link which leads to a single public page view of all their positions and relevant performance charts.
+- [x] Optimize recalculateRecords to use batch requests
 - [ ] Add crypto wallet address sync
 - [ ] Add cron job for domain valuations (after upgrading Vercel account)
-- [ ] Parallelize extension fetching in fetchHoldings when multiple handlers
 - [ ] Add real estate market estimate
 - [ ] Add private equity valuation
 

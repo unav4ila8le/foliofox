@@ -2,13 +2,13 @@ import { tool } from "ai";
 import { z } from "zod";
 
 import { getPortfolioSnapshot } from "./portfolio-snapshot";
-import { getHoldings } from "./holdings";
-import { getTransactions } from "./transactions";
-import { getRecords } from "./records";
+import { getPositions } from "./positions";
+import { getPortfolioRecords } from "./portfolio-records";
+import { getPositionSnapshots } from "./position-snapshots";
 import { getNetWorthHistory } from "./net-worth-history";
 import { getNetWorthChange } from "./net-worth-change";
 import { getProjectedIncome } from "./projected-income";
-import { getHoldingsPerformance } from "./holdings-performance";
+import { getAssetsPerformance } from "./assets-performance";
 import { getTopMovers } from "./top-movers";
 import { getAllocationDrift } from "./allocation-drift";
 import { getCurrencyExposure } from "./currency-exposure";
@@ -18,17 +18,17 @@ import { getNews } from "./news";
 export const aiTools = {
   getPortfolioSnapshot: tool({
     description:
-      "Get a comprehensive portfolio overview including net worth, asset allocation, and all holdings at any given date. Returns: summary, net worth value, holdings count, asset categories with percentages, and detailed holding information with values converted to base currency. Use this for both current and historical portfolio snapshots - for deeper analysis also use the other specialized tools.",
+      "Get a comprehensive portfolio overview including net worth, asset allocation, and all positions at any given date. Returns: summary, net worth value, positions count, asset categories with percentages, and detailed position information with values converted to base currency. Use this for both current and historical portfolio snapshots - for deeper analysis also use the other specialized tools.",
     inputSchema: z.object({
       baseCurrency: z
         .string()
-        .optional()
+        .nullable()
         .describe(
           "Currency code for analysis (e.g., USD, EUR, GBP, etc.). Leave empty to use the user's preferred currency.",
         ),
       date: z
         .string()
-        .optional()
+        .nullable()
         .describe(
           "Date for historical analysis in YYYY-MM-DD format (e.g., 2024-07-22). Leave empty to use the current date.",
         ),
@@ -38,46 +38,48 @@ export const aiTools = {
     },
   }),
 
-  getHoldings: tool({
+  getPositions: tool({
     description:
-      "Get raw holdings in original currencies (no FX conversion). Optionally filter by holding IDs. Uses market prices as-of the given date (defaults to today) for symbol holdings.",
+      "Get raw positions in original currencies (no FX conversion). Optionally filter by position IDs. Uses market prices as-of the given date (defaults to today) for market-backed positions (e.g., securities, domains, etc.).",
     inputSchema: z.object({
-      holdingIds: z.array(z.string()).optional(),
+      positionIds: z.array(z.string()).nullable(),
       date: z
         .string()
-        .optional()
+        .nullable()
         .describe("YYYY-MM-DD format (optional, defaults to today)"),
     }),
-    execute: async (args) => getHoldings(args),
+    execute: async (args) => getPositions(args),
   }),
 
-  getTransactions: tool({
+  getPortfolioRecords: tool({
     description:
-      "Get transactions history with optional filtering. Returns: transaction list with type, date, quantity, unit value, holding details, and metadata. Supports filtering by holding, date range, and archived status.",
+      "Get portfolio records history with optional filtering. Returns: record list with type, date, quantity, unit value, position details, and metadata. Supports filtering by position, date range, and archived status.",
     inputSchema: z.object({
-      holdingId: z.string().optional(),
-      startDate: z.string().optional().describe("YYYY-MM-DD format (optional)"),
-      endDate: z.string().optional().describe("YYYY-MM-DD format (optional)"),
+      positionId: z.string().nullable(),
+      startDate: z.string().nullable().describe("YYYY-MM-DD format (optional)"),
+      endDate: z.string().nullable().describe("YYYY-MM-DD format (optional)"),
       includeArchived: z
         .boolean()
-        .optional()
-        .describe("Include transactions from archived holdings"),
+        .nullable()
+        .describe("Include records from archived positions"),
     }),
     execute: async (args) => {
-      return getTransactions(args);
+      return getPortfolioRecords(args);
     },
   }),
 
-  getRecords: tool({
+  getPositionSnapshots: tool({
     description:
-      "Get historical records (quantity and unit value snapshots) for a specific holding. Returns: record list with date, quantity, unit value, total value, cost basis, and currency. Useful for analyzing holding performance over time.",
+      "Get historical snapshots (quantity and unit value) for a specific position. Returns: snapshot list with date, quantity, unit value, total value, and currency. Useful for analyzing position performance over time.",
     inputSchema: z.object({
-      holdingId: z.string().describe("Required holding ID to get records for"),
-      startDate: z.string().optional().describe("YYYY-MM-DD format (optional)"),
-      endDate: z.string().optional().describe("YYYY-MM-DD format (optional)"),
+      positionId: z
+        .string()
+        .describe("Required position ID to get snapshots for"),
+      startDate: z.string().nullable().describe("YYYY-MM-DD format (optional)"),
+      endDate: z.string().nullable().describe("YYYY-MM-DD format (optional)"),
     }),
     execute: async (args) => {
-      return getRecords(args);
+      return getPositionSnapshots(args);
     },
   }),
 
@@ -87,13 +89,13 @@ export const aiTools = {
     inputSchema: z.object({
       baseCurrency: z
         .string()
-        .optional()
+        .nullable()
         .describe(
           "Currency code for analysis (e.g., USD, EUR, GBP, etc.). Leave empty to use the user's preferred currency.",
         ),
       weeksBack: z
         .number()
-        .optional()
+        .nullable()
         .describe(
           "Number of weeks to look back (default: 24 weeks = ~6 months)",
         ),
@@ -109,13 +111,13 @@ export const aiTools = {
     inputSchema: z.object({
       baseCurrency: z
         .string()
-        .optional()
+        .nullable()
         .describe(
           "Currency code for analysis (e.g., USD, EUR, GBP, etc.). Leave empty to use the user's preferred currency.",
         ),
       weeksBack: z
         .number()
-        .optional()
+        .nullable()
         .describe(
           "Number of weeks to compare back (default: 24 weeks = ~6 months)",
         ),
@@ -127,17 +129,17 @@ export const aiTools = {
 
   getProjectedIncome: tool({
     description:
-      "Get projected dividend income over future months to analyze passive income potential. Returns: monthly income projections with dates, total projected income, dividend-paying holdings count, and success status. Useful for income planning and dividend strategy analysis.",
+      "Get projected dividend income over future months to analyze passive income potential. Returns: monthly income projections with dates, total projected income, dividend-paying positions count, and success status. Useful for income planning and dividend strategy analysis.",
     inputSchema: z.object({
       baseCurrency: z
         .string()
-        .optional()
+        .nullable()
         .describe(
           "Currency code for analysis (e.g., USD, EUR, GBP, etc.). Leave empty to use the user's preferred currency.",
         ),
       monthsAhead: z
         .number()
-        .optional()
+        .nullable()
         .describe(
           "Number of months to project ahead (default: 12 months = 1 year)",
         ),
@@ -147,32 +149,32 @@ export const aiTools = {
     },
   }),
 
-  getHoldingsPerformance: tool({
+  getAssetsPerformance: tool({
     description:
-      "Analyze holding(s) performance over a period. Returns price return (market move), value change (includes flows), and current unrealized P/L vs cost basis. Can analyze single holding, multiple holdings, or entire portfolio.",
+      "Analyze asset(s) performance over a period. Returns price return (market move), value change (includes flows), and current unrealized P/L vs cost basis. Can analyze single asset, multiple assets, or entire portfolio.",
     inputSchema: z.object({
       baseCurrency: z
         .string()
-        .optional()
+        .nullable()
         .describe(
           "Currency code for analysis (e.g., USD, EUR, GBP, etc.). Leave empty to use the user's preferred currency.",
         ),
-      holdingIds: z
+      positionIds: z
         .array(z.string())
-        .optional()
+        .nullable()
         .describe(
-          "Specific holding IDs to analyze. If omitted, analyzes all holdings.",
+          "Specific position IDs to analyze (assets only). If omitted, analyzes all assets. Get IDs via getPortfolioSnapshot or getPositions.",
         ),
       startDate: z
         .string()
-        .optional()
+        .nullable()
         .describe("YYYY-MM-DD format (optional, defaults to 180 days ago)"),
       endDate: z
         .string()
-        .optional()
+        .nullable()
         .describe("YYYY-MM-DD format (optional, defaults to today)"),
     }),
-    execute: async (args) => getHoldingsPerformance(args),
+    execute: async (args) => getAssetsPerformance(args),
   }),
 
   getTopMovers: tool({
@@ -181,13 +183,13 @@ export const aiTools = {
     inputSchema: z.object({
       baseCurrency: z
         .string()
-        .optional()
+        .nullable()
         .describe(
           "Currency code for analysis (e.g., USD, EUR, GBP, etc.). Leave empty to use the user's preferred currency.",
         ),
-      startDate: z.string().optional().describe("YYYY-MM-DD format (optional)"),
-      endDate: z.string().optional().describe("YYYY-MM-DD format (optional)"),
-      limit: z.number().optional().describe("Optional, defaults to 5"),
+      startDate: z.string().nullable().describe("YYYY-MM-DD format (optional)"),
+      endDate: z.string().nullable().describe("YYYY-MM-DD format (optional)"),
+      limit: z.number().nullable().describe("Optional, defaults to 5"),
     }),
     execute: async (args) => getTopMovers(args),
   }),
@@ -198,7 +200,7 @@ export const aiTools = {
     inputSchema: z.object({
       baseCurrency: z
         .string()
-        .optional()
+        .nullable()
         .describe(
           "Currency code for analysis (e.g., USD, EUR, GBP, etc.). Leave empty to use the user's preferred currency.",
         ),
@@ -211,17 +213,17 @@ export const aiTools = {
 
   getCurrencyExposure: tool({
     description:
-      "Calculate portfolio currency exposure by original currency as-of a date. Returns per-currency local value, base-currency value, percentage weight, FX rate used, and holdings count.",
+      "Calculate portfolio currency exposure by original currency as-of a date. Returns per-currency local value, base-currency value, percentage weight, FX rate used, and positions count.",
     inputSchema: z.object({
       baseCurrency: z
         .string()
-        .optional()
+        .nullable()
         .describe(
           "Currency code for analysis (e.g., USD, EUR, GBP). Leave empty to use the user's preferred currency.",
         ),
       date: z
         .string()
-        .optional()
+        .nullable()
         .describe("YYYY-MM-DD format (optional, defaults to today)"),
     }),
     execute: async (args) => getCurrencyExposure(args),
@@ -238,7 +240,7 @@ export const aiTools = {
         ),
       limit: z
         .number()
-        .optional()
+        .nullable()
         .describe(
           "Maximum number of symbols to return (default: 10, max: 20).",
         ),
@@ -248,17 +250,17 @@ export const aiTools = {
 
   getNews: tool({
     description:
-      "Get news articles for specific symbols or user's portfolio. Returns: news articles with title, publisher, link, published date, and related symbols. If no symbols provided, returns news for user's entire portfolio. Useful for market analysis and staying informed about holdings.",
+      "Get news articles for specific symbols or user's portfolio. Returns: news articles with title, publisher, link, published date, and related symbols. If no symbols provided, returns news for user's entire portfolio. Useful for market analysis and staying informed about user's positions.",
     inputSchema: z.object({
       symbolIds: z
         .array(z.string())
-        .optional()
+        .nullable()
         .describe(
           "Array of symbol IDs to get news for (e.g., ['AAPL', 'MSFT']). If omitted, returns news for user's entire portfolio.",
         ),
       limit: z
         .number()
-        .optional()
+        .nullable()
         .describe(
           "Maximum number of articles to return (default: 10). Limit is distributed across symbols.",
         ),

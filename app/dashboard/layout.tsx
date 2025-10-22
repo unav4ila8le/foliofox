@@ -6,9 +6,9 @@ import { RightSidebar } from "@/components/dashboard/layout/right-sidebar";
 import { Header } from "@/components/dashboard/layout/header";
 
 import { PrivacyModeProvider } from "@/components/dashboard/privacy-mode-provider";
-import { ImportHoldingsDialogProvider } from "@/components/dashboard/holdings/import";
-import { NewHoldingDialogProvider } from "@/components/dashboard/new-holding";
-import { NewRecordDialogProvider } from "@/components/dashboard/new-record";
+import { ImportPositionsDialogProvider } from "@/components/dashboard/positions/import";
+import { NewAssetDialogProvider } from "@/components/dashboard/new-asset";
+import { NewPortfolioRecordDialogProvider } from "@/components/dashboard/new-portfolio-record";
 
 import { fetchProfile } from "@/server/profile/actions";
 import { calculateNetWorth } from "@/server/analysis/net-worth";
@@ -50,9 +50,9 @@ export default async function Layout({
       }
     >
       <PrivacyModeProvider>
-        <ImportHoldingsDialogProvider>
-          <NewHoldingDialogProvider profile={profile}>
-            <NewRecordDialogProvider>
+        <ImportPositionsDialogProvider>
+          <NewAssetDialogProvider profile={profile}>
+            <NewPortfolioRecordDialogProvider>
               {/* Left sidebar */}
               <LeftSidebar
                 profile={profile}
@@ -68,9 +68,9 @@ export default async function Layout({
 
               {/* Right sidebar */}
               <RightSidebar />
-            </NewRecordDialogProvider>
-          </NewHoldingDialogProvider>
-        </ImportHoldingsDialogProvider>
+            </NewPortfolioRecordDialogProvider>
+          </NewAssetDialogProvider>
+        </ImportPositionsDialogProvider>
       </PrivacyModeProvider>
     </SidebarProvider>
   );

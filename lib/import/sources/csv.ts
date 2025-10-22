@@ -5,13 +5,13 @@ import {
 import { mapCategory } from "../parser/category-mapper";
 import { parseNumberStrict } from "../parser/number-parser";
 import {
-  normalizeHoldingsArray,
-  validateHoldingsArray,
+  normalizePositionsArray,
+  validatePositionsArray,
 } from "../parser/validation";
 
 import { fetchCurrencies } from "@/server/currencies/fetch";
 
-import type { HoldingRow, ImportResult } from "../types";
+import type { PositionImportRow, PositionImportResult } from "../types";
 
 /**
  * Detect the delimiter used in the file by scoring the first line.
@@ -78,8 +78,8 @@ function parseCSVRow(row: string, delimiter: string): string[] {
 
 /**
  * Infer category only when mapping returned "other".
- * @param currentCategory - Current canonical category code
- * @param name - Holding name (used for "cash" hint)
+ * @param currentCategory - Current canonical category id
+ * @param name - Position name (used for "cash" hint)
  * @param symbolId - Symbol (if present, we assume equity)
  * @returns Canonical category code
  */
@@ -144,11 +144,11 @@ function inferCurrencyColumnIndex(
 /**
  * Parse CSV text into structured data
  * @param csvContent - Raw CSV text from uploaded file
- * @returns Parsed holdings data or error details
+ * @returns Parsed positions data or error details
  */
-export async function parseHoldingsCSV(
+export async function parsePositionsCSV(
   csvContent: string,
-): Promise<ImportResult> {
+): Promise<PositionImportResult> {
   try {
     // Get supported currencies and extract just the codes
     const currencies = await fetchCurrencies();
@@ -167,7 +167,7 @@ export async function parseHoldingsCSV(
     if (lines.length < 2) {
       return {
         success: false,
-        holdings: [],
+        positions: [],
         errors: ["CSV file must have at least a header row and one data row"],
       };
     }
@@ -198,7 +198,7 @@ export async function parseHoldingsCSV(
     if (!requiredCheck.ok) {
       return {
         success: false,
-        holdings: [],
+        positions: [],
         errors: requiredCheck.missing.map(
           (header) => `Missing required column: ${header}`,
         ),
@@ -206,14 +206,14 @@ export async function parseHoldingsCSV(
     }
 
     // Parse each data row - continue even if headers are wrong to find all issues at once
-    const parsedHoldings: HoldingRow[] = [];
+    const parsedPositions: PositionImportRow[] = [];
 
     for (let rowIndex = 0; rowIndex < dataRows.length; rowIndex++) {
       const values = dataRows[rowIndex];
 
       // Safe reads for optional columns
-      const categoryRaw = columnMap.has("category_code")
-        ? values[columnMap.get("category_code")!]
+      const categoryRaw = columnMap.has("category_id")
+        ? values[columnMap.get("category_id")!]
         : "";
       const currencyRaw = columnMap.has("currency")
         ? values[columnMap.get("currency")!]
@@ -241,10 +241,10 @@ export async function parseHoldingsCSV(
         : "";
       const parsedCostBasis = parseNumberStrict(costBasisRaw);
 
-      // Build holding
-      const holding: HoldingRow = {
+      // Build position
+      const position: PositionImportRow = {
         name: nameValue,
-        category_code: mapCategory(categoryRaw),
+        category_id: mapCategory(categoryRaw),
         currency: (currencyRaw || "").trim().toUpperCase(),
         quantity: parseNumberStrict(values[columnMap.get("quantity")!]),
         unit_value: isNaN(parsedUnitValue) ? null : parsedUnitValue,
@@ -254,26 +254,26 @@ export async function parseHoldingsCSV(
       };
 
       // Infer category if missing from name or symbol
-      holding.category_code = inferCategoryIfMissing(
-        holding.category_code,
-        holding.name,
-        holding.symbol_id,
+      position.category_id = inferCategoryIfMissing(
+        position.category_id,
+        position.name,
+        position.symbol_id,
       );
 
-      // Add holding to results
-      parsedHoldings.push(holding);
+      // Add position to results
+      parsedPositions.push(position);
     }
 
-    // Normalize holdings using shared helper (adjust currency/symbol)
+    // Normalize positions using shared helper (adjust currency/symbol)
     const {
-      holdings: normalizedHoldings,
+      positions: normalizedPositions,
       warnings,
       symbolValidationResults,
-    } = await normalizeHoldingsArray(parsedHoldings);
+    } = await normalizePositionsArray(parsedPositions);
 
     // Run shared validation
-    const { errors: validationErrors } = await validateHoldingsArray(
-      normalizedHoldings,
+    const { errors: validationErrors } = await validatePositionsArray(
+      normalizedPositions,
       symbolValidationResults,
     );
 
@@ -283,10 +283,10 @@ export async function parseHoldingsCSV(
       : undefined;
 
     if (validationErrors.length > 0) {
-      // Validation failed: return parsed holdings alongside errors so user can review/fix
+      // Validation failed: return parsed positions alongside errors so user can review/fix
       return {
         success: false,
-        holdings: normalizedHoldings,
+        positions: normalizedPositions,
         warnings: warnings && warnings.length ? warnings : undefined,
         errors: validationErrors,
         symbolValidation,
@@ -296,7 +296,7 @@ export async function parseHoldingsCSV(
 
     return {
       success: true,
-      holdings: normalizedHoldings,
+      positions: normalizedPositions,
       warnings: warnings && warnings.length ? warnings : undefined,
       symbolValidation,
       supportedCurrencies,
@@ -305,7 +305,7 @@ export async function parseHoldingsCSV(
     console.error("Unexpected error during CSV parsing:", error);
     return {
       success: false,
-      holdings: [],
+      positions: [],
       errors: [
         `Failed to parse CSV: ${error instanceof Error ? error.message : "Unknown error"}`,
       ], // Array instead of string

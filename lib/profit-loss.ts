@@ -1,26 +1,26 @@
 import type {
-  TransformedHolding,
-  Record,
-  HoldingWithProfitLoss,
+  TransformedPosition,
+  PositionWithProfitLoss,
+  PositionSnapshot,
 } from "@/types/global.types";
 
 /**
- * Calculate unrealized P/L using latest record's cost basis and current values.
- * - cost_basis_per_unit: from latest record (fallback to unit_value)
+ * Calculate unrealized P/L using latest snapshot's cost basis and current values.
+ * - cost_basis_per_unit: from latest snapshot with basis (fallback to unit_value)
  * - total_cost_basis: cost_basis_per_unit * current_quantity
- * - profit_loss: holding.total_value - total_cost_basis
+ * - profit_loss: position.total_value - total_cost_basis
  * - profit_loss_percentage: profit_loss / total_cost_basis (0 if basis is 0)
  */
 export function calculateProfitLoss(
-  holdings: TransformedHolding[],
-  recordsByHolding: Map<string, Record[]>,
-): HoldingWithProfitLoss[] {
-  return holdings.map((holding) => {
-    const holdingRecords = recordsByHolding.get(holding.id) || [];
+  positions: TransformedPosition[],
+  snapshotsByPosition: Map<string, PositionSnapshot[]>,
+): PositionWithProfitLoss[] {
+  return positions.map((position) => {
+    const positionSnapshots = snapshotsByPosition.get(position.id) || [];
 
-    if (holdingRecords.length === 0) {
+    if (positionSnapshots.length === 0) {
       return {
-        ...holding,
+        ...position,
         cost_basis_per_unit: 0,
         total_cost_basis: 0,
         profit_loss: 0,
@@ -28,34 +28,34 @@ export function calculateProfitLoss(
       };
     }
 
-    // sort once
-    const sorted = [...holdingRecords].sort((a, b) => {
-      const dDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
-      if (dDiff !== 0) return dDiff;
+    // Sort once: most recent by date, then by created_at for tie-breakers
+    const sorted = [...positionSnapshots].sort((a, b) => {
+      const dateDifferenceMs =
+        new Date(b.date).getTime() - new Date(a.date).getTime();
+      if (dateDifferenceMs !== 0) return dateDifferenceMs;
       return (
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
     });
 
-    // Prefer latest transactional record with basis; then any record with basis; else latest
-    const basisRecord =
-      sorted.find((r) => r.transaction_id && r.cost_basis_per_unit != null) ??
-      sorted.find((r) => r.cost_basis_per_unit != null) ??
-      sorted[0];
+    // Use the latest snapshot that has a cost basis (UPDATE boundary semantics).
+    // If none has a basis, fall back to the latest snapshot.
+    const basisSnapshot =
+      sorted.find((s) => s.cost_basis_per_unit != null) ?? sorted[0];
 
-    const costBasisPerUnit = (basisRecord.cost_basis_per_unit ??
-      basisRecord.unit_value ??
+    const costBasisPerUnit = (basisSnapshot.cost_basis_per_unit ??
+      basisSnapshot.unit_value ??
       0) as number;
 
-    const currentQuantity = holding.current_quantity || 0;
-    const currentTotalValue = holding.total_value || 0;
+    const currentQuantity = position.current_quantity || 0;
+    const currentTotalValue = position.total_value || 0;
 
     const totalCostBasis = costBasisPerUnit * currentQuantity;
     const profitLoss = currentTotalValue - totalCostBasis;
     const profitLossPct = totalCostBasis > 0 ? profitLoss / totalCostBasis : 0;
 
     return {
-      ...holding,
+      ...position,
       cost_basis_per_unit: costBasisPerUnit,
       total_cost_basis: totalCostBasis,
       profit_loss: profitLoss,
