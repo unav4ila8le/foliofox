@@ -83,7 +83,9 @@ export async function recalculateSnapshotsUntilNextUpdate(
   // Get the base snapshot (latest before fromDate) - this is our reset point
   let { data: baseSnapshot } = await supabase
     .from("position_snapshots")
-    .select("quantity, cost_basis_per_unit, date, created_at, portfolio_record_id")
+    .select(
+      "quantity, cost_basis_per_unit, date, created_at, portfolio_record_id",
+    )
     .eq("position_id", positionId)
     .lte("date", format(fromDate, "yyyy-MM-dd"))
     .order("date", { ascending: false })
@@ -97,7 +99,9 @@ export async function recalculateSnapshotsUntilNextUpdate(
   ) {
     const { data: previousSnapshot } = await supabase
       .from("position_snapshots")
-      .select("quantity, cost_basis_per_unit, date, created_at, portfolio_record_id")
+      .select(
+        "quantity, cost_basis_per_unit, date, created_at, portfolio_record_id",
+      )
       .eq("position_id", positionId)
       .lte("date", baseSnapshot.date as string)
       .lt("created_at", baseSnapshot.created_at as string)
@@ -166,7 +170,10 @@ export async function recalculateSnapshotsUntilNextUpdate(
   const windowRecords =
     windowRecordsRaw
       ?.filter((record) => {
-        if (excludePortfolioRecordId && record.id === excludePortfolioRecordId) {
+        if (
+          excludePortfolioRecordId &&
+          record.id === excludePortfolioRecordId
+        ) {
           return false;
         }
 
