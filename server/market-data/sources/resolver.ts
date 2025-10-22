@@ -1,7 +1,4 @@
-import type {
-  MarketDataHandler,
-  MarketDataPosition,
-} from "./types";
+import type { MarketDataHandler, MarketDataPosition } from "./types";
 
 export interface MarketDataResolution {
   handler: MarketDataHandler;

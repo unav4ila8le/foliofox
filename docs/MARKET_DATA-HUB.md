@@ -73,21 +73,21 @@ export async function fetchMarketData(
 
 ## Adding a New Source
 
-1. **Model the identifier**  
+1. **Model the identifier**
    - Add the nullable identifier column to `positions` (e.g., `crypto_wallet_id`) and surface it through `TransformedPosition` so it flows into `MarketDataPosition`.
 
-2. **Create a handler**  
-   - Add `server/market-data/sources/<source>-handler.ts`.  
-   - Implement `fetchForPositions` to batch requests and call your underlying service. Return `Map<handlerKey, number>`.  
-   - Implement `getKey` to build a deterministic string based on the position identifier and date (e.g., ``${walletId}|${yyyy-MM-dd}``).
+2. **Create a handler**
+   - Add `server/market-data/sources/<source>-handler.ts`.
+   - Implement `fetchForPositions` to batch requests and call your underlying service. Return `Map<handlerKey, number>`.
+   - Implement `getKey` to build a deterministic string based on the position identifier and date (e.g., `${walletId}|${yyyy-MM-dd}`).
 
-3. **Register the handler**  
+3. **Register the handler**
    - Append the handler to `MARKET_DATA_HANDLERS` in `server/market-data/sources/registry.ts`. Order does not matter, but group similar sources when possible.
 
-4. **Backfill/cache requirements**  
+4. **Backfill/cache requirements**
    - Ensure the supporting fetcher (e.g., `server/crypto-wallets/fetch.ts`) and any cache tables exist so `fetchForPositions` can upsert results.
 
-5. **Verify hub consumers**  
+5. **Verify hub consumers**
    - `fetchPositions` and other callers rely on `resolveMarketDataForPositions`. No additional branching is required—just ensure the new identifier is populated on positions and the handler returns data.
    - Optionally expand tests to cover the new handler and its interaction with the market-data hub.
 
