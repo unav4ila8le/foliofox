@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict FFvsLHbIBGy9o4Tmuv50FZEehJeJ4R15nM98SbjgdYZ7GJoI9KlL9TfGRlCJXIL
+\restrict SLeCuEtxvwKCw1kt7cS3ud3jHieg9vFIQmk35Yb3Fx9ePkwpAjLUIfyYBP4p2xk
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.6 (Homebrew)
@@ -430,7 +430,8 @@ CREATE TABLE public.position_snapshots (
     unit_value numeric NOT NULL,
     cost_basis_per_unit numeric,
     portfolio_record_id uuid,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 
@@ -780,6 +781,14 @@ ALTER TABLE ONLY public.transactions
 
 ALTER TABLE ONLY public.quotes
     ADD CONSTRAINT unique_symbol_date UNIQUE (symbol_id, date);
+
+
+--
+-- Name: position_snapshots uq_position_snapshots_portfolio_record; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.position_snapshots
+    ADD CONSTRAINT uq_position_snapshots_portfolio_record UNIQUE (portfolio_record_id);
 
 
 --
@@ -2283,5 +2292,5 @@ ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT SELECT,I
 -- PostgreSQL database dump complete
 --
 
-\unrestrict FFvsLHbIBGy9o4Tmuv50FZEehJeJ4R15nM98SbjgdYZ7GJoI9KlL9TfGRlCJXIL
+\unrestrict SLeCuEtxvwKCw1kt7cS3ud3jHieg9vFIQmk35Yb3Fx9ePkwpAjLUIfyYBP4p2xk
 

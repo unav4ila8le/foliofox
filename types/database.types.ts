@@ -497,6 +497,7 @@ export type Database = {
           position_id: string;
           quantity: number;
           unit_value: number;
+          updated_at: string;
           user_id: string;
         };
         Insert: {
@@ -508,6 +509,7 @@ export type Database = {
           position_id: string;
           quantity: number;
           unit_value: number;
+          updated_at?: string;
           user_id: string;
         };
         Update: {
@@ -519,13 +521,14 @@ export type Database = {
           position_id?: string;
           quantity?: number;
           unit_value?: number;
+          updated_at?: string;
           user_id?: string;
         };
         Relationships: [
           {
             foreignKeyName: "position_snapshots_portfolio_record_id_fkey";
             columns: ["portfolio_record_id"];
-            isOneToOne: false;
+            isOneToOne: true;
             referencedRelation: "portfolio_records";
             referencedColumns: ["id"];
           },
