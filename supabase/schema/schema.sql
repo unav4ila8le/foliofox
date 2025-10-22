@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 1qMLc63JS6uLxkB5c4kpdcJiLu9ZD67itGJfz4l8q8xo3jxpfTBPw8Io5xp38eg
+\restrict PP2nIO3jWET6afs4jpvJNjaakYdNa6El4bZpLeTpjQT3ROMH7gGPvM2XdmPwKe3
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.6 (Homebrew)
@@ -600,13 +600,6 @@ CREATE INDEX dividend_events_currency_idx ON public.dividend_events USING btree 
 
 
 --
--- Name: dividend_events_symbol_id_idx; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX dividend_events_symbol_id_idx ON public.dividend_events USING btree (symbol_id);
-
-
---
 -- Name: dividends_updated_at_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -625,6 +618,13 @@ CREATE INDEX exchange_rates_base_currency_target_currency_date_desc_idx ON publi
 --
 
 CREATE INDEX exchange_rates_target_currency_idx ON public.exchange_rates USING btree (target_currency);
+
+
+--
+-- Name: idx_conversation_messages_user_id; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_conversation_messages_user_id ON public.conversation_messages USING btree (user_id);
 
 
 --
@@ -670,13 +670,6 @@ CREATE INDEX idx_news_related_symbols ON public.news USING gin (related_symbol_i
 
 
 --
--- Name: idx_position_categories_type; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_position_categories_type ON public.position_categories USING btree (position_type);
-
-
---
 -- Name: idx_position_snapshots_portfolio_record_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -705,6 +698,13 @@ CREATE INDEX idx_positions_category_id ON public.positions USING btree (category
 
 
 --
+-- Name: idx_positions_currency; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_positions_currency ON public.positions USING btree (currency);
+
+
+--
 -- Name: idx_positions_domain_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -716,13 +716,6 @@ CREATE INDEX idx_positions_domain_id ON public.positions USING btree (domain_id)
 --
 
 CREATE INDEX idx_positions_symbol_id ON public.positions USING btree (symbol_id);
-
-
---
--- Name: idx_positions_type; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_positions_type ON public.positions USING btree (type);
 
 
 --
@@ -1608,5 +1601,5 @@ ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT SELECT,I
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 1qMLc63JS6uLxkB5c4kpdcJiLu9ZD67itGJfz4l8q8xo3jxpfTBPw8Io5xp38eg
+\unrestrict PP2nIO3jWET6afs4jpvJNjaakYdNa6El4bZpLeTpjQT3ROMH7gGPvM2XdmPwKe3
 
