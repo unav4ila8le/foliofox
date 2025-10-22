@@ -48,7 +48,7 @@ export async function fetchPositions(options: FetchPositionsOptions = {}) {
     positionId,
     includeArchived = false,
     onlyArchived = false,
-    positionType = "asset",
+    positionType,
     asOfDate = null,
     includeSnapshots = false,
   } = options;
