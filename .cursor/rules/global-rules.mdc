@@ -4,15 +4,15 @@ globs:
 alwaysApply: true
 ---
 
-# Foliofox - Global Development Rules (Positions Model)
+# Foliofox - Global Development Rules
 
 ## Project Context
 
-- Next.js 15 App Router application for portfolio intelligence and net worth tracking
+- Next.js App Router application for portfolio intelligence and net worth tracking
 - Stack: TypeScript, Supabase, Shadcn UI, Tailwind CSS
 - Deployment: Vercel
-- Data Strategy: Daily cron refreshes for market/FX and manual updates (no WebSocket)
-- Canonical data model: positions (assets and liabilities), portfolio_records, position_snapshots, position_sources (+ source_symbols, + source_domains)
+- Data Strategy: Daily cron refreshes for market data/FX and manual updates (no WebSocket)
+- Canonical data model: positions (assets and liabilities), portfolio_records (BUY, SELL and UPDATE), position_snapshots
 
 ## Development Principles
 
@@ -21,12 +21,8 @@ alwaysApply: true
    - Keep URL state minimal; prefer lightweight search param helpers when needed
    - Minimize 'use client' directives - only for Web API/browser features
    - Split complex features into modular components
-   - Keep server actions in `server/` with `"use server"`
+   - Keep server actions/functions in `server/` with `"use server"`
    - Supabase: use user-scoped client from `supabase/server.ts`; reserve service-role client from `supabase/service.ts` for cron/admin only (bypasses RLS)
-   - Modules and directories use the positions schema:
-     - `server/positions/*`
-     - `server/portfolio-records/*`
-     - `server/position-snapshots/*`
 
 2. **TypeScript & Code Style**
    - Use TypeScript for all code with strict type checking
@@ -34,18 +30,19 @@ alwaysApply: true
    - Use types for utility, mapped, or database types (e.g., generated types, unions)
    - Use descriptive names with auxiliary verbs (isLoading, hasError)
    - Follow functional programming patterns
-   - Avoid unnecessary class usage
+   - Avoid unnecessary class usage and type casting
    - Prefer maps or objects over enums
    - Avoid wrapping async functions in explicit `new Promise`
    - Prefer explicit named boolean flags (e.g., `includeSnapshots: true`) over positional booleans
    - Centralize runtime enums in `types/enums.ts` and import where needed
+   - Prefer explicit and self-descriptive code; avoid abbreviations or initials
 
 3. **File Structure**
 
    ```
    components/
      ├── ui/          # Shadcn components (do not modify)
-     ├── feature/     # Feature-specific components
+     ├── feature/     # Feature-specific components (cross-pages)
      └── page/        # Page-specific components
    app/
      └── (routes)/    # Next.js App Router pages
@@ -53,7 +50,7 @@ alwaysApply: true
    types/             # TypeScript interfaces and types
    hooks/             # React hooks
    utils/             # Helper functions
-   server/            # Server actions & data access grouped by feature (positions, portfolio-records, position-snapshots, market-data)
+   server/            # Server actions & data access grouped by feature
    ```
 
 4. **Import Order**
@@ -110,7 +107,7 @@ alwaysApply: true
    - Optimize images with next/image
    - Monitor and optimize Core Web Vitals
    - Batch external/database calls; reuse cached results (quotes, FX)
-   - Avoid N+1 by bulk fetching snapshots and market data
+   - Avoid N+1 by bulk fetching
 
 8. **File Naming**
    - Use kebab-case for files and directories
@@ -123,7 +120,7 @@ alwaysApply: true
 - User: UX/UI expert handling design and styling
 - Collaboration: You build functional components, user enhances UI/UX
 
-ALWAYS begin your response by telling me what AI model you are using. Just say the name of the model like (claude-3.5-sonnet or gemini-2.5-pro)
+ALWAYS begin your response by telling me what AI model you are using. Just say the name of the model.
 
 ## Positions Fetching Guidelines
 

@@ -1,4 +1,4 @@
-# Market Data Sources – Plug-and-Play Architecture (Current)
+# Market Data Sources – Plug-and-Play Architecture
 
 ## Goals
 

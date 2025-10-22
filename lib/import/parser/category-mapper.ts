@@ -2,12 +2,12 @@
  * Category Mapper
  *
  * Purpose:
- * - Map user/broker/spreadsheet category strings to our canonical category codes
+ * - Map user/broker/spreadsheet category strings to our canonical category IDs
  * - Robust normalization (spacing, punctuation, hyphens, cases)
  * - Rich alias set for common real-world terms
  * - Safe defaults (fallback to "other")
  *
- * Canonical category codes:
+ * Canonical category IDs:
  *   - cash
  *   - equity
  *   - fixed_income
@@ -18,7 +18,7 @@
  *   - other
  */
 
-export type CategoryCode =
+export type CategoryId =
   | "cash"
   | "equity"
   | "fixed_income"
@@ -28,7 +28,7 @@ export type CategoryCode =
   | "domain"
   | "other";
 
-export const CATEGORY_CODES: CategoryCode[] = [
+export const CATEGORY_IDS: CategoryId[] = [
   "cash",
   "equity",
   "fixed_income",
@@ -62,7 +62,7 @@ function normalizeToken(raw: string): string {
  * Note on REITs:
  * - We map "reit" to real_estate to align with user expectations.
  */
-const CATEGORY_ALIASES: Record<CategoryCode, string[]> = {
+const CATEGORY_ALIASES: Record<CategoryId, string[]> = {
   cash: [
     "cash",
     "cash equivalents",
@@ -206,41 +206,41 @@ const CATEGORY_ALIASES: Record<CategoryCode, string[]> = {
 };
 
 // Build a flat lookup map once
-const FLAT_CATEGORY_MAP: Record<string, CategoryCode> = {};
-Object.entries(CATEGORY_ALIASES).forEach(([code, aliases]) => {
+const FLAT_CATEGORY_MAP: Record<string, CategoryId> = {};
+Object.entries(CATEGORY_ALIASES).forEach(([id, aliases]) => {
   aliases.forEach((alias) => {
     const key = normalizeToken(alias);
     if (
       key in FLAT_CATEGORY_MAP &&
-      FLAT_CATEGORY_MAP[key] !== (code as CategoryCode)
+      FLAT_CATEGORY_MAP[key] !== (id as CategoryId)
     ) {
       // Soft overwrite with first come, first served; no console.warn to keep it quiet in production
       return;
     }
-    FLAT_CATEGORY_MAP[key] = code as CategoryCode;
+    FLAT_CATEGORY_MAP[key] = id as CategoryId;
   });
 });
 
 /**
- * Is the provided string already a valid canonical category code?
+ * Is the provided string already a valid canonical category id?
  */
-export function isCategoryCode(input: string): input is CategoryCode {
-  return CATEGORY_CODES.includes(input as CategoryCode);
+export function isCategoryId(input: string): input is CategoryId {
+  return CATEGORY_IDS.includes(input as CategoryId);
 }
 
 /**
- * Map a user-provided category to our canonical category code.
- * - If it's already a canonical code, return it.
+ * Map a user-provided category to our canonical category id.
+ * - If it's already a canonical id, return it.
  * - Else, try alias lookup (robust normalization).
  * - Else, fallback to "other".
  */
 export function mapCategory(
   userCategory: string | null | undefined,
-): CategoryCode {
+): CategoryId {
   if (!userCategory || !userCategory.trim()) return "other";
 
   const raw = userCategory.trim();
-  if (isCategoryCode(raw)) return raw;
+  if (isCategoryId(raw)) return raw;
 
   const key = normalizeToken(raw);
   return FLAT_CATEGORY_MAP[key] || "other";
