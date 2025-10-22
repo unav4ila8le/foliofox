@@ -36,6 +36,18 @@ export type PortfolioRecordWithPosition = PortfolioRecord & {
     Tables<"positions">,
     "id" | "name" | "currency" | "type" | "archived_at"
   >;
+  position_snapshots?:
+    | Pick<
+        Tables<"position_snapshots">,
+        "id" | "cost_basis_per_unit" | "date" | "created_at"
+      >
+    | Array<
+        Pick<
+          Tables<"position_snapshots">,
+          "id" | "cost_basis_per_unit" | "date" | "created_at"
+        >
+      >
+    | null;
 };
 
 // Position Snapshots

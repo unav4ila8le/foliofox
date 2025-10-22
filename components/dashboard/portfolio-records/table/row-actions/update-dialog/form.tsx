@@ -1,8 +1,8 @@
 "use client";
 
 import { toast } from "sonner";
-import { CalendarIcon } from "lucide-react";
-import { useState } from "react";
+import { CalendarIcon, Info } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -28,6 +28,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -47,6 +52,21 @@ interface UpdatePortfolioRecordFormProps {
   onSuccess?: () => void;
 }
 
+const costBasisSchema = z
+  .string()
+  .optional()
+  .refine(
+    (value) =>
+      value === undefined ||
+      value.trim() === "" ||
+      !Number.isNaN(Number(value)),
+    { error: "Cost basis per unit must be a number" },
+  )
+  .refine(
+    (value) => value === undefined || value.trim() === "" || Number(value) > 0,
+    { error: "Cost basis per unit must be greater than 0" },
+  );
+
 const formSchema = z.object({
   date: z.date({ error: "A date is required." }),
   type: z.enum(PORTFOLIO_RECORD_TYPES, {
@@ -64,6 +84,7 @@ const formSchema = z.object({
       error: "Description must not exceed 256 characters.",
     })
     .optional(),
+  cost_basis_per_unit: costBasisSchema,
 });
 
 export function UpdatePortfolioRecordForm({
@@ -71,6 +92,21 @@ export function UpdatePortfolioRecordForm({
   onSuccess,
 }: UpdatePortfolioRecordFormProps) {
   const [isLoading, setIsLoading] = useState(false);
+
+  const initialCostBasis = useMemo(() => {
+    if (portfolioRecord.type !== "update") return "";
+
+    const snapshotSource = portfolioRecord.position_snapshots;
+    const snapshotArray = Array.isArray(snapshotSource)
+      ? snapshotSource
+      : snapshotSource
+        ? [snapshotSource]
+        : [];
+    const snapshot = snapshotArray[0];
+    return snapshot?.cost_basis_per_unit != null
+      ? String(snapshot.cost_basis_per_unit)
+      : "";
+  }, [portfolioRecord]);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -80,8 +116,19 @@ export function UpdatePortfolioRecordForm({
       quantity: portfolioRecord.quantity,
       unit_value: portfolioRecord.unit_value,
       description: portfolioRecord.description ?? "",
+      cost_basis_per_unit: initialCostBasis,
     },
   });
+
+  const recordType = form.watch("type");
+
+  useEffect(() => {
+    if (recordType !== "update") {
+      form.setValue("cost_basis_per_unit", "");
+    } else if (!form.getValues("cost_basis_per_unit")) {
+      form.setValue("cost_basis_per_unit", initialCostBasis);
+    }
+  }, [recordType, form, initialCostBasis]);
 
   // Get isDirty state from formState
   const { isDirty } = form.formState;
@@ -96,6 +143,13 @@ export function UpdatePortfolioRecordForm({
       formData.append("quantity", values.quantity.toString());
       formData.append("unit_value", values.unit_value.toString());
       formData.append("description", values.description || "");
+
+      if (values.type === "update") {
+        const trimmed = values.cost_basis_per_unit?.trim();
+        if (trimmed) {
+          formData.append("cost_basis_per_unit", trimmed);
+        }
+      }
 
       const result = await updatePortfolioRecord(formData, portfolioRecord.id);
 
@@ -170,7 +224,7 @@ export function UpdatePortfolioRecordForm({
               <FormLabel>Record type</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full capitalize">
                     <SelectValue placeholder="Select record type" />
                   </SelectTrigger>
                 </FormControl>
@@ -232,6 +286,40 @@ export function UpdatePortfolioRecordForm({
             )}
           />
         </div>
+
+        {recordType === "update" && (
+          <FormField
+            control={form.control}
+            name="cost_basis_per_unit"
+            render={({ field }) => (
+              <FormItem className="sm:w-1/2 sm:pr-1">
+                <div className="flex items-center gap-1">
+                  <FormLabel>Cost basis per unit (optional)</FormLabel>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="size-4" aria-label="Cost basis help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Enter your average price paid per unit at this date. Used
+                      for P/L. If omitted, we infer it from the unit value.
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <FormControl>
+                  <Input
+                    placeholder="E.g., 12.41"
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="any"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         <FormField
           control={form.control}

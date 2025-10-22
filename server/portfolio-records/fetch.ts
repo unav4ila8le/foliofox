@@ -30,6 +30,12 @@ export async function fetchPortfolioRecords(
         currency,
         type,
         archived_at
+      ),
+      position_snapshots (
+        id,
+        cost_basis_per_unit,
+        date,
+        created_at
       )
     `,
     )

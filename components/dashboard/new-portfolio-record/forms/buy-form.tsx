@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -31,7 +31,6 @@ import { useNewPortfolioRecordDialog } from "../index";
 import { cn } from "@/lib/utils";
 import { requiredNumberWithConstraints } from "@/lib/zod-helpers";
 
-import { fetchRecordBoundaryDate } from "@/server/portfolio-records/boundary";
 import { createPortfolioRecord } from "@/server/portfolio-records/create";
 
 const formSchema = z.object({
@@ -56,7 +55,6 @@ export function BuyForm() {
 
   // Local state
   const [isLoading, setIsLoading] = useState(false);
-  const [minDate, setMinDate] = useState<Date | null>(null);
 
   // Initialize form with React Hook Form
   const form = useForm({
@@ -71,16 +69,6 @@ export function BuyForm() {
 
   // Get form state for validation
   const { isDirty } = form.formState;
-
-  // Fetch the boundary date for the position
-  useEffect(() => {
-    if (!preselectedPosition) return;
-    const fetchBoundary = async () => {
-      const boundary = await fetchRecordBoundaryDate(preselectedPosition.id);
-      setMinDate(boundary ? new Date(boundary) : null);
-    };
-    fetchBoundary();
-  }, [preselectedPosition]);
 
   // Handle form submission
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -164,8 +152,7 @@ export function BuyForm() {
                     selected={field.value}
                     onSelect={field.onChange}
                     disabled={(date) =>
-                      date > new Date() ||
-                      date < (minDate ?? new Date("1900-01-01"))
+                      date > new Date() || date < new Date("1900-01-01")
                     }
                     autoFocus
                   />

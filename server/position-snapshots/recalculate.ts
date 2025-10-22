@@ -10,7 +10,7 @@ interface RecalculateOptions {
   positionId: string;
   fromDate: Date;
   excludePortfolioRecordId?: string;
-  customCostBasis?: number | null;
+  customCostBasisByRecordId?: Record<string, number | null>;
 }
 
 /**
@@ -20,8 +20,12 @@ interface RecalculateOptions {
 export async function recalculateSnapshotsUntilNextUpdate(
   options: RecalculateOptions,
 ) {
-  const { positionId, fromDate, excludePortfolioRecordId, customCostBasis } =
-    options;
+  const {
+    positionId,
+    fromDate,
+    excludePortfolioRecordId,
+    customCostBasisByRecordId,
+  } = options;
 
   const supabase = await createServiceClient();
 
@@ -72,10 +76,14 @@ export async function recalculateSnapshotsUntilNextUpdate(
     );
   }
 
+  const affectedRecordIds = affectedRecords
+    .map((record) => record.id)
+    .filter((id): id is string => Boolean(id));
+
   // Get the base snapshot (latest before fromDate) - this is our reset point
-  const { data: baseSnapshot } = await supabase
+  let { data: baseSnapshot } = await supabase
     .from("position_snapshots")
-    .select("quantity, cost_basis_per_unit, date, created_at")
+    .select("quantity, cost_basis_per_unit, date, created_at, portfolio_record_id")
     .eq("position_id", positionId)
     .lte("date", format(fromDate, "yyyy-MM-dd"))
     .order("date", { ascending: false })
@@ -83,107 +91,171 @@ export async function recalculateSnapshotsUntilNextUpdate(
     .limit(1)
     .maybeSingle();
 
-  // Process each record in sequence and create one snapshot per record
-  for (const record of affectedRecords) {
-    // Get all records up to this record's date (within our boundary)
-    let recordsQuery = supabase
-      .from("portfolio_records")
-      .select("*")
-      .eq("position_id", positionId);
+  while (
+    baseSnapshot?.portfolio_record_id &&
+    affectedRecordIds.includes(baseSnapshot.portfolio_record_id)
+  ) {
+    const { data: previousSnapshot } = await supabase
+      .from("position_snapshots")
+      .select("quantity, cost_basis_per_unit, date, created_at, portfolio_record_id")
+      .eq("position_id", positionId)
+      .lte("date", baseSnapshot.date as string)
+      .lt("created_at", baseSnapshot.created_at as string)
+      .order("date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    // Handle same-day vs different-day base snapshots
-    if (baseSnapshot?.date === record.date) {
-      // Same day: only include records created after the base snapshot but before/at current record
-      recordsQuery = recordsQuery
-        .eq("date", record.date)
-        .gt("created_at", baseSnapshot.created_at)
-        .lte("created_at", record.created_at);
-    } else {
-      // Different day: include all records from base snapshot date forward up to current record
-      recordsQuery = recordsQuery
-        .gte("date", baseSnapshot?.date || "1900-01-01")
-        .lte("date", record.date);
-    }
+    baseSnapshot = previousSnapshot ?? null;
+  }
 
-    // Apply boundary to records query as well
-    if (boundaryDate) {
-      recordsQuery = recordsQuery.lt("date", boundaryDate);
-    }
+  const fromDateStr = format(fromDate, "yyyy-MM-dd");
 
-    let { data: records } = await recordsQuery
-      .order("date", { ascending: true })
-      .order("created_at", { ascending: true });
+  const costBasisByRecordId = new Map<string, number | null>();
 
-    // Filter out excluded record if specified
-    if (excludePortfolioRecordId) {
-      records = records?.filter((r) => r.id !== excludePortfolioRecordId) || [];
-    }
+  if (affectedRecordIds.length > 0) {
+    const { data: existingSnapshots } = await supabase
+      .from("position_snapshots")
+      .select("portfolio_record_id, cost_basis_per_unit")
+      .eq("position_id", positionId)
+      .in("portfolio_record_id", affectedRecordIds);
 
-    // Initialize running totals from base snapshot
-    let runningQuantity = (baseSnapshot?.quantity as number) || 0;
-    let runningCostBasis = (baseSnapshot?.cost_basis_per_unit as number) || 0;
-
-    // Helper function to apply record to running quantities and cost basis
-    const applyRecord = (
-      recordData: Pick<PortfolioRecord, "type" | "quantity" | "unit_value">,
-    ) => {
-      if (recordData.type === "buy") {
-        // Calculate weighted average cost basis for purchases
-        const newShares = recordData.quantity;
-        const newCostBasis = recordData.unit_value;
-
-        if (runningQuantity > 0) {
-          // Weighted average: (existing_cost * existing_shares + new_cost * new_shares) / total_shares
-          const totalCost =
-            runningQuantity * runningCostBasis + newShares * newCostBasis;
-          runningQuantity += newShares;
-          runningCostBasis = totalCost / runningQuantity;
-        } else {
-          // First purchase or starting from zero
-          runningQuantity = newShares;
-          runningCostBasis = newCostBasis;
-        }
-      } else if (recordData.type === "sell") {
-        // FIFO: Keep same cost basis per unit, reduce quantity
-        runningQuantity = Math.max(0, runningQuantity - recordData.quantity);
-        // Cost basis per unit remains the same when selling
-      } else if (recordData.type === "update") {
-        // UPDATE = Reset point - set absolute values
-        runningQuantity = recordData.quantity;
-        // Use custom cost basis if provided, otherwise use unit_value
-        runningCostBasis = customCostBasis ?? recordData.unit_value;
+    existingSnapshots?.forEach((snapshot) => {
+      if (snapshot.portfolio_record_id) {
+        costBasisByRecordId.set(
+          snapshot.portfolio_record_id,
+          snapshot.cost_basis_per_unit ?? null,
+        );
       }
-    };
+    });
 
-    // Apply all records up to this record's date (excluding the current record)
-    for (const recordItem of records || []) {
-      if (recordItem.id !== record.id) {
-        applyRecord(recordItem);
-      }
-    }
-
-    // Apply the current record to get the final state
-    applyRecord(record);
-
-    // Use the stored unit_value from the portfolio record (no market data fetching)
-    const snapshotUnitValue = record.unit_value as number;
-
-    // Delete any existing snapshot for this record to avoid duplicates
     await supabase
       .from("position_snapshots")
       .delete()
       .eq("position_id", positionId)
-      .eq("portfolio_record_id", record.id);
+      .in("portfolio_record_id", affectedRecordIds);
+  }
 
-    // Create snapshot for this specific record
+  if (customCostBasisByRecordId) {
+    for (const [recordId, value] of Object.entries(customCostBasisByRecordId)) {
+      costBasisByRecordId.set(recordId, value ?? null);
+    }
+  }
+
+  const windowStartDate = baseSnapshot?.date
+    ? (baseSnapshot.date as string)
+    : fromDateStr;
+
+  let windowQuery = supabase
+    .from("portfolio_records")
+    .select("*")
+    .eq("position_id", positionId)
+    .gte("date", windowStartDate);
+
+  if (boundaryDate) {
+    windowQuery = windowQuery.lt("date", boundaryDate);
+  }
+
+  const { data: windowRecordsRaw } = await windowQuery
+    .order("date", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  const baseSnapshotDate = (baseSnapshot?.date as string) ?? null;
+  const baseSnapshotCreatedAt = (baseSnapshot?.created_at as string) ?? null;
+
+  const windowRecords =
+    windowRecordsRaw
+      ?.filter((record) => {
+        if (excludePortfolioRecordId && record.id === excludePortfolioRecordId) {
+          return false;
+        }
+
+        if (baseSnapshotDate) {
+          if (record.date === baseSnapshotDate) {
+            if (
+              baseSnapshotCreatedAt &&
+              record.created_at <= baseSnapshotCreatedAt
+            ) {
+              return false;
+            }
+          } else if (record.date < baseSnapshotDate) {
+            return false;
+          }
+        }
+
+        if (boundaryDate && record.date >= boundaryDate) {
+          return false;
+        }
+
+        return true;
+      })
+      .map((record) => record as PortfolioRecord) ?? [];
+
+  if (windowRecords.length === 0) {
+    return { success: true } as const;
+  }
+
+  let runningQuantity = Number(baseSnapshot?.quantity ?? 0);
+  let runningCostBasis = Number(baseSnapshot?.cost_basis_per_unit ?? 0);
+
+  const applyRecord = (recordItem: PortfolioRecord) => {
+    const quantity = Number(recordItem.quantity);
+    const unitValue = Number(recordItem.unit_value);
+
+    if (recordItem.type === "buy") {
+      if (runningQuantity > 0) {
+        const totalCost =
+          runningQuantity * runningCostBasis + quantity * unitValue;
+        runningQuantity += quantity;
+        runningCostBasis = totalCost / runningQuantity;
+      } else {
+        runningQuantity = quantity;
+        runningCostBasis = unitValue;
+      }
+      return;
+    }
+
+    if (recordItem.type === "sell") {
+      runningQuantity = Math.max(0, runningQuantity - quantity);
+      return;
+    }
+
+    if (recordItem.type === "update") {
+      runningQuantity = quantity;
+
+      const override =
+        (recordItem.id && costBasisByRecordId.get(recordItem.id)) ?? null;
+
+      runningCostBasis =
+        override != null ? Number(override) : Number(unitValue);
+    }
+  };
+
+  for (const record of windowRecords) {
+    applyRecord(record);
+
+    const recordDate = record.date as string;
+
+    if (recordDate < fromDateStr) {
+      continue;
+    }
+
+    if (record.id) {
+      await supabase
+        .from("position_snapshots")
+        .delete()
+        .eq("position_id", positionId)
+        .eq("portfolio_record_id", record.id);
+    }
+
     const { error } = await supabase.from("position_snapshots").insert({
       user_id: record.user_id,
       position_id: positionId,
       date: record.date,
       quantity: runningQuantity,
-      unit_value: snapshotUnitValue,
+      unit_value: Number(record.unit_value),
       cost_basis_per_unit: runningCostBasis,
-      portfolio_record_id: record.id,
+      portfolio_record_id: record.id ?? null,
     });
 
     if (error) {
