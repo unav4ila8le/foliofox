@@ -2,7 +2,6 @@ import { format } from "date-fns";
 
 import { fetchQuotes } from "@/server/quotes/fetch";
 
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   MarketDataHandler,
   SymbolRequest,
@@ -11,26 +10,6 @@ import type {
 
 export const symbolHandler: MarketDataHandler = {
   source: "symbol",
-
-  async fetchExtensions(positionIds: string[], supabase: SupabaseClient) {
-    const { data, error } = await supabase
-      .from("source_symbols")
-      .select("id, symbol_id")
-      .in("id", positionIds);
-
-    if (error) {
-      throw new Error(`Failed to fetch symbol extensions: ${error.message}`);
-    }
-
-    const extensionMap = new Map<string, string>();
-    data?.forEach((row) => {
-      if (row.symbol_id) {
-        extensionMap.set(row.id, row.symbol_id);
-      }
-    });
-
-    return extensionMap;
-  },
 
   async fetchForPositions(
     positions: MarketDataPosition[],

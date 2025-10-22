@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { getCurrentUser } from "@/server/auth/actions";
+import { fetchRecordBoundaryDate } from "@/server/portfolio-records/boundary";
 import { recalculateSnapshotsUntilNextUpdate } from "@/server/position-snapshots/recalculate";
 
 import type { PortfolioRecord } from "@/types/global.types";
@@ -30,6 +31,31 @@ export async function createPortfolioRecord(formData: FormData) {
     description: (formData.get("description") as string) || null,
   };
 
+  // Extract custom cost basis if provided (for UPDATE records)
+  const customCostBasis = formData.get("cost_basis_per_unit");
+  const costBasisPerUnit =
+    customCostBasis != null && String(customCostBasis).trim() !== ""
+      ? Number(customCostBasis)
+      : null;
+
+  // Guard: Disallow BUY/SELL before the earliest baseline
+  if (recordData.type !== "update") {
+    const boundaryDateStr = await fetchRecordBoundaryDate(
+      recordData.position_id,
+    );
+    if (boundaryDateStr) {
+      const boundaryDate = new Date(boundaryDateStr);
+      const newDate = new Date(recordData.date);
+      if (newDate < boundaryDate) {
+        return {
+          success: false,
+          code: "RECORD_BEFORE_BOUNDARY",
+          message: `Cannot add ${recordData.type.toUpperCase()} before baseline (${boundaryDateStr}). Add an UPDATE record first.`,
+        } as const;
+      }
+    }
+  }
+
   // Insert portfolio record
   const { data: inserted, error: insertError } = await supabase
     .from("portfolio_records")
@@ -49,6 +75,7 @@ export async function createPortfolioRecord(formData: FormData) {
   const recalculationResult = await recalculateSnapshotsUntilNextUpdate({
     positionId: inserted.position_id,
     fromDate: new Date(inserted.date),
+    customCostBasis: costBasisPerUnit,
   });
 
   if (!recalculationResult.success) {

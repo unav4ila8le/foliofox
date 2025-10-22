@@ -1,4 +1,3 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { TransformedPosition } from "@/types/global.types";
 
 /**
@@ -16,19 +15,6 @@ export interface MarketDataHandler {
    * Position source that this handler supports (e.g., 'symbol', 'domain').
    */
   source: string;
-
-  /**
-   * Fetch extension table data for positions of this source type.
-   * Returns a map of position_id -> source-specific ID (e.g., symbol_id, domain_id).
-   *
-   * @param positionIds - IDs of positions to fetch extensions for
-   * @param supabase - Supabase client for database access
-   * @returns Map of position_id to source-specific ID
-   */
-  fetchExtensions?(
-    positionIds: string[],
-    supabase: SupabaseClient,
-  ): Promise<Map<string, string>>;
 
   /**
    * Fetch market data for all applicable positions at a date.

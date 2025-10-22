@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { format } from "date-fns";
 
 import { getCurrentUser } from "@/server/auth/actions";
-import { createServiceClient } from "@/supabase/service";
 import { createSymbol } from "@/server/symbols/create";
 import { createPositionSnapshot } from "@/server/position-snapshots/create";
 
@@ -38,7 +37,6 @@ async function checkDuplicatePositionName(
  */
 export async function createPosition(formData: FormData) {
   const { supabase, user } = await getCurrentUser();
-  const serviceRoleClient = await createServiceClient();
 
   // Required fields
   const name = (formData.get("name") as string) || "";
@@ -83,7 +81,7 @@ export async function createPosition(formData: FormData) {
     } as const;
   }
 
-  // Ensure symbol exists when linking to a symbol source
+  // Ensure symbol exists if provided
   if (symbolId) {
     const result = await createSymbol(symbolId);
     if (!result.success) {
@@ -92,53 +90,6 @@ export async function createPosition(formData: FormData) {
         code: result.code,
         message: result.message,
       } as const;
-    }
-  }
-
-  // Create position source if symbol or domain provided
-  let sourceId: string | null = null;
-  if (symbolId || domainId) {
-    const sourceType: "symbol" | "domain" = symbolId ? "symbol" : "domain";
-    const { data: sourceRow, error: sourceError } = await serviceRoleClient
-      .from("position_sources")
-      .insert({ type: sourceType })
-      .select("id")
-      .single();
-
-    if (!sourceRow || sourceError) {
-      return {
-        success: false,
-        code: sourceError?.code || "SOURCE_CREATE_FAILED",
-        message: sourceError?.message || "Failed to create position source",
-      } as const;
-    }
-
-    sourceId = sourceRow.id;
-
-    if (symbolId) {
-      const { error: linkError } = await serviceRoleClient
-        .from("source_symbols")
-        .insert({ id: sourceId, symbol_id: symbolId });
-      if (linkError) {
-        return {
-          success: false,
-          code: linkError.code,
-          message: linkError.message,
-        } as const;
-      }
-    }
-
-    if (domainId) {
-      const { error: linkError } = await serviceRoleClient
-        .from("source_domains")
-        .insert({ id: sourceId, domain_id: domainId });
-      if (linkError) {
-        return {
-          success: false,
-          code: linkError.code,
-          message: linkError.message,
-        } as const;
-      }
     }
   }
 
@@ -152,7 +103,8 @@ export async function createPosition(formData: FormData) {
       currency,
       category_id,
       description,
-      source_id: sourceId,
+      symbol_id: symbolId,
+      domain_id: domainId,
     })
     .select("id")
     .single();

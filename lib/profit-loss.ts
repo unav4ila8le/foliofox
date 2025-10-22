@@ -38,14 +38,10 @@ export function calculateProfitLoss(
       );
     });
 
-    // Prefer latest snapshot linked to a portfolio record with basis;
-    // then any snapshot with basis; else fall back to the latest snapshot
+    // Use the latest snapshot that has a cost basis (UPDATE boundary semantics).
+    // If none has a basis, fall back to the latest snapshot.
     const basisSnapshot =
-      sorted.find(
-        (s) => s.portfolio_record_id && s.cost_basis_per_unit != null,
-      ) ??
-      sorted.find((s) => s.cost_basis_per_unit != null) ??
-      sorted[0];
+      sorted.find((s) => s.cost_basis_per_unit != null) ?? sorted[0];
 
     const costBasisPerUnit = (basisSnapshot.cost_basis_per_unit ??
       basisSnapshot.unit_value ??

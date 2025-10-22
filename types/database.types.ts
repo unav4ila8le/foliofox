@@ -538,24 +538,6 @@ export type Database = {
           },
         ];
       };
-      position_sources: {
-        Row: {
-          created_at: string;
-          id: string;
-          type: Database["public"]["Enums"]["position_source_type"];
-        };
-        Insert: {
-          created_at?: string;
-          id?: string;
-          type: Database["public"]["Enums"]["position_source_type"];
-        };
-        Update: {
-          created_at?: string;
-          id?: string;
-          type?: Database["public"]["Enums"]["position_source_type"];
-        };
-        Relationships: [];
-      };
       positions: {
         Row: {
           archived_at: string | null;
@@ -563,9 +545,10 @@ export type Database = {
           created_at: string;
           currency: string;
           description: string | null;
+          domain_id: string | null;
           id: string;
           name: string;
-          source_id: string | null;
+          symbol_id: string | null;
           type: Database["public"]["Enums"]["position_type"];
           updated_at: string;
           user_id: string;
@@ -576,9 +559,10 @@ export type Database = {
           created_at?: string;
           currency: string;
           description?: string | null;
+          domain_id?: string | null;
           id?: string;
           name: string;
-          source_id?: string | null;
+          symbol_id?: string | null;
           type: Database["public"]["Enums"]["position_type"];
           updated_at?: string;
           user_id: string;
@@ -589,9 +573,10 @@ export type Database = {
           created_at?: string;
           currency?: string;
           description?: string | null;
+          domain_id?: string | null;
           id?: string;
           name?: string;
-          source_id?: string | null;
+          symbol_id?: string | null;
           type?: Database["public"]["Enums"]["position_type"];
           updated_at?: string;
           user_id?: string;
@@ -612,17 +597,10 @@ export type Database = {
             referencedColumns: ["alphabetic_code"];
           },
           {
-            foreignKeyName: "positions_source_id_fkey";
-            columns: ["source_id"];
+            foreignKeyName: "positions_symbol_id_fkey";
+            columns: ["symbol_id"];
             isOneToOne: false;
-            referencedRelation: "position_sources";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "positions_source_id_fkey";
-            columns: ["source_id"];
-            isOneToOne: false;
-            referencedRelation: "position_sources_flat";
+            referencedRelation: "symbols";
             referencedColumns: ["id"];
           },
         ];
@@ -747,73 +725,6 @@ export type Database = {
             columns: ["transaction_id"];
             isOneToOne: false;
             referencedRelation: "transactions";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
-      source_domains: {
-        Row: {
-          domain_id: string;
-          id: string;
-        };
-        Insert: {
-          domain_id: string;
-          id: string;
-        };
-        Update: {
-          domain_id?: string;
-          id?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "source_domains_position_source_id_fkey";
-            columns: ["id"];
-            isOneToOne: true;
-            referencedRelation: "position_sources";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "source_domains_position_source_id_fkey";
-            columns: ["id"];
-            isOneToOne: true;
-            referencedRelation: "position_sources_flat";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
-      source_symbols: {
-        Row: {
-          id: string;
-          symbol_id: string;
-        };
-        Insert: {
-          id: string;
-          symbol_id: string;
-        };
-        Update: {
-          id?: string;
-          symbol_id?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "source_symbols_position_source_id_fkey";
-            columns: ["id"];
-            isOneToOne: true;
-            referencedRelation: "position_sources";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "source_symbols_position_source_id_fkey";
-            columns: ["id"];
-            isOneToOne: true;
-            referencedRelation: "position_sources_flat";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "source_symbols_symbol_fkey";
-            columns: ["symbol_id"];
-            isOneToOne: false;
-            referencedRelation: "symbols";
             referencedColumns: ["id"];
           },
         ];
@@ -947,23 +858,7 @@ export type Database = {
       };
     };
     Views: {
-      position_sources_flat: {
-        Row: {
-          domain_id: string | null;
-          id: string | null;
-          symbol_id: string | null;
-          type: Database["public"]["Enums"]["position_source_type"] | null;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "source_symbols_symbol_fkey";
-            columns: ["symbol_id"];
-            isOneToOne: false;
-            referencedRelation: "symbols";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
+      [_ in never]: never;
     };
     Functions: {
       [_ in never]: never;

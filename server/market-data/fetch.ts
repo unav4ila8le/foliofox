@@ -5,10 +5,13 @@ import type { MarketDataPosition } from "./sources/types";
 /**
  * Fetch market prices in bulk for a given set of positions and date.
  *
- * Automatically discovers and calls all registered market data handlers.
+ * Plug-and-play: Handlers are registered in one place (sources/registry.ts).
+ * Adding a new source only requires a new handler + registry entry; callers
+ * (e.g., fetchPositions, recalculation) pass minimal positions with IDs.
+ *
  * Returns a unified map where keys are handler-specific (e.g., "AAPL|2024-01-15").
  *
- * @param positions - Positions to fetch market data for
+ * @param positions - Minimal per-position identifiers (symbol_id/domain_id/...)
  * @param date - Date to fetch prices for
  * @param options.upsert - Whether to cache results in database (default: true)
  */

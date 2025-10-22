@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict TZyUIT9juCRh5vcByYKFcpegSc4bejGPdezYNwbAxjp1qHSplriqLAucciuCr0N
+\restrict FFvsLHbIBGy9o4Tmuv50FZEehJeJ4R15nM98SbjgdYZ7GJoI9KlL9TfGRlCJXIL
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.6 (Homebrew)
@@ -437,59 +437,6 @@ CREATE TABLE public.position_snapshots (
 ALTER TABLE public.position_snapshots OWNER TO postgres;
 
 --
--- Name: position_sources; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.position_sources (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    type public.position_source_type NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
-);
-
-
-ALTER TABLE public.position_sources OWNER TO postgres;
-
---
--- Name: source_domains; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.source_domains (
-    id uuid NOT NULL,
-    domain_id text NOT NULL
-);
-
-
-ALTER TABLE public.source_domains OWNER TO postgres;
-
---
--- Name: source_symbols; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.source_symbols (
-    id uuid NOT NULL,
-    symbol_id text NOT NULL
-);
-
-
-ALTER TABLE public.source_symbols OWNER TO postgres;
-
---
--- Name: position_sources_flat; Type: VIEW; Schema: public; Owner: postgres
---
-
-CREATE VIEW public.position_sources_flat WITH (security_invoker='true', security_barrier='true') AS
- SELECT ps.id,
-    ps.type,
-    ss.symbol_id,
-    sd.domain_id
-   FROM ((public.position_sources ps
-     LEFT JOIN public.source_symbols ss ON ((ss.id = ps.id)))
-     LEFT JOIN public.source_domains sd ON ((sd.id = ps.id)));
-
-
-ALTER VIEW public.position_sources_flat OWNER TO postgres;
-
---
 -- Name: positions; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -499,12 +446,13 @@ CREATE TABLE public.positions (
     type public.position_type NOT NULL,
     name text NOT NULL,
     currency text NOT NULL,
-    source_id uuid,
     category_id text DEFAULT 'other'::text NOT NULL,
     archived_at timestamp with time zone,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    description text
+    description text,
+    symbol_id text,
+    domain_id text
 );
 
 
@@ -771,14 +719,6 @@ ALTER TABLE ONLY public.position_snapshots
 
 
 --
--- Name: position_sources position_sources_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.position_sources
-    ADD CONSTRAINT position_sources_pkey PRIMARY KEY (id);
-
-
---
 -- Name: positions positions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -800,22 +740,6 @@ ALTER TABLE ONLY public.profiles
 
 ALTER TABLE ONLY public.records
     ADD CONSTRAINT records_pkey PRIMARY KEY (id);
-
-
---
--- Name: source_domains source_domains_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.source_domains
-    ADD CONSTRAINT source_domains_pkey PRIMARY KEY (id);
-
-
---
--- Name: source_symbols source_symbols_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.source_symbols
-    ADD CONSTRAINT source_symbols_pkey PRIMARY KEY (id);
 
 
 --
@@ -1013,13 +937,6 @@ CREATE INDEX idx_position_snapshots_user_date_desc ON public.position_snapshots 
 
 
 --
--- Name: idx_position_sources_type; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_position_sources_type ON public.position_sources USING btree (type);
-
-
---
 -- Name: idx_positions_category_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1027,10 +944,17 @@ CREATE INDEX idx_positions_category_id ON public.positions USING btree (category
 
 
 --
--- Name: idx_positions_source; Type: INDEX; Schema: public; Owner: postgres
+-- Name: idx_positions_domain_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_positions_source ON public.positions USING btree (source_id);
+CREATE INDEX idx_positions_domain_id ON public.positions USING btree (domain_id);
+
+
+--
+-- Name: idx_positions_symbol_id; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_positions_symbol_id ON public.positions USING btree (symbol_id);
 
 
 --
@@ -1178,27 +1102,6 @@ CREATE INDEX transactions_user_id_idx ON public.transactions USING btree (user_i
 --
 
 CREATE UNIQUE INDEX uq_position_categories_display_order ON public.position_categories USING btree (display_order);
-
-
---
--- Name: uq_position_snapshots_position_date; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE UNIQUE INDEX uq_position_snapshots_position_date ON public.position_snapshots USING btree (position_id, date);
-
-
---
--- Name: uq_source_domains_domain; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE UNIQUE INDEX uq_source_domains_domain ON public.source_domains USING btree (domain_id);
-
-
---
--- Name: uq_source_symbols_symbol; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE UNIQUE INDEX uq_source_symbols_symbol ON public.source_symbols USING btree (symbol_id);
 
 
 --
@@ -1424,11 +1327,11 @@ ALTER TABLE ONLY public.positions
 
 
 --
--- Name: positions positions_source_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: positions positions_symbol_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.positions
-    ADD CONSTRAINT positions_source_id_fkey FOREIGN KEY (source_id) REFERENCES public.position_sources(id) ON UPDATE CASCADE ON DELETE SET NULL;
+    ADD CONSTRAINT positions_symbol_id_fkey FOREIGN KEY (symbol_id) REFERENCES public.symbols(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
 
 --
@@ -1469,30 +1372,6 @@ ALTER TABLE ONLY public.records
 
 ALTER TABLE ONLY public.records
     ADD CONSTRAINT records_transaction_id_fkey FOREIGN KEY (transaction_id) REFERENCES public.transactions(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
---
--- Name: source_domains source_domains_position_source_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.source_domains
-    ADD CONSTRAINT source_domains_position_source_id_fkey FOREIGN KEY (id) REFERENCES public.position_sources(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
---
--- Name: source_symbols source_symbols_position_source_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.source_symbols
-    ADD CONSTRAINT source_symbols_position_source_id_fkey FOREIGN KEY (id) REFERENCES public.position_sources(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
---
--- Name: source_symbols source_symbols_symbol_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.source_symbols
-    ADD CONSTRAINT source_symbols_symbol_fkey FOREIGN KEY (symbol_id) REFERENCES public.symbols(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
@@ -1643,31 +1522,10 @@ CREATE POLICY "Enable read access for all authenticated users" ON public.positio
 
 
 --
--- Name: position_sources Enable read access for all authenticated users; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Enable read access for all authenticated users" ON public.position_sources FOR SELECT TO authenticated USING (true);
-
-
---
 -- Name: quotes Enable read access for all authenticated users; Type: POLICY; Schema: public; Owner: postgres
 --
 
 CREATE POLICY "Enable read access for all authenticated users" ON public.quotes FOR SELECT TO authenticated USING (true);
-
-
---
--- Name: source_domains Enable read access for all authenticated users; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Enable read access for all authenticated users" ON public.source_domains FOR SELECT TO authenticated USING (true);
-
-
---
--- Name: source_symbols Enable read access for all authenticated users; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Enable read access for all authenticated users" ON public.source_symbols FOR SELECT TO authenticated USING (true);
 
 
 --
@@ -2103,12 +1961,6 @@ ALTER TABLE public.position_categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.position_snapshots ENABLE ROW LEVEL SECURITY;
 
 --
--- Name: position_sources; Type: ROW SECURITY; Schema: public; Owner: postgres
---
-
-ALTER TABLE public.position_sources ENABLE ROW LEVEL SECURITY;
-
---
 -- Name: positions; Type: ROW SECURITY; Schema: public; Owner: postgres
 --
 
@@ -2131,18 +1983,6 @@ ALTER TABLE public.quotes ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE public.records ENABLE ROW LEVEL SECURITY;
-
---
--- Name: source_domains; Type: ROW SECURITY; Schema: public; Owner: postgres
---
-
-ALTER TABLE public.source_domains ENABLE ROW LEVEL SECURITY;
-
---
--- Name: source_symbols; Type: ROW SECURITY; Schema: public; Owner: postgres
---
-
-ALTER TABLE public.source_symbols ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: symbol_holdings; Type: ROW SECURITY; Schema: public; Owner: postgres
@@ -2317,41 +2157,6 @@ GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.po
 
 
 --
--- Name: TABLE position_sources; Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.position_sources TO anon;
-GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.position_sources TO authenticated;
-GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.position_sources TO service_role;
-
-
---
--- Name: TABLE source_domains; Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.source_domains TO anon;
-GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.source_domains TO authenticated;
-GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.source_domains TO service_role;
-
-
---
--- Name: TABLE source_symbols; Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.source_symbols TO anon;
-GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.source_symbols TO authenticated;
-GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.source_symbols TO service_role;
-
-
---
--- Name: TABLE position_sources_flat; Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT SELECT ON TABLE public.position_sources_flat TO authenticated;
-GRANT SELECT ON TABLE public.position_sources_flat TO service_role;
-
-
---
 -- Name: TABLE positions; Type: ACL; Schema: public; Owner: postgres
 --
 
@@ -2478,5 +2283,5 @@ ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT SELECT,I
 -- PostgreSQL database dump complete
 --
 
-\unrestrict TZyUIT9juCRh5vcByYKFcpegSc4bejGPdezYNwbAxjp1qHSplriqLAucciuCr0N
+\unrestrict FFvsLHbIBGy9o4Tmuv50FZEehJeJ4R15nM98SbjgdYZ7GJoI9KlL9TfGRlCJXIL
 

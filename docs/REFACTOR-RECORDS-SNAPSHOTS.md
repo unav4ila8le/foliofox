@@ -10,14 +10,9 @@ This plan is the authoritative, simplified blueprint for the refactor. No code o
 
 ### Target Data Model
 
-- positions: id, user_id, type ('asset' | 'liability'), name, currency, source_id (nullable), archived_at, created_at, updated_at
+- positions: id, user_id, type ('asset' | 'liability'), name, currency, archived_at, created_at, updated_at, description, symbol_id (nullable), domain_id (nullable)
 - portfolio_records: unified action log (buy, sell, update, borrow, repay, interest, fee, etc.); order timelines by created_at
 - position_snapshots: unified value history by date; record_id is nullable (initial/synthetic snapshots)
-- position_sources (hub): id, type ('symbol' | 'domain' | 'property' | 'account' | 'loan' | 'custom'), created_at
-  -- per-type detail tables (only for current needs):
-  - source_symbols: id (PK/FK to position_sources.id), symbol_id (FK to symbols.id)
-  - source_domains: id (PK/FK to position_sources.id), domain_id (text)
-  - source_properties: id (PK/FK to position_sources.id), external_id, ... (future)
 
 ### Categories
 
@@ -32,18 +27,16 @@ This plan is the authoritative, simplified blueprint for the refactor. No code o
 - [x] Set up CI/CD: PRs → staging preview; merge to `development` → staging deploy; merge to `main` → production deploy
 - [x] Turn on maintenance mode
 - [x] Full production DB backup and schema export
-- [x] Create new DB tables: positions, portfolio_records, position_snapshots, position_categories, position_sources, source_symbols, source_domains (kept existing tables for backfill)
-- [x] Replace `symbol_holdings`/`domain_holdings` with `position_sources` hub + `positions.source_id` for active reads/writes (legacy tables remain read-only until decommission)
+- [x] Create new DB tables: positions, portfolio_records, position_snapshots, position_categories
+- [x] Replace legacy holdings with unified positions; use `positions.symbol_id`/`positions.domain_id` for source-backed positions
 - [x] Backfill data: holdings → positions (type='asset'); transactions → portfolio_records; records → position_snapshots
-- [ ] Create compatibility views: holdings, transactions, records (optional if maintenance mode covers full cutover)
+- [x] Create compatibility views: holdings, transactions, records (optional if maintenance mode covers full cutover)
 - [x] Add RLS policies and essential indexes; verified and optimized policies using (select auth.uid()) per advisor guidance
-- [ ] Regenerate TypeScript types and update type aliases (avoid TS `Record`)
-- [ ] Refactor server modules: holdings→positions, transactions→portfolio-records, records→position-snapshots
-- [ ] Update components, routes, and AI tools to new imports/types and copy
-- [ ] Run full test pass on staging (DB, functionality, UI, edge cases)
-- [ ] Stakeholder review on staging; fix issues; repeat tests
-- [ ] Schedule production maintenance window; backup again
-- [ ] Apply migrations to production; cut over app to new modules
+- [x] Regenerate TypeScript types and update type aliases (avoid TS `Record`)
+- [x] Refactor server modules: holdings→positions, transactions→portfolio-records, records→position-snapshots
+- [x] Update components, routes, and AI tools to new imports/types and copy
+- [x] Run full test pass on staging (DB, functionality, UI, edge cases)
+- [x] Stakeholder review on staging; fix issues; repeat tests
 - [ ] Monitor errors/metrics; rollback plan ready
 - [ ] Turn off maintenance mode
 
@@ -138,21 +131,10 @@ Position sources (Symbols/Domains/Properties/etc.) migration specifics
 
 Position Sources
 
--- Add indexes:
-
-- `position_sources(type)`
-- `source_symbols(symbol_id)`
-- `source_domains(domain_id)`
-- RLS: `position_sources`, `source_symbols`, `source_domains` are global catalogs (no `user_id`). Access is indirect via `positions.source_id`. Keep all user scoping on `positions`, `portfolio_records`, `position_snapshots`.
-  - View `position_sources_flat` is configured as security invoker + security barrier; grants limited to SELECT for `authenticated`.
-
-Flattened View for reads (recommended)
-
--- Create a normal read-only view `position_sources_flat` that flattens hub + per-type identifiers:
-
-- columns: id, type, symbol_id, domain_id
-- Recommended default read path: `positions LEFT JOIN position_sources_flat` (single join in app queries).
-- Join per-type tables directly only when you need fields not projected by the view.
+- Add indexes:
+- `positions(symbol_id)`
+- `positions(domain_id)`
+- Read paths pull identifiers directly from `positions` without joins.
 
 ### Testing Focus
 

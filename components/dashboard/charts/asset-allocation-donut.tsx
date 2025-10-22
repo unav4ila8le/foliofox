@@ -1,7 +1,14 @@
 "use client";
 
 import { useMemo } from "react";
-import { PieChart, Pie, Cell, Label, Tooltip } from "recharts";
+import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Label,
+  Tooltip,
+} from "recharts";
 import { ChartPie } from "lucide-react";
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -61,72 +68,74 @@ export function AssetAllocationDonut({
           </CardHeader>
           <CardContent className="mt-6 flex flex-1">
             {/* Pie chart container with minimum width */}
-            <div className="w-3/5 min-w-24 flex-shrink-0">
-              <PieChart responsive style={{ width: "100%", height: "100%" }}>
-                <Pie
-                  data={assetAllocation}
-                  dataKey="total_value"
-                  nameKey="name"
-                  innerRadius={"80%"}
-                  outerRadius={"90%"}
-                  paddingAngle={2}
-                  cornerRadius={99}
-                  labelLine={false}
-                >
-                  {assetAllocation.map((_, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
-                      stroke="none"
+            <div className="w-3/5 min-w-24 shrink-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={assetAllocation}
+                    dataKey="total_value"
+                    nameKey="name"
+                    innerRadius={"80%"}
+                    outerRadius={"90%"}
+                    paddingAngle={2}
+                    cornerRadius={99}
+                    labelLine={false}
+                  >
+                    {assetAllocation.map((_, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                        stroke="none"
+                      />
+                    ))}
+                    <Label
+                      value={
+                        isPrivacyMode
+                          ? "* * * * * * * *"
+                          : formatCompactCurrency(netWorth, currency)
+                      }
+                      position="center"
+                      style={{
+                        fontSize: "16px",
+                        fontWeight: "bolder",
+                        fill: "var(--foreground)",
+                      }}
+                      dy={-5}
                     />
-                  ))}
-                  <Label
-                    value={
-                      isPrivacyMode
-                        ? "* * * * * * * *"
-                        : formatCompactCurrency(netWorth, currency)
-                    }
-                    position="center"
-                    style={{
-                      fontSize: "16px",
-                      fontWeight: "bolder",
-                      fill: "var(--foreground)",
-                    }}
-                    dy={-5}
-                  />
-                  <Label
-                    value="Net Worth"
-                    position="center"
-                    style={{
-                      fontSize: "12px",
-                      fill: "var(--muted-foreground)",
-                    }}
-                    dy={15}
-                  />
-                </Pie>
-                <Tooltip
-                  wrapperStyle={{ zIndex: 10 }}
-                  content={({ active, payload }) => {
-                    if (!active || !payload?.length) return null;
+                    <Label
+                      value="Net Worth"
+                      position="center"
+                      style={{
+                        fontSize: "12px",
+                        fill: "var(--muted-foreground)",
+                      }}
+                      dy={15}
+                    />
+                  </Pie>
+                  <Tooltip
+                    wrapperStyle={{ zIndex: 10 }}
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length) return null;
 
-                    const data = payload[0];
-                    return (
-                      <div className="bg-background border-border flex items-center gap-1.5 rounded-md border px-2.5 py-1.5">
-                        <div
-                          className="h-3 w-1 shrink-0 rounded-full"
-                          style={{ backgroundColor: data.payload.fill }}
-                        />
-                        <span className="text-muted-foreground text-xs">
-                          {data.payload.name}
-                        </span>
-                        <span className="text-foreground text-xs font-semibold">
-                          {formatCurrency(Number(data.value), currency)}
-                        </span>
-                      </div>
-                    );
-                  }}
-                />
-              </PieChart>
+                      const data = payload[0];
+                      return (
+                        <div className="bg-background border-border flex items-center gap-1.5 rounded-md border px-2.5 py-1.5">
+                          <div
+                            className="h-3 w-1 shrink-0 rounded-full"
+                            style={{ backgroundColor: data.payload.fill }}
+                          />
+                          <span className="text-muted-foreground text-xs">
+                            {data.payload.name}
+                          </span>
+                          <span className="text-foreground text-xs font-semibold">
+                            {formatCurrency(Number(data.value), currency)}
+                          </span>
+                        </div>
+                      );
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
             </div>
 
             {/* Custom legend outside ResponsiveContainer */}

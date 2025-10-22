@@ -18,8 +18,7 @@ export type TransformedPosition = Position & {
   current_quantity: number;
   current_unit_value: number;
   total_value: number;
-  symbol_id: string | null;
-  domain_id: string | null;
+  has_market_data: boolean;
   cost_basis_per_unit?: number | null;
 };
 

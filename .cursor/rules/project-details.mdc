@@ -38,10 +38,9 @@ Foliofox is a privacy-focused portfolio intelligence and net worth tracking app.
 
 ## Data Model (Simplified)
 
-- **Positions:** Unified table for assets and liabilities (`type: 'asset' | 'liability'`), joined to `position_categories` and optionally to `position_sources`
+- **Positions:** Unified table for assets and liabilities (`type: 'asset' | 'liability'`), joined to `position_categories`
 - **Portfolio Records:** Unified actions (`buy`, `sell`, `update`) ordered by `(date, created_at)`
 - **Position Snapshots:** Daily quantity/unit_value/basis; recalculated from a start date until the next `update` record
-- **Position Sources Hub:** `position_sources` (type), `source_symbols(symbol_id)`, `source_domains(domain_id)`
 - **Quotes:** Daily prices keyed by `symbol_id|date` (cached)
 - **Exchange Rates:** Daily USD-base FX rates cached by target currency and date
 - **Profiles, Asset Categories, Currencies:** User profile and reference data
@@ -71,9 +70,8 @@ Notes:
 
 ## Not in Scope (MVP)
 
-- No automatic bank or brokerage integrations
 - No expense tracking or budgeting features
-- No real-time data feeds (daily refreshes; no WebSockets)
+- No real-time data feeds (daily refreshes with aggressive caching; no WebSockets)
 
 ## For More Details
 

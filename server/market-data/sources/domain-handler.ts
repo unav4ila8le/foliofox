@@ -2,7 +2,6 @@ import { format } from "date-fns";
 
 import { fetchDomainValuations } from "@/server/domain-valuations/fetch";
 
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   MarketDataHandler,
   DomainRequest,
@@ -11,26 +10,6 @@ import type {
 
 export const domainHandler: MarketDataHandler = {
   source: "domain",
-
-  async fetchExtensions(positionIds: string[], supabase: SupabaseClient) {
-    const { data, error } = await supabase
-      .from("source_domains")
-      .select("id, domain_id")
-      .in("id", positionIds);
-
-    if (error) {
-      throw new Error(`Failed to fetch domain extensions: ${error.message}`);
-    }
-
-    const extensionMap = new Map<string, string>();
-    data?.forEach((row) => {
-      if (row.domain_id) {
-        extensionMap.set(row.id, row.domain_id);
-      }
-    });
-
-    return extensionMap;
-  },
 
   async fetchForPositions(
     positions: MarketDataPosition[],

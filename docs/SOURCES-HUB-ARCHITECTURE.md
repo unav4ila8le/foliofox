@@ -1,4 +1,4 @@
-# Sources Hub – Scalable Architecture Plan
+# Market Data Sources – Plug-and-Play Architecture (Current)
 
 ## Goals
 
@@ -8,43 +8,32 @@
 
 ## Core Concepts
 
-- SourceDescriptor (discriminated union) is the only shape exposed for instrument identity. Avoid top-level symbol/domain fields on positions.
+- Positions store nullable identifiers directly (e.g., `symbol_id`, `domain_id`). If all are null → custom position.
 
-```ts
-export type SourceDescriptor =
-  | { type: "custom" }
-  | { type: "symbol"; symbolId: string }
-  | { type: "domain"; domain: string };
-// Future: { type: "crypto_wallet"; walletAddress: string; blockchain: string } | ...
-```
-
-- Resolution helpers convert DB rows into descriptors:
-
-```ts
-// lib/sources/resolve.ts
-export async function getSourceDescriptor(
-  positionId: string,
-): Promise<SourceDescriptor> {}
-export async function getSourceDescriptors(
-  positionIds: string[],
-): Promise<Map<string, SourceDescriptor>> {}
-```
+- No hub resolution layer is needed. Reads pull identifiers directly from `positions`.
 
 - Registry-based operations route by descriptor.type:
 
 ```ts
-// lib/sources/registry.ts
-export interface SourceHandler<T extends SourceDescriptor = SourceDescriptor> {
-  type: T["type"];
-  getMarketKey(descriptor: T, date: Date): string | null;
-  fetchPrices?(
-    descriptors: T[],
+// server/market-data/sources/types.ts
+export type MarketDataPosition = {
+  currency: string;
+  symbol_id?: string | null;
+  domain_id?: string | null;
+  // future: wallet_address?: string | null; property_id?: string | null; ...
+};
+
+export interface MarketDataHandler {
+  source: string; // 'symbol' | 'domain' | 'wallet' | 'property' | ...
+  fetchForPositions(
+    positions: MarketDataPosition[],
     date: Date,
-    opts?: { upsert?: boolean },
+    options?: { upsert?: boolean },
   ): Promise<Map<string, number>>;
+  getKey(position: MarketDataPosition, date: Date): string | null;
 }
 
-export const SOURCE_HANDLERS: SourceHandler[] = [
+export const MARKET_DATA_HANDLERS: MarketDataHandler[] = [
   /* symbol, domain, ... */
 ];
 ```
@@ -52,35 +41,34 @@ export const SOURCE_HANDLERS: SourceHandler[] = [
 - Market data aggregator accepts descriptors (reusing existing handlers internally):
 
 ```ts
-export async function fetchMarketPrices(
-  descriptors: SourceDescriptor[],
+export async function fetchMarketData(
+  positions: MarketDataPosition[],
   date: Date,
   options: { upsert?: boolean } = {},
-): Promise<Map<string, number>> {}
+): Promise<Map<string, number>> {
+  /* calls each handler and merges */
+}
 ```
 
 ## Read/Write Integration
 
-- fetchPositions: return `source: SourceDescriptor` instead of raw IDs.
-- position-snapshots/recalculate: use descriptor.type → call aggregator; no per-type conditionals outside registry.
-- positions/create: keep hub writes (position_sources + per-type tables); return descriptor to caller.
+- fetchPositions: read `symbol_id`/`domain_id` and build minimal `MarketDataPosition` for aggregator.
+- position-snapshots/recalculate: same; derive handler via which ID is present.
+- positions/create: write IDs directly to `positions`.
 
-## Implementation Steps (post-refactor)
+## Implementation Steps
 
-1. Types: add `SourceDescriptor` and `SourceHandler`.
-2. Helpers: implement `getSourceDescriptor(s)` via `position_sources_flat`.
-3. Aggregator: add `fetchMarketPrices(descriptors, date)` thin wrapper over existing market-data handlers.
-4. fetchPositions: include `source: SourceDescriptor`; remove top-level symbol/domain in returned shape.
-5. position-snapshots/recalculate: swap to descriptors; remove scattered checks.
-6. UI: forms produce descriptors; server maps to hub rows; add optional source edit.
+1. Add/extend a MarketDataHandler in `server/market-data/sources/*`.
+2. Register it in `server/market-data/sources/registry.ts`.
+3. Ensure DB cache table exists (quotes, valuations, etc.) and implement fetch logic.
+4. No changes needed in `fetchPositions` beyond using present IDs; aggregator remains stable.
 
 ## Benefits
 
-- Add new source by creating one handler + extending the union.
-- Stronger encapsulation; fewer call sites change over time.
-- Simpler tests (handler-per-source).
+- Add new source by creating one handler and registering it.
+- No hub tables or view maintenance.
+- Minimal surface area: `fetchPositions` and recalculation stay unchanged.
 
 ## Notes
 
-- Keep `position_sources_flat` as the normalized read surface (security invoker + barrier).
-- Provide batch helpers to avoid N+1 (already used in snapshots recalculation).
+- Batch requests in handlers to avoid N+1.

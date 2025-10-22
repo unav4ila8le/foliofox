@@ -55,7 +55,7 @@ export async function fetchPositions(options: FetchPositionsOptions = {}) {
 
   const { supabase, user } = await getCurrentUser();
 
-  // Load base rows with category and flattened source identifiers
+  // Load base rows with category
   const baseQuery = supabase
     .from("positions")
     .select(
@@ -65,12 +65,6 @@ export async function fetchPositions(options: FetchPositionsOptions = {}) {
         name,
         position_type,
         display_order
-      ),
-      position_sources_flat (
-        id,
-        type,
-        symbol_id,
-        domain_id
       )
     `,
     )
@@ -139,14 +133,14 @@ export async function fetchPositions(options: FetchPositionsOptions = {}) {
   if (asOfDate !== null) {
     const activePositionIds = new Set(latestSnapshotByPositionId.keys());
     const marketPositions: MarketDataPosition[] = positions
-      .filter((p) => activePositionIds.has(p.id))
-      .map((p) => ({
-        currency: p.currency,
-        symbol_id: p.position_sources_flat?.symbol_id ?? null,
-        domain_id: p.position_sources_flat?.domain_id ?? null,
+      .filter((position) => activePositionIds.has(position.id))
+      .map((position) => ({
+        currency: position.currency,
+        symbol_id: position.symbol_id ?? null,
+        domain_id: position.domain_id ?? null,
       }));
 
-    priceMap = await fetchMarketData(marketPositions, asOfDate);
+    priceMap = await fetchMarketData(marketPositions, asOfDate as Date);
   }
 
   // Transform into UI-friendly shape
@@ -156,32 +150,38 @@ export async function fetchPositions(options: FetchPositionsOptions = {}) {
 
     // Use market price if available, otherwise fallback to snapshot unit value
     let current_unit_value = latestSnapshot?.unit_value ?? 0;
-    if (asOfDate !== null && position.position_sources_flat?.type) {
+    if (
+      asOfDate !== null &&
+      (position.symbol_id !== null || position.domain_id !== null)
+    ) {
       const handler = MARKET_DATA_HANDLERS.find(
-        (h) => h.source === position.position_sources_flat?.type,
+        (h) => h.source === (position.symbol_id ? "symbol" : "domain"),
       );
       if (handler) {
         const key = handler.getKey(
           {
             currency: position.currency,
-            symbol_id: position.position_sources_flat?.symbol_id ?? null,
-            domain_id: position.position_sources_flat?.domain_id ?? null,
+            symbol_id: position.symbol_id ?? null,
+            domain_id: position.domain_id ?? null,
           },
-          asOfDate,
+          asOfDate as Date,
         );
         current_unit_value = priceMap.get(key ?? "") ?? current_unit_value;
       }
     }
 
+    const has_market_data = Boolean(position.symbol_id || position.domain_id);
+
     return {
       ...(position as Position),
       is_archived: position.archived_at !== null,
       category_name: position.position_categories?.name,
-      symbol_id: position.position_sources_flat?.symbol_id ?? null,
-      domain_id: position.position_sources_flat?.domain_id ?? null,
+      symbol_id: position.symbol_id ?? null,
+      domain_id: position.domain_id ?? null,
       current_quantity,
       current_unit_value,
       total_value: current_quantity * current_unit_value,
+      has_market_data,
     };
   });
 

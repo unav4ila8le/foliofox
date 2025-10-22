@@ -196,6 +196,7 @@ N/A
 - [ ] Add tool for getting dividend yield given symbol
 - [ ] Add Plaid for user holding sync
 - [ ] Add currency using InputGroup to currency inputs in forms
+- [ ] Let users reset the cost basis for a position
 
 ---
 

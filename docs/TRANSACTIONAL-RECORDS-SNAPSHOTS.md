@@ -108,14 +108,13 @@ begin
 
   -- Rebuild snapshots by replaying records in window (excluding UPDATEs)
   -- NOTE: Pricing uses cached tables only (quotes, domain_valuations).
-  --       For keys, use symbol_id/domain_id via position_sources_flat.
+  --       For keys, use positions.symbol_id / positions.domain_id directly.
   with src as (
     select p.id as position_id,
-           psf.symbol_id,
-           psf.domain_id,
+           p.symbol_id,
+           p.domain_id,
            p.currency
     from positions p
-    left join position_sources_flat psf on psf.id = p.source_id
     where p.id = v_position_id and p.user_id = p_user_id
   ),
   base as (

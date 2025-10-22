@@ -14,6 +14,7 @@ import {
 } from "@/server/analysis/net-worth-change";
 
 import {
+  ResponsiveContainer,
   AreaChart,
   Area,
   XAxis,
@@ -203,71 +204,77 @@ export function NetWorthLineChart({
               isLoading && "opacity-50",
             )}
           >
-            <AreaChart
-              data={history}
-              responsive
-              style={{ width: "100%", height: "100%" }}
-            >
-              <defs>
-                <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={chartColor} stopOpacity={0.2} />
-                  <stop offset="100%" stopColor={chartColor} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid stroke="var(--border)" vertical={false} />
-              <YAxis
-                dataKey="value"
-                tickFormatter={formatYAxisValue}
-                axisLine={false}
-                tickLine={false}
-                tick={{
-                  fontSize: 12,
-                  fill: "var(--muted-foreground)",
-                  opacity: isPrivacyMode ? 0 : 1,
-                }}
-                domain={["auto", "auto"]}
-                width={40}
-              />
-              <XAxis
-                dataKey="date"
-                tickFormatter={formatXAxisDate}
-                axisLine={false}
-                tickLine={false}
-                tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
-                dy={5}
-              />
-              <Tooltip
-                content={({ active, payload }) => {
-                  if (!active || !payload?.length) return null;
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={history}>
+                <defs>
+                  <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop
+                      offset="0%"
+                      stopColor={chartColor}
+                      stopOpacity={0.2}
+                    />
+                    <stop
+                      offset="100%"
+                      stopColor={chartColor}
+                      stopOpacity={0}
+                    />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid stroke="var(--border)" vertical={false} />
+                <YAxis
+                  dataKey="value"
+                  tickFormatter={formatYAxisValue}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{
+                    fontSize: 12,
+                    fill: "var(--muted-foreground)",
+                    opacity: isPrivacyMode ? 0 : 1,
+                  }}
+                  domain={["auto", "auto"]}
+                  width={40}
+                />
+                <XAxis
+                  dataKey="date"
+                  tickFormatter={formatXAxisDate}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
+                  dy={5}
+                />
+                <Tooltip
+                  content={({ active, payload }) => {
+                    if (!active || !payload?.length) return null;
 
-                  const data = payload[0];
-                  return (
-                    <div className="bg-background border-border flex flex-col gap-1 rounded-md border px-2.5 py-1.5">
-                      <span className="text-muted-foreground text-xs">
-                        {format(data.payload.date, "PPP")}
-                      </span>
-                      <span className="text-sm">
-                        {formatCurrency(Number(data.value), currency)}
-                      </span>
-                    </div>
-                  );
-                }}
-                cursor={{ stroke: "var(--border)", strokeWidth: 1 }}
-              />
-              <Area
-                dataKey="value"
-                stroke={chartColor}
-                strokeWidth={1.5}
-                fill="url(#areaGradient)"
-                fillOpacity={1}
-                dot={false}
-                activeDot={{
-                  r: 4.5,
-                  strokeWidth: 2.5,
-                  filter: "drop-shadow(0px 1px 3px rgba(0, 0, 0, 0.3))",
-                }}
-              />
-            </AreaChart>
+                    const data = payload[0];
+                    return (
+                      <div className="bg-background border-border flex flex-col gap-1 rounded-md border px-2.5 py-1.5">
+                        <span className="text-muted-foreground text-xs">
+                          {format(data.payload.date, "PPP")}
+                        </span>
+                        <span className="text-sm">
+                          {formatCurrency(Number(data.value), currency)}
+                        </span>
+                      </div>
+                    );
+                  }}
+                  cursor={{ stroke: "var(--border)", strokeWidth: 1 }}
+                />
+                <Area
+                  dataKey="value"
+                  stroke={chartColor}
+                  strokeWidth={1.5}
+                  fill="url(#areaGradient)"
+                  fillOpacity={1}
+                  dot={false}
+                  activeDot={{
+                    r: 4.5,
+                    strokeWidth: 2.5,
+                    filter: "drop-shadow(0px 1px 3px rgba(0, 0, 0, 0.3))",
+                  }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </CardContent>
         </>
       )}

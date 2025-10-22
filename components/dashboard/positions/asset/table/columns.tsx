@@ -17,9 +17,9 @@ import { formatNumber, formatPercentage } from "@/lib/number-format";
 
 import type { PositionWithProfitLoss } from "@/types/global.types";
 
-// Check if the position has market data
+// Check if the position has market data (centralized server flag)
 const positionHasMarketData = (position: PositionWithProfitLoss): boolean =>
-  position.source_id !== null;
+  position.has_market_data === true;
 
 export const columns: ColumnDef<PositionWithProfitLoss>[] = [
   {
