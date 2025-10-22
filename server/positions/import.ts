@@ -97,14 +97,14 @@ export async function importPositionsFromCSV(
       formData.append("type", "asset");
       formData.append("name", row.name);
       formData.append("currency", row.currency);
-      formData.append("category_id", row.category_id); // ids match position_categories ids
+      formData.append("category_id", row.category_id);
       formData.append("quantity", String(row.quantity));
       formData.append("unit_value", unitValue != null ? String(unitValue) : "");
+      formData.append("symbol_id", row.symbol_id ?? "");
       formData.append(
         "cost_basis_per_unit",
         row.cost_basis_per_unit != null ? String(row.cost_basis_per_unit) : "",
       );
-      formData.append("symbolId", row.symbol_id ?? "");
       formData.append("description", row.description ?? "");
 
       const result = await createPosition(formData);
