@@ -63,7 +63,9 @@ export default async function Layout({
               {/* Main content */}
               <SidebarInset className="min-w-0">
                 <Header />
-                <div className="p-4 pt-2">{children}</div>
+                <div className="mx-auto w-full max-w-7xl p-4 pt-2">
+                  {children}
+                </div>
               </SidebarInset>
 
               {/* Right sidebar */}
