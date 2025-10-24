@@ -85,8 +85,8 @@ async function ProjectedIncomeWidgetWrapper({
 }
 
 async function PortfolioRecordsWidgetWrapper() {
-  const portfolioRecords = await fetchPortfolioRecords();
-  return <PortfolioRecordsWidget portfolioRecordsData={portfolioRecords} />;
+  const { records } = await fetchPortfolioRecords();
+  return <PortfolioRecordsWidget portfolioRecordsData={records} />;
 }
 
 // Main page component

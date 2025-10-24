@@ -197,12 +197,12 @@ N/A
 - [ ] Add Plaid for user positions sync
 - [ ] Add currency using InputGroup to currency inputs in forms
 - [ ] Let users intuitively reset the cost basis for a position
+- [ ] Add optional pagination to data table (for portfolio records)
 
 ---
 
 ### Post launch
 
-- [ ] Add optional pagination to data table (for portfolio records)
 - [ ] Look at generative UI for AI chat: https://ai-sdk.dev/docs/ai-sdk-ui/generative-user-interfaces
 - [ ] Add a way for the user to "share" their portfolio. Ideally, after agreeing, they get a public sharable link which leads to a single public page view of all their positions and relevant performance charts.
 - [x] Optimize recalculateRecords to use batch requests

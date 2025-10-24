@@ -2,6 +2,8 @@
 
 import { fetchPortfolioRecords } from "@/server/portfolio-records/fetch";
 
+import type { PortfolioRecordWithPosition } from "@/types/global.types";
+
 interface GetPortfolioRecordsParams {
   startDate: string | null;
   endDate: string | null;
@@ -16,14 +18,27 @@ export async function getPortfolioRecords(params: GetPortfolioRecordsParams) {
   const startDate = params.startDate ? new Date(params.startDate) : undefined;
   const endDate = params.endDate ? new Date(params.endDate) : undefined;
 
-  const portfolioRecords = await fetchPortfolioRecords({
-    positionId,
-    includeArchived,
-    startDate,
-    endDate,
-  });
+  const pageSize = 100;
+  let page = 1;
+  let pageCount = 1;
+  const allRecords: PortfolioRecordWithPosition[] = [];
 
-  const items = portfolioRecords.map((r) => ({
+  do {
+    const result = await fetchPortfolioRecords({
+      positionId,
+      includeArchived,
+      startDate,
+      endDate,
+      page,
+      pageSize,
+    });
+
+    allRecords.push(...result.records);
+    pageCount = result.pageCount;
+    page += 1;
+  } while (page <= pageCount);
+
+  const items = allRecords.map((r) => ({
     id: r.id as string,
     type: r.type as string,
     date: r.date as string, // YYYY-MM-DD
@@ -38,7 +53,7 @@ export async function getPortfolioRecords(params: GetPortfolioRecordsParams) {
   }));
 
   return {
-    total: portfolioRecords.length,
+    total: allRecords.length,
     returned: items.length,
     range: {
       start: startDate ?? null,

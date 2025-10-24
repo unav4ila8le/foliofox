@@ -41,12 +41,18 @@ function PageSkeleton() {
   );
 }
 
-async function AssetContent({ positionId }: { positionId: string }) {
+async function AssetContent({
+  positionId,
+  page,
+}: {
+  positionId: string;
+  page: number;
+}) {
   const position = await fetchSinglePosition(positionId);
 
   // Batch remaining requests
-  const [portfolioRecords, symbol, newsResult] = await Promise.all([
-    fetchPortfolioRecords({ positionId }),
+  const [portfolioRecordsPage, symbol, newsResult] = await Promise.all([
+    fetchPortfolioRecords({ positionId, page, pageSize: 50 }),
     position.symbol_id
       ? fetchSymbol(position.symbol_id)
       : Promise.resolve(null),
@@ -67,7 +73,15 @@ async function AssetContent({ positionId }: { positionId: string }) {
   const dividendCurrency =
     (projectedIncome as ProjectedIncomeResult)?.currency || position.currency;
 
-  // const positionSnapshots = snapshotsByPosition.get(position.id) || [];
+  const {
+    records,
+    total,
+    page: currentPage,
+    pageSize,
+    pageCount,
+    hasNextPage,
+    hasPreviousPage,
+  } = portfolioRecordsPage;
 
   return (
     <div className="grid grid-cols-6 gap-4">
@@ -104,19 +118,45 @@ async function AssetContent({ positionId }: { positionId: string }) {
         className={`col-span-6 space-y-2 ${hasSymbol ? "lg:col-span-4" : "lg:col-span-6"}`}
       >
         <h3 className="font-semibold">Records history</h3>
-        <PortfolioRecordsTable data={portfolioRecords} position={position} />
+        <PortfolioRecordsTable
+          data={records}
+          position={position}
+          pagination={{
+            page: currentPage,
+            pageSize,
+            pageCount,
+            total,
+            hasNextPage,
+            hasPreviousPage,
+            baseHref: `/dashboard/assets/${positionId}`,
+          }}
+        />
       </div>
     </div>
   );
 }
 
 // Main page component
-export default async function AssetPage({ params }: AssetPageProps) {
+export default async function AssetPage({
+  params,
+  searchParams,
+}: AssetPageProps & {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { asset: positionId } = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+
+  const pageParam = Array.isArray(resolvedSearchParams?.page)
+    ? resolvedSearchParams.page[0]
+    : resolvedSearchParams?.page;
+
+  const parsedPage = Number(pageParam);
+  const page =
+    Number.isFinite(parsedPage) && parsedPage > 0 ? Math.floor(parsedPage) : 1;
 
   return (
     <Suspense fallback={<PageSkeleton />}>
-      <AssetContent positionId={positionId} />
+      <AssetContent positionId={positionId} page={page} />
     </Suspense>
   );
 }

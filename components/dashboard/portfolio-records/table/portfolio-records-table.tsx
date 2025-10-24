@@ -1,8 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import {
+  useState,
+  useMemo,
+  useCallback,
+  useEffect,
+  useTransition,
+} from "react";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { FileText, Trash2, Search } from "lucide-react";
 
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import {
   InputGroup,
   InputGroupInput,
@@ -14,6 +30,8 @@ import { NewPortfolioRecordButton } from "@/components/dashboard/new-portfolio-r
 import { BulkActionBar } from "@/components/dashboard/tables/base/bulk-action-bar";
 import { DeletePortfolioRecordDialog } from "@/components/dashboard/portfolio-records/table/row-actions/delete-dialog";
 
+import { cn } from "@/lib/utils";
+
 import type {
   PortfolioRecordWithPosition,
   TransformedPosition,
@@ -23,23 +41,140 @@ interface PortfolioRecordsTableProps {
   data: PortfolioRecordWithPosition[];
   position?: TransformedPosition;
   showPositionColumn?: boolean;
+  pagination?: {
+    page: number;
+    pageSize: number;
+    pageCount: number;
+    total: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+    baseHref?: string;
+  };
+}
+
+type PaginationEntry = number | "ellipsis";
+
+function buildPaginationEntries(
+  page: number,
+  pageCount: number,
+): PaginationEntry[] {
+  if (pageCount <= 7) {
+    return Array.from({ length: pageCount }, (_, index) => index + 1);
+  }
+
+  const entries: PaginationEntry[] = [1];
+  const start = Math.max(2, page - 1);
+  const end = Math.min(pageCount - 1, page + 1);
+
+  if (start > 2) {
+    entries.push("ellipsis");
+  }
+
+  for (let current = start; current <= end; current += 1) {
+    entries.push(current);
+  }
+
+  if (end < pageCount - 1) {
+    entries.push("ellipsis");
+  }
+
+  entries.push(pageCount);
+
+  return entries;
 }
 
 export function PortfolioRecordsTable({
   data,
   position,
   showPositionColumn = false,
+  pagination,
 }: PortfolioRecordsTableProps) {
   const [filterValue, setFilterValue] = useState("");
   const [selectedRows, setSelectedRows] = useState<
     PortfolioRecordWithPosition[]
   >([]);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const tableKey = useMemo(() => {
+    const idsKey = data.map(({ id }) => id).join("-");
+    return pagination
+      ? `portfolio-records-${pagination.page}-${idsKey}`
+      : `portfolio-records-${idsKey}`;
+  }, [data, pagination]);
+
+  const paginationEntries = useMemo(
+    () =>
+      pagination
+        ? buildPaginationEntries(pagination.page, pagination.pageCount)
+        : [],
+    [pagination],
+  );
+
+  const createPageHref = useCallback(
+    (targetPage: number) => {
+      if (!pagination) return "#";
+      const params = new URLSearchParams(searchParams.toString());
+      if (targetPage === 1) {
+        params.delete("page");
+      } else {
+        params.set("page", String(targetPage));
+      }
+      const basePath = pagination.baseHref ?? pathname;
+      const query = params.toString();
+      return query ? `${basePath}?${query}` : basePath;
+    },
+    [pagination, pathname, searchParams],
+  );
+
+  const handlePageChange = useCallback(
+    (targetPage: number) => {
+      if (!pagination || targetPage === pagination.page) return;
+
+      startTransition(() => {
+        router.push(createPageHref(targetPage));
+      });
+    },
+    [pagination, router, createPageHref],
+  );
+
+  const paginationSummary = useMemo(() => {
+    if (!pagination) {
+      return `${data.length} record(s)`;
+    }
+    if (pagination.total === 0) {
+      return "0 record(s)";
+    }
+    const start = (pagination.page - 1) * pagination.pageSize + 1;
+    const end = Math.min(pagination.total, start + pagination.pageSize - 1);
+    return `Showing ${start}-${end} of ${pagination.total} record(s)`;
+  }, [pagination, data.length]);
+
+  const previousHref = pagination
+    ? createPageHref(
+        pagination.hasPreviousPage ? pagination.page - 1 : pagination.page,
+      )
+    : "#";
+  const nextHref = pagination
+    ? createPageHref(
+        pagination.hasNextPage ? pagination.page + 1 : pagination.page,
+      )
+    : "#";
+
+  useEffect(() => {
+    setSelectedRows([]);
+  }, [data]);
 
   const columns = getPortfolioRecordColumns({ showPositionColumn });
 
   return (
-    <div className="space-y-4">
+    <div
+      className={cn("space-y-4", isPending && "pointer-events-none opacity-50")}
+    >
       {/* Toolbar */}
       <div className="flex items-center justify-between gap-2">
         {/* Search */}
@@ -79,6 +214,7 @@ export function PortfolioRecordsTable({
         </div>
       ) : (
         <DataTable
+          key={tableKey}
           columns={columns}
           data={data}
           filterValue={filterValue}
@@ -87,9 +223,79 @@ export function PortfolioRecordsTable({
         />
       )}
 
+      {/* Pagination */}
+      {pagination && pagination.pageCount > 1 && (
+        <Pagination className="justify-end">
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                href={previousHref}
+                aria-disabled={!pagination.hasPreviousPage || isPending}
+                tabIndex={
+                  !pagination.hasPreviousPage || isPending ? -1 : undefined
+                }
+                className={
+                  !pagination.hasPreviousPage || isPending
+                    ? "pointer-events-none opacity-50"
+                    : undefined
+                }
+                onClick={(event) => {
+                  event.preventDefault();
+                  if (!pagination.hasPreviousPage || isPending) return;
+                  handlePageChange(pagination.page - 1);
+                }}
+              />
+            </PaginationItem>
+            {paginationEntries.map((entry, index) => (
+              <PaginationItem key={`${entry}-${index}`}>
+                {entry === "ellipsis" ? (
+                  <PaginationEllipsis />
+                ) : (
+                  <PaginationLink
+                    href={createPageHref(entry)}
+                    isActive={entry === pagination.page}
+                    aria-disabled={isPending}
+                    tabIndex={
+                      isPending || entry === pagination.page ? -1 : undefined
+                    }
+                    className={cn(
+                      isPending && "pointer-events-none opacity-50",
+                    )}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      if (isPending || entry === pagination.page) return;
+                      handlePageChange(entry);
+                    }}
+                  >
+                    {entry}
+                  </PaginationLink>
+                )}
+              </PaginationItem>
+            ))}
+            <PaginationItem>
+              <PaginationNext
+                href={nextHref}
+                aria-disabled={!pagination.hasNextPage || isPending}
+                tabIndex={!pagination.hasNextPage || isPending ? -1 : undefined}
+                className={
+                  !pagination.hasNextPage || isPending
+                    ? "pointer-events-none opacity-50"
+                    : undefined
+                }
+                onClick={(event) => {
+                  event.preventDefault();
+                  if (!pagination.hasNextPage || isPending) return;
+                  handlePageChange(pagination.page + 1);
+                }}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
+
       {/* Rows count */}
       <p className="text-muted-foreground text-end text-sm">
-        {data.length} record(s)
+        {paginationSummary}
       </p>
 
       {/* Floating bulk action bar */}
