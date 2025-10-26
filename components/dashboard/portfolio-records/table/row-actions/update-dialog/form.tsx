@@ -37,6 +37,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Calendar } from "@/components/ui/calendar";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  InputGroupText,
+} from "@/components/ui/input-group";
 
 import { cn } from "@/lib/utils";
 import { requiredNumberWithConstraints } from "@/lib/zod-helpers";
@@ -244,13 +250,13 @@ export function UpdatePortfolioRecordForm({
         <div className="grid items-start gap-x-2 gap-y-4 sm:grid-cols-2">
           <FormField
             control={form.control}
-            name="unit_value"
+            name="quantity"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Unit value</FormLabel>
+                <FormLabel>Quantity</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="E.g., 420.69"
+                    placeholder="E.g., 10"
                     type="number"
                     inputMode="decimal"
                     min={0}
@@ -266,20 +272,27 @@ export function UpdatePortfolioRecordForm({
 
           <FormField
             control={form.control}
-            name="quantity"
+            name="unit_value"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Quantity</FormLabel>
+                <FormLabel>Unit value</FormLabel>
                 <FormControl>
-                  <Input
-                    placeholder="E.g., 10"
-                    type="number"
-                    inputMode="decimal"
-                    min={0}
-                    step="any"
-                    {...field}
-                    value={field.value as number}
-                  />
+                  <InputGroup>
+                    <InputGroupInput
+                      placeholder="E.g., 420.69"
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      step="any"
+                      {...field}
+                      value={field.value as number}
+                    />
+                    <InputGroupAddon align="inline-end">
+                      <InputGroupText>
+                        {portfolioRecord.positions.currency || "N/A"}
+                      </InputGroupText>
+                    </InputGroupAddon>
+                  </InputGroup>
                 </FormControl>
                 <FormMessage />
               </FormItem>

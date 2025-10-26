@@ -80,7 +80,7 @@ export function NewsWidget({ newsData }: NewsWidgetProps) {
           </a>
         ))}
       </CardContent>
-      <div className="from-card absolute right-6 bottom-0 left-0 h-8 bg-gradient-to-t" />
+      <div className="from-card absolute right-6 bottom-0 left-0 h-8 bg-linear-to-t" />
     </Card>
   );
 }

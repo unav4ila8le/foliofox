@@ -20,6 +20,12 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from "@/components/ui/tooltip";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  InputGroupText,
+} from "@/components/ui/input-group";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -217,15 +223,20 @@ export function ManualEntryForm() {
               <FormItem>
                 <FormLabel>Current unit value</FormLabel>
                 <FormControl>
-                  <Input
-                    placeholder="E.g., 420.69"
-                    type="number"
-                    inputMode="decimal"
-                    min={0}
-                    step="any"
-                    {...field}
-                    value={field.value as number}
-                  />
+                  <InputGroup>
+                    <InputGroupInput
+                      placeholder="E.g., 420.69"
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      step="any"
+                      {...field}
+                      value={field.value as number}
+                    />
+                    <InputGroupAddon align="inline-end">
+                      <InputGroupText>{form.watch("currency")}</InputGroupText>
+                    </InputGroupAddon>
+                  </InputGroup>
                 </FormControl>
                 <FormMessage />
               </FormItem>
