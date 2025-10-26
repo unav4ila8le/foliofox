@@ -194,10 +194,11 @@ N/A
 - [x] New UX for adding new positions (one form per position source)
 - [x] Add ai tool for fetching historical quotes for symbols
 - [x] Add ai tool for getting dividend yield given symbol
+- [x] Add pagination to portfoli records
 - [ ] Add Plaid for user positions sync
-- [ ] Add currency using InputGroup to currency inputs in forms
+- [x] Add currency using InputGroup to value inputs in forms
 - [ ] Let users intuitively reset the cost basis for a position
-- [ ] Add pagination to portfolio records
+- [ ] Add pagination search and filtering to portfolio records
 
 ---
 

@@ -14,6 +14,7 @@ import { fetchSymbolNews } from "@/server/news/fetch";
 import { calculateSymbolProjectedIncome } from "@/server/analysis/projected-income";
 import { calculateSymbolDividendYield } from "@/server/analysis/dividend-yield";
 
+import { calculateProfitLoss } from "@/lib/profit-loss";
 import { formatPercentage, formatCurrency } from "@/lib/number-format";
 
 // Only needed for dynamic routes
@@ -48,7 +49,18 @@ async function AssetContent({
   positionId: string;
   page: number;
 }) {
-  const position = await fetchSinglePosition(positionId);
+  // Fetch position with snapshots to calculate P/L
+  const { position, snapshots } = await fetchSinglePosition(positionId, {
+    includeSnapshots: true,
+    asOfDate: new Date(),
+  });
+
+  // Calculate profit/loss data
+  const snapshotsMap = new Map([[position.id, snapshots]]);
+  const [positionWithProfitLoss] = calculateProfitLoss(
+    [position],
+    snapshotsMap,
+  );
 
   // Batch remaining requests
   const [portfolioRecordsPage, symbol, newsResult] = await Promise.all([
@@ -91,7 +103,11 @@ async function AssetContent({
     <div className="grid grid-cols-6 gap-4">
       {/* Header */}
       <div className="col-span-6">
-        <AssetHeader position={position} symbol={symbol} />
+        <AssetHeader
+          position={position}
+          symbol={symbol}
+          positionWithProfitLoss={positionWithProfitLoss}
+        />
       </div>
 
       <Separator className="col-span-6" />
