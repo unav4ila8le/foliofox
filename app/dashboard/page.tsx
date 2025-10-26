@@ -85,8 +85,8 @@ async function ProjectedIncomeWidgetWrapper({
 }
 
 async function PortfolioRecordsWidgetWrapper() {
-  const portfolioRecords = await fetchPortfolioRecords();
-  return <PortfolioRecordsWidget portfolioRecordsData={portfolioRecords} />;
+  const { records } = await fetchPortfolioRecords({ pageSize: 15 });
+  return <PortfolioRecordsWidget portfolioRecordsData={records} />;
 }
 
 // Main page component
@@ -125,7 +125,7 @@ export default async function DashboardPage() {
             <NewsWidgetWrapper />
           </Suspense>
         </div>
-        <div className="col-span-6 lg:col-span-3">
+        <div className="col-span-6 xl:col-span-3">
           <Suspense fallback={<Skeleton className="h-80 rounded-xl" />}>
             <ProjectedIncomeWidgetWrapper
               displayCurrency={profile.display_currency}

@@ -50,6 +50,16 @@ export type PortfolioRecordWithPosition = PortfolioRecord & {
     | null;
 };
 
+export type PortfolioRecordsPage = {
+  records: PortfolioRecordWithPosition[];
+  total: number;
+  page: number;
+  pageSize: number;
+  pageCount: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+};
+
 // Position Snapshots
 export type PositionSnapshot = Tables<"position_snapshots">;
 

@@ -192,17 +192,19 @@ N/A
 - [ ] Find a way to have a more accurate historical calculation which doesn't add much overhead. WeeksBack solution is fast but not accurate cause the date is "rounded" to match weeks and not days.
 - [x] Landingpage
 - [x] New UX for adding new positions (one form per position source)
-- [ ] Add ai tool for fetching historical quotes for symbols
-- [ ] Add ai tool for getting dividend yield given symbol
+- [x] Add ai tool for fetching historical quotes for symbols
+- [x] Add ai tool for getting dividend yield given symbol
+- [x] Add pagination to portfoli records
 - [ ] Add Plaid for user positions sync
-- [ ] Add currency using InputGroup to currency inputs in forms
+- [x] Add currency using InputGroup to value inputs in forms
 - [ ] Let users intuitively reset the cost basis for a position
+- [ ] Add pagination search and filtering to portfolio records
 
 ---
 
 ### Post launch
 
-- [ ] Add optional pagination to data table (for portfolio records)
+- [ ] Better tool usage UI in the AI chat
 - [ ] Look at generative UI for AI chat: https://ai-sdk.dev/docs/ai-sdk-ui/generative-user-interfaces
 - [ ] Add a way for the user to "share" their portfolio. Ideally, after agreeing, they get a public sharable link which leads to a single public page view of all their positions and relevant performance charts.
 - [x] Optimize recalculateRecords to use batch requests

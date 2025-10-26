@@ -66,9 +66,9 @@ export function AssetAllocationDonut({
           <CardHeader className="flex-none">
             <CardTitle>Asset Allocation</CardTitle>
           </CardHeader>
-          <CardContent className="mt-6 flex flex-1">
+          <CardContent className="mt-6 flex flex-1 2xl:gap-2">
             {/* Pie chart container with minimum width */}
-            <div className="w-3/5 min-w-24 shrink-0">
+            <div className="w-3/5 min-w-24 shrink-0 2xl:w-1/2">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie

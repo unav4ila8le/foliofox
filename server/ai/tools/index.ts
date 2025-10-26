@@ -12,6 +12,8 @@ import { getAssetsPerformance } from "./assets-performance";
 import { getTopMovers } from "./top-movers";
 import { getAllocationDrift } from "./allocation-drift";
 import { getCurrencyExposure } from "./currency-exposure";
+import { getDividendYield } from "./dividend-yield";
+import { getHistoricalQuotes } from "./historical-quotes";
 import { searchSymbols } from "./search-symbols";
 import { getNews } from "./news";
 
@@ -227,6 +229,50 @@ export const aiTools = {
         .describe("YYYY-MM-DD format (optional, defaults to today)"),
     }),
     execute: async (args) => getCurrencyExposure(args),
+  }),
+
+  getDividendYield: tool({
+    description:
+      "Get the latest dividend yield, last dividend amount, and payout cadence for a symbol. Use searchSymbols first if you need to confirm the Yahoo Finance symbol ticker. Set includeHistory to true when you want the recent dividend events list for added context.",
+    inputSchema: z.object({
+      symbolId: z
+        .string()
+        .describe(
+          "Yahoo Finance symbol identifier (e.g., 'AAPL', 'MSFT', 'VUSA.AS'). Required.",
+        ),
+      includeHistory: z
+        .boolean()
+        .nullable()
+        .describe(
+          "Set to true to include up to the 12 most recent dividend events.",
+        ),
+    }),
+    execute: async (args) => getDividendYield(args),
+  }),
+
+  getHistoricalQuotes: tool({
+    description:
+      "Retrieve daily historical prices for a symbol across a limited date range (≤365 days). Useful when the user asks for chart-ready data or wants to compare performance outside stored portfolio records. If you're unsure about the Yahoo Finance ticker symbol, call searchSymbols first to confirm the correct symbol before invoking this tool.",
+    inputSchema: z.object({
+      symbolId: z
+        .string()
+        .describe(
+          "Yahoo Finance symbol identifier (e.g., 'AAPL', 'MSFT', 'VUSA.AS'). Required.",
+        ),
+      startDate: z
+        .string()
+        .nullable()
+        .describe(
+          "Inclusive start date in YYYY-MM-DD format (optional, defaults to 30 days before end date).",
+        ),
+      endDate: z
+        .string()
+        .nullable()
+        .describe(
+          "Inclusive end date in YYYY-MM-DD format (optional, defaults to today).",
+        ),
+    }),
+    execute: async (args) => getHistoricalQuotes(args),
   }),
 
   searchSymbols: tool({

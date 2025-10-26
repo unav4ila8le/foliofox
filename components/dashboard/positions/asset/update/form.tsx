@@ -50,7 +50,7 @@ export function UpdateAssetForm({ position, onSuccess }: UpdateAssetFormProps) {
     defaultValues: {
       name: position.name,
       category_id: position.category_id,
-      description: position.description ?? undefined,
+      description: position.description ?? "",
     },
   });
 

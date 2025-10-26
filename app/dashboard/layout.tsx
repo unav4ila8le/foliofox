@@ -40,8 +40,8 @@ export default async function Layout({
       resizable={{ right: true }}
       defaultLeftWidth="max(16rem, 14vw)"
       defaultRightWidth="max(16rem, 20vw)"
-      minRightWidth="14rem"
-      maxRightWidth="28rem"
+      minRightWidth="16rem"
+      maxRightWidth="24vw"
       style={
         {
           "--sidebar-left-width-mobile": "max(18rem, 80vw)",
@@ -63,7 +63,9 @@ export default async function Layout({
               {/* Main content */}
               <SidebarInset className="min-w-0">
                 <Header />
-                <div className="p-4 pt-2">{children}</div>
+                <div className="mx-auto w-full max-w-7xl p-4 pt-2">
+                  {children}
+                </div>
               </SidebarInset>
 
               {/* Right sidebar */}

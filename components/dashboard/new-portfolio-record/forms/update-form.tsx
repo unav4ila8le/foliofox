@@ -30,6 +30,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import { Spinner } from "@/components/ui/spinner";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  InputGroupText,
+} from "@/components/ui/input-group";
 
 import { useNewPortfolioRecordDialog } from "../index";
 
@@ -286,16 +292,23 @@ export function UpdateForm() {
               <FormItem>
                 <FormLabel>Unit value</FormLabel>
                 <FormControl>
-                  <Input
-                    placeholder="E.g., 420.69"
-                    type="number"
-                    inputMode="decimal"
-                    min={0}
-                    step="any"
-                    disabled={hasSymbol} // Disabled for market assets (auto-filled)
-                    {...field}
-                    value={field.value as number}
-                  />
+                  <InputGroup>
+                    <InputGroupInput
+                      placeholder="E.g., 420.69"
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      step="any"
+                      disabled={hasSymbol} // Disabled for market assets (auto-filled)
+                      {...field}
+                      value={field.value as number}
+                    />
+                    <InputGroupAddon align="inline-end">
+                      <InputGroupText>
+                        {preselectedPosition?.currency || "N/A"}
+                      </InputGroupText>
+                    </InputGroupAddon>
+                  </InputGroup>
                 </FormControl>
                 <FormMessage />
               </FormItem>
