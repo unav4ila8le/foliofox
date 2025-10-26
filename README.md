@@ -192,8 +192,8 @@ N/A
 - [ ] Find a way to have a more accurate historical calculation which doesn't add much overhead. WeeksBack solution is fast but not accurate cause the date is "rounded" to match weeks and not days.
 - [x] Landingpage
 - [x] New UX for adding new positions (one form per position source)
-- [ ] Add ai tool for fetching historical quotes for symbols
-- [ ] Add ai tool for getting dividend yield given symbol
+- [x] Add ai tool for fetching historical quotes for symbols
+- [x] Add ai tool for getting dividend yield given symbol
 - [ ] Add Plaid for user positions sync
 - [ ] Add currency using InputGroup to currency inputs in forms
 - [ ] Let users intuitively reset the cost basis for a position

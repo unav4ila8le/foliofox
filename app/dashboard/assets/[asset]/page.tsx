@@ -11,10 +11,10 @@ import { fetchSinglePosition } from "@/server/positions/fetch";
 import { fetchPortfolioRecords } from "@/server/portfolio-records/fetch";
 import { fetchSymbol } from "@/server/symbols/fetch";
 import { fetchSymbolNews } from "@/server/news/fetch";
-import {
-  calculateSymbolProjectedIncome,
-  type ProjectedIncomeResult,
-} from "@/server/analysis/projected-income";
+import { calculateSymbolProjectedIncome } from "@/server/analysis/projected-income";
+import { calculateSymbolDividendYield } from "@/server/analysis/dividend-yield";
+
+import { formatPercentage, formatCurrency } from "@/lib/number-format";
 
 // Only needed for dynamic routes
 interface AssetPageProps {
@@ -63,15 +63,19 @@ async function AssetContent({
 
   const hasSymbol = Boolean(symbol);
 
-  const projectedIncome = hasSymbol
-    ? await calculateSymbolProjectedIncome(
-        symbol!.id,
-        position.current_quantity,
-      )
-    : { success: true, data: [], currency: position.currency };
+  // Calculate both projected income and dividend yield for symbols
+  const [projectedIncome, dividendYield] = hasSymbol
+    ? await Promise.all([
+        calculateSymbolProjectedIncome(symbol!.id, position.current_quantity),
+        calculateSymbolDividendYield(symbol!.id),
+      ])
+    : [{ success: true, data: [], currency: position.currency }, null];
 
-  const dividendCurrency =
-    (projectedIncome as ProjectedIncomeResult)?.currency || position.currency;
+  const dividendCurrency = projectedIncome?.currency || position.currency;
+
+  // Calculate total annual projected income
+  const totalAnnualIncome =
+    projectedIncome?.data?.reduce((sum, month) => sum + month.income, 0) || 0;
 
   const {
     records,
@@ -102,7 +106,27 @@ async function AssetContent({
           <Separator />
           {/* Projected Income */}
           <div className="space-y-3">
-            <h3 className="font-semibold">Projected Income</h3>
+            <div className="flex flex-row justify-between gap-4">
+              <div>
+                <h3 className="-mt-1 font-semibold">Projected Income</h3>
+                <p className="text-muted-foreground text-sm">
+                  Dividend Yield{" "}
+                  <span className="text-foreground font-medium">
+                    {dividendYield?.dividendYield
+                      ? formatPercentage(dividendYield.dividendYield)
+                      : "N/A"}
+                  </span>
+                </p>
+              </div>
+              <div className="text-right text-sm">
+                <p className="text-muted-foreground">Est. Annual</p>
+                <p className="text-green-600">
+                  {totalAnnualIncome > 0
+                    ? formatCurrency(totalAnnualIncome, dividendCurrency)
+                    : "N/A"}
+                </p>
+              </div>
+            </div>
             <AssetProjectedIncome
               projectedIncome={projectedIncome}
               dividendCurrency={dividendCurrency}
