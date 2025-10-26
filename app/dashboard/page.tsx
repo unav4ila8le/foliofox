@@ -85,7 +85,7 @@ async function ProjectedIncomeWidgetWrapper({
 }
 
 async function PortfolioRecordsWidgetWrapper() {
-  const { records } = await fetchPortfolioRecords();
+  const { records } = await fetchPortfolioRecords({ pageSize: 15 });
   return <PortfolioRecordsWidget portfolioRecordsData={records} />;
 }
 
