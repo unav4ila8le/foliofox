@@ -84,27 +84,37 @@ export async function fetchQuotes(
             });
           }
 
+          if (chartData?.quotes && chartData.quotes.length > 0) {
+            for (let i = chartData.quotes.length - 1; i >= 0; i -= 1) {
+              const quote = chartData.quotes[i];
+              const candidate = quote.adjclose ?? quote.close;
+              if (candidate && candidate > 0) {
+                return { symbolId, dateString, price: candidate, cacheKey };
+              }
+            }
+          }
+
+          // If the chart feed is empty (new listings, suspended symbols), fall
+          // back to the latest trade reported by the quote endpoint.
+          const realtimeQuote = await yahooFinance.quote(symbolId);
+          const marketPrice = realtimeQuote?.regularMarketPrice;
+          const marketTime = realtimeQuote?.regularMarketTime
+            ? new Date(realtimeQuote.regularMarketTime)
+            : null;
+
           if (
-            !chartData ||
-            !chartData.quotes ||
-            chartData.quotes.length === 0
+            marketPrice &&
+            marketPrice > 0 &&
+            marketTime &&
+            !Number.isNaN(marketTime.getTime()) &&
+            marketTime <= period2
           ) {
-            throw new Error(
-              `No chart data found for ${symbolId} on ${dateString}`,
-            );
+            return { symbolId, dateString, price: marketPrice, cacheKey };
           }
 
-          // Use the most recent available data (closest trading day)
-          const latestQuote = chartData.quotes[chartData.quotes.length - 1];
-          const price = latestQuote.adjclose ?? latestQuote.close;
-
-          if (!price || price <= 0) {
-            throw new Error(
-              `No valid price data available for ${symbolId} around ${dateString}`,
-            );
-          }
-
-          return { symbolId, dateString, price, cacheKey };
+          throw new Error(
+            `No chart data found for ${symbolId} on ${dateString}`,
+          );
         } catch (error) {
           console.warn(
             `Failed to fetch quote for ${symbolId} on ${dateString}:`,
