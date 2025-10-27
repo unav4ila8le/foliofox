@@ -75,65 +75,88 @@ export async function AssetHeader({
         <p className="text-muted-foreground">{position.description}</p>
       )}
 
-      {/* Position market data and profit/loss */}
       <div className="bg-card mt-3 grid grid-cols-2 gap-4 rounded-lg border px-4 py-2 text-sm md:grid-cols-4">
-        <div>
-          <p className="text-muted-foreground">Quantity</p>
-          <p className="font-semibold">
-            {position.current_quantity.toLocaleString()}
-          </p>
-        </div>
-        <div>
-          <p className="text-muted-foreground">
-            Market Price{" "}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Info
-                  className="inline-block size-3.5"
-                  aria-label="Market price help"
-                />
-              </TooltipTrigger>
-              <TooltipContent>
-                Market prices and exchange rates are updated daily at 10:00 PM
-                UTC.
-                <br />
-                Data shown is from the previous trading day.
-              </TooltipContent>
-            </Tooltip>
-          </p>
-          <p className="font-semibold">
-            {formatCurrency(position.current_unit_value, position.currency)}
-          </p>
-        </div>
-        <div>
-          <p className="text-muted-foreground">Cost Basis</p>
-          <p className="font-semibold">
-            {formatCurrency(
-              positionWithProfitLoss.cost_basis_per_unit ?? 0,
-              position.currency,
-            )}
-          </p>
-        </div>
-        <div>
-          <p className="text-muted-foreground">P/L (%)</p>
-          <p
-            className={cn(
-              "font-semibold",
-              positionWithProfitLoss.profit_loss >= 0
-                ? "text-green-600"
-                : "text-red-600",
-            )}
-          >
-            {formatCurrency(
-              positionWithProfitLoss.profit_loss,
-              position.currency,
-            )}
-            <span className="ml-1">
-              ({formatPercentage(positionWithProfitLoss.profit_loss_percentage)}
-              )
-            </span>
-          </p>
-        </div>
+        {/* Position market data and profit/loss */}
+        {position.has_market_data ? (
+          <>
+            <div>
+              <p className="text-muted-foreground">Quantity</p>
+              <p className="font-semibold">
+                {position.current_quantity.toLocaleString()}
+              </p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">
+                Market Price{" "}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info
+                      className="inline-block size-3.5"
+                      aria-label="Market price help"
+                    />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Market prices and exchange rates are updated daily at 10:00
+                    PM UTC.
+                    <br />
+                    Data shown is from the previous trading day.
+                  </TooltipContent>
+                </Tooltip>
+              </p>
+              <p className="font-semibold">
+                {formatCurrency(position.current_unit_value, position.currency)}
+              </p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Cost Basis</p>
+              <p className="font-semibold">
+                {formatCurrency(
+                  positionWithProfitLoss.cost_basis_per_unit ?? 0,
+                  position.currency,
+                )}
+              </p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">P/L (%)</p>
+              <p
+                className={cn(
+                  "font-semibold",
+                  positionWithProfitLoss.profit_loss >= 0
+                    ? "text-green-600"
+                    : "text-red-600",
+                )}
+              >
+                {formatCurrency(
+                  positionWithProfitLoss.profit_loss,
+                  position.currency,
+                )}
+                <span className="ml-1">
+                  (
+                  {formatPercentage(
+                    positionWithProfitLoss.profit_loss_percentage,
+                  )}
+                  )
+                </span>
+              </p>
+            </div>
+          </>
+        ) : (
+          // No market data available
+          <>
+            <div>
+              <p className="text-muted-foreground">Quantity</p>
+              <p className="font-semibold">
+                {position.current_quantity.toLocaleString()}
+              </p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Unit Value</p>
+              <p className="font-semibold">
+                {formatCurrency(position.current_unit_value, position.currency)}
+              </p>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
