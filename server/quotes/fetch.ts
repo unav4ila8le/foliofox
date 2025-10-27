@@ -1,6 +1,6 @@
 "use server";
 
-import { format, subDays } from "date-fns";
+import { addDays, format, subDays } from "date-fns";
 import YahooFinance from "yahoo-finance2";
 
 import { createServiceClient } from "@/supabase/service";
@@ -61,10 +61,12 @@ export async function fetchQuotes(
       async ({ symbolId, dateString, cacheKey }) => {
         try {
           // First try to get data for the exact date
-          const period2 = new Date(dateString);
+          const target = new Date(dateString);
+          const period2 = addDays(target, 1);
+
           let chartData = await yahooFinance.chart(symbolId, {
             period1: subDays(period2, 1),
-            period2: period2,
+            period2,
             interval: "1d",
           });
 
@@ -77,7 +79,7 @@ export async function fetchQuotes(
             // Go back up to 7 days to find the closest trading day
             chartData = await yahooFinance.chart(symbolId, {
               period1: subDays(period2, 7),
-              period2: period2,
+              period2,
               interval: "1d",
             });
           }
