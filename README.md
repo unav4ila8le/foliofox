@@ -212,6 +212,7 @@ N/A
 - [ ] Add cron job for domain valuations (after upgrading Vercel account)
 - [ ] Add real estate market estimate
 - [ ] Add private equity valuation
+- [ ] Add liabilities (debt)
 
 ## License
 

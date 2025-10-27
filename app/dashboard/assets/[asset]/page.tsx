@@ -110,8 +110,6 @@ async function AssetContent({
         />
       </div>
 
-      <Separator className="col-span-6" />
-
       {hasSymbol && (
         <div className="col-span-6 space-y-4 lg:col-span-2">
           {/* News */}
