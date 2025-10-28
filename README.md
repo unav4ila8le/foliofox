@@ -53,6 +53,10 @@ OPENAI_API_KEY=your_openai_api_key
 
 # Optional (used for domain valuations)
 REPLICATE_API_TOKEN=your_replicate_api_token
+
+# Optional (used for posthog)
+NEXT_PUBLIC_POSTHOG_KEY=<ph_project_api_key>
+NEXT_PUBLIC_POSTHOG_HOST=https://<us | eu>.i.posthog.com
 ```
 
 ### 3) Run the dev server
@@ -199,20 +203,16 @@ N/A
 - [x] Add currency using InputGroup to value inputs in forms
 - [ ] Let users intuitively reset the cost basis for a position
 - [ ] Add pagination search and filtering to portfolio records
-
----
-
-### Post launch
-
+- [x] Add PostHog
 - [ ] Better tool usage UI in the AI chat
 - [ ] Look at generative UI for AI chat: https://ai-sdk.dev/docs/ai-sdk-ui/generative-user-interfaces
 - [ ] Add a way for the user to "share" their portfolio. Ideally, after agreeing, they get a public sharable link which leads to a single public page view of all their positions and relevant performance charts.
 - [x] Optimize recalculateRecords to use batch requests
 - [ ] Add crypto wallet address sync
-- [ ] Add cron job for domain valuations (after upgrading Vercel account)
+- [ ] Add cron job for domain valuations
 - [ ] Add real estate market estimate
 - [ ] Add private equity valuation
-- [ ] Add liabilities (debt)
+- [ ] Add liabilities (debts)
 
 ## License
 
