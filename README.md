@@ -1,15 +1,17 @@
 # Foliofox
 
-A modern net worth tracking app built with Next.js, Supabase, Shadcn UI, and Tailwind CSS.
+A net worth tracking app built with Next.js, Supabase, Shadcn UI, and Tailwind CSS.
 
 ## Features
 
 - Track net worth over time with interactive charts
 - Multi-currency support with automatic exchange rates
 - Secure authentication and user profiles
+- AI financial advisor
+- Market Data provided by Yahoo Finance
 - Modular, type-safe codebase
 
-## Tech Stack
+## Tech Stack / Frameworks
 
 - Next.js 15 (App Router)
 - TypeScript (strict mode)
@@ -22,7 +24,7 @@ A modern net worth tracking app built with Next.js, Supabase, Shadcn UI, and Tai
 
 - Node.js 22+
 - PostgreSQL 17+ (for database schema operations)
-- A Supabase project (get your Project URL and anon key)
+- A Supabase project (get your Project URL, anon/publishable key, service_role/secret key)
 - Optional: Vercel account (for one-click deploy and scheduled cron jobs)
 
 ### 1) Clone and install
@@ -40,10 +42,8 @@ Create a `.env.local` file in the project root:
 ```bash
 # Required
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-
-# Optional (needed for scheduled jobs / admin tasks)
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_or_publishable_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key_or_secret_key
 
 # Optional (used to authorize cron invocations)
 CRON_SECRET=generate_a_strong_random_string
