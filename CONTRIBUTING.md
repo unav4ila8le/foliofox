@@ -3,98 +3,211 @@
 First off, thanks for taking the time to contribute!
 
 I'm Leonardo the founder of Foliofox. All types of contributions are encouraged and valued.
-See the [Table of Contents](#table-of-contents) for different ways to help and details about how this project handles them. Please make sure to read the relevant section before making your contribution. It will make it a lot easier for me and smooth out the experience for all involved. The community looks forward to your contributions.
+See the [Table of Contents](#table-of-contents) for different ways to help and details about how this project handles them. Please make sure to read the relevant section before making your contribution. The community looks forward to your contributions.
 
-> And if you like the project, but just don't have time to contribute, that's fine. There are other easy ways to support the project and show your appreciation, which I would also be very happy about:
+> And if you like the project, but just don't have time to contribute, that's fine. There are other easy ways to support the project and show your appreciation:
 >
 > - Star the project
-> - Tweet about it
+> - Share it on Reddit/X
 > - Refer this project in your project's readme
-> - Mention the project at local meetups and tell your friends/colleagues
+> - Mention it to friends/colleagues or at your local meetup
+
+If you need help, feel free to reach out to [@unav4ila8le](https://x.com/unav4ila8le).
 
 ## Table of Contents
 
-- [I Have a Question](#i-have-a-question)
-- [I Want To Contribute](#i-want-to-contribute)
+- [Local Development](#local-development)
+- [Types](#types)
+- [Linting & Formatting](#linting--formatting)
+- [Commit Message Convention](#commit-message-convention)
+- [Pull Request Guidelines](#pull-request-guidelines)
 - [Reporting Bugs](#reporting-bugs)
 - [Suggesting Enhancements](#suggesting-enhancements)
-- [Your First Code Contribution](#your-first-code-contribution)
+- [Legal Notice](#legal-notice)
 
-## I Have a Question
+## Local Development
 
-Before you ask a question, it is best to search for existing [Issues](https://github.com/unav4ila8le/foliofox/issues) that might help you. In case you have found a suitable issue and still need clarification, you can write your question in this issue.
+### Prerequisites
 
-If you then still feel the need to ask a question and need clarification, we recommend the following:
+- Node.js 22+
+- PostgreSQL 17+ (for database schema operations)
+- A Supabase project (get your Project URL, anon/publishable key, service_role/secret key)
+- Optional: Vercel account (for one-click deploy and scheduled cron jobs)
 
-- Open an [Issue](https://github.com/unav4ila8le/foliofox/issues/new).
-- Provide as much context as you can about what you're running into.
-- Provide project and platform versions (nodejs, npm, etc), depending on what seems relevant.
+### 1) Clone and install
 
-We will then take care of the issue as soon as possible.
+```bash
+git clone https://github.com/unav4ila8le/foliofox.git
+cd foliofox
+npm install
+```
 
-## I Want To Contribute
+### 2) Configure environment
 
-> ### Legal Notice
->
-> When contributing to this project, you must agree that you have authored 100% of the content, that you have the necessary rights to the content and that the content you contribute may be provided under the project licence.
+Create a `.env.local` file in the project root:
 
-### Reporting Bugs
+```bash
+# Required
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_or_publishable_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key_or_secret_key
 
-#### Before Submitting a Bug Report
+# Optional (used to authorize cron invocations)
+CRON_SECRET=generate_a_strong_random_string
 
-A good bug report shouldn't leave others needing to chase you up for more information. Therefore, I ask you to investigate carefully, collect information and describe the issue in detail in your report. Please complete the following steps in advance to help me fix any potential bug as fast as possible.
+# Optional (used for AI features)
+OPENAI_API_KEY=your_openai_api_key
 
-- Make sure that you are using the latest version.
-- Determine if your bug is really a bug and not an error on your side e.g. using incompatible environment components/versions (Make sure that you have read the [README](https://github.com/unav4ila8le/foliofox#readme). If you are looking for support, you might want to check [this section](#i-have-a-question)).
-- To see if other users have experienced (and potentially already solved) the same issue you are having, check if there is not already a bug report existing for your bug or error in the [bug tracker](https://github.com/unav4ila8le/foliofox/issues?q=label%3Abug).
-- Collect information about the bug:
-  - Stack trace (Traceback)
-  - OS, Platform and Version (Windows, Linux, macOS, x86, ARM)
-  - Version of the interpreter, compiler, SDK, runtime environment, package manager, depending on what seems relevant.
-  - Possibly your input and the output
-  - Can you reliably reproduce the issue? And can you also reproduce it with older versions?
+# Optional (used for domain valuations)
+REPLICATE_API_TOKEN=your_replicate_api_token
 
-#### How Do I Submit a Good Bug Report?
+# Optional (used for PostHog)
+NEXT_PUBLIC_POSTHOG_KEY=<ph_project_api_key>
+NEXT_PUBLIC_POSTHOG_HOST=https://<us | eu>.i.posthog.com
+```
 
-> You must never report security related issues, vulnerabilities or bugs including sensitive information to the issue tracker, or elsewhere in public. Instead sensitive bugs must be sent by email to <leonardobalduzzi@me.com>.
+### 3) Run the dev server
 
-<!-- You may add a PGP key to allow the messages to be sent encrypted as well. -->
+```bash
+npm run dev
+```
 
-We use GitHub issues to track bugs and errors. If you run into an issue with the project:
+Visit http://localhost:3000
 
-- Open an [Issue](https://github.com/unav4ila8le/foliofox/issues/new). (Since I can't be sure at this point whether it is a bug or not, we ask you not to talk about a bug yet and not to label the issue.)
-- Explain the behavior you would expect and the actual behavior.
-- Please provide as much context as possible and describe the _reproduction steps_ that someone else can follow to recreate the issue on their own. This usually includes your code. For good bug reports you should isolate the problem and create a reduced test case.
-- Provide the information you collected in the previous section.
+### 4) Database setup
 
-Once it's filed:
+This repository includes a schema-only dump at `supabase/schema/schema.sql` so you can reproduce the database structure with zero data.
 
-- I will label the issue accordingly.
-- I will try to reproduce the issue with your provided steps. If there are no reproduction steps or no obvious way to reproduce the issue, I will ask you for those steps and mark the issue as `needs repro`. Bugs with the `needs-repro` tag will not be addressed until they are reproduced.
-- If the team is able to reproduce the issue, it will be marked as `bug` and the issue will be left to be [implemented by someone](#your-first-code-contribution).
+**Apply to your own Supabase project:**
+
+```bash
+npx supabase db execute \
+  --db-url "postgresql://postgres:<password>@db.<your-ref>.supabase.co:5432/postgres" \
+  supabase/schema/schema.sql
+```
+
+**Apply locally with the Supabase CLI:**
+
+```bash
+npx supabase start
+npx supabase db reset
+npx supabase db execute supabase/schema/schema.sql
+```
+
+**Regenerate schema dump (maintainers only):**
+
+```bash
+# Note: Requires PostgreSQL 17+ for version compatibility
+pg_dump "postgresql://postgres.<your-project-ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres?sslmode=require" \
+  --schema-only \
+  --schema=public \
+  --file=supabase/schema/schema.sql
+```
+
+**Notes:**
+
+- This is structure-only (no data). App data is generated by the app.
+- The dump includes DDL, RLS, indexes, and functions from the `public` schema.
+- PostgreSQL 17+ is required for generating/importing the schema
+
+### 5) (Optional) Generate TypeScript types from Supabase
+
+If you use your own Supabase project, regenerate `types/database.types.ts`:
+
+```bash
+npx supabase login
+npx supabase link --project-ref <your-project-ref>
+# Option A: use the provided script (update project id in package.json first)
+npm run types:supabase
+# Option B: ad-hoc generation
+npx supabase gen types typescript --project-id <your-project-ref> > types/database.types.ts
+```
+
+### 6) (Optional) Deploy to Vercel
+
+- Import the repo into Vercel.
+- Set the same environment variables (Project Settings → Environment Variables).
+- `vercel.json` includes daily cron jobs at 22:00 UTC for quotes and FX updates.
+- Cron endpoints expect `Authorization: Bearer <CRON_SECRET>`.
+
+If headers can’t be configured in your environment, trigger manually:
+
+```bash
+# Exchange rates
+curl "http://localhost:3000/api/cron/fetch-exchange-rates" \
+  -H "authorization: Bearer $CRON_SECRET"
+
+# Quotes
+curl "http://localhost:3000/api/cron/fetch-quotes" \
+  -H "authorization: Bearer $CRON_SECRET"
+```
+
+### Package dependencies notes
+
+N/A
+
+## Types
+
+We use strict TypeScript for type safety. Some rules to follow:
+
+- Never use `any` type. Implicit or explicit.
+- Prefer `unknown` over `any`. Refine the type.
+- Always type your function parameters and return values explicitly; do not rely on implicit any or inference.
+- Do not use `as` type assertions. The only exception is `as const`.
+
+## Linting & Formatting
+
+Our linter will catch most styling issues that may exist in your code.
+
+- Check lint status: `npm run lint`
+- Check formatting: `npm run format`
+
+## Commit Message Convention
+
+Use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/): `type(scope): summary`
+
+- Allowed types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `build`, `ci`, `perf`
+- Scope: folder or domain, e.g. `server/positions`, `app/dashboard`, `ai`
+
+Examples:
+
+```text
+feat(positions): add cost basis override to new position form
+fix(exchange-rates): handle missing base currency fallback
+docs(contributing): document commit conventions and pr checklist
+```
+
+## Pull Request Guidelines
+
+- Keep PRs small and focused; one change per PR.
+- Title should follow Conventional Commits if possible.
+- Link related issues: Closes #123.
+- Describe what/why; include screenshots for UI changes.
+- Tests if applicable; no lint/type errors; run locally.
+- Follow project rules (RSC-first, TypeScript strict, server actions in server/, import order, naming).
+- Avoid breaking changes; if unavoidable, document migration in the PR.
+- For features, note performance, accessibility, and data model impacts.
+
+## Reporting Bugs
+
+First search existing [issues](https://github.com/unav4ila8le/foliofox/issues). If nothing matches, open a new [issue](https://github.com/unav4ila8le/foliofox/issues/new).
+
+- Ensure you’re on the latest version of `development`
+- Provide clear expected vs actual behavior
+- Include steps to reproduce (ideally a minimal example and screenshots/screen recodings if they apply). If there are no reproduction steps or no obvious way to reproduce the issue, I will ask you for those steps and mark the issue as `needs repro`. Bugs with the `needs-repro` tag will not be addressed until they are reproduced.
+- Add environment details (OS, Node, package manager)
+- **Security issues:** [report a vulnerability](https://github.com/unav4ila8le/foliofox/security) (do not post security issues publicly)
+
+## Suggesting Enhancements
+
+- Search existing [issues](https://github.com/unav4ila8le/foliofox/issues)
+- Explain current vs desired behavior and why it helps most users
+- Include alternatives considered and, if helpful, screenshots or references
+
+## Legal Notice
+
+By contributing to Foliofox, you agree that your contributions will be licensed under its MIT license.
 
 <!-- TODO
  create an issue template for bugs and errors that can be used as a guide and that defines the structure of the information to be included. -->
-
-### Suggesting Enhancements
-
-This section guides you through submitting an enhancement suggestion for Foliofox, **including completely new features and minor improvements to existing functionality**. Following these guidelines will help me and the community understand your suggestion and find related suggestions.
-
-#### Before Submitting an Enhancement
-
-- Make sure that you are using the latest version.
-- Perform a [search](https://github.com/unav4ila8le/foliofox/issues) to see if the enhancement has already been suggested. If it has, add a comment to the existing issue instead of opening a new one.
-- Find out whether your idea fits with the scope and aims of the project. It's up to you to make a strong case to convince the us of the merits of this feature. Keep in mind that we want features that will be useful to the majority of our users and not just a small subset. If you're just targeting a minority of users, consider writing an add-on/plugin library.
-
-#### How Do I Submit a Good Enhancement Suggestion?
-
-Enhancement suggestions are tracked as [GitHub issues](https://github.com/unav4ila8le/foliofox/issues).
-
-- Use a **clear and descriptive title** for the issue to identify the suggestion.
-- Provide a **step-by-step description of the suggested enhancement** in as many details as possible.
-- **Describe the current behavior** and **explain which behavior you expected to see instead** and why. At this point you can also tell which alternatives do not work for you.
-- You may want to **include screenshots or screen recordings** which help you demonstrate the steps or point out the part which the suggestion is related to.
-- **Explain why this enhancement would be useful** to most Foliofox users. You may also want to point out the other projects that solved it better and which could serve as inspiration.
-
-<!-- TODO
- to create an issue template for enhancement suggestions that can be used as a guide and that defines the structure of the information to be included. -->
