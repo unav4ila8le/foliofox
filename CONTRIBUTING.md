@@ -95,6 +95,7 @@ supabase start                # boots the Supabase stack in Docker
 supabase migration up --local # applies the tracked migrations to the local DB
 ```
 
+- Update your `.env.local` with the new local credentials by running `supabase status -o env` and copying the `SUPABASE_URL`, `ANON_KEY`, and `SERVICE_ROLE_KEY` values.
 - The CLI prints the local connection string (`postgresql://postgres:postgres@localhost:54322/postgres` by default).
 - Reset the local database with `supabase db reset --local` (it will replay all migrations and seed data).
 - You can also run `supabase db push --local` if you prefer the same command as remote projects.
