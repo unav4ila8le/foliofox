@@ -30,7 +30,7 @@ If you need help, feel free to reach out to [@unav4ila8le](https://x.com/unav4il
 ### Prerequisites
 
 - Node.js 22+
-- Supabase CLI 2.5+ (ships with the repo via `npx supabase`)
+- Supabase CLI 2.5+ (`supabase --version`; you can also run it via `npx supabase` if you prefer not to install globally)
 - Your own Supabase project (Project URL, anon/publishable key, service_role/secret key, database password)
 - Optional: Docker Desktop (only needed if you want to run the local Supabase stack)
 - Optional: Vercel account (for one-click deploy and scheduled cron jobs)
@@ -68,7 +68,19 @@ NEXT_PUBLIC_POSTHOG_KEY=<ph_project_api_key>
 NEXT_PUBLIC_POSTHOG_HOST=https://<us | eu>.i.posthog.com
 ```
 
-### 3) Run the dev server
+### 3) Apply database migrations (Supabase CLI)
+
+```bash
+supabase login                # once per machine
+supabase link --project-ref <your-project-ref>
+supabase db push --linked     # applies tracked migrations (baseline + new ones)
+```
+
+- You can safely re-run `supabase db push --linked` whenever you need to resync with the repo; it only applies migrations that have not yet been recorded in your project.
+- If prompted, use the **Database Password** from Supabase (Settings → Database).
+- **We do not ship seed/backfill scripts yet**; starter data is typically unnecessary because the app generates what it needs.
+
+### 4) Run the dev server
 
 ```bash
 npm run dev
@@ -76,65 +88,45 @@ npm run dev
 
 Visit http://localhost:3000
 
-### 4) Database setup (Supabase CLI flow)
-
-This repository tracks the database schema in `supabase/schema.sql`. The file is regenerated from production as needed and contains structure only (no data).
-
-#### Recommended: use your own hosted Supabase project
-
-```bash
-npx supabase login # once per machine
-npx supabase link --project-ref <your-project-ref>
-npx supabase db remote --linked < supabase/schema.sql
-```
-
-- The final command pipes the schema dump into your linked Supabase Postgres instance using the Supabase CLI (no direct `psql` required).
-- If you see a password prompt, enter the **Database Password** from the Supabase dashboard (Settings → Database).
-- Re-run the same `supabase db remote --linked < supabase/schema.sql` command any time you need to reset your hosted project to the repo schema.
-
-> **We do not ship seed/backfill scripts yet**; starter data is typically unnecessary because the app creates it during normal usage.
-
 #### Optional: run Supabase locally (requires Docker)
 
 ```bash
-npx supabase init    # once per machine, creates supabase/config.toml
-npx supabase start   # boots the local Supabase stack in Docker
+supabase start                # boots the Supabase stack in Docker
+supabase migration up --local # applies the tracked migrations to the local DB
 ```
 
-- The CLI prints a `postgresql://` connection string (by default `postgres:postgres@localhost:54322/postgres`).
-- Load the schema into that local database with:
+- The CLI prints the local connection string (`postgresql://postgres:postgres@localhost:54322/postgres` by default).
+- Reset the local database with `supabase db reset --local` (it will replay all migrations).
+- Stop the stack with `supabase stop` when you are done.
 
-  ```bash
-  npx supabase db remote \
-    --db-url "postgresql://postgres:postgres@localhost:54322/postgres" \
-    < supabase/schema.sql
-  ```
+#### Maintainers: creating database changes
 
-- Reset the local containers with `npx supabase db reset --local`.
+1. Generate a migration shell:
+   ```bash
+   supabase migration new add_feature_name
+   ```
+2. Edit the generated SQL file in `supabase/migrations/`.
+3. Test locally:
+   ```bash
+   supabase migration up --local
+   ```
+4. Apply remotely:
+   ```bash
+   supabase db push --linked
+   ```
+5. Commit the migration file along with any related code changes.
 
-#### Refresh the schema dump (maintainers only, requires Docker)
-
-```bash
-npx supabase db dump \
-  --linked \
-  --schema public \
-  --file supabase/schema.sql
-```
-
-- Always run the dump command after schema-affecting PRs.
-- Include `supabase/schema.sql` in your commit so contributors stay in sync.
-
-### 5) (Optional) Generate TypeScript types from Supabase
+### 5) Generate TypeScript types from Supabase
 
 If you use your own Supabase project, regenerate `types/database.types.ts`:
 
 ```bash
-npx supabase login
-npx supabase link --project-ref <your-project-ref>
+supabase login
+supabase link --project-ref <your-project-ref>
 # Option A: use the provided script (update project id in package.json first)
 npm run types:supabase
 # Option B: ad-hoc generation
-npx supabase gen types typescript --project-id <your-project-ref> > types/database.types.ts
+supabase gen types typescript --project-id <your-project-ref> > types/database.types.ts
 ```
 
 ### 6) (Optional) Deploy to Vercel

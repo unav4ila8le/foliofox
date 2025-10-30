@@ -3,4 +3,4 @@ node_modules
 build
 dist
 supabase/.temp
-supabase/schema
+supabase/migrations

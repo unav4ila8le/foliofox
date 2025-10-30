@@ -25,10 +25,10 @@ A net worth tracking app with an AI-powered financial advisor that helps you mak
 - `npm install`
 - Create `.env.local` (variables listed in [CONTRIBUTING.md](/CONTRIBUTING.md))
 - `npx supabase login` and `npx supabase link --project-ref <your-project-ref>`
-- `npx supabase db remote --linked < supabase/schema.sql` to sync schema
+- `npx supabase db push --linked` to apply the tracked migrations to your Supabase project
 - `npm run dev`
 
-For more details on running Foliofox locally please read the [contributing guide](/CONTRIBUTING.md).
+Need more detail or want to run the Supabase stack locally? Read the [contributing guide](/CONTRIBUTING.md).
 
 ## Contributing
 
