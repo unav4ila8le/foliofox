@@ -77,8 +77,8 @@ supabase db push --linked     # applies tracked migrations (baseline + new ones)
 ```
 
 - You can safely re-run `supabase db push --linked` whenever you need to resync with the repo; it only applies migrations that have not yet been recorded in your project.
+- The tracked migrations include the reference data (currencies + position categories) required for signup and basic usage.
 - If prompted, use the **Database Password** from Supabase (Settings → Database).
-- **We do not ship seed/backfill scripts yet**; starter data is typically unnecessary because the app generates what it needs.
 
 ### 4) Run the dev server
 
@@ -96,7 +96,8 @@ supabase migration up --local # applies the tracked migrations to the local DB
 ```
 
 - The CLI prints the local connection string (`postgresql://postgres:postgres@localhost:54322/postgres` by default).
-- Reset the local database with `supabase db reset --local` (it will replay all migrations).
+- Reset the local database with `supabase db reset --local` (it will replay all migrations and seed data).
+- You can also run `supabase db push --local` if you prefer the same command as remote projects.
 - Stop the stack with `supabase stop` when you are done.
 
 #### Maintainers: creating database changes
@@ -115,6 +116,8 @@ supabase migration up --local # applies the tracked migrations to the local DB
    supabase db push --linked
    ```
 5. Commit the migration file along with any related code changes.
+
+- If you update reference tables (currencies, position categories), edit the `*_seed_reference_data.sql` migration or add a new seed migration so contributors stay in sync.
 
 ### 5) Generate TypeScript types from Supabase
 
