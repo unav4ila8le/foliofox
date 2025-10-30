@@ -24,11 +24,11 @@ A net worth tracking app with an AI-powered financial advisor that helps you mak
 
 - `npm install`
 - Create `.env.local` (variables listed in [CONTRIBUTING.md](/CONTRIBUTING.md))
-- `npx supabase login` and `npx supabase link --project-ref <your-project-ref>`
-- `npx supabase db push --linked` to apply the tracked migrations to your Supabase project
+- `supabase login` and `supabase link --project-ref <your-project-ref>`
+- `supabase db push --linked` to apply schema **and** seed reference data (currencies, position categories)
 - `npm run dev`
 
-Need more detail or want to run the Supabase stack locally? Read the [contributing guide](/CONTRIBUTING.md).
+Need more detail or want to run the Supabase stack locally? Read the [contributing guide](/CONTRIBUTING.md). Local CLI users can also run `supabase db push --local` to load the same schema + seeds into Docker.
 
 ## Contributing
 
@@ -88,6 +88,7 @@ Please read the [contributing guide](/CONTRIBUTING.md).
 - [ ] Add a way for the user to "share" their portfolio. Ideally, after agreeing, they get a public sharable link which leads to a single public page view of all their positions and relevant performance charts.
 - [x] Optimize recalculateRecords to use batch requests
 - [ ] Add crypto wallet address sync
+- [ ] Find solution for when symbols are changed/renamed
 - [ ] Add cron job for domain valuations
 - [ ] Add real estate market estimate
 - [ ] Add private equity valuation
