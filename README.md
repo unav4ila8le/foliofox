@@ -20,6 +20,16 @@ A net worth tracking app with an AI-powered financial advisor that helps you mak
 - Supabase (Postgres, Auth, Storage)
 - Tailwind CSS
 
+## Local Development (Quick Start)
+
+- `npm install`
+- Create `.env.local` (variables listed in [CONTRIBUTING.md](/CONTRIBUTING.md))
+- `npx supabase login` and `npx supabase link --project-ref <your-project-ref>`
+- `npx supabase db remote --linked < supabase/schema.sql` to sync schema
+- `npm run dev`
+
+For more details on running Foliofox locally please read the [contributing guide](/CONTRIBUTING.md).
+
 ## Contributing
 
 Please read the [contributing guide](/CONTRIBUTING.md).
