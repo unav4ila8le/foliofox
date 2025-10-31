@@ -11,8 +11,8 @@ import {
 } from "@/components/ui/input-group";
 import { NewAssetButton } from "@/components/dashboard/new-asset";
 import { TableActionsDropdown } from "./table-actions";
-import { DeletePositionDialog } from "@/components/dashboard/positions/asset/row-actions/delete-dialog";
-import { ArchivePositionDialog } from "@/components/dashboard/positions/asset/row-actions/archive-dialog";
+import { DeletePositionDialog } from "@/components/dashboard/positions/shared/delete-dialog";
+import { ArchivePositionDialog } from "@/components/dashboard/positions/shared/archive-dialog";
 import { DataTable } from "@/components/dashboard/tables/base/data-table";
 import { BulkActionBar } from "@/components/dashboard/tables/base/bulk-action-bar";
 import { columns } from "./columns";

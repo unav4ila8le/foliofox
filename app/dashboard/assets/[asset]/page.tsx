@@ -51,6 +51,7 @@ async function AssetContent({
 }) {
   // Fetch position with snapshots to calculate P/L
   const { position, snapshots } = await fetchSinglePosition(positionId, {
+    includeArchived: true,
     includeSnapshots: true,
     asOfDate: new Date(),
   });

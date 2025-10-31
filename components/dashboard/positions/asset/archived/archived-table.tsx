@@ -2,7 +2,6 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 import { Trash2, ArchiveRestore, Search } from "lucide-react";
 
 import {
@@ -11,11 +10,11 @@ import {
   InputGroupAddon,
 } from "@/components/ui/input-group";
 import { BulkActionBar } from "@/components/dashboard/tables/base/bulk-action-bar";
-import { DeletePositionDialog } from "@/components/dashboard/positions/asset/row-actions/delete-dialog";
+import { DeletePositionDialog } from "@/components/dashboard/positions/shared/delete-dialog";
 import { DataTable } from "@/components/dashboard/tables/base/data-table";
 import { columns } from "./columns";
 
-import { restorePositions } from "@/server/positions/restore";
+import { useRestorePosition } from "@/hooks/use-restore-positions";
 
 import type { TransformedPosition } from "@/types/global.types";
 
@@ -24,12 +23,12 @@ interface ArchivedTableProps {
 }
 
 export function ArchivedAssetsTable({ data }: ArchivedTableProps) {
-  const [isRestoring, setIsRestoring] = useState(false);
   const [filterValue, setFilterValue] = useState("");
   const [selectedRows, setSelectedRows] = useState<TransformedPosition[]>([]);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
 
   const router = useRouter();
+  const { restorePositions, isRestoring } = useRestorePosition();
 
   // Handle row click to navigate to asset page
   const handleRowClick = useCallback(
@@ -39,25 +38,10 @@ export function ArchivedAssetsTable({ data }: ArchivedTableProps) {
     [router],
   );
 
-  // Restore positions
-  const handleRestore = async () => {
-    setIsRestoring(true);
-    try {
-      const positionIds = selectedRows.map((row) => row.id);
-      const result = await restorePositions(positionIds);
-      if (!result.success) {
-        throw new Error(result.message || "Failed to restore asset(s)");
-      }
-      toast.success(`${result.count} asset(s) restored successfully`);
-      // Reset selection state
-      setSelectedRows([]);
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to restore asset(s)",
-      );
-    } finally {
-      setIsRestoring(false);
-    }
+  // Handle restore selected
+  const handleRestoreSelected = async () => {
+    await restorePositions(selectedRows.map((row) => row.id));
+    setSelectedRows([]);
   };
 
   return (
@@ -95,7 +79,7 @@ export function ArchivedAssetsTable({ data }: ArchivedTableProps) {
           actions={[
             {
               label: "Restore selected",
-              onClick: handleRestore,
+              onClick: handleRestoreSelected,
               icon: <ArchiveRestore className="size-4" />,
               variant: "outline",
               disabled: isRestoring,

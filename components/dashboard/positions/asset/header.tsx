@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { EditAssetButton } from "./edit-asset-button";
+import { AssetMoreActionsButton } from "./asset-more-actions-button";
 
 import { formatCurrency, formatPercentage } from "@/lib/number-format";
 import { cn } from "@/lib/utils";
@@ -39,6 +40,7 @@ export async function AssetHeader({
             </Badge>
           )}
           <EditAssetButton position={position} />
+          <AssetMoreActionsButton position={position} />
         </div>
       </div>
 
