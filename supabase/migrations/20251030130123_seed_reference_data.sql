@@ -16,7 +16,6 @@ SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
-
 --
 -- Data for Name: currencies; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -43,8 +42,6 @@ INSERT INTO public.currencies (alphabetic_code, name, numeric_code, minor_unit) 
 INSERT INTO public.currencies (alphabetic_code, name, numeric_code, minor_unit) VALUES ('MYR', 'Malaysian Ringgit', 458, 2) ON CONFLICT (alphabetic_code) DO NOTHING;
 INSERT INTO public.currencies (alphabetic_code, name, numeric_code, minor_unit) VALUES ('BRL', 'Brazilian Real', 986, 2) ON CONFLICT (alphabetic_code) DO NOTHING;
 INSERT INTO public.currencies (alphabetic_code, name, numeric_code, minor_unit) VALUES ('INR', 'Indian Rupee', 356, 2) ON CONFLICT (alphabetic_code) DO NOTHING;
-
-
 --
 -- Data for Name: position_categories; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -57,8 +54,6 @@ INSERT INTO public.position_categories (id, name, description, display_order, po
 INSERT INTO public.position_categories (id, name, description, display_order, position_type) VALUES ('cash', 'Cash & Equivalents', 'Cash, bank accounts, and money market funds', 0, 'asset') ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.position_categories (id, name, description, display_order, position_type) VALUES ('other', 'Others', 'Collectibles, Art, Private Equity, and other alternative assets', 7, 'asset') ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.position_categories (id, name, description, display_order, position_type) VALUES ('domain', 'Domains', 'Registered internet domains held as digital assets.', 6, 'asset') ON CONFLICT (id) DO NOTHING;
-
-
 --
 -- PostgreSQL database dump complete
---
+--;
