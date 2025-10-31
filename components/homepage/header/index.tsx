@@ -45,7 +45,7 @@ export function Header({
             <Button asChild size="sm" className="h-7">
               <Link href="/dashboard">Dashboard</Link>
             </Button>
-            <UserMenu profile={profile} email={email}>
+            <UserMenu profile={profile} email={email} menuAlign="end">
               <Avatar className="cursor-pointer">
                 <AvatarImage src={avatarUrl} alt={username} />
                 <AvatarFallback className="bg-background uppercase">
