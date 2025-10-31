@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { toast } from "sonner";
 import {
   MoreHorizontal,
   Trash2,
@@ -23,10 +22,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { useNewPortfolioRecordDialog } from "@/components/dashboard/new-portfolio-record";
-import { ArchivePositionDialog } from "./archive-dialog";
-import { DeletePositionDialog } from "./delete-dialog";
+import { ArchivePositionDialog } from "@/components/dashboard/positions/shared/archive-dialog";
+import { DeletePositionDialog } from "@/components/dashboard/positions/shared/delete-dialog";
 
-import { restorePosition } from "@/server/positions/restore";
+import { useRestorePosition } from "@/hooks/use-restore-positions";
 
 import type { TransformedPosition } from "@/types/global.types";
 import { PORTFOLIO_RECORD_TYPES } from "@/types/enums";
@@ -34,7 +33,8 @@ import { PORTFOLIO_RECORD_TYPES } from "@/types/enums";
 export function ActionsCell({ position }: { position: TransformedPosition }) {
   const { setOpen, setPreselectedPosition, setInitialTab } =
     useNewPortfolioRecordDialog();
-  const [isRestoring, setIsRestoring] = useState(false);
+  const { restorePosition, isRestoring } = useRestorePosition();
+
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
@@ -67,25 +67,6 @@ export function ActionsCell({ position }: { position: TransformedPosition }) {
     setPreselectedPosition(position);
     setInitialTab("sell-form");
     setOpen(true);
-  };
-
-  // Restore position
-  const handleRestore = async () => {
-    setIsRestoring(true);
-    try {
-      const result = await restorePosition(position.id);
-      if (result.success) {
-        toast.success("Position restored successfully");
-      } else {
-        throw new Error(result.message || "Failed to restore position");
-      }
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to restore position",
-      );
-    } finally {
-      setIsRestoring(false);
-    }
   };
 
   return (
@@ -128,7 +109,10 @@ export function ActionsCell({ position }: { position: TransformedPosition }) {
 
           {/* Archive/restore position */}
           {position.is_archived ? (
-            <DropdownMenuItem onSelect={handleRestore} disabled={isRestoring}>
+            <DropdownMenuItem
+              onSelect={() => restorePosition(position.id)}
+              disabled={isRestoring}
+            >
               {isRestoring ? (
                 <Spinner />
               ) : (

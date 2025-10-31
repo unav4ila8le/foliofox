@@ -21,7 +21,7 @@ function PositionName({ positionId }: { positionId: string }) {
   const [name, setName] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchSinglePosition(positionId)
+    fetchSinglePosition(positionId, { includeArchived: true })
       .then((position) => setName(position.name))
       .catch(() => setName("Unknown Position"));
   }, [positionId]);

@@ -80,11 +80,17 @@ export async function fetchPositions(options: FetchPositionsOptions = {}) {
   if (onlyArchived) baseQuery.not("archived_at", "is", null);
   else if (!includeArchived) baseQuery.is("archived_at", null);
 
-  // Run the query and order by category display order
-  const { data: positions, error } = await baseQuery.order(
-    "position_categories(display_order)",
-    { ascending: true },
-  );
+  // Order results
+  if (onlyArchived) {
+    // Archived list: newest archived first
+    baseQuery.order("archived_at", { ascending: false });
+  } else {
+    // Non-archived views: order by category display order
+    baseQuery.order("position_categories(display_order)", { ascending: true });
+  }
+
+  // Run the query
+  const { data: positions, error } = await baseQuery;
 
   if (error) throw new Error(error.message);
 

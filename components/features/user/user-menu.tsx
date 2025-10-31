@@ -62,7 +62,7 @@ export function UserMenu({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
         <DropdownMenuContent
-          className="w-[var(--radix-dropdown-menu-trigger-width)] md:w-auto md:min-w-56"
+          className="min-w-(--radix-dropdown-menu-trigger-width) md:w-auto md:min-w-56"
           side={menuSide}
           align={menuAlign}
           sideOffset={menuSideOffset}
