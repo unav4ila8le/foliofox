@@ -41,8 +41,7 @@ If you need help, feel free to reach out to [@unav4ila8le](https://x.com/unav4il
 git clone https://github.com/unav4ila8le/foliofox.git
 cd foliofox
 npm install
-# Ensure you are on the development branch
-git checkout development
+git pull # stay up to date with upstream
 ```
 
 ### 2) Configure environment
@@ -191,7 +190,7 @@ docs(contributing): document commit conventions and pr checklist
 ## Pull Request Guidelines
 
 - Keep PRs small and focused; one change per PR.
-- Target the `development` branch for all PRs; we fast-forward releases into `main` after testing.
+- Target the `main` branch for all PRs.
 - Title should follow Conventional Commits if possible.
 - Link related issues, if any: Closes #123.
 - Describe what/why; include screenshots for UI changes.
@@ -204,17 +203,17 @@ docs(contributing): document commit conventions and pr checklist
 
 First search existing [issues](https://github.com/unav4ila8le/foliofox/issues). If nothing matches, open a new [issue](https://github.com/unav4ila8le/foliofox/issues/new).
 
-- Ensure you’re on the latest version of `development`
-- Provide clear expected vs actual behavior
+- Ensure you’re on the latest version of `main`.
+- Provide clear expected vs actual behavior.
 - Include steps to reproduce (ideally a minimal example and screenshots/screen recodings if they apply). If there are no reproduction steps or no obvious way to reproduce the issue, I will ask you for those steps and mark the issue as `needs repro`. Bugs with the `needs-repro` tag will not be addressed until they are reproduced.
-- Add environment details (OS, Node, package manager)
-- **Security issues:** [report a vulnerability](https://github.com/unav4ila8le/foliofox/security) (do not post security issues publicly)
+- Add environment details (OS, Node, package manager).
+- **Security issues:** [report a vulnerability](https://github.com/unav4ila8le/foliofox/security) (do not post security issues publicly).
 
 ## Suggesting Enhancements
 
-- Search existing [issues](https://github.com/unav4ila8le/foliofox/issues)
-- Explain current vs desired behavior and why it helps most users
-- Include alternatives considered and, if helpful, screenshots or references
+- Search existing [issues](https://github.com/unav4ila8le/foliofox/issues).
+- Explain current vs desired behavior and why it helps most users.
+- Include alternatives considered and, if helpful, screenshots or references.
 
 ## Legal Notice
 
