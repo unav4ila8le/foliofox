@@ -38,23 +38,48 @@ export async function fetchQuotes(
   const symbolIds = [...new Set(cacheQueries.map((q) => q.symbolId))];
   const dateStrings = [...new Set(cacheQueries.map((q) => q.dateString))];
 
-  const { data: cachedQuotes, error: cachedError } = await supabase
-    .from("quotes")
-    .select("symbol_id, date, price")
-    .in("symbol_id", symbolIds)
-    .in("date", dateStrings);
+  const chunkArray = <T>(arr: T[], size: number) => {
+    const chunks: T[][] = [];
+    for (let i = 0; i < arr.length; i += size) {
+      chunks.push(arr.slice(i, i + size));
+    }
+    return chunks;
+  };
 
-  if (cachedError) {
-    console.error("[fetchQuotes] cache query error:", cachedError);
-  } else {
-    console.log(
-      "[fetchQuotes] cache hits",
-      cachedQuotes?.length ?? 0,
-      "unique symbols",
-      symbolIds.length,
-      "unique dates",
-      dateStrings.length,
-    );
+  // Chunk Supabase lookups to stay comfortably under Supabase's 1k row limit
+  const MAX_ROWS_PER_QUERY = 900;
+  const baseChunkSize = Math.max(1, Math.floor(Math.sqrt(MAX_ROWS_PER_QUERY)));
+  const symbolChunkSize = Math.max(
+    1,
+    Math.min(symbolIds.length || 1, baseChunkSize),
+  );
+  const dateChunkSize = Math.max(
+    1,
+    Math.min(dateStrings.length || 1, baseChunkSize),
+  );
+
+  let cachedQuotes: Array<{ symbol_id: string; date: string; price: number }> =
+    [];
+
+  for (const symbolChunk of chunkArray(symbolIds, symbolChunkSize)) {
+    for (const dateChunk of chunkArray(dateStrings, dateChunkSize)) {
+      if (!symbolChunk.length || !dateChunk.length) continue;
+
+      const { data, error } = await supabase
+        .from("quotes")
+        .select("symbol_id, date, price")
+        .in("symbol_id", symbolChunk)
+        .in("date", dateChunk);
+
+      if (error) {
+        console.error("[fetchQuotes] cache query error:", error);
+        continue;
+      }
+
+      if (data?.length) {
+        cachedQuotes = cachedQuotes.concat(data);
+      }
+    }
   }
 
   // Store cached results
@@ -70,31 +95,12 @@ export async function fetchQuotes(
 
   // 2. Fetch missing quotes from Yahoo Finance grouped by symbol
   if (missingRequests.length > 0) {
-    const sample = missingRequests.slice(0, 5);
-    const missingBySymbol = new Map<string, number>();
-    missingRequests.forEach(({ symbolId }) => {
-      missingBySymbol.set(symbolId, (missingBySymbol.get(symbolId) ?? 0) + 1);
-    });
-    const topMissing = Array.from(missingBySymbol.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5);
-    console.log(
-      "[fetchQuotes] missingRequests",
-      missingRequests.length,
-      sample.map(({ symbolId, dateString }) => `${symbolId}|${dateString}`),
-      "top",
-      topMissing,
-    );
-
+    // Group requested calendar days per symbol so we can batch chart calls
     const requestsBySymbol = new Map<string, Set<string>>();
-
     missingRequests.forEach(({ symbolId, dateString }) => {
       const existing = requestsBySymbol.get(symbolId);
-      if (existing) {
-        existing.add(dateString);
-      } else {
-        requestsBySymbol.set(symbolId, new Set([dateString]));
-      }
+      if (existing) existing.add(dateString);
+      else requestsBySymbol.set(symbolId, new Set([dateString]));
     });
 
     const successfulFetches: Array<{
@@ -114,21 +120,35 @@ export async function fetchQuotes(
       const earliest = parseISO(dateStringsSorted[0]);
       const latest = parseISO(dateStringsSorted[dateStringsSorted.length - 1]);
 
-      const period1 = subDays(earliest, 7);
-      const period2 = addDays(latest, 1);
+      const period1Exact = earliest;
+      const period2Exact = addDays(earliest, 1);
+      const period1Extended = subDays(earliest, 7);
+      const period2Extended = addDays(latest, 1);
 
       let chartData;
       try {
+        // First try a tight range around the requested dates
         chartData = await yahooFinance.chart(symbolId, {
-          period1,
-          period2,
+          period1: period1Exact,
+          period2: period2Exact,
           interval: "1d",
         });
+
+        const hasResults = chartData?.quotes?.length;
+        if (!hasResults) {
+          // Fallback: expand to 7 days prior to capture the closest trading day
+          chartData = await yahooFinance.chart(symbolId, {
+            period1: period1Extended,
+            period2: period2Extended,
+            interval: "1d",
+          });
+        }
       } catch (error) {
         console.warn(`Failed to fetch chart for ${symbolId}:`, error);
-        continue;
+        chartData = null;
       }
 
+      // Normalize chart quotes into sortable { dateKey, price } tuples
       const quoteEntries = (chartData?.quotes ?? [])
         .map((quote) => {
           const date = quote.date ? new Date(quote.date) : null;
@@ -143,15 +163,15 @@ export async function fetchQuotes(
           };
         })
         .filter(
-          (
-            entry,
-          ): entry is { dateKey: string; price: number } => entry !== null,
+          (entry): entry is { dateKey: string; price: number } =>
+            entry !== null,
         )
         .sort((a, b) => a.dateKey.localeCompare(b.dateKey));
 
       let pointer = 0;
       let lastPrice: number | null = null;
 
+      // Walk chronologically and reuse the latest available trade price
       for (const dateString of dateStringsSorted) {
         while (pointer < quoteEntries.length) {
           const entry = quoteEntries[pointer];
@@ -179,20 +199,56 @@ export async function fetchQuotes(
           cacheKey,
         });
       }
+
+      // Final safety net: fallback to realtime quote when chart feed is empty
+      if (!successfulFetches.some((entry) => entry.symbolId === symbolId)) {
+        try {
+          const realtimeQuote = await yahooFinance.quote(symbolId);
+          const marketPrice = realtimeQuote?.regularMarketPrice;
+          const marketTimeRaw = realtimeQuote?.regularMarketTime;
+          const marketTime = marketTimeRaw ? new Date(marketTimeRaw) : null;
+
+          if (
+            marketPrice &&
+            marketPrice > 0 &&
+            marketTime &&
+            !Number.isNaN(marketTime.getTime()) &&
+            marketTime >= period1Extended &&
+            marketTime <= period2Extended
+          ) {
+            const marketDateKey = format(marketTime, "yyyy-MM-dd");
+            const latestRequest = dateStringsSorted.at(-1);
+
+            if (latestRequest && latestRequest === marketDateKey) {
+              const cacheKey = `${symbolId}|${latestRequest}`;
+              results.set(cacheKey, marketPrice);
+              successfulFetches.push({
+                symbolId,
+                dateString: latestRequest,
+                price: marketPrice,
+                cacheKey,
+              });
+            }
+          }
+        } catch (error) {
+          console.warn(
+            `Failed to fetch realtime quote for ${symbolId}:`,
+            error,
+          );
+        }
+      }
     }
 
     if (upsert && successfulFetches.length > 0) {
       const supabase = await createServiceClient();
-      const { error: insertError } = await supabase
-        .from("quotes")
-        .upsert(
-          successfulFetches.map(({ symbolId, dateString, price }) => ({
-            symbol_id: symbolId,
-            date: dateString,
-            price,
-          })),
-          { onConflict: "symbol_id,date" },
-        );
+      const { error: insertError } = await supabase.from("quotes").upsert(
+        successfulFetches.map(({ symbolId, dateString, price }) => ({
+          symbol_id: symbolId,
+          date: dateString,
+          price,
+        })),
+        { onConflict: "symbol_id,date" },
+      );
 
       if (insertError) {
         console.error("Failed to bulk insert quotes:", insertError);
