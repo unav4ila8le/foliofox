@@ -3,10 +3,12 @@
 import { format } from "date-fns";
 
 import { getCurrentUser } from "@/server/auth/actions";
-import { fetchMarketData } from "@/server/market-data/fetch";
+import {
+  fetchMarketData,
+  toMarketDataPositions,
+} from "@/server/market-data/fetch";
 import { resolveMarketDataForPositions } from "@/server/market-data/sources/resolver";
 
-import type { MarketDataPosition } from "@/server/market-data/sources/types";
 import type {
   Position,
   PositionSnapshot,
@@ -105,22 +107,16 @@ export async function fetchPositions(options: FetchPositionsOptions = {}) {
 
   if (!positions?.length) return [];
 
-  const positionIds = positions.map((position) => position.id);
-
-  const marketDataPositionsAll: MarketDataPosition[] = positions.map(
-    (position) => ({
-      id: position.id,
-      currency: position.currency,
-      symbol_id: position.symbol_id ?? null,
-      domain_id: position.domain_id ?? null,
-    }),
-  );
+  const marketDataPositionsAll = await toMarketDataPositions(positions);
 
   // Build snapshot query for as-of valuation or latest
   let snapshotsQuery = supabase
     .from("position_snapshots")
     .select("*")
-    .in("position_id", positionIds)
+    .in(
+      "position_id",
+      marketDataPositionsAll.map((p) => p.id),
+    )
     .eq("user_id", user.id)
     .order("position_id")
     .order("date", { ascending: false })

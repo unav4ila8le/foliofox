@@ -5,9 +5,9 @@ import { differenceInWeeks, startOfYear, format } from "date-fns";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
 import {
-  fetchNetWorthHistory,
+  fetchNetWorthHistoryDaily,
   NetWorthHistoryData,
-} from "@/server/analysis/net-worth-history";
+} from "@/server/analysis/net-worth-history-daily";
 import {
   fetchNetWorthChange,
   NetWorthChangeData,
@@ -82,10 +82,11 @@ export function NetWorthLineChart({
           : Number(weeks);
 
       // Fetch both history and change in parallel
+      const daysBack = weeksBackNum * 7;
       const [newHistory, newChange] = await Promise.all([
-        fetchNetWorthHistory({
+        fetchNetWorthHistoryDaily({
           targetCurrency: currency,
-          weeksBack: weeksBackNum,
+          daysBack,
         }),
         fetchNetWorthChange({
           targetCurrency: currency,

@@ -11,7 +11,7 @@ import { PortfolioRecordsWidget } from "@/components/dashboard/portfolio-records
 
 import { fetchProfile } from "@/server/profile/actions";
 import { calculateNetWorth } from "@/server/analysis/net-worth";
-import { fetchNetWorthHistory } from "@/server/analysis/net-worth-history";
+import { fetchNetWorthHistoryDaily } from "@/server/analysis/net-worth-history-daily";
 import { fetchNetWorthChange } from "@/server/analysis/net-worth-change";
 import { calculateAssetAllocation } from "@/server/analysis/asset-allocation";
 import { fetchPortfolioNews } from "@/server/news/fetch";
@@ -26,10 +26,11 @@ async function NetWorthChartWrapper({
   displayCurrency: string;
   netWorth: number;
 }) {
-  // Fetch both history and change for default period (24 weeks)
+  // Fetch both history and change for default period (24 weeks -> 168 days)
   const [netWorthHistory, netWorthChange] = await Promise.all([
-    fetchNetWorthHistory({
+    fetchNetWorthHistoryDaily({
       targetCurrency: displayCurrency,
+      daysBack: 24 * 7,
     }),
     fetchNetWorthChange({
       targetCurrency: displayCurrency,

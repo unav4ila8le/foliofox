@@ -27,6 +27,16 @@ export interface MarketDataHandler {
   ): Promise<Map<string, number>>;
 
   /**
+   * Fetch market data for all applicable positions at a range of dates.
+   * Returns a map where keys match the format from `getKey()`.
+   */
+  fetchForPositionsRange?(
+    positions: MarketDataPosition[],
+    dates: Date[],
+    options?: { upsert?: boolean; eligibleDates?: Map<string, Set<string>> },
+  ): Promise<Map<string, number>>;
+
+  /**
    * The key used by callers to look up the value in the map returned by fetchForPositions.
    * Return null if the positions does not have enough information for a key.
    */

@@ -34,6 +34,40 @@ export const domainHandler: MarketDataHandler = {
     }
   },
 
+  async fetchForPositionsRange(
+    positions: MarketDataPosition[],
+    dates: Date[],
+    options?: { upsert?: boolean; eligibleDates?: Map<string, Set<string>> },
+  ) {
+    const requests: DomainRequest[] = [];
+    const dedup = new Set<string>();
+
+    for (const date of dates) {
+      const dateKey = format(date, "yyyy-MM-dd");
+
+      for (const position of positions) {
+        if (!position.domain_id) continue;
+
+        const allowedDates = options?.eligibleDates?.get(position.id ?? "");
+        if (allowedDates && !allowedDates.has(dateKey)) continue;
+
+        const dedupKey = `${position.domain_id}|${dateKey}`;
+        if (dedup.has(dedupKey)) continue;
+        dedup.add(dedupKey);
+
+        requests.push({ domain: position.domain_id, date });
+      }
+    }
+
+    if (requests.length === 0) return new Map();
+
+    try {
+      return await fetchDomainValuations(requests, options?.upsert ?? true);
+    } catch {
+      return new Map();
+    }
+  },
+
   getKey(position: MarketDataPosition, date: Date) {
     if (!position.domain_id) return null;
     return `${position.domain_id}|${format(date, "yyyy-MM-dd")}`;

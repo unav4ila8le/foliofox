@@ -1,6 +1,6 @@
 "use server";
 
-import { addDays, format, subDays } from "date-fns";
+import { addDays, compareAsc, format, parseISO, subDays } from "date-fns";
 import YahooFinance from "yahoo-finance2";
 
 import { createServiceClient } from "@/supabase/service";
@@ -38,11 +38,24 @@ export async function fetchQuotes(
   const symbolIds = [...new Set(cacheQueries.map((q) => q.symbolId))];
   const dateStrings = [...new Set(cacheQueries.map((q) => q.dateString))];
 
-  const { data: cachedQuotes } = await supabase
+  const { data: cachedQuotes, error: cachedError } = await supabase
     .from("quotes")
     .select("symbol_id, date, price")
     .in("symbol_id", symbolIds)
     .in("date", dateStrings);
+
+  if (cachedError) {
+    console.error("[fetchQuotes] cache query error:", cachedError);
+  } else {
+    console.log(
+      "[fetchQuotes] cache hits",
+      cachedQuotes?.length ?? 0,
+      "unique symbols",
+      symbolIds.length,
+      "unique dates",
+      dateStrings.length,
+    );
+  }
 
   // Store cached results
   cachedQuotes?.forEach((quote) => {
@@ -55,110 +68,131 @@ export async function fetchQuotes(
     ({ cacheKey }) => !results.has(cacheKey),
   );
 
-  // 2. Fetch missing quotes from Yahoo Finance in parallel
+  // 2. Fetch missing quotes from Yahoo Finance grouped by symbol
   if (missingRequests.length > 0) {
-    const fetchPromises = missingRequests.map(
-      async ({ symbolId, dateString, cacheKey }) => {
-        try {
-          // First try to get data for the exact date
-          const target = new Date(dateString);
-          const period2 = addDays(target, 1);
-
-          let chartData = await yahooFinance.chart(symbolId, {
-            period1: subDays(period2, 1),
-            period2,
-            interval: "1d",
-          });
-
-          // If no data for exact date (weekend/holiday), extend the range
-          if (
-            !chartData ||
-            !chartData.quotes ||
-            chartData.quotes.length === 0
-          ) {
-            // Go back up to 7 days to find the closest trading day
-            chartData = await yahooFinance.chart(symbolId, {
-              period1: subDays(period2, 7),
-              period2,
-              interval: "1d",
-            });
-          }
-
-          if (chartData?.quotes && chartData.quotes.length > 0) {
-            for (let i = chartData.quotes.length - 1; i >= 0; i -= 1) {
-              const quote = chartData.quotes[i];
-              const candidate = quote.adjclose ?? quote.close;
-              if (candidate && candidate > 0) {
-                return { symbolId, dateString, price: candidate, cacheKey };
-              }
-            }
-          }
-
-          // If the chart feed is empty (new listings, suspended symbols), fall
-          // back to the latest trade reported by the quote endpoint.
-          const realtimeQuote = await yahooFinance.quote(symbolId);
-          const marketPrice = realtimeQuote?.regularMarketPrice;
-          const marketTime = realtimeQuote?.regularMarketTime
-            ? new Date(realtimeQuote.regularMarketTime)
-            : null;
-
-          if (
-            marketPrice &&
-            marketPrice > 0 &&
-            marketTime &&
-            !Number.isNaN(marketTime.getTime()) &&
-            marketTime <= period2
-          ) {
-            return { symbolId, dateString, price: marketPrice, cacheKey };
-          }
-
-          throw new Error(
-            `No chart data found for ${symbolId} on ${dateString}`,
-          );
-        } catch (error) {
-          console.warn(
-            `Failed to fetch quote for ${symbolId} on ${dateString}:`,
-            error,
-          );
-          return null; // Return null for failed fetches
-        }
-      },
+    const sample = missingRequests.slice(0, 5);
+    const missingBySymbol = new Map<string, number>();
+    missingRequests.forEach(({ symbolId }) => {
+      missingBySymbol.set(symbolId, (missingBySymbol.get(symbolId) ?? 0) + 1);
+    });
+    const topMissing = Array.from(missingBySymbol.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+    console.log(
+      "[fetchQuotes] missingRequests",
+      missingRequests.length,
+      sample.map(({ symbolId, dateString }) => `${symbolId}|${dateString}`),
+      "top",
+      topMissing,
     );
 
-    // Wait for all fetches to complete
-    const fetchResults = await Promise.all(fetchPromises);
+    const requestsBySymbol = new Map<string, Set<string>>();
 
-    // 3. Store successful fetches in results (always) and in database if upsert is enabled
-    const successfulFetches = [];
-    // Remove duplicates
-    const seen = new Set<string>();
-    for (const result of fetchResults) {
-      if (result) {
-        const key = `${result.symbolId}|${result.dateString}`;
-        if (!seen.has(key)) {
-          seen.add(key);
-          successfulFetches.push(result);
+    missingRequests.forEach(({ symbolId, dateString }) => {
+      const existing = requestsBySymbol.get(symbolId);
+      if (existing) {
+        existing.add(dateString);
+      } else {
+        requestsBySymbol.set(symbolId, new Set([dateString]));
+      }
+    });
+
+    const successfulFetches: Array<{
+      symbolId: string;
+      dateString: string;
+      price: number;
+      cacheKey: string;
+    }> = [];
+
+    for (const [symbolId, dateStringsSet] of requestsBySymbol.entries()) {
+      const dateStringsSorted = Array.from(dateStringsSet).sort((a, b) =>
+        compareAsc(parseISO(a), parseISO(b)),
+      );
+
+      if (!dateStringsSorted.length) continue;
+
+      const earliest = parseISO(dateStringsSorted[0]);
+      const latest = parseISO(dateStringsSorted[dateStringsSorted.length - 1]);
+
+      const period1 = subDays(earliest, 7);
+      const period2 = addDays(latest, 1);
+
+      let chartData;
+      try {
+        chartData = await yahooFinance.chart(symbolId, {
+          period1,
+          period2,
+          interval: "1d",
+        });
+      } catch (error) {
+        console.warn(`Failed to fetch chart for ${symbolId}:`, error);
+        continue;
+      }
+
+      const quoteEntries = (chartData?.quotes ?? [])
+        .map((quote) => {
+          const date = quote.date ? new Date(quote.date) : null;
+          if (!date || Number.isNaN(date.getTime())) return null;
+
+          const value = quote.adjclose ?? quote.close;
+          if (!value || value <= 0) return null;
+
+          return {
+            dateKey: format(date, "yyyy-MM-dd"),
+            price: Number(value),
+          };
+        })
+        .filter(
+          (
+            entry,
+          ): entry is { dateKey: string; price: number } => entry !== null,
+        )
+        .sort((a, b) => a.dateKey.localeCompare(b.dateKey));
+
+      let pointer = 0;
+      let lastPrice: number | null = null;
+
+      for (const dateString of dateStringsSorted) {
+        while (pointer < quoteEntries.length) {
+          const entry = quoteEntries[pointer];
+          if (!entry) {
+            pointer += 1;
+            continue;
+          }
+
+          if (entry.dateKey <= dateString) {
+            lastPrice = entry.price;
+            pointer += 1;
+          } else {
+            break;
+          }
         }
+
+        if (lastPrice == null) continue;
+
+        const cacheKey = `${symbolId}|${dateString}`;
+        results.set(cacheKey, lastPrice);
+        successfulFetches.push({
+          symbolId,
+          dateString,
+          price: lastPrice,
+          cacheKey,
+        });
       }
     }
 
-    // Add to results
-    successfulFetches.forEach(({ cacheKey, price }) => {
-      results.set(cacheKey, price);
-    });
-
-    // 4. Upsert to database only if enabled
     if (upsert && successfulFetches.length > 0) {
       const supabase = await createServiceClient();
-      // Bulk insert into database
-      const { error: insertError } = await supabase.from("quotes").upsert(
-        successfulFetches.map(({ symbolId, dateString, price }) => ({
-          symbol_id: symbolId,
-          date: dateString,
-          price: price,
-        })),
-        { onConflict: "symbol_id,date" },
-      );
+      const { error: insertError } = await supabase
+        .from("quotes")
+        .upsert(
+          successfulFetches.map(({ symbolId, dateString, price }) => ({
+            symbol_id: symbolId,
+            date: dateString,
+            price,
+          })),
+          { onConflict: "symbol_id,date" },
+        );
 
       if (insertError) {
         console.error("Failed to bulk insert quotes:", insertError);
