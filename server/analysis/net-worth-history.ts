@@ -23,7 +23,6 @@ export async function fetchNetWorthHistory({
   targetCurrency?: string;
   daysBack?: number;
 }): Promise<NetWorthHistoryData[]> {
-  const t0 = Date.now();
 
   if (!targetCurrency) {
     const { profile } = await fetchProfile();
@@ -50,12 +49,7 @@ export async function fetchNetWorthHistory({
   if (positionsError) throw new Error(positionsError.message);
 
   if (!positions?.length) {
-    const emptyHistory = dates.map((date) => ({ date, value: 0 }));
-    const t1 = Date.now();
-    console.log(
-      `[net-worth-history-daily] points=${emptyHistory.length} time=${(t1 - t0).toFixed(0)}ms`,
-    );
-    return emptyHistory;
+    return dates.map((date) => ({ date, value: 0 }));
   }
 
   const positionIds = positions.map((p) => p.id);
@@ -211,11 +205,6 @@ export async function fetchNetWorthHistory({
 
     history.push({ date, value: total });
   }
-
-  const t1 = Date.now();
-  console.log(
-    `[net-worth-history-daily] points=${history.length} time=${(t1 - t0).toFixed(0)}ms (${((t1 - t0) / Math.max(history.length, 1)).toFixed(1)} ms/pt)`,
-  );
 
   return history;
 }

@@ -82,15 +82,6 @@ export async function fetchQuotes(
     }
   }
 
-  console.log(
-    "[fetchQuotes] cache hits",
-    cachedQuotes.length,
-    "symbols",
-    symbolIds.length,
-    "dates",
-    dateStrings.length,
-  );
-
   // Store cached results
   cachedQuotes?.forEach((quote) => {
     const cacheKey = `${quote.symbol_id}|${quote.date}`;
@@ -111,16 +102,6 @@ export async function fetchQuotes(
       if (existing) existing.add(dateString);
       else requestsBySymbol.set(symbolId, new Set([dateString]));
     });
-
-    console.log(
-      "[fetchQuotes] yahoo fetch",
-      `symbols=${requestsBySymbol.size}`,
-      `missing=${missingRequests.length}`,
-      "details:",
-      Array.from(missingRequests).map(
-        ({ symbolId, dateString }) => `${symbolId}|${dateString}`,
-      ),
-    );
 
     const successfulFetches: Array<{
       symbolId: string;
