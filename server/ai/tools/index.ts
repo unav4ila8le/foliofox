@@ -95,11 +95,11 @@ export const aiTools = {
         .describe(
           "Currency code for analysis (e.g., USD, EUR, GBP, etc.). Leave empty to use the user's preferred currency.",
         ),
-      weeksBack: z
+      daysBack: z
         .number()
         .nullable()
         .describe(
-          "Number of weeks to look back (default: 24 weeks = ~6 months)",
+          "Number of days to look back (default: 180 days = ~6 months)",
         ),
     }),
     execute: async (args) => {
@@ -117,11 +117,11 @@ export const aiTools = {
         .describe(
           "Currency code for analysis (e.g., USD, EUR, GBP, etc.). Leave empty to use the user's preferred currency.",
         ),
-      weeksBack: z
+      daysBack: z
         .number()
         .nullable()
         .describe(
-          "Number of weeks to compare back (default: 24 weeks = ~6 months)",
+          "Number of days to compare back (default: 180 days ≈ 6 months)",
         ),
     }),
     execute: async (args) => {

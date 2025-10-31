@@ -4,16 +4,16 @@ import { fetchNetWorthHistory } from "@/server/analysis/net-worth-history";
 
 interface GetNetWorthHistoryParams {
   baseCurrency: string | null;
-  weeksBack: number | null;
+  daysBack: number | null;
 }
 
 export async function getNetWorthHistory(params: GetNetWorthHistoryParams) {
   const baseCurrency = params.baseCurrency ?? undefined;
-  const weeksBack = params.weeksBack ?? 24;
+  const daysBack = params.daysBack ?? 180;
 
   const history = await fetchNetWorthHistory({
     targetCurrency: baseCurrency,
-    weeksBack,
+    daysBack,
   });
 
   const items = history.map((item) => ({
@@ -25,7 +25,7 @@ export async function getNetWorthHistory(params: GetNetWorthHistoryParams) {
     total: history.length,
     returned: items.length,
     baseCurrency,
-    weeksBack,
+    daysBack,
     period: {
       start: items[0]?.date ?? null,
       end: items[items.length - 1]?.date ?? null,
