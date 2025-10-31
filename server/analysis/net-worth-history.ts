@@ -30,9 +30,12 @@ export async function fetchNetWorthHistory({
     targetCurrency = profile.display_currency;
   }
 
+  // Validate and enforce minimum daysBack
+  const totalDaysBack = Math.max(1, Math.trunc(daysBack));
+
   const end = new Date();
-  const start = subDays(end, daysBack - 1);
-  const dates: Date[] = Array.from({ length: daysBack }, (_, index) =>
+  const start = subDays(end, totalDaysBack - 1);
+  const dates: Date[] = Array.from({ length: totalDaysBack }, (_, index) =>
     addDays(start, index),
   );
 

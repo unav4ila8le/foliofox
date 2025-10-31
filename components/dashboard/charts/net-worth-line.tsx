@@ -86,33 +86,26 @@ export function NetWorthLineChart({
 
       switch (value) {
         case "1m": {
-          daysBack =
-            differenceInCalendarDays(today, subMonths(today, 1)) + 1;
+          daysBack = differenceInCalendarDays(today, subMonths(today, 1)) + 1;
           break;
         }
         case "3m": {
-          daysBack =
-            differenceInCalendarDays(today, subMonths(today, 3)) + 1;
+          daysBack = differenceInCalendarDays(today, subMonths(today, 3)) + 1;
           break;
         }
         case "6m": {
-          daysBack =
-            differenceInCalendarDays(today, subMonths(today, 6)) + 1;
+          daysBack = differenceInCalendarDays(today, subMonths(today, 6)) + 1;
           break;
         }
         case "ytd": {
-          daysBack =
-            differenceInCalendarDays(today, startOfYear(today)) + 1;
+          daysBack = differenceInCalendarDays(today, startOfYear(today)) + 1;
           break;
         }
         default: {
-          daysBack =
-            differenceInCalendarDays(today, subMonths(today, 6)) + 1;
+          daysBack = differenceInCalendarDays(today, subMonths(today, 6)) + 1;
           break;
         }
       }
-
-      daysBack = Math.max(1, Math.trunc(daysBack));
 
       // Fetch both history and change in parallel
       const [newHistory, newChange] = await Promise.all([

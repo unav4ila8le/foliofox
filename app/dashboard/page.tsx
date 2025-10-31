@@ -29,10 +29,7 @@ async function NetWorthChartWrapper({
 }) {
   const today = new Date();
   const defaultDaysBack =
-    Math.max(
-      1,
-      differenceInCalendarDays(today, subMonths(today, 6)) + 1,
-    );
+    differenceInCalendarDays(today, subMonths(today, 6)) + 1;
 
   // Fetch both history and change for default period (6 calendar months)
   const [netWorthHistory, netWorthChange] = await Promise.all([
