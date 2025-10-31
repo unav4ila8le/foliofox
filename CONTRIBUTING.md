@@ -41,6 +41,8 @@ If you need help, feel free to reach out to [@unav4ila8le](https://x.com/unav4il
 git clone https://github.com/unav4ila8le/foliofox.git
 cd foliofox
 npm install
+# Ensure you are on the development branch
+git checkout development
 ```
 
 ### 2) Configure environment
@@ -189,8 +191,9 @@ docs(contributing): document commit conventions and pr checklist
 ## Pull Request Guidelines
 
 - Keep PRs small and focused; one change per PR.
+- Target the `development` branch for all PRs; we fast-forward releases into `main` after testing.
 - Title should follow Conventional Commits if possible.
-- Link related issues: Closes #123.
+- Link related issues, if any: Closes #123.
 - Describe what/why; include screenshots for UI changes.
 - Tests if applicable; no lint/type errors; run locally.
 - Follow project rules (RSC-first, TypeScript strict, server actions in server/, import order, naming).
