@@ -23,7 +23,6 @@ export async function fetchNetWorthHistory({
   targetCurrency?: string;
   daysBack?: number;
 }): Promise<NetWorthHistoryData[]> {
-
   if (!targetCurrency) {
     const { profile } = await fetchProfile();
     targetCurrency = profile.display_currency;

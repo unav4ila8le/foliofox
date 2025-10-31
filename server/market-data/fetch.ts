@@ -133,10 +133,14 @@ export async function fetchMarketDataRange(
     if (!posForHandler?.length) continue;
 
     if (typeof handler.fetchForPositionsRange === "function") {
-      const result = await handler.fetchForPositionsRange(posForHandler, uniqueDates, {
-        upsert,
-        eligibleDates,
-      });
+      const result = await handler.fetchForPositionsRange(
+        posForHandler,
+        uniqueDates,
+        {
+          upsert,
+          eligibleDates,
+        },
+      );
       handlerResults.set(handler.source, result);
     } else {
       const aggregated = new Map<string, number>();
