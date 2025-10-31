@@ -1,13 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { differenceInWeeks, startOfYear, format } from "date-fns";
+import {
+  differenceInCalendarDays,
+  startOfYear,
+  subMonths,
+  format,
+} from "date-fns";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
 import {
-  fetchNetWorthHistoryDaily,
+  fetchNetWorthHistory,
   NetWorthHistoryData,
-} from "@/server/analysis/net-worth-history-daily";
+} from "@/server/analysis/net-worth-history";
 import {
   fetchNetWorthChange,
   NetWorthChangeData,
@@ -72,25 +77,52 @@ export function NetWorthLineChart({
   const history = customTimeRange?.history ?? initialHistory;
   const change = customTimeRange?.change ?? initialChange;
 
-  const handleWeeksChange = async (weeks: string) => {
+  const handleRangeChange = async (value: string) => {
     setIsLoading(true);
 
     try {
-      const weeksBackNum =
-        weeks === "ytd"
-          ? Math.ceil(differenceInWeeks(new Date(), startOfYear(new Date())))
-          : Number(weeks);
+      const today = new Date();
+      let daysBack: number;
+
+      switch (value) {
+        case "1m": {
+          daysBack =
+            differenceInCalendarDays(today, subMonths(today, 1)) + 1;
+          break;
+        }
+        case "3m": {
+          daysBack =
+            differenceInCalendarDays(today, subMonths(today, 3)) + 1;
+          break;
+        }
+        case "6m": {
+          daysBack =
+            differenceInCalendarDays(today, subMonths(today, 6)) + 1;
+          break;
+        }
+        case "ytd": {
+          daysBack =
+            differenceInCalendarDays(today, startOfYear(today)) + 1;
+          break;
+        }
+        default: {
+          daysBack =
+            differenceInCalendarDays(today, subMonths(today, 6)) + 1;
+          break;
+        }
+      }
+
+      daysBack = Math.max(1, Math.trunc(daysBack));
 
       // Fetch both history and change in parallel
-      const daysBack = weeksBackNum * 7;
       const [newHistory, newChange] = await Promise.all([
-        fetchNetWorthHistoryDaily({
+        fetchNetWorthHistory({
           targetCurrency: currency,
           daysBack,
         }),
         fetchNetWorthChange({
           targetCurrency: currency,
-          weeksBack: weeksBackNum,
+          daysBack,
         }),
       ]);
 
@@ -183,17 +215,17 @@ export function NetWorthLineChart({
                 </div>
               </div>
               <Select
-                defaultValue="24"
-                onValueChange={handleWeeksChange}
+                defaultValue="6m"
+                onValueChange={handleRangeChange}
                 disabled={isLoading}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="6 Months" />
                 </SelectTrigger>
                 <SelectContent align="end">
-                  <SelectItem value="4">1 Month</SelectItem>
-                  <SelectItem value="12">3 Months</SelectItem>
-                  <SelectItem value="24">6 Months</SelectItem>
+                  <SelectItem value="1m">1 Month</SelectItem>
+                  <SelectItem value="3m">3 Months</SelectItem>
+                  <SelectItem value="6m">6 Months</SelectItem>
                   <SelectItem value="ytd">YTD</SelectItem>
                 </SelectContent>
               </Select>

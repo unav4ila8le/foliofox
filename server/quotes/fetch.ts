@@ -82,6 +82,15 @@ export async function fetchQuotes(
     }
   }
 
+  console.log(
+    "[fetchQuotes] cache hits",
+    cachedQuotes.length,
+    "symbols",
+    symbolIds.length,
+    "dates",
+    dateStrings.length,
+  );
+
   // Store cached results
   cachedQuotes?.forEach((quote) => {
     const cacheKey = `${quote.symbol_id}|${quote.date}`;
@@ -102,6 +111,16 @@ export async function fetchQuotes(
       if (existing) existing.add(dateString);
       else requestsBySymbol.set(symbolId, new Set([dateString]));
     });
+
+    console.log(
+      "[fetchQuotes] yahoo fetch",
+      `symbols=${requestsBySymbol.size}`,
+      `missing=${missingRequests.length}`,
+      "details:",
+      Array.from(missingRequests).map(
+        ({ symbolId, dateString }) => `${symbolId}|${dateString}`,
+      ),
+    );
 
     const successfulFetches: Array<{
       symbolId: string;
@@ -170,6 +189,7 @@ export async function fetchQuotes(
 
       let pointer = 0;
       let lastPrice: number | null = null;
+      const requestedSet = new Set(dateStringsSorted);
 
       // Walk chronologically and reuse the latest available trade price
       for (const dateString of dateStringsSorted) {
@@ -212,19 +232,15 @@ export async function fetchQuotes(
             marketPrice &&
             marketPrice > 0 &&
             marketTime &&
-            !Number.isNaN(marketTime.getTime()) &&
-            marketTime >= period1Extended &&
-            marketTime <= period2Extended
+            !Number.isNaN(marketTime.getTime())
           ) {
             const marketDateKey = format(marketTime, "yyyy-MM-dd");
-            const latestRequest = dateStringsSorted.at(-1);
-
-            if (latestRequest && latestRequest === marketDateKey) {
-              const cacheKey = `${symbolId}|${latestRequest}`;
+            if (requestedSet.has(marketDateKey)) {
+              const cacheKey = `${symbolId}|${marketDateKey}`;
               results.set(cacheKey, marketPrice);
               successfulFetches.push({
                 symbolId,
-                dateString: latestRequest,
+                dateString: marketDateKey,
                 price: marketPrice,
                 cacheKey,
               });

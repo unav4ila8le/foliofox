@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { differenceInCalendarDays, subMonths } from "date-fns";
 
 import { Skeleton } from "@/components/ui/custom/skeleton";
 import { Greetings } from "@/components/dashboard/greetings";
@@ -11,7 +12,7 @@ import { PortfolioRecordsWidget } from "@/components/dashboard/portfolio-records
 
 import { fetchProfile } from "@/server/profile/actions";
 import { calculateNetWorth } from "@/server/analysis/net-worth";
-import { fetchNetWorthHistoryDaily } from "@/server/analysis/net-worth-history-daily";
+import { fetchNetWorthHistory } from "@/server/analysis/net-worth-history";
 import { fetchNetWorthChange } from "@/server/analysis/net-worth-change";
 import { calculateAssetAllocation } from "@/server/analysis/asset-allocation";
 import { fetchPortfolioNews } from "@/server/news/fetch";
@@ -26,14 +27,22 @@ async function NetWorthChartWrapper({
   displayCurrency: string;
   netWorth: number;
 }) {
-  // Fetch both history and change for default period (24 weeks -> 168 days)
+  const today = new Date();
+  const defaultDaysBack =
+    Math.max(
+      1,
+      differenceInCalendarDays(today, subMonths(today, 6)) + 1,
+    );
+
+  // Fetch both history and change for default period (6 calendar months)
   const [netWorthHistory, netWorthChange] = await Promise.all([
-    fetchNetWorthHistoryDaily({
+    fetchNetWorthHistory({
       targetCurrency: displayCurrency,
-      daysBack: 24 * 7,
+      daysBack: defaultDaysBack,
     }),
     fetchNetWorthChange({
       targetCurrency: displayCurrency,
+      daysBack: defaultDaysBack,
     }),
   ]);
 
