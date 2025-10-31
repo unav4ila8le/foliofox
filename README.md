@@ -97,7 +97,7 @@ Please read the [contributing guide](/CONTRIBUTING.md).
 - [ ] Net Worth view **after capital gain taxes**
 - [ ] Demo mode with fake data
 - [ ] Create a FAQ/documentation page and use it as information source for the AI advisor knowledge about the platform.
-- [ ] Archive/Delete assets from asset page
+- [x] Archive/Delete assets from asset page
 
 ## License
 
