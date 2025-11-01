@@ -31,6 +31,14 @@ export interface MarketDataHandler {
     date: Date,
     options?: { upsert?: boolean },
   ): Promise<Map<string, number>>;
+
+  /** Optional range-aware fetch for bulk history requests */
+  fetchForPositionsRange?(
+    positions: MarketDataPosition[],
+    dates: Date[],
+    options?: { upsert?: boolean; eligibleDates?: Map<string, Set<string>> },
+  ): Promise<Map<string, number>>;
+
   getKey(position: MarketDataPosition, date: Date): string | null;
 }
 
@@ -55,6 +63,14 @@ export async function fetchMarketData(
 }> {
   /* calls each handler, maps results by position.id */
 }
+
+export async function fetchMarketDataRange(
+  positions: MarketDataPosition[],
+  dates: Date[],
+  options: { upsert?: boolean; eligibleDates?: Map<string, Set<string>> } = {},
+): Promise<Map<string, number>> {
+  /* spans many dates; handlers can implement fetchForPositionsRange */
+}
 ```
 
 ## Read/Write Integration
@@ -63,22 +79,25 @@ export async function fetchMarketData(
 - position-snapshots/recalculate: remains transaction-driven; uses stored unit values and does not call the market data hub.
 - positions/create: write IDs directly to `positions`.
 - `resolveMarketDataKey` / `resolveMarketDataForPositions`: shared helpers that map positions to handlers/keys so callers avoid inline branching.
+- Bulk history (charts, AI tools, etc.) should call `fetchMarketDataRange` with an optional `eligibleDates` map so handlers can skip days where a position wasn’t active.
 
 ## Implementation Steps
 
 1. Add/extend a MarketDataHandler in `server/market-data/sources/*`.
 2. Register it in `server/market-data/sources/registry.ts`.
-3. Ensure DB cache table exists (quotes, valuations, etc.) and implement fetch logic.
-4. Callers provide `position.id` plus any source identifiers; the hub resolves keys internally.
+3. Ensure DB cache table exists (quotes, valuations, etc.) and implement fetch logic (single-date **and** optional range mode if bulk history benefits from batching).
+4. Callers provide `position.id` plus any source identifiers; the hub resolves keys internally via the `fetchMarketData` adapter.
 
 ## Adding a New Source
 
 1. **Model the identifier**
    - Add the nullable identifier column to `positions` (e.g., `crypto_wallet_id`) and surface it through `TransformedPosition` so it flows into `MarketDataPosition`.
+   - Extend `toMarketDataPositions` in `server/market-data/fetch.ts` so the minimal descriptors include your new identifier. This keeps source-specific knowledge centralized.
 
 2. **Create a handler**
    - Add `server/market-data/sources/<source>-handler.ts`.
    - Implement `fetchForPositions` to batch requests and call your underlying service. Return `Map<handlerKey, number>`.
+   - Optionally implement `fetchForPositionsRange` if the source can return many dates in a single call (improves chart queries and other bulk history workloads).
    - Implement `getKey` to build a deterministic string based on the position identifier and date (e.g., `${walletId}|${yyyy-MM-dd}`).
 
 3. **Register the handler**
