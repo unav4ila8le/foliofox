@@ -12,13 +12,13 @@ export interface NetWorthChangeData {
 
 interface FetchNetWorthChangeParams {
   targetCurrency?: string;
-  weeksBack?: number;
+  daysBack?: number;
 }
 
-// Fetch net worth change between current date and weeksBack ago
+// Fetch net worth change between current date and a past comparison window
 export async function fetchNetWorthChange({
   targetCurrency,
-  weeksBack = 24,
+  daysBack = 180,
 }: FetchNetWorthChangeParams) {
   // Get user's preferred currency if not specified
   if (!targetCurrency) {
@@ -29,7 +29,8 @@ export async function fetchNetWorthChange({
   // Calculate comparison date
   const today = new Date();
   const comparisonDate = new Date(today);
-  comparisonDate.setDate(today.getDate() - weeksBack * 7);
+  const totalDaysBack = Math.max(1, Math.trunc(daysBack));
+  comparisonDate.setDate(today.getDate() - totalDaysBack);
 
   // Calculate net worth at both dates in parallel
   const [currentValue, previousValue] = await Promise.all([

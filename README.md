@@ -72,7 +72,7 @@ Please read the [contributing guide](/CONTRIBUTING.md).
 - [x] Foliofox AI advisor. Chat with your portfolio.
 - [x] Add Transactions list on the dashboard home
 - [x] Add privacy mode (blur/hide net worth numbers)
-- [ ] Find a way to have a more accurate historical calculation which doesn't add much overhead. WeeksBack solution is fast but not accurate cause the date is "rounded" to match weeks and not days.
+- [x] Find a way to have a more accurate (daily) historical calculation which doesn't add much overhead. WeeksBack solution is fast but not accurate cause the date is "rounded" to match weeks and not days.
 - [x] Landingpage
 - [x] New UX for adding new positions (one form per position source)
 - [x] Add ai tool for fetching historical quotes for symbols

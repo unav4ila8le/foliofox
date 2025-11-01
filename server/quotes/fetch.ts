@@ -1,6 +1,6 @@
 "use server";
 
-import { addDays, format, subDays } from "date-fns";
+import { addDays, compareAsc, format, parseISO, subDays } from "date-fns";
 import YahooFinance from "yahoo-finance2";
 
 import { createServiceClient } from "@/supabase/service";
@@ -38,11 +38,49 @@ export async function fetchQuotes(
   const symbolIds = [...new Set(cacheQueries.map((q) => q.symbolId))];
   const dateStrings = [...new Set(cacheQueries.map((q) => q.dateString))];
 
-  const { data: cachedQuotes } = await supabase
-    .from("quotes")
-    .select("symbol_id, date, price")
-    .in("symbol_id", symbolIds)
-    .in("date", dateStrings);
+  const chunkArray = <T>(arr: T[], size: number) => {
+    const chunks: T[][] = [];
+    for (let i = 0; i < arr.length; i += size) {
+      chunks.push(arr.slice(i, i + size));
+    }
+    return chunks;
+  };
+
+  // Chunk Supabase lookups to stay comfortably under Supabase's 1k row limit
+  const MAX_ROWS_PER_QUERY = 900;
+  const baseChunkSize = Math.max(1, Math.floor(Math.sqrt(MAX_ROWS_PER_QUERY)));
+  const symbolChunkSize = Math.max(
+    1,
+    Math.min(symbolIds.length || 1, baseChunkSize),
+  );
+  const dateChunkSize = Math.max(
+    1,
+    Math.min(dateStrings.length || 1, baseChunkSize),
+  );
+
+  let cachedQuotes: Array<{ symbol_id: string; date: string; price: number }> =
+    [];
+
+  for (const symbolChunk of chunkArray(symbolIds, symbolChunkSize)) {
+    for (const dateChunk of chunkArray(dateStrings, dateChunkSize)) {
+      if (!symbolChunk.length || !dateChunk.length) continue;
+
+      const { data, error } = await supabase
+        .from("quotes")
+        .select("symbol_id, date, price")
+        .in("symbol_id", symbolChunk)
+        .in("date", dateChunk);
+
+      if (error) {
+        console.error("[fetchQuotes] cache query error:", error);
+        continue;
+      }
+
+      if (data?.length) {
+        cachedQuotes = cachedQuotes.concat(data);
+      }
+    }
+  }
 
   // Store cached results
   cachedQuotes?.forEach((quote) => {
@@ -55,107 +93,147 @@ export async function fetchQuotes(
     ({ cacheKey }) => !results.has(cacheKey),
   );
 
-  // 2. Fetch missing quotes from Yahoo Finance in parallel
+  // 2. Fetch missing quotes from Yahoo Finance grouped by symbol
   if (missingRequests.length > 0) {
-    const fetchPromises = missingRequests.map(
-      async ({ symbolId, dateString, cacheKey }) => {
+    // Group requested calendar days per symbol so we can batch chart calls
+    const requestsBySymbol = new Map<string, Set<string>>();
+    missingRequests.forEach(({ symbolId, dateString }) => {
+      const existing = requestsBySymbol.get(symbolId);
+      if (existing) existing.add(dateString);
+      else requestsBySymbol.set(symbolId, new Set([dateString]));
+    });
+
+    const successfulFetches: Array<{
+      symbolId: string;
+      dateString: string;
+      price: number;
+      cacheKey: string;
+    }> = [];
+
+    for (const [symbolId, dateStringsSet] of requestsBySymbol.entries()) {
+      const dateStringsSorted = Array.from(dateStringsSet).sort((a, b) =>
+        compareAsc(parseISO(a), parseISO(b)),
+      );
+
+      if (!dateStringsSorted.length) continue;
+
+      const earliest = parseISO(dateStringsSorted[0]);
+      const latest = parseISO(dateStringsSorted[dateStringsSorted.length - 1]);
+
+      // Include a small buffer before the earliest request so we can
+      // reuse the prior trading day's quote if the first calendar day
+      // falls on a weekend or holiday. Yahoo's chart API treats period2
+      // as exclusive, so we add one day after the latest request.
+      const bufferedStart = subDays(earliest, 7);
+      const periodEndExclusive = addDays(latest, 1);
+
+      let chartData;
+      try {
+        chartData = await yahooFinance.chart(symbolId, {
+          period1: bufferedStart,
+          period2: periodEndExclusive,
+          interval: "1d",
+        });
+      } catch (error) {
+        console.warn(`Failed to fetch chart for ${symbolId}:`, error);
+        chartData = null;
+      }
+
+      // Normalize chart quotes into sortable { dateKey, price } tuples
+      const quoteEntries = (chartData?.quotes ?? [])
+        .map((quote) => {
+          const date = quote.date ? new Date(quote.date) : null;
+          if (!date || Number.isNaN(date.getTime())) return null;
+
+          const value = quote.adjclose ?? quote.close;
+          if (!value || value <= 0) return null;
+
+          return {
+            dateKey: format(date, "yyyy-MM-dd"),
+            price: Number(value),
+          };
+        })
+        .filter(
+          (entry): entry is { dateKey: string; price: number } =>
+            entry !== null,
+        )
+        .sort((a, b) => a.dateKey.localeCompare(b.dateKey));
+
+      let pointer = 0;
+      let lastPrice: number | null = null;
+      const requestedSet = new Set(dateStringsSorted);
+
+      // Walk chronologically and reuse the latest available trade price
+      for (const dateString of dateStringsSorted) {
+        while (pointer < quoteEntries.length) {
+          const entry = quoteEntries[pointer];
+          if (!entry) {
+            pointer += 1;
+            continue;
+          }
+
+          if (entry.dateKey <= dateString) {
+            lastPrice = entry.price;
+            pointer += 1;
+          } else {
+            break;
+          }
+        }
+
+        if (lastPrice == null) continue;
+
+        const cacheKey = `${symbolId}|${dateString}`;
+        results.set(cacheKey, lastPrice);
+        successfulFetches.push({
+          symbolId,
+          dateString,
+          price: lastPrice,
+          cacheKey,
+        });
+      }
+
+      // Final safety net: fallback to realtime quote when chart feed is empty
+      if (!successfulFetches.some((entry) => entry.symbolId === symbolId)) {
         try {
-          // First try to get data for the exact date
-          const target = new Date(dateString);
-          const period2 = addDays(target, 1);
-
-          let chartData = await yahooFinance.chart(symbolId, {
-            period1: subDays(period2, 1),
-            period2,
-            interval: "1d",
-          });
-
-          // If no data for exact date (weekend/holiday), extend the range
-          if (
-            !chartData ||
-            !chartData.quotes ||
-            chartData.quotes.length === 0
-          ) {
-            // Go back up to 7 days to find the closest trading day
-            chartData = await yahooFinance.chart(symbolId, {
-              period1: subDays(period2, 7),
-              period2,
-              interval: "1d",
-            });
-          }
-
-          if (chartData?.quotes && chartData.quotes.length > 0) {
-            for (let i = chartData.quotes.length - 1; i >= 0; i -= 1) {
-              const quote = chartData.quotes[i];
-              const candidate = quote.adjclose ?? quote.close;
-              if (candidate && candidate > 0) {
-                return { symbolId, dateString, price: candidate, cacheKey };
-              }
-            }
-          }
-
-          // If the chart feed is empty (new listings, suspended symbols), fall
-          // back to the latest trade reported by the quote endpoint.
           const realtimeQuote = await yahooFinance.quote(symbolId);
           const marketPrice = realtimeQuote?.regularMarketPrice;
-          const marketTime = realtimeQuote?.regularMarketTime
-            ? new Date(realtimeQuote.regularMarketTime)
-            : null;
+          const marketTimeRaw = realtimeQuote?.regularMarketTime;
+          const marketTime = marketTimeRaw ? new Date(marketTimeRaw) : null;
 
           if (
             marketPrice &&
             marketPrice > 0 &&
             marketTime &&
-            !Number.isNaN(marketTime.getTime()) &&
-            marketTime <= period2
+            !Number.isNaN(marketTime.getTime())
           ) {
-            return { symbolId, dateString, price: marketPrice, cacheKey };
+            const marketDateKey = format(marketTime, "yyyy-MM-dd");
+            if (requestedSet.has(marketDateKey)) {
+              const cacheKey = `${symbolId}|${marketDateKey}`;
+              results.set(cacheKey, marketPrice);
+              successfulFetches.push({
+                symbolId,
+                dateString: marketDateKey,
+                price: marketPrice,
+                cacheKey,
+              });
+            }
           }
-
-          throw new Error(
-            `No chart data found for ${symbolId} on ${dateString}`,
-          );
         } catch (error) {
           console.warn(
-            `Failed to fetch quote for ${symbolId} on ${dateString}:`,
+            `Failed to fetch realtime quote for ${symbolId}:`,
             error,
           );
-          return null; // Return null for failed fetches
-        }
-      },
-    );
-
-    // Wait for all fetches to complete
-    const fetchResults = await Promise.all(fetchPromises);
-
-    // 3. Store successful fetches in results (always) and in database if upsert is enabled
-    const successfulFetches = [];
-    // Remove duplicates
-    const seen = new Set<string>();
-    for (const result of fetchResults) {
-      if (result) {
-        const key = `${result.symbolId}|${result.dateString}`;
-        if (!seen.has(key)) {
-          seen.add(key);
-          successfulFetches.push(result);
         }
       }
     }
 
-    // Add to results
-    successfulFetches.forEach(({ cacheKey, price }) => {
-      results.set(cacheKey, price);
-    });
-
-    // 4. Upsert to database only if enabled
     if (upsert && successfulFetches.length > 0) {
       const supabase = await createServiceClient();
-      // Bulk insert into database
       const { error: insertError } = await supabase.from("quotes").upsert(
         successfulFetches.map(({ symbolId, dateString, price }) => ({
           symbol_id: symbolId,
           date: dateString,
-          price: price,
+          price,
         })),
         { onConflict: "symbol_id,date" },
       );

@@ -46,18 +46,48 @@ export async function fetchExchangeRates(
   const currencies = [...new Set(cacheQueries.map((q) => q.currency))];
   const dateStrings = [...new Set(cacheQueries.map((q) => q.dateString))];
 
-  const { data: cachedRates } = await supabase
-    .from("exchange_rates")
-    .select("target_currency, date, rate")
-    .eq("base_currency", "USD")
-    .in("target_currency", currencies)
-    .in("date", dateStrings);
+  const chunkArray = <T>(arr: T[], size: number) => {
+    const chunks: T[][] = [];
+    for (let i = 0; i < arr.length; i += size) {
+      chunks.push(arr.slice(i, i + size));
+    }
+    return chunks;
+  };
 
-  // Store cached results
-  cachedRates?.forEach((rate) => {
-    const cacheKey = `${rate.target_currency}|${rate.date}`;
-    results.set(cacheKey, rate.rate);
-  });
+  // Chunk Supabase lookups to stay comfortably under Supabase's 1k row limit
+  const MAX_ROWS_PER_QUERY = 900;
+  const baseChunkSize = Math.max(1, Math.floor(Math.sqrt(MAX_ROWS_PER_QUERY)));
+  const currencyChunkSize = Math.max(
+    1,
+    Math.min(currencies.length || 1, baseChunkSize),
+  );
+  const dateChunkSize = Math.max(
+    1,
+    Math.min(dateStrings.length || 1, baseChunkSize),
+  );
+
+  for (const currencyChunk of chunkArray(currencies, currencyChunkSize)) {
+    for (const dateChunk of chunkArray(dateStrings, dateChunkSize)) {
+      if (!currencyChunk.length || !dateChunk.length) continue;
+
+      const { data, error } = await supabase
+        .from("exchange_rates")
+        .select("target_currency, date, rate")
+        .eq("base_currency", "USD")
+        .in("target_currency", currencyChunk)
+        .in("date", dateChunk);
+
+      if (error) {
+        console.error("[fetchExchangeRates] cache query error:", error);
+        continue;
+      }
+
+      data?.forEach((rate) => {
+        const cacheKey = `${rate.target_currency}|${rate.date}`;
+        results.set(cacheKey, rate.rate);
+      });
+    }
+  }
 
   // 2. Find what's missing from cache
   const missingRequests = cacheQueries.filter(

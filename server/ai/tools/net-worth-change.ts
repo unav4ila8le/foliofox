@@ -4,30 +4,32 @@ import { fetchNetWorthChange } from "@/server/analysis/net-worth-change";
 
 interface GetNetWorthChangeParams {
   baseCurrency: string | null;
-  weeksBack: number | null;
+  daysBack: number | null;
 }
 
 export async function getNetWorthChange(params: GetNetWorthChangeParams) {
   const baseCurrency = params.baseCurrency ?? undefined;
-  const weeksBack = params.weeksBack ?? 24;
+  const daysBack = params.daysBack ?? 180;
 
   const change = await fetchNetWorthChange({
     targetCurrency: baseCurrency,
-    weeksBack,
+    daysBack,
   });
 
   return {
     baseCurrency,
-    weeksBack,
+    daysBack,
     comparison: {
       current: {
         date: new Date().toISOString().split("T")[0],
         value: change.currentValue,
       },
       previous: {
-        date: new Date(Date.now() - weeksBack * 7 * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .split("T")[0],
+        date: (() => {
+          const previousDate = new Date();
+          previousDate.setDate(previousDate.getDate() - daysBack);
+          return previousDate.toISOString().split("T")[0];
+        })(),
         value: change.previousValue,
       },
     },

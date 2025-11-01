@@ -440,6 +440,7 @@ export function ReviewForm({
                               }}
                             />
                           </FormControl>
+                          <FormMessage className="whitespace-normal" />
                         </FormItem>
                       )}
                     />
@@ -477,6 +478,7 @@ export function ReviewForm({
                           <FormControl>
                             <Input {...field} value={field.value ?? ""} />
                           </FormControl>
+                          <FormMessage className="whitespace-normal" />
                         </FormItem>
                       )}
                     />

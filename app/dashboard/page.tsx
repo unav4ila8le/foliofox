@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { differenceInCalendarDays, subMonths } from "date-fns";
 
 import { Skeleton } from "@/components/ui/custom/skeleton";
 import { Greetings } from "@/components/dashboard/greetings";
@@ -26,13 +27,19 @@ async function NetWorthChartWrapper({
   displayCurrency: string;
   netWorth: number;
 }) {
-  // Fetch both history and change for default period (24 weeks)
+  const today = new Date();
+  const defaultDaysBack =
+    differenceInCalendarDays(today, subMonths(today, 6)) + 1;
+
+  // Fetch both history and change for default period (6 calendar months)
   const [netWorthHistory, netWorthChange] = await Promise.all([
     fetchNetWorthHistory({
       targetCurrency: displayCurrency,
+      daysBack: defaultDaysBack,
     }),
     fetchNetWorthChange({
       targetCurrency: displayCurrency,
+      daysBack: defaultDaysBack,
     }),
   ]);
 
