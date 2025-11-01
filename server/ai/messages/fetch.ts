@@ -18,20 +18,10 @@ export async function fetchConversationMessages(
     .limit(Math.min(Math.max(limit, 1), 200));
 
   return (data ?? []).map((m) => {
-    if (m.parts && Array.isArray(m.parts)) {
-      return {
-        id: m.id,
-        role: m.role as "user" | "assistant",
-        parts: m.parts as UIMessage["parts"],
-        createdAt: m.created_at,
-      };
-    }
-
-    // Legacy fallback for old messages without parts
     return {
       id: m.id,
       role: m.role as "user" | "assistant",
-      parts: [{ type: "text" as const, text: m.content }],
+      parts: m.parts as UIMessage["parts"],
       createdAt: m.created_at,
     };
   });
