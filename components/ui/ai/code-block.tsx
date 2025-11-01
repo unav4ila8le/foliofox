@@ -51,7 +51,7 @@ const lineNumberTransformer: ShikiTransformer = {
 export async function highlightCode(
   code: string,
   language: BundledLanguage,
-  showLineNumbers = false
+  showLineNumbers = false,
 ) {
   const transformers: ShikiTransformer[] = showLineNumbers
     ? [lineNumberTransformer]
@@ -101,19 +101,19 @@ export const CodeBlock = ({
     <CodeBlockContext.Provider value={{ code }}>
       <div
         className={cn(
-          "group relative w-full overflow-hidden rounded-md border bg-background text-foreground",
-          className
+          "group bg-background text-foreground relative w-full overflow-hidden rounded-md border",
+          className,
         )}
         {...props}
       >
         <div className="relative">
           <div
-            className="overflow-hidden dark:hidden [&>pre]:m-0 [&>pre]:bg-background! [&>pre]:p-4 [&>pre]:text-foreground! [&>pre]:text-sm [&_code]:font-mono [&_code]:text-sm"
+            className="[&>pre]:bg-background! [&>pre]:text-foreground! overflow-hidden dark:hidden [&_code]:font-mono [&_code]:text-sm [&>pre]:m-0 [&>pre]:p-4 [&>pre]:text-sm"
             // biome-ignore lint/security/noDangerouslySetInnerHtml: "this is needed."
             dangerouslySetInnerHTML={{ __html: html }}
           />
           <div
-            className="hidden overflow-hidden dark:block [&>pre]:m-0 [&>pre]:bg-background! [&>pre]:p-4 [&>pre]:text-foreground! [&>pre]:text-sm [&_code]:font-mono [&_code]:text-sm"
+            className="[&>pre]:bg-background! [&>pre]:text-foreground! hidden overflow-hidden dark:block [&_code]:font-mono [&_code]:text-sm [&>pre]:m-0 [&>pre]:p-4 [&>pre]:text-sm"
             // biome-ignore lint/security/noDangerouslySetInnerHtml: "this is needed."
             dangerouslySetInnerHTML={{ __html: darkHtml }}
           />
