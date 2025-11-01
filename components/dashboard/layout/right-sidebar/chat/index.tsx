@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, Fragment } from "react";
-import { DefaultChatTransport, type UIMessage } from "ai";
+import { DefaultChatTransport, isToolUIPart, type UIMessage } from "ai";
 import { useChat } from "@ai-sdk/react";
 import { Check, Copy, RefreshCcw } from "lucide-react";
 
@@ -39,6 +39,13 @@ import { fetchConversations } from "@/server/ai/conversations/fetch";
 import { fetchConversationMessages } from "@/server/ai/messages/fetch";
 import type { Mode } from "@/server/ai/system-prompt";
 import { cn } from "@/lib/utils";
+import {
+  Tool,
+  ToolContent,
+  ToolHeader,
+  ToolInput,
+  ToolOutput,
+} from "@/components/ui/ai/tool";
 
 const suggestions = [
   "What would happen to my portfolio if the market crashes 30% tomorrow?",
@@ -215,6 +222,21 @@ export function Chat() {
                         </Fragment>
                       );
                     default:
+                      if (isToolUIPart(part)) {
+                        return (
+                          <Tool key={`${message.id}-part-${i}`}>
+                            <ToolHeader type={part.type} state={part.state} />
+                            <ToolContent>
+                              <ToolInput input={part.input} />
+                              <ToolOutput
+                                output={part.output}
+                                errorText={part.errorText}
+                              />
+                            </ToolContent>
+                          </Tool>
+                        );
+                      }
+
                       return null;
                   }
                 })}

@@ -52,17 +52,20 @@ export async function POST(req: Request) {
     onError: (err) => {
       console.error("AI chat error:", err);
     },
-
-    onFinish: async ({ text, usage }) => {
-      if (!conversationId || !text) return;
-      await persistAssistantMessage({
-        conversationId,
-        content: text,
-        model,
-        usageTokens: usage?.totalTokens,
-      });
-    },
   });
 
-  return result.toUIMessageStreamResponse();
+  return result.toUIMessageStreamResponse({
+    onFinish: async ({ messages }) => {
+      if (conversationId && messages.length > 0) {
+        const tokens = await result.totalUsage;
+
+        await persistAssistantMessage({
+          conversationId,
+          messages,
+          model,
+          usageTokens: tokens.totalTokens,
+        });
+      }
+    },
+  });
 }
