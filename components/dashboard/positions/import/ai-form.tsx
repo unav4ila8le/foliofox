@@ -140,8 +140,7 @@ export function AIImportForm() {
           <span className="text-foreground font-medium">
             Supported formats:{" "}
           </span>
-          Images (PNG, JPEG, WEBP), PDFs, Excel files, broker statements, and
-          more.
+          Images, screenshots, PDFs, broker statements, and more.
         </p>
       </div>
 
