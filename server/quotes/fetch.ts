@@ -120,29 +120,20 @@ export async function fetchQuotes(
       const earliest = parseISO(dateStringsSorted[0]);
       const latest = parseISO(dateStringsSorted[dateStringsSorted.length - 1]);
 
-      const period1Exact = earliest;
-      const period2Exact = addDays(earliest, 1);
-      const period1Extended = subDays(earliest, 7);
-      const period2Extended = addDays(latest, 1);
+      // Include a small buffer before the earliest request so we can
+      // reuse the prior trading day's quote if the first calendar day
+      // falls on a weekend or holiday. Yahoo's chart API treats period2
+      // as exclusive, so we add one day after the latest request.
+      const bufferedStart = subDays(earliest, 7);
+      const periodEndExclusive = addDays(latest, 1);
 
       let chartData;
       try {
-        // First try a tight range around the requested dates
         chartData = await yahooFinance.chart(symbolId, {
-          period1: period1Exact,
-          period2: period2Exact,
+          period1: bufferedStart,
+          period2: periodEndExclusive,
           interval: "1d",
         });
-
-        const hasResults = chartData?.quotes?.length;
-        if (!hasResults) {
-          // Fallback: expand to 7 days prior to capture the closest trading day
-          chartData = await yahooFinance.chart(symbolId, {
-            period1: period1Extended,
-            period2: period2Extended,
-            interval: "1d",
-          });
-        }
       } catch (error) {
         console.warn(`Failed to fetch chart for ${symbolId}:`, error);
         chartData = null;
