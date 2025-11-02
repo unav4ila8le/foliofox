@@ -1,6 +1,6 @@
 # Foliofox
 
-A net worth tracking app with an AI-powered financial advisor that helps you make smarter decisions about your portfolio. **Foliofox is not a budgeting or an expense tracking app**
+A net worth tracking app with an AI-powered financial advisor that helps you make smarter decisions about your portfolio. **Foliofox is not a budgeting or an expense tracking app.**
 
 ![hero](/public/images/github/readme-hero.png)
 
