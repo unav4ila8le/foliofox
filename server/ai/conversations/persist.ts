@@ -1,6 +1,7 @@
 import type { UIMessage } from "ai";
 
 import { createClient } from "@/supabase/server";
+import { Json } from "@/types/database.types";
 
 type TextPart = { type: "text"; text: string };
 
@@ -18,6 +19,21 @@ function getLastUserText(messages: UIMessage[]): string {
     .trim();
 }
 
+async function getNextMessageOrder(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  conversationId: string,
+): Promise<number> {
+  const { data } = await supabase
+    .from("conversation_messages")
+    .select("order")
+    .eq("conversation_id", conversationId)
+    .order("order", { ascending: false })
+    .limit(1)
+    .single();
+
+  return (data?.order ?? -1) + 1;
+}
+
 export async function persistConversationFromMessages(params: {
   conversationId: string;
   messages: UIMessage[];
@@ -30,25 +46,30 @@ export async function persistConversationFromMessages(params: {
   const user = auth?.user;
   if (!user) return;
 
-  const lastUserText = getLastUserText(messages);
+  const lastUserText = getLastUserText(messages) || "Conversation";
   // Ensure conversation exists (idempotent)
   await supabase.from("conversations").upsert(
     {
       id: conversationId,
       user_id: user.id,
-      title: (lastUserText || "Conversation").slice(0, 240),
+      title: lastUserText.slice(0, 240),
     },
     { onConflict: "id" },
   );
 
-  if (!lastUserText) return;
+  const lastUiMessage = messages.at(-1);
 
-  // Save user message
+  if (!lastUiMessage) return;
+
+  const messageOrder = await getNextMessageOrder(supabase, conversationId);
+
   await supabase.from("conversation_messages").insert({
     conversation_id: conversationId,
     user_id: user.id,
     role: "user",
     content: lastUserText,
+    parts: lastUiMessage.parts as Json,
+    order: messageOrder,
     model,
   });
 
@@ -62,36 +83,51 @@ export async function persistConversationFromMessages(params: {
 
 export async function persistAssistantMessage(params: {
   conversationId: string;
-  content: string;
+  messages: UIMessage[];
   model?: string;
   usageTokens?: number;
 }): Promise<void> {
   const {
     conversationId,
-    content,
+    messages,
     model = "gpt-4o-mini",
     usageTokens,
   } = params;
 
-  if (!content.trim()) return;
+  if (messages.length === 0) return;
 
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   const user = auth?.user;
   if (!user) return;
 
-  await supabase.from("conversation_messages").insert({
+  const baseOrder = await getNextMessageOrder(supabase, conversationId);
+
+  const rows = messages.map((message, index) => ({
     conversation_id: conversationId,
     user_id: user.id,
-    role: "assistant",
-    content,
+    role: message.role as "assistant" | "user" | "system" | "tool",
+    content: extractTextContent(message.parts),
+    parts: message.parts as Json,
+    order: baseOrder + index,
     model,
-    usage_tokens: usageTokens ?? null,
-  });
+    usage_tokens: usageTokens,
+  }));
+
+  await supabase.from("conversation_messages").insert(rows);
 
   await supabase
     .from("conversations")
     .update({ updated_at: new Date().toISOString() })
     .eq("id", conversationId)
     .eq("user_id", user.id);
+}
+
+export function extractTextContent(parts: UIMessage["parts"]): string {
+  if (!Array.isArray(parts)) return "";
+
+  return parts
+    .filter((p) => p.type === "text")
+    .map((p) => p.text)
+    .join("\n");
 }
