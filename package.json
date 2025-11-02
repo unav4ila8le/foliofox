@@ -12,7 +12,8 @@
     "type": "tsc --noEmit",
     "types:supabase:local": "supabase gen types typescript --local > types/database.types.ts",
     "types:supabase:linked": "supabase gen types typescript --linked > types/database.types.ts",
-    "shadcn:update": "node scripts/update-shadcn.mjs"
+    "shadcn:update": "node scripts/update-shadcn.mjs",
+    "prepare": "husky"
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.28",
@@ -69,6 +70,8 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "^15.4.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.6",
     "postcss": "^8",
     "prettier": "^3.5.2",
     "prettier-plugin-tailwindcss": "^0.7.0",
@@ -76,5 +79,10 @@
     "tailwindcss": "^4.0.8",
     "tw-animate-css": "^1.2.5",
     "typescript": "^5"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,json,css,md}": "prettier --write .",
+    "*.{js,jsx,ts,tsx}": "eslint",
+    "*": "bash -c 'npm run type'"
   }
 }
