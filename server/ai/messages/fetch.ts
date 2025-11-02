@@ -11,10 +11,10 @@ export async function fetchConversationMessages(
 
   const { data } = await supabase
     .from("conversation_messages")
-    .select("id, role, content, parts, message_order, created_at")
+    .select("id, role, content, parts, order, created_at")
     .eq("conversation_id", conversationId)
     .eq("user_id", user.id)
-    .order("message_order", { ascending: true })
+    .order("order", { ascending: true })
     .limit(Math.min(Math.max(limit, 1), 200));
 
   return (data ?? []).map((m) => {

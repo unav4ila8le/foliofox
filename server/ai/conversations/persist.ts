@@ -25,13 +25,13 @@ async function getNextMessageOrder(
 ): Promise<number> {
   const { data } = await supabase
     .from("conversation_messages")
-    .select("message_order")
+    .select("order")
     .eq("conversation_id", conversationId)
-    .order("message_order", { ascending: false })
+    .order("order", { ascending: false })
     .limit(1)
     .single();
 
-  return (data?.message_order ?? -1) + 1;
+  return (data?.order ?? -1) + 1;
 }
 
 export async function persistConversationFromMessages(params: {
@@ -69,7 +69,7 @@ export async function persistConversationFromMessages(params: {
     role: "user",
     content: lastUserText,
     parts: lastUiMessage.parts as Json,
-    message_order: messageOrder,
+    order: messageOrder,
     model,
   });
 
@@ -109,7 +109,7 @@ export async function persistAssistantMessage(params: {
     role: message.role as "assistant" | "user" | "system" | "tool",
     content: extractTextContent(message.parts),
     parts: message.parts as Json,
-    message_order: baseOrder + index,
+    order: baseOrder + index,
     model,
     usage_tokens: usageTokens,
   }));

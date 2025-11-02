@@ -1,7 +1,7 @@
 -- Backfill migration for legacy messages created before schema change
--- This migration handles existing data that only has content (no parts, no message_order)
+-- This migration handles existing data that only has content (no parts, no order)
 
--- Step 1: Backfill message_order based on created_at timestamp
+-- Step 1: Backfill order based on created_at timestamp
 -- Assigns sequential order (0, 1, 2...) per conversation, ordered by creation time
 WITH ordered_messages AS (
   SELECT
@@ -12,10 +12,10 @@ WITH ordered_messages AS (
       ORDER BY created_at ASC
     ) - 1 AS new_order
   FROM conversation_messages
-  WHERE message_order = 0  -- Only backfill messages with default order
+  WHERE "order" = 0  -- Only backfill messages with default order
 )
 UPDATE conversation_messages cm
-SET message_order = om.new_order
+SET "order" = om.new_order
 FROM ordered_messages om
 WHERE cm.id = om.id;
 
