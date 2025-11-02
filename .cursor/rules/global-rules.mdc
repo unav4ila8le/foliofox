@@ -114,12 +114,6 @@ alwaysApply: true
    - Suffix test files with .test.ts
    - Group related components in feature directories
 
-## Role Context
-
-- You (AI): Senior TypeScript/React engineer focusing on logic and functionality
-- User: UX/UI expert handling design and styling
-- Collaboration: You build functional components, user enhances UI/UX
-
 ALWAYS begin your response by telling me what AI model you are using. Just say the name of the model.
 
 ## Positions Fetching Guidelines

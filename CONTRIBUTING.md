@@ -78,7 +78,7 @@ supabase db push --linked     # applies tracked migrations (baseline + new ones)
 ```
 
 - You can safely re-run `supabase db push --linked` whenever you need to resync with the repo; it only applies migrations that have not yet been recorded in your project.
-- The tracked migrations include the reference data (currencies + position categories) required for signup and basic usage.
+- The tracked migrations also include the reference data required for signup and basic usage.
 - If prompted, use the **Database Password** from Supabase (Settings → Database).
 
 ### 4) Run the dev server
@@ -101,7 +101,7 @@ supabase migration up --local # applies the tracked migrations to the local DB
   - `ANON_KEY` → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
   - `SERVICE_ROLE_KEY` → `SUPABASE_SERVICE_ROLE_KEY`
 - The CLI prints the local connection string (`postgresql://postgres:postgres@localhost:54322/postgres` by default).
-- Reset the local database with `supabase db reset --local` (it will replay all migrations and seed data). 
+- Reset the local database with `supabase db reset --local` (it will replay all migrations and seed data).
 - You can regenerate types with `supabase gen types typescript --local > types/database.types.ts`.
 - You can also run `supabase db push --local` if you prefer the same command as remote projects.
 - Stop the stack with `supabase stop` when you are done.
@@ -132,8 +132,8 @@ If you use your own Supabase project, regenerate `types/database.types.ts`:
 ```bash
 supabase login
 supabase link --project-ref <your-project-ref>
-# Option A: use the provided script (update project id in package.json first)
-npm run types:supabase
+# Option A: use the provided script
+npm run types:supabase:local
 # Option B: ad-hoc generation
 supabase gen types typescript --project-id <your-project-ref> > types/database.types.ts
 ```

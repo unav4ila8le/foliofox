@@ -10,7 +10,8 @@
     "format:check": "prettier --check .",
     "lint": "eslint .",
     "type": "tsc --noEmit",
-    "types:supabase": "supabase gen types typescript --project-id icnvjrvkdjtbnldhootf > types/database.types.ts",
+    "types:supabase:local": "supabase gen types typescript --local > types/database.types.ts",
+    "types:supabase:linked": "supabase gen types typescript --linked > types/database.types.ts",
     "shadcn:update": "node scripts/update-shadcn.mjs"
   },
   "dependencies": {
