@@ -34,6 +34,8 @@ Need more detail or want to run the Supabase stack locally? Read the [contributi
 
 Please read the [contributing guide](/CONTRIBUTING.md).
 
+Join our [Discord server](https://discord.gg/9AGutMkvUR).
+
 ## To Do List
 
 > Foliofox started as personal project with me as a single maintainer, so the To‑Do lived here in the README. Now that it’s public, I’m migrating these items to GitHub Issues for better tracking and collaboration. This list remains the temporary source of truth until that migration is complete.
