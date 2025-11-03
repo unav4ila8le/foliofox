@@ -77,27 +77,21 @@ Please read the [contributing guide](/CONTRIBUTING.md).
 - [x] New UX for adding new positions (one form per position source)
 - [x] Add ai tool for fetching historical quotes for symbols
 - [x] Add ai tool for getting dividend yield given symbol
-- [x] Add pagination to portfoli records
-- [ ] Add Plaid for user positions sync
-- [x] Add currency using InputGroup to value inputs in forms
-- [ ] Let users intuitively reset the cost basis for a position
-- [ ] Add pagination search and filtering to portfolio records
-- [x] Add PostHog
-- [ ] Better tool usage UI in the AI chat
-- [ ] Look at generative UI for AI chat: https://ai-sdk.dev/docs/ai-sdk-ui/generative-user-interfaces
-- [ ] Add a way for the user to "share" their portfolio. Ideally, after agreeing, they get a public sharable link which leads to a single public page view of all their positions and relevant performance charts.
+- [x] Add pagination to portfolio records
 - [x] Optimize recalculateRecords to use batch requests
+- [x] Add PostHog
+- [x] Do not trim cost basis to the first 2 decimals. Allow for up to 6 decimals. (Reviewed and confirmed that the rounding only happens in the UI. Analsyis/calculations keep full precision)
+- [x] Archive/Delete assets from asset page
+- [x] Add currency using InputGroup to value inputs in forms
+- [x] Better tool usage UI in the AI chat
+- [ ] Add Plaid for user positions sync
+- [ ] Look at generative UI for AI chat: https://ai-sdk.dev/docs/ai-sdk-ui/generative-user-interfaces
 - [ ] Add crypto wallet address sync
-- [ ] Find solution for when symbols are changed/renamed
 - [ ] Add cron job for domain valuations
 - [ ] Add real estate market estimate
 - [ ] Add private equity valuation
 - [ ] Add liabilities (debts)
-- [x] Do not trim cost basis to the first 2 decimals. Allow for up to 6 decimals. (Reviewed and confirmed that the rounding only happens in the UI. Analsyis/calculations keep full precision)
 - [ ] Net Worth view **after capital gain taxes**
-- [ ] Demo mode with fake data
-- [ ] Create a FAQ/documentation page and use it as information source for the AI advisor knowledge about the platform.
-- [x] Archive/Delete assets from asset page
 
 ## License
 
