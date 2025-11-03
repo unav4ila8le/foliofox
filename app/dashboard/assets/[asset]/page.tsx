@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
 
 import { Skeleton } from "@/components/ui/custom/skeleton";
 import { Separator } from "@/components/ui/separator";
@@ -16,6 +17,11 @@ import { calculateSymbolDividendYield } from "@/server/analysis/dividend-yield";
 
 import { calculateProfitLoss } from "@/lib/profit-loss";
 import { formatPercentage, formatCurrency } from "@/lib/number-format";
+
+import type {
+  PositionSnapshot,
+  TransformedPosition,
+} from "@/types/global.types";
 
 // Only needed for dynamic routes
 interface AssetPageProps {
@@ -50,11 +56,26 @@ async function AssetContent({
   page: number;
 }) {
   // Fetch position with snapshots to calculate P/L
-  const { position, snapshots } = await fetchSinglePosition(positionId, {
-    includeArchived: true,
-    includeSnapshots: true,
-    asOfDate: new Date(),
-  });
+  let position: TransformedPosition;
+  let snapshots: PositionSnapshot[];
+
+  try {
+    const result = await fetchSinglePosition(positionId, {
+      includeArchived: true,
+      includeSnapshots: true,
+      asOfDate: new Date(),
+    });
+    position = result.position;
+    snapshots = result.snapshots;
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.startsWith("Position not found")
+    ) {
+      redirect("/dashboard/assets");
+    }
+    throw error;
+  }
 
   // Calculate profit/loss data
   const snapshotsMap = new Map([[position.id, snapshots]]);
