@@ -21,7 +21,10 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { CurrencySelector } from "@/components/dashboard/currency-selector";
 
-import { updateProfile } from "@/server/profile/actions";
+import {
+  updateProfile,
+  checkUsernameAvailability,
+} from "@/server/profile/actions";
 
 import type { Profile } from "@/types/global.types";
 
@@ -63,6 +66,30 @@ export function SettingsForm({ profile, onSuccess, email }: SettingsFormProps) {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
+      if (values.username.trim() !== profile.username) {
+        const usernameCheck = await checkUsernameAvailability(
+          values.username.trim(),
+        );
+
+        if (usernameCheck.error) {
+          form.setError("username", {
+            type: "manual",
+            message:
+              "Failed to verify username availability. Please try again.",
+          });
+          return;
+        }
+
+        if (!usernameCheck.available) {
+          form.setError("username", {
+            type: "manual",
+            message:
+              "Username already taken. Please choose a different username.",
+          });
+          return;
+        }
+      }
+
       const formData = new FormData();
       formData.append("username", values.username.trim());
       formData.append(

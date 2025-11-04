@@ -81,6 +81,16 @@ export function SignupForm() {
             type: "manual",
             message: result.message,
           });
+        } else if (result.code === "username_check_error") {
+          form.setError("username", {
+            type: "manual",
+            message: result.message,
+          });
+        } else if (result.code === "username_already_exists") {
+          form.setError("username", {
+            type: "manual",
+            message: result.message,
+          });
         } else {
           toast.error("Signup failed", {
             description: result.message,
