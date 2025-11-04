@@ -64,8 +64,8 @@ interface AssetPerformanceData {
 export async function getAssetsPerformance(params: GetAssetsPerformanceParams) {
   try {
     // Get user's profile for default currency
-    const { profile } = await fetchProfile();
-    const baseCurrency = params.baseCurrency ?? profile.display_currency;
+    const baseCurrency =
+      params.baseCurrency ?? (await fetchProfile()).profile.display_currency;
 
     // Set date range (default to 180 days)
     const endDate = params.endDate ? new Date(params.endDate) : new Date();

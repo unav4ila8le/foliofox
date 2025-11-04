@@ -4,6 +4,7 @@ import { fetchPositions } from "@/server/positions/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 
 import { convertCurrency } from "@/lib/currency-conversion";
+import type { PositionsQueryContext } from "@/server/positions/fetch";
 
 /**
  * Calculate asset allocation by category at a specific date.
@@ -12,13 +13,17 @@ import { convertCurrency } from "@/lib/currency-conversion";
 export async function calculateAssetAllocation(
   targetCurrency: string,
   date: Date = new Date(),
+  context?: PositionsQueryContext,
 ) {
   // 1. Fetch positions valued as-of date (no snapshots histories needed)
-  const positions = await fetchPositions({
-    positionType: "asset",
-    includeArchived: true,
-    asOfDate: date,
-  });
+  const positions = await fetchPositions(
+    {
+      positionType: "asset",
+      includeArchived: true,
+      asOfDate: date,
+    },
+    context,
+  );
 
   if (!positions?.length) {
     return [];

@@ -91,7 +91,7 @@ Join our [Discord server](https://discord.gg/9AGutMkvUR).
 - [ ] Add crypto wallet address sync
 - [ ] Add cron job for domain valuations
 - [ ] Add real estate market estimate
-- [ ] Add private equity valuation
+- [ ] Add private equity valuation (stripe API link)
 - [ ] Add liabilities (debts)
 - [ ] Net Worth view **after capital gain taxes**
 

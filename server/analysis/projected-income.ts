@@ -2,12 +2,12 @@
 
 import { format, addMonths, startOfMonth } from "date-fns";
 
-import { fetchProfile } from "@/server/profile/actions";
 import { fetchPositions } from "@/server/positions/fetch";
 import { fetchDividends } from "@/server/dividends/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 
 import { convertCurrency } from "@/lib/currency-conversion";
+import type { PositionsQueryContext } from "@/server/positions/fetch";
 
 import type {
   Dividend,
@@ -26,20 +26,18 @@ export interface ProjectedIncomeResult {
  * Calculate projected monthly income for user's portfolio
  */
 export async function calculateProjectedIncome(
-  targetCurrency?: string,
+  targetCurrency: string,
   monthsAhead: number = 12,
+  context?: PositionsQueryContext,
 ) {
   try {
-    // Get user's preferred currency if not specified
-    if (!targetCurrency) {
-      const { profile } = await fetchProfile();
-      targetCurrency = profile.display_currency;
-    }
-
-    const positions = await fetchPositions({
-      positionType: "asset",
-      includeArchived: true,
-    });
+    const positions = await fetchPositions(
+      {
+        positionType: "asset",
+        includeArchived: true,
+      },
+      context,
+    );
 
     const symbolIds = positions
       .filter((position) => position.symbol_id)
@@ -83,7 +81,7 @@ export async function calculateProjectedIncome(
         uniqueCurrencies.add(event.currency);
       });
     });
-    uniqueCurrencies.add(targetCurrency!);
+    uniqueCurrencies.add(targetCurrency);
 
     // Create exchange rate requests for unique currencies only
     const exchangeRequests = Array.from(uniqueCurrencies).map((currency) => ({
@@ -130,7 +128,7 @@ export async function calculateProjectedIncome(
         const convertedValue = convertCurrency(
           positionDividendIncome,
           dividendCurrency,
-          targetCurrency!,
+          targetCurrency,
           exchangeRatesMap,
           format(new Date(), "yyyy-MM-dd"),
         );
@@ -149,7 +147,7 @@ export async function calculateProjectedIncome(
         date: new Date(month + "-01"),
         income,
       })),
-      currency: targetCurrency!,
+      currency: targetCurrency,
     };
   } catch (error) {
     console.error("Error calculating projected income:", error);

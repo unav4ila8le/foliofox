@@ -25,8 +25,8 @@ interface CategoryDrift {
  */
 export async function getAllocationDrift(params: GetAllocationDriftParams) {
   try {
-    const { profile } = await fetchProfile();
-    const baseCurrency = params.baseCurrency ?? profile.display_currency;
+    const baseCurrency =
+      params.baseCurrency ?? (await fetchProfile()).profile.display_currency;
 
     const compareDate = new Date(params.compareToDate);
     const currentDate = new Date();

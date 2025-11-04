@@ -1,6 +1,7 @@
 "use server";
 
 import { calculateProjectedIncome } from "@/server/analysis/projected-income";
+import { fetchProfile } from "@/server/profile/actions";
 
 interface GetProjectedIncomeParams {
   baseCurrency: string | null;
@@ -8,7 +9,9 @@ interface GetProjectedIncomeParams {
 }
 
 export async function getProjectedIncome(params: GetProjectedIncomeParams) {
-  const baseCurrency = params.baseCurrency ?? undefined;
+  const baseCurrency =
+    params.baseCurrency ??
+    (await fetchProfile()).profile.display_currency;
   const monthsAhead = params.monthsAhead ?? 12;
 
   const result = await calculateProjectedIncome(baseCurrency, monthsAhead);
