@@ -37,9 +37,7 @@ export type PositionsQueryContext = {
   userId?: string;
 };
 
-async function resolvePositionsContext(
-  context?: PositionsQueryContext,
-) {
+async function resolvePositionsContext(context?: PositionsQueryContext) {
   if (context) {
     const { supabaseClient, userId } = context;
     if (!supabaseClient || !userId) {
