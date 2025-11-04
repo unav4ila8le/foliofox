@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/supabase/server";
+import { checkUsernameAvailability } from "@/server/profile/actions";
 
 // Sign up
 export async function signUp(formData: FormData) {
@@ -18,6 +19,26 @@ export async function signUp(formData: FormData) {
       },
     },
   };
+
+  const usernameCheck = await checkUsernameAvailability(
+    data.options.data.username,
+  );
+
+  if (usernameCheck.error) {
+    return {
+      success: false,
+      code: "username_check_error",
+      message: "Failed to verify username availability. Please try again.",
+    };
+  }
+
+  if (!usernameCheck.available) {
+    return {
+      success: false,
+      code: "username_already_exists",
+      message: "Username already taken. Please choose a different username.",
+    };
+  }
 
   const { data: signUpData, error } = await supabase.auth.signUp(data);
 

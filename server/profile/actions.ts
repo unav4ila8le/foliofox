@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getCurrentUser, getOptionalUser } from "@/server/auth/actions";
 
 import type { Profile } from "@/types/global.types";
+import { createClient } from "@/supabase/server";
 
 // Fetch current user profile
 export async function fetchProfile() {
@@ -40,6 +41,20 @@ export async function fetchOptionalProfile() {
 
   if (!profile) return null;
   return { profile, email: user.email ?? "" };
+}
+
+export async function checkUsernameAvailability(username: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc("check_username_available", {
+    name: username.trim(),
+  });
+
+  if (error) {
+    return { available: false, error: error.message };
+  }
+
+  return { available: data, error: null };
 }
 
 // Update profile
