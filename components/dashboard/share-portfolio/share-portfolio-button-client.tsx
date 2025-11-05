@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Link } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +19,7 @@ import { EnableSharing } from "./enable-sharing";
 import { enablePublicPortfolio } from "@/server/public-portfolios/enable";
 import { disablePublicPortfolio } from "@/server/public-portfolios/disable";
 import { updatePublicPortfolioSettings } from "@/server/public-portfolios/update";
+import { SHARE_DURATIONS } from "@/lib/public-portfolio";
 
 import type {
   PublicPortfolioMetadata,
@@ -25,7 +27,7 @@ import type {
 } from "@/types/global.types";
 import type { EditSharingFormValues } from "./edit-sharing";
 
-const DEFAULT_DURATION: ShareDuration = "24h";
+const DEFAULT_DURATION: ShareDuration = SHARE_DURATIONS[0];
 
 export function SharePortfolioButtonClient({
   initialShareMetadata,
@@ -48,6 +50,12 @@ export function SharePortfolioButtonClient({
         throw new Error(result.error ?? "Failed to enable public portfolio.");
       }
       setShareMetadata(result.data);
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to enable public portfolio.",
+      );
     } finally {
       setIsEnabling(false);
     }
@@ -61,6 +69,12 @@ export function SharePortfolioButtonClient({
         throw new Error(result.error ?? "Failed to disable public portfolio.");
       }
       setShareMetadata(result.data);
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to disable public portfolio.",
+      );
     } finally {
       setIsDisabling(false);
     }

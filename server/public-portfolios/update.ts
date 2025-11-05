@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/server/auth/actions";
 
 import {
   computeExpiry,
+  SHARE_DURATIONS,
   sanitizeSlug,
   toPublicPortfolioMetadata,
   UNIQUE_VIOLATION_CODE,
@@ -20,6 +21,13 @@ export async function updatePublicPortfolioSettings(
   duration: ShareDuration,
 ) {
   const { supabase, user } = await getCurrentUser();
+
+  if (!SHARE_DURATIONS.includes(duration)) {
+    return {
+      success: false as const,
+      error: "Invalid share duration.",
+    };
+  }
 
   const sanitized = sanitizeSlug(newSlug);
   if (!sanitized) {

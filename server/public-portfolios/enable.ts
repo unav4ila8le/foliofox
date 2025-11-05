@@ -8,6 +8,7 @@ import {
   buildSlugCandidate,
   computeExpiry,
   generateRandomString,
+  SHARE_DURATIONS,
   sanitizeSlug,
   toPublicPortfolioMetadata,
   UNIQUE_VIOLATION_CODE,
@@ -77,6 +78,13 @@ async function upsertPublicPortfolio(
 
 export async function enablePublicPortfolio(duration: ShareDuration) {
   const { supabase, user } = await getCurrentUser();
+
+  if (!SHARE_DURATIONS.includes(duration)) {
+    return {
+      success: false as const,
+      error: "Invalid share duration.",
+    };
+  }
 
   const existing = await fetchPublicPortfolio(supabase, user.id);
   const baseSlugSource =

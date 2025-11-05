@@ -84,16 +84,21 @@ export function EditSharing({
 }: EditSharingProps) {
   const [open, setOpen] = useState(false);
 
-  // Get site URL from environment with fallback
-  const siteUrl =
+  const fallbackSiteUrl =
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
     "https://foliofox.ai";
+  let siteUrl = fallbackSiteUrl;
+  try {
+    siteUrl = new URL(shareMetadata.shareUrl).origin;
+  } catch {
+    siteUrl = fallbackSiteUrl;
+  }
 
   const form = useForm<EditSharingFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       slug: shareMetadata.slug,
-      duration: "24h",
+      duration: SHARE_DURATIONS[0],
     },
   });
 

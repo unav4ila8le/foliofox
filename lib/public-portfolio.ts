@@ -1,5 +1,5 @@
 import { addDays, addHours } from "date-fns";
-import crypto from "node:crypto";
+import { randomInt } from "node:crypto";
 
 import type {
   PublicPortfolio,
@@ -24,9 +24,8 @@ const DURATION_TO_EXPIRY: Record<ShareDuration, (base: Date) => Date> = {
 
 export function generateRandomString(length: number) {
   let output = "";
-  const bytes = crypto.randomBytes(length);
   for (let i = 0; i < length; i += 1) {
-    const index = bytes[i] % RANDOM_CHARS.length;
+    const index = randomInt(RANDOM_CHARS.length);
     output += RANDOM_CHARS[index];
   }
   return output;
