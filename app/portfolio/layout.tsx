@@ -13,7 +13,7 @@ export default async function PortfolioLayout({
     <div className="flex min-h-svh flex-col p-3">
       <div className="container mx-auto flex max-w-5xl flex-1 flex-col">
         <Header profile={data?.profile} email={data?.email} />
-        <main className="mt-2 flex flex-1">{children}</main>
+        <main className="mt-2 flex flex-1 flex-col">{children}</main>
       </div>
     </div>
   );

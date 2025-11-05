@@ -19,6 +19,7 @@ import {
   formatCurrency,
   formatPercentage,
 } from "@/lib/number-format";
+import { cn } from "@/lib/utils";
 
 const COLORS = [
   "var(--chart-0)",
@@ -29,28 +30,36 @@ const COLORS = [
   "var(--chart-5)",
 ];
 
-export function AssetAllocationDonut({
+type AssetAllocationDatum = {
+  category_id: string;
+  name: string;
+  total_value: number;
+};
+
+type AssetAllocationDonutProps = {
+  netWorth: number;
+  currency: string;
+  assetAllocation: AssetAllocationDatum[];
+  className?: string;
+};
+
+type AssetAllocationDonutBaseProps = AssetAllocationDonutProps & {
+  maskValues?: boolean;
+};
+
+function AssetAllocationDonutBase({
   netWorth,
   currency,
   assetAllocation,
-}: {
-  netWorth: number;
-  currency: string;
-  assetAllocation: Array<{
-    category_id: string;
-    name: string;
-    total_value: number;
-  }>;
-}) {
-  const { isPrivacyMode } = usePrivacyMode();
-
-  // Calculate total value for percentage calculation
+  className,
+  maskValues = false,
+}: AssetAllocationDonutBaseProps) {
   const totalAssetsValue = useMemo(() => {
     return assetAllocation.reduce((sum, item) => sum + item.total_value, 0);
   }, [assetAllocation]);
 
   return (
-    <Card className="flex h-64 flex-col gap-0 md:h-80">
+    <Card className={cn("flex h-64 flex-col gap-0 md:h-80", className)}>
       {assetAllocation.length === 0 ? (
         <CardContent className="flex flex-1 flex-col items-center justify-center text-center">
           <div className="bg-accent rounded-lg p-2">
@@ -67,7 +76,6 @@ export function AssetAllocationDonut({
             <CardTitle>Asset Allocation</CardTitle>
           </CardHeader>
           <CardContent className="mt-6 flex flex-1 2xl:gap-2">
-            {/* Pie chart container with minimum width */}
             <div className="w-3/5 min-w-24 shrink-0 2xl:w-1/2">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -90,7 +98,7 @@ export function AssetAllocationDonut({
                     ))}
                     <Label
                       value={
-                        isPrivacyMode
+                        maskValues
                           ? "* * * * * * * *"
                           : formatCompactCurrency(netWorth, currency)
                       }
@@ -138,7 +146,6 @@ export function AssetAllocationDonut({
               </ResponsiveContainer>
             </div>
 
-            {/* Custom legend outside ResponsiveContainer */}
             <div className="flex flex-1 items-center">
               <ul className="flex w-full flex-col gap-2">
                 {assetAllocation.map((item, index) => (
@@ -155,7 +162,9 @@ export function AssetAllocationDonut({
                           {item.name}{" "}
                           <span className="text-muted-foreground">
                             {formatPercentage(
-                              item.total_value / totalAssetsValue,
+                              totalAssetsValue === 0
+                                ? 0
+                                : item.total_value / totalAssetsValue,
                             )}
                           </span>
                         </span>
@@ -170,4 +179,13 @@ export function AssetAllocationDonut({
       )}
     </Card>
   );
+}
+
+export function AssetAllocationDonut(props: AssetAllocationDonutProps) {
+  const { isPrivacyMode } = usePrivacyMode();
+  return <AssetAllocationDonutBase {...props} maskValues={isPrivacyMode} />;
+}
+
+export function AssetAllocationDonutPublic(props: AssetAllocationDonutProps) {
+  return <AssetAllocationDonutBase {...props} maskValues={false} />;
 }
