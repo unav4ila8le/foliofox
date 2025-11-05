@@ -116,7 +116,7 @@ export type ProjectedIncomeData = {
 // Public portfolio sharing
 export type PublicPortfolio = Tables<"public_portfolios">;
 
-export type PublicPortfolioView = {
+export type PublicPortfolioMetadata = {
   id: string;
   slug: string;
   shareUrl: string;
@@ -125,7 +125,7 @@ export type PublicPortfolioView = {
 };
 
 export type PublicPortfolioWithProfile = {
-  share: PublicPortfolio;
+  publicPortfolio: PublicPortfolio;
   profile: Pick<
     Tables<"profiles">,
     "user_id" | "username" | "display_currency" | "avatar_url"

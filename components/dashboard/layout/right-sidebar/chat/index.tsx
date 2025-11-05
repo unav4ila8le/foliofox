@@ -5,6 +5,8 @@ import { DefaultChatTransport, isToolUIPart, type UIMessage } from "ai";
 import { useChat } from "@ai-sdk/react";
 import { Check, Copy, RefreshCcw } from "lucide-react";
 
+import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
+
 import {
   Conversation,
   ConversationContent,
@@ -72,6 +74,8 @@ export function Chat() {
   const [isLoadingConversation, setIsLoadingConversation] = useState(false);
   const [copiedMessages, setCopiedMessages] = useState<Set<string>>(new Set());
 
+  const { copyToClipboard } = useCopyToClipboard({ timeout: 4000 });
+
   // Load conversation list on mount
   useEffect(() => {
     let isCancelled = false;
@@ -130,8 +134,8 @@ export function Chat() {
   };
 
   // Copy message text with a temporary visual state
-  const handleCopy = async (text: string, messageId: string) => {
-    await navigator.clipboard.writeText(text);
+  const handleCopy = (text: string, messageId: string) => {
+    copyToClipboard(text);
     setCopiedMessages((prev) => new Set(prev).add(messageId));
     setTimeout(() => {
       setCopiedMessages((prev) => {

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { getCurrentUser } from "@/server/auth/actions";
 
-import { toPublicPortfolioView } from "@/lib/public-portfolio";
+import { toPublicPortfolioMetadata } from "@/lib/public-portfolio";
 
 import { fetchPublicPortfolio, resolveSiteUrl } from "./fetch";
 
@@ -34,7 +34,7 @@ export async function disablePublicPortfolio() {
   }
 
   const siteUrl = await resolveSiteUrl();
-  const view = toPublicPortfolioView(data, siteUrl);
+  const view = toPublicPortfolioMetadata(data, siteUrl);
 
   revalidatePath("/dashboard");
   revalidatePath(`/portfolio/${view.slug}`);

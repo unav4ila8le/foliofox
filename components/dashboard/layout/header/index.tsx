@@ -1,4 +1,9 @@
+import { Suspense } from "react";
+
+import { Loader2 } from "lucide-react";
+
 import { SidebarTrigger } from "@/components/ui/custom/sidebar";
+import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
@@ -9,6 +14,7 @@ import { Breadcrumb } from "./breadcrumb";
 import { NewActionButton } from "./new-action-button";
 import { FeedbackButton } from "@/components/dashboard/layout/header/feedback";
 import { ThemeToggle } from "@/components/features/theme/theme-toggle";
+import { SharePortfolioButton } from "@/components/dashboard/share-portfolio";
 
 export function Header() {
   return (
@@ -28,6 +34,16 @@ export function Header() {
       </div>
       <div className="flex items-center gap-2">
         <NewActionButton />
+        <Suspense
+          fallback={
+            <Button variant="outline" disabled>
+              <Loader2 className="mr-2 size-4 animate-spin" />
+              Share
+            </Button>
+          }
+        >
+          <SharePortfolioButton />
+        </Suspense>
         <FeedbackButton />
         <ThemeToggle />
         <Tooltip delayDuration={500}>

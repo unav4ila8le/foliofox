@@ -9,9 +9,8 @@ import {
   computeExpiry,
   generateRandomString,
   sanitizeSlug,
-  toPublicPortfolioView,
+  toPublicPortfolioMetadata,
   UNIQUE_VIOLATION_CODE,
-  ID_LENGTH,
 } from "@/lib/public-portfolio";
 
 import type { ShareDuration } from "@/types/global.types";
@@ -87,20 +86,22 @@ export async function enablePublicPortfolio(duration: ShareDuration) {
     baseSlugSource.length >= 3 ? baseSlugSource : generateRandomString(8);
 
   const expiry = computeExpiry(duration).toISOString();
-  const id = existing?.id ?? generateRandomString(ID_LENGTH);
 
   for (let attempt = 0; attempt < 6; attempt += 1) {
     const slugCandidate = buildSlugCandidate(baseSlug, attempt);
     try {
-      const record = await upsertPublicPortfolio(supabase, {
-        id,
+      const payload = {
         user_id: user.id,
         slug: slugCandidate,
         expires_at: expiry,
-      });
+      } as Database["public"]["Tables"]["public_portfolios"]["Insert"];
+      if (existing?.id) {
+        payload.id = existing.id;
+      }
+      const record = await upsertPublicPortfolio(supabase, payload);
 
       const siteUrl = await resolveSiteUrl();
-      const view = toPublicPortfolioView(record, siteUrl);
+      const view = toPublicPortfolioMetadata(record, siteUrl);
 
       revalidatePath("/dashboard");
       revalidatePath(`/portfolio/${view.slug}`);

@@ -5,14 +5,20 @@ import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/server/auth/actions";
 
 import {
+  computeExpiry,
   sanitizeSlug,
-  toPublicPortfolioView,
+  toPublicPortfolioMetadata,
   UNIQUE_VIOLATION_CODE,
 } from "@/lib/public-portfolio";
 
+import type { ShareDuration } from "@/types/global.types";
+
 import { fetchPublicPortfolio, resolveSiteUrl } from "./fetch";
 
-export async function updatePublicPortfolioSlug(newSlug: string) {
+export async function updatePublicPortfolioSettings(
+  newSlug: string,
+  duration: ShareDuration,
+) {
   const { supabase, user } = await getCurrentUser();
 
   const sanitized = sanitizeSlug(newSlug);
@@ -37,17 +43,12 @@ export async function updatePublicPortfolioSlug(newSlug: string) {
     };
   }
 
-  if (existing.slug === sanitized) {
-    const siteUrl = await resolveSiteUrl();
-    return {
-      success: true as const,
-      data: toPublicPortfolioView(existing, siteUrl),
-    };
-  }
-
   const { data, error } = await supabase
     .from("public_portfolios")
-    .update({ slug: sanitized })
+    .update({
+      slug: sanitized,
+      expires_at: computeExpiry(duration).toISOString(),
+    })
     .eq("user_id", user.id)
     .select("*")
     .single();
@@ -67,7 +68,7 @@ export async function updatePublicPortfolioSlug(newSlug: string) {
   }
 
   const siteUrl = await resolveSiteUrl();
-  const currentView = toPublicPortfolioView(data, siteUrl);
+  const currentView = toPublicPortfolioMetadata(data, siteUrl);
 
   revalidatePath("/dashboard");
   revalidatePath(`/portfolio/${existing.slug}`);

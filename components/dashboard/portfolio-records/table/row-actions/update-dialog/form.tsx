@@ -275,10 +275,11 @@ export function UpdatePortfolioRecordForm({
             name="unit_value"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Unit value</FormLabel>
+                <FormLabel htmlFor={field.name}>Unit value</FormLabel>
                 <FormControl>
                   <InputGroup>
                     <InputGroupInput
+                      id={field.name}
                       placeholder="E.g., 420.69"
                       type="number"
                       inputMode="decimal"

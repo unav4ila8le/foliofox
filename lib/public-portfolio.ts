@@ -3,17 +3,16 @@ import crypto from "node:crypto";
 
 import type {
   PublicPortfolio,
-  PublicPortfolioView,
+  PublicPortfolioMetadata,
   ShareDuration,
 } from "@/types/global.types";
 
 export const SLUG_PATTERN = /^[a-z0-9]+$/;
 export const MAX_SLUG_LENGTH = 32;
 export const SLUG_SUFFIX_LENGTH = 4;
-export const ID_LENGTH = 12; // 3 < length < 16 per DB constraint
 export const UNIQUE_VIOLATION_CODE = "23505";
 
-export const SHARE_DURATIONS: ShareDuration[] = ["24h", "7d", "30d"];
+export const SHARE_DURATIONS = ["24h", "7d", "30d"] as const;
 
 const RANDOM_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -58,10 +57,10 @@ export function isPortfolioActive(expiresAt: string | null) {
   return expiresAt ? new Date(expiresAt) > new Date() : false;
 }
 
-export function toPublicPortfolioView(
+export function toPublicPortfolioMetadata(
   row: PublicPortfolio,
   siteUrl: string,
-): PublicPortfolioView {
+): PublicPortfolioMetadata {
   const normalizedSiteUrl = siteUrl.replace(/\/$/, "");
   const expiresAt = row.expires_at;
 

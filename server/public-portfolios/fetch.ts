@@ -8,13 +8,14 @@ import { createServiceClient } from "@/supabase/service";
 import {
   isPortfolioActive,
   sanitizeSlug,
-  toPublicPortfolioView,
+  toPublicPortfolioMetadata,
 } from "@/lib/public-portfolio";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import type {
   PublicPortfolio,
+  PublicPortfolioMetadata,
   PublicPortfolioWithProfile,
 } from "@/types/global.types";
 
@@ -55,13 +56,13 @@ export async function resolveSiteUrl() {
   return "http://localhost:3000";
 }
 
-export async function fetchCurrentPublicPortfolio() {
+export async function fetchCurrentPublicPortfolio(): Promise<PublicPortfolioMetadata | null> {
   const { supabase, user } = await getCurrentUser();
   const record = await fetchPublicPortfolio(supabase, user.id);
   if (!record) return null;
 
   const siteUrl = await resolveSiteUrl();
-  return toPublicPortfolioView(record, siteUrl);
+  return toPublicPortfolioMetadata(record, siteUrl);
 }
 
 export async function fetchPublicPortfolioBySlug(
@@ -72,25 +73,25 @@ export async function fetchPublicPortfolioBySlug(
 
   const supabase = createServiceClient();
 
-  const { data: share, error } = await supabase
+  const { data: publicPortfolio, error } = await supabase
     .from("public_portfolios")
     .select("*")
     .eq("slug", sanitized)
     .maybeSingle();
 
-  if (error || !share) return null;
+  if (error || !publicPortfolio) return null;
 
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("user_id, username, display_currency, avatar_url")
-    .eq("user_id", share.user_id)
+    .eq("user_id", publicPortfolio.user_id)
     .maybeSingle();
 
   if (profileError || !profile) return null;
 
   return {
-    share,
+    publicPortfolio,
     profile,
-    isActive: isPortfolioActive(share.expires_at),
+    isActive: isPortfolioActive(publicPortfolio.expires_at),
   };
 }

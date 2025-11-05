@@ -221,10 +221,11 @@ export function ManualEntryForm() {
             name="unit_value"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Current unit value</FormLabel>
+                <FormLabel htmlFor={field.name}>Current unit value</FormLabel>
                 <FormControl>
                   <InputGroup>
                     <InputGroupInput
+                      id={field.name}
                       placeholder="E.g., 420.69"
                       type="number"
                       inputMode="decimal"
