@@ -47,7 +47,7 @@ export default async function PublicPortfolioPage({
   }
 
   return (
-    <div className="mt-8 grid w-full grid-cols-6 gap-4">
+    <div className="mt-4 grid w-full grid-cols-6 gap-4 md:mt-8">
       <div className="col-span-6">
         <PublicPortfolioHeader
           username={portfolio.owner.username}
