@@ -1,5 +1,5 @@
 import { addDays, addHours } from "date-fns";
-import { randomInt } from "node:crypto";
+import { randomInt } from "crypto";
 
 import type {
   PublicPortfolio,
