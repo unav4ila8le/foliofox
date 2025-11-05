@@ -11,11 +11,16 @@ import { buildPublicPortfolioView } from "@/server/public-portfolios/view";
 
 export default async function PublicPortfolioPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ currency?: string | string[] }>;
 }) {
-  const { slug } = await params;
-  const portfolio = await buildPublicPortfolioView(slug);
+  const [{ slug }, search] = await Promise.all([params, searchParams]);
+  const rawCurrency = Array.isArray(search?.currency)
+    ? search?.currency[0]
+    : search?.currency;
+  const portfolio = await buildPublicPortfolioView(slug, rawCurrency);
 
   if (!portfolio) {
     notFound();
@@ -47,6 +52,8 @@ export default async function PublicPortfolioPage({
         <PublicPortfolioHeader
           username={portfolio.owner.username}
           avatarUrl={portfolio.owner.avatarUrl}
+          currentCurrency={portfolio.netWorth.currency}
+          defaultCurrency={portfolio.owner.displayCurrency}
         />
       </div>
       <div className="col-span-6 md:col-span-3">
@@ -54,7 +61,7 @@ export default async function PublicPortfolioPage({
           netWorth={portfolio.netWorth.value}
           currency={portfolio.netWorth.currency}
           assetAllocation={portfolio.assetAllocation}
-          className="h-72!"
+          className="h-72! rounded-lg shadow-none"
         />
       </div>
       <div className="col-span-6 md:col-span-3">
@@ -66,7 +73,7 @@ export default async function PublicPortfolioPage({
             currency: portfolio.projectedIncome.currency,
           }}
           currency={portfolio.projectedIncome.currency}
-          className="h-72!"
+          className="h-72! rounded-lg shadow-none"
         />
       </div>
       <div className="col-span-6">

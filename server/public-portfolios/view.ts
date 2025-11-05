@@ -51,8 +51,15 @@ export type PublicPortfolioView =
       metadata: PublicPortfolioMetadata;
     };
 
+function normalizeCurrency(code: string | undefined) {
+  if (!code) return undefined;
+  const trimmed = code.trim();
+  return /^[A-Z]{3}$/.test(trimmed) ? trimmed : undefined;
+}
+
 export async function buildPublicPortfolioView(
   slug: string,
+  requestedCurrency?: string,
 ): Promise<PublicPortfolioView | null> {
   const resolved = await fetchPublicPortfolioBySlug(slug);
   if (!resolved) {
@@ -70,7 +77,9 @@ export async function buildPublicPortfolioView(
     };
   }
 
-  const targetCurrency = profile.display_currency ?? "USD";
+  const fallbackCurrency = profile.display_currency ?? "USD";
+  const targetCurrency =
+    normalizeCurrency(requestedCurrency) ?? fallbackCurrency;
   const asOf = new Date();
 
   const supabaseClient = createServiceClient();
@@ -105,7 +114,7 @@ export async function buildPublicPortfolioView(
     owner: {
       userId: profile.user_id,
       username: profile.username ?? null,
-      displayCurrency: targetCurrency,
+      displayCurrency: fallbackCurrency,
       avatarUrl: profile.avatar_url ?? null,
     },
     netWorth: {

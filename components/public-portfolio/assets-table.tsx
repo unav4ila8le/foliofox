@@ -55,7 +55,7 @@ export function PublicPortfolioAssetsTable({
               <TableRow key={position.id}>
                 <TableCell>
                   <div className="flex flex-col">
-                    <span className="font-medium">{position.name}</span>
+                    <span>{position.name}</span>
                     {position.category_name && (
                       <span className="text-muted-foreground text-xs">
                         {position.category_name}

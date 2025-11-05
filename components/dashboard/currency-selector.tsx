@@ -41,6 +41,7 @@ interface CurrencySelectorProps {
   id?: string;
   disabled?: boolean;
   className?: string;
+  popoverAlign?: "start" | "center" | "end";
   popoverWidth?: string;
 }
 
@@ -49,6 +50,7 @@ export function CurrencySelector({
   id,
   disabled,
   className,
+  popoverAlign = "start",
   popoverWidth = "w-(--radix-popover-trigger-width)",
 }: CurrencySelectorProps) {
   const [open, setOpen] = useState(false);
@@ -118,7 +120,7 @@ export function CurrencySelector({
           <ChevronsUpDown className="text-muted-foreground" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className={cn(popoverWidth, "p-0")}>
+      <PopoverContent align={popoverAlign} className={cn(popoverWidth, "p-0")}>
         <CurrencyList
           setOpen={setOpen}
           value={field.value}
