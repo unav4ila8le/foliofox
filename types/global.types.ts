@@ -112,3 +112,25 @@ export type ProjectedIncomeData = {
   date: Date;
   income: number;
 };
+
+// Public portfolio sharing
+export type PublicPortfolio = Tables<"public_portfolios">;
+
+export type PublicPortfolioView = {
+  id: string;
+  slug: string;
+  shareUrl: string;
+  expiresAt: string | null;
+  isActive: boolean;
+};
+
+export type PublicPortfolioWithProfile = {
+  share: PublicPortfolio;
+  profile: Pick<
+    Tables<"profiles">,
+    "user_id" | "username" | "display_currency" | "avatar_url"
+  >;
+  isActive: boolean;
+};
+
+export type ShareDuration = "24h" | "7d" | "30d";
