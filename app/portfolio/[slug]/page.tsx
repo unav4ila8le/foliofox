@@ -1,11 +1,13 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
-import { buildPublicPortfolioView } from "@/server/public-portfolios/view";
+import { Logomark } from "@/components/ui/logos/logomark";
+import { PublicPortfolioHeader } from "@/components/public-portfolio/header";
 import { PublicPortfolioAssetsTable } from "@/components/public-portfolio/assets-table";
 import { AssetAllocationDonutPublic } from "@/components/dashboard/charts/asset-allocation-donut";
 import { ProjectedIncomeWidget } from "@/components/dashboard/charts/projected-income/widget";
-import { Logomark } from "@/components/ui/logos/logomark";
+
+import { buildPublicPortfolioView } from "@/server/public-portfolios/view";
 
 export default async function PublicPortfolioPage({
   params,
@@ -41,7 +43,12 @@ export default async function PublicPortfolioPage({
 
   return (
     <div className="mt-8 grid w-full grid-cols-6 gap-4">
-      <div className="col-span-6">Portfolio header</div>
+      <div className="col-span-6">
+        <PublicPortfolioHeader
+          username={portfolio.owner.username}
+          avatarUrl={portfolio.owner.avatarUrl}
+        />
+      </div>
       <div className="col-span-6 md:col-span-3">
         <AssetAllocationDonutPublic
           netWorth={portfolio.netWorth.value}
