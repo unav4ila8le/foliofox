@@ -31,8 +31,8 @@ export default async function PublicPortfolioPage({
       <div className="flex flex-1 flex-col items-center justify-center text-center">
         <Link href="/" aria-label="Foliofox - Go to homepage">
           <Logomark
-            height={80}
-            className="text-muted-foreground/30 hover:text-brand transition-colors"
+            height={64}
+            className="text-muted-foreground/20 hover:text-brand transition-colors"
           />
         </Link>
         <h1 className="mt-4 text-2xl font-semibold">Link expired</h1>

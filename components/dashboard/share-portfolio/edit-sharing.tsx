@@ -43,14 +43,14 @@ import {
 } from "@/components/ui/select";
 
 import {
-  SHARE_DURATIONS,
+  PUBLIC_PORTFOLIO_EXPIRATIONS,
   SLUG_PATTERN,
   MAX_SLUG_LENGTH,
 } from "@/lib/public-portfolio";
 
 import type {
   PublicPortfolioMetadata,
-  ShareDuration,
+  PublicPortfolioExpirationOption,
 } from "@/types/global.types";
 
 export type EditSharingFormValues = z.infer<typeof formSchema>;
@@ -68,7 +68,7 @@ const formSchema = z.object({
         "Slug can only contain lowercase letters and numbers, without spaces.",
     })
     .transform((value) => value.toLowerCase()),
-  duration: z.enum(SHARE_DURATIONS),
+  expiration: z.enum(PUBLIC_PORTFOLIO_EXPIRATIONS),
 });
 
 type EditSharingProps = {
@@ -98,7 +98,7 @@ export function EditSharing({
     resolver: zodResolver(formSchema),
     defaultValues: {
       slug: shareMetadata.slug,
-      duration: SHARE_DURATIONS[0],
+      expiration: PUBLIC_PORTFOLIO_EXPIRATIONS[0],
     },
   });
 
@@ -175,10 +175,10 @@ export function EditSharing({
               )}
             />
 
-            {/* Duration */}
+            {/* Expiration */}
             <FormField
               control={form.control}
-              name="duration"
+              name="expiration"
               render={({ field }) => (
                 <FormItem className="sm:w-1/2 sm:pr-1">
                   <FormLabel htmlFor={field.name}>Expire after</FormLabel>
@@ -188,12 +188,12 @@ export function EditSharing({
                       value={field.value}
                     >
                       <SelectTrigger className="w-full" id={field.name}>
-                        <SelectValue placeholder="Select duration" />
+                        <SelectValue placeholder="Select expiration" />
                       </SelectTrigger>
                       <SelectContent>
-                        {SHARE_DURATIONS.map((value) => (
+                        {PUBLIC_PORTFOLIO_EXPIRATIONS.map((value) => (
                           <SelectItem key={value} value={value}>
-                            {labelForDuration(value)}
+                            {labelForExpiration(value)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -229,8 +229,8 @@ export function EditSharing({
   );
 }
 
-function labelForDuration(duration: ShareDuration) {
-  switch (duration) {
+function labelForExpiration(expiration: PublicPortfolioExpirationOption) {
+  switch (expiration) {
     case "24h":
       return "24 hours";
     case "7d":
@@ -238,6 +238,6 @@ function labelForDuration(duration: ShareDuration) {
     case "30d":
       return "30 days";
     default:
-      return duration;
+      return "Never";
   }
 }

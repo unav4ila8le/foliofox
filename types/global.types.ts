@@ -122,6 +122,7 @@ export type PublicPortfolioMetadata = {
   shareUrl: string;
   expiresAt: string | null;
   isActive: boolean;
+  neverExpires: boolean;
 };
 
 export type PublicPortfolioWithProfile = {
@@ -133,4 +134,4 @@ export type PublicPortfolioWithProfile = {
   isActive: boolean;
 };
 
-export type ShareDuration = "24h" | "7d" | "30d";
+export type PublicPortfolioExpirationOption = "24h" | "7d" | "30d" | "never";

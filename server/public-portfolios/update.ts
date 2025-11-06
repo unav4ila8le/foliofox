@@ -5,27 +5,27 @@ import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/server/auth/actions";
 
 import {
-  computeExpiry,
-  SHARE_DURATIONS,
+  PUBLIC_PORTFOLIO_EXPIRATIONS,
+  computeExpiration,
   sanitizeSlug,
   toPublicPortfolioMetadata,
   UNIQUE_VIOLATION_CODE,
 } from "@/lib/public-portfolio";
 
-import type { ShareDuration } from "@/types/global.types";
+import type { PublicPortfolioExpirationOption } from "@/types/global.types";
 
 import { fetchPublicPortfolio, resolveSiteUrl } from "./fetch";
 
 export async function updatePublicPortfolioSettings(
   newSlug: string,
-  duration: ShareDuration,
+  expirationOption: PublicPortfolioExpirationOption,
 ) {
   const { supabase, user } = await getCurrentUser();
 
-  if (!SHARE_DURATIONS.includes(duration)) {
+  if (!PUBLIC_PORTFOLIO_EXPIRATIONS.includes(expirationOption)) {
     return {
       success: false as const,
-      error: "Invalid share duration.",
+      error: "Invalid expiration option.",
     };
   }
 
@@ -55,7 +55,7 @@ export async function updatePublicPortfolioSettings(
     .from("public_portfolios")
     .update({
       slug: sanitized,
-      expires_at: computeExpiry(duration).toISOString(),
+      expires_at: computeExpiration(expirationOption),
     })
     .eq("user_id", user.id)
     .select("*")

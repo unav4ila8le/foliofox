@@ -2,7 +2,6 @@
 
 import { Check, Copy } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import {
   InputGroup,
   InputGroupAddon,
@@ -18,18 +17,14 @@ import type { PublicPortfolioMetadata } from "@/types/global.types";
 
 type ActiveSharingProps = {
   shareMetadata: PublicPortfolioMetadata;
-  onDisable: () => void;
   onUpdate: (values: EditSharingFormValues) => Promise<void> | void;
   isUpdating?: boolean;
-  isDisabling?: boolean;
 };
 
 export function ActiveSharing({
   shareMetadata,
-  onDisable,
   onUpdate,
   isUpdating = false,
-  isDisabling = false,
 }: ActiveSharingProps) {
   const { copyToClipboard, isCopied } = useCopyToClipboard();
 
@@ -44,13 +39,13 @@ export function ActiveSharing({
           <InputGroupInput
             value={shareMetadata.shareUrl}
             readOnly
-            disabled={isUpdating || isDisabling}
+            disabled={isUpdating}
           />
           <InputGroupAddon align="inline-end">
             <InputGroupButton
               variant="secondary"
               onClick={() => copyToClipboard(shareMetadata.shareUrl)}
-              disabled={isUpdating || isDisabling}
+              disabled={isUpdating}
             >
               {isCopied ? (
                 <Check className="size-4" />
@@ -68,20 +63,17 @@ export function ActiveSharing({
               shareMetadata.isActive ? "bg-green-500" : "bg-red-600",
             )}
           />
-          {shareMetadata.expiresAt
-            ? `Expires on ${new Date(shareMetadata.expiresAt).toLocaleString()}`
-            : "No expiration date set"}
+          {shareMetadata.neverExpires
+            ? "Never expires"
+            : shareMetadata.expiresAt
+              ? `Expires on ${new Date(
+                  shareMetadata.expiresAt,
+                ).toLocaleString()}`
+              : "No expiration date set"}
         </p>
       </div>
 
       <div className="flex items-center justify-end gap-2">
-        <Button
-          variant="outline"
-          onClick={onDisable}
-          disabled={isDisabling || isUpdating}
-        >
-          Disable sharing
-        </Button>
         <EditSharing
           shareMetadata={shareMetadata}
           onSubmit={onUpdate}

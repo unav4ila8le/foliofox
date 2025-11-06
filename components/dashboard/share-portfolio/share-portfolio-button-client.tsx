@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Link } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -14,20 +13,22 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ActiveSharing } from "./active-sharing";
-import { EnableSharing } from "./enable-sharing";
+import { ToggleSharing } from "./toggle-sharing";
 
 import { enablePublicPortfolio } from "@/server/public-portfolios/enable";
 import { disablePublicPortfolio } from "@/server/public-portfolios/disable";
 import { updatePublicPortfolioSettings } from "@/server/public-portfolios/update";
-import { SHARE_DURATIONS } from "@/lib/public-portfolio";
+import { PUBLIC_PORTFOLIO_EXPIRATIONS } from "@/lib/public-portfolio";
+import { cn } from "@/lib/utils";
 
 import type {
   PublicPortfolioMetadata,
-  ShareDuration,
+  PublicPortfolioExpirationOption,
 } from "@/types/global.types";
 import type { EditSharingFormValues } from "./edit-sharing";
 
-const DEFAULT_DURATION: ShareDuration = SHARE_DURATIONS[0];
+const DEFAULT_EXPIRATION: PublicPortfolioExpirationOption =
+  PUBLIC_PORTFOLIO_EXPIRATIONS[0];
 
 export function SharePortfolioButtonClient({
   initialShareMetadata,
@@ -45,7 +46,7 @@ export function SharePortfolioButtonClient({
   const handleEnable = async () => {
     setIsEnabling(true);
     try {
-      const result = await enablePublicPortfolio(DEFAULT_DURATION);
+      const result = await enablePublicPortfolio(DEFAULT_EXPIRATION);
       if (!result.success) {
         throw new Error(result.error ?? "Failed to enable public portfolio.");
       }
@@ -62,6 +63,7 @@ export function SharePortfolioButtonClient({
   };
 
   const handleDisable = async () => {
+    if (!shareMetadata?.isActive) return;
     setIsDisabling(true);
     try {
       const result = await disablePublicPortfolio();
@@ -85,7 +87,7 @@ export function SharePortfolioButtonClient({
     try {
       const result = await updatePublicPortfolioSettings(
         values.slug,
-        values.duration,
+        values.expiration,
       );
       if (!result.success) {
         throw new Error(result.error ?? "Failed to update public link.");
@@ -108,25 +110,26 @@ export function SharePortfolioButtonClient({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Link className="size-5" />
-            Share your portfolio
-          </DialogTitle>
+          <DialogTitle>Share your portfolio</DialogTitle>
           <DialogDescription>
             Generate a public link and control its availability.
           </DialogDescription>
         </DialogHeader>
-
-        {shareMetadata?.isActive ? (
-          <ActiveSharing
-            shareMetadata={shareMetadata}
-            onDisable={handleDisable}
-            onUpdate={handleUpdate}
-            isDisabling={isDisabling}
-            isUpdating={isUpdating}
-          />
-        ) : (
-          <EnableSharing onEnable={handleEnable} isEnabling={isEnabling} />
+        <ToggleSharing
+          onEnable={handleEnable}
+          onDisable={handleDisable}
+          isActive={Boolean(shareMetadata?.isActive)}
+          isEnabling={isEnabling}
+          isDisabling={isDisabling}
+        />
+        {shareMetadata?.isActive && (
+          <div className={cn(isDisabling && "pointer-events-none opacity-50")}>
+            <ActiveSharing
+              shareMetadata={shareMetadata}
+              onUpdate={handleUpdate}
+              isUpdating={isUpdating}
+            />
+          </div>
         )}
       </DialogContent>
     </Dialog>

@@ -5,16 +5,16 @@ import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/server/auth/actions";
 
 import {
+  PUBLIC_PORTFOLIO_EXPIRATIONS,
   buildSlugCandidate,
-  computeExpiry,
+  computeExpiration,
   generateRandomString,
-  SHARE_DURATIONS,
   sanitizeSlug,
   toPublicPortfolioMetadata,
   UNIQUE_VIOLATION_CODE,
 } from "@/lib/public-portfolio";
 
-import type { ShareDuration } from "@/types/global.types";
+import type { PublicPortfolioExpirationOption } from "@/types/global.types";
 import type { Database } from "@/types/database.types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -76,13 +76,15 @@ async function upsertPublicPortfolio(
   return data;
 }
 
-export async function enablePublicPortfolio(duration: ShareDuration) {
+export async function enablePublicPortfolio(
+  expirationOption: PublicPortfolioExpirationOption,
+) {
   const { supabase, user } = await getCurrentUser();
 
-  if (!SHARE_DURATIONS.includes(duration)) {
+  if (!PUBLIC_PORTFOLIO_EXPIRATIONS.includes(expirationOption)) {
     return {
       success: false as const,
-      error: "Invalid share duration.",
+      error: "Invalid expiration option.",
     };
   }
 
@@ -93,7 +95,7 @@ export async function enablePublicPortfolio(duration: ShareDuration) {
   const baseSlug =
     baseSlugSource.length >= 3 ? baseSlugSource : generateRandomString(8);
 
-  const expiry = computeExpiry(duration).toISOString();
+  const expiration = computeExpiration(expirationOption);
 
   for (let attempt = 0; attempt < 6; attempt += 1) {
     const slugCandidate = buildSlugCandidate(baseSlug, attempt);
@@ -101,7 +103,7 @@ export async function enablePublicPortfolio(duration: ShareDuration) {
       const payload = {
         user_id: user.id,
         slug: slugCandidate,
-        expires_at: expiry,
+        expires_at: expiration,
       } as Database["public"]["Tables"]["public_portfolios"]["Insert"];
       if (existing?.id) {
         payload.id = existing.id;
