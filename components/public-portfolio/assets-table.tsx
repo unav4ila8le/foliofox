@@ -1,3 +1,5 @@
+import { Package } from "lucide-react";
+
 import {
   Table,
   TableBody,
@@ -6,6 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 import { cn } from "@/lib/utils";
@@ -25,9 +28,17 @@ export function PublicPortfolioAssetsTable({
 }: PublicPortfolioAssetsTableProps) {
   if (positions.length === 0) {
     return (
-      <div className="border-border bg-muted/30 text-muted-foreground flex items-center justify-center rounded-lg border px-6 py-16 text-center text-sm">
-        This portfolio does not contain any assets yet.
-      </div>
+      <Card className="flex h-80 flex-col gap-4 rounded-lg shadow-none">
+        <CardContent className="flex flex-1 flex-col items-center justify-center text-center">
+          <div className="bg-accent rounded-lg p-2">
+            <Package className="text-muted-foreground size-4" />
+          </div>
+          <p className="mt-3 font-medium">Positions</p>
+          <p className="text-muted-foreground mt-1 text-sm">
+            This portfolio does not contain any positions yet.
+          </p>
+        </CardContent>
+      </Card>
     );
   }
 

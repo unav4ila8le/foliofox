@@ -11,9 +11,11 @@ import type { Profile } from "@/types/global.types";
 export function Header({
   profile,
   email,
+  cta,
 }: {
   profile?: Profile;
   email?: string;
+  cta?: string;
 }) {
   const avatarUrl = profile?.avatar_url || undefined;
   const username = profile?.username || "User";
@@ -56,7 +58,7 @@ export function Header({
           </div>
         ) : (
           <Button asChild size="sm">
-            <Link href="/auth/login">Get started</Link>
+            <Link href="/auth/login">{cta || "Get started"}</Link>
           </Button>
         )}
       </nav>
