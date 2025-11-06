@@ -18,8 +18,8 @@ export async function getPortfolioSnapshot(params: {
 }) {
   try {
     // Get user's profile to use their preferred currency
-    const { profile } = await fetchProfile();
-    const baseCurrency = params.baseCurrency ?? profile.display_currency;
+    const baseCurrency =
+      params.baseCurrency ?? (await fetchProfile()).profile.display_currency;
 
     // Use a single date across quotes and FX for consistency
     const asOfDate = params.date ? new Date(params.date) : new Date();

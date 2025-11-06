@@ -84,7 +84,7 @@ export function SettingsForm({ profile, onSuccess, email }: SettingsFormProps) {
           form.setError("username", {
             type: "manual",
             message:
-              "Username already taken. Please choose a different username.",
+              "This username is already taken. Please choose a different username.",
           });
           return;
         }

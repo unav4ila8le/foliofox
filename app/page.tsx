@@ -7,7 +7,7 @@ export default async function HomePage() {
   const data = await fetchOptionalProfile();
 
   return (
-    <div className="from-muted to-background min-h-svh bg-gradient-to-b p-3">
+    <div className="from-muted to-background min-h-svh bg-linear-to-b p-3">
       <div className="container mx-auto max-w-5xl">
         <Header profile={data?.profile} email={data?.email} />
         <main className="mt-16">

@@ -40,8 +40,8 @@ export async function getCurrencyExposure(
   params: GetCurrencyExposureParams,
 ): Promise<CurrencyExposureResult> {
   try {
-    const { profile } = await fetchProfile();
-    const baseCurrency = params.baseCurrency ?? profile.display_currency;
+    const baseCurrency =
+      params.baseCurrency ?? (await fetchProfile()).profile.display_currency;
 
     const date = params.date ? new Date(params.date) : new Date();
     const dateKey = format(date, "yyyy-MM-dd");

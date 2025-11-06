@@ -36,7 +36,8 @@ export async function signUp(formData: FormData) {
     return {
       success: false,
       code: "username_already_exists",
-      message: "Username already taken. Please choose a different username.",
+      message:
+        "This username is already taken. Please choose a different username.",
     };
   }
 

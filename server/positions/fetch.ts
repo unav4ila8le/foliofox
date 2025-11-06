@@ -1,6 +1,7 @@
 "use server";
 
 import { format } from "date-fns";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { getCurrentUser } from "@/server/auth/actions";
 import {
@@ -14,6 +15,7 @@ import type {
   PositionSnapshot,
   TransformedPosition,
 } from "@/types/global.types";
+import type { Database } from "@/types/database.types";
 
 interface FetchPositionsOptions {
   includeArchived?: boolean;
@@ -30,12 +32,33 @@ interface FetchPositionsOptions {
   includeSnapshots?: boolean;
 }
 
+export type PositionsQueryContext = {
+  supabaseClient?: SupabaseClient<Database>;
+  userId?: string;
+};
+
+async function resolvePositionsContext(context?: PositionsQueryContext) {
+  if (context) {
+    const { supabaseClient, userId } = context;
+    if (!supabaseClient || !userId) {
+      throw new Error(
+        "fetchPositions override requires both supabaseClient and userId",
+      );
+    }
+    return { supabase: supabaseClient, userId };
+  }
+
+  const { supabase, user } = await getCurrentUser();
+  return { supabase, userId: user.id };
+}
+
 /**
  * Fetch positions with optional archived filter and as-of valuation.
  * Returns UI-ready TransformedPosition[] mirroring the legacy API shape.
  */
 export async function fetchPositions(
   options: FetchPositionsOptions & { includeSnapshots: true },
+  context?: PositionsQueryContext,
 ): Promise<{
   positions: TransformedPosition[];
   snapshots: Map<string, PositionSnapshot[]>;
@@ -43,9 +66,13 @@ export async function fetchPositions(
 
 export async function fetchPositions(
   options?: FetchPositionsOptions,
+  context?: PositionsQueryContext,
 ): Promise<TransformedPosition[]>;
 
-export async function fetchPositions(options: FetchPositionsOptions = {}) {
+export async function fetchPositions(
+  options: FetchPositionsOptions = {},
+  context?: PositionsQueryContext,
+) {
   const {
     positionId,
     includeArchived = false,
@@ -55,7 +82,7 @@ export async function fetchPositions(options: FetchPositionsOptions = {}) {
     includeSnapshots = false,
   } = options;
 
-  const { supabase, user } = await getCurrentUser();
+  const { supabase, userId } = await resolvePositionsContext(context);
 
   // Load base rows with category
   const baseQuery = supabase
@@ -70,7 +97,7 @@ export async function fetchPositions(options: FetchPositionsOptions = {}) {
       )
     `,
     )
-    .eq("user_id", user.id);
+    .eq("user_id", userId);
 
   // If a positionId is provided, filter for that specific position
   if (positionId) baseQuery.eq("id", positionId);
@@ -117,7 +144,7 @@ export async function fetchPositions(options: FetchPositionsOptions = {}) {
       "position_id",
       marketDataPositionsAll.map((p) => p.id),
     )
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .order("position_id")
     .order("date", { ascending: false })
     .order("created_at", { ascending: false });
@@ -220,6 +247,7 @@ export async function fetchSinglePosition(
   options: Omit<FetchPositionsOptions, "positionId"> & {
     includeSnapshots: true;
   },
+  context?: PositionsQueryContext,
 ): Promise<{
   position: TransformedPosition;
   snapshots: PositionSnapshot[];
@@ -228,18 +256,23 @@ export async function fetchSinglePosition(
 export async function fetchSinglePosition(
   positionId: string,
   options?: Omit<FetchPositionsOptions, "positionId">,
+  context?: PositionsQueryContext,
 ): Promise<TransformedPosition>;
 
 export async function fetchSinglePosition(
   positionId: string,
   options: Omit<FetchPositionsOptions, "positionId"> = {},
+  context?: PositionsQueryContext,
 ) {
   if (options.includeSnapshots) {
-    const { positions, snapshots } = await fetchPositions({
-      ...options,
-      positionId,
-      includeSnapshots: true,
-    });
+    const { positions, snapshots } = await fetchPositions(
+      {
+        ...options,
+        positionId,
+        includeSnapshots: true,
+      },
+      context,
+    );
 
     if (!positions || positions.length === 0) {
       throw new Error(`Position not found: ${positionId}`);
@@ -251,10 +284,13 @@ export async function fetchSinglePosition(
     };
   }
 
-  const positions = await fetchPositions({
-    ...options,
-    positionId,
-  });
+  const positions = await fetchPositions(
+    {
+      ...options,
+      positionId,
+    },
+    context,
+  );
 
   if (!positions || positions.length === 0) {
     throw new Error(`Position not found: ${positionId}`);

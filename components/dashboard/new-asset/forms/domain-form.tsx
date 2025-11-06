@@ -159,7 +159,10 @@ export function DomainForm() {
           name="domain"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="flex items-center justify-between gap-2">
+              <FormLabel
+                htmlFor={field.name}
+                className="flex items-center justify-between gap-2"
+              >
                 Domain
                 <Link
                   href="https://humbleworth.com"
@@ -172,6 +175,7 @@ export function DomainForm() {
               <FormControl>
                 <InputGroup>
                   <InputGroupInput
+                    id={field.name}
                     disabled={isCheckingValuation}
                     placeholder="E.g., foliofox.ai"
                     {...field}
