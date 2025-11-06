@@ -41,10 +41,10 @@ export async function signUp(formData: FormData) {
     };
   }
 
-  const { data: signUpData, error } = await supabase.auth.signUp(data);
+  const { error } = await supabase.auth.signUp(data);
 
-  // Check if user already exists (identities array will be empty)
-  if (signUpData?.user && signUpData.user.identities?.length === 0) {
+  // Check if user already exists
+  if (error?.code === "user_already_exists") {
     return {
       success: false,
       code: "user_already_exists",
