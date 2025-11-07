@@ -13,12 +13,12 @@ import {
   ChevronDownIcon,
   CircleIcon,
   ClockIcon,
-  WrenchIcon,
   XCircleIcon,
 } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
 import { isValidElement } from "react";
 import { CodeBlock } from "./code-block";
+import { Logomark } from "../ui/logos/logomark";
 
 export type ToolProps = ComponentProps<typeof Collapsible>;
 
@@ -80,7 +80,7 @@ export const ToolHeader = ({
     {...props}
   >
     <div className="flex items-center gap-2">
-      <WrenchIcon className="text-muted-foreground size-4" />
+      <Logomark />
       <span className="text-sm font-medium">
         {title ?? type.split("-").slice(1).join("-")}
       </span>

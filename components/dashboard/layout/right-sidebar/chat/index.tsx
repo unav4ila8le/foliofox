@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Fragment } from "react";
+import { useState, useEffect, useMemo, Fragment } from "react";
 import { DefaultChatTransport, isToolUIPart, type UIMessage } from "ai";
 import { useChat } from "@ai-sdk/react";
 import { Check, Copy, RefreshCcw } from "lucide-react";
@@ -14,7 +14,13 @@ import {
   ConversationEmptyState,
   ConversationScrollButton,
 } from "@/components/ai-elements/conversation";
-import { Message, MessageContent } from "@/components/ai-elements/message";
+import {
+  Message,
+  MessageContent,
+  MessageResponse,
+  MessageActions,
+  MessageAction,
+} from "@/components/ai-elements/message";
 import { MessageLoading } from "@/components/ai-elements/message-loading";
 import {
   PromptInput,
@@ -30,9 +36,8 @@ import {
   PromptInputSelectValue,
   PromptInputProvider,
   PromptInputFooter,
+  usePromptInputController,
 } from "@/components/ai-elements/prompt-input";
-import { Response } from "@/components/ui/ai/response";
-import { Actions, Action } from "@/components/ui/ai/actions";
 import { Logomark } from "@/components/ui/logos/logomark";
 import { ChatHeader } from "./header";
 
@@ -55,8 +60,7 @@ const suggestions = [
   "Based on my positions and portfolio history, what's my probability of reaching $1M net worth in 10 years?",
 ];
 
-export function Chat() {
-  const [input, setInput] = useState("");
+function ChatContent() {
   const [mode, setMode] = useState<Mode>("advisory");
   // Current conversation identifier (used to scope/useChat state)
   const [conversationId, setConversationId] = useState<string>(() =>
@@ -74,6 +78,7 @@ export function Chat() {
   const [copiedMessages, setCopiedMessages] = useState<Set<string>>(new Set());
 
   const { copyToClipboard } = useCopyToClipboard({ timeout: 4000 });
+  const controller = usePromptInputController();
 
   // Load conversation list on mount
   useEffect(() => {
@@ -91,13 +96,20 @@ export function Chat() {
     };
   }, []);
 
+  // Memoize transport to ensure mode changes are picked up
+  const transport = useMemo(
+    () =>
+      new DefaultChatTransport({
+        api: "/api/ai/chat",
+        headers: { "x-ff-mode": mode, "x-ff-conversation-id": conversationId },
+      }),
+    [mode, conversationId],
+  );
+
   const { messages, sendMessage, status, stop, regenerate } = useChat({
     id: conversationId,
     messages: initialMessages,
-    transport: new DefaultChatTransport({
-      api: "/api/ai/chat",
-      headers: { "x-ff-mode": mode, "x-ff-conversation-id": conversationId },
-    }),
+    transport,
   });
 
   // Switch to an existing conversation (loads history)
@@ -154,7 +166,6 @@ export function Chat() {
     }
 
     sendMessage({ text: message.text || "" });
-    setInput("");
   };
 
   return (
@@ -171,6 +182,7 @@ export function Chat() {
       {/* Conversation */}
       <Conversation
         className={cn(
+          "min-h-0 flex-1 overflow-hidden",
           isLoadingConversation && "pointer-events-none opacity-50",
         )}
       >
@@ -196,30 +208,44 @@ export function Chat() {
 
                       return (
                         <Fragment key={`${message.id}-${i}`}>
-                          <Message from={message.role} className="max-w-[90%]">
+                          <Message
+                            from={message.role}
+                            className={cn(
+                              "max-w-[90%]",
+                              isAssistant && "max-w-full",
+                            )}
+                          >
                             <MessageContent className="group-[.is-user]:bg-primary group-[.is-user]:text-primary-foreground">
-                              <Response>{part.text}</Response>
+                              {isAssistant ? (
+                                <MessageResponse>{part.text}</MessageResponse>
+                              ) : (
+                                part.text
+                              )}
                             </MessageContent>
                           </Message>
                           {isAssistant && status !== "streaming" && (
-                            <Actions>
+                            <MessageActions className="-mt-3">
                               {isLastMessage && (
-                                <Action
+                                <MessageAction
                                   onClick={() => regenerate()}
                                   tooltip="Regenerate response"
                                 >
-                                  <RefreshCcw />
-                                </Action>
+                                  <RefreshCcw className="size-3.5" />
+                                </MessageAction>
                               )}
-                              <Action
+                              <MessageAction
                                 onClick={() =>
                                   handleCopy(part.text, message.id)
                                 }
                                 tooltip={isCopied ? "Copied!" : "Copy"}
                               >
-                                {isCopied ? <Check /> : <Copy />}
-                              </Action>
-                            </Actions>
+                                {isCopied ? (
+                                  <Check className="size-3.5" />
+                                ) : (
+                                  <Copy className="size-3.5" />
+                                )}
+                              </MessageAction>
+                            </MessageActions>
                           )}
                         </Fragment>
                       );
@@ -230,7 +256,11 @@ export function Chat() {
                             key={`${message.id}-part-${i}`}
                             className="mb-0"
                           >
-                            <ToolHeader type={part.type} state={part.state} />
+                            <ToolHeader
+                              type={part.type}
+                              state={part.state}
+                              className="truncate"
+                            />
                             <ToolContent>
                               <ToolInput input={part.input} />
                               <ToolOutput
@@ -257,7 +287,7 @@ export function Chat() {
 
       {/* Suggestions */}
       {messages.length === 0 && (
-        <div className="space-y-2">
+        <div className="space-y-2 px-2 pb-2">
           <p className="text-muted-foreground px-2 text-sm">Suggestions</p>
           <div className="space-y-1">
             {suggestions.map((suggestion) => (
@@ -275,23 +305,19 @@ export function Chat() {
       )}
 
       {/* Prompt Input */}
-      <PromptInputProvider>
+      <div className="px-2">
         <PromptInput onSubmit={handleSubmit} className="bg-background">
           <PromptInputBody>
-            <PromptInputTextarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask Foliofox..."
-            />
+            <PromptInputTextarea placeholder="Ask Foliofox..." />
           </PromptInputBody>
 
-          <PromptInputFooter>
+          <PromptInputFooter className="px-2 pb-2">
             <PromptInputTools>
               <PromptInputSelect
                 value={mode}
                 onValueChange={(value) => setMode(value as Mode)}
               >
-                <PromptInputSelectTrigger>
+                <PromptInputSelectTrigger className="rounded-sm">
                   <PromptInputSelectValue placeholder="Mode" />
                 </PromptInputSelectTrigger>
                 <PromptInputSelectContent>
@@ -307,15 +333,37 @@ export function Chat() {
                 </PromptInputSelectContent>
               </PromptInputSelect>
             </PromptInputTools>
-            <PromptInputSubmit status={status} />
+            <PromptInputSubmit
+              className="rounded-sm"
+              status={status}
+              disabled={
+                status === "streaming"
+                  ? false
+                  : controller.textInput.value.trim().length < 3
+              }
+              onClick={(e) => {
+                if (status === "streaming") {
+                  e.preventDefault();
+                  stop();
+                }
+              }}
+            />
           </PromptInputFooter>
         </PromptInput>
-      </PromptInputProvider>
+      </div>
 
       {/* Dislaimer */}
-      <p className="text-muted-foreground text-center text-xs">
+      <p className="text-muted-foreground p-2 text-center text-xs">
         You are responsible for your investment decisions.
       </p>
     </div>
+  );
+}
+
+export function Chat() {
+  return (
+    <PromptInputProvider>
+      <ChatContent />
+    </PromptInputProvider>
   );
 }
