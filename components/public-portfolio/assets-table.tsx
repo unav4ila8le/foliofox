@@ -8,6 +8,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -44,7 +49,7 @@ export function PublicPortfolioAssetsTable({
 
   return (
     <div className="overflow-hidden rounded-lg border">
-      <Table>
+      <Table className="[&_td:first-child]:pl-4 [&_td:last-child]:pr-4 [&_th:first-child]:pl-4 [&_th:last-child]:pr-4">
         <TableHeader className="bg-muted/50">
           <TableRow>
             <TableHead>Name</TableHead>
@@ -64,9 +69,14 @@ export function PublicPortfolioAssetsTable({
 
             return (
               <TableRow key={position.id}>
-                <TableCell>
-                  <div className="flex flex-col">
-                    <span>{position.name}</span>
+                <TableCell className="max-w-48 md:max-w-64 lg:max-w-80">
+                  <div>
+                    <Tooltip delayDuration={500}>
+                      <TooltipTrigger asChild>
+                        <div className="truncate">{position.name}</div>
+                      </TooltipTrigger>
+                      <TooltipContent>{position.name}</TooltipContent>
+                    </Tooltip>
                     {position.category_name && (
                       <span className="text-muted-foreground text-xs">
                         {position.category_name}
@@ -94,7 +104,7 @@ export function PublicPortfolioAssetsTable({
                         undefined,
                         { maximumFractionDigits: 2 },
                       )
-                    : "—"}
+                    : "-"}
                 </TableCell>
                 <TableCell
                   className={cn(
@@ -110,7 +120,7 @@ export function PublicPortfolioAssetsTable({
                     ? formatNumber(profitLoss, undefined, {
                         maximumFractionDigits: 2,
                       })
-                    : "—"}
+                    : "-"}
                 </TableCell>
                 <TableCell
                   className={cn(
@@ -124,7 +134,7 @@ export function PublicPortfolioAssetsTable({
                 >
                   {marketDataAvailable
                     ? formatPercentage(profitLossPercent)
-                    : "—"}
+                    : "-"}
                 </TableCell>
               </TableRow>
             );

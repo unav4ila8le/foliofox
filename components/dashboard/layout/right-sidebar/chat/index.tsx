@@ -7,22 +7,20 @@ import { Check, Copy, RefreshCcw } from "lucide-react";
 
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 
+import { Button } from "@/components/ui/button";
 import {
   Conversation,
   ConversationContent,
   ConversationEmptyState,
   ConversationScrollButton,
-} from "@/components/ui/ai/conversation";
-import {
-  Message,
-  MessageContent,
-  MessageLoading,
-} from "@/components/ui/ai/message";
+} from "@/components/ai-elements/conversation";
+import { Message, MessageContent } from "@/components/ai-elements/message";
+import { MessageLoading } from "@/components/ai-elements/message-loading";
 import {
   PromptInput,
   PromptInputTextarea,
   PromptInputSubmit,
-  PromptInputToolbar,
+  PromptInputTools,
   PromptInputBody,
   type PromptInputMessage,
   PromptInputSelect,
@@ -30,10 +28,9 @@ import {
   PromptInputSelectContent,
   PromptInputSelectItem,
   PromptInputSelectValue,
-} from "@/components/ui/ai/prompt-input";
+} from "@/components/ai-elements/prompt-input";
 import { Response } from "@/components/ui/ai/response";
 import { Actions, Action } from "@/components/ui/ai/actions";
-import { Suggestions, Suggestion } from "@/components/ui/ai/suggestions";
 import { Logomark } from "@/components/ui/logos/logomark";
 import { ChatHeader } from "./header";
 
@@ -47,7 +44,7 @@ import {
   ToolHeader,
   ToolInput,
   ToolOutput,
-} from "@/components/ui/ai/tool";
+} from "@/components/ai-elements/tool";
 
 const suggestions = [
   "What would happen to my portfolio if the market crashes 30% tomorrow?",
@@ -159,7 +156,7 @@ export function Chat() {
   };
 
   return (
-    <div className="flex h-full flex-col p-2 pt-0">
+    <div className="flex h-full flex-col">
       {/* Header */}
       <ChatHeader
         conversations={conversations}
@@ -172,11 +169,10 @@ export function Chat() {
       {/* Conversation */}
       <Conversation
         className={cn(
-          "-me-2",
           isLoadingConversation && "pointer-events-none opacity-50",
         )}
       >
-        <ConversationContent>
+        <ConversationContent className="gap-4 p-2">
           {messages.length === 0 ? (
             <ConversationEmptyState
               icon={
@@ -198,13 +194,13 @@ export function Chat() {
 
                       return (
                         <Fragment key={`${message.id}-${i}`}>
-                          <Message from={message.role}>
-                            <MessageContent variant="flat">
+                          <Message from={message.role} className="max-w-[90%]">
+                            <MessageContent className="group-[.is-user]:bg-primary group-[.is-user]:text-primary-foreground">
                               <Response>{part.text}</Response>
                             </MessageContent>
                           </Message>
                           {isAssistant && status !== "streaming" && (
-                            <Actions className="-mt-2">
+                            <Actions>
                               {isLastMessage && (
                                 <Action
                                   onClick={() => regenerate()}
@@ -228,7 +224,10 @@ export function Chat() {
                     default:
                       if (isToolUIPart(part)) {
                         return (
-                          <Tool key={`${message.id}-part-${i}`}>
+                          <Tool
+                            key={`${message.id}-part-${i}`}
+                            className="mb-0"
+                          >
                             <ToolHeader type={part.type} state={part.state} />
                             <ToolContent>
                               <ToolInput input={part.input} />
@@ -256,30 +255,33 @@ export function Chat() {
 
       {/* Suggestions */}
       {messages.length === 0 && (
-        <div className="mb-2 space-y-2">
+        <div className="space-y-2">
           <p className="text-muted-foreground px-2 text-sm">Suggestions</p>
-          <Suggestions>
+          <div className="space-y-1">
             {suggestions.map((suggestion) => (
-              <Suggestion
+              <Button
                 key={suggestion}
-                onClick={handleSuggestionClick}
-                suggestion={suggestion}
-              />
+                onClick={() => handleSuggestionClick(suggestion)}
+                variant="ghost"
+                className="h-auto p-2 text-start whitespace-normal"
+              >
+                {suggestion}
+              </Button>
             ))}
-          </Suggestions>
+          </div>
         </div>
       )}
 
       {/* Prompt Input */}
       <PromptInput onSubmit={handleSubmit}>
-        <PromptInputBody className="border-none">
+        <PromptInputBody>
           <PromptInputTextarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask Foliofox..."
           />
         </PromptInputBody>
-        <PromptInputToolbar>
+        <PromptInputTools>
           <PromptInputSelect
             value={mode}
             onValueChange={(value) => setMode(value as Mode)}
@@ -305,7 +307,7 @@ export function Chat() {
             onClick={status === "streaming" ? stop : undefined}
             status={status}
           />
-        </PromptInputToolbar>
+        </PromptInputTools>
       </PromptInput>
 
       {/* Dislaimer */}
