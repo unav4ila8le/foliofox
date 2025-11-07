@@ -28,6 +28,8 @@ import {
   PromptInputSelectContent,
   PromptInputSelectItem,
   PromptInputSelectValue,
+  PromptInputProvider,
+  PromptInputFooter,
 } from "@/components/ai-elements/prompt-input";
 import { Response } from "@/components/ui/ai/response";
 import { Actions, Action } from "@/components/ui/ai/actions";
@@ -273,45 +275,45 @@ export function Chat() {
       )}
 
       {/* Prompt Input */}
-      <PromptInput onSubmit={handleSubmit}>
-        <PromptInputBody>
-          <PromptInputTextarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask Foliofox..."
-          />
-        </PromptInputBody>
-        <PromptInputTools>
-          <PromptInputSelect
-            value={mode}
-            onValueChange={(value) => setMode(value as Mode)}
-          >
-            <PromptInputSelectTrigger>
-              <PromptInputSelectValue placeholder="Mode" />
-            </PromptInputSelectTrigger>
-            <PromptInputSelectContent>
-              <PromptInputSelectItem value="educational">
-                Educational
-              </PromptInputSelectItem>
-              <PromptInputSelectItem value="advisory">
-                Advisory
-              </PromptInputSelectItem>
-              <PromptInputSelectItem value="unhinged">
-                Unhinged
-              </PromptInputSelectItem>
-            </PromptInputSelectContent>
-          </PromptInputSelect>
-          <PromptInputSubmit
-            disabled={status === "streaming" ? false : input.trim().length < 2}
-            type={status === "streaming" ? "button" : "submit"}
-            onClick={status === "streaming" ? stop : undefined}
-            status={status}
-          />
-        </PromptInputTools>
-      </PromptInput>
+      <PromptInputProvider>
+        <PromptInput onSubmit={handleSubmit} className="bg-background">
+          <PromptInputBody>
+            <PromptInputTextarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Ask Foliofox..."
+            />
+          </PromptInputBody>
+
+          <PromptInputFooter>
+            <PromptInputTools>
+              <PromptInputSelect
+                value={mode}
+                onValueChange={(value) => setMode(value as Mode)}
+              >
+                <PromptInputSelectTrigger>
+                  <PromptInputSelectValue placeholder="Mode" />
+                </PromptInputSelectTrigger>
+                <PromptInputSelectContent>
+                  <PromptInputSelectItem value="educational">
+                    Educational
+                  </PromptInputSelectItem>
+                  <PromptInputSelectItem value="advisory">
+                    Advisory
+                  </PromptInputSelectItem>
+                  <PromptInputSelectItem value="unhinged">
+                    Unhinged
+                  </PromptInputSelectItem>
+                </PromptInputSelectContent>
+              </PromptInputSelect>
+            </PromptInputTools>
+            <PromptInputSubmit status={status} />
+          </PromptInputFooter>
+        </PromptInput>
+      </PromptInputProvider>
 
       {/* Dislaimer */}
-      <p className="text-muted-foreground mt-2 text-center text-xs">
+      <p className="text-muted-foreground text-center text-xs">
         You are responsible for your investment decisions.
       </p>
     </div>
