@@ -105,7 +105,9 @@ export function SharePortfolioButtonClient({
           {shareMetadata?.isActive && (
             <span className="size-2 animate-pulse rounded-full bg-green-500" />
           )}
-          Share Portfolio
+          <span>
+            Share <span className="hidden md:inline">Portfolio</span>
+          </span>
         </Button>
       </DialogTrigger>
       <DialogContent>
