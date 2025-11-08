@@ -1,6 +1,7 @@
 "use server";
 
 import { fetchPortfolioRecords } from "@/server/portfolio-records/fetch";
+import { clampDateRange } from "@/server/ai/tools/helpers/time-range";
 
 import type { PortfolioRecordWithPosition } from "@/types/global.types";
 
@@ -15,8 +16,14 @@ export async function getPortfolioRecords(params: GetPortfolioRecordsParams) {
   const positionId = params.positionId ?? undefined;
   const includeArchived = params.includeArchived ?? undefined;
 
-  const startDate = params.startDate ? new Date(params.startDate) : undefined;
-  const endDate = params.endDate ? new Date(params.endDate) : undefined;
+  const { startDate: startDateKey, endDate: endDateKey } = clampDateRange({
+    startDate: params.startDate,
+    endDate: params.endDate,
+    maxDays: positionId ? 730 : undefined,
+  });
+
+  const startDate = startDateKey ? new Date(startDateKey) : undefined;
+  const endDate = endDateKey ? new Date(endDateKey) : undefined;
 
   const pageSize = 100;
   let page = 1;
@@ -56,8 +63,8 @@ export async function getPortfolioRecords(params: GetPortfolioRecordsParams) {
     total: allRecords.length,
     returned: items.length,
     range: {
-      start: startDate ?? null,
-      end: endDate ?? null,
+      start: startDate?.toISOString().split("T")[0] ?? null,
+      end: endDate?.toISOString().split("T")[0] ?? null,
     },
     positionId: params.positionId,
     includeArchived: params.includeArchived ?? true,

@@ -1,6 +1,7 @@
 "use server";
 
 import { fetchPositionSnapshots } from "@/server/position-snapshots/fetch";
+import { clampDateRange } from "@/server/ai/tools/helpers/time-range";
 
 interface GetPositionSnapshotsParams {
   positionId: string; // Required - position snapshots are always for a specific position
@@ -11,8 +12,13 @@ interface GetPositionSnapshotsParams {
 export async function getPositionSnapshots(params: GetPositionSnapshotsParams) {
   const { positionId } = params;
 
-  const startDate = params.startDate ? new Date(params.startDate) : undefined;
-  const endDate = params.endDate ? new Date(params.endDate) : undefined;
+  const { startDate: startKey, endDate: endKey } = clampDateRange({
+    startDate: params.startDate,
+    endDate: params.endDate,
+    maxDays: 1095, // allow up to ~3 years for single-position detail
+  });
+  const startDate = startKey ? new Date(startKey) : undefined;
+  const endDate = endKey ? new Date(endKey) : undefined;
 
   const snapshots = await fetchPositionSnapshots({
     positionId,
@@ -36,8 +42,8 @@ export async function getPositionSnapshots(params: GetPositionSnapshotsParams) {
     returned: items.length,
     positionId,
     range: {
-      start: startDate ?? null,
-      end: endDate ?? null,
+      start: startDate?.toISOString().split("T")[0] ?? null,
+      end: endDate?.toISOString().split("T")[0] ?? null,
     },
     items,
   };

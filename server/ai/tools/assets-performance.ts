@@ -1,6 +1,6 @@
 "use server";
 
-import { format, subDays } from "date-fns";
+import { parseISO } from "date-fns";
 
 import { fetchProfile } from "@/server/profile/actions";
 import { fetchPositions } from "@/server/positions/fetch";
@@ -8,6 +8,7 @@ import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 
 import { calculateProfitLoss } from "@/lib/profit-loss";
 import { convertCurrency } from "@/lib/currency-conversion";
+import { clampDateRange } from "@/server/ai/tools/helpers/time-range";
 
 interface GetAssetsPerformanceParams {
   baseCurrency: string | null;
@@ -67,14 +68,12 @@ export async function getAssetsPerformance(params: GetAssetsPerformanceParams) {
     const baseCurrency =
       params.baseCurrency ?? (await fetchProfile()).profile.display_currency;
 
-    // Set date range (default to 180 days)
-    const endDate = params.endDate ? new Date(params.endDate) : new Date();
-    const startDate = params.startDate
-      ? new Date(params.startDate)
-      : subDays(endDate, 180);
-
-    const startDateKey = format(startDate, "yyyy-MM-dd");
-    const endDateKey = format(endDate, "yyyy-MM-dd");
+    const { startDate: startDateKey, endDate: endDateKey } = clampDateRange({
+      startDate: params.startDate,
+      endDate: params.endDate,
+    });
+    const startDate = parseISO(startDateKey);
+    const endDate = parseISO(endDateKey);
 
     // Fetch end-date positions (with snapshots for P/L) and start-date positions (no snapshots needed)
     const [endSnapshot, startPositions] = await Promise.all([

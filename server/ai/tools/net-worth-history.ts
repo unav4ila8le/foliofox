@@ -1,6 +1,7 @@
 "use server";
 
 import { fetchNetWorthHistory } from "@/server/analysis/net-worth-history";
+import { clampDaysBack } from "@/server/ai/tools/helpers/time-range";
 
 interface GetNetWorthHistoryParams {
   baseCurrency: string | null;
@@ -9,7 +10,7 @@ interface GetNetWorthHistoryParams {
 
 export async function getNetWorthHistory(params: GetNetWorthHistoryParams) {
   const baseCurrency = params.baseCurrency ?? undefined;
-  const daysBack = params.daysBack ?? 180;
+  const daysBack = clampDaysBack({ requested: params.daysBack });
 
   const history = await fetchNetWorthHistory({
     targetCurrency: baseCurrency,

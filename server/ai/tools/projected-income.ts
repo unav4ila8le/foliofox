@@ -11,7 +11,7 @@ interface GetProjectedIncomeParams {
 export async function getProjectedIncome(params: GetProjectedIncomeParams) {
   const baseCurrency =
     params.baseCurrency ?? (await fetchProfile()).profile.display_currency;
-  const monthsAhead = params.monthsAhead ?? 12;
+  const monthsAhead = Math.min(Math.max(params.monthsAhead ?? 12, 1), 24);
 
   const result = await calculateProjectedIncome(baseCurrency, monthsAhead);
 
