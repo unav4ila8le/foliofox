@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, Fragment } from "react";
+import { useState, useEffect, useMemo, Fragment, useRef } from "react";
 import { DefaultChatTransport, isToolUIPart, type UIMessage } from "ai";
 import { useChat } from "@ai-sdk/react";
 import { Check, Copy, RefreshCcw } from "lucide-react";
@@ -37,6 +37,7 @@ import {
   PromptInputProvider,
   PromptInputFooter,
   usePromptInputController,
+  PromptInputSpeechButton,
 } from "@/components/ai-elements/prompt-input";
 import { Logomark } from "@/components/ui/logos/logomark";
 import { ChatHeader } from "./header";
@@ -79,6 +80,7 @@ function ChatContent() {
 
   const { copyToClipboard } = useCopyToClipboard({ timeout: 4000 });
   const controller = usePromptInputController();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Load conversation list on mount
   useEffect(() => {
@@ -308,16 +310,25 @@ function ChatContent() {
       <div className="px-2">
         <PromptInput onSubmit={handleSubmit} className="bg-background">
           <PromptInputBody>
-            <PromptInputTextarea placeholder="Ask Foliofox..." />
+            <PromptInputTextarea
+              placeholder="Ask Foliofox..."
+              ref={textareaRef}
+            />
           </PromptInputBody>
 
           <PromptInputFooter className="px-2 pb-2">
             <PromptInputTools>
+              <PromptInputSpeechButton
+                textareaRef={textareaRef}
+                onTranscriptionChange={(text) => {
+                  controller.textInput.setInput(text);
+                }}
+              />
               <PromptInputSelect
                 value={mode}
                 onValueChange={(value) => setMode(value as Mode)}
               >
-                <PromptInputSelectTrigger className="rounded-sm">
+                <PromptInputSelectTrigger>
                   <PromptInputSelectValue placeholder="Mode" />
                 </PromptInputSelectTrigger>
                 <PromptInputSelectContent>
@@ -334,7 +345,6 @@ function ChatContent() {
               </PromptInputSelect>
             </PromptInputTools>
             <PromptInputSubmit
-              className="rounded-sm"
               status={status}
               disabled={
                 status === "streaming"

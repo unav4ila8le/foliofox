@@ -151,7 +151,12 @@ export function EditSharing({
                   <FormControl>
                     <ButtonGroup className="w-full">
                       <ButtonGroupText asChild>
-                        <Label>{siteUrl}/portfolio/</Label>
+                        <Label>
+                          <span className="sm:hidden">/portfolio/</span>
+                          <span className="hidden sm:inline">
+                            {siteUrl}/portfolio/
+                          </span>
+                        </Label>
                       </ButtonGroupText>
                       <InputGroup>
                         <InputGroupInput

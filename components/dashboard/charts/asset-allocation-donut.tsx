@@ -75,8 +75,8 @@ function AssetAllocationDonutBase({
           <CardHeader className="flex-none">
             <CardTitle>Asset Allocation</CardTitle>
           </CardHeader>
-          <CardContent className="mt-6 flex flex-1 2xl:gap-2">
-            <div className="w-3/5 min-w-24 shrink-0 2xl:w-1/2">
+          <CardContent className="flex flex-1 gap-2">
+            <div className="w-1/2 min-w-24 shrink-0">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie

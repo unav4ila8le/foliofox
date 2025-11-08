@@ -216,9 +216,18 @@ export function NetWorthLineChart({
                   <SelectValue placeholder="6 Months" />
                 </SelectTrigger>
                 <SelectContent align="end">
-                  <SelectItem value="1m">1 Month</SelectItem>
-                  <SelectItem value="3m">3 Months</SelectItem>
-                  <SelectItem value="6m">6 Months</SelectItem>
+                  <SelectItem value="1m">
+                    <span className="sm:hidden">1mo</span>
+                    <span className="hidden sm:inline">1 Month</span>
+                  </SelectItem>
+                  <SelectItem value="3m">
+                    <span className="sm:hidden">3mo</span>
+                    <span className="hidden sm:inline">3 Months</span>
+                  </SelectItem>
+                  <SelectItem value="6m">
+                    <span className="sm:hidden">6mo</span>
+                    <span className="hidden sm:inline">6 Months</span>
+                  </SelectItem>
                   <SelectItem value="ytd">YTD</SelectItem>
                 </SelectContent>
               </Select>
