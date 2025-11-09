@@ -106,6 +106,13 @@ supabase migration up --local # applies the tracked migrations to the local DB
 - You can also run `supabase db push --local` if you prefer the same command as remote projects.
 - Stop the stack with `supabase stop` when you are done.
 
+**Test User for Local Development:**
+
+When running locally, a test user is automatically seeded on `db reset` or `db push --local`:
+
+- **Email:** `test@example.com`
+- **Password:** `Password123`
+
 #### Maintainers: creating database changes
 
 1. Generate a migration shell:
