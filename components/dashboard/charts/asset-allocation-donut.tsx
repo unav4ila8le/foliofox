@@ -59,7 +59,12 @@ function AssetAllocationDonutBase({
   }, [assetAllocation]);
 
   return (
-    <Card className={cn("flex h-64 flex-col gap-0 md:h-80", className)}>
+    <Card
+      className={cn(
+        "flex h-64 flex-col gap-0 rounded-lg shadow-xs md:h-80",
+        className,
+      )}
+    >
       {assetAllocation.length === 0 ? (
         <CardContent className="flex flex-1 flex-col items-center justify-center text-center">
           <div className="bg-accent rounded-lg p-2">

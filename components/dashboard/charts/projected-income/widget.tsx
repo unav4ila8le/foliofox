@@ -22,7 +22,12 @@ export function ProjectedIncomeWidget({
   // Handle error state
   if (!projectedIncome.success) {
     return (
-      <Card className={cn("flex h-80 flex-col gap-4", className)}>
+      <Card
+        className={cn(
+          "flex h-80 flex-col gap-4 rounded-lg shadow-xs",
+          className,
+        )}
+      >
         <CardContent className="flex flex-1 flex-col items-center justify-center text-center">
           <div className="bg-accent rounded-lg p-2">
             <BanknoteArrowDown className="text-muted-foreground size-4" />
@@ -39,7 +44,12 @@ export function ProjectedIncomeWidget({
   // Handle empty state
   if (!projectedIncome.data || projectedIncome.data.length === 0) {
     return (
-      <Card className={cn("flex h-80 flex-col gap-4", className)}>
+      <Card
+        className={cn(
+          "flex h-80 flex-col gap-4 rounded-lg shadow-xs",
+          className,
+        )}
+      >
         <CardContent className="flex flex-1 flex-col items-center justify-center text-center">
           <div className="bg-accent rounded-lg p-2">
             <BanknoteArrowDown className="text-muted-foreground size-4" />
@@ -60,7 +70,9 @@ export function ProjectedIncomeWidget({
   );
 
   return (
-    <Card className={cn("flex h-80 flex-col gap-4", className)}>
+    <Card
+      className={cn("flex h-80 flex-col gap-4 rounded-lg shadow-xs", className)}
+    >
       <CardHeader className="flex flex-none justify-between">
         <CardTitle>Projected Income</CardTitle>
         <div className="text-right">

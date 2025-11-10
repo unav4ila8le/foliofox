@@ -61,7 +61,7 @@ export default async function PublicPortfolioPage({
           netWorth={portfolio.netWorth.value}
           currency={portfolio.netWorth.currency}
           assetAllocation={portfolio.assetAllocation}
-          className="h-72! rounded-lg shadow-none"
+          className="h-72!"
         />
       </div>
       <div className="col-span-6 md:col-span-3">
@@ -73,7 +73,7 @@ export default async function PublicPortfolioPage({
             currency: portfolio.projectedIncome.currency,
           }}
           currency={portfolio.projectedIncome.currency}
-          className="h-72! rounded-lg shadow-none"
+          className="h-72!"
         />
       </div>
       <div className="col-span-6">

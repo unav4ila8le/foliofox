@@ -123,7 +123,7 @@ export function DataTable<TData extends DataWithId, TValue>({
   );
 
   return (
-    <div className="overflow-hidden rounded-md border">
+    <div className="overflow-hidden rounded-lg border">
       <Table>
         <TableHeader className="bg-muted/50">
           {table.getHeaderGroups().map((headerGroup) => (

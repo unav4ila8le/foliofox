@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/custom/skeleton";
 import { Greetings } from "@/components/dashboard/greetings";
 import { MarketDataDisclaimer } from "@/components/dashboard/market-data-disclaimer";
 import { AssetAllocationDonut } from "@/components/dashboard/charts/asset-allocation-donut";
-import { NetWorthLineChart } from "@/components/dashboard/charts/net-worth-line";
+import { NetWorthAreaChart } from "@/components/dashboard/charts/net-worth-area";
 import { NewsWidget } from "@/components/dashboard/news/widget";
 import { ProjectedIncomeWidget } from "@/components/dashboard/charts/projected-income/widget";
 import { PortfolioRecordsWidget } from "@/components/dashboard/portfolio-records/widget";
@@ -44,7 +44,7 @@ async function NetWorthChartWrapper({
   ]);
 
   return (
-    <NetWorthLineChart
+    <NetWorthAreaChart
       currency={displayCurrency}
       netWorth={netWorth}
       history={netWorthHistory}

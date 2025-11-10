@@ -14,7 +14,7 @@ export function NewsWidget({ newsData }: NewsWidgetProps) {
   // Handle error state
   if (!newsData.success) {
     return (
-      <Card className="flex h-80 flex-col gap-4">
+      <Card className="flex h-80 flex-col gap-4 rounded-lg shadow-xs">
         <CardContent className="flex flex-1 flex-col items-center justify-center text-center">
           <div className="bg-accent rounded-lg p-2">
             <Newspaper className="text-muted-foreground size-4" />
@@ -31,7 +31,7 @@ export function NewsWidget({ newsData }: NewsWidgetProps) {
   // Handle empty state
   if (!newsData.data || newsData.data.length === 0) {
     return (
-      <Card className="flex h-80 flex-col gap-4">
+      <Card className="flex h-80 flex-col gap-4 rounded-lg shadow-xs">
         <CardContent className="flex flex-1 flex-col items-center justify-center text-center">
           <div className="bg-accent rounded-lg p-2">
             <Newspaper className="text-muted-foreground size-4" />
@@ -47,7 +47,7 @@ export function NewsWidget({ newsData }: NewsWidgetProps) {
 
   // Display news articles
   return (
-    <Card className="relative flex h-80 flex-col gap-4 overflow-hidden pb-0">
+    <Card className="relative flex h-80 flex-col gap-4 overflow-hidden rounded-lg pb-0 shadow-xs">
       <CardHeader className="flex-none">
         <CardTitle>Portfolio News</CardTitle>
       </CardHeader>

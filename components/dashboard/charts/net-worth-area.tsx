@@ -54,7 +54,7 @@ import {
 } from "@/lib/number-format";
 import { cn } from "@/lib/utils";
 
-export function NetWorthLineChart({
+export function NetWorthAreaChart({
   currency,
   netWorth,
   history: initialHistory,
@@ -145,7 +145,7 @@ export function NetWorthLineChart({
       : "oklch(0.64 0.21 25)";
 
   return (
-    <Card className="flex h-80 flex-col">
+    <Card className="flex h-80 flex-col rounded-lg shadow-xs">
       {netWorth === 0 ? (
         <CardContent className="flex flex-1 flex-col items-center justify-center text-center">
           <div className="bg-accent rounded-lg p-2">
