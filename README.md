@@ -88,7 +88,6 @@ Join our [Discord server](https://discord.gg/9AGutMkvUR).
 - [x] Better tool usage UI in the AI chat
 - [ ] Add Plaid for user positions sync
 - [ ] Look at generative UI for AI chat: https://ai-sdk.dev/docs/ai-sdk-ui/generative-user-interfaces
-- [ ] Add crypto wallet address sync
 - [ ] Add cron job for domain valuations
 - [ ] Add real estate market estimate
 - [ ] Add private equity valuation (stripe API link)

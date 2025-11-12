@@ -1,35 +1,70 @@
-# Symbol Identifier Refactor – High-Level Plan
+# Symbol Identifier Refactor – Updated Plan
 
 ## What
 
-- Introduce stable UUID primary keys for `symbols` so every downstream table references a security by UUID, not by its ticker text.
-- Keep the human-readable ticker (and future identifiers) as mutable metadata on the symbol, paving the way for alias tracking (e.g., SPLG → SPYM) and multiple identifiers per security.
-- Add a lightweight alias/resolution layer so server code always resolves user input + Yahoo responses to the canonical UUID before touching market data caches or positions.
-- Backfill existing data (positions, quotes, dividends, news, analytics) to use the new UUID FKs, regenerate Supabase types, and update server modules to read/write via the resolver.
+- Promote `symbols.id` to a UUID primary key while the current text identifier becomes `symbols.ticker`, a mutable metadata column.
+- Introduce `symbol_aliases` so every identifier (ticker, ISIN, broker code, vendor slug) resolves to the canonical symbol UUID, with a notion of the primary alias.
+- Build resolver utilities so server paths accept user/vendor identifiers, resolve them to UUIDs, and keep `symbols.ticker` aligned with the active alias.
+- Backfill existing data (positions, quotes, dividends, news, analytics) to use UUID foreign keys, regenerate types, and update services/clients accordingly.
 
 ## Why
 
-- Tickers change: today a rename forces manual rewrites across every table and cache; UUIDs let us update metadata without touching references.
-- Future-proofing: enables storing historical tickers, ISIN/CUSIP/broker IDs, and handling concurrent identifiers without schema churn.
-- Reliability: market data, dividends, and analytics can keep working through renames because they key off the UUID while aliases point to the correct current ticker.
-- Operational safety: once aliases exist, we can detect upcoming Yahoo changes, schedule metadata updates, and avoid breaking user portfolios.
+- Ticker churn currently forces schema rewrites; UUIDs let us update metadata without touching relationships.
+- Alias tracking future-proofs us for multiple providers and identifier types without new tables per vendor.
+- Market data, analytics, and imports stay reliable during renames because they key off UUIDs while aliases map to the right text identifier.
+- Centralized resolution logic reduces drift between ingestion paths and unlocks rename detection workflows later.
 
 ## Where
 
-- Database: migrations that add UUIDs to `symbols`, new FK columns on dependent tables, and an `symbol_aliases` (or similar) table for historical/current identifiers.
-- Server code: modules under `server/symbols`, `server/positions`, `server/market-data`, `server/quotes`, `server/dividends`, `server/news`, analytics, AI tools, and CSV import/export need to read/write UUIDs via the resolver.
-- Tooling: Supabase type generation, zod schemas, and any shared types in `types/*.ts` updated to reflect the UUID-based shape.
+- Database: Supabase migrations for `symbols`, dependent FK tables, new `symbol_aliases`, updated RLS policies, and supporting indexes.
+- Server code: modules under `server/symbols`, `server/positions`, `server/market-data`, `server/quotes`, `server/dividends`, analytics jobs, CSV import/export, AI tools.
+- Tooling: Supabase type generation, Zod schemas, shared interfaces in `types/`, fixtures/tests.
+- Documentation: this plan, README notes, deployment checklist.
 
 ## How
 
-- Migrations: add `id uuid` to `symbols`, keep the existing ticker as `ticker text UNIQUE`, and backfill UUID FKs on dependent tables before dropping the old text PK constraints.
-- Resolver: centralize symbol lookups so every server path (creation, imports, market data, analytics) converts user input or Yahoo responses into the canonical UUID, checking alias tables when needed.
-- Code updates: regenerate Supabase types, refactor modules to store UUIDs while still exposing `ticker` (and future identifiers) in APIs/exports, and add regression tests around position creation, market data fetching, and analytics.
-- Aliases & metadata: store Yahoo ticker, ISIN, etc., as columns. This makes adding future data sources straightforward—each handler just reads the appropriate identifier from the symbol metadata while the FK relationships stay untouched.
+### Phase 0 – Discovery & Design
 
-## When
+- Review existing migrations and `supabase/types.ts` to catalogue every ticker-based FK.
+- Expand this doc with schema diagrams (UUID column, alias table shape, index strategy, cascade behaviour).
+- Inventory code paths that assume ticker primary keys (SQL views/RPCs, server modules, UI hooks, cron jobs).
 
-- Phase 1 (Design & Review): lock the schema changes, alias table shape, and rollout order; collect contributor feedback on this doc.
-- Phase 2 (Migrations & Backfill): run the Supabase migrations in staging, backfill UUIDs + aliases, regenerate types, and smoke-test critical flows.
-- Phase 3 (App Refactor): update server/client code to use the resolver + UUID FKs, run automated tests, and verify end-to-end scenarios (add/edit position, imports, dashboards, AI tools).
-- Phase 4 (Production Rollout): deploy migrations + code during a low-traffic window, monitor market data jobs, and announce the alias capability to contributors.
+### Phase 1 – Database Migrations & Backfill
+
+- Add `id uuid default gen_random_uuid()` to `symbols`, populate values, and promote it to primary key.
+- Rename the old text PK column to `ticker`, keep it unique, and continue storing the current Yahoo ticker there.
+- Create `symbol_aliases` with `id uuid`, `symbol_id uuid references symbols(id)`, `value text`, `type text`, `source text`, `effective_from/through timestamptz`, `is_primary boolean`, plus unique/index constraints to prevent duplicates.
+- Add nullable `symbol_id uuid` columns to dependent tables (`positions`, `portfolio_records`, `quotes`, `dividends`, `news`, snapshots, analytics caches, CSV staging) and backfill them by joining on the legacy ticker.
+- Flip the new columns to `not null`, enforce foreign keys, drop legacy ticker FKs, and update RLS policies to reference UUIDs.
+
+### Phase 2 – Tooling & Types
+
+- Regenerate Supabase types (e.g., `npm run supabase:types`) and commit updates to generated files such as `types/supabase.ts`.
+- Refresh shared TS/Zod definitions (e.g., `types/symbol.ts`) to include UUIDs, ticker metadata, and alias arrays.
+- Update seeds/fixtures/tests that assumed ticker primary keys.
+
+### Phase 3 – Resolver Layer & Server Refactor
+
+- Implement `server/symbols/symbol-resolver.ts` helpers (`resolveSymbolAlias`, `getCanonicalSymbol`, `ensurePrimaryAlias`, `setPrimaryAlias`) backed by `symbol_aliases`.
+- Ensure `setPrimaryAlias` write-through updates `symbols.ticker` whenever a new alias becomes primary (or alternatively refresh a derived view if we pick that approach).
+- Refactor all data ingress/egress (position CRUD, CSV import/export, cron fetchers, analytics jobs) to call the resolver and persist UUID foreign keys.
+- Update market data handlers to request provider-specific aliases via the resolver before hitting external APIs.
+
+### Phase 4 – Client & API Updates
+
+- Adjust API routes and React components to expect `{ id, ticker, aliases[] }`, retaining ticker for display while relying on UUIDs for references.
+- Audit hooks/utils for ticker assumptions and propagate canonical UUIDs where necessary.
+- Update CSV export/import flows: expose ticker to users but persist UUIDs internally.
+
+### Phase 5 – Testing, Verification & Rollout
+
+- Extend unit/integration/e2e tests to cover alias resolution, renamed ticker flows, market data updates, and CSV workflows.
+- Run staging smoke tests for migrations, backfill, cron jobs, dashboards, analytics, and AI tools.
+- Document rollback steps (snapshot pre-migration, reapply old constraints) and prepare production deployment checklist for a low-traffic window.
+- Communicate schema/API changes to contributors; update README and this plan with rollout status.
+
+## Follow-ups
+
+- Rename detection/automation can build on this foundation once UUID + resolver land.
+- Evaluate SQL trigger vs. application-level write-through for keeping `symbols.ticker` synchronized after we have real usage data.
+- Consider materialized views or caching if alias lookups become hot paths after rollout.
