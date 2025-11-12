@@ -84,7 +84,7 @@
     "typescript": "^5"
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx,json,css,md}": "prettier --write .",
+    "*.{js,jsx,ts,tsx,json,css,md}": "prettier --write",
     "*.{js,jsx,ts,tsx}": "eslint",
     "*": "bash -c 'npm run type'"
   }
