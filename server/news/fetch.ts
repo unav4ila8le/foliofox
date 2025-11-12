@@ -4,15 +4,23 @@ import YahooFinance from "yahoo-finance2";
 
 import { createServiceClient } from "@/supabase/service";
 import { fetchPositions } from "@/server/positions/fetch";
+import {
+  resolveSymbolInput,
+  resolveSymbolsBatch,
+} from "@/server/symbols/resolver";
 
 import type { NewsArticle } from "@/types/global.types";
 import type { TablesInsert } from "@/types/database.types";
 
 export interface NewsSearchResult {
   success: boolean;
-  data?: NewsArticle[];
+  data?: EnrichedNewsArticle[];
   message?: string;
 }
+
+type EnrichedNewsArticle = NewsArticle & {
+  related_symbols: Array<{ id: string; ticker: string | null }>;
+};
 
 // Initialize yahooFinance consistent with other modules
 const yahooFinance = new YahooFinance();
@@ -36,109 +44,189 @@ export async function fetchNewsForSymbols(
       return { success: true, data: [] };
     }
 
+    // 1) Batch resolve all symbol identifiers to canonical UUIDs and Yahoo tickers
+    const uniqueInputs = [
+      ...new Set(
+        symbolIds.map((id) => id.trim()).filter((id) => id.length > 0),
+      ),
+    ];
+
+    const { byInput, byCanonicalId } = await resolveSymbolsBatch(uniqueInputs, {
+      provider: "yahoo",
+      providerType: "ticker",
+      onError: "warn",
+    });
+
+    const canonicalIds = [...byCanonicalId.keys()];
+    if (!canonicalIds.length) {
+      return { success: true, data: [] };
+    }
+    const canonicalIdSet = new Set(canonicalIds);
+
+    // Start with batch-resolved metadata, then extend as we discover related symbols
+    const canonicalMeta = new Map(byCanonicalId);
+
     const supabase = createServiceClient();
     const cacheThreshold = new Date(Date.now() - CACHE_DURATION_MS);
 
-    // 1. Check cache for ALL symbols at once
-    // Use 'overlaps' to find articles that relate to ANY of our symbols
+    // 2) Check the cache for ALL requested canonical symbols at once
     const { data: cachedNews } = await supabase
       .from("news")
       .select("*")
-      .overlaps("related_symbol_ids", symbolIds) // Find news matching ANY symbol
-      .gte("created_at", cacheThreshold.toISOString()) // Only fresh cache (< 30 minutes old)
+      .overlaps("related_symbol_ids", canonicalIds)
+      .gte("created_at", cacheThreshold.toISOString())
       .order("published_at", { ascending: false });
 
-    // 2. Figure out which symbols have enough cached articles
-    const symbolsWithEnoughCache = new Set<string>();
+    const canonicalWithEnoughCache = new Set<string>();
     const allCachedArticles: NewsArticle[] = [];
 
     if (cachedNews) {
-      // Count how many articles we have for each symbol
-      const articleCountBySymbol = new Map<string, number>();
+      const articleCountByCanonical = new Map<string, number>();
 
-      cachedNews.forEach((article) => {
-        // Convert database strings to proper Date objects
-        const processedArticle = {
-          ...article,
-        };
-        allCachedArticles.push(processedArticle);
-
-        // Count this article for each symbol it relates to
-        article.related_symbol_ids?.forEach((symbolId) => {
-          if (symbolIds.includes(symbolId)) {
-            const currentCount = articleCountBySymbol.get(symbolId) || 0;
-            articleCountBySymbol.set(symbolId, currentCount + 1);
-          }
+      cachedNews.forEach((article: NewsArticle) => {
+        allCachedArticles.push({ ...article });
+        article.related_symbol_ids?.forEach((symbolId: string) => {
+          if (!canonicalIdSet.has(symbolId)) return;
+          const current = articleCountByCanonical.get(symbolId) || 0;
+          articleCountByCanonical.set(symbolId, current + 1);
         });
       });
 
-      // Mark symbols that have enough cached articles
-      symbolIds.forEach((symbolId) => {
-        const count = articleCountBySymbol.get(symbolId) || 0;
+      canonicalIds.forEach((canonicalId) => {
+        const count = articleCountByCanonical.get(canonicalId) || 0;
         if (count >= limit) {
-          symbolsWithEnoughCache.add(symbolId);
+          canonicalWithEnoughCache.add(canonicalId);
         }
       });
     }
 
-    // 3. Find symbols that need fresh data from Yahoo Finance
-    const symbolsNeedingFresh = symbolIds.filter(
-      (symbolId) => !symbolsWithEnoughCache.has(symbolId),
+    // 3) Determine which canonical symbols still need fresh data
+    const canonicalNeedingFresh = canonicalIds.filter(
+      (canonicalId) => !canonicalWithEnoughCache.has(canonicalId),
     );
 
-    // 4. Fetch fresh data only for symbols that need it
+    // 4) Fetch fresh data only for canonical symbols that need it
     const freshArticles: NewsArticle[] = [];
     const articlesToCache: TablesInsert<"news">[] = []; // For batch database insert
+    const relatedResolutionCache = new Map<
+      string,
+      { canonicalId: string | null; displayTicker: string | null }
+    >();
 
-    if (symbolsNeedingFresh.length > 0) {
-      // Fetch all symbols in parallel from Yahoo Finance
-      const fetchPromises = symbolsNeedingFresh.map(async (symbolId) => {
+    if (canonicalNeedingFresh.length > 0) {
+      const fetchPromises = canonicalNeedingFresh.map(async (canonicalId) => {
+        const tickerInfo = canonicalMeta.get(canonicalId);
+        const yahooTicker = tickerInfo?.providerAlias;
+        if (!yahooTicker) {
+          console.warn(
+            `Skipping news fetch for canonical symbol ${canonicalId}: missing Yahoo ticker alias.`,
+          );
+          return { canonicalId, searchResult: null };
+        }
+
         try {
-          const searchResult = await yahooFinance.search(symbolId, {
+          const searchResult = await yahooFinance.search(yahooTicker, {
             quotesCount: 0,
             newsCount: limit,
             enableFuzzyQuery: false,
           });
-          return { symbolId, searchResult };
+          return { canonicalId, searchResult };
         } catch (error) {
-          console.warn(`Failed to fetch news for symbol ${symbolId}:`, error);
-          return { symbolId, searchResult: null };
+          console.warn(
+            `Failed to fetch news for canonical symbol ${canonicalId} (${yahooTicker}):`,
+            error,
+          );
+          return { canonicalId, searchResult: null };
         }
       });
 
       const results = await Promise.all(fetchPromises);
 
       // Process all results
-      results.forEach(({ symbolId, searchResult }) => {
-        if (searchResult?.news && searchResult.news.length > 0) {
-          searchResult.news.forEach((article) => {
-            articlesToCache.push({
-              yahoo_uuid: article.uuid,
-              title: article.title,
-              publisher: article.publisher,
-              link: article.link,
-              published_at: article.providerPublishTime.toISOString(),
-              related_symbol_ids: [
-                ...new Set([symbolId, ...(article.relatedTickers || [])]),
-              ],
-            });
+      for (const { canonicalId, searchResult } of results) {
+        if (!searchResult?.news?.length) continue;
 
-            freshArticles.push({
-              id: crypto.randomUUID(),
-              yahoo_uuid: article.uuid,
-              title: article.title,
-              publisher: article.publisher,
-              link: article.link,
-              published_at: article.providerPublishTime.toISOString(),
-              related_symbol_ids: [
-                ...new Set([symbolId, ...(article.relatedTickers || [])]),
-              ],
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
+        for (const article of searchResult.news) {
+          const canonicalRelatedIds = new Set<string>([canonicalId]);
+
+          for (const relatedTicker of article.relatedTickers || []) {
+            const trimmed = relatedTicker.trim();
+            if (!trimmed) continue;
+
+            const existingResolution = byInput.get(trimmed);
+            if (existingResolution) {
+              canonicalRelatedIds.add(existingResolution.canonicalId);
+              if (!canonicalMeta.has(existingResolution.canonicalId)) {
+                canonicalMeta.set(existingResolution.canonicalId, {
+                  providerAlias: existingResolution.providerAlias,
+                  displayTicker: existingResolution.displayTicker,
+                });
+              }
+              continue;
+            }
+
+            if (relatedResolutionCache.has(trimmed)) {
+              const cached = relatedResolutionCache.get(trimmed);
+              if (cached?.canonicalId) {
+                canonicalRelatedIds.add(cached.canonicalId);
+                if (
+                  cached.displayTicker &&
+                  !canonicalMeta.has(cached.canonicalId)
+                ) {
+                  canonicalMeta.set(cached.canonicalId, {
+                    providerAlias: cached.displayTicker,
+                    displayTicker: cached.displayTicker,
+                  });
+                }
+              }
+              continue;
+            }
+
+            const relatedResolved = await resolveSymbolInput(trimmed);
+            const relatedCanonical = relatedResolved?.symbol?.id ?? null;
+            const relatedDisplayTicker =
+              relatedResolved?.primaryAlias?.value ??
+              relatedResolved?.symbol?.ticker ??
+              null;
+            relatedResolutionCache.set(trimmed, {
+              canonicalId: relatedCanonical,
+              displayTicker: relatedDisplayTicker,
             });
+            if (relatedCanonical) {
+              canonicalRelatedIds.add(relatedCanonical);
+              if (!canonicalMeta.has(relatedCanonical)) {
+                canonicalMeta.set(relatedCanonical, {
+                  providerAlias: relatedDisplayTicker ?? trimmed,
+                  displayTicker: relatedDisplayTicker,
+                });
+              }
+            }
+          }
+
+          const relatedIdsArray = Array.from(canonicalRelatedIds);
+
+          articlesToCache.push({
+            yahoo_uuid: article.uuid,
+            title: article.title,
+            publisher: article.publisher,
+            link: article.link,
+            published_at: article.providerPublishTime.toISOString(),
+            related_symbol_ids: relatedIdsArray,
+          });
+
+          freshArticles.push({
+            id: crypto.randomUUID(),
+            yahoo_uuid: article.uuid,
+            title: article.title,
+            publisher: article.publisher,
+            link: article.link,
+            published_at: article.providerPublishTime.toISOString(),
+            related_symbol_ids: relatedIdsArray,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
           });
         }
-      });
+      }
 
       // 5. Store all new articles in database with one batch operation
       if (articlesToCache.length > 0) {
@@ -163,24 +251,46 @@ export async function fetchNewsForSymbols(
       }
     }
 
-    // 6. Combine cached and fresh articles
+    // 5) Combine cached and fresh articles
     const allArticles = [...allCachedArticles, ...freshArticles];
 
-    // 7. Remove duplicates based on yahoo_uuid (same article from different symbols)
+    // 6) Remove duplicates based on yahoo_uuid (same article from different symbols)
     const uniqueArticles = allArticles.filter(
       (article, index, array) =>
         array.findIndex((a) => a.yahoo_uuid === article.yahoo_uuid) === index,
     );
 
-    // 8. Sort by publication date (newest first)
+    // 7) Sort by publication date (newest first)
     uniqueArticles.sort(
       (a, b) =>
         new Date(b.published_at).getTime() - new Date(a.published_at).getTime(),
     );
 
+    const canonicalIdToTicker = new Map<string, string>();
+    canonicalMeta.forEach(
+      (
+        meta: { providerAlias: string; displayTicker: string | null },
+        canonicalId: string,
+      ) => {
+        const ticker = meta.displayTicker ?? meta.providerAlias;
+        if (ticker) {
+          canonicalIdToTicker.set(canonicalId, ticker);
+        }
+      },
+    );
+
+    const enrichedArticles = uniqueArticles.map((article) => ({
+      ...article,
+      related_symbols:
+        article.related_symbol_ids?.map((id) => ({
+          id,
+          ticker: canonicalIdToTicker.get(id) ?? null,
+        })) ?? [],
+    }));
+
     return {
       success: true,
-      data: uniqueArticles,
+      data: enrichedArticles,
     };
   } catch (error) {
     console.error("Error fetching news for symbols:", symbolIds, error);

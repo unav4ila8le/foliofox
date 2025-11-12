@@ -3,19 +3,20 @@
 import { getCurrentUser } from "@/server/auth/actions";
 import { fetchYahooFinanceSymbol } from "@/server/symbols/search";
 import { fetchCurrencies } from "@/server/currencies/fetch";
+import { setPrimarySymbolAlias } from "@/server/symbols/resolver";
 
 // Create symbol using Yahoo Finance data
-export async function createSymbol(symbolId: string) {
+export async function createSymbol(symbolTicker: string) {
   const { supabase } = await getCurrentUser();
 
   // 1) Get symbol data from Yahoo Finance
-  const yahooFinanceSymbol = await fetchYahooFinanceSymbol(symbolId);
+  const yahooFinanceSymbol = await fetchYahooFinanceSymbol(symbolTicker);
 
   if (!yahooFinanceSymbol.success) {
     return {
       success: false,
       code: "YAHOO_FINANCE_SYMBOL_FETCH_ERROR",
-      message: `Failed to fetch symbol data from Yahoo Finance for symbol ${symbolId}: ${yahooFinanceSymbol.message}`,
+      message: `Failed to fetch symbol data from Yahoo Finance for symbol ${symbolTicker}: ${yahooFinanceSymbol.message}`,
     };
   }
 
@@ -42,16 +43,37 @@ export async function createSymbol(symbolId: string) {
     };
   }
 
-  // 3) Insert into symbols table
-  const { error } = await supabase.from("symbols").upsert(symbolData);
+  // 3) Insert/update symbol metadata and fetch canonical row
+  const { data: upsertedSymbol, error: upsertError } = await supabase
+    .from("symbols")
+    .upsert(symbolData, { onConflict: "ticker" })
+    .select("*")
+    .single();
 
-  if (error) {
+  if (upsertError || !upsertedSymbol) {
     return {
       success: false,
-      code: error.code || "UNKNOWN",
-      message: error.message || "Failed to create symbol",
+      code: upsertError?.code || "SYMBOL_UPSERT_FAILED",
+      message: upsertError?.message || "Failed to create symbol",
     };
   }
 
-  return { success: true, data: symbolData };
+  // 4) Ensure a primary ticker alias exists and points to the latest value
+  try {
+    await setPrimarySymbolAlias(upsertedSymbol.id, symbolData.ticker, {
+      source: "yahoo",
+      type: "ticker",
+    });
+  } catch (aliasError) {
+    return {
+      success: false,
+      code: "SYMBOL_ALIAS_SYNC_FAILED",
+      message:
+        aliasError instanceof Error
+          ? aliasError.message
+          : "Failed to sync symbol alias",
+    };
+  }
+
+  return { success: true, data: upsertedSymbol };
 }

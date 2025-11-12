@@ -5,6 +5,7 @@ import { format } from "date-fns";
 
 import { getCurrentUser } from "@/server/auth/actions";
 import { createSymbol } from "@/server/symbols/create";
+import { resolveSymbolInput } from "@/server/symbols/resolver";
 import { createPositionSnapshot } from "@/server/position-snapshots/create";
 
 import type { Position } from "@/types/global.types";
@@ -54,7 +55,8 @@ export async function createPosition(formData: FormData) {
   }
 
   // Optional identifiers
-  const symbolId = (formData.get("symbol_id") as string) || null;
+  const rawSymbolInput = ((formData.get("symbol_id") as string) || "").trim();
+  let symbolUuid: string | null = null;
   const domainId = (formData.get("domain_id") as string) || null;
 
   // Initial snapshot fields
@@ -82,14 +84,34 @@ export async function createPosition(formData: FormData) {
   }
 
   // Ensure symbol exists if provided
-  if (symbolId) {
-    const result = await createSymbol(symbolId);
-    if (!result.success) {
-      return {
-        success: false,
-        code: result.code,
-        message: result.message,
-      } as const;
+  if (rawSymbolInput) {
+    const resolved = await resolveSymbolInput(rawSymbolInput);
+
+    if (resolved?.symbol?.id) {
+      symbolUuid = resolved.symbol.id;
+    } else {
+      const creationResult = await createSymbol(rawSymbolInput);
+      if (!creationResult.success || !creationResult.data?.id) {
+        return {
+          success: false,
+          code: creationResult.code ?? "SYMBOL_CREATE_FAILED",
+          message:
+            creationResult.message ??
+            "Unable to create symbol from provided identifier",
+        } as const;
+      }
+
+      const postCreateResolved = await resolveSymbolInput(rawSymbolInput);
+      if (!postCreateResolved?.symbol?.id) {
+        return {
+          success: false,
+          code: "SYMBOL_RESOLUTION_FAILED",
+          message:
+            "Symbol metadata was created but could not be resolved to a canonical identifier.",
+        } as const;
+      }
+
+      symbolUuid = postCreateResolved.symbol.id;
     }
   }
 
@@ -103,7 +125,7 @@ export async function createPosition(formData: FormData) {
       currency,
       category_id,
       description,
-      symbol_id: symbolId,
+      symbol_id: symbolUuid,
       domain_id: domainId,
     })
     .select("id")

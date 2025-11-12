@@ -4,6 +4,10 @@ import { addDays, compareAsc, format, parseISO, subDays } from "date-fns";
 import YahooFinance from "yahoo-finance2";
 
 import { createServiceClient } from "@/supabase/service";
+import {
+  resolveSymbolInput,
+  resolveSymbolsBatch,
+} from "@/server/symbols/resolver";
 
 // Initialize yahooFinance with v3 pattern
 const yahooFinance = new YahooFinance();
@@ -24,19 +28,55 @@ export async function fetchQuotes(
 
   const results = new Map<string, number>();
 
-  // Prepare cache queries for all requests
-  const cacheQueries = requests.map(({ symbolId, date }) => ({
-    symbolId,
-    dateString: format(date, "yyyy-MM-dd"),
-    cacheKey: `${symbolId}|${format(date, "yyyy-MM-dd")}`,
+  // 1) Batch resolve all unique symbol identifiers
+  const uniqueSymbolIds = [...new Set(requests.map((r) => r.symbolId))];
+  const { byInput, byCanonicalId } = await resolveSymbolsBatch(
+    uniqueSymbolIds,
+    {
+      provider: "yahoo",
+      providerType: "ticker",
+      onError: "throw",
+    },
+  );
+
+  // 2) Map requests to normalized format with resolutions
+  const normalizedRequests = requests.map(({ symbolId, date }) => {
+    const resolution = byInput.get(symbolId);
+    if (!resolution) {
+      throw new Error(
+        `Unable to resolve symbol identifier "${symbolId}" to a canonical symbol.`,
+      );
+    }
+
+    const dateString = format(date, "yyyy-MM-dd");
+
+    return {
+      inputKey: symbolId,
+      canonicalId: resolution.canonicalId,
+      yahooTicker: resolution.providerAlias,
+      date,
+      dateString,
+      cacheKey: `${resolution.canonicalId}|${dateString}`,
+    };
+  });
+
+  // Prepare cache queries for all requests (using canonical IDs)
+  const cacheQueries = normalizedRequests.map((item) => ({
+    symbolId: item.canonicalId,
+    dateString: item.dateString,
+    cacheKey: item.cacheKey,
   }));
 
   // 1. Always check database cache
   const supabase = await createServiceClient();
 
   // Get unique symbolIds and dateStrings for efficient query
-  const symbolIds = [...new Set(cacheQueries.map((q) => q.symbolId))];
-  const dateStrings = [...new Set(cacheQueries.map((q) => q.dateString))];
+  const symbolIds = [
+    ...new Set(normalizedRequests.map((request) => request.canonicalId)),
+  ];
+  const dateStrings = [
+    ...new Set(normalizedRequests.map((request) => request.dateString)),
+  ];
 
   const chunkArray = <T>(arr: T[], size: number) => {
     const chunks: T[][] = [];
@@ -128,14 +168,26 @@ export async function fetchQuotes(
       const periodEndExclusive = addDays(latest, 1);
 
       let chartData;
+      const resolution = byCanonicalId.get(symbolId);
+      const ticker = resolution?.providerAlias;
+      if (!ticker) {
+        console.warn(
+          `Skipping quote fetch for symbol ${symbolId}: missing Yahoo ticker alias.`,
+        );
+        continue;
+      }
+
       try {
-        chartData = await yahooFinance.chart(symbolId, {
+        chartData = await yahooFinance.chart(ticker, {
           period1: bufferedStart,
           period2: periodEndExclusive,
           interval: "1d",
         });
       } catch (error) {
-        console.warn(`Failed to fetch chart for ${symbolId}:`, error);
+        console.warn(
+          `Failed to fetch chart for ${symbolId} (${ticker}):`,
+          error,
+        );
         chartData = null;
       }
 
@@ -195,7 +247,7 @@ export async function fetchQuotes(
       // Final safety net: fallback to realtime quote when chart feed is empty
       if (!successfulFetches.some((entry) => entry.symbolId === symbolId)) {
         try {
-          const realtimeQuote = await yahooFinance.quote(symbolId);
+          const realtimeQuote = await yahooFinance.quote(ticker);
           const marketPrice = realtimeQuote?.regularMarketPrice;
           const marketTimeRaw = realtimeQuote?.regularMarketTime;
           const marketTime = marketTimeRaw ? new Date(marketTimeRaw) : null;
@@ -244,6 +296,15 @@ export async function fetchQuotes(
     }
   }
 
+  // Populate alias keys for any original inputs that differed from canonical IDs
+  normalizedRequests.forEach(({ inputKey, canonicalId, dateString }) => {
+    const canonicalCacheKey = `${canonicalId}|${dateString}`;
+    const aliasCacheKey = `${inputKey}|${dateString}`;
+    if (inputKey !== canonicalId && results.has(canonicalCacheKey)) {
+      results.set(aliasCacheKey, results.get(canonicalCacheKey)!);
+    }
+  });
+
   return results;
 }
 
@@ -262,8 +323,21 @@ export async function fetchSingleQuote(
   } = {},
 ): Promise<number> {
   const { date = new Date(), upsert = true } = options;
+  const resolved = await resolveSymbolInput(symbolId);
 
-  const quotes = await fetchQuotes([{ symbolId, date }], upsert);
-  const key = `${symbolId}|${format(date, "yyyy-MM-dd")}`;
-  return quotes.get(key) || 0;
+  if (!resolved?.symbol?.id) {
+    throw new Error(
+      `Unable to resolve symbol identifier "${symbolId}" to a canonical symbol.`,
+    );
+  }
+
+  const canonicalId = resolved.symbol.id;
+  const dateKey = format(date, "yyyy-MM-dd");
+  const quotes = await fetchQuotes([{ symbolId: canonicalId, date }], upsert);
+
+  return (
+    quotes.get(`${canonicalId}|${dateKey}`) ??
+    quotes.get(`${symbolId}|${dateKey}`) ??
+    0
+  );
 }

@@ -3,7 +3,7 @@
 import { calculateSymbolDividendYield } from "@/server/analysis/dividend-yield";
 
 type GetDividendYieldParams = {
-  symbolId: string;
+  symbolLookup: string;
   includeHistory?: boolean | null;
 };
 
@@ -14,14 +14,14 @@ type DividendHistoryItem = {
 };
 
 export async function getDividendYield({
-  symbolId,
+  symbolLookup,
   includeHistory,
 }: GetDividendYieldParams) {
-  if (!symbolId.trim()) {
-    throw new Error("symbolId is required");
+  if (!symbolLookup.trim()) {
+    throw new Error("symbol lookup is required");
   }
 
-  const analytics = await calculateSymbolDividendYield(symbolId);
+  const analytics = await calculateSymbolDividendYield(symbolLookup);
 
   if (!analytics.paysDividends) {
     return {

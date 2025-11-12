@@ -5,6 +5,7 @@ import { parseISO } from "date-fns";
 import { fetchProfile } from "@/server/profile/actions";
 import { fetchPositions } from "@/server/positions/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
+import { resolveSymbolsBatch } from "@/server/symbols/resolver";
 
 import { calculateProfitLoss } from "@/lib/profit-loss";
 import { convertCurrency } from "@/lib/currency-conversion";
@@ -92,6 +93,31 @@ export async function getAssetsPerformance(params: GetAssetsPerformanceParams) {
 
     const { positions: endPositions, snapshots: snapshotsByPosition } =
       endSnapshot;
+
+    // Resolve tickers for any positions with symbols once - reuse for both start and end snapshots
+    const symbolIdSet = new Set(
+      endPositions
+        .concat(startPositions)
+        .map((p) => p.symbol_id)
+        .filter((id): id is string => Boolean(id)),
+    );
+
+    const symbolIdToTicker = new Map<string, string>();
+    if (symbolIdSet.size > 0) {
+      const { byInput } = await resolveSymbolsBatch(Array.from(symbolIdSet), {
+        provider: "yahoo",
+        providerType: "ticker",
+        onError: "warn",
+      });
+
+      byInput.forEach((resolution, symbolId) => {
+        const ticker =
+          resolution.displayTicker ?? resolution.providerAlias ?? null;
+        if (ticker) {
+          symbolIdToTicker.set(symbolId, ticker);
+        }
+      });
+    }
 
     // Filter assets if specific position IDs provided
     const targetPositions = params.positionIds
@@ -231,7 +257,9 @@ export async function getAssetsPerformance(params: GetAssetsPerformanceParams) {
         asset: {
           id: position.id,
           name: position.name,
-          symbol: position.symbol_id ?? null,
+          symbol: position.symbol_id
+            ? (symbolIdToTicker.get(position.symbol_id) ?? null)
+            : null,
           category: position.category_name ?? position.category_id,
           currency: position.currency,
           isArchived: position.is_archived,

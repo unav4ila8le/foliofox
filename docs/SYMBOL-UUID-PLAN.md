@@ -45,16 +45,30 @@
 
 ### Phase 3 – Resolver Layer & Server Refactor
 
-- Implement `server/symbols/symbol-resolver.ts` helpers (`resolveSymbolAlias`, `getCanonicalSymbol`, `ensurePrimaryAlias`, `setPrimaryAlias`) backed by `symbol_aliases`.
-- Ensure `setPrimaryAlias` write-through updates `symbols.ticker` whenever a new alias becomes primary (or alternatively refresh a derived view if we pick that approach).
+- Implement `server/symbols/resolver.ts` helpers (`resolveSymbolInput`, `getCanonicalSymbol`, `getProviderSymbolAlias`, `setPrimarySymbolAlias`) backed by `symbol_aliases`.
+- Ensure `setPrimarySymbolAlias` write-through updates `symbols.ticker` whenever a new alias becomes primary (or alternatively refresh a derived view if we pick that approach).
 - Refactor all data ingress/egress (position CRUD, CSV import/export, cron fetchers, analytics jobs) to call the resolver and persist UUID foreign keys.
-- Update market data handlers to request provider-specific aliases via the resolver before hitting external APIs.
+- Update market data handlers (quotes, dividends, news, analytics) to request provider-specific aliases via the resolver before hitting external APIs.
 
 ### Phase 4 – Client & API Updates
 
 - Adjust API routes and React components to expect `{ id, ticker, aliases[] }`, retaining ticker for display while relying on UUIDs for references.
 - Audit hooks/utils for ticker assumptions and propagate canonical UUIDs where necessary.
-- Update CSV export/import flows: expose ticker to users but persist UUIDs internally.
+- Update CSV export/import flows: expose tickers to users but persist UUIDs internally.
+- **Inventory (needs refactor to use resolver + canonical UUIDs while surfacing tickers):**
+  - UI forms & dialogs
+    - `components/dashboard/new-asset/forms/symbol-search-form.tsx` (rename input to `symbolLookup`, resolve to UUID on submit, surface ticker in UI).
+    - `components/dashboard/symbol-search.tsx` (shared picker expects tickers, needs resolver integration).
+    - `components/dashboard/new-portfolio-record/index.tsx` and forms (`buy-form.tsx`, `sell-form.tsx`, `update-form.tsx`) – ensure preselected positions show tickers via resolver and submit UUIDs only.
+  - Positions import/export flows
+    - `components/dashboard/positions/import/csv-form.tsx`, `.../review/form.tsx`, `.../review/table.tsx` (rename `symbol_id` inputs to `symbolLookup`, pipe through resolver before import).
+    - `public/sample-positions-template.csv` (update header/help text to reflect UUID backing + alias support).
+    - `server/positions/export.ts` (export tickers via resolver while keeping UUIDs internal).
+    - `lib/import/*` (`sources/csv.ts`, `sources/ai.ts`, `serialize.ts`, `parser/*`) – update schemas to accept `symbolLookup`, resolve to UUID before persistence.
+  - Misc client hooks/components
+    - `components/dashboard/positions/asset/table/row-actions/actions-cell.tsx` (presentation should rely on resolver for tickers).
+    - `components/dashboard/positions/import/review/form.tsx` (auto-fill currency via resolver metadata instead of legacy symbol map).
+    - `components/dashboard/new-portfolio-record/position-selector.tsx` (surface ticker via resolver helper).
 
 ### Phase 5 – Testing, Verification & Rollout
 
@@ -68,3 +82,19 @@
 - Rename detection/automation can build on this foundation once UUID + resolver land.
 - Evaluate SQL trigger vs. application-level write-through for keeping `symbols.ticker` synchronized after we have real usage data.
 - Consider materialized views or caching if alias lookups become hot paths after rollout.
+- Finish naming pass: adopt `symbolLookup` for user-supplied identifiers during the final cleanup so future functions communicate they accept tickers/aliases/UUIDs.
+- ✅ **Extracted shared helper**: `resolveSymbolsBatch` in `server/symbols/resolver.ts` consolidates the repeated resolver + provider alias pattern. Updated `server/quotes/fetch.ts`, `server/dividends/fetch.ts`, `server/news/fetch.ts`, and AI tool resolvers (`assets-performance`, `portfolio-snapshot`, `positions`) to use it.
+
+## Implementation Status
+
+- **Phase 0 – Discovery & Design** ✅ Completed (schema/catalogue documented).
+- **Phase 1 – Database Migrations & Backfill** ✅ Completed (`symbol_aliases`, UUID PK, news arrays, alias seeding).
+- **Phase 2 – Tooling & Types** ✅ Supabase types regenerated; remaining Zod helpers updated alongside feature refactors.
+- **Phase 3 – Resolver Layer & Server Refactor** ✅ Completed
+  - Resolver module shipped (`resolveSymbolInput`, `getCanonicalSymbol`, `getProviderSymbolAlias`, `setPrimarySymbolAlias`).
+  - Positions CRUD/import and market data (quotes/dividends/news) resolve UUIDs before hitting Yahoo/Supabase caches.
+  - AI/analytics + AI tools now accept `symbolLookup` values and return canonical UUIDs while exposing tickers for display.
+  - All server-side code verified: no deprecated `symbol_id` usage assuming tickers remains. All database UUIDs correctly flow through resolver layer.
+  - ✅ Shared batch resolver helper (`resolveSymbolsBatch`) extracted and integrated into quotes/dividends/news modules.
+- **Phase 4 – Client & API Updates** ⏳ Queued (UI/CSV to surface ticker while persisting UUID).
+- **Phase 5 – Testing, Verification & Rollout** ⏳ Queued (expanded automated coverage, staging smoke tests, rollout checklist).

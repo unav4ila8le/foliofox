@@ -3,24 +3,35 @@
 import { addDays, differenceInCalendarDays, format, parseISO } from "date-fns";
 
 import { fetchQuotes } from "@/server/quotes/fetch";
+import { resolveSymbolInput } from "@/server/symbols/resolver";
 
 const DEFAULT_WINDOW_DAYS = 30;
 const MAX_WINDOW_DAYS = 365;
 
 type GetHistoricalQuotesParams = {
-  symbolId: string;
+  symbolLookup: string;
   startDate: string | null;
   endDate: string | null;
 };
 
 export async function getHistoricalQuotes({
-  symbolId,
+  symbolLookup,
   startDate,
   endDate,
 }: GetHistoricalQuotesParams) {
-  if (!symbolId.trim()) {
-    throw new Error("symbolId is required");
+  const normalizedLookup = symbolLookup.trim();
+  if (!normalizedLookup) {
+    throw new Error("symbol lookup is required");
   }
+
+  const resolved = await resolveSymbolInput(normalizedLookup);
+  if (!resolved?.symbol?.id) {
+    throw new Error(`Unable to resolve symbol "${symbolLookup}".`);
+  }
+
+  const canonicalId = resolved.symbol.id;
+  const displayTicker =
+    resolved.primaryAlias?.value ?? resolved.symbol?.ticker ?? normalizedLookup;
 
   const resolvedEnd = endDate ? parseISO(endDate) : new Date();
   if (Number.isNaN(resolvedEnd.getTime())) {
@@ -51,7 +62,7 @@ export async function getHistoricalQuotes({
     cursor <= resolvedEnd;
     cursor = addDays(cursor, 1)
   ) {
-    requests.push({ symbolId, date: cursor });
+    requests.push({ symbolId: canonicalId, date: cursor });
   }
 
   // Avoid caching ad-hoc AI lookups into the primary quotes table
@@ -59,7 +70,10 @@ export async function getHistoricalQuotes({
 
   const series = requests.map(({ date }) => {
     const dateString = format(date, "yyyy-MM-dd");
-    const price = quotesMap.get(`${symbolId}|${dateString}`) ?? null;
+    const price =
+      quotesMap.get(`${canonicalId}|${dateString}`) ??
+      quotesMap.get(`${symbolLookup}|${dateString}`) ??
+      null;
 
     return {
       date: dateString,
@@ -70,7 +84,8 @@ export async function getHistoricalQuotes({
   });
 
   return {
-    symbolId,
+    symbolId: canonicalId,
+    symbolTicker: displayTicker,
     startDate: format(resolvedStart, "yyyy-MM-dd"),
     endDate: format(resolvedEnd, "yyyy-MM-dd"),
     points: series,

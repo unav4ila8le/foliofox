@@ -5,6 +5,7 @@ import { format, addMonths, startOfMonth } from "date-fns";
 import { fetchPositions } from "@/server/positions/fetch";
 import { fetchDividends } from "@/server/dividends/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
+import { resolveSymbolInput } from "@/server/symbols/resolver";
 
 import { convertCurrency } from "@/lib/currency-conversion";
 import type { PositionsQueryContext } from "@/server/positions/fetch";
@@ -165,14 +166,24 @@ export async function calculateProjectedIncome(
  * Calculate projected income for a specific symbol
  */
 export async function calculateSymbolProjectedIncome(
-  symbolId: string,
+  symbolLookup: string,
   quantity: number,
   monthsAhead: number = 12,
 ) {
   try {
-    // Fetch dividend data for this specific symbol
-    const dividendsMap = await fetchDividends([{ symbolId }]);
-    const dividendData = dividendsMap.get(symbolId);
+    const resolved = await resolveSymbolInput(symbolLookup);
+    if (!resolved?.symbol?.id) {
+      return {
+        success: false,
+        data: [],
+        message: `Unable to resolve symbol lookup "${symbolLookup}".`,
+      };
+    }
+
+    const canonicalId = resolved.symbol.id;
+
+    const dividendsMap = await fetchDividends([{ symbolId: canonicalId }]);
+    const dividendData = dividendsMap.get(canonicalId);
 
     if (!dividendData?.summary) {
       return {
@@ -223,7 +234,10 @@ export async function calculateSymbolProjectedIncome(
       currency: symbolCurrency,
     };
   } catch (error) {
-    console.error(`Error calculating projected income for ${symbolId}:`, error);
+    console.error(
+      `Error calculating projected income for ${symbolLookup}:`,
+      error,
+    );
     return {
       success: false,
       message:

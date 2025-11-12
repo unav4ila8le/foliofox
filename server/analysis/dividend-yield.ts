@@ -3,6 +3,7 @@
 import { addMonths } from "date-fns";
 
 import { fetchDividends } from "@/server/dividends/fetch";
+import { resolveSymbolInput } from "@/server/symbols/resolver";
 import { fetchSingleQuote } from "@/server/quotes/fetch";
 
 const FREQUENCY_MULTIPLIER: Record<string, number> = {
@@ -15,22 +16,30 @@ const FREQUENCY_MULTIPLIER: Record<string, number> = {
 /**
  * Fetch dividend data and compute a dividend yield for a symbol.
  */
-export async function calculateSymbolDividendYield(symbolId: string) {
-  const cleanedSymbol = symbolId.trim();
-  if (!cleanedSymbol) {
-    throw new Error("symbolId is required");
+export async function calculateSymbolDividendYield(symbolLookup: string) {
+  const input = symbolLookup.trim();
+  if (!input) {
+    throw new Error("symbol lookup value is required");
   }
 
-  // Attempt to reuse cached dividend data when available
-  const dividendsMap = await fetchDividends(
-    [{ symbolId: cleanedSymbol }],
-    false,
-  );
-  const entry = dividendsMap.get(cleanedSymbol);
+  // 1) Resolve the identifier to a canonical symbol (UUID + aliases)
+  const resolved = await resolveSymbolInput(input);
+  if (!resolved?.symbol?.id) {
+    throw new Error(`Unable to resolve symbol "${symbolLookup}".`);
+  }
+
+  const canonicalId = resolved.symbol.id;
+  const displayTicker =
+    resolved.primaryAlias?.value ?? resolved.symbol.ticker ?? input;
+
+  // 2) Attempt to reuse cached dividend data when available
+  const dividendsMap = await fetchDividends([{ symbolId: canonicalId }], false);
+  const entry = dividendsMap.get(canonicalId);
 
   if (!entry || !entry.summary) {
     return {
-      symbolId: cleanedSymbol,
+      symbolId: canonicalId,
+      displayTicker,
       paysDividends: false,
       dividendYield: null,
       dividendYieldSource: "unavailable",
@@ -95,7 +104,7 @@ export async function calculateSymbolDividendYield(symbolId: string) {
 
   // Always fetch the latest price to support estimation and metadata
   try {
-    const fetchedPrice = await fetchSingleQuote(cleanedSymbol, {
+    const fetchedPrice = await fetchSingleQuote(canonicalId, {
       upsert: false,
     });
     if (typeof fetchedPrice === "number" && fetchedPrice > 0) {
@@ -103,7 +112,7 @@ export async function calculateSymbolDividendYield(symbolId: string) {
     }
   } catch (error) {
     console.warn(
-      `Failed to fetch price while calculating dividend yield (${cleanedSymbol}):`,
+      `Failed to fetch price while calculating dividend yield (${canonicalId}):`,
       error,
     );
   }
@@ -120,7 +129,8 @@ export async function calculateSymbolDividendYield(symbolId: string) {
       : "unavailable";
 
   return {
-    symbolId: cleanedSymbol,
+    symbolId: canonicalId,
+    displayTicker,
     paysDividends: true,
     dividendYield,
     dividendYieldSource,

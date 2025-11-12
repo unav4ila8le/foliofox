@@ -300,6 +300,149 @@ async function loadSymbolAliases(
   return data ?? [];
 }
 
+/**
+ * Batch resolve multiple symbol identifiers to canonical UUIDs and provider aliases.
+ * Useful for market data fetching (quotes, dividends, news) where you need both
+ * the canonical ID for database operations and the provider ticker for API calls.
+ *
+ * @param symbolInputs - Array of symbol identifiers (tickers, UUIDs, aliases)
+ * @param options - Resolution options
+ * @returns Maps for efficient lookup: input -> resolution, canonicalId -> provider metadata
+ */
+export async function resolveSymbolsBatch(
+  symbolInputs: string[],
+  options: {
+    provider?: string;
+    providerType?: string;
+    onError?: "throw" | "warn" | "skip";
+  } = {},
+): Promise<{
+  byInput: Map<
+    string,
+    {
+      canonicalId: string;
+      providerAlias: string;
+      displayTicker: string | null;
+    }
+  >;
+  byCanonicalId: Map<
+    string,
+    {
+      providerAlias: string;
+      displayTicker: string | null;
+    }
+  >;
+}> {
+  const provider = options.provider ?? DEFAULT_ALIAS_SOURCE;
+  const providerType = options.providerType ?? DEFAULT_ALIAS_TYPE;
+  const onError = options.onError ?? "throw";
+
+  const byInput = new Map<
+    string,
+    {
+      canonicalId: string;
+      providerAlias: string;
+      displayTicker: string | null;
+    }
+  >();
+  const byCanonicalId = new Map<
+    string,
+    {
+      providerAlias: string;
+      displayTicker: string | null;
+    }
+  >();
+
+  // Deduplicate inputs
+  const uniqueInputs = [
+    ...new Set(
+      symbolInputs.map((id) => id.trim()).filter((id) => id.length > 0),
+    ),
+  ];
+
+  // Resolve all inputs in parallel
+  await Promise.all(
+    uniqueInputs.map(async (inputKey) => {
+      // Skip if already resolved
+      if (byInput.has(inputKey)) return;
+
+      try {
+        // 1) Resolve input to canonical symbol
+        const resolved = await resolveSymbolInput(inputKey);
+        if (!resolved?.symbol?.id) {
+          const errorMsg = `Unable to resolve symbol identifier "${inputKey}" to a canonical symbol.`;
+          if (onError === "throw") {
+            throw new Error(errorMsg);
+          }
+          if (onError === "warn") {
+            console.warn(errorMsg);
+          }
+          return;
+        }
+
+        const canonicalId = resolved.symbol.id;
+
+        // 2) Get provider-specific alias (e.g., Yahoo ticker)
+        const providerAliasRecord = await getProviderSymbolAlias(
+          canonicalId,
+          provider,
+          {
+            type: providerType,
+          },
+        );
+
+        const providerAlias =
+          providerAliasRecord?.value ??
+          resolved.primaryAlias?.value ??
+          resolved.symbol.ticker;
+
+        if (!providerAlias) {
+          const errorMsg = `Symbol "${inputKey}" is missing a ${provider} ${providerType} alias.`;
+          if (onError === "throw") {
+            throw new Error(errorMsg);
+          }
+          if (onError === "warn") {
+            console.warn(errorMsg);
+          }
+          return;
+        }
+
+        // 3) Get display ticker (primary alias or symbol ticker)
+        const displayTicker =
+          resolved.primaryAlias?.value ?? resolved.symbol.ticker ?? null;
+
+        // 4) Store resolution
+        const resolution = {
+          canonicalId,
+          providerAlias,
+          displayTicker,
+        };
+
+        byInput.set(inputKey, resolution);
+        if (!byCanonicalId.has(canonicalId)) {
+          byCanonicalId.set(canonicalId, {
+            providerAlias,
+            displayTicker,
+          });
+        }
+      } catch (error) {
+        if (onError === "throw") {
+          throw error;
+        }
+        if (onError === "warn") {
+          console.warn(
+            `Error resolving symbol "${inputKey}":`,
+            error instanceof Error ? error.message : error,
+          );
+        }
+        // onError === "skip" silently continues
+      }
+    }),
+  );
+
+  return { byInput, byCanonicalId };
+}
+
 async function normalizeSymbolAliasValue(value: string, type?: string) {
   if ((type ?? DEFAULT_ALIAS_TYPE) === DEFAULT_ALIAS_TYPE) {
     return await normalizeSymbol(value);
