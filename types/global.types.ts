@@ -1,4 +1,4 @@
-import type { Tables } from "@/types/database.types";
+import type { Tables, TablesInsert } from "@/types/database.types";
 
 // Profile
 export type Profile = Pick<
@@ -75,17 +75,11 @@ export type PositionCategory = Tables<"position_categories">;
 export type ExchangeRate = Tables<"exchange_rates">;
 
 // Symbol
-export type Symbol = Pick<
-  Tables<"symbols">,
-  | "id"
-  | "quote_type"
-  | "short_name"
-  | "long_name"
-  | "exchange"
-  | "currency"
-  | "industry"
-  | "sector"
->;
+export type Symbol = Tables<"symbols">;
+
+export type SymbolAlias = Tables<"symbol_aliases">;
+
+export type SymbolInsert = TablesInsert<"symbols">;
 
 export type SymbolSearchResult = {
   id: string;
