@@ -30,14 +30,11 @@ export async function fetchQuotes(
 
   // 1) Batch resolve all unique symbol identifiers
   const uniqueLookups = [...new Set(requests.map((r) => r.symbolLookup))];
-  const { byInput, byCanonicalId } = await resolveSymbolsBatch(
-    uniqueLookups,
-    {
-      provider: "yahoo",
-      providerType: "ticker",
-      onError: "throw",
-    },
-  );
+  const { byInput, byCanonicalId } = await resolveSymbolsBatch(uniqueLookups, {
+    provider: "yahoo",
+    providerType: "ticker",
+    onError: "throw",
+  });
 
   // 2) Map requests to normalized format with resolutions
   const normalizedRequests = requests.map(({ symbolLookup, date }) => {
@@ -259,12 +256,17 @@ export async function fetchQuotes(
             !Number.isNaN(marketTime.getTime())
           ) {
             const marketDateKey = format(marketTime, "yyyy-MM-dd");
-            if (requestedSet.has(marketDateKey)) {
-              const cacheKey = `${symbolId}|${marketDateKey}`;
+            // Prefer an exact date match, otherwise fall back to the latest requested date.
+            const fallbackDateKey = requestedSet.has(marketDateKey)
+              ? marketDateKey
+              : dateStringsSorted[dateStringsSorted.length - 1];
+
+            if (fallbackDateKey) {
+              const cacheKey = `${symbolId}|${fallbackDateKey}`;
               results.set(cacheKey, marketPrice);
               successfulFetches.push({
                 symbolId,
-                dateString: marketDateKey,
+                dateString: fallbackDateKey,
                 price: marketPrice,
                 cacheKey,
               });
