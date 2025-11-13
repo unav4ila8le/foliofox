@@ -15,12 +15,12 @@ const yahooFinance = new YahooFinance();
 /**
  * Fetch multiple quotes for different symbols and dates in bulk.
  *
- * @param requests - Array of {symbolId, date} pairs to fetch
+ * @param requests - Array of {symbolLookup, date} pairs to fetch
  * @param upsert - Whether to cache results in database (defaults to true)
- * @returns Map where key is "symbolId|date" and value is the price
+ * @returns Map where key is "canonicalSymbolId|date" and value is the price
  */
 export async function fetchQuotes(
-  requests: Array<{ symbolId: string; date: Date }>,
+  requests: Array<{ symbolLookup: string; date: Date }>,
   upsert: boolean = true,
 ) {
   // Early return if no requests
@@ -29,9 +29,9 @@ export async function fetchQuotes(
   const results = new Map<string, number>();
 
   // 1) Batch resolve all unique symbol identifiers
-  const uniqueSymbolIds = [...new Set(requests.map((r) => r.symbolId))];
+  const uniqueLookups = [...new Set(requests.map((r) => r.symbolLookup))];
   const { byInput, byCanonicalId } = await resolveSymbolsBatch(
-    uniqueSymbolIds,
+    uniqueLookups,
     {
       provider: "yahoo",
       providerType: "ticker",
@@ -40,18 +40,18 @@ export async function fetchQuotes(
   );
 
   // 2) Map requests to normalized format with resolutions
-  const normalizedRequests = requests.map(({ symbolId, date }) => {
-    const resolution = byInput.get(symbolId);
+  const normalizedRequests = requests.map(({ symbolLookup, date }) => {
+    const resolution = byInput.get(symbolLookup);
     if (!resolution) {
       throw new Error(
-        `Unable to resolve symbol identifier "${symbolId}" to a canonical symbol.`,
+        `Unable to resolve symbol identifier "${symbolLookup}" to a canonical symbol.`,
       );
     }
 
     const dateString = format(date, "yyyy-MM-dd");
 
     return {
-      inputKey: symbolId,
+      inputLookup: symbolLookup,
       canonicalId: resolution.canonicalId,
       yahooTicker: resolution.providerAlias,
       date,
@@ -297,10 +297,10 @@ export async function fetchQuotes(
   }
 
   // Populate alias keys for any original inputs that differed from canonical IDs
-  normalizedRequests.forEach(({ inputKey, canonicalId, dateString }) => {
+  normalizedRequests.forEach(({ inputLookup, canonicalId, dateString }) => {
     const canonicalCacheKey = `${canonicalId}|${dateString}`;
-    const aliasCacheKey = `${inputKey}|${dateString}`;
-    if (inputKey !== canonicalId && results.has(canonicalCacheKey)) {
+    const aliasCacheKey = `${inputLookup}|${dateString}`;
+    if (inputLookup !== canonicalId && results.has(canonicalCacheKey)) {
       results.set(aliasCacheKey, results.get(canonicalCacheKey)!);
     }
   });
@@ -316,28 +316,31 @@ export async function fetchQuotes(
  * @returns The quote price
  */
 export async function fetchSingleQuote(
-  symbolId: string,
+  symbolLookup: string,
   options: {
     date?: Date;
     upsert?: boolean;
   } = {},
 ): Promise<number> {
   const { date = new Date(), upsert = true } = options;
-  const resolved = await resolveSymbolInput(symbolId);
+  const resolved = await resolveSymbolInput(symbolLookup);
 
   if (!resolved?.symbol?.id) {
     throw new Error(
-      `Unable to resolve symbol identifier "${symbolId}" to a canonical symbol.`,
+      `Unable to resolve symbol identifier "${symbolLookup}" to a canonical symbol.`,
     );
   }
 
   const canonicalId = resolved.symbol.id;
   const dateKey = format(date, "yyyy-MM-dd");
-  const quotes = await fetchQuotes([{ symbolId: canonicalId, date }], upsert);
+  const quotes = await fetchQuotes(
+    [{ symbolLookup: canonicalId, date }],
+    upsert,
+  );
 
   return (
     quotes.get(`${canonicalId}|${dateKey}`) ??
-    quotes.get(`${symbolId}|${dateKey}`) ??
+    quotes.get(`${symbolLookup}|${dateKey}`) ??
     0
   );
 }

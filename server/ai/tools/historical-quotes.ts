@@ -62,7 +62,7 @@ export async function getHistoricalQuotes({
     cursor <= resolvedEnd;
     cursor = addDays(cursor, 1)
   ) {
-    requests.push({ symbolId: canonicalId, date: cursor });
+    requests.push({ symbolLookup: canonicalId, date: cursor });
   }
 
   // Avoid caching ad-hoc AI lookups into the primary quotes table

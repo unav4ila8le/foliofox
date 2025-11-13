@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
 
     // 5. Prepare quote requests for the target date
     const quoteRequests = symbolIds.map((symbolId) => ({
-      symbolId,
+      symbolLookup: symbolId,
       date: new Date(date),
     }));
 

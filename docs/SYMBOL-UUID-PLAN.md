@@ -83,6 +83,7 @@
 - Evaluate SQL trigger vs. application-level write-through for keeping `symbols.ticker` synchronized after we have real usage data.
 - Consider materialized views or caching if alias lookups become hot paths after rollout.
 - Finish naming pass: adopt `symbolLookup` for user-supplied identifiers during the final cleanup so future functions communicate they accept tickers/aliases/UUIDs.
+- ✅ Naming convention locked: client/server inputs use `symbolLookup`, resolver outputs use `canonicalSymbolId`/`symbol_id`.
 - ✅ **Extracted shared helper**: `resolveSymbolsBatch` in `server/symbols/resolver.ts` consolidates the repeated resolver + provider alias pattern. Updated `server/quotes/fetch.ts`, `server/dividends/fetch.ts`, `server/news/fetch.ts`, and AI tool resolvers (`assets-performance`, `portfolio-snapshot`, `positions`) to use it.
 
 ## Implementation Status
