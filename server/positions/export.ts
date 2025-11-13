@@ -2,7 +2,7 @@
 
 import { fetchPositions } from "@/server/positions/fetch";
 import { calculateProfitLoss } from "@/lib/profit-loss";
-import { resolveSymbolsBatch } from "@/server/symbols/resolver";
+import { createServiceClient } from "@/supabase/service";
 
 type ExportType = "asset" | "liability";
 
@@ -27,21 +27,30 @@ export async function exportPositions(
     const positionsWithPL = calculateProfitLoss(positions, snapshots);
 
     // Resolve symbol UUIDs to tickers for export
-    const symbolUuids = positionsWithPL
-      .map((p) => p.symbol_id)
-      .filter((id): id is string => Boolean(id));
+    const uniqueSymbolUuids = Array.from(
+      new Set(
+        positionsWithPL
+          .map((p) => p.symbol_id)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    );
     const symbolUuidToTicker = new Map<string, string>();
-    if (symbolUuids.length > 0) {
-      const { byInput } = await resolveSymbolsBatch(symbolUuids, {
-        provider: "yahoo",
-        providerType: "ticker",
-        onError: "warn",
-      });
-      byInput.forEach((resolution, uuid) => {
-        const ticker =
-          resolution.displayTicker ?? resolution.providerAlias ?? null;
-        if (ticker) {
-          symbolUuidToTicker.set(uuid, ticker);
+    if (uniqueSymbolUuids.length > 0) {
+      const supabase = await createServiceClient();
+      const { data: symbols, error } = await supabase
+        .from("symbols")
+        .select("id,ticker")
+        .in("id", uniqueSymbolUuids);
+
+      if (error) {
+        throw new Error(
+          `Failed to resolve tickers for export: ${error.message}`,
+        );
+      }
+
+      symbols?.forEach((symbol) => {
+        if (symbol.id && symbol.ticker) {
+          symbolUuidToTicker.set(symbol.id, symbol.ticker);
         }
       });
     }
@@ -49,7 +58,7 @@ export async function exportPositions(
     // Empty CSV with headers when no data
     if (positionsWithPL.length === 0) {
       const headers =
-        "name,category_id,currency,current_quantity,current_unit_value,total_value,cost_basis_per_unit,total_cost_basis,profit_loss,profit_loss_percentage,symbol_id,domain_id,description\n";
+        "name,category_id,currency,current_quantity,current_unit_value,total_value,cost_basis_per_unit,total_cost_basis,profit_loss,profit_loss_percentage,symbol_ticker,domain_id,description\n";
       return { success: true, data: headers } as const;
     }
 
@@ -85,7 +94,7 @@ export async function exportPositions(
     });
 
     const headers =
-      "name,category_id,currency,current_quantity,current_unit_value,total_value,cost_basis_per_unit,total_cost_basis,profit_loss,profit_loss_percentage,symbol_id,domain_id,description";
+      "name,category_id,currency,current_quantity,current_unit_value,total_value,cost_basis_per_unit,total_cost_basis,profit_loss,profit_loss_percentage,ticker,domain_id,description";
     const csv = [headers, ...rows].join("\n");
 
     return { success: true, data: csv } as const;

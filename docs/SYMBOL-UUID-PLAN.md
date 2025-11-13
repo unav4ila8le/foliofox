@@ -96,11 +96,12 @@
   - AI/analytics + AI tools now accept `symbolLookup` values and return canonical UUIDs while exposing tickers for display.
   - All server-side code verified: no deprecated `symbol_id` usage assuming tickers remains. All database UUIDs correctly flow through resolver layer.
   - ✅ Shared batch resolver helper (`resolveSymbolsBatch`) extracted and integrated into quotes/dividends/news modules.
-- **Phase 4 – Client & API Updates** ✅ Completed
+- **Phase 4 – Client & API Updates** ⏳ In progress
   - ✅ Updated `server/symbols/fetch.ts` to include `ticker` in select
   - ✅ Fixed `components/dashboard/positions/asset/header.tsx` to display `symbol.ticker` instead of `symbol.id`
   - ✅ Updated `components/dashboard/new-asset/forms/symbol-search-form.tsx` to use `symbolLookup` field name (still passes as `symbol_id` to server action which handles resolution)
   - ✅ Updated `server/positions/export.ts` to resolve symbol UUIDs to tickers for CSV export (users see tickers, not UUIDs)
-  - ✅ CSV import already handles tickers correctly via resolver in `server/positions/import.ts`
-  - ✅ Verified portfolio record forms, position selector, and other client components - all correctly use UUIDs internally while accepting/displaying tickers where appropriate
+  - ⏳ Rename user-facing inputs, CSV templates, and importer schemas from `symbol_id` to `symbolLookup` so we stop implying that users provide UUIDs.
+  - ⏳ Update UI help text/documentation to explain that exported CSVs surface tickers while Supabase still stores UUIDs internally.
+  - ⏳ Final verification pass to ensure no client code assumes `symbol_id === ticker`.
 - **Phase 5 – Testing, Verification & Rollout** ⏳ Queued (expanded automated coverage, staging smoke tests, rollout checklist).
