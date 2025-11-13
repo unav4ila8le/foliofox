@@ -33,7 +33,6 @@ import { useNewAssetDialog } from "../index";
 import { requiredNumberWithConstraints } from "@/lib/zod-helpers";
 
 import { fetchYahooFinanceSymbol } from "@/server/symbols/search";
-import { fetchSingleQuote } from "@/server/quotes/fetch";
 import { createPosition } from "@/server/positions/create";
 
 import { getPositionCategoryKeyFromQuoteType } from "@/lib/position-category-mappings";
@@ -46,9 +45,6 @@ const formSchema = z.object({
     .max(64, { error: "Name must not exceed 64 characters." }),
   category_id: z.string().min(1, { error: "Category is required." }),
   currency: z.string().length(3),
-  unit_value: requiredNumberWithConstraints("Unit value is required.", {
-    gte: { value: 0, error: "Value must be 0 or greater" },
-  }),
   quantity: requiredNumberWithConstraints("Quantity is required.", {
     gte: { value: 0, error: "Quantity must be 0 or greater" },
   }),
@@ -87,7 +83,6 @@ export function SymbolSearchForm() {
       name: "",
       category_id: "",
       currency: "",
-      unit_value: "",
       quantity: "",
       cost_basis_per_unit: "",
       description: "",
@@ -111,10 +106,7 @@ export function SymbolSearchForm() {
         );
       }
 
-      // 2. Fetch the price for today without upsert
-      const unitValue = await fetchSingleQuote(symbolLookup, { upsert: false });
-
-      // 3. Auto-fill form fields
+      // 2. Auto-fill form fields
       const symbolData = yahooFinanceSymbol.data;
 
       // Category
@@ -129,9 +121,6 @@ export function SymbolSearchForm() {
       if (symbolData.currency) {
         form.setValue("currency", symbolData.currency);
       }
-
-      // Unit value
-      form.setValue("unit_value", unitValue);
 
       // Name
       const displayName = symbolData.long_name || symbolData.short_name;
@@ -159,7 +148,6 @@ export function SymbolSearchForm() {
       formData.append("name", values.name);
       formData.append("category_id", values.category_id);
       formData.append("currency", values.currency);
-      formData.append("unit_value", values.unit_value.toString());
       formData.append("quantity", values.quantity.toString());
 
       // Only append cost basis per unit if it exists

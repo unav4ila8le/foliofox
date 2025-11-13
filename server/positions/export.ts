@@ -58,7 +58,7 @@ export async function exportPositions(
     // Empty CSV with headers when no data
     if (positionsWithPL.length === 0) {
       const headers =
-        "name,category_id,currency,current_quantity,current_unit_value,total_value,cost_basis_per_unit,total_cost_basis,profit_loss,profit_loss_percentage,symbol_ticker,domain_id,description\n";
+        "name,category_id,currency,current_quantity,current_unit_value,total_value,cost_basis_per_unit,total_cost_basis,profit_loss,profit_loss_percentage,ticker,domain,description\n";
       return { success: true, data: headers } as const;
     }
 
@@ -94,7 +94,7 @@ export async function exportPositions(
     });
 
     const headers =
-      "name,category_id,currency,current_quantity,current_unit_value,total_value,cost_basis_per_unit,total_cost_basis,profit_loss,profit_loss_percentage,ticker,domain_id,description";
+      "name,category_id,currency,current_quantity,current_unit_value,total_value,cost_basis_per_unit,total_cost_basis,profit_loss,profit_loss_percentage,ticker,domain,description";
     const csv = [headers, ...rows].join("\n");
 
     return { success: true, data: csv } as const;

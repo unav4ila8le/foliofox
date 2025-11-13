@@ -7,6 +7,7 @@ import { getCurrentUser } from "@/server/auth/actions";
 import { createSymbol } from "@/server/symbols/create";
 import { resolveSymbolInput } from "@/server/symbols/resolver";
 import { createPositionSnapshot } from "@/server/position-snapshots/create";
+import { fetchSingleQuote } from "@/server/quotes/fetch";
 
 import type { Position } from "@/types/global.types";
 
@@ -70,11 +71,14 @@ export async function createPosition(formData: FormData) {
   const dateRaw = (formData.get("date") as string) || null;
 
   const quantity = quantityRaw != null ? Number(quantityRaw) : 0;
-  const unit_value = unitValueRaw != null ? Number(unitValueRaw) : 0;
-  const cost_basis_per_unit =
+  let unit_value: number | null =
+    unitValueRaw != null && String(unitValueRaw).trim() !== ""
+      ? Number(unitValueRaw)
+      : null;
+  const costBasisInput =
     costBasisRaw != null && String(costBasisRaw).trim() !== ""
       ? Number(costBasisRaw)
-      : unit_value;
+      : null;
   const snapshotDate = dateRaw ? new Date(dateRaw) : new Date();
 
   // Duplicate name check (active positions only)
@@ -117,7 +121,26 @@ export async function createPosition(formData: FormData) {
 
       symbolUuid = postCreateResolved.symbol.id;
     }
+
+    if (symbolUuid && (unit_value == null || Number.isNaN(unit_value))) {
+      try {
+        unit_value = await fetchSingleQuote(symbolUuid, { upsert: true });
+      } catch (error) {
+        console.warn(
+          `Failed to fetch canonical price for symbol ${symbolUuid}:`,
+          error,
+        );
+        unit_value = null;
+      }
+    }
   }
+
+  const finalUnitValue =
+    unit_value != null && Number.isFinite(unit_value) ? unit_value : 0;
+  const finalCostBasis =
+    costBasisInput != null && Number.isFinite(costBasisInput)
+      ? costBasisInput
+      : finalUnitValue;
 
   // Create position
   const { data: positionRow, error: positionError } = await supabase
@@ -148,8 +171,8 @@ export async function createPosition(formData: FormData) {
     position_id: positionRow.id,
     date: format(snapshotDate, "yyyy-MM-dd"),
     quantity,
-    unit_value,
-    cost_basis_per_unit,
+    unit_value: finalUnitValue,
+    cost_basis_per_unit: finalCostBasis,
   });
 
   if (!snapshotResult.success) return snapshotResult;
