@@ -96,5 +96,11 @@
   - AI/analytics + AI tools now accept `symbolLookup` values and return canonical UUIDs while exposing tickers for display.
   - All server-side code verified: no deprecated `symbol_id` usage assuming tickers remains. All database UUIDs correctly flow through resolver layer.
   - ✅ Shared batch resolver helper (`resolveSymbolsBatch`) extracted and integrated into quotes/dividends/news modules.
-- **Phase 4 – Client & API Updates** ⏳ Queued (UI/CSV to surface ticker while persisting UUID).
+- **Phase 4 – Client & API Updates** ✅ Completed
+  - ✅ Updated `server/symbols/fetch.ts` to include `ticker` in select
+  - ✅ Fixed `components/dashboard/positions/asset/header.tsx` to display `symbol.ticker` instead of `symbol.id`
+  - ✅ Updated `components/dashboard/new-asset/forms/symbol-search-form.tsx` to use `symbolLookup` field name (still passes as `symbol_id` to server action which handles resolution)
+  - ✅ Updated `server/positions/export.ts` to resolve symbol UUIDs to tickers for CSV export (users see tickers, not UUIDs)
+  - ✅ CSV import already handles tickers correctly via resolver in `server/positions/import.ts`
+  - ✅ Verified portfolio record forms, position selector, and other client components - all correctly use UUIDs internally while accepting/displaying tickers where appropriate
 - **Phase 5 – Testing, Verification & Rollout** ⏳ Queued (expanded automated coverage, staging smoke tests, rollout checklist).

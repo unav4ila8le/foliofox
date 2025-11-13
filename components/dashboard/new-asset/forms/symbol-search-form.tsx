@@ -39,7 +39,7 @@ import { createPosition } from "@/server/positions/create";
 import { getPositionCategoryKeyFromQuoteType } from "@/lib/position-category-mappings";
 
 const formSchema = z.object({
-  symbol_id: z.string().min(1, { error: "Symbol is required." }),
+  symbolLookup: z.string().min(1, { error: "Symbol is required." }),
   name: z
     .string()
     .min(3, { error: "Name must be at least 3 characters." })
@@ -83,7 +83,7 @@ export function SymbolSearchForm() {
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      symbol_id: "",
+      symbolLookup: "",
       name: "",
       category_id: "",
       currency: "",
@@ -98,13 +98,13 @@ export function SymbolSearchForm() {
   const { isDirty } = form.formState;
 
   // Watch field changes
-  const symbolId = form.watch("symbol_id") || "";
+  const symbolLookup = form.watch("symbolLookup") || "";
 
   // Handle symbol selection from dropdown
-  const handleSymbolSelect = async (symbolId: string) => {
+  const handleSymbolSelect = async (symbolLookup: string) => {
     try {
       // 1. Fetch the symbol quote details
-      const yahooFinanceSymbol = await fetchYahooFinanceSymbol(symbolId);
+      const yahooFinanceSymbol = await fetchYahooFinanceSymbol(symbolLookup);
       if (!yahooFinanceSymbol.success || !yahooFinanceSymbol.data) {
         throw new Error(
           yahooFinanceSymbol.message || "Failed to fetch symbol details",
@@ -112,7 +112,7 @@ export function SymbolSearchForm() {
       }
 
       // 2. Fetch the price for today without upsert
-      const unitValue = await fetchSingleQuote(symbolId, { upsert: false });
+      const unitValue = await fetchSingleQuote(symbolLookup, { upsert: false });
 
       // 3. Auto-fill form fields
       const symbolData = yahooFinanceSymbol.data;
@@ -135,7 +135,7 @@ export function SymbolSearchForm() {
 
       // Name
       const displayName = symbolData.long_name || symbolData.short_name;
-      form.setValue("name", `${symbolId} - ${displayName}`);
+      form.setValue("name", `${symbolLookup} - ${displayName}`);
     } catch (error) {
       console.warn(
         "Error selecting symbol:",
@@ -155,7 +155,7 @@ export function SymbolSearchForm() {
     setIsLoading(true);
     try {
       const formData = new FormData();
-      formData.append("symbol_id", values.symbol_id);
+      formData.append("symbol_id", values.symbolLookup);
       formData.append("name", values.name);
       formData.append("category_id", values.category_id);
       formData.append("currency", values.currency);
@@ -196,7 +196,7 @@ export function SymbolSearchForm() {
   }
 
   // Check if form is ready (symbol selected)
-  const isFormReady = Boolean(symbolId);
+  const isFormReady = Boolean(symbolLookup);
 
   return (
     <Form {...form}>
@@ -204,7 +204,7 @@ export function SymbolSearchForm() {
         {/* Symbol */}
         <FormField
           control={form.control}
-          name="symbol_id"
+          name="symbolLookup"
           render={({ field }) => (
             <FormItem>
               <FormLabel className="flex items-center justify-between gap-2">

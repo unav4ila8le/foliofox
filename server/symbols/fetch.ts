@@ -32,9 +32,7 @@ export async function fetchSymbol(symbolId: string) {
 
   const { data, error } = await supabase
     .from("symbols")
-    .select(
-      "id, quote_type, short_name, long_name, exchange, currency, industry, sector",
-    )
+    .select("*")
     .eq("id", symbolId)
     .maybeSingle();
 
