@@ -65,7 +65,7 @@ export async function importPositionsFromCSV(
 
       // If symbol present and unit_value missing, try to create symbol and fetch quote
       let canonicalSymbolId: string | null = null;
-      const rawSymbolInput = row.symbol_id?.trim() ?? "";
+      const rawSymbolInput = row.symbolLookup?.trim() ?? "";
 
       if (rawSymbolInput !== "") {
         const resolved = await resolveSymbolInput(rawSymbolInput);
@@ -122,7 +122,7 @@ export async function importPositionsFromCSV(
       formData.append("category_id", row.category_id);
       formData.append("quantity", String(row.quantity));
       formData.append("unit_value", unitValue != null ? String(unitValue) : "");
-      formData.append("symbol_id", canonicalSymbolId ?? "");
+      formData.append("symbolLookup", canonicalSymbolId ?? rawSymbolInput ?? "");
       formData.append(
         "cost_basis_per_unit",
         row.cost_basis_per_unit != null ? String(row.cost_basis_per_unit) : "",

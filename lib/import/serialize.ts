@@ -14,7 +14,7 @@ export function positionsToCSV(rows: PositionImportRow[]): string {
     "quantity",
     "unit_value",
     "cost_basis_per_unit",
-    "symbol_id",
+    "symbol_lookup",
     "description",
   ];
 
@@ -39,7 +39,7 @@ export function positionsToCSV(rows: PositionImportRow[]): string {
       qty,
       unit,
       cost,
-      p.symbol_id ?? "",
+      p.symbolLookup ?? "",
       p.description ?? "",
     ].map(escapeCSVCell);
 

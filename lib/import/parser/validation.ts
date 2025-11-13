@@ -34,7 +34,9 @@ export async function validatePositionsArray(
   });
 
   // Symbol checks (existence + currency mismatch)
-  const symbols = rows.map((r) => (r.symbol_id || "").trim()).filter(Boolean);
+  const symbols = rows
+    .map((r) => (r.symbolLookup || "").trim())
+    .filter(Boolean);
 
   if (symbols.length > 0) {
     let batch: Awaited<ReturnType<typeof validateSymbolsBatch>>;
@@ -56,12 +58,12 @@ export async function validatePositionsArray(
     }
 
     rows.forEach((row, idx) => {
-      if (!row.symbol_id) return;
-      const v = batch.results.get(row.symbol_id);
+      if (!row.symbolLookup) return;
+      const v = batch.results.get(row.symbolLookup);
       if (!v) return;
       if (!v.valid) {
         errors.push(
-          v.error || `Row ${idx + 1}: Invalid symbol "${row.symbol_id}"`,
+          v.error || `Row ${idx + 1}: Invalid symbol "${row.symbolLookup}"`,
         );
       } else if (v.currency) {
         errors.push(...validateSymbolCurrency(row, idx + 1, v.currency));
@@ -94,13 +96,15 @@ export async function normalizePositionsArray(
   cloned.forEach((h) => {
     if (
       h.category_id === "cryptocurrency" &&
-      h.symbol_id &&
-      !h.symbol_id.includes("-")
+      h.symbolLookup &&
+      !h.symbolLookup.includes("-")
     ) {
-      const code = h.symbol_id.toUpperCase().trim();
+      const code = h.symbolLookup.toUpperCase().trim();
       const normalized = `${code}-USD`;
-      warnings.push(`Normalized crypto symbol ${h.symbol_id} to ${normalized}`);
-      h.symbol_id = normalized;
+      warnings.push(
+        `Normalized crypto symbol ${h.symbolLookup} to ${normalized}`,
+      );
+      h.symbolLookup = normalized;
       if (h.currency !== "USD") {
         warnings.push(
           `Adjusted currency for ${normalized} from ${h.currency} to USD`,
@@ -110,7 +114,9 @@ export async function normalizePositionsArray(
     }
   });
 
-  const symbols = cloned.map((r) => (r.symbol_id || "").trim()).filter(Boolean);
+  const symbols = cloned
+    .map((r) => (r.symbolLookup || "").trim())
+    .filter(Boolean);
   if (symbols.length === 0) {
     return { positions: cloned, warnings };
   }
@@ -118,20 +124,20 @@ export async function normalizePositionsArray(
   const batch = await validateSymbolsBatch(symbols);
 
   cloned.forEach((h) => {
-    if (!h.symbol_id) return;
-    const v = batch.results.get(h.symbol_id);
+    if (!h.symbolLookup) return;
+    const v = batch.results.get(h.symbolLookup);
     if (!v) return;
 
     if (v.currency && h.currency !== v.currency) {
       warnings.push(
-        `Adjusted currency for ${h.symbol_id} from ${h.currency} to ${v.currency}`,
+        `Adjusted currency for ${h.symbolLookup} from ${h.currency} to ${v.currency}`,
       );
       h.currency = v.currency;
     }
 
-    if (v.normalized && v.normalized !== h.symbol_id) {
-      warnings.push(`Normalized symbol ${h.symbol_id} to ${v.normalized}`);
-      h.symbol_id = v.normalized;
+    if (v.normalized && v.normalized !== h.symbolLookup) {
+      warnings.push(`Normalized symbol ${h.symbolLookup} to ${v.normalized}`);
+      h.symbolLookup = v.normalized;
     }
   });
 
@@ -193,7 +199,7 @@ export function validatePosition(
   }
 
   // Validate unit value
-  if (position.symbol_id && position.symbol_id.trim() !== "") {
+  if (position.symbolLookup && position.symbolLookup.trim() !== "") {
     // Optional if symbol provided (will be fetched from market); if present, must be >= 0
     if (position.unit_value != null && position.unit_value < 0) {
       errors.push(
@@ -228,7 +234,7 @@ export function validateSymbolCurrency(
 ): string[] {
   if (symbolCurrency && symbolCurrency !== position.currency) {
     return [
-      `Row ${rowNumber}: Symbol "${position.symbol_id}" uses ${symbolCurrency} currency, but CSV specifies ${position.currency}. Please use ${symbolCurrency} for this symbol.`,
+      `Row ${rowNumber}: Symbol lookup "${position.symbolLookup}" uses ${symbolCurrency} currency, but CSV specifies ${position.currency}. Please use ${symbolCurrency} for this symbol.`,
     ];
   }
   return [];

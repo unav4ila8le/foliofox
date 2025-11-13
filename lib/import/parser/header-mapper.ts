@@ -12,7 +12,7 @@
  *   - currency
  *   - current_quantity
  *   - current_unit_value
- *   - symbol_id
+ *   - symbol_lookup
  *   - description
  */
 
@@ -23,7 +23,7 @@ export type CanonicalHeader =
   | "quantity"
   | "unit_value"
   | "cost_basis_per_unit"
-  | "symbol_id"
+  | "symbol_lookup"
   | "description";
 
 // Common aliases from brokers and spreadsheets (DEGIRO, IBKR, Trading212, Fidelity, Vanguard, Schwab, eToro, etc.)
@@ -45,8 +45,10 @@ const HEADER_ALIASES: Record<CanonicalHeader, string[]> = {
     "position name",
   ],
 
-  // Symbol or ISIN (we'll validate/normalize later)
-  symbol_id: [
+  // Symbol lookup value (ticker, ISIN, alias)
+  symbol_lookup: [
+    "symbol_lookup",
+    "symbol id",
     "symbol_id",
     "symbol",
     "ticker",

@@ -1,4 +1,4 @@
-name,category_id,currency,quantity,unit_value,cost_basis_per_unit,symbol_id,description
+name,category_id,currency,quantity,unit_value,cost_basis_per_unit,symbol_lookup,description
 Emergency Fund,cash,USD,5000.0,1,,,High-yield savings account
 Checking Account,cash,EUR,3000.0,1,,,Daily bank account
 Apple Inc,equity,USD,10.0,,98.50,AAPL,

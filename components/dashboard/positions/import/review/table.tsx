@@ -38,7 +38,7 @@ export function PositionsImportReviewTable({
       Array.from(
         new Set(
           initialPositions
-            .map((p) => p.symbol_id)
+            .map((p) => p.symbolLookup)
             .filter((s): s is string => Boolean(s)),
         ),
       ),

@@ -7,7 +7,7 @@ export type PositionImportRow = {
   quantity: number;
   unit_value: number | null;
   cost_basis_per_unit: number | null;
-  symbol_id: string | null;
+  symbolLookup: string | null;
   description: string | null;
 };
 

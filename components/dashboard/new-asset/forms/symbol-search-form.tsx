@@ -155,7 +155,7 @@ export function SymbolSearchForm() {
     setIsLoading(true);
     try {
       const formData = new FormData();
-      formData.append("symbol_id", values.symbolLookup);
+      formData.append("symbolLookup", values.symbolLookup);
       formData.append("name", values.name);
       formData.append("category_id", values.category_id);
       formData.append("currency", values.currency);

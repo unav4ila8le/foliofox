@@ -55,7 +55,12 @@ export async function createPosition(formData: FormData) {
   }
 
   // Optional identifiers
-  const rawSymbolInput = ((formData.get("symbol_id") as string) || "").trim();
+  const rawSymbolInput =
+    (
+      (formData.get("symbolLookup") as string) ??
+      (formData.get("symbol_id") as string) ??
+      ""
+    ).trim();
   let symbolUuid: string | null = null;
   const domainId = (formData.get("domain_id") as string) || null;
 

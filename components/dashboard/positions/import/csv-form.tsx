@@ -129,8 +129,8 @@ export function CSVImportForm() {
               </span>
             </TooltipTrigger>
             <TooltipContent className="max-w-xs">
-              Unit Value is required unless symbol_id is present. For positions
-              with symbol_id, the unit value will be fetched from the market.
+              Unit value is required unless a symbol lookup is provided. When a
+              lookup (ticker/ISIN/etc.) is present we fetch the price for you.
             </TooltipContent>
           </Tooltip>
           .
@@ -152,11 +152,12 @@ export function CSVImportForm() {
           <Tooltip>
             <TooltipTrigger asChild>
               <span className="text-foreground inline-block cursor-help underline-offset-4 hover:underline">
-                symbol_id
+                symbol_lookup
               </span>
             </TooltipTrigger>
             <TooltipContent className="max-w-xs">
-              Use Yahoo Finance ticker symbols (e.g., AAPL, MSFT, VWCE.DE).
+              Use any supported lookup (ticker, ISIN, etc.). Yahoo Finance
+              tickers (e.g., AAPL, MSFT, VWCE.DE) work best.
             </TooltipContent>
           </Tooltip>
           , description.
