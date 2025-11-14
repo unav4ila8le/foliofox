@@ -37,8 +37,10 @@ export function ToggleSharing({
         <Label htmlFor="public-sharing">Public portfolio sharing</Label>
       </div>
       <p className="text-muted-foreground">
-        Your portfolio will be publicly available for 24 hours. You can change
-        the expiration date or disable it at any time.
+        {isActive
+          ? "Your portfolio is publicly available."
+          : "Your portfolio will be publicly available for 24 hours."}{" "}
+        You can change the expiration date or disable it at any time.
       </p>
     </div>
   );
