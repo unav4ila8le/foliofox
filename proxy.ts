@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/supabase/middleware";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const maintenanceEnabled = process.env.MAINTENANCE_MODE === "true";
 
   // If maintenance is enabled, redirect to the maintenance page
@@ -16,6 +16,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  runtime: "nodejs",
   matcher: ["/dashboard/:path*", "/auth/update-password"],
 };
