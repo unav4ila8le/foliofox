@@ -52,8 +52,8 @@ Create a `.env.local` file in the project root:
 # Required
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_or_publishable_key
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key_or_secret_key
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
+SUPABASE_SECRET_KEY=your_supabase_secret_key
 
 # Optional (used to authorize cron invocations)
 CRON_SECRET=generate_a_strong_random_string
@@ -98,8 +98,8 @@ supabase migration up --local # applies the tracked migrations to the local DB
 
 - Update your `.env.local` with the new local credentials by running `supabase status -o env` and mapping the output to the environment variables:
   - `API_URL` → `NEXT_PUBLIC_SUPABASE_URL`
-  - `ANON_KEY` → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-  - `SERVICE_ROLE_KEY` → `SUPABASE_SERVICE_ROLE_KEY`
+  - `PUBLISHABLE_KEY` → `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+  - `SECRET_KEY` → `SUPABASE_SECRET_KEY`
 - The CLI prints the local connection string (`postgresql://postgres:postgres@localhost:54322/postgres` by default).
 - Reset the local database with `supabase db reset --local` (it will replay all migrations and seed data).
 - You can regenerate types with `supabase gen types typescript --local > types/database.types.ts`.

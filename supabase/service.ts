@@ -10,6 +10,6 @@ import type { Database } from "@/types/database.types";
 export function createServiceClient() {
   return createClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!, // This bypasses RLS
+    process.env.SUPABASE_SECRET_KEY!, // This bypasses RLS
   );
 }
