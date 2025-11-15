@@ -12,7 +12,7 @@ Foliofox is a privacy-focused portfolio intelligence and net worth tracking app.
 
 ## Tech Stack
 
-- **Framework:** Next.js 15 (App Router)
+- **Framework:** Next.js 16 (App Router)
 - **Language:** TypeScript (strict mode)
 - **Database:** Supabase (Postgres, Auth)
 - **Styling:** Tailwind CSS, Shadcn UI

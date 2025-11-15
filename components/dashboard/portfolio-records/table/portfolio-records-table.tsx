@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  useState,
-  useMemo,
-  useCallback,
-  useEffect,
-  useTransition,
-} from "react";
+import { useState, useMemo, useCallback, useTransition } from "react";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { FileText, Trash2, Search } from "lucide-react";
 
@@ -90,9 +84,6 @@ export function PortfolioRecordsTable({
   pagination,
 }: PortfolioRecordsTableProps) {
   const [filterValue, setFilterValue] = useState("");
-  const [selectedRows, setSelectedRows] = useState<
-    PortfolioRecordWithPosition[]
-  >([]);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -106,6 +97,23 @@ export function PortfolioRecordsTable({
       ? `portfolio-records-${pagination.page}-${idsKey}`
       : `portfolio-records-${idsKey}`;
   }, [data, pagination]);
+
+  const [selectionState, setSelectionState] = useState<{
+    key: string;
+    rows: PortfolioRecordWithPosition[];
+  }>(() => ({
+    key: tableKey,
+    rows: [],
+  }));
+  const selectedRows =
+    selectionState.key === tableKey ? selectionState.rows : [];
+
+  const handleSelectedRowsChange = useCallback(
+    (rows: PortfolioRecordWithPosition[]) => {
+      setSelectionState({ key: tableKey, rows });
+    },
+    [tableKey],
+  );
 
   const paginationEntries = useMemo(
     () =>
@@ -165,10 +173,6 @@ export function PortfolioRecordsTable({
       )
     : "#";
 
-  useEffect(() => {
-    setSelectedRows([]);
-  }, [data]);
-
   const columns = getPortfolioRecordColumns({ showPositionColumn });
 
   return (
@@ -219,7 +223,7 @@ export function PortfolioRecordsTable({
           data={data}
           filterValue={filterValue}
           filterColumnId="description"
-          onSelectedRowsChange={setSelectedRows}
+          onSelectedRowsChange={handleSelectedRowsChange}
         />
       )}
 
@@ -319,7 +323,7 @@ export function PortfolioRecordsTable({
         onOpenChangeAction={setOpenDeleteDialog}
         portfolioRecords={selectedRows.map(({ id }) => ({ id }))} // Minimal DTO
         onCompleted={() => {
-          setSelectedRows([]);
+          setSelectionState({ key: tableKey, rows: [] });
         }}
       />
     </div>
