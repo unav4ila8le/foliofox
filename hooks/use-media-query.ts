@@ -8,8 +8,8 @@ export function useMediaQuery(query: string): boolean {
   useEffect(() => {
     const mediaQuery = window.matchMedia(query);
 
-    // Set initial value
-    setMatches(mediaQuery.matches);
+    // Schedule the initial value update asynchronously
+    const timer = setTimeout(() => setMatches(mediaQuery.matches), 0);
 
     // Listen for changes
     const handler = (event: MediaQueryListEvent) => {
@@ -19,6 +19,7 @@ export function useMediaQuery(query: string): boolean {
     mediaQuery.addEventListener("change", handler);
 
     return () => {
+      clearTimeout(timer);
       mediaQuery.removeEventListener("change", handler);
     };
   }, [query]);

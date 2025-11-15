@@ -1,15 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { getTimeBasedGreetings } from "@/lib/time-based-greetings";
 
 export function Greetings({ username }: { username: string }) {
-  const [greeting, setGreeting] = useState<string>("");
-
-  useEffect(() => {
-    setGreeting(getTimeBasedGreetings());
-  }, []);
+  const [greeting] = useState(() => getTimeBasedGreetings());
 
   return (
     <h1 className="text-2xl font-semibold">

@@ -1,11 +1,76 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useSyncExternalStore,
+  useCallback,
+} from "react";
 import { Button } from "../ui/button";
 import { Eye, EyeOff } from "lucide-react";
 
 const PRIVACY_MODE_COOKIE_NAME = "privacy_mode";
 const PRIVACY_MODE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
+
+type PrivacyModeListener = () => void;
+
+const privacyModeListeners = new Set<PrivacyModeListener>();
+
+// Reads persisted state from cookies/localStorage.
+function readPersistedPrivacyMode(): boolean {
+  try {
+    const privacyModeFromCookie = document.cookie
+      .split("; ")
+      .map((cookieRow) => cookieRow.split("="))
+      .find(([cookieName]) => cookieName === PRIVACY_MODE_COOKIE_NAME)?.[1];
+
+    const persisted =
+      (privacyModeFromCookie
+        ? decodeURIComponent(privacyModeFromCookie)
+        : window.localStorage.getItem(PRIVACY_MODE_COOKIE_NAME)) === "true";
+
+    return persisted;
+  } catch {
+    return true;
+  }
+}
+
+// Persists the flag for future visits and other tabs.
+function persistPrivacyMode(next: boolean) {
+  const secureSuffix = location.protocol === "https:" ? "; Secure" : "";
+
+  document.cookie =
+    `${PRIVACY_MODE_COOKIE_NAME}=${encodeURIComponent(String(next))}; Path=/; Max-Age=${PRIVACY_MODE_COOKIE_MAX_AGE}; SameSite=Lax` +
+    secureSuffix;
+
+  try {
+    window.localStorage.setItem(PRIVACY_MODE_COOKIE_NAME, String(next));
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+function notifyPrivacyModeListeners() {
+  privacyModeListeners.forEach((listener) => listener());
+}
+
+// Wires the store to the browser storage event.
+function subscribeToPrivacyMode(listener: PrivacyModeListener) {
+  privacyModeListeners.add(listener);
+
+  const handleStorageChange = (storageEvent: StorageEvent) => {
+    if (storageEvent.key === PRIVACY_MODE_COOKIE_NAME) {
+      notifyPrivacyModeListeners();
+    }
+  };
+
+  window.addEventListener("storage", handleStorageChange);
+
+  return () => {
+    privacyModeListeners.delete(listener);
+    window.removeEventListener("storage", handleStorageChange);
+  };
+}
 
 type PrivacyModeContextType = {
   isPrivacyMode: boolean;
@@ -28,53 +93,17 @@ export function PrivacyModeProvider({
 }: {
   children: React.ReactNode;
 }) {
-  // Always start blurred (true) so SSR and the client's first render match.
-  const [isPrivacyMode, setIsPrivacyMode] = useState<boolean>(true);
+  const isPrivacyMode = useSyncExternalStore(
+    subscribeToPrivacyMode,
+    readPersistedPrivacyMode,
+    () => true,
+  );
 
-  // After hydration, read persisted value and update if needed.
-  useEffect(() => {
-    try {
-      const privacyModeFromCookie = document.cookie
-        .split("; ")
-        .map((cookieRow) => cookieRow.split("="))
-        .find(([cookieName]) => cookieName === PRIVACY_MODE_COOKIE_NAME)?.[1];
-
-      const persisted =
-        (privacyModeFromCookie
-          ? decodeURIComponent(privacyModeFromCookie)
-          : localStorage.getItem(PRIVACY_MODE_COOKIE_NAME)) === "true";
-
-      setIsPrivacyMode((prev) => (prev !== persisted ? persisted : prev));
-    } catch {
-      // stay true (safe default)
-      setIsPrivacyMode(true);
-    }
-    // Listen for changes from other tabs
-    const handleStorageChange = (storageEvent: StorageEvent) => {
-      if (
-        storageEvent.key === PRIVACY_MODE_COOKIE_NAME &&
-        storageEvent.newValue != null
-      ) {
-        setIsPrivacyMode(storageEvent.newValue === "true");
-      }
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
+  const togglePrivacyMode = useCallback(() => {
+    const next = !readPersistedPrivacyMode();
+    persistPrivacyMode(next);
+    notifyPrivacyModeListeners();
   }, []);
-
-  const togglePrivacyMode = () => {
-    setIsPrivacyMode((prev) => {
-      const next = !prev;
-      document.cookie =
-        `${PRIVACY_MODE_COOKIE_NAME}=${encodeURIComponent(String(next))}; Path=/; Max-Age=${PRIVACY_MODE_COOKIE_MAX_AGE}; SameSite=Lax` +
-        (location.protocol === "https:" ? "; Secure" : "");
-      try {
-        localStorage.setItem(PRIVACY_MODE_COOKIE_NAME, String(next));
-      } catch {}
-      return next;
-    });
-  };
 
   return (
     <PrivacyModeContext.Provider value={{ isPrivacyMode, togglePrivacyMode }}>

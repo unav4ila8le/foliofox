@@ -23,7 +23,10 @@ export function HeroImage({
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    const timer = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Avoid hydration mismatch: render light version until mounted
   const src = mounted && resolvedTheme === "dark" ? heroDark : heroLight;
