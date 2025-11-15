@@ -4,3 +4,4 @@ build
 dist
 supabase/.temp
 supabase/migrations
+types/database.types.ts

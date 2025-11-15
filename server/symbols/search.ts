@@ -3,7 +3,7 @@
 import YahooFinance from "yahoo-finance2";
 import { z } from "zod";
 
-import type { Symbol, SymbolSearchResult } from "@/types/global.types";
+import type { SymbolInsert, SymbolSearchResult } from "@/types/global.types";
 
 const yahooFinance = new YahooFinance();
 
@@ -69,8 +69,9 @@ export async function fetchYahooFinanceSymbol(symbolId: string) {
     const price = summary.price;
     const profile = summary.assetProfile;
 
-    const data: Symbol = {
-      id: symbolId,
+    const normalizedTicker = symbolId.trim().toUpperCase();
+    const data: SymbolInsert = {
+      ticker: normalizedTicker,
       quote_type: price?.quoteType || "",
       short_name: price?.shortName || symbolId,
       long_name: price?.longName || price?.shortName || symbolId,

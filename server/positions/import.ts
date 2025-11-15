@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { getCurrentUser } from "@/server/auth/actions";
 import { createSymbol } from "@/server/symbols/create";
+import { resolveSymbolInput } from "@/server/symbols/resolver";
 import { fetchSingleQuote } from "@/server/quotes/fetch";
 import { createPosition } from "@/server/positions/create";
 
@@ -63,27 +64,48 @@ export async function importPositionsFromCSV(
       let unitValue = row.unit_value;
 
       // If symbol present and unit_value missing, try to create symbol and fetch quote
-      if (row.symbol_id && row.symbol_id.trim() !== "") {
-        const symbolResult = await createSymbol(row.symbol_id);
-        if (!symbolResult.success) {
-          return {
-            success: false,
-            error: `Failed to create symbol ${row.symbol_id}: ${symbolResult.message}`,
-          };
+      let canonicalSymbolId: string | null = null;
+      const rawSymbolInput = row.symbolLookup?.trim() ?? "";
+
+      if (rawSymbolInput !== "") {
+        const resolved = await resolveSymbolInput(rawSymbolInput);
+
+        if (resolved?.symbol?.id) {
+          canonicalSymbolId = resolved.symbol.id;
+        } else {
+          const creationResult = await createSymbol(rawSymbolInput);
+          if (!creationResult.success || !creationResult.data?.id) {
+            return {
+              success: false,
+              error: `Failed to create symbol ${rawSymbolInput}: ${creationResult.message}`,
+            };
+          }
+
+          const postCreateResolved = await resolveSymbolInput(rawSymbolInput);
+          if (!postCreateResolved?.symbol?.id) {
+            return {
+              success: false,
+              error: `Symbol ${rawSymbolInput} was created but could not be resolved to a canonical identifier`,
+            };
+          }
+
+          canonicalSymbolId = postCreateResolved.symbol.id;
         }
 
         if (unitValue == null) {
           try {
-            unitValue = await fetchSingleQuote(row.symbol_id);
+            unitValue = await fetchSingleQuote(
+              canonicalSymbolId ?? rawSymbolInput,
+            );
           } catch {
-            // Keep as null; validation below will handle the requirement for non-symbol entries
+            // Keep unitValue as null and let validation handle it
           }
         }
       }
 
       // For non-symbol imports, unit_value must be present and valid
       if (
-        (row.symbol_id == null || row.symbol_id.trim() === "") &&
+        rawSymbolInput === "" &&
         (unitValue == null || !Number.isFinite(unitValue))
       ) {
         return {
@@ -100,7 +122,10 @@ export async function importPositionsFromCSV(
       formData.append("category_id", row.category_id);
       formData.append("quantity", String(row.quantity));
       formData.append("unit_value", unitValue != null ? String(unitValue) : "");
-      formData.append("symbol_id", row.symbol_id ?? "");
+      formData.append(
+        "symbolLookup",
+        canonicalSymbolId ?? rawSymbolInput ?? "",
+      );
       formData.append(
         "cost_basis_per_unit",
         row.cost_basis_per_unit != null ? String(row.cost_basis_per_unit) : "",

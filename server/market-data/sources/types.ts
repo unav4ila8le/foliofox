@@ -44,5 +44,5 @@ export interface MarketDataHandler {
 }
 
 // Concrete request payloads (kept for internal handler use)
-export type SymbolRequest = { symbolId: string; date: Date };
+export type SymbolRequest = { symbolLookup: string; date: Date };
 export type DomainRequest = { domain: string; date: Date };

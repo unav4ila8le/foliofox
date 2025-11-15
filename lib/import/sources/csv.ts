@@ -80,19 +80,19 @@ function parseCSVRow(row: string, delimiter: string): string[] {
  * Infer category only when mapping returned "other".
  * @param currentCategory - Current canonical category id
  * @param name - Position name (used for "cash" hint)
- * @param symbolId - Symbol (if present, we assume equity)
+ * @param symbolLookup - Symbol (if present, we assume equity)
  * @returns Canonical category code
  */
 function inferCategoryIfMissing(
   currentCategory: string,
   name: string,
-  symbolId: string | null,
+  symbolLookup: string | null,
 ): string {
   if (currentCategory && currentCategory !== "other") return currentCategory;
 
   const lowerName = name.toLowerCase();
   if (lowerName.includes("cash")) return "cash";
-  if (symbolId && symbolId.trim() !== "") return "equity";
+  if (symbolLookup && symbolLookup.trim() !== "") return "equity";
   if (lowerName.includes("domain") || lowerName.includes(".com"))
     return "domain";
   return "other";
@@ -218,8 +218,8 @@ export async function parsePositionsCSV(
       const currencyRaw = columnMap.has("currency")
         ? values[columnMap.get("currency")!]
         : "";
-      const symbolRaw = columnMap.has("symbol_id")
-        ? values[columnMap.get("symbol_id")!]
+      const symbolRaw = columnMap.has("symbol_lookup")
+        ? values[columnMap.get("symbol_lookup")!]
         : "";
       const descriptionRaw = columnMap.has("description")
         ? values[columnMap.get("description")!]
@@ -249,7 +249,7 @@ export async function parsePositionsCSV(
         quantity: parseNumberStrict(values[columnMap.get("quantity")!]),
         unit_value: isNaN(parsedUnitValue) ? null : parsedUnitValue,
         cost_basis_per_unit: isNaN(parsedCostBasis) ? null : parsedCostBasis,
-        symbol_id: symbolRaw || null,
+        symbolLookup: symbolRaw || null,
         description: descriptionRaw || null,
       };
 
@@ -257,7 +257,7 @@ export async function parsePositionsCSV(
       position.category_id = inferCategoryIfMissing(
         position.category_id,
         position.name,
-        position.symbol_id,
+        position.symbolLookup,
       );
 
       // Add position to results

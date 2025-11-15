@@ -4,6 +4,7 @@ import { format, subYears, subDays } from "date-fns";
 import YahooFinance from "yahoo-finance2";
 
 import { createServiceClient } from "@/supabase/service";
+import { resolveSymbolsBatch } from "@/server/symbols/resolver";
 
 import type { Dividend, DividendEvent } from "@/types/global.types";
 
@@ -23,72 +24,91 @@ export async function fetchDividends(
   // Early return if no requests
   if (!requests.length) return new Map();
 
-  const results = new Map<
+  // 1) Batch resolve all symbol identifiers to canonical UUIDs and Yahoo tickers
+  const uniqueInputs = requests
+    .map((r) => r.symbolId.trim())
+    .filter((symbolId) => symbolId.length > 0);
+
+  const { byInput, byCanonicalId } = await resolveSymbolsBatch(uniqueInputs, {
+    provider: "yahoo",
+    providerType: "ticker",
+    onError: "throw",
+  });
+
+  const canonicalIds = [...byCanonicalId.keys()];
+
+  // 2) Warm the cache with any dividend rows already stored in the database
+  const canonicalResults = new Map<
     string,
     { events: DividendEvent[]; summary: Dividend }
   >();
-  const supabase = createServiceClient();
-  const symbolIds = [...new Set(requests.map((r) => r.symbolId))];
 
-  // 1. Check database cache first
+  const supabase = createServiceClient();
+
   if (upsert) {
     const [cachedEvents, cachedSummaries] = await Promise.all([
       supabase
         .from("dividend_events")
         .select("*")
-        .in("symbol_id", symbolIds)
+        .in("symbol_id", canonicalIds)
         .gte("event_date", subYears(new Date(), 3).toISOString()),
       supabase
         .from("dividends")
         .select("*")
-        .in("symbol_id", symbolIds)
+        .in("symbol_id", canonicalIds)
         .gte("updated_at", subDays(new Date(), 30).toISOString()),
     ]);
 
-    // Group cached results by symbol
     const eventsBySymbol = new Map<string, DividendEvent[]>();
-    cachedEvents.data?.forEach((event) => {
+    cachedEvents.data?.forEach((event: DividendEvent) => {
       const existing = eventsBySymbol.get(event.symbol_id) || [];
       existing.push(event);
       eventsBySymbol.set(event.symbol_id, existing);
     });
 
     const summariesBySymbol = new Map<string, Dividend>();
-    cachedSummaries.data?.forEach((summary) => {
+    cachedSummaries.data?.forEach((summary: Dividend) => {
       summariesBySymbol.set(summary.symbol_id, summary);
     });
 
-    // Check which symbols have sufficient cache
-    symbolIds.forEach((symbolId) => {
+    canonicalIds.forEach((symbolId) => {
       const events = eventsBySymbol.get(symbolId) || [];
       const summary = summariesBySymbol.get(symbolId);
 
       if (events.length > 0 && summary) {
-        results.set(symbolId, { events, summary });
+        canonicalResults.set(symbolId, { events, summary });
       }
     });
   }
 
-  // 2. Find symbols that need fresh data
-  const missingSymbols = symbolIds.filter((symbolId) => !results.has(symbolId));
+  const missingCanonicalIds = canonicalIds.filter(
+    (symbolId) => !canonicalResults.has(symbolId),
+  );
 
-  // 3. Fetch missing dividend data from Yahoo Finance
-  if (missingSymbols.length > 0) {
-    const fetchPromises = missingSymbols.map(async (symbolId) => {
+  if (missingCanonicalIds.length > 0) {
+    // 3) Fetch missing dividend data from Yahoo Finance (bulk per canonical symbol)
+    const fetchPromises = missingCanonicalIds.map(async (symbolId) => {
+      const resolution = byCanonicalId.get(symbolId);
+      const yahooTicker = resolution?.providerAlias;
+      if (!yahooTicker) {
+        console.warn(
+          `Skipping dividend fetch for ${symbolId}: missing Yahoo ticker alias.`,
+        );
+        return { symbolId, events: [], summary: null as Dividend | null };
+      }
+
       try {
-        // Use the efficient 2-call approach
         const [summary, chart] = await Promise.all([
-          yahooFinance.quoteSummary(symbolId, {
+          yahooFinance.quoteSummary(yahooTicker, {
             modules: ["summaryDetail", "calendarEvents"],
           }),
-          yahooFinance.chart(symbolId, {
+          yahooFinance.chart(yahooTicker, {
             period1: subYears(new Date(), 3),
             period2: new Date(),
             events: "div",
           }),
         ]);
 
-        // Process events from chart
         const events: DividendEvent[] = [];
         if (chart.events?.dividends) {
           chart.events.dividends.forEach((dividend) => {
@@ -104,7 +124,6 @@ export async function fetchDividends(
           });
         }
 
-        // Calculate derived fields from events
         const inferred_frequency = detectDividendFrequency(events);
         const last_dividend_date =
           events.length > 0
@@ -115,14 +134,12 @@ export async function fetchDividends(
               )[0].event_date
             : null;
 
-        // Only create dividend summary if the symbol actually pays dividends
         const hasDividendData =
           summary.summaryDetail?.dividendRate ||
           summary.summaryDetail?.trailingAnnualDividendRate ||
           summary.summaryDetail?.dividendYield ||
           (chart.events?.dividends && chart.events.dividends.length > 0);
 
-        // Build summary with calculated fields
         if (hasDividendData) {
           const summaryData: Dividend = {
             symbol_id: symbolId,
@@ -141,31 +158,34 @@ export async function fetchDividends(
           };
 
           return { symbolId, events, summary: summaryData };
-        } else {
-          // Return null summary for non-dividend stocks
-          return { symbolId, events, summary: null };
         }
+
+        return { symbolId, events, summary: null as Dividend | null };
       } catch (error) {
-        console.warn(`Failed to fetch dividends for ${symbolId}:`, error);
-        return { symbolId, events: [], summary: null };
+        console.warn(
+          `Failed to fetch dividends for ${symbolId} (${yahooTicker}):`,
+          error,
+        );
+        return { symbolId, events: [], summary: null as Dividend | null };
       }
     });
 
     const fetchResults = await Promise.all(fetchPromises);
 
-    // 4. Process and cache results
     const allEvents: DividendEvent[] = [];
     const allSummaries: Dividend[] = [];
 
     fetchResults.forEach(({ symbolId, events, summary }) => {
-      if (events.length > 0 || summary) {
-        results.set(symbolId, { events, summary: summary! });
+      if (events.length > 0) {
         allEvents.push(...events);
-        if (summary) allSummaries.push(summary);
+      }
+
+      if (summary) {
+        canonicalResults.set(symbolId, { events, summary });
+        allSummaries.push(summary);
       }
     });
 
-    // 5. Bulk upsert to database
     if (upsert) {
       await Promise.all([
         allEvents.length > 0
@@ -182,7 +202,20 @@ export async function fetchDividends(
     }
   }
 
-  return results;
+  // 4) Return a map keyed by the caller's original identifier, defaulting to canonical data
+  const finalResults = new Map<
+    string,
+    { events: DividendEvent[]; summary: Dividend }
+  >();
+
+  byInput.forEach(({ canonicalId }, inputKey) => {
+    const canonical = canonicalResults.get(canonicalId);
+    if (canonical) {
+      finalResults.set(inputKey, canonical);
+    }
+  });
+
+  return finalResults;
 }
 
 /**

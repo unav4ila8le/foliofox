@@ -3,6 +3,7 @@
 import { fetchProfile } from "@/server/profile/actions";
 import { fetchPositions } from "@/server/positions/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
+import { resolveSymbolsBatch } from "@/server/symbols/resolver";
 import { calculateAssetAllocation } from "@/server/analysis/asset-allocation";
 import { convertCurrency } from "@/lib/currency-conversion";
 
@@ -42,6 +43,30 @@ export async function getPortfolioSnapshot(params: {
         lastUpdated: new Date().toISOString(),
       };
 
+    // Resolve tickers for any symbols once to reuse below
+    const symbolIdSet = new Set(
+      positions
+        .map((position) => position.symbol_id)
+        .filter((id): id is string => Boolean(id)),
+    );
+
+    const symbolIdToTicker = new Map<string, string>();
+    if (symbolIdSet.size) {
+      const { byInput } = await resolveSymbolsBatch(Array.from(symbolIdSet), {
+        provider: "yahoo",
+        providerType: "ticker",
+        onError: "warn",
+      });
+
+      byInput.forEach((resolution, symbolId) => {
+        const ticker =
+          resolution.displayTicker ?? resolution.providerAlias ?? null;
+        if (ticker) {
+          symbolIdToTicker.set(symbolId, ticker);
+        }
+      });
+    }
+
     // Fetch FX rates for the as-of date
     const uniqueCurrencies = new Set<string>();
     positions.forEach((position) => uniqueCurrencies.add(position.currency));
@@ -79,7 +104,9 @@ export async function getPortfolioSnapshot(params: {
         return {
           id: position.id,
           name: position.name,
-          symbol: position.symbol_id || null,
+          symbol: position.symbol_id
+            ? (symbolIdToTicker.get(position.symbol_id) ?? null)
+            : null,
           category: position.category_name!,
           categoryId: position.category_id,
           quantity,

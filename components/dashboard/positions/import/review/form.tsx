@@ -103,7 +103,7 @@ export function ReviewForm({
         .gte(0, { error: "Cost basis per unit must be 0 or greater" })
         .nullable()
         .optional(),
-      symbol_id: z
+      symbolLookup: z
         .string()
         .nullable()
         .optional()
@@ -125,7 +125,7 @@ export function ReviewForm({
         .optional(),
     })
     .superRefine((val, ctx) => {
-      const hasSymbol = !!val.symbol_id && val.symbol_id.trim() !== "";
+      const hasSymbol = !!val.symbolLookup && val.symbolLookup.trim() !== "";
       if (!hasSymbol) {
         if (val.unit_value === null || !Number.isFinite(val.unit_value)) {
           ctx.addIssue({
@@ -167,7 +167,7 @@ export function ReviewForm({
   useEffect(() => {
     // Watch symbol changes
     const watchedSymbols =
-      form.watch("positions")?.map((p) => p.symbol_id) || [];
+      form.watch("positions")?.map((p) => p.symbolLookup) || [];
 
     // Auto-update currency
     watchedSymbols.forEach((symbolId, index) => {
@@ -343,15 +343,15 @@ export function ReviewForm({
                       control={form.control}
                       name={`positions.${index}.currency`}
                       render={({ field }) => {
-                        const symbolId = form.getValues(
-                          `positions.${index}.symbol_id`,
+                        const symbolLookup = form.getValues(
+                          `positions.${index}.symbolLookup`,
                         );
                         return (
                           <FormItem>
                             <FormControl>
                               <CurrencySelector
                                 field={field}
-                                disabled={Boolean(symbolId?.trim())}
+                                disabled={Boolean(symbolLookup?.trim())}
                                 popoverWidth="w-64"
                               />
                             </FormControl>
@@ -450,7 +450,7 @@ export function ReviewForm({
                   <TableCell className="w-48 align-top">
                     <FormField
                       control={form.control}
-                      name={`positions.${index}.symbol_id`}
+                      name={`positions.${index}.symbolLookup`}
                       render={({ field }) => (
                         <FormItem>
                           <FormControl>
@@ -514,7 +514,7 @@ export function ReviewForm({
                         quantity: null,
                         unit_value: null,
                         cost_basis_per_unit: null,
-                        symbol_id: null,
+                        symbolLookup: null,
                         description: null,
                       })
                     }

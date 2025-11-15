@@ -50,7 +50,7 @@ export async function AssetHeader({
           <p>
             Ticker Symbol
             <span className="text-foreground ml-1 font-medium">
-              {symbol.id}
+              {symbol.ticker}
             </span>
           </p>
           {symbol.exchange && (

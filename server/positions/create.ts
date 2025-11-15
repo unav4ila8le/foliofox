@@ -5,7 +5,9 @@ import { format } from "date-fns";
 
 import { getCurrentUser } from "@/server/auth/actions";
 import { createSymbol } from "@/server/symbols/create";
+import { resolveSymbolInput } from "@/server/symbols/resolver";
 import { createPositionSnapshot } from "@/server/position-snapshots/create";
+import { fetchSingleQuote } from "@/server/quotes/fetch";
 
 import type { Position } from "@/types/global.types";
 
@@ -54,7 +56,12 @@ export async function createPosition(formData: FormData) {
   }
 
   // Optional identifiers
-  const symbolId = (formData.get("symbol_id") as string) || null;
+  const rawSymbolInput = (
+    (formData.get("symbolLookup") as string) ??
+    (formData.get("symbol_id") as string) ??
+    ""
+  ).trim();
+  let symbolUuid: string | null = null;
   const domainId = (formData.get("domain_id") as string) || null;
 
   // Initial snapshot fields
@@ -64,11 +71,14 @@ export async function createPosition(formData: FormData) {
   const dateRaw = (formData.get("date") as string) || null;
 
   const quantity = quantityRaw != null ? Number(quantityRaw) : 0;
-  const unit_value = unitValueRaw != null ? Number(unitValueRaw) : 0;
-  const cost_basis_per_unit =
+  let unit_value: number | null =
+    unitValueRaw != null && String(unitValueRaw).trim() !== ""
+      ? Number(unitValueRaw)
+      : null;
+  const costBasisInput =
     costBasisRaw != null && String(costBasisRaw).trim() !== ""
       ? Number(costBasisRaw)
-      : unit_value;
+      : null;
   const snapshotDate = dateRaw ? new Date(dateRaw) : new Date();
 
   // Duplicate name check (active positions only)
@@ -82,16 +92,55 @@ export async function createPosition(formData: FormData) {
   }
 
   // Ensure symbol exists if provided
-  if (symbolId) {
-    const result = await createSymbol(symbolId);
-    if (!result.success) {
-      return {
-        success: false,
-        code: result.code,
-        message: result.message,
-      } as const;
+  if (rawSymbolInput) {
+    const resolved = await resolveSymbolInput(rawSymbolInput);
+
+    if (resolved?.symbol?.id) {
+      symbolUuid = resolved.symbol.id;
+    } else {
+      const creationResult = await createSymbol(rawSymbolInput);
+      if (!creationResult.success || !creationResult.data?.id) {
+        return {
+          success: false,
+          code: creationResult.code ?? "SYMBOL_CREATE_FAILED",
+          message:
+            creationResult.message ??
+            "Unable to create symbol from provided identifier",
+        } as const;
+      }
+
+      const postCreateResolved = await resolveSymbolInput(rawSymbolInput);
+      if (!postCreateResolved?.symbol?.id) {
+        return {
+          success: false,
+          code: "SYMBOL_RESOLUTION_FAILED",
+          message:
+            "Symbol metadata was created but could not be resolved to a canonical identifier.",
+        } as const;
+      }
+
+      symbolUuid = postCreateResolved.symbol.id;
+    }
+
+    if (symbolUuid && (unit_value == null || Number.isNaN(unit_value))) {
+      try {
+        unit_value = await fetchSingleQuote(symbolUuid, { upsert: true });
+      } catch (error) {
+        console.warn(
+          `Failed to fetch canonical price for symbol ${symbolUuid}:`,
+          error,
+        );
+        unit_value = null;
+      }
     }
   }
+
+  const finalUnitValue =
+    unit_value != null && Number.isFinite(unit_value) ? unit_value : 0;
+  const finalCostBasis =
+    costBasisInput != null && Number.isFinite(costBasisInput)
+      ? costBasisInput
+      : finalUnitValue;
 
   // Create position
   const { data: positionRow, error: positionError } = await supabase
@@ -103,7 +152,7 @@ export async function createPosition(formData: FormData) {
       currency,
       category_id,
       description,
-      symbol_id: symbolId,
+      symbol_id: symbolUuid,
       domain_id: domainId,
     })
     .select("id")
@@ -122,8 +171,8 @@ export async function createPosition(formData: FormData) {
     position_id: positionRow.id,
     date: format(snapshotDate, "yyyy-MM-dd"),
     quantity,
-    unit_value,
-    cost_basis_per_unit,
+    unit_value: finalUnitValue,
+    cost_basis_per_unit: finalCostBasis,
   });
 
   if (!snapshotResult.success) return snapshotResult;

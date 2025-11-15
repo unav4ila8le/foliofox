@@ -20,7 +20,7 @@ export const symbolHandler: MarketDataHandler = {
     const requests: SymbolRequest[] = [];
     for (const p of positions) {
       if (p.symbol_id) {
-        requests.push({ symbolId: p.symbol_id, date });
+        requests.push({ symbolLookup: p.symbol_id, date });
       }
     }
 
@@ -55,7 +55,7 @@ export const symbolHandler: MarketDataHandler = {
         if (dedup.has(dedupKey)) continue;
         dedup.add(dedupKey);
 
-        requests.push({ symbolId: position.symbol_id, date });
+        requests.push({ symbolLookup: position.symbol_id, date });
       }
     }
 

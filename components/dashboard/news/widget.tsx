@@ -52,33 +52,40 @@ export function NewsWidget({ newsData }: NewsWidgetProps) {
         <CardTitle>Portfolio News</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 divide-y overflow-y-auto pb-6">
-        {newsData.data.map((article) => (
-          <a
-            key={article.id}
-            href={article.link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group flex cursor-pointer items-start justify-between gap-4 py-3 first:pt-0 last:pb-0"
-          >
-            <div className="space-y-1">
-              <h4 className="line-clamp-3 text-sm font-medium md:line-clamp-2">
-                {article.title}
-              </h4>
-              <p className="text-muted-foreground group-hover:text-foreground text-xs transition-colors">
-                {article.publisher} •{" "}
-                {formatDistanceToNow(new Date(article.published_at), {
-                  addSuffix: true,
-                })}
-              </p>
-            </div>
-            {article.related_symbol_ids &&
-              article.related_symbol_ids.length > 0 && (
+        {newsData.data.map((article) => {
+          const primarySymbol =
+            article.related_symbols?.find((sym) => sym.ticker) ??
+            article.related_symbols?.[0];
+          const fallbackId = article.related_symbol_ids?.[0];
+          const label = primarySymbol?.ticker ?? fallbackId ?? null;
+
+          return (
+            <a
+              key={article.id}
+              href={article.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex cursor-pointer items-start justify-between gap-4 py-3 first:pt-0 last:pb-0"
+            >
+              <div className="space-y-1">
+                <h4 className="line-clamp-3 text-sm font-medium md:line-clamp-2">
+                  {article.title}
+                </h4>
+                <p className="text-muted-foreground group-hover:text-foreground text-xs transition-colors">
+                  {article.publisher} •{" "}
+                  {formatDistanceToNow(new Date(article.published_at), {
+                    addSuffix: true,
+                  })}
+                </p>
+              </div>
+              {label && (
                 <Badge variant="outline" className="group-hover:bg-accent">
-                  {article.related_symbol_ids[0]}
+                  {label}
                 </Badge>
               )}
-          </a>
-        ))}
+            </a>
+          );
+        })}
       </CardContent>
       <div className="from-card absolute right-6 bottom-0 left-0 h-8 bg-linear-to-t" />
     </Card>

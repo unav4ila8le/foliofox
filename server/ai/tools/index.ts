@@ -235,10 +235,10 @@ export const aiTools = {
     description:
       "Get the latest dividend yield, last dividend amount, and payout cadence for a symbol. Use searchSymbols first if you need to confirm the Yahoo Finance symbol ticker. Set includeHistory to true when you want the recent dividend events list for added context.",
     inputSchema: z.object({
-      symbolId: z
+      symbolLookup: z
         .string()
         .describe(
-          "Yahoo Finance symbol identifier (e.g., 'AAPL', 'MSFT', 'VUSA.AS'). Required.",
+          "Symbol lookup value (ticker, alias, or canonical UUID). Use searchSymbols first if you're unsure about the ticker.",
         ),
       includeHistory: z
         .boolean()
@@ -254,10 +254,10 @@ export const aiTools = {
     description:
       "Retrieve daily historical prices for a symbol across a limited date range (≤365 days). Useful when the user asks for chart-ready data or wants to compare performance outside stored portfolio records. If you're unsure about the Yahoo Finance ticker symbol, call searchSymbols first to confirm the correct symbol before invoking this tool.",
     inputSchema: z.object({
-      symbolId: z
+      symbolLookup: z
         .string()
         .describe(
-          "Yahoo Finance symbol identifier (e.g., 'AAPL', 'MSFT', 'VUSA.AS'). Required.",
+          "Symbol lookup value (ticker, alias, or canonical UUID). Use searchSymbols first if you're unsure about the ticker.",
         ),
       startDate: z
         .string()
@@ -298,11 +298,11 @@ export const aiTools = {
     description:
       "Get news articles for specific symbols or user's portfolio. Returns: news articles with title, publisher, link, published date, and related symbols. If no symbols provided, returns news for user's entire portfolio. Useful for market analysis and staying informed about user's positions.",
     inputSchema: z.object({
-      symbolIds: z
+      symbolLookups: z
         .array(z.string())
         .nullable()
         .describe(
-          "Array of symbol IDs to get news for (e.g., ['AAPL', 'MSFT']). If omitted, returns news for user's entire portfolio.",
+          "Array of symbol lookup strings (tickers, aliases, or UUIDs). If omitted, returns news for the user's entire portfolio.",
         ),
       limit: z
         .number()
