@@ -9,13 +9,12 @@ import { ProjectedIncomeWidget } from "@/components/dashboard/charts/projected-i
 
 import { buildPublicPortfolioView } from "@/server/public-portfolios/view";
 
-export default async function PublicPortfolioPage({
-  params,
-  searchParams,
-}: {
+export default async function PublicPortfolioPage(props: {
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ currency?: string | string[] }>;
 }) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const [{ slug }, search] = await Promise.all([params, searchParams]);
   const rawCurrency = Array.isArray(search?.currency)
     ? search?.currency[0]

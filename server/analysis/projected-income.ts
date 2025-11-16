@@ -1,5 +1,6 @@
 "use server";
 
+import { cache } from "react";
 import { format, addMonths, startOfMonth } from "date-fns";
 
 import { fetchPositions } from "@/server/positions/fetch";
@@ -26,141 +27,143 @@ export interface ProjectedIncomeResult {
 /**
  * Calculate projected monthly income for user's portfolio
  */
-export async function calculateProjectedIncome(
-  targetCurrency: string,
-  monthsAhead: number = 12,
-  context?: PositionsQueryContext,
-) {
-  try {
-    const positions = await fetchPositions(
-      {
-        positionType: "asset",
-        includeArchived: true,
-      },
-      context,
-    );
+export const calculateProjectedIncome = cache(
+  async (
+    targetCurrency: string,
+    monthsAhead: number = 12,
+    context?: PositionsQueryContext,
+  ) => {
+    try {
+      const positions = await fetchPositions(
+        {
+          positionType: "asset",
+          includeArchived: true,
+        },
+        context,
+      );
 
-    const symbolIds = positions
-      .filter((position) => position.symbol_id)
-      .map((position) => position.symbol_id!);
+      const symbolIds = positions
+        .filter((position) => position.symbol_id)
+        .map((position) => position.symbol_id!);
 
-    if (symbolIds.length === 0) {
-      return {
-        success: true,
-        data: [],
-        message: "No positions with market data found",
-      };
-    }
+      if (symbolIds.length === 0) {
+        return {
+          success: true,
+          data: [],
+          message: "No positions with market data found",
+        };
+      }
 
-    const dividendsMap = await fetchDividends(
-      symbolIds.map((symbolId) => ({ symbolId })),
-    );
+      const dividendsMap = await fetchDividends(
+        symbolIds.map((symbolId) => ({ symbolId })),
+      );
 
-    // Check if any positions have dividend data
-    const positionsWithDividends = positions.filter((position) => {
-      if (!position.symbol_id) return false;
-      const dividendData = dividendsMap.get(position.symbol_id);
-      return dividendData?.summary && dividendData.events.length > 0;
-    });
-
-    if (positionsWithDividends.length === 0) {
-      return {
-        success: true,
-        data: [],
-        message: "No dividend-paying positions found in your portfolio",
-      };
-    }
-
-    // Collect unique currencies we need exchange rates for
-    const uniqueCurrencies = new Set<string>();
-    positions.forEach((position) => {
-      uniqueCurrencies.add(position.currency);
-    });
-    // Add dividend event currencies (from dividend_events table)
-    dividendsMap.forEach(({ events }) => {
-      events.forEach((event: DividendEvent) => {
-        uniqueCurrencies.add(event.currency);
-      });
-    });
-    uniqueCurrencies.add(targetCurrency);
-
-    // Create exchange rate requests for unique currencies only
-    const exchangeRequests = Array.from(uniqueCurrencies).map((currency) => ({
-      currency,
-      date: new Date(),
-    }));
-
-    // Fetch exchange rates
-    const exchangeRatesMap = await fetchExchangeRates(exchangeRequests);
-
-    // Calculate monthly projected income
-    const monthlyIncome = new Map<string, number>();
-    const today = new Date();
-
-    for (let i = 0; i < monthsAhead; i++) {
-      const monthStart = startOfMonth(addMonths(today, i));
-      const monthKey = format(monthStart, "yyyy-MM");
-      let monthTotal = 0;
-
-      positions.forEach((position) => {
-        if (!position.symbol_id) return;
-
+      // Check if any positions have dividend data
+      const positionsWithDividends = positions.filter((position) => {
+        if (!position.symbol_id) return false;
         const dividendData = dividendsMap.get(position.symbol_id);
-        if (!dividendData?.summary) return;
-
-        const { summary } = dividendData;
-
-        // Calculate expected dividend for this month based on frequency
-        const monthlyDividend = calculateMonthlyDividend(
-          summary,
-          monthStart,
-          dividendData.events,
-        );
-        const positionDividendIncome =
-          monthlyDividend * position.current_quantity;
-
-        // Get the currency from dividend events (use most recent event's currency)
-        const dividendCurrency =
-          dividendData.events.length > 0
-            ? dividendData.events[0].currency
-            : position.currency;
-
-        // Handle currency conversion
-        const convertedValue = convertCurrency(
-          positionDividendIncome,
-          dividendCurrency,
-          targetCurrency,
-          exchangeRatesMap,
-          format(new Date(), "yyyy-MM-dd"),
-        );
-
-        if (convertedValue !== null) {
-          monthTotal += convertedValue;
-        }
+        return dividendData?.summary && dividendData.events.length > 0;
       });
 
-      monthlyIncome.set(monthKey, monthTotal);
-    }
+      if (positionsWithDividends.length === 0) {
+        return {
+          success: true,
+          data: [],
+          message: "No dividend-paying positions found in your portfolio",
+        };
+      }
 
-    return {
-      success: true,
-      data: Array.from(monthlyIncome.entries()).map(([month, income]) => ({
-        date: new Date(month + "-01"),
-        income,
-      })),
-      currency: targetCurrency,
-    };
-  } catch (error) {
-    console.error("Error calculating projected income:", error);
-    return {
-      success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to calculate projected income",
-    };
-  }
-}
+      // Collect unique currencies we need exchange rates for
+      const uniqueCurrencies = new Set<string>();
+      positions.forEach((position) => {
+        uniqueCurrencies.add(position.currency);
+      });
+      // Add dividend event currencies (from dividend_events table)
+      dividendsMap.forEach(({ events }) => {
+        events.forEach((event: DividendEvent) => {
+          uniqueCurrencies.add(event.currency);
+        });
+      });
+      uniqueCurrencies.add(targetCurrency);
+
+      // Create exchange rate requests for unique currencies only
+      const exchangeRequests = Array.from(uniqueCurrencies).map((currency) => ({
+        currency,
+        date: new Date(),
+      }));
+
+      // Fetch exchange rates
+      const exchangeRatesMap = await fetchExchangeRates(exchangeRequests);
+
+      // Calculate monthly projected income
+      const monthlyIncome = new Map<string, number>();
+      const today = new Date();
+
+      for (let i = 0; i < monthsAhead; i++) {
+        const monthStart = startOfMonth(addMonths(today, i));
+        const monthKey = format(monthStart, "yyyy-MM");
+        let monthTotal = 0;
+
+        positions.forEach((position) => {
+          if (!position.symbol_id) return;
+
+          const dividendData = dividendsMap.get(position.symbol_id);
+          if (!dividendData?.summary) return;
+
+          const { summary } = dividendData;
+
+          // Calculate expected dividend for this month based on frequency
+          const monthlyDividend = calculateMonthlyDividend(
+            summary,
+            monthStart,
+            dividendData.events,
+          );
+          const positionDividendIncome =
+            monthlyDividend * position.current_quantity;
+
+          // Get the currency from dividend events (use most recent event's currency)
+          const dividendCurrency =
+            dividendData.events.length > 0
+              ? dividendData.events[0].currency
+              : position.currency;
+
+          // Handle currency conversion
+          const convertedValue = convertCurrency(
+            positionDividendIncome,
+            dividendCurrency,
+            targetCurrency,
+            exchangeRatesMap,
+            format(new Date(), "yyyy-MM-dd"),
+          );
+
+          if (convertedValue !== null) {
+            monthTotal += convertedValue;
+          }
+        });
+
+        monthlyIncome.set(monthKey, monthTotal);
+      }
+
+      return {
+        success: true,
+        data: Array.from(monthlyIncome.entries()).map(([month, income]) => ({
+          date: new Date(month + "-01"),
+          income,
+        })),
+        currency: targetCurrency,
+      };
+    } catch (error) {
+      console.error("Error calculating projected income:", error);
+      return {
+        success: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to calculate projected income",
+      };
+    }
+  },
+);
 
 /**
  * Calculate projected income for a specific symbol

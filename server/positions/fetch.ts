@@ -1,5 +1,6 @@
 "use server";
 
+import { cache } from "react";
 import { format } from "date-fns";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -56,23 +57,27 @@ async function resolvePositionsContext(context?: PositionsQueryContext) {
  * Fetch positions with optional archived filter and as-of valuation.
  * Returns UI-ready TransformedPosition[] mirroring the legacy API shape.
  */
-export async function fetchPositions(
+async function fetchPositionsImpl(
   options: FetchPositionsOptions & { includeSnapshots: true },
   context?: PositionsQueryContext,
 ): Promise<{
   positions: TransformedPosition[];
   snapshots: Map<string, PositionSnapshot[]>;
 }>;
-
-export async function fetchPositions(
+async function fetchPositionsImpl(
   options?: FetchPositionsOptions,
   context?: PositionsQueryContext,
 ): Promise<TransformedPosition[]>;
-
-export async function fetchPositions(
+async function fetchPositionsImpl(
   options: FetchPositionsOptions = {},
   context?: PositionsQueryContext,
-) {
+): Promise<
+  | TransformedPosition[]
+  | {
+      positions: TransformedPosition[];
+      snapshots: Map<string, PositionSnapshot[]>;
+    }
+> {
   const {
     positionId,
     includeArchived = false,
@@ -233,6 +238,11 @@ export async function fetchPositions(
 
   return { positions: transformed, snapshots: groupedSnapshots };
 }
+
+// Export cached version with overloads preserved
+export const fetchPositions = cache(
+  fetchPositionsImpl,
+) as typeof fetchPositionsImpl;
 
 /**
  * Fetch a single position by ID.

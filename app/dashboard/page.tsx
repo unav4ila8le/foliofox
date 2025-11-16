@@ -20,32 +20,34 @@ import { calculateProjectedIncome } from "@/server/analysis/projected-income";
 import { fetchPortfolioRecords } from "@/server/portfolio-records/fetch";
 
 // Separate components for data fetching with suspense
-async function NetWorthChartWrapper({
-  displayCurrency,
-  netWorth,
-}: {
-  displayCurrency: string;
-  netWorth: number;
-}) {
+async function GreetingsWrapper() {
+  const { profile } = await fetchProfile();
+
+  return <Greetings username={profile.username} />;
+}
+
+async function NetWorthChartWrapper() {
   const today = new Date();
   const defaultDaysBack =
     differenceInCalendarDays(today, subMonths(today, 6)) + 1;
 
+  const { profile } = await fetchProfile();
   // Fetch both history and change for default period (6 calendar months)
-  const [netWorthHistory, netWorthChange] = await Promise.all([
+  const [netWorth, netWorthHistory, netWorthChange] = await Promise.all([
+    calculateNetWorth(profile.display_currency),
     fetchNetWorthHistory({
-      targetCurrency: displayCurrency,
+      targetCurrency: profile.display_currency,
       daysBack: defaultDaysBack,
     }),
     fetchNetWorthChange({
-      targetCurrency: displayCurrency,
+      targetCurrency: profile.display_currency,
       daysBack: defaultDaysBack,
     }),
   ]);
 
   return (
     <NetWorthAreaChart
-      currency={displayCurrency}
+      currency={profile.display_currency}
       netWorth={netWorth}
       history={netWorthHistory}
       change={netWorthChange}
@@ -53,18 +55,16 @@ async function NetWorthChartWrapper({
   );
 }
 
-async function AssetAllocationChartWrapper({
-  displayCurrency,
-  netWorth,
-}: {
-  displayCurrency: string;
-  netWorth: number;
-}) {
-  const assetAllocation = await calculateAssetAllocation(displayCurrency);
+async function AssetAllocationChartWrapper() {
+  const { profile } = await fetchProfile();
+  const [netWorth, assetAllocation] = await Promise.all([
+    calculateNetWorth(profile.display_currency),
+    calculateAssetAllocation(profile.display_currency),
+  ]);
 
   return (
     <AssetAllocationDonut
-      currency={displayCurrency}
+      currency={profile.display_currency}
       netWorth={netWorth}
       assetAllocation={assetAllocation}
     />
@@ -73,20 +73,20 @@ async function AssetAllocationChartWrapper({
 
 async function NewsWidgetWrapper() {
   const newsResult = await fetchPortfolioNews(12);
+
   return <NewsWidget newsData={newsResult} />;
 }
 
-async function ProjectedIncomeWidgetWrapper({
-  displayCurrency,
-}: {
-  displayCurrency: string;
-}) {
-  const projectedData = await calculateProjectedIncome(displayCurrency);
+async function ProjectedIncomeWidgetWrapper() {
+  const { profile } = await fetchProfile();
+  const projectedData = await calculateProjectedIncome(
+    profile.display_currency,
+  );
 
   return (
     <ProjectedIncomeWidget
       projectedIncome={projectedData}
-      currency={displayCurrency}
+      currency={profile.display_currency}
     />
   );
 }
@@ -98,14 +98,15 @@ async function PortfolioRecordsWidgetWrapper() {
 
 // Main page component
 export default async function DashboardPage() {
-  const { profile } = await fetchProfile();
-  const netWorth = await calculateNetWorth(profile.display_currency);
-
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <Greetings username={profile.username} />
+          <Suspense
+            fallback={<h1 className="text-2xl font-semibold">Welcome Back</h1>}
+          >
+            <GreetingsWrapper />
+          </Suspense>
           <p className="text-muted-foreground">Here&apos;s your summary</p>
         </div>
         <MarketDataDisclaimer />
@@ -113,18 +114,12 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-6 gap-4">
         <div className="col-span-6 xl:col-span-4">
           <Suspense fallback={<Skeleton className="h-80 rounded-xl" />}>
-            <NetWorthChartWrapper
-              displayCurrency={profile.display_currency}
-              netWorth={netWorth}
-            />
+            <NetWorthChartWrapper />
           </Suspense>
         </div>
         <div className="col-span-6 lg:col-span-3 xl:col-span-2">
           <Suspense fallback={<Skeleton className="h-80 rounded-xl" />}>
-            <AssetAllocationChartWrapper
-              displayCurrency={profile.display_currency}
-              netWorth={netWorth}
-            />
+            <AssetAllocationChartWrapper />
           </Suspense>
         </div>
         <div className="col-span-6 lg:col-span-3">
@@ -134,9 +129,7 @@ export default async function DashboardPage() {
         </div>
         <div className="col-span-6 xl:col-span-3">
           <Suspense fallback={<Skeleton className="h-80 rounded-xl" />}>
-            <ProjectedIncomeWidgetWrapper
-              displayCurrency={profile.display_currency}
-            />
+            <ProjectedIncomeWidgetWrapper />
           </Suspense>
         </div>
         <div className="col-span-6">
