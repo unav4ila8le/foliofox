@@ -8,6 +8,8 @@ import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 import { convertCurrency } from "@/lib/currency-conversion";
 import type { PositionsQueryContext } from "@/server/positions/fetch";
 
+const getDefaultAsOfDate = cache(() => new Date());
+
 /**
  * Calculate asset allocation by category at a specific date.
  * Uses bulk market data fetching for optimal performance.
@@ -15,15 +17,16 @@ import type { PositionsQueryContext } from "@/server/positions/fetch";
 export const calculateAssetAllocation = cache(
   async (
     targetCurrency: string,
-    date: Date = new Date(),
+    date?: Date,
     context?: PositionsQueryContext,
   ) => {
+    const asOfDate = date ?? getDefaultAsOfDate();
     // 1. Fetch positions valued as-of date (no snapshots histories needed)
     const positions = await fetchPositions(
       {
         positionType: "asset",
         includeArchived: true,
-        asOfDate: date,
+        asOfDate,
       },
       context,
     );
@@ -39,7 +42,7 @@ export const calculateAssetAllocation = cache(
 
     const exchangeRequests = Array.from(uniqueCurrencies).map((currency) => ({
       currency,
-      date,
+      date: asOfDate,
     }));
 
     const exchangeRates = await fetchExchangeRates(exchangeRequests);
@@ -52,7 +55,7 @@ export const calculateAssetAllocation = cache(
         position.currency,
         targetCurrency,
         exchangeRates,
-        date,
+        asOfDate,
       ),
     }));
 

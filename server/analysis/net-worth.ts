@@ -1,12 +1,15 @@
 "use server";
 
 import { cache } from "react";
+import { startOfDay } from "date-fns";
 
 import { fetchPositions } from "@/server/positions/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 
 import { convertCurrency } from "@/lib/currency-conversion";
 import type { PositionsQueryContext } from "@/server/positions/fetch";
+
+const getDefaultAsOfDate = cache(() => startOfDay(new Date()));
 
 /**
  * Calculate total net worth in specified target currency at a specific date.
@@ -15,14 +18,16 @@ import type { PositionsQueryContext } from "@/server/positions/fetch";
 export const calculateNetWorth = cache(
   async (
     targetCurrency: string,
-    date: Date = new Date(),
+    date?: Date,
     context?: PositionsQueryContext,
   ) => {
+    const asOfDate = date ?? getDefaultAsOfDate();
+
     // 1. Fetch positions valued as-of the date
     const positions = await fetchPositions(
       {
         includeArchived: true,
-        asOfDate: date,
+        asOfDate,
       },
       context,
     );
@@ -36,7 +41,7 @@ export const calculateNetWorth = cache(
 
     const exchangeRequests = Array.from(uniqueCurrencies).map((currency) => ({
       currency,
-      date,
+      date: asOfDate,
     }));
 
     const exchangeRates = await fetchExchangeRates(exchangeRequests);
@@ -50,7 +55,7 @@ export const calculateNetWorth = cache(
         position.currency,
         targetCurrency,
         exchangeRates,
-        date,
+        asOfDate,
       );
       netWorth += convertedValue;
     });

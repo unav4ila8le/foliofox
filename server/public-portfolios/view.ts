@@ -80,7 +80,6 @@ export async function buildPublicPortfolioView(
   const fallbackCurrency = profile.display_currency ?? "USD";
   const targetCurrency =
     normalizeCurrency(requestedCurrency) ?? fallbackCurrency;
-  const asOf = new Date();
 
   const supabaseClient = createServiceClient();
   const context: PositionsQueryContext = {
@@ -88,15 +87,17 @@ export async function buildPublicPortfolioView(
     userId: publicPortfolio.user_id,
   };
 
+  const asOfDate = new Date();
+
   const [netWorth, assetAllocation, projectedIncomeResult, positionsResult] =
     await Promise.all([
-      calculateNetWorth(targetCurrency, asOf, context),
-      calculateAssetAllocation(targetCurrency, asOf, context),
+      calculateNetWorth(targetCurrency, asOfDate, context),
+      calculateAssetAllocation(targetCurrency, asOfDate, context),
       calculateProjectedIncome(targetCurrency, 12, context),
       fetchPositions(
         {
           positionType: "asset",
-          asOfDate: asOf,
+          asOfDate: asOfDate,
           includeSnapshots: true,
         },
         context,
