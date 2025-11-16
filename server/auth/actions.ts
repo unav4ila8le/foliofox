@@ -1,11 +1,12 @@
 "use server";
 
+import { cache } from "react";
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/supabase/server";
 
 // Get current user
-export async function getCurrentUser() {
+export const getCurrentUser = cache(async () => {
   const supabase = await createClient();
 
   const { data, error } = await supabase.auth.getUser();
@@ -17,13 +18,13 @@ export async function getCurrentUser() {
 
   // Return supabase client and user
   return { supabase, user: data.user };
-}
+});
 
-export async function getOptionalUser() {
+export const getOptionalUser = cache(async () => {
   const supabase = await createClient();
 
   const { data } = await supabase.auth.getUser();
 
   // Return supabase client and user
   return { supabase, user: data?.user ?? null };
-}
+});

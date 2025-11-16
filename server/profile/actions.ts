@@ -1,5 +1,6 @@
 "use server";
 
+import { cache } from "react";
 import { revalidatePath } from "next/cache";
 
 import { getCurrentUser, getOptionalUser } from "@/server/auth/actions";
@@ -8,7 +9,7 @@ import type { Profile } from "@/types/global.types";
 import { createClient } from "@/supabase/server";
 
 // Fetch current user profile
-export async function fetchProfile() {
+export const fetchProfile = cache(async () => {
   const { supabase, user } = await getCurrentUser();
 
   const { data: profile, error } = await supabase
@@ -26,10 +27,10 @@ export async function fetchProfile() {
     profile,
     email: user.email ?? "",
   };
-}
+});
 
 // Fetch optional user profile
-export async function fetchOptionalProfile() {
+export const fetchOptionalProfile = cache(async () => {
   const { supabase, user } = await getOptionalUser();
   if (!user) return null;
 
@@ -41,7 +42,7 @@ export async function fetchOptionalProfile() {
 
   if (!profile) return null;
   return { profile, email: user.email ?? "" };
-}
+});
 
 export async function checkUsernameAvailability(username: string) {
   const supabase = await createClient();

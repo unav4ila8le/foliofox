@@ -1,15 +1,12 @@
 "use server";
 
 import { format, subYears, subDays } from "date-fns";
-import YahooFinance from "yahoo-finance2";
 
+import { yahooFinance } from "@/server/yahoo-finance/client";
 import { createServiceClient } from "@/supabase/service";
 import { resolveSymbolsBatch } from "@/server/symbols/resolver";
 
 import type { Dividend, DividendEvent } from "@/types/global.types";
-
-// Initialize yahooFinance with v3 pattern
-const yahooFinance = new YahooFinance();
 
 /**
  * Fetch dividend data for multiple symbols in bulk.
@@ -44,29 +41,46 @@ export async function fetchDividends(
   >();
 
   const supabase = createServiceClient();
+  const eventsBySymbol = new Map<string, DividendEvent[]>();
+  const summariesBySymbol = new Map<string, Dividend>();
 
   if (upsert) {
+    const eventsDateThreshold = subYears(new Date(), 3).toISOString();
+    const summariesDateThreshold = subDays(new Date(), 7).toISOString();
+
     const [cachedEvents, cachedSummaries] = await Promise.all([
       supabase
         .from("dividend_events")
         .select("*")
         .in("symbol_id", canonicalIds)
-        .gte("event_date", subYears(new Date(), 3).toISOString()),
+        .gte("event_date", eventsDateThreshold),
       supabase
         .from("dividends")
         .select("*")
         .in("symbol_id", canonicalIds)
-        .gte("updated_at", subDays(new Date(), 30).toISOString()),
+        .gte("updated_at", summariesDateThreshold),
     ]);
 
-    const eventsBySymbol = new Map<string, DividendEvent[]>();
+    if (cachedEvents.error) {
+      console.error(
+        `Failed to fetch cached dividend events:`,
+        cachedEvents.error,
+      );
+    }
+
+    if (cachedSummaries.error) {
+      console.error(
+        `Failed to fetch cached dividend summaries:`,
+        cachedSummaries.error,
+      );
+    }
+
     cachedEvents.data?.forEach((event: DividendEvent) => {
       const existing = eventsBySymbol.get(event.symbol_id) || [];
       existing.push(event);
       eventsBySymbol.set(event.symbol_id, existing);
     });
 
-    const summariesBySymbol = new Map<string, Dividend>();
     cachedSummaries.data?.forEach((summary: Dividend) => {
       summariesBySymbol.set(summary.symbol_id, summary);
     });
@@ -75,8 +89,23 @@ export async function fetchDividends(
       const events = eventsBySymbol.get(symbolId) || [];
       const summary = summariesBySymbol.get(symbolId);
 
-      if (events.length > 0 && summary) {
-        canonicalResults.set(symbolId, { events, summary });
+      const hasEvents = events.length > 0;
+      const hasSummary = !!summary;
+      const isFreshCheck =
+        summary?.dividends_checked_at &&
+        new Date(summary.dividends_checked_at) >=
+          new Date(summariesDateThreshold);
+
+      const isFreshNonPayer = summary?.pays_dividends === false && isFreshCheck;
+      const isFreshPayer =
+        summary?.pays_dividends === true && hasEvents && isFreshCheck;
+
+      if (isFreshPayer || isFreshNonPayer) {
+        canonicalResults.set(symbolId, { events, summary: summary! });
+      } else {
+        if (!hasEvents && !hasSummary) {
+          // Both missing - this is expected for new symbols
+        }
       }
     });
   }
@@ -91,8 +120,8 @@ export async function fetchDividends(
       const resolution = byCanonicalId.get(symbolId);
       const yahooTicker = resolution?.providerAlias;
       if (!yahooTicker) {
-        console.warn(
-          `Skipping dividend fetch for ${symbolId}: missing Yahoo ticker alias.`,
+        console.error(
+          `Failed to fetch dividends for ${symbolId}: missing Yahoo ticker alias.`,
         );
         return { symbolId, events: [], summary: null as Dividend | null };
       }
@@ -153,6 +182,8 @@ export async function fetchDividends(
               : null,
             last_dividend_date,
             inferred_frequency,
+            pays_dividends: true,
+            dividends_checked_at: new Date().toISOString(),
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           };
@@ -160,9 +191,36 @@ export async function fetchDividends(
           return { symbolId, events, summary: summaryData };
         }
 
-        return { symbolId, events, summary: null as Dividend | null };
+        // Avoid overwriting existing payer data if it exists
+        const existingSummary = summariesBySymbol.get(symbolId);
+        const existingHasPayerData =
+          existingSummary?.pays_dividends === true ||
+          existingSummary?.forward_annual_dividend ||
+          existingSummary?.trailing_ttm_dividend ||
+          existingSummary?.dividend_yield ||
+          existingSummary?.last_dividend_date;
+
+        if (existingHasPayerData) {
+          return { symbolId, events, summary: null as Dividend | null };
+        }
+
+        const noDividendsMarker: Dividend = {
+          symbol_id: symbolId,
+          forward_annual_dividend: null,
+          trailing_ttm_dividend: null,
+          dividend_yield: null,
+          ex_dividend_date: null,
+          last_dividend_date: null,
+          inferred_frequency: null,
+          pays_dividends: false,
+          dividends_checked_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+
+        return { symbolId, events, summary: noDividendsMarker };
       } catch (error) {
-        console.warn(
+        console.error(
           `Failed to fetch dividends for ${symbolId} (${yahooTicker}):`,
           error,
         );
@@ -187,18 +245,31 @@ export async function fetchDividends(
     });
 
     if (upsert) {
-      await Promise.all([
+      const [eventsResult, summariesResult] = await Promise.all([
         allEvents.length > 0
           ? supabase
               .from("dividend_events")
               .upsert(allEvents, { onConflict: "symbol_id,event_date" })
-          : null,
+          : Promise.resolve({ data: null, error: null }),
         allSummaries.length > 0
           ? supabase
               .from("dividends")
               .upsert(allSummaries, { onConflict: "symbol_id" })
-          : null,
+          : Promise.resolve({ data: null, error: null }),
       ]);
+
+      if (eventsResult.error) {
+        console.error(
+          `Failed to insert ${allEvents.length} dividend events:`,
+          eventsResult.error,
+        );
+      }
+      if (summariesResult.error) {
+        console.error(
+          `Failed to insert ${allSummaries.length} dividend summaries:`,
+          summariesResult.error,
+        );
+      }
     }
   }
 

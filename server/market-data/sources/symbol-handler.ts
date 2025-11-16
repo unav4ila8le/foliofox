@@ -1,6 +1,5 @@
-import { format } from "date-fns";
-
 import { fetchQuotes } from "@/server/quotes/fetch";
+import { formatUtcDateKey } from "@/server/quotes/utils";
 
 import type {
   MarketDataHandler,
@@ -43,7 +42,7 @@ export const symbolHandler: MarketDataHandler = {
     const dedup = new Set<string>();
 
     for (const date of dates) {
-      const dateKey = format(date, "yyyy-MM-dd");
+      const dateKey = formatUtcDateKey(date);
 
       for (const position of positions) {
         if (!position.symbol_id) continue;
@@ -70,6 +69,6 @@ export const symbolHandler: MarketDataHandler = {
 
   getKey(position: MarketDataPosition, date: Date) {
     if (!position.symbol_id) return null;
-    return `${position.symbol_id}|${format(date, "yyyy-MM-dd")}`;
+    return `${position.symbol_id}|${formatUtcDateKey(date)}`;
   },
 };

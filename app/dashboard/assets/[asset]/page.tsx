@@ -197,13 +197,13 @@ async function AssetContent({
 }
 
 // Main page component
-export default async function AssetPage({
-  params,
-  searchParams,
-}: AssetPageProps & {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const { asset: positionId } = await params;
+export default async function AssetPage(
+  props: AssetPageProps & {
+    searchParams?: Promise<Record<string, string | string[] | undefined>>;
+  },
+) {
+  const searchParams = await props.searchParams;
+  const { asset: positionId } = await props.params;
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
 
   const pageParam = Array.isArray(resolvedSearchParams?.page)
