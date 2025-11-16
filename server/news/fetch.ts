@@ -1,7 +1,6 @@
 "use server";
 
-import YahooFinance from "yahoo-finance2";
-
+import { yahooFinance } from "@/server/yahoo-finance/client";
 import { createServiceClient } from "@/supabase/service";
 import { fetchPositions } from "@/server/positions/fetch";
 import {
@@ -21,9 +20,6 @@ export interface NewsSearchResult {
 type EnrichedNewsArticle = NewsArticle & {
   related_symbols: Array<{ id: string; ticker: string | null }>;
 };
-
-// Initialize yahooFinance consistent with other modules
-const yahooFinance = new YahooFinance();
 
 // Cache duration: 30 minutes
 const CACHE_DURATION_MS = 30 * 60 * 1000;

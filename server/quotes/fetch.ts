@@ -1,8 +1,8 @@
 "use server";
 
 import { addDays, compareAsc, parseISO, subDays } from "date-fns";
-import YahooFinance from "yahoo-finance2";
 
+import { yahooFinance } from "@/server/yahoo-finance/client";
 import { createServiceClient } from "@/supabase/service";
 import {
   resolveSymbolInput,
@@ -13,9 +13,6 @@ import {
   formatUtcDateKey,
   normalizeChartQuoteEntries,
 } from "./utils";
-
-// Initialize yahooFinance with v3 pattern
-const yahooFinance = new YahooFinance();
 
 /**
  * Fetch multiple quotes for different symbols and dates in bulk.

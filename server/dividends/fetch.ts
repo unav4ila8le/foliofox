@@ -1,15 +1,12 @@
 "use server";
 
 import { format, subYears, subDays } from "date-fns";
-import YahooFinance from "yahoo-finance2";
 
+import { yahooFinance } from "@/server/yahoo-finance/client";
 import { createServiceClient } from "@/supabase/service";
 import { resolveSymbolsBatch } from "@/server/symbols/resolver";
 
 import type { Dividend, DividendEvent } from "@/types/global.types";
-
-// Initialize yahooFinance with v3 pattern
-const yahooFinance = new YahooFinance();
 
 /**
  * Fetch dividend data for multiple symbols in bulk.

@@ -1,11 +1,10 @@
 "use server";
 
-import YahooFinance from "yahoo-finance2";
 import { z } from "zod";
 
-import type { SymbolInsert, SymbolSearchResult } from "@/types/global.types";
+import { yahooFinance } from "@/server/yahoo-finance/client";
 
-const yahooFinance = new YahooFinance();
+import type { SymbolInsert, SymbolSearchResult } from "@/types/global.types";
 
 // Define the search parameters schema
 const searchParamsSchema = z.object({
