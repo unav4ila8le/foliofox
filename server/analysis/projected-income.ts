@@ -267,30 +267,38 @@ function calculateMonthlyDividend(
   month: Date,
   events: DividendEvent[],
 ): number {
-  // Try to get annual dividend amount from summary first
-  let annualAmount =
-    summary.trailing_ttm_dividend || summary.forward_annual_dividend;
+  // Prefer provider amounts unless they are clearly inflated compared to payouts we observed
+  const oneYearAgo = new Date();
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
-  // If summary data is missing, calculate from historical events
-  if (!annualAmount || annualAmount <= 0) {
-    if (events.length > 0) {
-      // Calculate average annual dividend from last 12 months of events
-      const oneYearAgo = new Date();
-      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+  const recentEvents = events.filter(
+    (event) => new Date(event.event_date) >= oneYearAgo,
+  );
 
-      const recentEvents = events.filter(
-        (event) => new Date(event.event_date) >= oneYearAgo,
-      );
+  const eventAnnualAmount =
+    recentEvents.length > 0
+      ? recentEvents.reduce((sum, event) => sum + event.gross_amount, 0)
+      : 0;
 
-      if (recentEvents.length > 0) {
-        const totalAmount = recentEvents.reduce(
-          (sum, event) => sum + event.gross_amount,
-          0,
-        );
-        annualAmount = totalAmount; // This is the total paid in the last year
-      }
-    }
-  }
+  const providerTtm = summary.trailing_ttm_dividend || 0;
+  const providerForward = summary.forward_annual_dividend || 0;
+
+  const hasEvents = eventAnnualAmount > 0;
+  const ttmWithinTolerance =
+    providerTtm > 0 && hasEvents
+      ? providerTtm >= eventAnnualAmount * 0.9 &&
+        providerTtm <= eventAnnualAmount * 1.1
+      : true;
+
+  // Keep TTM when it aligns with payouts (±10%); otherwise prefer events, then forward.
+  const annualAmount =
+    providerTtm > 0 && ttmWithinTolerance
+      ? providerTtm
+      : hasEvents
+        ? eventAnnualAmount
+        : providerForward > 0
+          ? providerForward
+          : providerTtm;
 
   if (!annualAmount || annualAmount <= 0) {
     return 0;

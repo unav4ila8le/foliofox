@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "13.0.5"
-  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -180,10 +175,12 @@ export type Database = {
         Row: {
           created_at: string
           dividend_yield: number | null
+          dividends_checked_at: string | null
           ex_dividend_date: string | null
           forward_annual_dividend: number | null
           inferred_frequency: string | null
           last_dividend_date: string | null
+          pays_dividends: boolean | null
           symbol_id: string
           trailing_ttm_dividend: number | null
           updated_at: string
@@ -191,10 +188,12 @@ export type Database = {
         Insert: {
           created_at?: string
           dividend_yield?: number | null
+          dividends_checked_at?: string | null
           ex_dividend_date?: string | null
           forward_annual_dividend?: number | null
           inferred_frequency?: string | null
           last_dividend_date?: string | null
+          pays_dividends?: boolean | null
           symbol_id: string
           trailing_ttm_dividend?: number | null
           updated_at?: string
@@ -202,10 +201,12 @@ export type Database = {
         Update: {
           created_at?: string
           dividend_yield?: number | null
+          dividends_checked_at?: string | null
           ex_dividend_date?: string | null
           forward_annual_dividend?: number | null
           inferred_frequency?: string | null
           last_dividend_date?: string | null
+          pays_dividends?: boolean | null
           symbol_id?: string
           trailing_ttm_dividend?: number | null
           updated_at?: string
@@ -886,3 +887,4 @@ export const Constants = {
     },
   },
 } as const
+

@@ -9,6 +9,7 @@
 ## Core Concepts
 
 - Positions store nullable identifiers directly (e.g., `symbol_id`, `domain_id`). If all are null → custom position.
+  - **Note**: `symbol_id` is a UUID (foreign key to `symbols.id`). Symbol handlers receive UUIDs and resolve them to provider-specific aliases (e.g., Yahoo tickers) internally via the resolver layer.
 
 - No hub resolution layer is needed. Reads pull identifiers directly from `positions`.
 
@@ -19,7 +20,7 @@
 export type MarketDataPosition = {
   id: string;
   currency: string;
-  symbol_id?: string | null;
+  symbol_id?: string | null; // UUID foreign key to symbols.id (resolved to provider aliases internally)
   domain_id?: string | null;
   // future: wallet_address?: string | null; property_id?: string | null; ...
 };
@@ -75,11 +76,11 @@ export async function fetchMarketDataRange(
 
 ## Read/Write Integration
 
-- fetchPositions: pass `id`/`symbol_id`/`domain_id` directly to the aggregator; lookups come back by `position.id`.
+- fetchPositions: pass `id`/`symbol_id` (UUID)/`domain_id` directly to the aggregator; lookups come back by `position.id`.
 - position-snapshots/recalculate: remains transaction-driven; uses stored unit values and does not call the market data hub.
-- positions/create: write IDs directly to `positions`.
+- positions/create: write IDs directly to `positions` (symbol_id should be a UUID).
 - `resolveMarketDataKey` / `resolveMarketDataForPositions`: shared helpers that map positions to handlers/keys so callers avoid inline branching.
-- Bulk history (charts, AI tools, etc.) should call `fetchMarketDataRange` with an optional `eligibleDates` map so handlers can skip days where a position wasn’t active.
+- Bulk history (charts, AI tools, etc.) should call `fetchMarketDataRange` with an optional `eligibleDates` map so handlers can skip days where a position wasn't active.
 
 ## Implementation Steps
 
@@ -97,8 +98,9 @@ export async function fetchMarketDataRange(
 2. **Create a handler**
    - Add `server/market-data/sources/<source>-handler.ts`.
    - Implement `fetchForPositions` to batch requests and call your underlying service. Return `Map<handlerKey, number>`.
+     - **For symbol handlers**: You'll receive `symbol_id` as a UUID. Use the resolver layer (e.g., `resolveSymbolsBatch` in `server/symbols/resolver.ts`) to convert UUIDs to provider-specific aliases (e.g., Yahoo tickers) before calling external APIs. See `server/market-data/sources/symbol-handler.ts` for reference.
    - Optionally implement `fetchForPositionsRange` if the source can return many dates in a single call (improves chart queries and other bulk history workloads).
-   - Implement `getKey` to build a deterministic string based on the position identifier and date (e.g., `${walletId}|${yyyy-MM-dd}`).
+   - Implement `getKey` to build a deterministic string based on the position identifier and date (e.g., `${symbolId}|${yyyy-MM-dd}` for symbols, `${walletId}|${yyyy-MM-dd}` for wallets).
 
 3. **Register the handler**
    - Append the handler to `MARKET_DATA_HANDLERS` in `server/market-data/sources/registry.ts`. Order does not matter, but group similar sources when possible.
@@ -119,3 +121,4 @@ export async function fetchMarketDataRange(
 ## Notes
 
 - Batch requests in handlers to avoid N+1.
+- Symbol handlers receive UUIDs (`symbol_id`) and must resolve them to provider aliases (e.g., Yahoo tickers) via the resolver layer before calling external APIs. The resolver handles UUID detection and alias lookup automatically.
