@@ -70,7 +70,7 @@ export async function fetchNewsForSymbols(
       .from("news")
       .select("*")
       .overlaps("related_symbol_ids", canonicalIds)
-      .gte("created_at", cacheThreshold.toISOString())
+      .gte("updated_at", cacheThreshold.toISOString())
       .order("published_at", { ascending: false });
 
     const canonicalWithEnoughCache = new Set<string>();
@@ -140,8 +140,9 @@ export async function fetchNewsForSymbols(
 
       // Process all results
       for (const { canonicalId, searchResult } of results) {
-        if (!searchResult?.news?.length) continue;
-
+        if (!searchResult?.news?.length) {
+          continue;
+        }
         for (const article of searchResult.news) {
           const canonicalRelatedIds = new Set<string>([canonicalId]);
 
@@ -226,14 +227,51 @@ export async function fetchNewsForSymbols(
 
       // 5. Store all new articles in database with one batch operation
       if (articlesToCache.length > 0) {
-        // Remove duplicates before upserting
-        const uniqueArticles = [];
-        const seen = new Set<string>();
+        // Group articles by yahoo_uuid to handle duplicates
+        const articlesByUuid = new Map<string, typeof articlesToCache>();
         for (const article of articlesToCache) {
-          if (!seen.has(article.yahoo_uuid)) {
-            seen.add(article.yahoo_uuid);
-            uniqueArticles.push(article);
+          const existing = articlesByUuid.get(article.yahoo_uuid);
+          if (existing) {
+            existing.push(article);
+          } else {
+            articlesByUuid.set(article.yahoo_uuid, [article]);
           }
+        }
+
+        // Query existing articles to merge related_symbol_ids
+        const uuidsToCheck = Array.from(articlesByUuid.keys());
+        const { data: existingArticles } = await supabase
+          .from("news")
+          .select("yahoo_uuid, related_symbol_ids")
+          .in("yahoo_uuid", uuidsToCheck);
+
+        const existingByUuid = new Map(
+          existingArticles?.map((a) => [
+            a.yahoo_uuid,
+            a.related_symbol_ids || [],
+          ]) || [],
+        );
+
+        // Merge related_symbol_ids for duplicates and existing articles
+        const uniqueArticles = [];
+        for (const [uuid, articles] of articlesByUuid.entries()) {
+          // Collect all related_symbol_ids from all instances of this article
+          const allRelatedIds = new Set<string>();
+          articles.forEach((article) => {
+            article.related_symbol_ids?.forEach((id) => allRelatedIds.add(id));
+          });
+
+          // Merge with existing article's related_symbol_ids if it exists
+          const existingIds = existingByUuid.get(uuid) || [];
+          existingIds.forEach((id) => allRelatedIds.add(id));
+
+          // Use the first article as the base, but with merged related_symbol_ids
+          const mergedArticle = {
+            ...articles[0],
+            related_symbol_ids: Array.from(allRelatedIds),
+          };
+
+          uniqueArticles.push(mergedArticle);
         }
 
         const { error: insertError } = await supabase
