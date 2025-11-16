@@ -62,7 +62,9 @@ export const calculateProjectedIncome = cache(
       const positionsWithDividends = positions.filter((position) => {
         if (!position.symbol_id) return false;
         const dividendData = dividendsMap.get(position.symbol_id);
-        return dividendData?.summary && dividendData.events.length > 0;
+        if (!dividendData?.summary) return false;
+        if (dividendData.summary.pays_dividends === false) return false;
+        return dividendData.events.length > 0;
       });
 
       if (positionsWithDividends.length === 0) {
@@ -109,6 +111,7 @@ export const calculateProjectedIncome = cache(
 
           const dividendData = dividendsMap.get(position.symbol_id);
           if (!dividendData?.summary) return;
+          if (dividendData.summary.pays_dividends === false) return;
 
           const { summary } = dividendData;
 
@@ -188,7 +191,10 @@ export async function calculateSymbolProjectedIncome(
     const dividendsMap = await fetchDividends([{ symbolId: canonicalId }]);
     const dividendData = dividendsMap.get(canonicalId);
 
-    if (!dividendData?.summary) {
+    if (
+      !dividendData?.summary ||
+      dividendData.summary.pays_dividends === false
+    ) {
       return {
         success: true,
         data: [],

@@ -21,6 +21,12 @@ export async function fetchDividends(
   // Early return if no requests
   if (!requests.length) return new Map();
 
+  // 🔍 INSTRUMENTATION: Log incoming requests
+  const uniqueSymbolIds = [...new Set(requests.map((r) => r.symbolId))];
+  console.log(
+    `[fetchDividends] 📥 Incoming: ${requests.length} requests for ${uniqueSymbolIds.length} unique symbols`,
+  );
+
   // 1) Batch resolve all symbol identifiers to canonical UUIDs and Yahoo tickers
   const uniqueInputs = requests
     .map((r) => r.symbolId.trim())
@@ -41,29 +47,59 @@ export async function fetchDividends(
   >();
 
   const supabase = createServiceClient();
+  const eventsBySymbol = new Map<string, DividendEvent[]>();
+  const summariesBySymbol = new Map<string, Dividend>();
 
   if (upsert) {
+    // 🔍 INSTRUMENTATION: Log cache query parameters
+    const eventsDateThreshold = subYears(new Date(), 3).toISOString();
+    const summariesDateThreshold = subDays(new Date(), 7).toISOString();
+    console.log(
+      `[fetchDividends] 🔍 Cache query: events >= ${eventsDateThreshold}, summaries updated_at >= ${summariesDateThreshold}`,
+    );
+
     const [cachedEvents, cachedSummaries] = await Promise.all([
       supabase
         .from("dividend_events")
         .select("*")
         .in("symbol_id", canonicalIds)
-        .gte("event_date", subYears(new Date(), 3).toISOString()),
+        .gte("event_date", eventsDateThreshold),
       supabase
         .from("dividends")
         .select("*")
         .in("symbol_id", canonicalIds)
-        .gte("updated_at", subDays(new Date(), 30).toISOString()),
+        .gte("updated_at", summariesDateThreshold),
     ]);
 
-    const eventsBySymbol = new Map<string, DividendEvent[]>();
+    // 🔍 INSTRUMENTATION: Log cache query results
+    if (cachedEvents.error) {
+      console.error(
+        `[fetchDividends] ❌ Cache query error for events:`,
+        cachedEvents.error,
+      );
+    } else {
+      console.log(
+        `[fetchDividends] 🔍 Found ${cachedEvents.data?.length || 0} cached events`,
+      );
+    }
+
+    if (cachedSummaries.error) {
+      console.error(
+        `[fetchDividends] ❌ Cache query error for summaries:`,
+        cachedSummaries.error,
+      );
+    } else {
+      console.log(
+        `[fetchDividends] 🔍 Found ${cachedSummaries.data?.length || 0} cached summaries`,
+      );
+    }
+
     cachedEvents.data?.forEach((event: DividendEvent) => {
       const existing = eventsBySymbol.get(event.symbol_id) || [];
       existing.push(event);
       eventsBySymbol.set(event.symbol_id, existing);
     });
 
-    const summariesBySymbol = new Map<string, Dividend>();
     cachedSummaries.data?.forEach((summary: Dividend) => {
       summariesBySymbol.set(summary.symbol_id, summary);
     });
@@ -72,8 +108,37 @@ export async function fetchDividends(
       const events = eventsBySymbol.get(symbolId) || [];
       const summary = summariesBySymbol.get(symbolId);
 
-      if (events.length > 0 && summary) {
-        canonicalResults.set(symbolId, { events, summary });
+      // 🔍 INSTRUMENTATION: Log cache status per symbol
+      const hasEvents = events.length > 0;
+      const hasSummary = !!summary;
+      const isFreshCheck =
+        summary?.dividends_checked_at &&
+        new Date(summary.dividends_checked_at) >=
+          new Date(summariesDateThreshold);
+
+      const isFreshNonPayer = summary?.pays_dividends === false && isFreshCheck;
+      const isFreshPayer =
+        summary?.pays_dividends === true && hasEvents && isFreshCheck;
+
+      if (isFreshPayer || isFreshNonPayer) {
+        canonicalResults.set(symbolId, { events, summary: summary! });
+      } else {
+        // Log why symbol wasn't cached (for debugging)
+        if (!hasEvents && !hasSummary) {
+          // Both missing - this is expected for new symbols
+        } else if (!hasEvents) {
+          console.log(
+            `[fetchDividends] ⚠️  Symbol ${symbolId} has summary but no events`,
+          );
+        } else if (!hasSummary) {
+          console.log(
+            `[fetchDividends] ⚠️  Symbol ${symbolId} has events but no summary`,
+          );
+        } else if (hasSummary && !isFreshCheck) {
+          console.log(
+            `[fetchDividends] ⚠️  Symbol ${symbolId} cache is stale (checked_at=${summary.dividends_checked_at})`,
+          );
+        }
       }
     });
   }
@@ -82,7 +147,30 @@ export async function fetchDividends(
     (symbolId) => !canonicalResults.has(symbolId),
   );
 
+  // 🔍 INSTRUMENTATION: Log cache performance
+  const totalSymbols = canonicalIds.length;
+  const cacheHits = totalSymbols - missingCanonicalIds.length;
+  const cacheMisses = missingCanonicalIds.length;
+  const cacheHitRate = totalSymbols > 0 ? (cacheHits / totalSymbols) * 100 : 0;
+
+  if (totalSymbols > 0) {
+    console.log(
+      `[fetchDividends] 📊 Cache stats: ${cacheHits}/${totalSymbols} symbols found in cache (${cacheHitRate.toFixed(1)}%)`,
+    );
+
+    if (cacheMisses > 0) {
+      console.log(
+        `[fetchDividends] ⚠️  Cache misses: ${cacheMisses} symbols need fresh data`,
+      );
+      const sampleMisses = missingCanonicalIds.slice(0, 5);
+      console.log(`[fetchDividends] Sample missing symbols:`, sampleMisses);
+    }
+  }
+
   if (missingCanonicalIds.length > 0) {
+    console.log(
+      `[fetchDividends] 🚨 Calling Yahoo Finance API for ${missingCanonicalIds.length} symbols`,
+    );
     // 3) Fetch missing dividend data from Yahoo Finance (bulk per canonical symbol)
     const fetchPromises = missingCanonicalIds.map(async (symbolId) => {
       const resolution = byCanonicalId.get(symbolId);
@@ -105,6 +193,16 @@ export async function fetchDividends(
             events: "div",
           }),
         ]);
+
+        // 🔍 INSTRUMENTATION: Log what Yahoo Finance returned
+        const hasDividendRate =
+          !!summary.summaryDetail?.dividendRate ||
+          !!summary.summaryDetail?.trailingAnnualDividendRate ||
+          !!summary.summaryDetail?.dividendYield;
+        const hasDividendEvents = !!chart.events?.dividends?.length;
+        console.log(
+          `[fetchDividends] 🔍 Yahoo Finance response for ${symbolId} (${yahooTicker}): hasDividendRate=${hasDividendRate}, hasDividendEvents=${hasDividendEvents}, eventsCount=${chart.events?.dividends?.length || 0}`,
+        );
 
         const events: DividendEvent[] = [];
         if (chart.events?.dividends) {
@@ -150,6 +248,8 @@ export async function fetchDividends(
               : null,
             last_dividend_date,
             inferred_frequency,
+            pays_dividends: true,
+            dividends_checked_at: new Date().toISOString(),
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           };
@@ -157,7 +257,38 @@ export async function fetchDividends(
           return { symbolId, events, summary: summaryData };
         }
 
-        return { symbolId, events, summary: null as Dividend | null };
+        console.log(
+          `[fetchDividends] ⚠️  Symbol ${symbolId} (${yahooTicker}) has no dividend data - skipping insert`,
+        );
+
+        // Avoid overwriting existing payer data if it exists
+        const existingSummary = summariesBySymbol.get(symbolId);
+        const existingHasPayerData =
+          existingSummary?.pays_dividends === true ||
+          existingSummary?.forward_annual_dividend ||
+          existingSummary?.trailing_ttm_dividend ||
+          existingSummary?.dividend_yield ||
+          existingSummary?.last_dividend_date;
+
+        if (existingHasPayerData) {
+          return { symbolId, events, summary: null as Dividend | null };
+        }
+
+        const noDividendsMarker: Dividend = {
+          symbol_id: symbolId,
+          forward_annual_dividend: null,
+          trailing_ttm_dividend: null,
+          dividend_yield: null,
+          ex_dividend_date: null,
+          last_dividend_date: null,
+          inferred_frequency: null,
+          pays_dividends: false,
+          dividends_checked_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+
+        return { symbolId, events, summary: noDividendsMarker };
       } catch (error) {
         console.warn(
           `Failed to fetch dividends for ${symbolId} (${yahooTicker}):`,
@@ -184,19 +315,51 @@ export async function fetchDividends(
     });
 
     if (upsert) {
-      await Promise.all([
+      // 🔍 INSTRUMENTATION: Log what we're about to insert
+      console.log(
+        `[fetchDividends] 💾 Inserting: ${allEvents.length} events, ${allSummaries.length} summaries`,
+      );
+
+      const [eventsResult, summariesResult] = await Promise.all([
         allEvents.length > 0
           ? supabase
               .from("dividend_events")
               .upsert(allEvents, { onConflict: "symbol_id,event_date" })
-          : null,
+          : Promise.resolve({ data: null, error: null }),
         allSummaries.length > 0
           ? supabase
               .from("dividends")
               .upsert(allSummaries, { onConflict: "symbol_id" })
-          : null,
+          : Promise.resolve({ data: null, error: null }),
       ]);
+
+      // 🔍 INSTRUMENTATION: Check for insert errors
+      if (eventsResult.error) {
+        console.error(
+          `[fetchDividends] ❌ Failed to insert ${allEvents.length} events:`,
+          eventsResult.error,
+        );
+      } else if (allEvents.length > 0) {
+        console.log(
+          `[fetchDividends] ✅ Successfully inserted ${allEvents.length} events`,
+        );
+      }
+
+      if (summariesResult.error) {
+        console.error(
+          `[fetchDividends] ❌ Failed to insert ${allSummaries.length} summaries:`,
+          summariesResult.error,
+        );
+      } else if (allSummaries.length > 0) {
+        console.log(
+          `[fetchDividends] ✅ Successfully inserted ${allSummaries.length} summaries`,
+        );
+      }
     }
+  } else {
+    console.log(
+      `[fetchDividends] ✅ All ${totalSymbols} symbols found in cache - no API calls needed`,
+    );
   }
 
   // 4) Return a map keyed by the caller's original identifier, defaulting to canonical data

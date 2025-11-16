@@ -36,7 +36,7 @@ export async function calculateSymbolDividendYield(symbolLookup: string) {
   const dividendsMap = await fetchDividends([{ symbolId: canonicalId }], false);
   const entry = dividendsMap.get(canonicalId);
 
-  if (!entry || !entry.summary) {
+  if (!entry || !entry.summary || entry.summary.pays_dividends === false) {
     return {
       symbolId: canonicalId,
       displayTicker,
