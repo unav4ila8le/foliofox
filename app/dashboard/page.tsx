@@ -10,6 +10,7 @@ import { NewsWidget } from "@/components/dashboard/news/widget";
 import { ProjectedIncomeWidget } from "@/components/dashboard/charts/projected-income/widget";
 import { PortfolioRecordsWidget } from "@/components/dashboard/portfolio-records/widget";
 
+import { getCurrentUser } from "@/server/auth/actions";
 import { fetchProfile } from "@/server/profile/actions";
 import { calculateNetWorth } from "@/server/analysis/net-worth";
 import { fetchNetWorthHistory } from "@/server/analysis/net-worth-history";
@@ -72,6 +73,7 @@ async function AssetAllocationChartWrapper() {
 }
 
 async function NewsWidgetWrapper() {
+  await getCurrentUser();
   const newsResult = await fetchPortfolioNews(12);
 
   return <NewsWidget newsData={newsResult} />;
