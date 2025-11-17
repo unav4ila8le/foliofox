@@ -38,9 +38,10 @@ export const fetchOptionalProfile = cache(async () => {
     .from("profiles")
     .select("username, display_currency, avatar_url")
     .eq("user_id", user.id)
-    .single();
+    .maybeSingle();
 
   if (!profile) return null;
+
   return { profile, email: user.email ?? "" };
 });
 

@@ -48,7 +48,7 @@ const formSchema = z.object({
   }),
 });
 
-export function SettingsForm({ profile, onSuccess, email }: SettingsFormProps) {
+export function SettingsForm({ profile, email, onSuccess }: SettingsFormProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm({

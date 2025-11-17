@@ -9,15 +9,17 @@ import { usePrivacyMode } from "@/components/dashboard/privacy-mode-provider";
 
 import { formatCurrency } from "@/lib/number-format";
 
-import type { Profile } from "@/types/global.types";
+import type { FinancialProfile, Profile } from "@/types/global.types";
 
 export function User({
   profile,
   email,
+  financialProfile,
   netWorth,
 }: {
   profile: Profile;
   email: string;
+  financialProfile?: FinancialProfile | null;
   netWorth: number;
 }) {
   const { isMobile } = useSidebar();
@@ -31,8 +33,9 @@ export function User({
     <UserMenu
       profile={profile}
       email={email}
+      financialProfile={financialProfile}
       menuSide={isMobile ? "bottom" : "right"}
-      menuAlign="end"
+      menuAlign="start"
     >
       <SidebarMenuButton
         size="lg"

@@ -11,6 +11,7 @@ import { NewAssetDialogProvider } from "@/components/dashboard/new-asset";
 import { NewPortfolioRecordDialogProvider } from "@/components/dashboard/new-portfolio-record";
 
 import { fetchProfile } from "@/server/profile/actions";
+import { fetchFinancialProfile } from "@/server/financial-profiles/actions";
 import { calculateNetWorth } from "@/server/analysis/net-worth";
 
 export default async function Layout({
@@ -31,6 +32,7 @@ export default async function Layout({
   const defaultOpenRight = rightSidebarCookie !== "false";
 
   const { profile, email } = await fetchProfile();
+  const financialProfile = await fetchFinancialProfile();
   const netWorth = await calculateNetWorth(profile.display_currency);
 
   return (
@@ -57,6 +59,7 @@ export default async function Layout({
               <LeftSidebar
                 profile={profile}
                 email={email}
+                financialProfile={financialProfile}
                 netWorth={netWorth}
               />
 

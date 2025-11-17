@@ -129,3 +129,6 @@ export type PublicPortfolioWithProfile = {
 };
 
 export type PublicPortfolioExpirationOption = "24h" | "7d" | "30d" | "never";
+
+// Financial Profile
+export type FinancialProfile = Tables<"financial_profiles">;

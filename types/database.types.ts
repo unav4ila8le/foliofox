@@ -311,6 +311,64 @@ export type Database = {
         }
         Relationships: []
       }
+      financial_profiles: {
+        Row: {
+          about: string | null
+          age_band: Database["public"]["Enums"]["age_band"] | null
+          created_at: string
+          data_sharing_consent: boolean
+          id: string
+          income_amount: number | null
+          income_currency: string | null
+          risk_preference: Database["public"]["Enums"]["risk_preference"] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          about?: string | null
+          age_band?: Database["public"]["Enums"]["age_band"] | null
+          created_at?: string
+          data_sharing_consent?: boolean
+          id?: string
+          income_amount?: number | null
+          income_currency?: string | null
+          risk_preference?:
+            | Database["public"]["Enums"]["risk_preference"]
+            | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          about?: string | null
+          age_band?: Database["public"]["Enums"]["age_band"] | null
+          created_at?: string
+          data_sharing_consent?: boolean
+          id?: string
+          income_amount?: number | null
+          income_currency?: string | null
+          risk_preference?:
+            | Database["public"]["Enums"]["risk_preference"]
+            | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_profiles_income_currency_fkey"
+            columns: ["income_currency"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["alphabetic_code"]
+          },
+          {
+            foreignKeyName: "financial_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       news: {
         Row: {
           created_at: string
@@ -746,10 +804,17 @@ export type Database = {
       check_username_available: { Args: { name: string }; Returns: boolean }
     }
     Enums: {
+      age_band: "18-24" | "25-34" | "35-44" | "45-54" | "55-64" | "65+"
       conversation_role: "system" | "user" | "assistant" | "tool"
       feedback_type: "issue" | "idea" | "other"
       portfolio_record_type: "buy" | "sell" | "update"
       position_type: "asset" | "liability"
+      risk_preference:
+        | "very_conservative"
+        | "conservative"
+        | "moderate"
+        | "aggressive"
+        | "very_aggressive"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -880,10 +945,18 @@ export const Constants = {
   },
   public: {
     Enums: {
+      age_band: ["18-24", "25-34", "35-44", "45-54", "55-64", "65+"],
       conversation_role: ["system", "user", "assistant", "tool"],
       feedback_type: ["issue", "idea", "other"],
       portfolio_record_type: ["buy", "sell", "update"],
       position_type: ["asset", "liability"],
+      risk_preference: [
+        "very_conservative",
+        "conservative",
+        "moderate",
+        "aggressive",
+        "very_aggressive",
+      ],
     },
   },
 } as const
