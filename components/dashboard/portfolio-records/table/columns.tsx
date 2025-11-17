@@ -84,15 +84,22 @@ export function getPortfolioRecordColumns({
         );
       }
       return (
-        <Link
-          href={`/dashboard/${position.type === "liability" ? "liabilities" : "assets"}/${positionId}`}
-          className="hover:text-primary max-w-60 truncate underline-offset-4 hover:underline"
-          title={positionName}
-          onClick={(e) => e.stopPropagation()}
-          aria-label={`Open ${positionName}`}
-        >
-          {positionName}
-        </Link>
+        <div className="flex w-40 sm:w-64 lg:w-80">
+          <Tooltip delayDuration={500}>
+            <TooltipTrigger asChild>
+              <Link
+                href={`/dashboard/${position.type === "liability" ? "liabilities" : "assets"}/${positionId}`}
+                className="hover:text-primary truncate underline-offset-4 hover:underline"
+                title={positionName}
+                onClick={(e) => e.stopPropagation()}
+                aria-label={`Open ${positionName}`}
+              >
+                {positionName}
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent>{positionName}</TooltipContent>
+          </Tooltip>
+        </div>
       );
     },
   };

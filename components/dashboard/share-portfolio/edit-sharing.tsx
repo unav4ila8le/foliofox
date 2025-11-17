@@ -86,7 +86,7 @@ export function EditSharing({
 
   const fallbackSiteUrl =
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-    "https://foliofox.ai";
+    "https://foliofox.com";
   let siteUrl = fallbackSiteUrl;
   try {
     siteUrl = new URL(shareMetadata.shareUrl).origin;

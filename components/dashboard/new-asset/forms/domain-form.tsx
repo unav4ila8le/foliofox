@@ -177,7 +177,7 @@ export function DomainForm() {
                   <InputGroupInput
                     id={field.name}
                     disabled={isCheckingValuation}
-                    placeholder="E.g., foliofox.ai"
+                    placeholder="E.g., foliofox.com"
                     {...field}
                     onChange={(e) => {
                       const cleaned = cleanDomain(e.target.value);

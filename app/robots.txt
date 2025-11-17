@@ -2,4 +2,4 @@ User-Agent: *
 Allow: /
 Disallow: /dashboard/
 
-Sitemap: https://www.foliofox.ai/sitemap.xml
+Sitemap: https://www.foliofox.com/sitemap.xml
