@@ -147,6 +147,14 @@ export async function fetchExchangeRates(
         })),
       );
 
+      // Sort by PK components to avoid lock-order deadlocks
+      allRows.sort((a, b) => {
+        if (a.target_currency === b.target_currency) {
+          return a.date.localeCompare(b.date);
+        }
+        return a.target_currency.localeCompare(b.target_currency);
+      });
+
       // Single bulk insert into database
       const { error: insertError } = await supabase
         .from("exchange_rates")

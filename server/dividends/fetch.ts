@@ -245,6 +245,15 @@ export async function fetchDividends(
     });
 
     if (upsert) {
+      // Sort by PK components to avoid lock-order deadlocks
+      allEvents.sort((a, b) => {
+        if (a.symbol_id === b.symbol_id) {
+          return a.event_date.localeCompare(b.event_date);
+        }
+        return a.symbol_id.localeCompare(b.symbol_id);
+      });
+      allSummaries.sort((a, b) => a.symbol_id.localeCompare(b.symbol_id));
+
       const [eventsResult, summariesResult] = await Promise.all([
         allEvents.length > 0
           ? supabase
