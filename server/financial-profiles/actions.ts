@@ -31,24 +31,36 @@ export const fetchFinancialProfile = cache(async () => {
 export async function upsertFinancialProfile(formData: FormData) {
   const { supabase, user } = await getCurrentUser();
 
+  const pickStringOrNull = (name: string) => {
+    const raw = formData.get(name);
+    if (raw === null) return null;
+    const value = String(raw).trim();
+    return value === "" ? null : value;
+  };
+
+  const pickNumberOrNull = (name: string) => {
+    const raw = pickStringOrNull(name);
+    if (raw === null) return null;
+    const parsed = Number(raw);
+    return Number.isNaN(parsed) ? null : parsed;
+  };
+
   // Extract form data
   const financialProfileData: Pick<
     FinancialProfile,
-    | "data_sharing_consent"
     | "age_band"
     | "income_amount"
     | "income_currency"
     | "risk_preference"
     | "about"
   > = {
-    data_sharing_consent: Boolean(formData.get("data_sharing_consent")),
-    age_band: formData.get("age_band") as (typeof AGE_BANDS)[number] | null,
-    income_amount: formData.get("income_amount") as number | null,
-    income_currency: formData.get("income_currency") as string | null,
-    risk_preference: formData.get("risk_preference") as
+    age_band: pickStringOrNull("age_band") as (typeof AGE_BANDS)[number] | null,
+    income_amount: pickNumberOrNull("income_amount"),
+    income_currency: pickStringOrNull("income_currency"),
+    risk_preference: pickStringOrNull("risk_preference") as
       | (typeof RISK_PREFERENCES)[number]
       | null,
-    about: formData.get("about") as string | null,
+    about: pickStringOrNull("about"),
   };
 
   const { error } = await supabase

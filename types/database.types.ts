@@ -316,7 +316,6 @@ export type Database = {
           about: string | null
           age_band: Database["public"]["Enums"]["age_band"] | null
           created_at: string
-          data_sharing_consent: boolean
           id: string
           income_amount: number | null
           income_currency: string | null
@@ -328,7 +327,6 @@ export type Database = {
           about?: string | null
           age_band?: Database["public"]["Enums"]["age_band"] | null
           created_at?: string
-          data_sharing_consent?: boolean
           id?: string
           income_amount?: number | null
           income_currency?: string | null
@@ -342,7 +340,6 @@ export type Database = {
           about?: string | null
           age_band?: Database["public"]["Enums"]["age_band"] | null
           created_at?: string
-          data_sharing_consent?: boolean
           id?: string
           income_amount?: number | null
           income_currency?: string | null
@@ -601,6 +598,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          data_sharing_consent: boolean
           display_currency: string
           updated_at: string
           user_id: string
@@ -609,6 +607,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          data_sharing_consent?: boolean
           display_currency?: string
           updated_at?: string
           user_id: string
@@ -617,6 +616,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string
+          data_sharing_consent?: boolean
           display_currency?: string
           updated_at?: string
           user_id?: string

@@ -14,7 +14,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { Badge } from "@/components/ui/badge";
 
-import { SettingsDialog } from "@/components/dashboard/layout/left-sidebar/settings/dialog";
+import { SettingsDialog } from "@/components/features/settings/dialog";
 import { FinancialProfileDialog } from "@/components/features/financial-profile/dialog";
 import { signOut } from "@/server/auth/sign-out";
 

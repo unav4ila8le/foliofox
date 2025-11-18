@@ -52,7 +52,6 @@ interface FinancialProfileFormProps {
 
 // Form validation schema using Zod
 const formSchema = z.object({
-  data_sharing_consent: z.boolean(),
   age_band: z.enum(AGE_BANDS).nullable().optional(),
   income_amount: z
     .preprocess((value) => {
@@ -82,7 +81,6 @@ export function FinancialProfileForm({
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      data_sharing_consent: financialProfile?.data_sharing_consent ?? false,
       age_band: financialProfile?.age_band ?? null,
       income_amount: financialProfile?.income_amount ?? null,
       income_currency:
@@ -101,10 +99,6 @@ export function FinancialProfileForm({
     try {
       // Prepare form data for server action
       const formData = new FormData();
-      formData.append(
-        "data_sharing_consent",
-        values.data_sharing_consent ? "true" : "false",
-      );
       formData.append("age_band", values.age_band ?? "");
       formData.append("income_amount", values.income_amount?.toString() ?? "");
       formData.append("income_currency", values.income_currency ?? "");
@@ -230,7 +224,7 @@ export function FinancialProfileForm({
                 <RadioGroup
                   onValueChange={field.onChange}
                   value={field.value}
-                  className="grid grid-cols-2 gap-2"
+                  className="grid gap-2 sm:grid-cols-2"
                 >
                   {RISK_PREFERENCES.map((preference) => (
                     <Label
