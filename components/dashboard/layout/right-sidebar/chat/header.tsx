@@ -28,8 +28,6 @@ import { AISettingsDialog } from "@/components/features/ai-settings/dialog";
 
 import { deleteConversation } from "@/server/ai/conversations/delete";
 
-import type { Profile } from "@/types/global.types";
-
 interface ChatHeaderProps {
   conversations?: {
     id: string;
@@ -40,7 +38,6 @@ interface ChatHeaderProps {
   onNewConversation: () => void;
   onConversationDeleted?: () => void;
   isLoadingConversation?: boolean;
-  profile: Profile;
 }
 
 export function ChatHeader({
@@ -49,7 +46,6 @@ export function ChatHeader({
   onNewConversation,
   onConversationDeleted,
   isLoadingConversation,
-  profile,
 }: ChatHeaderProps) {
   const [openHistory, setOpenHistory] = useState(false);
   const [openAISettings, setOpenAISettings] = useState(false);
@@ -170,7 +166,6 @@ export function ChatHeader({
       <AISettingsDialog
         open={openAISettings}
         onOpenChange={setOpenAISettings}
-        profile={profile}
       />
     </div>
   );

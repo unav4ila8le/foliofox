@@ -14,7 +14,7 @@ export const fetchProfile = cache(async () => {
 
   const { data: profile, error } = await supabase
     .from("profiles")
-    .select("username, display_currency, avatar_url")
+    .select("*")
     .eq("user_id", user.id)
     .single();
 
@@ -36,7 +36,7 @@ export const fetchOptionalProfile = cache(async () => {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("username, display_currency, avatar_url")
+    .select("*")
     .eq("user_id", user.id)
     .maybeSingle();
 

@@ -12,16 +12,11 @@ import type { Profile } from "@/types/global.types";
 interface SettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  profile: Profile;
-  email: string;
+  profile?: Profile;
+  email?: string;
 }
 
-export function SettingsDialog({
-  open,
-  onOpenChange,
-  profile,
-  email,
-}: SettingsDialogProps) {
+export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
@@ -31,11 +26,7 @@ export function SettingsDialog({
             Change here your profile information
           </DialogDescription>
         </DialogHeader>
-        <SettingsForm
-          profile={profile}
-          email={email}
-          onSuccess={() => onOpenChange(false)}
-        />
+        <SettingsForm onSuccess={() => onOpenChange(false)} />
       </DialogContent>
     </Dialog>
   );

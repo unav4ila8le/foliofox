@@ -25,12 +25,9 @@ import {
   updateProfile,
   checkUsernameAvailability,
 } from "@/server/profile/actions";
-
-import type { Profile } from "@/types/global.types";
+import { useOptionalDashboardData } from "@/components/dashboard/dashboard-data-provider";
 
 interface SettingsFormProps {
-  profile: Profile;
-  email: string;
   onSuccess?: () => void;
 }
 
@@ -48,8 +45,16 @@ const formSchema = z.object({
   }),
 });
 
-export function SettingsForm({ profile, email, onSuccess }: SettingsFormProps) {
+export function SettingsForm({ onSuccess }: SettingsFormProps) {
+  const dashboardData = useOptionalDashboardData();
+  const profile = dashboardData?.profile;
+  const email = dashboardData?.email;
+
   const [isLoading, setIsLoading] = useState(false);
+
+  if (!profile || !email) {
+    throw new Error("SettingsForm requires a profile");
+  }
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -66,7 +71,7 @@ export function SettingsForm({ profile, email, onSuccess }: SettingsFormProps) {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      if (values.username.trim() !== profile.username) {
+      if (values.username.trim() !== profile?.username) {
         const usernameCheck = await checkUsernameAvailability(
           values.username.trim(),
         );

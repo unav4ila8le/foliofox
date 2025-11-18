@@ -12,7 +12,7 @@ import type { FinancialProfile, Profile } from "@/types/global.types";
 interface FinancialProfileDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  profile: Profile;
+  profile?: Profile;
   financialProfile?: FinancialProfile | null;
 }
 

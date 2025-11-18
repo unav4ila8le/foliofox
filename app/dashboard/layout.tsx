@@ -9,6 +9,7 @@ import { PrivacyModeProvider } from "@/components/dashboard/privacy-mode-provide
 import { ImportPositionsDialogProvider } from "@/components/dashboard/positions/import";
 import { NewAssetDialogProvider } from "@/components/dashboard/new-asset";
 import { NewPortfolioRecordDialogProvider } from "@/components/dashboard/new-portfolio-record";
+import { DashboardDataProvider } from "@/components/dashboard/dashboard-data-provider";
 
 import { fetchProfile } from "@/server/profile/actions";
 import { fetchFinancialProfile } from "@/server/financial-profiles/actions";
@@ -36,47 +37,51 @@ export default async function Layout({
   const netWorth = await calculateNetWorth(profile.display_currency);
 
   return (
-    <SidebarProvider
-      defaultOpen={defaultOpenLeft}
-      defaultOpenRight={defaultOpenRight}
-      resizable={{ right: true }}
-      defaultLeftWidth="max(16rem, 14vw)"
-      defaultRightWidth="max(16rem, 20vw)"
-      minRightWidth="16rem"
-      maxRightWidth="24vw"
-      style={
-        {
-          "--sidebar-left-width-mobile": "max(18rem, 80vw)",
-          "--sidebar-right-width-mobile": "max(18rem, 80vw)",
-        } as React.CSSProperties
-      }
+    <DashboardDataProvider
+      value={{
+        profile,
+        email,
+        financialProfile,
+        netWorth,
+      }}
     >
-      <PrivacyModeProvider>
-        <ImportPositionsDialogProvider>
-          <NewAssetDialogProvider profile={profile}>
-            <NewPortfolioRecordDialogProvider>
-              {/* Left sidebar */}
-              <LeftSidebar
-                profile={profile}
-                email={email}
-                financialProfile={financialProfile}
-                netWorth={netWorth}
-              />
+      <SidebarProvider
+        defaultOpen={defaultOpenLeft}
+        defaultOpenRight={defaultOpenRight}
+        resizable={{ right: true }}
+        defaultLeftWidth="max(16rem, 14vw)"
+        defaultRightWidth="max(16rem, 20vw)"
+        minRightWidth="16rem"
+        maxRightWidth="24vw"
+        style={
+          {
+            "--sidebar-left-width-mobile": "max(18rem, 80vw)",
+            "--sidebar-right-width-mobile": "max(18rem, 80vw)",
+          } as React.CSSProperties
+        }
+      >
+        <PrivacyModeProvider>
+          <ImportPositionsDialogProvider>
+            <NewAssetDialogProvider>
+              <NewPortfolioRecordDialogProvider>
+                {/* Left sidebar */}
+                <LeftSidebar />
 
-              {/* Main content */}
-              <SidebarInset className="min-w-0">
-                <Header />
-                <div className="mx-auto w-full max-w-7xl p-4 pt-2">
-                  {children}
-                </div>
-              </SidebarInset>
+                {/* Main content */}
+                <SidebarInset className="min-w-0">
+                  <Header />
+                  <div className="mx-auto w-full max-w-7xl p-4 pt-2">
+                    {children}
+                  </div>
+                </SidebarInset>
 
-              {/* Right sidebar */}
-              <RightSidebar profile={profile} />
-            </NewPortfolioRecordDialogProvider>
-          </NewAssetDialogProvider>
-        </ImportPositionsDialogProvider>
-      </PrivacyModeProvider>
-    </SidebarProvider>
+                {/* Right sidebar */}
+                <RightSidebar />
+              </NewPortfolioRecordDialogProvider>
+            </NewAssetDialogProvider>
+          </ImportPositionsDialogProvider>
+        </PrivacyModeProvider>
+      </SidebarProvider>
+    </DashboardDataProvider>
   );
 }

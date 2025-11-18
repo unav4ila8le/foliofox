@@ -17,28 +17,35 @@ import { Badge } from "@/components/ui/badge";
 import { SettingsDialog } from "@/components/features/settings/dialog";
 import { FinancialProfileDialog } from "@/components/features/financial-profile/dialog";
 import { signOut } from "@/server/auth/sign-out";
+import { useOptionalDashboardData } from "@/components/dashboard/dashboard-data-provider";
 
 import type { FinancialProfile, Profile } from "@/types/global.types";
 
 interface UserMenuProps {
-  profile: Profile;
-  email: string;
-  financialProfile?: FinancialProfile | null;
   children: ReactNode;
+  profile?: Profile;
+  financialProfile?: FinancialProfile | null;
+  email?: string;
   menuSide?: "top" | "right" | "bottom" | "left";
   menuAlign?: "start" | "center" | "end";
   menuSideOffset?: number;
 }
 
 export function UserMenu({
-  profile,
-  email,
-  financialProfile,
   children,
+  profile: profileProp,
+  financialProfile: financialProfileProp = null,
+  email,
   menuSide = "bottom",
   menuAlign = "end",
   menuSideOffset = 4,
 }: UserMenuProps) {
+  const dashboardData = useOptionalDashboardData();
+  const profile = dashboardData?.profile ?? profileProp;
+  const financialProfile =
+    dashboardData?.financialProfile ?? financialProfileProp;
+  const emailValue = dashboardData?.email ?? email;
+
   const [isLoading, setIsLoading] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
   const [financialProfileDialogOpen, setFinancialProfileDialogOpen] =
@@ -66,8 +73,12 @@ export function UserMenu({
           align={menuAlign}
           sideOffset={menuSideOffset}
         >
-          <DropdownMenuItem disabled>{email}</DropdownMenuItem>
-          <DropdownMenuSeparator />
+          {emailValue && (
+            <>
+              <DropdownMenuItem disabled>{emailValue}</DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          )}
           <DropdownMenuItem
             onSelect={() => {
               setFinancialProfileDialogOpen(true);
@@ -116,7 +127,7 @@ export function UserMenu({
         open={settingsDialogOpen}
         onOpenChange={setSettingsDialogOpen}
         profile={profile}
-        email={email}
+        email={emailValue}
       />
     </>
   );

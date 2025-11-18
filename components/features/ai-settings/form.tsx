@@ -21,11 +21,9 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 
 import { updateAISettings } from "@/server/profile/actions";
-
-import type { Profile } from "@/types/global.types";
+import { useDashboardData } from "@/components/dashboard/dashboard-data-provider";
 
 interface AISettingsFormProps {
-  profile: Profile;
   onSuccess?: () => void;
 }
 
@@ -33,7 +31,8 @@ const formSchema = z.object({
   data_sharing_consent: z.boolean(),
 });
 
-export function AISettingsForm({ profile, onSuccess }: AISettingsFormProps) {
+export function AISettingsForm({ onSuccess }: AISettingsFormProps) {
+  const { profile } = useDashboardData();
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm({

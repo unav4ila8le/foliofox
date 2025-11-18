@@ -13,30 +13,13 @@ import { User } from "./user";
 import { Branding } from "./branding";
 import { Menu } from "./menu";
 
-import type { FinancialProfile, Profile } from "@/types/global.types";
-
-export function LeftSidebar({
-  profile,
-  email,
-  financialProfile,
-  netWorth,
-}: {
-  profile: Profile;
-  email: string;
-  financialProfile?: FinancialProfile | null;
-  netWorth: number;
-}) {
+export function LeftSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
         <UISidebarMenu>
           <SidebarMenuItem>
-            <User
-              profile={profile}
-              email={email}
-              financialProfile={financialProfile}
-              netWorth={netWorth}
-            />
+            <User />
           </SidebarMenuItem>
         </UISidebarMenu>
       </SidebarHeader>
