@@ -84,7 +84,7 @@ export function AISettingsForm({ onSuccess }: AISettingsFormProps) {
           control={form.control}
           name="data_sharing_consent"
           render={({ field }) => (
-            <FormItem className="space-y-2 rounded-lg border px-4 py-3 text-sm">
+            <FormItem className="rounded-lg border px-4 py-3 text-sm">
               <FormControl>
                 <div className="flex items-center gap-2">
                   <Switch
@@ -94,14 +94,16 @@ export function AISettingsForm({ onSuccess }: AISettingsFormProps) {
                     onCheckedChange={field.onChange}
                     className="data-[state=checked]:bg-green-500"
                   />
-                  <FormLabel>AI data sharing consent</FormLabel>
+                  <FormLabel htmlFor="data-sharing-consent">
+                    AI data sharing consent
+                  </FormLabel>
                 </div>
-                <FormDescription className="text-muted-foreground">
-                  {field.value
-                    ? "Your data is being shared with Foliofox AI Advisor."
-                    : "Your data is not being shared with Foliofox AI Advisor."}
-                </FormDescription>
               </FormControl>
+              <FormDescription className="text-muted-foreground">
+                {profile.data_sharing_consent
+                  ? "Your data is being shared with Foliofox AI Advisor."
+                  : "Your data is not being shared with Foliofox AI Advisor."}
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}

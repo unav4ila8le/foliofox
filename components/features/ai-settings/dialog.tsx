@@ -20,9 +20,11 @@ export function AISettingsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader>
-          <DialogTitle>AI settings</DialogTitle>
+          <DialogTitle>Foliofox AI Advisor</DialogTitle>
           <DialogDescription>
-            Change here Foliofox AI Advisor settings
+            Foliofox AI Advisor can provide more relevant answers if you choose
+            to share different levels of data. This feature is powered by
+            third-party AI providers.
           </DialogDescription>
         </DialogHeader>
         <AISettingsForm onSuccess={() => onOpenChange(false)} />
