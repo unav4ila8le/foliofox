@@ -85,3 +85,27 @@ export async function updateProfile(formData: FormData) {
   revalidatePath("/dashboard", "layout");
   return { success: true };
 }
+
+// Update profile
+export async function updateAISettings(formData: FormData) {
+  const { supabase, user } = await getCurrentUser();
+
+  // Data is already validated in the form component
+  const data: Pick<Profile, "data_sharing_consent"> = {
+    data_sharing_consent: Boolean(formData.get("data_sharing_consent")),
+  };
+
+  // Update AI settings
+  const { error } = await supabase
+    .from("profiles")
+    .update(data)
+    .eq("user_id", user.id);
+
+  // Return Supabase errors instead of throwing
+  if (error) {
+    return { success: false, code: error.code, message: error.message };
+  }
+
+  revalidatePath("/dashboard", "layout");
+  return { success: true };
+}

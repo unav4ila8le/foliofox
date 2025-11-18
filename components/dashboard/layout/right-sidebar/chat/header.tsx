@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { History, Plus, Trash2 } from "lucide-react";
+import { History, Plus, Settings, Trash2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 
@@ -24,8 +24,11 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { useSidebar } from "@/components/ui/custom/sidebar";
+import { AISettingsDialog } from "@/components/features/ai-settings/dialog";
 
 import { deleteConversation } from "@/server/ai/conversations/delete";
+
+import type { Profile } from "@/types/global.types";
 
 interface ChatHeaderProps {
   conversations?: {
@@ -37,6 +40,7 @@ interface ChatHeaderProps {
   onNewConversation: () => void;
   onConversationDeleted?: () => void;
   isLoadingConversation?: boolean;
+  profile: Profile;
 }
 
 export function ChatHeader({
@@ -45,8 +49,10 @@ export function ChatHeader({
   onNewConversation,
   onConversationDeleted,
   isLoadingConversation,
+  profile,
 }: ChatHeaderProps) {
-  const [open, setOpen] = useState(false);
+  const [openHistory, setOpenHistory] = useState(false);
+  const [openAISettings, setOpenAISettings] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const { rightWidth } = useSidebar();
 
@@ -70,7 +76,8 @@ export function ChatHeader({
     <div className="relative flex items-center gap-4 p-2 xl:justify-between">
       <span className="text-sm font-medium">AI Chat</span>
       <div className="flex items-center gap-1">
-        <Popover open={open} onOpenChange={setOpen}>
+        {/* Conversation history */}
+        <Popover open={openHistory} onOpenChange={setOpenHistory}>
           <Tooltip delayDuration={500}>
             <TooltipTrigger asChild>
               <PopoverTrigger asChild>
@@ -100,7 +107,7 @@ export function ChatHeader({
                         disabled={isLoadingConversation || deletingId === c.id}
                         onSelect={() => {
                           onSelectConversation?.(c.id);
-                          setOpen(false);
+                          setOpenHistory(false);
                         }}
                         className="group items-start gap-2"
                       >
@@ -131,6 +138,21 @@ export function ChatHeader({
           </PopoverContent>
         </Popover>
 
+        {/* AI settings */}
+        <Tooltip delayDuration={500}>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setOpenAISettings(true)}
+            >
+              <Settings />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>AI settings</TooltipContent>
+        </Tooltip>
+
+        {/* New conversation */}
         <Tooltip delayDuration={500}>
           <TooltipTrigger asChild>
             <Button
@@ -145,6 +167,11 @@ export function ChatHeader({
           <TooltipContent>New conversation</TooltipContent>
         </Tooltip>
       </div>
+      <AISettingsDialog
+        open={openAISettings}
+        onOpenChange={setOpenAISettings}
+        profile={profile}
+      />
     </div>
   );
 }

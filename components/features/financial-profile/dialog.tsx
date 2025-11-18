@@ -26,7 +26,7 @@ export function FinancialProfileDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         onOpenAutoFocus={(e) => e.preventDefault()}
-        className="max-h-[calc(100dvh-1rem)] md:max-w-2xl"
+        className="max-h-[calc(100dvh-1rem)] overflow-y-auto md:max-w-2xl"
       >
         <DialogHeader>
           <DialogTitle>Financial profile</DialogTitle>

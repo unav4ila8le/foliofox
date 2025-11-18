@@ -54,6 +54,8 @@ import {
   ToolOutput,
 } from "@/components/ai-elements/tool";
 
+import type { Profile } from "@/types/global.types";
+
 const suggestions = [
   "What would happen to my portfolio if the market crashes 30% tomorrow?",
   "How should I rebalance my portfolio to reduce risk while maintaining growth potential?",
@@ -61,7 +63,7 @@ const suggestions = [
   "Based on my positions and portfolio history, what's my probability of reaching $1M net worth in 10 years?",
 ];
 
-function ChatContent() {
+function ChatContent({ profile }: { profile: Profile }) {
   const [mode, setMode] = useState<Mode>("advisory");
   // Current conversation identifier (used to scope/useChat state)
   const [conversationId, setConversationId] = useState<string>(() =>
@@ -179,6 +181,7 @@ function ChatContent() {
         onNewConversation={handleNewConversation}
         onConversationDeleted={refreshConversations}
         isLoadingConversation={isLoadingConversation}
+        profile={profile}
       />
 
       {/* Conversation */}
@@ -370,10 +373,10 @@ function ChatContent() {
   );
 }
 
-export function Chat() {
+export function Chat({ profile }: { profile: Profile }) {
   return (
     <PromptInputProvider>
-      <ChatContent />
+      <ChatContent profile={profile} />
     </PromptInputProvider>
   );
 }

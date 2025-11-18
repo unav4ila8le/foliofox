@@ -72,7 +72,7 @@ export default async function Layout({
               </SidebarInset>
 
               {/* Right sidebar */}
-              <RightSidebar />
+              <RightSidebar profile={profile} />
             </NewPortfolioRecordDialogProvider>
           </NewAssetDialogProvider>
         </ImportPositionsDialogProvider>
