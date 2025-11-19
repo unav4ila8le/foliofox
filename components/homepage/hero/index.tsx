@@ -4,13 +4,7 @@ import { Suspense } from "react";
 import { Button } from "@/components/ui/button";
 
 import { HeroImage } from "./image";
-
-import { fetchOptionalProfile } from "@/server/profile/actions";
-
-async function CTAWrapper() {
-  const data = await fetchOptionalProfile();
-  return data?.profile ? "Dashboard" : "Get Started";
-}
+import { CTAWrapper } from "@/components/homepage/cta-wrapper";
 
 export function Hero() {
   return (

@@ -1,51 +1,10 @@
 import Link from "next/link";
 import { Suspense } from "react";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logos/logo";
 import { GithubLogo } from "@/components/ui/logos/github-logo";
-import { UserMenu } from "@/components/features/user/user-menu";
-
-import { fetchOptionalProfile } from "@/server/profile/actions";
-
-function CTAButton({ cta = "Get started" }: { cta?: string }) {
-  return (
-    <Button asChild size="sm">
-      <Link href="/auth/login">{cta}</Link>
-    </Button>
-  );
-}
-
-async function OptionalProfileWrapper({ cta }: { cta?: string }) {
-  const data = await fetchOptionalProfile();
-  const profile = data?.profile;
-  const email = data?.email ?? "";
-
-  if (profile) {
-    const avatarUrl = profile.avatar_url || undefined;
-    const username = profile.username || "User";
-    const initial = username.slice(0, 1);
-
-    return (
-      <div className="flex items-center gap-2">
-        <Button asChild size="sm" className="h-7">
-          <Link href="/dashboard">Dashboard</Link>
-        </Button>
-        <UserMenu profile={profile} email={email} menuAlign="end">
-          <Avatar className="cursor-pointer">
-            <AvatarImage src={avatarUrl} alt={username} />
-            <AvatarFallback className="bg-background uppercase">
-              {initial}
-            </AvatarFallback>
-          </Avatar>
-        </UserMenu>
-      </div>
-    );
-  }
-
-  return <CTAButton cta={cta} />;
-}
+import { CTAWrapper } from "@/components/homepage/cta-wrapper";
 
 export async function Header({ cta = "Get started" }: { cta?: string }) {
   return (
@@ -69,9 +28,13 @@ export async function Header({ cta = "Get started" }: { cta?: string }) {
             <GithubLogo />
           </Link>
         </Button>
-        <Suspense fallback={<CTAButton cta={cta} />}>
-          <OptionalProfileWrapper cta={cta} />
-        </Suspense>
+        <Button asChild size="sm">
+          <Link href="/dashboard">
+            <Suspense fallback={cta}>
+              <CTAWrapper cta={cta} />
+            </Suspense>
+          </Link>
+        </Button>
       </nav>
     </header>
   );
