@@ -14,7 +14,7 @@ async function ArchivedTableWrapper() {
   return <ArchivedAssetsTable data={positions} />;
 }
 
-export default async function ArchivedAssetsPage() {
+export default function ArchivedAssetsPage() {
   return (
     <Suspense fallback={<Skeleton className="h-80" />}>
       <ArchivedTableWrapper />

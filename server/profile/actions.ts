@@ -92,7 +92,7 @@ export async function updateAISettings(formData: FormData) {
 
   // Data is already validated in the form component
   const data: Pick<Profile, "data_sharing_consent"> = {
-    data_sharing_consent: Boolean(formData.get("data_sharing_consent")),
+    data_sharing_consent: formData.get("data_sharing_consent") === "true",
   };
 
   // Update AI settings

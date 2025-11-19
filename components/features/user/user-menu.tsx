@@ -86,7 +86,7 @@ export function UserMenu({
           >
             <CircleUser className="size-4" />
             Financial profile
-            <Badge className="bg-brand ml-auto">New</Badge>
+            <Badge className="bg-brand/10 text-brand ml-auto">New</Badge>
           </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={() => {

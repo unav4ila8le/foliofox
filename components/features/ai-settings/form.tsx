@@ -100,9 +100,9 @@ export function AISettingsForm({ onSuccess }: AISettingsFormProps) {
                 </div>
               </FormControl>
               <FormDescription className="text-muted-foreground">
-                {profile.data_sharing_consent
-                  ? "Your data is being shared with Foliofox AI Advisor."
-                  : "Your data is not being shared with Foliofox AI Advisor."}
+                Foliofox AI Advisor can provide more relevant answers if you
+                choose to share different levels of data. This feature is
+                powered by third-party AI providers.
               </FormDescription>
               <FormMessage />
             </FormItem>

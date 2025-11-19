@@ -22,9 +22,7 @@ export function AISettingsDialog({
         <DialogHeader>
           <DialogTitle>Foliofox AI Advisor</DialogTitle>
           <DialogDescription>
-            Foliofox AI Advisor can provide more relevant answers if you choose
-            to share different levels of data. This feature is powered by
-            third-party AI providers.
+            Update your AI settings and data sharing preferences here.
           </DialogDescription>
         </DialogHeader>
         <AISettingsForm onSuccess={() => onOpenChange(false)} />
