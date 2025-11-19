@@ -1,5 +1,5 @@
 import { Sidebar, SidebarRail } from "@/components/ui/custom/sidebar";
-import { Chat } from "./chat";
+import { AIAdvisor } from "./ai-advisor";
 
 export function RightSidebar() {
   return (
@@ -8,7 +8,7 @@ export function RightSidebar() {
       showMobileClose
       mobileBreakpoint="(max-width: 1279px)"
     >
-      <Chat />
+      <AIAdvisor />
       <SidebarRail side="right" />
     </Sidebar>
   );

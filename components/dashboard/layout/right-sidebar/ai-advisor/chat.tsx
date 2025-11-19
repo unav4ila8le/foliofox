@@ -1,6 +1,12 @@
 "use client";
 
-import { useState, useEffect, useMemo, Fragment, useRef } from "react";
+import {
+  useState,
+  Fragment,
+  useRef,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import { DefaultChatTransport, isToolUIPart, type UIMessage } from "ai";
 import { useChat } from "@ai-sdk/react";
 import { Check, Copy, RefreshCcw } from "lucide-react";
@@ -34,18 +40,10 @@ import {
   PromptInputSelectContent,
   PromptInputSelectItem,
   PromptInputSelectValue,
-  PromptInputProvider,
   PromptInputFooter,
   usePromptInputController,
   PromptInputSpeechButton,
 } from "@/components/ai-elements/prompt-input";
-import { Logomark } from "@/components/ui/logos/logomark";
-import { ChatHeader } from "./header";
-
-import { fetchConversations } from "@/server/ai/conversations/fetch";
-import { fetchConversationMessages } from "@/server/ai/messages/fetch";
-import type { Mode } from "@/server/ai/system-prompt";
-import { cn } from "@/lib/utils";
 import {
   Tool,
   ToolContent,
@@ -53,6 +51,11 @@ import {
   ToolInput,
   ToolOutput,
 } from "@/components/ai-elements/tool";
+import { Logomark } from "@/components/ui/logos/logomark";
+
+import type { Mode } from "@/server/ai/system-prompt";
+
+import { cn } from "@/lib/utils";
 
 const suggestions = [
   "What would happen to my portfolio if the market crashes 30% tomorrow?",
@@ -61,85 +64,38 @@ const suggestions = [
   "Based on my positions and portfolio history, what's my probability of reaching $1M net worth in 10 years?",
 ];
 
-function ChatContent() {
+interface ChatProps {
+  conversationId: string;
+  initialMessages: UIMessage[];
+  isLoadingConversation: boolean;
+  copiedMessages: Set<string>;
+  setCopiedMessages: Dispatch<SetStateAction<Set<string>>>;
+}
+
+export function Chat({
+  conversationId,
+  initialMessages,
+  isLoadingConversation,
+  copiedMessages,
+  setCopiedMessages,
+}: ChatProps) {
   const [mode, setMode] = useState<Mode>("advisory");
-  // Current conversation identifier (used to scope/useChat state)
-  const [conversationId, setConversationId] = useState<string>(() =>
-    crypto.randomUUID(),
-  );
-  const [conversations, setConversations] = useState<
-    {
-      id: string;
-      title: string;
-      updatedAt: string;
-    }[]
-  >([]);
-  const [initialMessages, setInitialMessages] = useState<UIMessage[]>([]);
-  const [isLoadingConversation, setIsLoadingConversation] = useState(false);
-  const [copiedMessages, setCopiedMessages] = useState<Set<string>>(new Set());
 
   const { copyToClipboard } = useCopyToClipboard({ timeout: 4000 });
   const controller = usePromptInputController();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Load conversation list on mount
-  useEffect(() => {
-    let isCancelled = false;
-    (async () => {
-      try {
-        const list = await fetchConversations();
-        if (!isCancelled) setConversations(list);
-      } catch {
-        // Ignore load errors; header will show empty state
-      }
-    })();
-    return () => {
-      isCancelled = true;
-    };
-  }, []);
-
-  // Memoize transport to ensure mode changes are picked up
-  const transport = useMemo(
-    () =>
-      new DefaultChatTransport({
-        api: "/api/ai/chat",
-        headers: { "x-ff-mode": mode, "x-ff-conversation-id": conversationId },
-      }),
-    [mode, conversationId],
-  );
+  // Fresh transport reflects current mode + conversation
+  const transport = new DefaultChatTransport({
+    api: "/api/ai/chat",
+    headers: { "x-ff-mode": mode, "x-ff-conversation-id": conversationId },
+  });
 
   const { messages, sendMessage, status, stop, regenerate } = useChat({
     id: conversationId,
     messages: initialMessages,
     transport,
   });
-
-  // Switch to an existing conversation (loads history)
-  const handleSelectConversation = async (id: string) => {
-    setIsLoadingConversation(true);
-    try {
-      const msgs = await fetchConversationMessages(id);
-      setConversationId(id);
-      setInitialMessages(msgs);
-      setCopiedMessages(new Set());
-    } finally {
-      setIsLoadingConversation(false);
-    }
-  };
-
-  const refreshConversations = async () => {
-    const list = await fetchConversations();
-    setConversations(list);
-  };
-
-  // Start a fresh conversation (clears history)
-  const handleNewConversation = () => {
-    const id = crypto.randomUUID();
-    setConversationId(id);
-    setInitialMessages([]);
-    setCopiedMessages(new Set());
-    refreshConversations();
-  };
 
   // Quick-send a suggested prompt
   const handleSuggestionClick = (suggestion: string) => {
@@ -171,16 +127,7 @@ function ChatContent() {
   };
 
   return (
-    <div className="flex h-full flex-col">
-      {/* Header */}
-      <ChatHeader
-        conversations={conversations}
-        onSelectConversation={handleSelectConversation}
-        onNewConversation={handleNewConversation}
-        onConversationDeleted={refreshConversations}
-        isLoadingConversation={isLoadingConversation}
-      />
-
+    <>
       {/* Conversation */}
       <Conversation
         className={cn(
@@ -308,7 +255,10 @@ function ChatContent() {
 
       {/* Prompt Input */}
       <div className="px-2">
-        <PromptInput onSubmit={handleSubmit} className="bg-background">
+        <PromptInput
+          onSubmit={handleSubmit}
+          className="bg-background rounded-md"
+        >
           <PromptInputBody>
             <PromptInputTextarea
               placeholder="Ask Foliofox..."
@@ -361,19 +311,6 @@ function ChatContent() {
           </PromptInputFooter>
         </PromptInput>
       </div>
-
-      {/* Dislaimer */}
-      <p className="text-muted-foreground p-2 text-center text-xs">
-        You are responsible for your investment decisions.
-      </p>
-    </div>
-  );
-}
-
-export function Chat() {
-  return (
-    <PromptInputProvider>
-      <ChatContent />
-    </PromptInputProvider>
+    </>
   );
 }
