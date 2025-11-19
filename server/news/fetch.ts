@@ -274,6 +274,9 @@ export async function fetchNewsForSymbols(
           uniqueArticles.push(mergedArticle);
         }
 
+        // Sort deterministically to avoid lock ordering deadlocks on upsert
+        uniqueArticles.sort((a, b) => a.yahoo_uuid.localeCompare(b.yahoo_uuid));
+
         const { error: insertError } = await supabase
           .from("news")
           .upsert(uniqueArticles, { onConflict: "yahoo_uuid" });

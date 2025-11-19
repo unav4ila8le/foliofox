@@ -1,12 +1,12 @@
 import Link from "next/link";
+import { Suspense } from "react";
 
 import { Button } from "@/components/ui/button";
 
 import { HeroImage } from "./image";
+import { CTAWrapper } from "@/components/homepage/cta-wrapper";
 
-import type { Profile } from "@/types/global.types";
-
-export function Hero({ profile }: { profile?: Profile }) {
+export function Hero() {
   return (
     <section>
       <div className="mx-auto max-w-xl text-center">
@@ -22,11 +22,11 @@ export function Hero({ profile }: { profile?: Profile }) {
           size="lg"
           className="bg-brand hover:bg-brand/90 mt-8 h-11 rounded-lg px-8 text-base"
         >
-          {profile ? (
-            <Link href="/dashboard">Dashboard</Link>
-          ) : (
-            <Link href="/auth/login">Get started</Link>
-          )}
+          <Link href="/dashboard">
+            <Suspense fallback="Get Started">
+              <CTAWrapper />
+            </Suspense>
+          </Link>
         </Button>
       </div>
       <div className="mt-12 mask-b-from-60%">

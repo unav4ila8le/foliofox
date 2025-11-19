@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { SelectionDialog } from "./selection-dialog";
 
+import { useDashboardData } from "@/components/dashboard/dashboard-data-provider";
 import type { Profile } from "@/types/global.types";
 import type { VariantProps } from "class-variance-authority";
 
@@ -34,11 +35,10 @@ const NewAssetDialogContext = createContext<
 
 export function NewAssetDialogProvider({
   children,
-  profile,
 }: {
   children: React.ReactNode;
-  profile: Profile;
 }) {
+  const { profile } = useDashboardData();
   const [openSelectionDialog, setOpenSelectionDialog] = useState(false);
   const [openFormDialog, setOpenFormDialog] = useState(false);
   const [selectedType, setSelectedType] = useState<SelectionType>("custom");

@@ -14,7 +14,7 @@ export const fetchProfile = cache(async () => {
 
   const { data: profile, error } = await supabase
     .from("profiles")
-    .select("username, display_currency, avatar_url")
+    .select("*")
     .eq("user_id", user.id)
     .single();
 
@@ -36,11 +36,12 @@ export const fetchOptionalProfile = cache(async () => {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("username, display_currency, avatar_url")
+    .select("*")
     .eq("user_id", user.id)
-    .single();
+    .maybeSingle();
 
   if (!profile) return null;
+
   return { profile, email: user.email ?? "" };
 });
 
@@ -71,6 +72,30 @@ export async function updateProfile(formData: FormData) {
   };
 
   // Update profile
+  const { error } = await supabase
+    .from("profiles")
+    .update(data)
+    .eq("user_id", user.id);
+
+  // Return Supabase errors instead of throwing
+  if (error) {
+    return { success: false, code: error.code, message: error.message };
+  }
+
+  revalidatePath("/dashboard", "layout");
+  return { success: true };
+}
+
+// Update profile
+export async function updateAISettings(formData: FormData) {
+  const { supabase, user } = await getCurrentUser();
+
+  // Data is already validated in the form component
+  const data: Pick<Profile, "data_sharing_consent"> = {
+    data_sharing_consent: formData.get("data_sharing_consent") === "true",
+  };
+
+  // Update AI settings
   const { error } = await supabase
     .from("profiles")
     .update(data)

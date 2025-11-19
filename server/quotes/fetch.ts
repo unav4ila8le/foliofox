@@ -234,6 +234,14 @@ export async function fetchQuotes(
     }
 
     if (upsert && successfulFetches.length > 0) {
+      // Sort by PK components to take locks in a stable order
+      successfulFetches.sort((a, b) => {
+        if (a.symbolId === b.symbolId) {
+          return a.dateString.localeCompare(b.dateString);
+        }
+        return a.symbolId.localeCompare(b.symbolId);
+      });
+
       const supabase = await createServiceClient();
       const { error: insertError } = await supabase.from("quotes").upsert(
         successfulFetches.map(({ symbolId, dateString, price }) => ({

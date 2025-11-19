@@ -1,10 +1,7 @@
 import type { Tables, TablesInsert } from "@/types/database.types";
 
 // Profile
-export type Profile = Pick<
-  Tables<"profiles">,
-  "username" | "display_currency" | "avatar_url"
->;
+export type Profile = Tables<"profiles">;
 
 // Currency
 export type Currency = Pick<Tables<"currencies">, "alphabetic_code" | "name">;
@@ -129,3 +126,6 @@ export type PublicPortfolioWithProfile = {
 };
 
 export type PublicPortfolioExpirationOption = "24h" | "7d" | "30d" | "never";
+
+// Financial Profile
+export type FinancialProfile = Tables<"financial_profiles">;

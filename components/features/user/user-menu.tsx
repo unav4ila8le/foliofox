@@ -1,17 +1,9 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { LogOut, Settings } from "lucide-react";
+import { CircleUser, LogOut, Settings } from "lucide-react";
 import { toast } from "sonner";
 
-import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,31 +12,44 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Spinner } from "@/components/ui/spinner";
+import { Badge } from "@/components/ui/badge";
 
-import { SettingsForm } from "@/components/dashboard/layout/left-sidebar/settings-form";
+import { SettingsDialog } from "@/components/features/settings/dialog";
+import { FinancialProfileDialog } from "@/components/features/financial-profile/dialog";
 import { signOut } from "@/server/auth/sign-out";
+import { useOptionalDashboardData } from "@/components/dashboard/dashboard-data-provider";
 
-import type { Profile } from "@/types/global.types";
+import type { FinancialProfile, Profile } from "@/types/global.types";
 
 interface UserMenuProps {
-  profile: Profile;
-  email?: string;
   children: ReactNode;
+  profile?: Profile;
+  financialProfile?: FinancialProfile | null;
+  email?: string;
   menuSide?: "top" | "right" | "bottom" | "left";
   menuAlign?: "start" | "center" | "end";
   menuSideOffset?: number;
 }
 
 export function UserMenu({
-  profile,
-  email,
   children,
+  profile: profileProp,
+  financialProfile: financialProfileProp = null,
+  email,
   menuSide = "bottom",
   menuAlign = "end",
   menuSideOffset = 4,
 }: UserMenuProps) {
+  const dashboardData = useOptionalDashboardData();
+  const profile = dashboardData?.profile ?? profileProp;
+  const financialProfile =
+    dashboardData?.financialProfile ?? financialProfileProp;
+  const emailValue = dashboardData?.email ?? email;
+
   const [isLoading, setIsLoading] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
+  const [financialProfileDialogOpen, setFinancialProfileDialogOpen] =
+    useState(false);
 
   async function handleSignOut() {
     setIsLoading(true);
@@ -58,23 +63,39 @@ export function UserMenu({
   }
 
   return (
-    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+    <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
         <DropdownMenuContent
+          onCloseAutoFocus={(e) => e.preventDefault()}
           className="min-w-(--radix-dropdown-menu-trigger-width) md:w-auto md:min-w-56"
           side={menuSide}
           align={menuAlign}
           sideOffset={menuSideOffset}
         >
-          {email ? <DropdownMenuItem disabled>{email}</DropdownMenuItem> : null}
-          <DropdownMenuSeparator />
-          <DialogTrigger asChild>
-            <DropdownMenuItem>
-              <Settings className="size-4" />
-              Settings
-            </DropdownMenuItem>
-          </DialogTrigger>
+          {emailValue && (
+            <>
+              <DropdownMenuItem disabled>{emailValue}</DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          )}
+          <DropdownMenuItem
+            onSelect={() => {
+              setFinancialProfileDialogOpen(true);
+            }}
+          >
+            <CircleUser className="size-4" />
+            Financial profile
+            <Badge className="bg-brand/10 text-brand ml-auto">New</Badge>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={() => {
+              setSettingsDialogOpen(true);
+            }}
+          >
+            <Settings className="size-4" />
+            Settings
+          </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={(event) => {
               event.preventDefault();
@@ -96,19 +117,18 @@ export function UserMenu({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
-        <DialogHeader>
-          <DialogTitle>Settings</DialogTitle>
-          <DialogDescription>
-            Change here your profile information
-          </DialogDescription>
-        </DialogHeader>
-        <SettingsForm
-          profile={profile}
-          email={email ?? ""}
-          onSuccess={() => setDialogOpen(false)}
-        />
-      </DialogContent>
-    </Dialog>
+      <FinancialProfileDialog
+        open={financialProfileDialogOpen}
+        onOpenChange={setFinancialProfileDialogOpen}
+        profile={profile}
+        financialProfile={financialProfile}
+      />
+      <SettingsDialog
+        open={settingsDialogOpen}
+        onOpenChange={setSettingsDialogOpen}
+        profile={profile}
+        email={emailValue}
+      />
+    </>
   );
 }

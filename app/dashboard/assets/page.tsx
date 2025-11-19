@@ -17,7 +17,7 @@ async function AssetsTableWrapper() {
   return <AssetsTable data={positionsWithProfitLoss} />;
 }
 
-export default async function AssetsPage() {
+export default function AssetsPage() {
   return (
     <div className="flex flex-col gap-4">
       <div>

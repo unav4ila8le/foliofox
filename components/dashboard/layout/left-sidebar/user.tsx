@@ -6,20 +6,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SidebarMenuButton, useSidebar } from "@/components/ui/custom/sidebar";
 import { UserMenu } from "@/components/features/user/user-menu";
 import { usePrivacyMode } from "@/components/dashboard/privacy-mode-provider";
+import { useDashboardData } from "@/components/dashboard/dashboard-data-provider";
 
 import { formatCurrency } from "@/lib/number-format";
 
-import type { Profile } from "@/types/global.types";
-
-export function User({
-  profile,
-  email,
-  netWorth,
-}: {
-  profile: Profile;
-  email: string;
-  netWorth: number;
-}) {
+export function User() {
+  const { profile, netWorth } = useDashboardData();
   const { isMobile } = useSidebar();
   const { isPrivacyMode } = usePrivacyMode();
 
@@ -28,12 +20,7 @@ export function User({
   const initial = username.slice(0, 1);
 
   return (
-    <UserMenu
-      profile={profile}
-      email={email}
-      menuSide={isMobile ? "bottom" : "right"}
-      menuAlign="end"
-    >
+    <UserMenu menuSide={isMobile ? "bottom" : "right"} menuAlign="start">
       <SidebarMenuButton
         size="lg"
         className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground flex items-center gap-2"

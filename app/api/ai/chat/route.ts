@@ -1,6 +1,7 @@
 import { openai } from "@ai-sdk/openai";
 import { streamText, UIMessage, convertToModelMessages, stepCountIs } from "ai";
 
+import { fetchProfile } from "@/server/profile/actions";
 import { createSystemPrompt, type Mode } from "@/server/ai/system-prompt";
 import { aiTools } from "@/server/ai/tools";
 import {
@@ -17,6 +18,11 @@ export async function POST(req: Request) {
   const mode =
     (req.headers.get("x-ff-mode")?.toLowerCase() as Mode) ?? "advisory";
   const conversationId = req.headers.get("x-ff-conversation-id") ?? undefined;
+
+  const { profile } = await fetchProfile();
+  if (!profile.data_sharing_consent) {
+    return new Response("AI data sharing consent required", { status: 403 });
+  }
 
   if (conversationId) {
     // Non-blocking; don't fail the request if persistence errors

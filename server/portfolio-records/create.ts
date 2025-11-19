@@ -17,8 +17,8 @@ import { PORTFOLIO_RECORD_TYPES } from "@/types/enums";
 export async function createPortfolioRecord(formData: FormData) {
   const { supabase, user } = await getCurrentUser();
 
-  // Extract record data
-  const recordData: Pick<
+  // Extract portfolio record data
+  const portfolioRecordData: Pick<
     PortfolioRecord,
     "position_id" | "type" | "date" | "quantity" | "unit_value" | "description"
   > = {
@@ -40,7 +40,7 @@ export async function createPortfolioRecord(formData: FormData) {
   // Insert portfolio record
   const { data: inserted, error: insertError } = await supabase
     .from("portfolio_records")
-    .insert({ user_id: user.id, ...recordData })
+    .insert({ user_id: user.id, ...portfolioRecordData })
     .select("id, position_id, date")
     .single();
 
@@ -53,7 +53,7 @@ export async function createPortfolioRecord(formData: FormData) {
   }
 
   const customCostBasisMap =
-    recordData.type === "update" && costBasisPerUnit !== null
+    portfolioRecordData.type === "update" && costBasisPerUnit !== null
       ? { [inserted.id]: costBasisPerUnit }
       : undefined;
 
