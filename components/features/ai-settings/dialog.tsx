@@ -1,3 +1,5 @@
+import { Sparkles } from "lucide-react";
+
 import {
   Dialog,
   DialogContent,
@@ -20,7 +22,9 @@ export function AISettingsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader>
-          <DialogTitle>Foliofox AI Advisor</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <Sparkles className="size-5" /> Foliofox AI Advisor
+          </DialogTitle>
           <DialogDescription>
             Update your AI settings and data sharing preferences here.
           </DialogDescription>

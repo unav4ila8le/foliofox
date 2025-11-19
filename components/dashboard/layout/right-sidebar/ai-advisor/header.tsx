@@ -38,6 +38,7 @@ interface ChatHeaderProps {
   onNewConversation: () => void;
   onConversationDeleted?: () => void;
   isLoadingConversation?: boolean;
+  isAIEnabled?: boolean;
 }
 
 export function ChatHeader({
@@ -46,6 +47,7 @@ export function ChatHeader({
   onNewConversation,
   onConversationDeleted,
   isLoadingConversation,
+  isAIEnabled,
 }: ChatHeaderProps) {
   const [openHistory, setOpenHistory] = useState(false);
   const [openAISettings, setOpenAISettings] = useState(false);
@@ -77,7 +79,7 @@ export function ChatHeader({
           <Tooltip delayDuration={500}>
             <TooltipTrigger asChild>
               <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" disabled={!isAIEnabled}>
                   <History />
                 </Button>
               </PopoverTrigger>
@@ -155,7 +157,7 @@ export function ChatHeader({
               variant="ghost"
               size="icon"
               onClick={onNewConversation}
-              disabled={isLoadingConversation}
+              disabled={isLoadingConversation || !isAIEnabled}
             >
               {isLoadingConversation ? <Spinner /> : <Plus />}
             </Button>

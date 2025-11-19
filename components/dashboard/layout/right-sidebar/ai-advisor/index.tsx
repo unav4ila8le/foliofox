@@ -10,8 +10,6 @@ import { Chat } from "./chat";
 import { fetchConversationMessages } from "@/server/ai/messages/fetch";
 import { fetchConversations } from "@/server/ai/conversations/fetch";
 
-import { cn } from "@/lib/utils";
-
 import type { UIMessage } from "ai";
 
 export function AIAdvisor() {
@@ -79,18 +77,14 @@ export function AIAdvisor() {
   };
 
   return (
-    <div
-      className={cn(
-        "flex h-full flex-col",
-        !isAIEnabled && "pointer-events-none opacity-50",
-      )}
-    >
+    <div className="flex h-full flex-col">
       <ChatHeader
         conversations={conversations}
         onSelectConversation={handleSelectConversation}
         onNewConversation={handleNewConversation}
         onConversationDeleted={refreshConversations}
         isLoadingConversation={isLoadingConversation}
+        isAIEnabled={isAIEnabled}
       />
       <PromptInputProvider>
         <Chat
@@ -99,6 +93,7 @@ export function AIAdvisor() {
           isLoadingConversation={isLoadingConversation}
           copiedMessages={copiedMessages}
           setCopiedMessages={setCopiedMessages}
+          isAIEnabled={isAIEnabled}
         />
       </PromptInputProvider>
       {/* Disclaimer */}

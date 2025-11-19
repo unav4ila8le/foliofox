@@ -9,7 +9,7 @@ import {
 } from "react";
 import { DefaultChatTransport, isToolUIPart, type UIMessage } from "ai";
 import { useChat } from "@ai-sdk/react";
-import { Check, Copy, RefreshCcw } from "lucide-react";
+import { Check, Copy, RefreshCcw, Sparkles } from "lucide-react";
 
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 
@@ -52,6 +52,7 @@ import {
   ToolOutput,
 } from "@/components/ai-elements/tool";
 import { Logomark } from "@/components/ui/logos/logomark";
+import { AISettingsDialog } from "@/components/features/ai-settings/dialog";
 
 import type { Mode } from "@/server/ai/system-prompt";
 
@@ -64,12 +65,42 @@ const suggestions = [
   "Based on my positions and portfolio history, what's my probability of reaching $1M net worth in 10 years?",
 ];
 
+function DisabledState() {
+  const [openAISettings, setOpenAISettings] = useState(false);
+
+  return (
+    <div className="p-4 text-center">
+      <ConversationEmptyState
+        icon={<Logomark width={64} className="text-muted-foreground/25" />}
+        title="Foliofox AI Advisor"
+        description="Share your portfolio and financial profile to get tailored portfolio insights and advice."
+        className="p-0 pb-3"
+      />
+      <p className="text-muted-foreground mb-2 text-sm">
+        Turn on AI data sharing in settings to unlock personalized answers.
+      </p>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setOpenAISettings(true)}
+      >
+        <Sparkles /> Enable data sharing
+      </Button>
+      <AISettingsDialog
+        open={openAISettings}
+        onOpenChange={setOpenAISettings}
+      />
+    </div>
+  );
+}
+
 interface ChatProps {
   conversationId: string;
   initialMessages: UIMessage[];
   isLoadingConversation: boolean;
   copiedMessages: Set<string>;
   setCopiedMessages: Dispatch<SetStateAction<Set<string>>>;
+  isAIEnabled?: boolean;
 }
 
 export function Chat({
@@ -78,6 +109,7 @@ export function Chat({
   isLoadingConversation,
   copiedMessages,
   setCopiedMessages,
+  isAIEnabled,
 }: ChatProps) {
   const [mode, setMode] = useState<Mode>("advisory");
 
@@ -137,13 +169,17 @@ export function Chat({
       >
         <ConversationContent className="gap-4 p-2">
           {messages.length === 0 ? (
-            <ConversationEmptyState
-              icon={
-                <Logomark width={64} className="text-muted-foreground/25" />
-              }
-              title="Foliofox AI Advisor"
-              description="Type a message below to start a conversation"
-            />
+            isAIEnabled ? (
+              <ConversationEmptyState
+                icon={
+                  <Logomark width={64} className="text-muted-foreground/25" />
+                }
+                title="Foliofox AI Advisor"
+                description="Type a message below to start a conversation"
+              />
+            ) : (
+              <DisabledState />
+            )
           ) : (
             messages.map((message, messageIndex) => (
               <Fragment key={message.id}>
@@ -178,6 +214,7 @@ export function Chat({
                                 <MessageAction
                                   onClick={() => regenerate()}
                                   tooltip="Regenerate response"
+                                  disabled={!isAIEnabled}
                                 >
                                   <RefreshCcw className="size-3.5" />
                                 </MessageAction>
@@ -241,6 +278,7 @@ export function Chat({
           <div className="space-y-1">
             {suggestions.map((suggestion) => (
               <Button
+                disabled={!isAIEnabled}
                 key={suggestion}
                 onClick={() => handleSuggestionClick(suggestion)}
                 variant="ghost"
@@ -254,7 +292,9 @@ export function Chat({
       )}
 
       {/* Prompt Input */}
-      <div className="px-2">
+      <div
+        className={cn("px-2", !isAIEnabled && "pointer-events-none opacity-50")}
+      >
         <PromptInput
           onSubmit={handleSubmit}
           className="bg-background rounded-md"
