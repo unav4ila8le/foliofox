@@ -1,13 +1,105 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
 import { Logomark } from "@/components/ui/logos/logomark";
+import { Skeleton } from "@/components/ui/skeleton";
 import { PublicPortfolioHeader } from "@/components/public-portfolio/header";
 import { PublicPortfolioAssetsTable } from "@/components/public-portfolio/assets-table";
 import { AssetAllocationDonutPublic } from "@/components/dashboard/charts/asset-allocation-donut";
 import { ProjectedIncomeWidget } from "@/components/dashboard/charts/projected-income/widget";
 
-import { buildPublicPortfolioView } from "@/server/public-portfolios/view";
+import { fetchPublicPortfolioBySlug } from "@/server/public-portfolios/fetch";
+import { createServiceClient } from "@/supabase/service";
+import { calculateNetWorth } from "@/server/analysis/net-worth";
+import { calculateAssetAllocation } from "@/server/analysis/asset-allocation";
+import { calculateProjectedIncome } from "@/server/analysis/projected-income";
+import { fetchPositions } from "@/server/positions/fetch";
+import { calculateProfitLoss } from "@/lib/profit-loss";
+
+import type { PositionsQueryContext } from "@/server/positions/fetch";
+
+// --- Wrapper Components ---
+
+async function AssetAllocationWrapper({
+  userId,
+  currency,
+}: {
+  userId: string;
+  currency: string;
+}) {
+  const supabaseClient = createServiceClient();
+  const context: PositionsQueryContext = { supabaseClient, userId };
+  const asOfDate = new Date();
+
+  const [netWorth, assetAllocation] = await Promise.all([
+    calculateNetWorth(currency, asOfDate, context),
+    calculateAssetAllocation(currency, asOfDate, context),
+  ]);
+
+  return (
+    <AssetAllocationDonutPublic
+      netWorth={netWorth}
+      currency={currency}
+      assetAllocation={assetAllocation}
+      className="h-72!"
+    />
+  );
+}
+
+async function ProjectedIncomeWrapper({
+  userId,
+  currency,
+}: {
+  userId: string;
+  currency: string;
+}) {
+  const supabaseClient = createServiceClient();
+  const context: PositionsQueryContext = { supabaseClient, userId };
+
+  const projectedIncomeResult = await calculateProjectedIncome(
+    currency,
+    12,
+    context,
+  );
+
+  return (
+    <ProjectedIncomeWidget
+      projectedIncome={{
+        success: projectedIncomeResult.success,
+        data: projectedIncomeResult.data ?? [],
+        message: projectedIncomeResult.message,
+        currency: projectedIncomeResult.currency ?? currency,
+      }}
+      currency={projectedIncomeResult.currency ?? currency}
+      className="h-72!"
+    />
+  );
+}
+
+async function PositionsWrapper({ userId }: { userId: string }) {
+  const supabaseClient = createServiceClient();
+  const context: PositionsQueryContext = { supabaseClient, userId };
+  const asOfDate = new Date();
+
+  const positionsResult = await fetchPositions(
+    {
+      positionType: "asset",
+      asOfDate: asOfDate,
+      includeSnapshots: true,
+    },
+    context,
+  );
+
+  const positionsWithProfitLoss = calculateProfitLoss(
+    positionsResult.positions,
+    positionsResult.snapshots,
+  );
+
+  return <PublicPortfolioAssetsTable positions={positionsWithProfitLoss} />;
+}
+
+// --- Main Page Component ---
 
 export default async function PublicPortfolioPage(props: {
   params: Promise<{ slug: string }>;
@@ -16,16 +108,18 @@ export default async function PublicPortfolioPage(props: {
   const searchParams = await props.searchParams;
   const params = await props.params;
   const [{ slug }, search] = await Promise.all([params, searchParams]);
-  const rawCurrency = Array.isArray(search?.currency)
-    ? search?.currency[0]
-    : search?.currency;
-  const portfolio = await buildPublicPortfolioView(slug, rawCurrency);
 
-  if (!portfolio) {
+  // 1. Fetch metadata first (fast)
+  const resolved = await fetchPublicPortfolioBySlug(slug);
+
+  if (!resolved) {
     notFound();
   }
 
-  if (portfolio.status === "expired") {
+  const { profile } = resolved;
+
+  // 2. Handle expired state
+  if (!resolved.isActive) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center text-center">
         <Link href="/" aria-label="Foliofox - Go to homepage">
@@ -45,38 +139,49 @@ export default async function PublicPortfolioPage(props: {
     );
   }
 
+  // 3. Determine currency
+  function normalizeCurrency(code: string | undefined | string[]) {
+    if (!code) return undefined;
+    const singleCode = Array.isArray(code) ? code[0] : code;
+    const trimmed = singleCode.trim();
+    return /^[A-Z]{3}$/.test(trimmed) ? trimmed : undefined;
+  }
+
+  const fallbackCurrency = profile.display_currency ?? "USD";
+  const targetCurrency =
+    normalizeCurrency(search?.currency) ?? fallbackCurrency;
+
+  // 4. Render page with Suspense boundaries
   return (
     <div className="mt-4 grid w-full grid-cols-6 gap-4 md:mt-8">
       <div className="col-span-6">
         <PublicPortfolioHeader
-          username={portfolio.owner.username}
-          avatarUrl={portfolio.owner.avatarUrl}
-          currentCurrency={portfolio.netWorth.currency}
-          defaultCurrency={portfolio.owner.displayCurrency}
+          username={profile.username}
+          avatarUrl={profile.avatar_url}
+          currentCurrency={targetCurrency}
+          defaultCurrency={profile.display_currency}
         />
       </div>
       <div className="col-span-6 md:col-span-3">
-        <AssetAllocationDonutPublic
-          netWorth={portfolio.netWorth.value}
-          currency={portfolio.netWorth.currency}
-          assetAllocation={portfolio.assetAllocation}
-          className="h-72!"
-        />
+        <Suspense fallback={<Skeleton className="h-72" />}>
+          <AssetAllocationWrapper
+            userId={profile.user_id}
+            currency={targetCurrency}
+          />
+        </Suspense>
       </div>
       <div className="col-span-6 md:col-span-3">
-        <ProjectedIncomeWidget
-          projectedIncome={{
-            success: portfolio.projectedIncome.success,
-            data: portfolio.projectedIncome.data,
-            message: portfolio.projectedIncome.message,
-            currency: portfolio.projectedIncome.currency,
-          }}
-          currency={portfolio.projectedIncome.currency}
-          className="h-72!"
-        />
+        <Suspense fallback={<Skeleton className="h-72" />}>
+          <ProjectedIncomeWrapper
+            userId={profile.user_id}
+            currency={targetCurrency}
+          />
+        </Suspense>
       </div>
       <div className="col-span-6">
-        <PublicPortfolioAssetsTable positions={portfolio.positions} />
+        <Suspense fallback={<Skeleton className="h-96" />}>
+          <PositionsWrapper userId={profile.user_id} />
+        </Suspense>
       </div>
     </div>
   );

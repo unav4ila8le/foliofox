@@ -1,6 +1,8 @@
-import { fetchOptionalProfile } from "@/server/profile/actions";
+import { createClient } from "@/supabase/server";
 
 export async function CTAWrapper({ cta = "Get started" }: { cta?: string }) {
-  const data = await fetchOptionalProfile();
-  return data?.profile ? "Dashboard" : cta;
+  const supabase = await createClient();
+
+  const { data } = await supabase.auth.getClaims();
+  return data?.claims ? "Dashboard" : cta;
 }
