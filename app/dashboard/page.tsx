@@ -28,11 +28,11 @@ async function GreetingsWrapper() {
 }
 
 async function NetWorthChartWrapper() {
+  const { profile } = await fetchProfile();
+
   const today = new Date();
   const defaultDaysBack =
     differenceInCalendarDays(today, subMonths(today, 6)) + 1;
-
-  const { profile } = await fetchProfile();
   // Fetch both history and change for default period (6 calendar months)
   const [netWorth, netWorthHistory, netWorthChange] = await Promise.all([
     calculateNetWorth(profile.display_currency),
@@ -115,27 +115,27 @@ export default function DashboardPage() {
       </div>
       <div className="grid grid-cols-6 gap-4">
         <div className="col-span-6 xl:col-span-4">
-          <Suspense fallback={<Skeleton className="h-80 rounded-xl" />}>
+          <Suspense fallback={<Skeleton className="h-80" />}>
             <NetWorthChartWrapper />
           </Suspense>
         </div>
         <div className="col-span-6 lg:col-span-3 xl:col-span-2">
-          <Suspense fallback={<Skeleton className="h-80 rounded-xl" />}>
+          <Suspense fallback={<Skeleton className="h-80" />}>
             <AssetAllocationChartWrapper />
           </Suspense>
         </div>
         <div className="col-span-6 lg:col-span-3">
-          <Suspense fallback={<Skeleton className="h-80 rounded-xl" />}>
+          <Suspense fallback={<Skeleton className="h-80" />}>
             <NewsWidgetWrapper />
           </Suspense>
         </div>
         <div className="col-span-6 xl:col-span-3">
-          <Suspense fallback={<Skeleton className="h-80 rounded-xl" />}>
+          <Suspense fallback={<Skeleton className="h-80" />}>
             <ProjectedIncomeWidgetWrapper />
           </Suspense>
         </div>
         <div className="col-span-6">
-          <Suspense fallback={<Skeleton className="h-80 rounded-xl" />}>
+          <Suspense fallback={<Skeleton className="h-80" />}>
             <PortfolioRecordsWidgetWrapper />
           </Suspense>
         </div>
