@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { addYears, format } from "date-fns";
 import { Plus, Trash2 } from "lucide-react";
 
@@ -42,8 +42,11 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlanProjectionChart } from "@/components/dashboard/plans/plan-projection-chart";
+import { MultiSimulationChart } from "@/components/dashboard/plans/multi-simulation-chart";
+import { AnalyticsView } from "@/components/dashboard/plans/analytics-view";
 import { SalaryIncomeForm } from "@/components/dashboard/plans/salary-income-form";
 import { FreelanceIncomeForm } from "@/components/dashboard/plans/freelance-income-form";
+import { SimulationSidebar } from "@/components/dashboard/plans/simulation-sidebar";
 
 import {
   projectNetWorth,
@@ -54,6 +57,18 @@ import {
   type RecurringFrequency,
 } from "@/lib/planning-engine";
 import { type TimeScale } from "@/lib/projection-aggregation";
+import {
+  type Simulation,
+  type SimulationData,
+  createSimulation,
+  cloneSimulation,
+  setPrimarySimulation,
+  toggleSimulationVisibility,
+  updateSimulation,
+  deleteSimulation,
+  SIMULATION_COLORS,
+} from "@/lib/simulation";
+import { generateProjectionAnalytics } from "@/lib/projection-analytics";
 
 // For prototype: hardcoded demo data
 const DEMO_CATEGORIES: CategoryAssumption[] = [
@@ -103,39 +118,122 @@ const DEMO_HISTORICAL_DATA = [
 ];
 
 export default function PlansPage() {
-  // Basic assumptions (persisted in localStorage)
-  const [annualExpenses, setAnnualExpenses] = useLocalStorage("plans_annualExpenses", 60000);
-  const [reinvestmentRate, setReinvestmentRate] = useLocalStorage("plans_reinvestmentRate", 0.5); // 50%
-  const [timeHorizon, setTimeHorizon] = useLocalStorage("plans_timeHorizon", "10");
-  const [startDate, setStartDate] = useLocalStorage("plans_startDate", format(new Date(), "yyyy-MM-dd"));
-  const [timeScale, setTimeScale] = useLocalStorage<TimeScale>("plans_timeScale", "monthly");
+  // View state (Chart or Analytics)
+  const [activeView, setActiveView] = useState<'chart' | 'analytics'>('chart');
 
-  // Events (with localStorage persistence)
-  // We need to handle Date serialization/deserialization
-  const [eventsRaw, setEventsRaw] = useLocalStorage<any[]>("plans_events", []);
-  const [recurringEventsRaw, setRecurringEventsRaw] = useLocalStorage<any[]>("plans_recurringEvents", []);
+  // Simulation-based state (replaces all individual states)
+  const [simulations, setSimulations] = useLocalStorage<any[]>("plans_simulations_v2", []);
+  const [activeSimulationId, setActiveSimulationId] = useLocalStorage<string | null>("plans_activeSimId", null);
 
-  // Convert raw data to proper types with Date objects
-  const events: OneTimeEvent[] = useMemo(() =>
-    eventsRaw.map(e => ({ ...e, date: new Date(e.date) })),
-    [eventsRaw]
-  );
-
-  const recurringEvents: RecurringEvent[] = useMemo(() =>
-    recurringEventsRaw.map(e => ({
-      ...e,
-      startDate: new Date(e.startDate),
-      endDate: e.endDate ? new Date(e.endDate) : undefined,
+  // Deserialize simulations (handle Date objects)
+  const deserializedSimulations: Simulation[] = useMemo(() =>
+    simulations.map(s => ({
+      ...s,
+      createdAt: new Date(s.createdAt),
+      lastModified: new Date(s.lastModified),
+      data: {
+        ...s.data,
+        startDate: new Date(s.data.startDate),
+        oneTimeEvents: s.data.oneTimeEvents.map((e: any) => ({
+          ...e,
+          date: new Date(e.date),
+        })),
+        recurringEvents: s.data.recurringEvents.map((e: any) => ({
+          ...e,
+          startDate: new Date(e.startDate),
+          endDate: e.endDate ? new Date(e.endDate) : undefined,
+        })),
+      },
     })),
-    [recurringEventsRaw]
+    [simulations]
   );
 
+  // Initialize with default simulation if empty
+  useEffect(() => {
+    if (deserializedSimulations.length === 0) {
+      const defaultSim = createSimulation("Current Reality", {
+        startDate: new Date(),
+        timeHorizon: 10,
+        timeScale: 'monthly',
+        oneTimeEvents: [],
+        recurringEvents: [],
+        categoryAssumptions: DEMO_CATEGORIES.length > 0 ? DEMO_CATEGORIES : [{
+          categoryId: "cash",
+          categoryName: "Cash",
+          currentValue: 10000,
+          expectedAnnualReturn: 0.015,
+          variance: 0,
+        }],
+        reinvestmentAllocation: [{ categoryId: DEMO_CATEGORIES.length > 0 ? DEMO_CATEGORIES[0].categoryId : "cash", percentage: 1.0 }],
+        annualExpenses: 60000,
+        reinvestmentRate: 0.5,
+      });
+      setSimulations([defaultSim]);
+      setActiveSimulationId(defaultSim.id);
+    } else if (!activeSimulationId) {
+      setActiveSimulationId(deserializedSimulations[0].id);
+    }
+  }, [deserializedSimulations.length, activeSimulationId, setSimulations, setActiveSimulationId]);
+
+  // Get active simulation
+  const activeSimulation = deserializedSimulations.find(s => s.id === activeSimulationId);
+  if (!activeSimulation) return <div className="flex items-center justify-center h-screen">Loading...</div>;
+
+  // Helper: Update active simulation's data
+  const updateActiveSimulationData = (updates: Partial<SimulationData>) => {
+    setSimulations(
+      updateSimulation(deserializedSimulations, activeSimulation.id, {
+        data: { ...activeSimulation.data, ...updates }
+      })
+    );
+  };
+
+  // Convenience accessors (so existing code still works)
+  const events = activeSimulation.data.oneTimeEvents;
+  const recurringEvents = activeSimulation.data.recurringEvents;
+  const categoryAssumptions = activeSimulation.data.categoryAssumptions;
+  const reinvestmentAllocation = activeSimulation.data.reinvestmentAllocation;
+  const annualExpenses = activeSimulation.data.annualExpenses;
+  const reinvestmentRate = activeSimulation.data.reinvestmentRate;
+  const timeScale = activeSimulation.data.timeScale;
+  const timeHorizon = activeSimulation.data.timeHorizon.toString();
+  const startDate = format(activeSimulation.data.startDate, "yyyy-MM-dd");
+
+  // Update handlers (modify to use updateActiveSimulationData)
   const setEvents = (newEvents: OneTimeEvent[]) => {
-    setEventsRaw(newEvents);
+    updateActiveSimulationData({ oneTimeEvents: newEvents });
   };
 
   const setRecurringEvents = (newEvents: RecurringEvent[]) => {
-    setRecurringEventsRaw(newEvents);
+    updateActiveSimulationData({ recurringEvents: newEvents });
+  };
+
+  const setCategoryAssumptions = (cats: CategoryAssumption[]) => {
+    updateActiveSimulationData({ categoryAssumptions: cats });
+  };
+
+  const setReinvestmentAllocation = (alloc: Array<{categoryId: string; percentage: number}>) => {
+    updateActiveSimulationData({ reinvestmentAllocation: alloc });
+  };
+
+  const setAnnualExpenses = (val: number) => {
+    updateActiveSimulationData({ annualExpenses: val });
+  };
+
+  const setReinvestmentRate = (val: number) => {
+    updateActiveSimulationData({ reinvestmentRate: val });
+  };
+
+  const setTimeScale = (val: TimeScale) => {
+    updateActiveSimulationData({ timeScale: val });
+  };
+
+  const setTimeHorizon = (val: string) => {
+    updateActiveSimulationData({ timeHorizon: Number(val) });
+  };
+
+  const setStartDate = (val: string) => {
+    updateActiveSimulationData({ startDate: new Date(val) });
   };
 
   // Form state for new events
@@ -237,31 +335,42 @@ export default function PlansPage() {
     }
   };
 
-  // Category assumptions (persisted in localStorage)
-  const [categoryAssumptions, setCategoryAssumptions] = useLocalStorage<CategoryAssumption[]>(
-    "plans_categories",
-    DEMO_CATEGORIES.length > 0 ? DEMO_CATEGORIES : [
-      {
-        categoryId: "cash",
-        categoryName: "Cash",
-        currentValue: 10000,
-        expectedAnnualReturn: 0.015,
-        variance: 0,
-      },
-    ]
-  );
+  // Simulation CRUD handlers
+  const handleCreateNew = () => {
+    const newSim = createSimulation(
+      `Simulation ${deserializedSimulations.length + 1}`,
+      { ...activeSimulation.data }, // Clone current data
+      deserializedSimulations
+    );
+    setSimulations([...deserializedSimulations, newSim]);
+    setActiveSimulationId(newSim.id);
+  };
 
-  // Reinvestment allocation (persisted)
-  const [reinvestmentAllocation, setReinvestmentAllocation] = useLocalStorage<Array<{
-    categoryId: string;
-    percentage: number;
-  }>>(
-    "plans_reinvestmentAllocation",
-    categoryAssumptions.map((cat, idx) => ({
-      categoryId: cat.categoryId,
-      percentage: idx === 0 ? 1.0 : 0, // Default: 100% to first category
-    }))
-  );
+  const handleClone = (id: string) => {
+    const original = deserializedSimulations.find(s => s.id === id);
+    if (!original) return;
+
+    const cloned = cloneSimulation(
+      original,
+      `${original.name} (Copy)`,
+      deserializedSimulations
+    );
+    setSimulations([...deserializedSimulations, cloned]);
+  };
+
+  const handleDelete = (id: string) => {
+    const updated = deleteSimulation(deserializedSimulations, id);
+    setSimulations(updated);
+    if (activeSimulationId === id && updated.length > 0) {
+      setActiveSimulationId(updated[0].id);
+    }
+  };
+
+  const handleRename = (id: string, newName: string) => {
+    setSimulations(
+      updateSimulation(deserializedSimulations, id, { name: newName })
+    );
+  };
 
   // Category management functions
   const addCategory = () => {
@@ -273,13 +382,14 @@ export default function PlansPage() {
       expectedAnnualReturn: 0.05,
       variance: 0,
     };
-    setCategoryAssumptions([...categoryAssumptions, newCategory]);
 
-    // Add to reinvestment allocation with 0%
-    setReinvestmentAllocation([
-      ...reinvestmentAllocation,
-      { categoryId: newId, percentage: 0 },
-    ]);
+    updateActiveSimulationData({
+      categoryAssumptions: [...categoryAssumptions, newCategory],
+      reinvestmentAllocation: [
+        ...reinvestmentAllocation,
+        { categoryId: newId, percentage: 0 },
+      ],
+    });
   };
 
   const removeCategory = (categoryId: string) => {
@@ -288,39 +398,41 @@ export default function PlansPage() {
       return;
     }
 
-    setCategoryAssumptions(categoryAssumptions.filter(c => c.categoryId !== categoryId));
-    setReinvestmentAllocation(reinvestmentAllocation.filter(a => a.categoryId !== categoryId));
+    updateActiveSimulationData({
+      categoryAssumptions: categoryAssumptions.filter(c => c.categoryId !== categoryId),
+      reinvestmentAllocation: reinvestmentAllocation.filter(a => a.categoryId !== categoryId),
+    });
   };
 
   const updateCategoryField = (categoryId: string, field: keyof CategoryAssumption, value: any) => {
-    setCategoryAssumptions(
-      categoryAssumptions.map(cat =>
-        cat.categoryId === categoryId ? { ...cat, [field]: value } : cat
-      )
+    const updatedCategories = categoryAssumptions.map(cat =>
+      cat.categoryId === categoryId ? { ...cat, [field]: value } : cat
     );
 
-    // If category name changed, update categoryId and reinvestment allocation
+    // If category name changed, update categoryId in both categories and reinvestment allocation
     if (field === 'categoryName') {
       const newId = value.toLowerCase().replace(/\s+/g, '-');
-      setCategoryAssumptions(prev =>
-        prev.map(cat =>
+      updateActiveSimulationData({
+        categoryAssumptions: updatedCategories.map(cat =>
           cat.categoryId === categoryId ? { ...cat, categoryId: newId } : cat
-        )
-      );
-      setReinvestmentAllocation(prev =>
-        prev.map(alloc =>
+        ),
+        reinvestmentAllocation: reinvestmentAllocation.map(alloc =>
           alloc.categoryId === categoryId ? { ...alloc, categoryId: newId } : alloc
-        )
-      );
+        ),
+      });
+    } else {
+      updateActiveSimulationData({
+        categoryAssumptions: updatedCategories,
+      });
     }
   };
 
   const updateReinvestmentAllocation = (categoryId: string, percentage: number) => {
-    setReinvestmentAllocation(
-      reinvestmentAllocation.map(alloc =>
+    updateActiveSimulationData({
+      reinvestmentAllocation: reinvestmentAllocation.map(alloc =>
         alloc.categoryId === categoryId ? { ...alloc, percentage: percentage / 100 } : alloc
-      )
-    );
+      ),
+    });
   };
 
   // Calculate total reinvestment percentage
@@ -329,7 +441,7 @@ export default function PlansPage() {
     0
   );
 
-  // Calculate projection
+  // Calculate projection for active simulation (for forms and single-simulation view)
   const projection = useMemo(() => {
     const inputs: PlanInputs = {
       startDate: new Date(startDate),
@@ -364,8 +476,64 @@ export default function PlansPage() {
     recurringEvents,
   ]);
 
+  // Calculate projections for all visible simulations (for multi-simulation comparison)
+  const visibleSimulationsWithProjections = useMemo(() => {
+    return deserializedSimulations
+      .filter(sim => sim.visible)
+      .map(sim => {
+        const inputs: PlanInputs = {
+          startDate: sim.data.startDate,
+          timeHorizonYears: sim.data.timeHorizon,
+          categoryAssumptions: sim.data.categoryAssumptions,
+          incomeExpense: {
+            annualIncome: { mean: 0, variance: 0 },
+            annualExpenses: { mean: sim.data.annualExpenses, variance: 0 },
+            reinvestmentRate: sim.data.reinvestmentRate,
+            reinvestmentAllocation: sim.data.reinvestmentAllocation,
+          },
+          oneTimeEvents: sim.data.oneTimeEvents,
+          recurringEvents: sim.data.recurringEvents,
+          plannedSales: [],
+        };
+
+        return {
+          simulation: sim,
+          projection: projectNetWorth(inputs, 'expected'),
+        };
+      });
+  }, [deserializedSimulations]);
+
+  // Calculate analytics for active simulation (only when viewing analytics)
+  const analytics = useMemo(() => {
+    if (activeView === 'analytics' && activeSimulation) {
+      return generateProjectionAnalytics(
+        projection,
+        activeSimulation.data.oneTimeEvents,
+        activeSimulation.data.recurringEvents,
+        activeSimulation.data.categoryAssumptions
+      );
+    }
+    return null;
+  }, [activeView, projection, activeSimulation]);
+
   return (
-    <div className="container mx-auto space-y-6 py-8">
+    <div className="flex h-screen overflow-hidden">
+      {/* Simulation Sidebar */}
+      <SimulationSidebar
+        simulations={deserializedSimulations}
+        activeSimulationId={activeSimulationId}
+        onSelectSimulation={setActiveSimulationId}
+        onToggleVisibility={(id) => setSimulations(toggleSimulationVisibility(deserializedSimulations, id))}
+        onSetPrimary={(id) => setSimulations(setPrimarySimulation(deserializedSimulations, id))}
+        onCreateNew={handleCreateNew}
+        onClone={handleClone}
+        onDelete={handleDelete}
+        onRename={handleRename}
+      />
+
+      {/* Main Content */}
+      <div className="flex-1 overflow-auto ml-4">
+        <div className="container mx-auto space-y-6 py-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Financial Plans</h1>
         <p className="text-muted-foreground">
@@ -373,58 +541,84 @@ export default function PlansPage() {
         </p>
       </div>
 
-      {/* Chart */}
+      {/* Chart / Analytics */}
       <Card className="flex flex-col" style={{ height: "600px" }}>
         <CardHeader>
           <div className="flex justify-between gap-4">
-            <div>
-              <CardTitle>Net Worth Projection</CardTitle>
+            <div className="flex items-center gap-4">
+              <CardTitle>Financial Projection</CardTitle>
+              {/* Tab Switcher */}
+              <Tabs value={activeView} onValueChange={(val) => setActiveView(val as 'chart' | 'analytics')}>
+                <TabsList className="h-8">
+                  <TabsTrigger value="chart" className="text-xs">📊 Chart</TabsTrigger>
+                  <TabsTrigger value="analytics" className="text-xs">📈 Analytics</TabsTrigger>
+                </TabsList>
+              </Tabs>
             </div>
-            <div className="flex items-center gap-2">
+            {activeView === 'chart' && (
               <div className="flex items-center gap-2">
-                <Label htmlFor="start-date" className="text-sm whitespace-nowrap">Start Date:</Label>
-                <Input
-                  id="start-date"
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="w-[150px]"
-                />
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="start-date" className="text-sm whitespace-nowrap">Start Date:</Label>
+                  <Input
+                    id="start-date"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-[150px]"
+                  />
+                </div>
+                <Select value={timeScale} onValueChange={(value) => setTimeScale(value as TimeScale)}>
+                  <SelectTrigger className="w-[130px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent align="end">
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                    <SelectItem value="quarterly">Quarterly</SelectItem>
+                    <SelectItem value="yearly">Yearly</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={timeHorizon} onValueChange={setTimeHorizon}>
+                  <SelectTrigger className="w-[120px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent align="end">
+                    <SelectItem value="5">5 Years</SelectItem>
+                    <SelectItem value="10">10 Years</SelectItem>
+                    <SelectItem value="30">30 Years</SelectItem>
+                    <SelectItem value="50">50 Years</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <Select value={timeScale} onValueChange={(value) => setTimeScale(value as TimeScale)}>
-                <SelectTrigger className="w-[130px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent align="end">
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                  <SelectItem value="quarterly">Quarterly</SelectItem>
-                  <SelectItem value="yearly">Yearly</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={timeHorizon} onValueChange={setTimeHorizon}>
-                <SelectTrigger className="w-[120px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent align="end">
-                  <SelectItem value="5">5 Years</SelectItem>
-                  <SelectItem value="10">10 Years</SelectItem>
-                  <SelectItem value="30">30 Years</SelectItem>
-                  <SelectItem value="50">50 Years</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            )}
           </div>
         </CardHeader>
-        <CardContent className="flex-1 min-h-0">
-          <PlanProjectionChart
-            historicalData={DEMO_HISTORICAL_DATA}
-            projection={projection}
-            currency="USD"
-            oneTimeEvents={events}
-            recurringEvents={recurringEvents}
-            onToggleEvent={toggleEvent}
-            timeScale={timeScale}
-          />
+        <CardContent className="flex-1 min-h-0 overflow-auto">
+          {activeView === 'chart' ? (
+            <>
+              {visibleSimulationsWithProjections.length > 1 ? (
+                <MultiSimulationChart
+                  simulations={visibleSimulationsWithProjections}
+                  currency="USD"
+                  timeScale={timeScale}
+                />
+              ) : (
+                <PlanProjectionChart
+                  historicalData={DEMO_HISTORICAL_DATA}
+                  projection={projection}
+                  currency="USD"
+                  oneTimeEvents={events}
+                  recurringEvents={recurringEvents}
+                  onToggleEvent={toggleEvent}
+                  timeScale={timeScale}
+                />
+              )}
+            </>
+          ) : (
+            <AnalyticsView
+              analytics={analytics}
+              currency="USD"
+            />
+          )}
         </CardContent>
       </Card>
 
@@ -472,7 +666,10 @@ export default function PlansPage() {
         <Card>
           <CardHeader>
             <CardTitle>Portfolio Assumptions</CardTitle>
-            <CardDescription>Current holdings & expected returns</CardDescription>
+            <CardDescription>
+              Define your portfolio categories and where surplus cash gets reinvested.
+              After covering your living expenses, remaining income is allocated to these categories based on the percentages you set.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Category list */}
@@ -895,6 +1092,8 @@ export default function PlansPage() {
           </Tabs>
         </CardContent>
       </Card>
+        </div>
+      </div>
     </div>
   );
 }
