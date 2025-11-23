@@ -15,6 +15,15 @@ import { format, isSameMonth } from "date-fns";
 
 import type { ProjectionResult, OneTimeEvent, RecurringEvent } from "@/lib/planning-engine";
 import { formatCurrency, formatCompactNumber } from "@/lib/number-format";
+import {
+  aggregateProjection,
+  groupEventMarkers,
+  formatPeriodLabel,
+  getPeriodDescription,
+  type TimeScale,
+  type AggregatedProjectionPoint,
+  type EventMarkerGroup,
+} from "@/lib/projection-aggregation";
 
 interface PlanProjectionChartProps {
   historicalData: Array<{ date: Date; netWorth: number }>;
@@ -24,6 +33,7 @@ interface PlanProjectionChartProps {
   oneTimeEvents?: OneTimeEvent[];
   recurringEvents?: RecurringEvent[];
   onToggleEvent?: (eventId: string, type: 'one-time' | 'recurring') => void;
+  timeScale?: TimeScale;
 }
 
 export function PlanProjectionChart({
@@ -34,8 +44,15 @@ export function PlanProjectionChart({
   oneTimeEvents = [],
   recurringEvents = [],
   onToggleEvent,
+  timeScale = 'monthly',
 }: PlanProjectionChartProps) {
   const [hoveredYear, setHoveredYear] = useState<number | null>(null);
+
+  // Aggregate projection data based on time scale
+  const aggregatedData = useMemo(() => {
+    return aggregateProjection(projection.points, timeScale);
+  }, [projection.points, timeScale]);
+
   // Combine historical and projected data
   const chartData = useMemo(() => {
     const data: Array<{
@@ -45,7 +62,7 @@ export function PlanProjectionChart({
       isProjection: boolean;
     }> = [];
 
-    // Add historical data
+    // Add historical data (keep as monthly for now)
     historicalData.forEach((point) => {
       data.push({
         timestamp: point.date.getTime(),
@@ -55,8 +72,8 @@ export function PlanProjectionChart({
       });
     });
 
-    // Add projected data
-    projection.points.forEach((point) => {
+    // Add aggregated projected data
+    aggregatedData.forEach((point) => {
       data.push({
         timestamp: point.date.getTime(),
         date: point.date,
@@ -66,94 +83,77 @@ export function PlanProjectionChart({
     });
 
     return data;
-  }, [historicalData, projection]);
+  }, [historicalData, aggregatedData]);
 
-  // Find event markers (events that occur within the projection timeframe)
-  const eventMarkers = useMemo(() => {
-    const markers: Array<{
+  // Find event markers (events that occur within the projection timeframe) - now grouped by period
+  const eventMarkerGroups = useMemo(() => {
+    const allEventMarkers: Array<{
+      id: string;
       date: Date;
-      value: number;
       description: string;
       amount: number;
       emoji?: string;
-      type: 'one-time' | 'recurring-start' | 'recurring-occurrence';
-      eventId: string;
+      type: 'one-time' | 'recurring';
       eventType: 'one-time' | 'recurring';
       enabled: boolean;
     }> = [];
 
     // Add one-time events
     oneTimeEvents.forEach((event) => {
-      // Find the closest data point to this event
-      const dataPoint = chartData.find((d) => isSameMonth(d.date, event.date));
-      if (dataPoint) {
-        markers.push({
-          date: event.date,
-          value: dataPoint.value,
-          description: event.description,
-          amount: event.amount,
-          emoji: event.emoji,
-          type: 'one-time',
-          eventId: event.id,
-          eventType: 'one-time',
-          enabled: event.enabled !== false,
-        });
-      }
+      allEventMarkers.push({
+        id: event.id,
+        date: event.date,
+        description: event.description,
+        amount: event.amount,
+        emoji: event.emoji,
+        type: 'one-time',
+        eventType: 'one-time',
+        enabled: event.enabled !== false,
+      });
     });
 
-    // Add recurring event markers
+    // Add recurring event markers - find all occurrences from projection points
     recurringEvents.forEach((event) => {
-      // Find all occurrences of this recurring event by checking projection.points
-      // We still want to show all markers even if disabled
       const enabled = event.enabled !== false;
 
-      // For enabled events, use projection points
       if (enabled) {
+        // Find all occurrences from projection points
         projection.points.forEach((point) => {
           const hasEvent = point.events.find(e =>
             e.type === 'recurring' && e.description === event.description
           );
 
           if (hasEvent) {
-            const dataPoint = chartData.find((d) => d.timestamp === point.date.getTime());
-            if (!dataPoint) return;
-
-            const isStart = isSameMonth(point.date, event.startDate);
-            markers.push({
+            allEventMarkers.push({
+              id: event.id,
               date: point.date,
-              value: dataPoint.value,
-              description: isStart ? `${event.description} (starts)` : event.description,
+              description: event.description,
               amount: hasEvent.amount || event.amount,
               emoji: event.emoji,
-              type: isStart ? 'recurring-start' : 'recurring-occurrence',
-              eventId: event.id,
+              type: 'recurring',
               eventType: 'recurring',
               enabled: true,
             });
           }
         });
       } else {
-        // For disabled events, manually calculate where they would appear
-        // Just show the start marker
-        const dataPoint = chartData.find((d) => isSameMonth(d.date, event.startDate));
-        if (dataPoint) {
-          markers.push({
-            date: event.startDate,
-            value: dataPoint.value,
-            description: `${event.description} (starts)`,
-            amount: event.amount,
-            emoji: event.emoji,
-            type: 'recurring-start',
-            eventId: event.id,
-            eventType: 'recurring',
-            enabled: false,
-          });
-        }
+        // For disabled events, just show at start date
+        allEventMarkers.push({
+          id: event.id,
+          date: event.startDate,
+          description: event.description,
+          amount: event.amount,
+          emoji: event.emoji,
+          type: 'recurring',
+          eventType: 'recurring',
+          enabled: false,
+        });
       }
     });
 
-    return markers;
-  }, [chartData, oneTimeEvents, recurringEvents, projection]);
+    // Group events by time period
+    return groupEventMarkers(allEventMarkers, aggregatedData, timeScale);
+  }, [oneTimeEvents, recurringEvents, projection.points, aggregatedData, timeScale]);
 
   // Calculate annual summaries for year tooltips
   const yearSummaries = useMemo(() => {
@@ -253,7 +253,7 @@ export function PlanProjectionChart({
     const date = new Date(timestamp);
     // Check if date is valid
     if (isNaN(date.getTime())) return "";
-    return format(date, "MMM yyyy");
+    return formatPeriodLabel(date, timeScale);
   };
 
   // Custom X-axis tick component for year click
@@ -394,70 +394,85 @@ export function PlanProjectionChart({
 
             const data = payload[0];
 
-            // Check if we're hovering over an event marker
-            const hoveredMarker = eventMarkers.find(
-              marker => coordinate && Math.abs(marker.date.getTime() - data.payload.timestamp) < 2592000000 // within ~30 days
+            // Check if we're hovering over a period with events
+            const hoveredGroup = eventMarkerGroups.find(
+              group => group.displayDate.getTime() === data.payload.timestamp
             );
 
-            if (hoveredMarker) {
-              // Show event tooltip with breakdown
+            if (hoveredGroup && hoveredGroup.events.length > 0) {
+              // Show events in this period
               const isProjection = data.payload.isProjection;
-              const monthlyChange = projection.points.find(p =>
-                p.date.getTime() === data.payload.timestamp
-              )?.monthlyChange;
+              const periodDescription = getPeriodDescription(hoveredGroup.periodStart, hoveredGroup.periodEnd, timeScale);
+
+              // Find corresponding aggregated point for period summary
+              const aggregatedPoint = aggregatedData.find(p =>
+                p.date.getTime() === hoveredGroup.displayDate.getTime()
+              );
 
               return (
-                <div className="bg-background border-border flex flex-col gap-2 rounded-md border px-2.5 py-1.5 shadow-md">
-                  {/* Event marker indicator */}
-                  <div className="flex items-center gap-2">
-                    {hoveredMarker.emoji && (
-                      <span className="text-lg">{hoveredMarker.emoji}</span>
-                    )}
-                    <span className="text-sm font-medium">{hoveredMarker.description}</span>
-                  </div>
-
-                  {/* Net worth */}
-                  <div className="flex flex-col gap-1">
+                <div className="bg-background border-border flex flex-col gap-2 rounded-md border px-2.5 py-1.5 shadow-md max-w-sm">
+                  {/* Period header */}
+                  <div className="flex flex-col gap-1 border-b pb-2">
                     <span className="text-muted-foreground text-xs">
-                      {format(data.payload.date, "PPP")}
+                      {periodDescription}
                       {isProjection && " (projected)"}
                     </span>
                     <span className="text-sm font-medium">
-                      {privacyMode ? "***" : formatCurrency(Number(data.value), currency)}
+                      Net Worth: {privacyMode ? "***" : formatCurrency(Number(data.value), currency)}
                     </span>
                   </div>
 
-                  {/* Monthly change breakdown */}
-                  {monthlyChange && (
+                  {/* Events in this period */}
+                  <div className="flex flex-col gap-1">
+                    <span className="text-muted-foreground text-xs font-medium">
+                      Events ({hoveredGroup.events.length}):
+                    </span>
+                    <div className="flex flex-col gap-1 max-h-40 overflow-y-auto">
+                      {hoveredGroup.events.map((event, idx) => (
+                        <div key={idx} className="flex items-center justify-between gap-2 text-xs">
+                          <div className="flex items-center gap-1">
+                            {event.emoji && <span className="text-sm">{event.emoji}</span>}
+                            <span className="text-muted-foreground truncate">{event.description}</span>
+                          </div>
+                          <span className={`font-medium whitespace-nowrap ${event.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {event.amount >= 0 ? "+" : ""}
+                            {privacyMode ? "***" : formatCurrency(event.amount, currency)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Period summary */}
+                  {aggregatedPoint && (
                     <div className="flex flex-col gap-1 border-t pt-2">
                       <div className="flex items-baseline justify-between gap-2">
-                        <span className="text-muted-foreground text-xs">Change from last month:</span>
-                        <span className={`text-xs font-medium ${monthlyChange.total >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {monthlyChange.total >= 0 ? "+" : ""}
-                          {privacyMode ? "***" : formatCurrency(monthlyChange.total, currency)}
+                        <span className="text-muted-foreground text-xs">Period change:</span>
+                        <span className={`text-xs font-medium ${aggregatedPoint.periodSummary.totalChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {aggregatedPoint.periodSummary.totalChange >= 0 ? "+" : ""}
+                          {privacyMode ? "***" : formatCurrency(aggregatedPoint.periodSummary.totalChange, currency)}
                         </span>
                       </div>
-                      {/* Breakdown items */}
                       <div className="ml-2 flex flex-col gap-0.5 text-xs">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-muted-foreground">├─ Portfolio returns:</span>
+                          <span className="text-muted-foreground">Portfolio growth:</span>
                           <span className="font-medium">
-                            {monthlyChange.portfolioGrowth >= 0 ? "+" : ""}
-                            {privacyMode ? "***" : formatCurrency(monthlyChange.portfolioGrowth, currency)}
+                            {aggregatedPoint.periodSummary.totalPortfolioGrowth >= 0 ? "+" : ""}
+                            {privacyMode ? "***" : formatCurrency(aggregatedPoint.periodSummary.totalPortfolioGrowth, currency)}
                           </span>
                         </div>
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-muted-foreground">├─ Income/Expenses:</span>
+                          <span className="text-muted-foreground">Cash flow:</span>
                           <span className="font-medium">
-                            {monthlyChange.cashFlow >= 0 ? "+" : ""}
-                            {privacyMode ? "***" : formatCurrency(monthlyChange.cashFlow, currency)}
+                            {aggregatedPoint.periodSummary.totalCashFlow >= 0 ? "+" : ""}
+                            {privacyMode ? "***" : formatCurrency(aggregatedPoint.periodSummary.totalCashFlow, currency)}
                           </span>
                         </div>
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-muted-foreground">└─ Events:</span>
-                          <span className={`font-medium ${hoveredMarker.amount < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                            {monthlyChange.eventImpact >= 0 ? "+" : ""}
-                            {privacyMode ? "***" : formatCurrency(monthlyChange.eventImpact, currency)}
+                          <span className="text-muted-foreground">Event impact:</span>
+                          <span className="font-medium">
+                            {aggregatedPoint.periodSummary.totalEventImpact >= 0 ? "+" : ""}
+                            {privacyMode ? "***" : formatCurrency(aggregatedPoint.periodSummary.totalEventImpact, currency)}
                           </span>
                         </div>
                       </div>
@@ -469,53 +484,60 @@ export function PlanProjectionChart({
 
             // Show regular net worth tooltip with breakdown
             const isProjection = data.payload.isProjection;
-            const monthlyChange = projection.points.find(p =>
+            const periodDescription = getPeriodDescription(
+              data.payload.date,
+              data.payload.date,
+              timeScale
+            );
+
+            // Find aggregated point for period summary
+            const aggregatedPoint = aggregatedData.find(p =>
               p.date.getTime() === data.payload.timestamp
-            )?.monthlyChange;
+            );
 
             return (
               <div className="bg-background border-border flex flex-col gap-2 rounded-md border px-2.5 py-1.5 shadow-md">
                 <div className="flex flex-col gap-1">
                   <span className="text-muted-foreground text-xs">
-                    {format(data.payload.date, "PPP")}
+                    {periodDescription}
                     {isProjection && " (projected)"}
                   </span>
                   <span className="text-sm font-medium">
-                    {privacyMode ? "***" : formatCurrency(Number(data.value), currency)}
+                    Net Worth: {privacyMode ? "***" : formatCurrency(Number(data.value), currency)}
                   </span>
                 </div>
 
-                {/* Monthly change breakdown */}
-                {monthlyChange && (
+                {/* Period change breakdown */}
+                {aggregatedPoint && (
                   <div className="flex flex-col gap-1 border-t pt-2">
                     <div className="flex items-baseline justify-between gap-2">
-                      <span className="text-muted-foreground text-xs">Change from last month:</span>
-                      <span className={`text-xs font-medium ${monthlyChange.total >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {monthlyChange.total >= 0 ? "+" : ""}
-                        {privacyMode ? "***" : formatCurrency(monthlyChange.total, currency)}
+                      <span className="text-muted-foreground text-xs">Period change:</span>
+                      <span className={`text-xs font-medium ${aggregatedPoint.periodSummary.totalChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {aggregatedPoint.periodSummary.totalChange >= 0 ? "+" : ""}
+                        {privacyMode ? "***" : formatCurrency(aggregatedPoint.periodSummary.totalChange, currency)}
                       </span>
                     </div>
                     {/* Breakdown items */}
                     <div className="ml-2 flex flex-col gap-0.5 text-xs">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-muted-foreground">├─ Portfolio returns:</span>
+                        <span className="text-muted-foreground">├─ Portfolio growth:</span>
                         <span className="font-medium">
-                          {monthlyChange.portfolioGrowth >= 0 ? "+" : ""}
-                          {privacyMode ? "***" : formatCurrency(monthlyChange.portfolioGrowth, currency)}
+                          {aggregatedPoint.periodSummary.totalPortfolioGrowth >= 0 ? "+" : ""}
+                          {privacyMode ? "***" : formatCurrency(aggregatedPoint.periodSummary.totalPortfolioGrowth, currency)}
                         </span>
                       </div>
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-muted-foreground">├─ Income/Expenses:</span>
+                        <span className="text-muted-foreground">├─ Cash flow:</span>
                         <span className="font-medium">
-                          {monthlyChange.cashFlow >= 0 ? "+" : ""}
-                          {privacyMode ? "***" : formatCurrency(monthlyChange.cashFlow, currency)}
+                          {aggregatedPoint.periodSummary.totalCashFlow >= 0 ? "+" : ""}
+                          {privacyMode ? "***" : formatCurrency(aggregatedPoint.periodSummary.totalCashFlow, currency)}
                         </span>
                       </div>
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-muted-foreground">└─ Events:</span>
+                        <span className="text-muted-foreground">└─ Event impact:</span>
                         <span className="font-medium">
-                          {monthlyChange.eventImpact >= 0 ? "+" : ""}
-                          {privacyMode ? "***" : formatCurrency(monthlyChange.eventImpact, currency)}
+                          {aggregatedPoint.periodSummary.totalEventImpact >= 0 ? "+" : ""}
+                          {privacyMode ? "***" : formatCurrency(aggregatedPoint.periodSummary.totalEventImpact, currency)}
                         </span>
                       </div>
                     </div>
@@ -540,74 +562,72 @@ export function PlanProjectionChart({
           }}
         />
 
-        {/* Event markers */}
-        {eventMarkers.map((marker, index) => {
-          const isRecurringOccurrence = marker.type === 'recurring-occurrence';
-          const isDisabled = !marker.enabled;
+        {/* Event marker groups - horizontally stacked */}
+        {eventMarkerGroups.map((group, groupIndex) => {
+          return group.events.map((event, eventIndex) => {
+            const isDisabled = !event.enabled;
+            const opacity = isDisabled ? 0.3 : 1;
 
-          // Opacity: disabled = 0.2, recurring occurrence = 0.4, default = 1
-          let opacity = 1;
-          if (isDisabled) {
-            opacity = 0.2;
-          } else if (isRecurringOccurrence) {
-            opacity = 0.4;
-          }
+            // Horizontal offset for stacking (12px spacing)
+            const horizontalOffset = eventIndex * 12 - (group.events.length - 1) * 6;
 
-          return (
-            <ReferenceDot
-              key={index}
-              x={marker.date.getTime()}
-              y={marker.value}
-              r={marker.emoji ? 0 : 6}
-              fill={marker.emoji ? "transparent" : (marker.amount < 0 ? "oklch(0.64 0.21 25)" : "oklch(0.72 0.19 150)")}
-              stroke={marker.emoji ? "transparent" : "var(--background)"}
-              strokeWidth={2}
-              style={{ cursor: 'pointer' }}
-              shape={(props: any) => {
-                const { cx, cy } = props;
-                return (
-                  <g
-                    style={{ pointerEvents: 'all', opacity }}
-                    onClick={() => onToggleEvent?.(marker.eventId, marker.eventType)}
-                  >
-                    {marker.emoji ? (
-                      <text
-                        x={cx}
-                        y={cy - 10}
-                        textAnchor="middle"
-                        fontSize="20"
-                        style={{ cursor: 'pointer' }}
-                      >
-                        {marker.emoji}
-                      </text>
-                    ) : (
-                      <circle
-                        cx={cx}
-                        cy={cy}
-                        r={6}
-                        fill={marker.amount < 0 ? "oklch(0.64 0.21 25)" : "oklch(0.72 0.19 150)"}
-                        stroke="var(--background)"
-                        strokeWidth={2}
-                        style={{ cursor: 'pointer' }}
-                      />
-                    )}
-                    {/* Show a strikethrough line for disabled events */}
-                    {isDisabled && (
-                      <line
-                        x1={cx - 12}
-                        y1={cy}
-                        x2={cx + 12}
-                        y2={cy}
-                        stroke="var(--destructive)"
-                        strokeWidth={2}
-                        opacity={0.8}
-                      />
-                    )}
-                  </g>
-                );
-              }}
-            />
-          );
+            return (
+              <ReferenceDot
+                key={`${groupIndex}-${eventIndex}`}
+                x={group.displayDate.getTime()}
+                y={group.netWorthAtPeriod}
+                r={0}
+                fill="transparent"
+                stroke="transparent"
+                style={{ cursor: 'pointer' }}
+                shape={(props: any) => {
+                  const { cx, cy } = props;
+                  const adjustedCx = cx + horizontalOffset;
+
+                  return (
+                    <g
+                      style={{ pointerEvents: 'all', opacity }}
+                      onClick={() => onToggleEvent?.(event.id, event.eventType)}
+                    >
+                      {event.emoji ? (
+                        <text
+                          x={adjustedCx}
+                          y={cy - 10}
+                          textAnchor="middle"
+                          fontSize="18"
+                          style={{ cursor: 'pointer' }}
+                        >
+                          {event.emoji}
+                        </text>
+                      ) : (
+                        <circle
+                          cx={adjustedCx}
+                          cy={cy}
+                          r={5}
+                          fill={event.amount < 0 ? "oklch(0.64 0.21 25)" : "oklch(0.72 0.19 150)"}
+                          stroke="var(--background)"
+                          strokeWidth={2}
+                          style={{ cursor: 'pointer' }}
+                        />
+                      )}
+                      {/* Show a strikethrough line for disabled events */}
+                      {isDisabled && (
+                        <line
+                          x1={adjustedCx - 10}
+                          y1={cy - 10}
+                          x2={adjustedCx + 10}
+                          y2={cy - 10}
+                          stroke="var(--destructive)"
+                          strokeWidth={2}
+                          opacity={0.8}
+                        />
+                      )}
+                    </g>
+                  );
+                }}
+              />
+            );
+          });
         })}
       </AreaChart>
     </ResponsiveContainer>

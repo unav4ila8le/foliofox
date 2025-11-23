@@ -47,6 +47,9 @@ export interface OneTimeEvent {
   emoji?: string; // optional emoji icon for the event
   affectsCategory?: string; // if this event changes a specific category (e.g., "sell 20% of stocks")
   enabled?: boolean; // whether this event is included in calculations (default: true)
+  tags?: string[]; // categorization tags (e.g., ["income", "bonus"], ["expense", "tax"])
+  metadata?: Record<string, any>; // flexible storage for additional data (gross amount, tax rate, etc.)
+  linkedEventIds?: string[]; // IDs of related events (e.g., salary event links to its tax event)
 }
 
 export type RecurringFrequency = 'monthly' | 'quarterly' | 'yearly';
@@ -54,12 +57,15 @@ export type RecurringFrequency = 'monthly' | 'quarterly' | 'yearly';
 export interface RecurringEvent {
   id: string;
   startDate: Date;
-  endDate?: Date;
+  endDate?: Date; // when this recurring event stops (e.g., contract end date)
   amount: number; // amount per occurrence
   frequency: RecurringFrequency;
   description: string;
   emoji?: string; // optional emoji icon for the event
   enabled?: boolean; // whether this event is included in calculations (default: true)
+  tags?: string[]; // categorization tags (e.g., ["income", "salary"], ["expense", "tax"])
+  metadata?: Record<string, any>; // flexible storage for additional data (gross amount, tax rate, etc.)
+  linkedEventIds?: string[]; // IDs of related events (e.g., salary event links to its tax event)
 }
 
 export interface PlannedSale {
@@ -334,4 +340,288 @@ export function projectAllScenarios(inputs: PlanInputs): {
     expected: projectNetWorth(inputs, 'expected'),
     optimistic: projectNetWorth(inputs, 'optimistic'),
   };
+}
+
+// ============================================================================
+// Event Template Builders
+// ============================================================================
+
+/**
+ * Helper to generate unique IDs for events
+ */
+function generateEventId(prefix: string): string {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
+
+export interface SalaryIncomeParams {
+  description: string;
+  grossMonthlySalary: number;
+  taxRate?: number; // decimal (0.3 = 30% tax)
+  startDate: Date;
+  endDate?: Date; // optional contract end date
+  frequency?: RecurringFrequency;
+  emoji?: string;
+  autoCreateTaxEvents?: boolean; // if true, creates linked tax payment events
+  taxPaymentFrequency?: RecurringFrequency; // how often taxes are paid (default: monthly for employees)
+}
+
+/**
+ * Creates a salary income stream with optional automatic tax events
+ *
+ * Example (employee):
+ *   createSalaryIncome({
+ *     description: "Software Engineer at TechCo",
+ *     grossMonthlySalary: 5000,
+ *     taxRate: 0.30,
+ *     startDate: new Date(2025, 0, 1),
+ *     endDate: new Date(2027, 0, 1), // 2-year contract
+ *     autoCreateTaxEvents: true,
+ *     taxPaymentFrequency: 'monthly'
+ *   })
+ *
+ * Returns: [income event, tax event (if autoCreateTaxEvents)]
+ */
+export function createSalaryIncome(params: SalaryIncomeParams): RecurringEvent[] {
+  const events: RecurringEvent[] = [];
+
+  const taxRate = params.taxRate || 0;
+  const netMonthlySalary = params.grossMonthlySalary * (1 - taxRate);
+  const frequency = params.frequency || 'monthly';
+
+  const salaryId = generateEventId('salary');
+  const taxId = params.autoCreateTaxEvents ? generateEventId('tax') : undefined;
+
+  // Create the income event (net salary)
+  const salaryEvent: RecurringEvent = {
+    id: salaryId,
+    description: params.description,
+    amount: netMonthlySalary,
+    frequency,
+    startDate: params.startDate,
+    endDate: params.endDate,
+    emoji: params.emoji || '💼',
+    enabled: true,
+    tags: ['income', 'salary'],
+    metadata: {
+      grossAmount: params.grossMonthlySalary,
+      taxRate,
+      netAmount: netMonthlySalary,
+      type: 'salary',
+    },
+    linkedEventIds: taxId ? [taxId] : undefined,
+  };
+
+  events.push(salaryEvent);
+
+  // Create automatic tax payment events if requested
+  if (params.autoCreateTaxEvents && taxRate > 0) {
+    const taxFrequency = params.taxPaymentFrequency || 'monthly';
+    const monthlyTax = params.grossMonthlySalary * taxRate;
+
+    // Adjust tax amount based on payment frequency
+    let taxAmount = monthlyTax;
+    if (taxFrequency === 'quarterly') {
+      taxAmount = monthlyTax * 3;
+    } else if (taxFrequency === 'yearly') {
+      taxAmount = monthlyTax * 12;
+    }
+
+    const taxEvent: RecurringEvent = {
+      id: taxId!,
+      description: `Tax payment for ${params.description}`,
+      amount: -taxAmount, // negative because it's an expense
+      frequency: taxFrequency,
+      startDate: params.startDate,
+      endDate: params.endDate,
+      emoji: '🏛️',
+      enabled: true,
+      tags: ['expense', 'tax'],
+      metadata: {
+        taxRate,
+        linkedSalaryId: salaryId,
+        type: 'income-tax',
+      },
+      linkedEventIds: [salaryId],
+    };
+
+    events.push(taxEvent);
+  }
+
+  return events;
+}
+
+export interface FreelanceIncomeParams {
+  description: string;
+  monthlyRate?: number; // for ongoing contracts
+  projectAmount?: number; // for one-time projects
+  isOneTime?: boolean; // true for project-based, false for ongoing
+  taxRate?: number;
+  startDate: Date;
+  endDate?: Date;
+  frequency?: RecurringFrequency;
+  emoji?: string;
+  autoCreateTaxEvents?: boolean;
+}
+
+/**
+ * Creates freelance income with quarterly estimated tax payments
+ *
+ * Example (ongoing freelance):
+ *   createFreelanceIncome({
+ *     description: "Freelance Design Work",
+ *     monthlyRate: 3000,
+ *     taxRate: 0.25,
+ *     startDate: new Date(2025, 0, 1),
+ *     autoCreateTaxEvents: true
+ *   })
+ */
+export function createFreelanceIncome(params: FreelanceIncomeParams): (RecurringEvent | OneTimeEvent)[] {
+  const events: (RecurringEvent | OneTimeEvent)[] = [];
+
+  const taxRate = params.taxRate || 0;
+  const freelanceId = generateEventId('freelance');
+  const taxId = params.autoCreateTaxEvents ? generateEventId('tax') : undefined;
+
+  if (params.isOneTime && params.projectAmount) {
+    // One-time project
+    const netAmount = params.projectAmount * (1 - taxRate);
+
+    const projectEvent: OneTimeEvent = {
+      id: freelanceId,
+      description: params.description,
+      date: params.startDate,
+      amount: netAmount,
+      emoji: params.emoji || '🎨',
+      enabled: true,
+      tags: ['income', 'freelance', 'project'],
+      metadata: {
+        grossAmount: params.projectAmount,
+        taxRate,
+        netAmount,
+        type: 'freelance-project',
+      },
+      linkedEventIds: taxId ? [taxId] : undefined,
+    };
+
+    events.push(projectEvent);
+
+    // Create one-time tax payment if requested
+    if (params.autoCreateTaxEvents && taxRate > 0) {
+      const taxEvent: OneTimeEvent = {
+        id: taxId!,
+        description: `Tax payment for ${params.description}`,
+        date: params.startDate,
+        amount: -(params.projectAmount * taxRate),
+        emoji: '🏛️',
+        enabled: true,
+        tags: ['expense', 'tax'],
+        metadata: {
+          taxRate,
+          linkedFreelanceId: freelanceId,
+          type: 'self-employment-tax',
+        },
+        linkedEventIds: [freelanceId],
+      };
+
+      events.push(taxEvent);
+    }
+  } else if (params.monthlyRate) {
+    // Ongoing freelance work
+    const netMonthlyRate = params.monthlyRate * (1 - taxRate);
+    const frequency = params.frequency || 'monthly';
+
+    const freelanceEvent: RecurringEvent = {
+      id: freelanceId,
+      description: params.description,
+      amount: netMonthlyRate,
+      frequency,
+      startDate: params.startDate,
+      endDate: params.endDate,
+      emoji: params.emoji || '🎨',
+      enabled: true,
+      tags: ['income', 'freelance'],
+      metadata: {
+        grossAmount: params.monthlyRate,
+        taxRate,
+        netAmount: netMonthlyRate,
+        type: 'freelance-recurring',
+      },
+      linkedEventIds: taxId ? [taxId] : undefined,
+    };
+
+    events.push(freelanceEvent);
+
+    // Create quarterly estimated tax payments
+    if (params.autoCreateTaxEvents && taxRate > 0) {
+      const quarterlyTax = params.monthlyRate * taxRate * 3;
+
+      const taxEvent: RecurringEvent = {
+        id: taxId!,
+        description: `Quarterly tax for ${params.description}`,
+        amount: -quarterlyTax,
+        frequency: 'quarterly',
+        startDate: params.startDate,
+        endDate: params.endDate,
+        emoji: '🏛️',
+        enabled: true,
+        tags: ['expense', 'tax', 'estimated'],
+        metadata: {
+          taxRate,
+          linkedFreelanceId: freelanceId,
+          type: 'self-employment-tax',
+        },
+        linkedEventIds: [freelanceId],
+      };
+
+      events.push(taxEvent);
+    }
+  }
+
+  return events;
+}
+
+export interface TaxEventParams {
+  description: string;
+  amount: number; // should be negative (expense)
+  frequency?: RecurringFrequency;
+  startDate: Date;
+  endDate?: Date;
+  isOneTime?: boolean;
+  linkedIncomeEventId?: string;
+  emoji?: string;
+}
+
+/**
+ * Creates a standalone tax payment event
+ * Useful for custom tax situations not covered by auto-generation
+ */
+export function createTaxEvent(params: TaxEventParams): RecurringEvent | OneTimeEvent {
+  const taxId = generateEventId('tax');
+
+  const baseEvent = {
+    id: taxId,
+    description: params.description,
+    amount: params.amount < 0 ? params.amount : -params.amount, // ensure negative
+    emoji: params.emoji || '🏛️',
+    enabled: true,
+    tags: ['expense', 'tax'],
+    metadata: {
+      type: 'custom-tax',
+    },
+    linkedEventIds: params.linkedIncomeEventId ? [params.linkedIncomeEventId] : undefined,
+  };
+
+  if (params.isOneTime) {
+    return {
+      ...baseEvent,
+      date: params.startDate,
+    } as OneTimeEvent;
+  } else {
+    return {
+      ...baseEvent,
+      frequency: params.frequency || 'yearly',
+      startDate: params.startDate,
+      endDate: params.endDate,
+    } as RecurringEvent;
+  }
 }
