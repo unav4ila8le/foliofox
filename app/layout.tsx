@@ -45,19 +45,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${manrope.variable} antialiased transition-all`}>
-        <Suspense
-          fallback={
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="system"
-              enableSystem
-              disableTransitionOnChange
-            >
-              <Toaster />
-              {children}
-            </ThemeProvider>
-          }
-        >
+        <Suspense>
           <PostHogUserProvider>
             <ThemeProvider
               attribute="class"
