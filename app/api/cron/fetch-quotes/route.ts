@@ -1,12 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, connection } from "next/server";
+import { headers } from "next/headers";
 
 import { fetchSymbols } from "@/server/symbols/fetch";
 import { fetchQuotes } from "@/server/quotes/fetch";
 
 export async function GET(request: NextRequest) {
+  // Wait for incoming request before continuing (prevents prerendering)
+  await connection();
+
   try {
     // 1. Security check: Verify the request is from Vercel Cron
-    const authHeader = request.headers.get("authorization");
+    const authHeader = (await headers()).get("authorization");
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return new Response("Unauthorized", {
         status: 401,

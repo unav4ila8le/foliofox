@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { cacheLife } from "next/cache";
 import { differenceInCalendarDays, subMonths } from "date-fns";
 
 import { Skeleton } from "@/components/ui/custom/skeleton";
@@ -22,12 +23,14 @@ import { fetchPortfolioRecords } from "@/server/portfolio-records/fetch";
 
 // Separate components for data fetching with suspense
 async function GreetingsWrapper() {
+  "use cache: private";
   const { profile } = await fetchProfile();
 
   return <Greetings username={profile.username} />;
 }
 
 async function NetWorthChartWrapper() {
+  "use cache: private";
   const { profile } = await fetchProfile();
 
   const today = new Date();
@@ -57,6 +60,7 @@ async function NetWorthChartWrapper() {
 }
 
 async function AssetAllocationChartWrapper() {
+  "use cache: private";
   const { profile } = await fetchProfile();
   const [netWorth, assetAllocation] = await Promise.all([
     calculateNetWorth(profile.display_currency),
@@ -73,6 +77,8 @@ async function AssetAllocationChartWrapper() {
 }
 
 async function NewsWidgetWrapper() {
+  "use cache: private";
+  cacheLife("minutes");
   await getCurrentUser();
   const newsResult = await fetchPortfolioNews(12);
 
@@ -80,6 +86,7 @@ async function NewsWidgetWrapper() {
 }
 
 async function ProjectedIncomeWidgetWrapper() {
+  "use cache: private";
   const { profile } = await fetchProfile();
   const projectedData = await calculateProjectedIncome(
     profile.display_currency,
@@ -94,6 +101,7 @@ async function ProjectedIncomeWidgetWrapper() {
 }
 
 async function PortfolioRecordsWidgetWrapper() {
+  "use cache: private";
   const { records } = await fetchPortfolioRecords({ pageSize: 15 });
   return <PortfolioRecordsWidget portfolioRecordsData={records} />;
 }

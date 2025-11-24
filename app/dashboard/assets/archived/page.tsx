@@ -7,6 +7,7 @@ import { fetchPositions } from "@/server/positions/fetch";
 
 // Separate components for data fetching with suspense
 async function ArchivedTableWrapper() {
+  "use cache: private";
   const positions = await fetchPositions({
     onlyArchived: true,
     positionType: "asset",

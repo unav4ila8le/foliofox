@@ -55,6 +55,8 @@ async function AssetContent({
   positionId: string;
   page: number;
 }) {
+  "use cache: private";
+
   // Fetch position with snapshots to calculate P/L
   let position: TransformedPosition;
   let snapshots: PositionSnapshot[];

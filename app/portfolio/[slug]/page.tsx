@@ -28,6 +28,8 @@ async function AssetAllocationWrapper({
   userId: string;
   currency: string;
 }) {
+  "use cache";
+
   const supabaseClient = createServiceClient();
   const context: PositionsQueryContext = { supabaseClient, userId };
   const asOfDate = new Date();
@@ -54,6 +56,8 @@ async function ProjectedIncomeWrapper({
   userId: string;
   currency: string;
 }) {
+  "use cache";
+
   const supabaseClient = createServiceClient();
   const context: PositionsQueryContext = { supabaseClient, userId };
 
@@ -78,6 +82,8 @@ async function ProjectedIncomeWrapper({
 }
 
 async function PositionsWrapper({ userId }: { userId: string }) {
+  "use cache";
+
   const supabaseClient = createServiceClient();
   const context: PositionsQueryContext = { supabaseClient, userId };
   const asOfDate = new Date();

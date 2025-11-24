@@ -20,6 +20,8 @@ export default async function Layout({
 }: {
   children: React.ReactNode;
 }) {
+  "use cache: private";
+
   const cookieStore = await cookies();
 
   // Left sidebar state

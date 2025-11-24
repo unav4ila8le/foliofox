@@ -7,6 +7,7 @@ import { fetchPositions } from "@/server/positions/fetch";
 import { calculateProfitLoss } from "@/lib/profit-loss";
 
 async function AssetsTableWrapper() {
+  "use cache: private";
   const { positions, snapshots } = await fetchPositions({
     positionType: "asset",
     includeSnapshots: true,

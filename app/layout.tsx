@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
+import { Suspense } from "react";
 
 import { PostHogProvider } from "@/components/features/posthog/posthog-provider";
 import { ThemeProvider } from "@/components/features/theme/theme-provider";
@@ -20,11 +21,11 @@ export const metadata: Metadata = {
     "Comprehensive portfolio tracking and AI-powered financial planning. Monitor your holdings, analyze performance, and discover growth opportunities with predictive insights tailored to your wealth-building strategy.",
 };
 
-export default async function RootLayout({
+async function PostHogUserProvider({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   // Get optional user for PostHog identification
   const { user } = await getOptionalUser();
   const userData = user
@@ -33,21 +34,42 @@ export default async function RootLayout({
         email: user.email,
       }
     : null;
+  return <PostHogProvider user={userData}>{children}</PostHogProvider>;
+}
 
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${manrope.variable} antialiased transition-all`}>
-        <PostHogProvider user={userData}>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <Toaster />
-            {children}
-          </ThemeProvider>
-        </PostHogProvider>
+        <Suspense
+          fallback={
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              <Toaster />
+              {children}
+            </ThemeProvider>
+          }
+        >
+          <PostHogUserProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              <Toaster />
+              {children}
+            </ThemeProvider>
+          </PostHogUserProvider>
+        </Suspense>
       </body>
     </html>
   );
