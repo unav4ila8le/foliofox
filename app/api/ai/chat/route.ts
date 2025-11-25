@@ -1,4 +1,4 @@
-import { openai } from "@ai-sdk/openai";
+import { aiModel, chatModelId } from "@/server/ai/provider";
 import { streamText, UIMessage, convertToModelMessages, stepCountIs } from "ai";
 
 import { fetchProfile } from "@/server/profile/actions";
@@ -14,7 +14,6 @@ export const maxDuration = 45;
 
 export async function POST(req: Request) {
   const { messages }: { messages: UIMessage[] } = await req.json();
-  const model = "gpt-4o-mini";
   const mode =
     (req.headers.get("x-ff-mode")?.toLowerCase() as Mode) ?? "advisory";
   const conversationId = req.headers.get("x-ff-conversation-id") ?? undefined;
@@ -36,7 +35,7 @@ export async function POST(req: Request) {
   const firstAssistantTurn = !messages.some((m) => m.role === "assistant");
 
   const result = streamText({
-    model: openai(model),
+    model: aiModel(chatModelId),
     messages: convertToModelMessages(messages),
     tools: aiTools,
     system,
@@ -68,7 +67,7 @@ export async function POST(req: Request) {
         await persistAssistantMessage({
           conversationId,
           messages,
-          model,
+          model: chatModelId,
           usageTokens: tokens.totalTokens,
         });
       }

@@ -1,4 +1,4 @@
-import { openai } from "@ai-sdk/openai";
+import { aiModel, extractionModelId } from "@/server/ai/provider";
 import { generateObject } from "ai";
 
 import {
@@ -42,7 +42,7 @@ export async function POST(req: Request) {
   ]);
 
   const result = await generateObject({
-    model: openai("gpt-4o-mini"),
+    model: aiModel(extractionModelId),
     temperature: 0,
     messages: [
       {
