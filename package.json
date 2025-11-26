@@ -45,7 +45,6 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
-    "dotenv": "^17.2.3",
     "lucide-react": "^0.554.0",
     "nanoid": "^5.1.6",
     "next": "^16.0.3",
@@ -83,7 +82,6 @@
     "prettier-plugin-tailwindcss": "^0.7.0",
     "supabase": "^2.58.5",
     "tailwindcss": "^4.0.8",
-    "tsx": "^4.20.6",
     "tw-animate-css": "^1.2.5",
     "typescript": "^5"
   },
