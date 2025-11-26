@@ -29,10 +29,10 @@ let errorCount = 0;
 
 for (const component of componentsToUpdate) {
   try {
-    const command = `npx shadcn@latest add -y -o ${component}`;
+    const args = ["shadcn@latest", "add", "-y", "-o", component];
 
     console.log(`Updating ${component}...`);
-    execSync(command, { stdio: "pipe" });
+    execFileSync("npx", args, { stdio: "pipe" });
 
     successCount++;
   } catch {
