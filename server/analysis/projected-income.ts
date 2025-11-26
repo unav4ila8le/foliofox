@@ -244,7 +244,8 @@ export async function calculateSymbolProjectedIncome(
     };
   } catch (error) {
     console.error(
-      `Error calculating projected income for ${symbolLookup}:`,
+      "Error calculating projected income for %s:",
+      symbolLookup,
       error,
     );
     return {
