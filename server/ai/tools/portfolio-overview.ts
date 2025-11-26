@@ -1,6 +1,7 @@
 "use server";
 
 import { fetchProfile } from "@/server/profile/actions";
+import { fetchFinancialProfile } from "@/server/financial-profiles/actions";
 import { fetchPositions } from "@/server/positions/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 import { resolveSymbolsBatch } from "@/server/symbols/resolver";
@@ -8,12 +9,12 @@ import { calculateAssetAllocation } from "@/server/analysis/asset-allocation";
 import { convertCurrency } from "@/lib/currency-conversion";
 
 /**
- * Get portfolio snapshot for AI analysis (positions model)
+ * Get portfolio overview for AI analysis
  * Accurate as-of behavior when a date is provided:
  * - Positions valued via latest snapshot at/before date
  * - FX conversion as-of date
  */
-export async function getPortfolioSnapshot(params: {
+export async function getPortfolioOverview(params: {
   baseCurrency: string | null;
   date: string | null;
 }) {
@@ -24,6 +25,9 @@ export async function getPortfolioSnapshot(params: {
 
     // Use a single date across quotes and FX for consistency
     const asOfDate = params.date ? new Date(params.date) : new Date();
+
+    // Fetch user's financial profile
+    const financialProfile = await fetchFinancialProfile();
 
     // Fetch positions valued as-of the target date
     const positions = await fetchPositions({
@@ -152,6 +156,7 @@ export async function getPortfolioSnapshot(params: {
 
     return {
       summary: `Portfolio contains ${positionsBase.length} positions across ${categories.length} categories`,
+      financialProfile,
       netWorth,
       currency: baseCurrency,
       positionsCount: positionsBase.length,
@@ -161,9 +166,9 @@ export async function getPortfolioSnapshot(params: {
       lastUpdated: new Date().toISOString(),
     };
   } catch (error) {
-    console.error("Error fetching portfolio snapshot:", error);
+    console.error("Error fetching portfolio overview:", error);
     throw new Error(
-      `Failed to fetch portfolio snapshot: ${error instanceof Error ? error.message : "Unknown error"}`,
+      `Failed to fetch portfolio overview: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
   }
 }

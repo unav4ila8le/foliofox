@@ -1,7 +1,7 @@
 import { tool } from "ai";
 import { z } from "zod";
 
-import { getPortfolioSnapshot } from "./portfolio-snapshot";
+import { getPortfolioOverview } from "./portfolio-overview";
 import { getPositions } from "./positions";
 import { getPortfolioRecords } from "./portfolio-records";
 import { getPositionSnapshots } from "./position-snapshots";
@@ -18,9 +18,9 @@ import { searchSymbols } from "./search-symbols";
 import { getNews } from "./news";
 
 export const aiTools = {
-  getPortfolioSnapshot: tool({
+  getPortfolioOverview: tool({
     description:
-      "Get a comprehensive portfolio overview including net worth, asset allocation, and all positions at any given date. Returns: summary, net worth value, positions count, asset categories with percentages, and detailed position information with values converted to base currency. Use this for both current and historical portfolio snapshots - for deeper analysis also use the other specialized tools.",
+      "Get a comprehensive portfolio overview including the user's financial profile, net worth, asset allocation, and all positions at any given date. Returns: summary, financial profile, net worth value, positions count, asset categories with percentages, and detailed position information with values converted to base currency. Use this for both current and historical portfolio snapshots - for deeper analysis also use the other specialized tools.",
     inputSchema: z.object({
       baseCurrency: z
         .string()
@@ -36,7 +36,7 @@ export const aiTools = {
         ),
     }),
     execute: async (args) => {
-      return getPortfolioSnapshot(args);
+      return getPortfolioOverview(args);
     },
   }),
 
@@ -165,7 +165,7 @@ export const aiTools = {
         .array(z.string())
         .nullable()
         .describe(
-          "Specific position IDs to analyze (assets only). If omitted, analyzes all assets. Get IDs via getPortfolioSnapshot or getPositions.",
+          "Specific position IDs to analyze (assets only). If omitted, analyzes all assets. Get IDs via getPortfolioOverview or getPositions.",
         ),
       startDate: z
         .string()

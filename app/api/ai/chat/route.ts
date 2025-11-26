@@ -41,13 +41,13 @@ export async function POST(req: Request) {
     system,
     stopWhen: stepCountIs(24),
 
-    // Force portfolio snapshot on very first assistant step
+    // Force portfolio overview on very first assistant step
     prepareStep: async ({ stepNumber }) => {
       if (firstAssistantTurn && stepNumber === 0) {
         return {
-          toolChoice: { type: "tool", toolName: "getPortfolioSnapshot" },
+          toolChoice: { type: "tool", toolName: "getPortfolioOverview" },
           // Limit available tools to avoid accidental picks or schema failures
-          activeTools: ["getPortfolioSnapshot"],
+          activeTools: ["getPortfolioOverview"],
         };
       }
       // Otherwise, default behavior (no forced tools)
