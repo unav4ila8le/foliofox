@@ -1,6 +1,7 @@
 {
   "name": "foliofox",
   "version": "0.1.0",
+  "packageManager": "npm@11.x",
   "private": true,
   "scripts": {
     "dev": "next dev",
