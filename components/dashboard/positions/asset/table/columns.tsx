@@ -112,6 +112,10 @@ export const columns: ColumnDef<PositionWithProfitLoss>[] = [
   {
     accessorKey: "current_quantity",
     header: "Quantity",
+    meta: {
+      headerClassName: "text-right",
+      cellClassName: "text-right",
+    },
     cell: ({ row }) => {
       const current_quantity = row.getValue<number>("current_quantity");
       return (
@@ -126,6 +130,10 @@ export const columns: ColumnDef<PositionWithProfitLoss>[] = [
   {
     accessorKey: "current_unit_value",
     header: "Unit value",
+    meta: {
+      headerClassName: "text-right",
+      cellClassName: "text-right",
+    },
     cell: ({ row }) => {
       const current_unit_value = row.getValue<number>("current_unit_value");
       return (
@@ -140,6 +148,10 @@ export const columns: ColumnDef<PositionWithProfitLoss>[] = [
   {
     accessorKey: "cost_basis_per_unit",
     header: "Cost basis",
+    meta: {
+      headerClassName: "text-right",
+      cellClassName: "text-right",
+    },
     cell: ({ row }) => {
       const hasMarketData = positionHasMarketData(row.original);
       if (!hasMarketData) {
@@ -158,10 +170,14 @@ export const columns: ColumnDef<PositionWithProfitLoss>[] = [
   },
   {
     accessorKey: "profit_loss",
+    meta: {
+      headerClassName: "text-right",
+      cellClassName: "text-right",
+    },
     header: ({ column }) => {
       return (
         <div
-          className="hover:text-primary flex cursor-pointer items-center gap-2 transition-colors"
+          className="hover:text-primary flex cursor-pointer items-center justify-end gap-2 transition-colors"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
           P/L
@@ -193,10 +209,14 @@ export const columns: ColumnDef<PositionWithProfitLoss>[] = [
   },
   {
     accessorKey: "profit_loss_percentage",
+    meta: {
+      headerClassName: "text-right",
+      cellClassName: "text-right",
+    },
     header: ({ column }) => {
       return (
         <div
-          className="hover:text-primary flex cursor-pointer items-center gap-2 transition-colors"
+          className="hover:text-primary flex cursor-pointer items-center justify-end gap-2 transition-colors"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
           P/L %
@@ -230,10 +250,14 @@ export const columns: ColumnDef<PositionWithProfitLoss>[] = [
   },
   {
     accessorKey: "total_value",
+    meta: {
+      headerClassName: "text-right",
+      cellClassName: "text-right",
+    },
     header: ({ column }) => {
       return (
         <div
-          className="hover:text-primary flex cursor-pointer items-center gap-2 transition-colors"
+          className="hover:text-primary flex cursor-pointer items-center justify-end gap-2 transition-colors"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
           Total value

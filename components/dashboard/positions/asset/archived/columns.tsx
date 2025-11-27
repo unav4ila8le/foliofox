@@ -84,6 +84,10 @@ export const columns: ColumnDef<TransformedPosition>[] = [
   {
     accessorKey: "current_quantity",
     header: "Quantity",
+    meta: {
+      headerClassName: "text-right",
+      cellClassName: "text-right",
+    },
     cell: ({ row }) => {
       const current_quantity = row.getValue<number>("current_quantity");
       return (
@@ -98,6 +102,10 @@ export const columns: ColumnDef<TransformedPosition>[] = [
   {
     accessorKey: "current_unit_value",
     header: "Unit value",
+    meta: {
+      headerClassName: "text-right",
+      cellClassName: "text-right",
+    },
     cell: ({ row }) => {
       const unit_value = row.getValue<number>("current_unit_value");
 
@@ -111,6 +119,10 @@ export const columns: ColumnDef<TransformedPosition>[] = [
   {
     accessorKey: "total_value",
     header: "Total Value",
+    meta: {
+      headerClassName: "text-right",
+      cellClassName: "text-right",
+    },
     cell: ({ row }) => {
       const total_value = row.getValue<number>("total_value");
 
@@ -123,10 +135,14 @@ export const columns: ColumnDef<TransformedPosition>[] = [
   },
   {
     accessorKey: "archived_at",
+    meta: {
+      headerClassName: "text-right",
+      cellClassName: "text-right",
+    },
     header: ({ column }) => {
       return (
         <div
-          className="hover:text-primary flex cursor-pointer items-center gap-2 transition-colors"
+          className="hover:text-primary flex cursor-pointer items-center justify-end gap-2 ps-16 transition-colors"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
           Archived on
