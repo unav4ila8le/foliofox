@@ -26,7 +26,7 @@ import type {
 // Only needed for dynamic routes
 interface AssetPageProps {
   params: Promise<{
-    asset: string;
+    id: string;
   }>;
 }
 
@@ -205,7 +205,7 @@ export default async function AssetPage(
   },
 ) {
   const searchParams = await props.searchParams;
-  const { asset: positionId } = await props.params;
+  const { id: positionId } = await props.params;
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
 
   const pageParam = Array.isArray(resolvedSearchParams?.page)

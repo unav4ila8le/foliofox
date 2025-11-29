@@ -38,7 +38,7 @@ import type { SymbolSearchResult } from "@/types/global.types";
 // Props interface for react-hook-form integration
 interface SymbolSearchProps {
   field: {
-    value: string;
+    value: string | undefined;
     onChange: (value: string) => void;
   };
   id?: string;

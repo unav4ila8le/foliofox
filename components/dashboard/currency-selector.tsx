@@ -35,7 +35,7 @@ import type { Currency } from "@/types/global.types";
 // Props interface for react-hook-form integration
 interface CurrencySelectorProps {
   field: {
-    value: string;
+    value: string | undefined;
     onChange: (value: string) => void;
   };
   id?: string;
@@ -79,7 +79,7 @@ export function CurrencySelector({
               className,
             )}
           >
-            {field.value}
+            {field.value || "Select currency"}
             <ChevronsUpDown className="text-muted-foreground" />
           </Button>
         </DrawerTrigger>
@@ -116,7 +116,7 @@ export function CurrencySelector({
             className,
           )}
         >
-          {field.value}
+          {field.value || "Select currency"}
           <ChevronsUpDown className="text-muted-foreground" />
         </Button>
       </PopoverTrigger>
@@ -135,7 +135,7 @@ export function CurrencySelector({
 
 interface CurrencyListProps {
   setOpen: (open: boolean) => void;
-  value: string;
+  value: string | undefined;
   onChange: (value: string) => void;
   currencies: Currency[];
   isLoading: boolean;

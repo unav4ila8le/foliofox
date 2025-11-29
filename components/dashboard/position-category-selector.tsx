@@ -35,7 +35,7 @@ import type { PositionCategory } from "@/types/global.types";
 // Props interface for react-hook-form integration
 interface CategorySelectorProps {
   field: {
-    value: string;
+    value: string | undefined;
     onChange: (value: string) => void;
   };
   id?: string;
@@ -63,7 +63,9 @@ export function PositionCategorySelector({
 
   // Find the selected category name
   const selectedCategory = categories.find((cat) => cat.id === field.value);
-  const categoryName = selectedCategory ? selectedCategory.name : field.value;
+  const categoryName = selectedCategory
+    ? selectedCategory.name
+    : field.value || "";
 
   if (isMobile) {
     return (
@@ -139,7 +141,7 @@ export function PositionCategorySelector({
 
 interface CategoryListProps {
   setOpen: (open: boolean) => void;
-  value: string;
+  value: string | undefined;
   onChange: (value: string) => void;
   categories: PositionCategory[];
   isLoading: boolean;
