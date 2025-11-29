@@ -1,0 +1,4 @@
+node_modules
+.next
+docker-compose.yml
+.env.local
