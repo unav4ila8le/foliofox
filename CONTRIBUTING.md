@@ -27,24 +27,36 @@ If you need help, feel free to reach out to [@unav4ila8le](https://x.com/unav4il
 
 ## Local Development
 
+You can build and run Foliofox locally using either Docker or a local Node.js setup.
+
 ### Prerequisites
 
-- Node.js 22+
-- Supabase CLI 2.5+ (`supabase --version`; you can also run it via `npx supabase` if you prefer not to install globally)
 - Your own Supabase project (Project URL, anon/publishable key, service_role/secret key, database password)
-- Optional: Docker Desktop (only needed if you want to run the local Supabase stack)
-- Optional: Vercel account (for one-click deploy and scheduled cron jobs)
+- [Supabase CLI 2.5+](https://supabase.com/docs/guides/local-development/cli/getting-started) (`supabase --version`; you can also run it via `npx supabase` if you prefer not to install globally)
 
-### 1) Clone and install
+**For Docker setup:**
+
+- Docker Desktop
+
+**For traditional Node.js setup:**
+
+- Node.js 22+
+- npm 11+
+
+**Optional:**
+
+- Vercel account (for one-click deploy and scheduled cron jobs)
+
+### Option 1: Docker Setup
+
+#### 1) Clone the repository
 
 ```bash
 git clone https://github.com/unav4ila8le/foliofox.git
 cd foliofox
-npm install
-git pull # stay up to date with upstream
 ```
 
-### 2) Configure environment
+#### 2) Docker: configure environment
 
 Create a `.env.local` file in the project root:
 
@@ -69,7 +81,7 @@ NEXT_PUBLIC_POSTHOG_KEY=<ph_project_api_key>
 NEXT_PUBLIC_POSTHOG_HOST=https://<us | eu>.i.posthog.com
 ```
 
-### 3) Apply database migrations (Supabase CLI)
+#### 3) Docker: apply database migrations
 
 ```bash
 supabase login                # once per machine
@@ -81,13 +93,45 @@ supabase db push --linked     # applies tracked migrations (baseline + new ones)
 - The tracked migrations also include the reference data required for signup and basic usage.
 - If prompted, use the **Database Password** from Supabase (Settings → Database).
 
-### 4) Run the dev server
+#### 4) Docker: build
+
+```bash
+docker compose up --build
+```
+
+Visit <http://localhost:3000>
+
+- Run in detached mode: `docker compose up -d`
+- Rebuild after changes: `docker compose up --build`
+- Stop: `docker compose down`
+
+### Option 2: Local Node.js Setup
+
+For more faster development, we suggest using the traditional local setup:
+
+#### 1) Clone and install npm dependencies
+
+```bash
+git clone https://github.com/unav4ila8le/foliofox.git
+cd foliofox
+npm install
+```
+
+#### 2) Configure local environment
+
+Create a `.env.local` file in the project root, same as [Docker setup above](#2-docker-configure-environment).
+
+#### 3) Apply database migrations
+
+Same as [Docker apply database migrations](#3-docker-apply-database-migrations).
+
+#### 4) Run the dev server
 
 ```bash
 npm run dev
 ```
 
-Visit http://localhost:3000
+Visit <http://localhost:3000>
 
 #### Optional: run Supabase locally (requires Docker)
 
@@ -116,18 +160,24 @@ When running locally, a test user is automatically seeded on `db reset` or `db p
 #### Maintainers: creating database changes
 
 1. Generate a migration shell:
+
    ```bash
    supabase migration new add_feature_name
    ```
+
 2. Edit the generated SQL file in `supabase/migrations/`.
 3. Test locally:
+
    ```bash
    supabase migration up --local
    ```
+
 4. Apply remotely:
+
    ```bash
    supabase db push --linked
    ```
+
 5. Commit the migration file along with any related code changes.
 
 - If you update reference tables (currencies, position categories), edit the `*_seed_reference_data.sql` migration or add a new seed migration so contributors stay in sync.
