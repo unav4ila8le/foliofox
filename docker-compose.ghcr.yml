@@ -1,0 +1,9 @@
+services:
+  app:
+    image: ghcr.io/unav4ila8le/foliofox:main
+    container_name: foliofox
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.local
+    restart: unless-stopped

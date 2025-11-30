@@ -20,15 +20,49 @@ A net worth tracking app with an AI-powered financial advisor that helps you mak
 - Supabase (Postgres, Auth, Storage)
 - Tailwind CSS
 
-## Local Development (Quick Start)
+## Quick Start (Docker)
 
-- `npm install`
-- Create `.env.local` (variables listed in [CONTRIBUTING.md](/CONTRIBUTING.md))
-- `supabase login` and `supabase link --project-ref <your-project-ref>`
-- `supabase db push --linked` to apply schema **and** seed reference data (currencies, position categories)
-- `npm run dev`
+**Prerequisites:** Docker Desktop and your own Supabase project (see [CONTRIBUTING.md](/CONTRIBUTING.md) for details).
 
-Need more detail or want to run the Supabase stack locally? Read the [contributing guide](/CONTRIBUTING.md). Local CLI users can also run `supabase db push --local` to load the same schema + seeds into Docker.
+1. Clone and configure:
+
+   ```bash
+   git clone https://github.com/unav4ila8le/foliofox.git
+   cd foliofox
+   ```
+
+2. Create `.env.local` with your [Supabase](https://supabase.com/) credentials:
+
+   ```bash
+   NEXT_PUBLIC_SITE_URL=http://localhost:3000
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
+   SUPABASE_SECRET_KEY=your_supabase_secret_key
+   ```
+
+3. Apply database migrations:
+
+   ```bash
+   supabase login
+   supabase link --project-ref <your-project-ref>
+   supabase db push --linked
+   ```
+
+4. Start with Docker using latest pre-built image:
+
+   ```bash
+   docker compose -f docker-compose.ghcr.yml up
+   ```
+
+   Or build locally:
+
+   ```bash
+   docker compose up --build
+   ```
+
+Visit <http://localhost:3000>
+
+For local Node.js setup without Docker, see the [contributing guide](/CONTRIBUTING.md).
 
 ## Contributing
 
