@@ -171,9 +171,8 @@ async function fetchPositionsImpl(
     }
   });
 
-  const { MARKET_DATA_HANDLERS } = await import(
-    "@/server/market-data/sources/registry"
-  );
+  const { MARKET_DATA_HANDLERS } =
+    await import("@/server/market-data/sources/registry");
 
   const resolutionDate = asOfDate ?? new Date();
   const allResolutions = resolveMarketDataForPositions(
