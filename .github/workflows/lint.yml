@@ -33,7 +33,7 @@ jobs:
         run: corepack prepare npm@11.6.4 --activate
 
       - name: Install dependencies
-        run: npm ci || (npm install --package-lock-only && npm ci)
+        run: npm ci || (npm install && npm ci)
 
       - name: Run ESLint
         run: npm run lint
