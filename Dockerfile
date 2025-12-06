@@ -1,4 +1,4 @@
-FROM node:22-alpine AS base
+FROM node:22.21-alpine AS base
 
 # Ensure base image is up to date
 RUN apk upgrade --no-cache && \
