@@ -1,7 +1,6 @@
 {
   "name": "foliofox",
   "version": "0.1.0",
-  "packageManager": "npm@11.6.4",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -78,6 +77,7 @@
     "eslint-config-prettier": "^10.1.8",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.6",
+    "picomatch": "^4.0.3",
     "postcss": "^8",
     "prettier": "^3.5.2",
     "prettier-plugin-tailwindcss": "^0.7.0",
