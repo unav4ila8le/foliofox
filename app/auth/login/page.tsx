@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
@@ -6,6 +7,11 @@ import { Logo } from "@/components/ui/logos/logo";
 import { LoginForm } from "@/components/features/auth/login-form";
 
 import { createClient } from "@/supabase/server";
+
+export const metadata: Metadata = {
+  title: "Login",
+  description: "Sign in to your Foliofox account.",
+};
 
 export default async function LoginPage() {
   // Check if user is already logged in and redirect to dashboard
