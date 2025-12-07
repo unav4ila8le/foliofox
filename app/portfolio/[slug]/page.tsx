@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -18,6 +19,33 @@ import { fetchPositions } from "@/server/positions/fetch";
 import { calculateProfitLoss } from "@/lib/profit-loss";
 
 import type { PositionsQueryContext } from "@/server/positions/fetch";
+
+// --- Metadata Generation ---
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+
+  const resolved = await fetchPublicPortfolioBySlug(slug);
+
+  if (!resolved || !resolved.isActive) {
+    return {
+      title: "Public Portfolio",
+      description: "View this public portfolio on Foliofox.",
+    };
+  }
+
+  const { profile } = resolved;
+  const username = profile.username;
+
+  return {
+    title: `${username}'s Portfolio`,
+    description: `View ${username}'s public portfolio on Foliofox. Track positions, asset allocation, and performance insights.`,
+  };
+}
 
 // --- Wrapper Components ---
 

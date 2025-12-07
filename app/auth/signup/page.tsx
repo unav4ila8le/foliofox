@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
@@ -5,6 +6,11 @@ import { Logo } from "@/components/ui/logos/logo";
 import { SignupForm } from "@/components/features/auth/signup-form";
 
 import { createClient } from "@/supabase/server";
+
+export const metadata: Metadata = {
+  title: "Signup",
+  description: "Create a new free account on Foliofox.",
+};
 
 export default async function SignupPage() {
   // Check if user is already logged in and redirect to dashboard

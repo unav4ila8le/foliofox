@@ -11,12 +11,15 @@ import { getOptionalUser } from "@/server/auth/actions";
 import "./globals.css";
 
 const manrope = Manrope({
-  variable: "--font-manrope",
   subsets: ["latin"],
+  variable: "--font-manrope",
 });
 
 export const metadata: Metadata = {
-  title: "Foliofox - Portfolio Intelligence Platform",
+  title: {
+    default: "Foliofox - The AI-Powered Portfolio Intelligence Platform",
+    template: "%s - Foliofox",
+  },
   description:
     "Comprehensive portfolio tracking and AI-powered financial planning. Monitor your holdings, analyze performance, and discover growth opportunities with predictive insights tailored to your wealth-building strategy.",
 };
@@ -44,7 +47,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${manrope.variable} antialiased transition-all`}>
+      <body className={`${manrope.variable} antialiased`}>
         <Suspense>
           <PostHogUserProvider>
             <ThemeProvider

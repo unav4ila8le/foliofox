@@ -1,5 +1,6 @@
 "use server";
 
+import { cache } from "react";
 import { headers } from "next/headers";
 
 import { getCurrentUser } from "@/server/auth/actions";
@@ -65,33 +66,33 @@ export async function fetchCurrentPublicPortfolio(): Promise<PublicPortfolioMeta
   return toPublicPortfolioMetadata(record, siteUrl);
 }
 
-export async function fetchPublicPortfolioBySlug(
-  slug: string,
-): Promise<PublicPortfolioWithProfile | null> {
-  const sanitized = sanitizeSlug(slug);
-  if (!sanitized) return null;
+export const fetchPublicPortfolioBySlug = cache(
+  async (slug: string): Promise<PublicPortfolioWithProfile | null> => {
+    const sanitized = sanitizeSlug(slug);
+    if (!sanitized) return null;
 
-  const supabase = createServiceClient();
+    const supabase = createServiceClient();
 
-  const { data: publicPortfolio, error } = await supabase
-    .from("public_portfolios")
-    .select("*")
-    .eq("slug", sanitized)
-    .maybeSingle();
+    const { data: publicPortfolio, error } = await supabase
+      .from("public_portfolios")
+      .select("*")
+      .eq("slug", sanitized)
+      .maybeSingle();
 
-  if (error || !publicPortfolio) return null;
+    if (error || !publicPortfolio) return null;
 
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("user_id, username, display_currency, avatar_url")
-    .eq("user_id", publicPortfolio.user_id)
-    .maybeSingle();
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("user_id, username, display_currency, avatar_url")
+      .eq("user_id", publicPortfolio.user_id)
+      .maybeSingle();
 
-  if (profileError || !profile) return null;
+    if (profileError || !profile) return null;
 
-  return {
-    publicPortfolio,
-    profile,
-    isActive: isPortfolioActive(publicPortfolio.expires_at),
-  };
-}
+    return {
+      publicPortfolio,
+      profile,
+      isActive: isPortfolioActive(publicPortfolio.expires_at),
+    };
+  },
+);
