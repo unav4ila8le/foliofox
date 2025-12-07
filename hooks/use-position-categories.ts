@@ -11,30 +11,41 @@ export function usePositionCategories(
 ) {
   const [categories, setCategories] = useState<PositionCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     async function fetchPositionCategories() {
-      // Supabase client
-      const supabase = createClient();
+      try {
+        // Supabase client
+        const supabase = createClient();
 
-      // Get position categories
-      const { data, error } = await supabase
-        .from("position_categories")
-        .select("*")
-        .eq("position_type", positionType)
-        .order("display_order", { ascending: true });
+        // Get position categories
+        const { data, error: supabaseError } = await supabase
+          .from("position_categories")
+          .select("*")
+          .eq("position_type", positionType)
+          .order("display_order", { ascending: true });
 
-      // Throw error
-      if (error) {
-        throw new Error("Error fetching position categories:", error);
+        // Handle error
+        if (supabaseError) {
+          throw new Error(
+            `Error fetching position categories: ${supabaseError.message}`,
+          );
+        }
+
+        setCategories(data || []);
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Unknown error";
+        setError(new Error(errorMessage));
+        console.error("Failed to fetch position categories:", err);
+      } finally {
+        setIsLoading(false);
       }
-
-      setCategories(data);
-      setIsLoading(false);
     }
 
     fetchPositionCategories();
   }, [positionType]);
 
-  return { categories, isLoading };
+  return { categories, isLoading, error };
 }
