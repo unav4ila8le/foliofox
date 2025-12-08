@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, TrendingUp } from "lucide-react";
+import { GitBranch, Home, TrendingUp } from "lucide-react";
 
 import {
   SidebarMenu as UISidebarMenu,
@@ -22,6 +22,11 @@ const items = [
     title: "Assets",
     url: "/dashboard/assets",
     icon: TrendingUp,
+  },
+  {
+    title: "Scenario Planning",
+    url: "/dashboard/scenario-planning",
+    icon: GitBranch,
   },
 ];
 
