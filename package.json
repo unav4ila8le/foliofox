@@ -16,8 +16,8 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^2.0.28",
-    "@ai-sdk/react": "^2.0.108",
+    "@ai-sdk/openai": "^2.0.80",
+    "@ai-sdk/react": "^2.0.109",
     "@hookform/resolvers": "^5.2.2",
     "@posthog/react": "^1.4.0",
     "@radix-ui/react-accordion": "^1.2.12",
@@ -38,7 +38,7 @@
     "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@supabase/ssr": "^0.8.0",
-    "@supabase/supabase-js": "^2.49.4",
+    "@supabase/supabase-js": "^2.87.0",
     "@tanstack/react-table": "^8.21.2",
     "ai": "^5.0.106",
     "class-variance-authority": "^0.7.1",
