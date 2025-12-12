@@ -65,6 +65,7 @@ export function ArchivedAssetsTable({ data }: ArchivedTableProps) {
         filterValue={filterValue}
         onRowClick={handleRowClick}
         onSelectedRowsChange={setSelectedRows}
+        initialSorting={[{ id: "name", desc: false }]}
       />
 
       {/* Rows count */}
