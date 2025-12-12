@@ -82,6 +82,7 @@ export function AssetsTable({ data }: AssetsTableProps) {
           onSelectedRowsChange={setSelectedRows}
           enableGrouping={true}
           groupBy={["category_id"]}
+          initialSorting={[{ id: "name", desc: false }]}
         />
       )}
 
