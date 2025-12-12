@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, Plus, Trash2 } from "lucide-react";
+import { CalendarIcon, Plus, Trash2, X } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
@@ -437,6 +437,17 @@ export function UpsertEventForm({
                       />
                     </PopoverContent>
                   </Popover>
+                  {field.value && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-0 right-0 h-full px-3"
+                      onClick={() => field.onChange(undefined)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
                   <FormDescription>Leave empty for no end date</FormDescription>
                   <FormMessage />
                 </FormItem>
