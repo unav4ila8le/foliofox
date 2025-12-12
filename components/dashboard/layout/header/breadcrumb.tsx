@@ -16,6 +16,14 @@ import {
 import { fetchSinglePosition } from "@/server/positions/fetch";
 import { Skeleton } from "@/components/ui/custom/skeleton";
 
+// Helper function to format segment names
+function formatSegmentName(segment: string): string {
+  return segment
+    .split("-")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 // Separate component for position name fetching
 function PositionName({ positionId }: { positionId: string }) {
   const [name, setName] = useState<string | null>(null);
@@ -72,7 +80,7 @@ export function Breadcrumb() {
                       {isPositionSegment && positionId ? (
                         <PositionName positionId={positionId} />
                       ) : (
-                        segment.charAt(0).toUpperCase() + segment.slice(1)
+                        formatSegmentName(segment)
                       )}
                     </BreadcrumbPage>
                   ) : (
@@ -81,7 +89,7 @@ export function Breadcrumb() {
                         {isPositionSegment && positionId ? (
                           <PositionName positionId={positionId} />
                         ) : (
-                          segment.charAt(0).toUpperCase() + segment.slice(1)
+                          formatSegmentName(segment)
                         )}
                       </Link>
                     </BreadcrumbLink>

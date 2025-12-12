@@ -41,6 +41,7 @@ interface DataTableProps<TData extends DataWithId, TValue> {
   enableGrouping?: boolean;
   groupBy?: string[];
   meta?: TableMeta<TData>;
+  defaultSorting?: SortingState;
 }
 
 export function DataTable<TData extends DataWithId, TValue>({
@@ -53,8 +54,9 @@ export function DataTable<TData extends DataWithId, TValue>({
   enableGrouping = false,
   groupBy = [],
   meta,
+  defaultSorting = [],
 }: DataTableProps<TData, TValue>) {
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [sorting, setSorting] = useState<SortingState>(defaultSorting);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [expanded, setExpanded] = useState<ExpandedState>(true);
 
