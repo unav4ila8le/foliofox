@@ -122,6 +122,8 @@ async function fetchPositionsImpl(
     // Non-archived views: order by category display order
     baseQuery.order("position_categories(display_order)", { ascending: true });
   }
+  // Secondary sort: alphabetical by name (A to Z)
+  baseQuery.order("name", { ascending: true });
 
   // Run the query
   const { data: positions, error } = await baseQuery;
