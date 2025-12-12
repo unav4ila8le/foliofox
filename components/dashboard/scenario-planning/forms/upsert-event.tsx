@@ -424,6 +424,20 @@ export function UpsertEventForm({
                           ) : (
                             <span>No end date</span>
                           )}
+                          {field.value && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="rounded-none"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                field.onChange(undefined);
+                              }}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          )}
                           <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                         </Button>
                       </FormControl>
@@ -437,18 +451,6 @@ export function UpsertEventForm({
                       />
                     </PopoverContent>
                   </Popover>
-                  {field.value && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute top-0 right-0 h-full px-3"
-                      onClick={() => field.onChange(undefined)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
-                  <FormDescription>Leave empty for no end date</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
