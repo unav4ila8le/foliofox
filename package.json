@@ -6,7 +6,6 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "vitest",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
@@ -14,6 +13,7 @@
     "types:supabase:local": "supabase gen types typescript --local > types/database.types.ts",
     "types:supabase:linked": "supabase gen types typescript --linked > types/database.types.ts",
     "shadcn:update": "node scripts/update-shadcn.mjs",
+    "test": "vitest",
     "prepare": "husky"
   },
   "dependencies": {

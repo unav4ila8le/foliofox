@@ -7,6 +7,7 @@ import {
   type ColumnFiltersState,
   type RowSelectionState,
   type ExpandedState,
+  type TableMeta,
   flexRender,
   getCoreRowModel,
   getSortedRowModel,
@@ -39,6 +40,7 @@ interface DataTableProps<TData extends DataWithId, TValue> {
   onSelectedRowsChange?: (rows: TData[]) => void;
   enableGrouping?: boolean;
   groupBy?: string[];
+  meta?: TableMeta<TData>;
   defaultSorting?: SortingState;
 }
 
@@ -51,6 +53,7 @@ export function DataTable<TData extends DataWithId, TValue>({
   onSelectedRowsChange,
   enableGrouping = false,
   groupBy = [],
+  meta,
   defaultSorting = [],
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>(defaultSorting);
@@ -97,6 +100,7 @@ export function DataTable<TData extends DataWithId, TValue>({
     autoResetExpanded: false,
     autoResetPageIndex: false,
     getRowId: (row) => String(row.id),
+    meta,
     state: {
       sorting,
       columnFilters,
