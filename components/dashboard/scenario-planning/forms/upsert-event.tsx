@@ -148,7 +148,7 @@ export function UpsertEventForm({
         | "once"
         | "monthly"
         | "yearly",
-      startDate: getDateRangeFromEvent(event).startDate,
+      startDate: getDateRangeFromEvent(event).startDate ?? new Date(),
       endDate: getDateRangeFromEvent(event).endDate,
       conditions: event ? extractConditionsFromEvent(event) : [],
     },
