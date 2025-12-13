@@ -39,7 +39,8 @@ function ActionsCell({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem
-          onClick={() => {
+          onClick={(event) => {
+            event.stopPropagation();
             // @ts-expect-error - meta is typed but onEdit is custom
             table.options.meta?.onEdit(row.original, index);
             setOpen(false);
@@ -50,7 +51,8 @@ function ActionsCell({
         </DropdownMenuItem>
         <DropdownMenuItem
           className="text-destructive"
-          onClick={() => {
+          onClick={(event) => {
+            event.stopPropagation();
             // @ts-expect-error - meta is typed but onDelete is custom
             table.options.meta?.onDelete(index);
             setOpen(false);
