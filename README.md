@@ -15,7 +15,7 @@ A net worth tracking app with an AI-powered financial advisor that helps you mak
 
 ## Built with
 
-- Next.js 15 (App Router)
+- Next.js 16 (App Router)
 - TypeScript (strict mode)
 - Supabase (Postgres, Auth, Storage)
 - Tailwind CSS
