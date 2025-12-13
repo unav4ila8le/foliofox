@@ -6,8 +6,9 @@ CREATE TABLE IF NOT EXISTS public.financial_scenarios (
   name text NOT NULL,
   events jsonb NOT NULL DEFAULT '{}',
   engine_version integer NOT NULL DEFAULT 1,
+  initial_balance numeric NOT NULL DEFAULT 0,
   created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
+  updated_at timestamptz NOT NULL DEFAULT now(),
 
   CONSTRAINT financial_scenarios_name_check CHECK (
     char_length(name) >= 1 AND char_length(name) <= 255
