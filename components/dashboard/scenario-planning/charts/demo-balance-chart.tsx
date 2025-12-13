@@ -7,7 +7,7 @@ import {
   makeOneOff,
   type Scenario,
 } from "@/lib/scenario-planning";
-import { addYears } from "date-fns/addYears";
+import { addYears } from "date-fns";
 import { fromJSDate, ld } from "@/lib/local-date";
 import {
   Area,

@@ -2,7 +2,7 @@
 
 import React from "react";
 import { runScenario, Scenario, ScenarioEvent } from "@/lib/scenario-planning";
-import { addYears } from "date-fns/addYears";
+import { addYears } from "date-fns";
 import { fromJSDate } from "@/lib/local-date";
 import {
   Card,
