@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { GitBranch, Home, TrendingUp } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 import {
   SidebarMenu as UISidebarMenu,
@@ -27,6 +28,7 @@ const items = [
     title: "Scenario Planning",
     url: "/dashboard/scenario-planning",
     icon: GitBranch,
+    badge: "Beta",
   },
 ];
 
@@ -48,7 +50,14 @@ export function Menu() {
           >
             <Link href={item.url} onClick={() => setOpenMobile(false)}>
               <item.icon />
-              <span>{item.title}</span>
+              <div className="flex w-full min-w-0 items-center gap-2">
+                <span className="flex-1 truncate">{item.title}</span>
+                {item.badge && (
+                  <Badge className="bg-brand/10 text-brand ml-auto flex-none">
+                    {item.badge}
+                  </Badge>
+                )}
+              </div>
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
