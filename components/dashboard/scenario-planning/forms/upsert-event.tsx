@@ -26,7 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon, Plus, Trash2, X } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -178,6 +178,11 @@ export function UpsertEventForm({
   const { isDirty } = form.formState;
   const recurrence = form.watch("recurrence");
   const type = form.watch("type");
+
+  const conditionTypes = useWatch({
+    control: form.control,
+    name: "conditions",
+  });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     // Convert Date to LocalDate
@@ -486,7 +491,7 @@ export function UpsertEventForm({
           {fields.length > 0 && (
             <div className="space-y-4 rounded-lg border p-4">
               {fields.map((field, index) => {
-                const conditionType = form.watch(`conditions.${index}.type`);
+                const conditionType = conditionTypes?.[index]?.type;
 
                 return (
                   <div
