@@ -147,6 +147,8 @@ export function BalanceChart({
     null,
   );
 
+  const deferredHoveredTimestamp = React.useDeferredValue(hoveredTimestamp);
+
   const endDate = React.useMemo(() => {
     return addYears(new Date(), parseInt(timeHorizon, 10));
   }, [timeHorizon]);
@@ -520,7 +522,27 @@ export function BalanceChart({
             </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData}>
+              <AreaChart
+                data={chartData}
+                onMouseMove={(state) => {
+                  if (state.activeIndex == null) {
+                    setHoveredTimestamp(null);
+                  } else {
+                    const data =
+                      chartData[
+                        typeof state.activeIndex === "string"
+                          ? parseInt(state.activeIndex)
+                          : state.activeIndex
+                      ];
+
+                    if (data == null) {
+                      return;
+                    }
+
+                    setHoveredTimestamp(data.timestamp);
+                  }
+                }}
+              >
                 <defs>
                   <linearGradient
                     id="scenarioGradient"
@@ -581,7 +603,8 @@ export function BalanceChart({
 
                 {/* Event markers - custom icons based on biggest event */}
                 {eventMarkers.map((marker, markerIndex) => {
-                  const isHovered = hoveredTimestamp === marker.timestamp;
+                  const isHovered =
+                    deferredHoveredTimestamp === marker.timestamp;
                   return (
                     <ReferenceDot
                       key={markerIndex}
@@ -603,10 +626,7 @@ export function BalanceChart({
 
                 <Tooltip
                   content={({ active, payload }) => {
-                    if (!active || !payload?.length) {
-                      if (hoveredTimestamp !== null) {
-                        setHoveredTimestamp(null);
-                      }
+                    if (!active) {
                       return null;
                     }
 
@@ -616,11 +636,6 @@ export function BalanceChart({
                     );
 
                     if (!monthData) return null;
-
-                    // Update hovered timestamp
-                    if (hoveredTimestamp !== monthData.timestamp) {
-                      setHoveredTimestamp(monthData.timestamp);
-                    }
 
                     const periodLabel =
                       scale === "yearly"
