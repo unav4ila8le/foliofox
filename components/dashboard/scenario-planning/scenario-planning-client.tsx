@@ -1,20 +1,30 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
+import {
+  InputGroup,
+  InputGroupInput,
+  InputGroupAddon,
+  InputGroupText,
+  InputGroupButton,
+} from "@/components/ui/input-group";
+import { Label } from "@/components/ui/label";
+
 import { UpsertEventDialog } from "./dialogs/upsert-event";
 import { EventsTable } from "./table/events-table";
+import { BalanceChart } from "./charts/balance-chart";
+
+import type { Scenario, ScenarioEvent } from "@/lib/scenario-planning";
+
 import {
   upsertEvent,
   deleteEvent,
   updateInitialBalance,
 } from "@/server/financial-scenarios/actions";
-import type { Scenario, ScenarioEvent } from "@/lib/scenario-planning";
-import { BalanceChart } from "./charts/balance-chart";
 
 export function ScenarioPlanningClient({
   scenario,
@@ -32,6 +42,8 @@ export function ScenarioPlanningClient({
     scenario.initialBalance.toString(),
   );
   const [isUpdatingBalance, setIsUpdatingBalance] = useState(false);
+
+  const isBalanceDirty = initialBalance !== scenario.initialBalance.toString();
 
   const handleEventClick = (event: ScenarioEvent, index: number) => {
     setEditingEvent({ event, index });
@@ -53,7 +65,11 @@ export function ScenarioPlanningClient({
         throw new Error(result.message || "Failed to save event");
       }
 
-      toast.success(index !== undefined ? "Event updated" : "Event created");
+      toast.success(
+        index !== undefined
+          ? "Event updated successfully"
+          : "Event created successfully",
+      );
       handleDialogClose();
     } catch (error) {
       toast.error(
@@ -70,7 +86,7 @@ export function ScenarioPlanningClient({
         throw new Error(result.message || "Failed to delete event");
       }
 
-      toast.success("Event deleted");
+      toast.success("Event deleted successfully");
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to delete event",
@@ -94,7 +110,7 @@ export function ScenarioPlanningClient({
         throw new Error(result.message || "Failed to update initial balance");
       }
 
-      toast.success("Initial balance updated");
+      toast.success("Initial balance updated successfully");
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -107,28 +123,40 @@ export function ScenarioPlanningClient({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Initial Balance Input */}
-      <div className="flex items-end gap-4">
-        <div className="max-w-xs flex-1">
-          <Label htmlFor="initial-balance">Initial balance</Label>
-          <Input
+      <div className="space-y-2">
+        <Label htmlFor="initial-balance">Initial balance</Label>
+        <InputGroup className="max-w-80">
+          <InputGroupInput
             id="initial-balance"
+            placeholder="E.g., 100,000"
             type="number"
+            inputMode="decimal"
+            min={0}
             step="any"
             value={initialBalance}
             onChange={(e) => setInitialBalance(e.target.value)}
-            onBlur={handleInitialBalanceUpdate}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 handleInitialBalanceUpdate();
               }
             }}
             disabled={isUpdatingBalance}
-            placeholder="0"
-            className="mt-1"
           />
-        </div>
+          <InputGroupAddon align="inline-start">
+            <InputGroupText>{currency}</InputGroupText>
+          </InputGroupAddon>
+          <InputGroupAddon align="inline-end">
+            <InputGroupButton
+              variant="secondary"
+              disabled={!isBalanceDirty || isUpdatingBalance}
+              onClick={handleInitialBalanceUpdate}
+            >
+              Update
+            </InputGroupButton>
+          </InputGroupAddon>
+        </InputGroup>
       </div>
 
       <BalanceChart

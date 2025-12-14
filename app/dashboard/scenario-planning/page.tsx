@@ -1,10 +1,13 @@
 import { Suspense } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
-import { getOrCreateDefaultScenario } from "@/server/financial-scenarios/actions";
-import { fetchProfile } from "@/server/profile/actions";
+
+import { Skeleton } from "@/components/ui/custom/skeleton";
 import { ScenarioPlanningClient } from "@/components/dashboard/scenario-planning/scenario-planning-client";
 
+import { getOrCreateDefaultScenario } from "@/server/financial-scenarios/actions";
+import { fetchProfile } from "@/server/profile/actions";
+
 async function ScenarioPlanningContent() {
+  "use cache: private";
   const [scenario, { profile }] = await Promise.all([
     getOrCreateDefaultScenario(),
     fetchProfile(),
@@ -24,7 +27,7 @@ export default function ScenarioPlanningPage() {
       <div>
         <h1 className="text-2xl font-semibold">Scenario Planning</h1>
         <p className="text-muted-foreground">
-          Plan your financial future with our scenario planning tool.
+          Plan your financial future with our scenario planning tool
         </p>
       </div>
       <Suspense fallback={<Skeleton className="h-96" />}>
