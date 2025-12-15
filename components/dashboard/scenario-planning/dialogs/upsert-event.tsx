@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { UpsertEventForm } from "../forms/upsert-event";
+
 import type { ScenarioEvent } from "@/lib/scenario-planning";
 
 export function UpsertEventDialog({

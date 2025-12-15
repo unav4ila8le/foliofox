@@ -1,5 +1,12 @@
 "use client";
 
+import { useEffect } from "react";
+import { CalendarIcon, Plus, Trash2, X } from "lucide-react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm, useFieldArray, useWatch } from "react-hook-form";
+import { z } from "zod";
+import { format } from "date-fns";
+
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -24,16 +31,11 @@ import {
 } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, Plus, Trash2, X } from "lucide-react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, useFieldArray, useWatch } from "react-hook-form";
-import { z } from "zod";
-import { format } from "date-fns";
+
 import { cn } from "@/lib/utils";
 import { makeOneOff, makeRecurring } from "@/lib/scenario-planning";
 import { ld, type LocalDate } from "@/lib/local-date";
 import type { ScenarioEvent } from "@/lib/scenario-planning";
-import { useEffect } from "react";
 
 const conditionSchema = z.discriminatedUnion("type", [
   z.object({
@@ -83,11 +85,11 @@ function extractConditionsFromEvent(event: ScenarioEvent) {
 }
 
 const formSchema = z.object({
-  name: z.string().min(1, "Name is required."),
-  type: z.enum(["income", "expense"], { error: "Type is required." }),
+  name: z.string().min(1, "Name is required"),
+  type: z.enum(["income", "expense"], { error: "Type is required" }),
   amount: z.coerce.number().positive("Amount must be greater than 0"),
   recurrence: z.enum(["once", "monthly", "yearly"]),
-  startDate: z.date({ error: "Start date is required." }),
+  startDate: z.date({ error: "Start date is required" }),
   endDate: z.date().optional(),
   conditions: z.array(conditionSchema).default([]),
 });
@@ -176,8 +178,14 @@ export function UpsertEventForm({
   }, [event, form]);
 
   const { isDirty } = form.formState;
-  const recurrence = form.watch("recurrence");
-  const type = form.watch("type");
+  const recurrence = useWatch({
+    control: form.control,
+    name: "recurrence",
+  });
+  const type = useWatch({
+    control: form.control,
+    name: "type",
+  });
 
   const conditionTypes = useWatch({
     control: form.control,
@@ -258,6 +266,7 @@ export function UpsertEventForm({
         onSubmit={form.handleSubmit(onSubmit)}
         className="grid gap-x-2 gap-y-4"
       >
+        {/* Name */}
         <FormField
           control={form.control}
           name="name"
@@ -278,7 +287,9 @@ export function UpsertEventForm({
             </FormItem>
           )}
         />
-        <div className="grid grid-cols-2 gap-4">
+
+        <div className="grid items-start gap-x-2 gap-y-4 sm:grid-cols-2">
+          {/* Type */}
           <FormField
             control={form.control}
             name="type"
@@ -307,6 +318,8 @@ export function UpsertEventForm({
               </FormItem>
             )}
           />
+
+          {/* Amount */}
           <FormField
             control={form.control}
             name="amount"
@@ -315,7 +328,7 @@ export function UpsertEventForm({
                 <FormLabel>Amount</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="E.g., 1000"
+                    placeholder="E.g., 1,000"
                     type="number"
                     inputMode="decimal"
                     step="any"
@@ -338,11 +351,13 @@ export function UpsertEventForm({
             )}
           />
         </div>
+
+        {/* Recurrence */}
         <FormField
           control={form.control}
           name="recurrence"
           render={({ field }) => (
-            <FormItem>
+            <FormItem className="sm:w-1/2 sm:pr-1">
               <FormLabel>Recurrence</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
@@ -366,12 +381,14 @@ export function UpsertEventForm({
             </FormItem>
           )}
         />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+        <div className="grid gap-2 sm:grid-cols-2">
+          {/* Start Date */}
           <FormField
             control={form.control}
             name="startDate"
             render={({ field }) => (
-              <FormItem className="flex flex-col">
+              <FormItem>
                 <FormLabel>
                   {recurrence === "once" ? "Date" : "Start Date"}
                 </FormLabel>
@@ -381,7 +398,7 @@ export function UpsertEventForm({
                       <Button
                         variant="outline"
                         className={cn(
-                          "w-full pl-3 text-left font-normal",
+                          "text-left font-normal",
                           !field.value && "text-muted-foreground",
                         )}
                       >
@@ -390,7 +407,7 @@ export function UpsertEventForm({
                         ) : (
                           <span>Pick a date</span>
                         )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        <CalendarIcon className="ml-auto opacity-50" />
                       </Button>
                     </FormControl>
                   </PopoverTrigger>
@@ -399,7 +416,7 @@ export function UpsertEventForm({
                       mode="single"
                       selected={field.value}
                       onSelect={field.onChange}
-                      initialFocus
+                      autoFocus
                     />
                   </PopoverContent>
                 </Popover>
@@ -407,12 +424,13 @@ export function UpsertEventForm({
               </FormItem>
             )}
           />
+          {/* End Date */}
           {recurrence !== "once" && (
             <FormField
               control={form.control}
               name="endDate"
               render={({ field }) => (
-                <FormItem className="flex flex-col">
+                <FormItem>
                   <FormLabel>End Date (optional)</FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>
@@ -420,7 +438,7 @@ export function UpsertEventForm({
                         <Button
                           variant="outline"
                           className={cn(
-                            "w-full pl-3 text-left font-normal",
+                            "group text-left font-normal",
                             !field.value && "text-muted-foreground",
                           )}
                         >
@@ -430,20 +448,23 @@ export function UpsertEventForm({
                             <span>No end date</span>
                           )}
                           {field.value && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="rounded-none"
+                            <div
+                              className="ml-auto hidden opacity-50 group-hover:block hover:opacity-100"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 field.onChange(undefined);
                               }}
                             >
-                              <X className="h-4 w-4" />
-                            </Button>
+                              <X />
+                              <span className="sr-only">Clear</span>
+                            </div>
                           )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          <CalendarIcon
+                            className={cn(
+                              "ml-auto opacity-50",
+                              field.value && "group-hover:hidden",
+                            )}
+                          />
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
@@ -452,7 +473,7 @@ export function UpsertEventForm({
                         mode="single"
                         selected={field.value}
                         onSelect={field.onChange}
-                        initialFocus
+                        autoFocus
                       />
                     </PopoverContent>
                   </Popover>
@@ -464,39 +485,24 @@ export function UpsertEventForm({
         </div>
 
         {/* Conditions Section */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-medium">Additional Conditions</h3>
-              <p className="text-muted-foreground text-xs">
-                Add conditions that must be met for this event to occur
-              </p>
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                append({
-                  type: "networth-is-above",
-                  amount: undefined,
-                })
-              }
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Condition
-            </Button>
+        <div className="space-y-2">
+          <div>
+            <h3 className="text-sm font-medium">Additional Conditions</h3>
+            <p className="text-muted-foreground text-xs">
+              Add conditions that must be met for this event to occur
+            </p>
           </div>
 
+          {/* Conditions List */}
           {fields.length > 0 && (
-            <div className="space-y-4 rounded-lg border p-4">
+            <div className="space-y-4">
               {fields.map((field, index) => {
                 const conditionType = conditionTypes?.[index]?.type;
 
                 return (
                   <div
                     key={`${field.id}-${conditionType}`}
-                    className="relative space-y-4 rounded-md border p-4"
+                    className="bg-card relative space-y-4 rounded-md border p-4 shadow-xs"
                   >
                     <div className="flex items-start justify-between gap-4">
                       <FormField
@@ -554,9 +560,8 @@ export function UpsertEventForm({
                         variant="ghost"
                         size="icon"
                         onClick={() => remove(index)}
-                        className="mt-8"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="size-4" />
                       </Button>
                     </div>
 
@@ -572,7 +577,7 @@ export function UpsertEventForm({
                             <FormControl>
                               <Input
                                 type="number"
-                                placeholder="E.g., 10000"
+                                placeholder="E.g., 10,000"
                                 inputMode="decimal"
                                 step="any"
                                 name={field.name}
@@ -731,6 +736,20 @@ export function UpsertEventForm({
               })}
             </div>
           )}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              append({
+                type: "networth-is-above",
+                amount: undefined,
+              })
+            }
+          >
+            <Plus />
+            Add Condition
+          </Button>
         </div>
 
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
