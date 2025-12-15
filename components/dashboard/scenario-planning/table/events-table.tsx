@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { Search, Plus } from "lucide-react";
 import {
   InputGroup,
@@ -34,18 +34,6 @@ export function EventsTable({
     id: `${index}-${event.name}`,
   }));
 
-  // Handle row click
-  const handleRowClick = useCallback(
-    (eventWithId: ScenarioEventWithId) => {
-      // Find the original index
-      const index = events.findIndex((e) => e.name === eventWithId.name);
-      if (index !== -1) {
-        onEventClick(events[index], index);
-      }
-    },
-    [events, onEventClick],
-  );
-
   return (
     <div className="space-y-4">
       <h2 className="mb-2 text-lg font-semibold">Events</h2>
@@ -73,7 +61,6 @@ export function EventsTable({
         data={eventsWithId}
         filterValue={filterValue}
         filterColumnId="name"
-        onRowClick={handleRowClick}
         meta={{
           onEdit: onEventClick,
           onDelete: onDelete,

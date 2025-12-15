@@ -136,9 +136,7 @@ export const columns: ColumnDef<ScenarioEventWithId>[] = [
         <div className="flex w-40 sm:w-64 lg:w-80">
           <Tooltip delayDuration={500}>
             <TooltipTrigger asChild>
-              <div className="truncate underline-offset-4 hover:underline">
-                {name}
-              </div>
+              <div className="truncate">{name}</div>
             </TooltipTrigger>
             <TooltipContent>{name}</TooltipContent>
           </Tooltip>

@@ -11,9 +11,9 @@ import {
 } from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
 
-import { UpsertEventDialog } from "./dialogs/upsert-event";
-import { EventsTable } from "./table/events-table";
 import { BalanceChart } from "./charts/balance-chart";
+import { EventsTable } from "./table/events-table";
+import { UpsertEventDialog } from "./dialogs/upsert-event";
 
 import type { Scenario, ScenarioEvent } from "@/lib/scenario-planning";
 
