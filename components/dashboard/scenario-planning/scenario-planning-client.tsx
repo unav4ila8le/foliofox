@@ -38,6 +38,7 @@ export function ScenarioPlanningClient({
   const [initialBalance, setInitialBalance] = useState(
     scenario.initialBalance.toString(),
   );
+  const [displayBalance, setDisplayBalance] = useState(scenario.initialBalance);
   const [isUpdatingBalance, setIsUpdatingBalance] = useState(false);
 
   const isBalanceDirty = initialBalance !== scenario.initialBalance.toString();
@@ -107,6 +108,7 @@ export function ScenarioPlanningClient({
         throw new Error(result.message || "Failed to update initial balance");
       }
 
+      setDisplayBalance(balance);
       toast.success("Initial balance updated successfully");
     } catch (error) {
       toast.error(
@@ -160,7 +162,7 @@ export function ScenarioPlanningClient({
       <BalanceChart
         scenario={scenario}
         currency={currency}
-        initialBalance={parseFloat(initialBalance) || 0}
+        initialBalance={displayBalance}
         onAddEvent={() => setDialogOpen(true)}
       />
 
