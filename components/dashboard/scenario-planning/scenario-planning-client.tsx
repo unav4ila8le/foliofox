@@ -1,10 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
 import { toast } from "sonner";
-
-import { Button } from "@/components/ui/button";
 import {
   InputGroup,
   InputGroupInput,
@@ -167,28 +164,14 @@ export function ScenarioPlanningClient({
         onAddEvent={() => setDialogOpen(true)}
       />
 
+      {/* Events */}
       {scenario.events.length > 0 && (
-        <>
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold">Events</h2>
-              <p className="text-muted-foreground text-sm">
-                {scenario.events.length} event
-                {scenario.events.length > 1 ? "s" : ""} configured
-              </p>
-            </div>
-            <Button onClick={() => setDialogOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              New Event
-            </Button>
-          </div>
-
-          <EventsTable
-            events={scenario.events}
-            onEventClick={handleEventClick}
-            onDelete={handleDelete}
-          />
-        </>
+        <EventsTable
+          events={scenario.events}
+          onEventClick={handleEventClick}
+          onDelete={handleDelete}
+          onAddEvent={() => setDialogOpen(true)}
+        />
       )}
 
       <UpsertEventDialog
