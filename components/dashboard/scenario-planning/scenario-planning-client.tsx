@@ -127,7 +127,7 @@ export function ScenarioPlanningClient({
       {/* Initial Balance Input */}
       <div className="space-y-2">
         <Label htmlFor="initial-balance">Initial balance</Label>
-        <InputGroup className="max-w-80">
+        <InputGroup className="md:max-w-80">
           <InputGroupInput
             id="initial-balance"
             placeholder="E.g., 100,000"
@@ -159,6 +159,7 @@ export function ScenarioPlanningClient({
         </InputGroup>
       </div>
 
+      {/* Chart */}
       <BalanceChart
         scenario={scenario}
         currency={currency}

@@ -1,9 +1,20 @@
 "use client";
 
-import React from "react";
-import { runScenario, Scenario, ScenarioEvent } from "@/lib/scenario-planning";
+import { useState, useMemo, useCallback, useDeferredValue } from "react";
 import { addYears } from "date-fns";
-import { fromJSDate } from "@/lib/local-date";
+import { Plus, GitBranch } from "lucide-react";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ReferenceDot,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -18,21 +29,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  ReferenceDot,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import { formatCompactNumber, formatCurrency } from "@/lib/number-format";
-import { BalanceStats } from "../stats/balance-stats";
-import { Plus, GitBranch } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { DemoBalanceChart } from "./demo-balance-chart";
+import { BalanceStats } from "../stats/balance-stats";
+
+import { runScenario, Scenario, ScenarioEvent } from "@/lib/scenario-planning";
+import { fromJSDate } from "@/lib/local-date";
+import { formatCompactNumber, formatCurrency } from "@/lib/number-format";
 
 const CustomEventMarker = (props: {
   cx?: number;
@@ -58,6 +60,7 @@ const CustomEventMarker = (props: {
   const fontSize = isHovered ? baseFontSize * 1.2 : baseFontSize;
   const strokeWidth = isHovered ? baseStrokeWidth * 1.2 : baseStrokeWidth;
 
+  // Define area chart color based on net cashflow
   const backgroundColor =
     netCashflow >= 0
       ? "oklch(0.72 0.19 150)" // green
@@ -137,23 +140,19 @@ export function BalanceChart({
   initialBalance: number;
   onAddEvent?: () => void;
 }) {
-  const [timeHorizon, setTimeHorizon] = React.useState<"2" | "5" | "10" | "30">(
-    "5",
-  );
-  const [scale, setScale] = React.useState<"monthly" | "quarterly" | "yearly">(
+  const [timeHorizon, setTimeHorizon] = useState<"2" | "5" | "10" | "30">("5");
+  const [scale, setScale] = useState<"monthly" | "quarterly" | "yearly">(
     "monthly",
   );
-  const [hoveredTimestamp, setHoveredTimestamp] = React.useState<number | null>(
-    null,
-  );
+  const [hoveredTimestamp, setHoveredTimestamp] = useState<number | null>(null);
 
-  const deferredHoveredTimestamp = React.useDeferredValue(hoveredTimestamp);
+  const deferredHoveredTimestamp = useDeferredValue(hoveredTimestamp);
 
-  const endDate = React.useMemo(() => {
+  const endDate = useMemo(() => {
     return addYears(new Date(), parseInt(timeHorizon, 10));
   }, [timeHorizon]);
 
-  const { scenarioResult } = React.useMemo(() => {
+  const { scenarioResult } = useMemo(() => {
     const scenarioResult = runScenario({
       scenario,
       initialBalance,
@@ -166,7 +165,7 @@ export function BalanceChart({
     };
   }, [scenario, initialBalance, endDate]);
 
-  const getPeriodKey = React.useCallback(
+  const getPeriodKey = useCallback(
     (date: Date): string => {
       const year = date.getFullYear();
       const month = date.getMonth();
@@ -186,7 +185,7 @@ export function BalanceChart({
     [scale],
   );
 
-  const chartData = React.useMemo(() => {
+  const chartData = useMemo(() => {
     const sortedMonths = Object.keys(scenarioResult.balance).sort();
 
     if (scale === "monthly") {
@@ -264,7 +263,7 @@ export function BalanceChart({
     }
   }, [scenarioResult, scale, getPeriodKey]);
 
-  const eventMarkers = React.useMemo(() => {
+  const eventMarkers = useMemo(() => {
     const markers: Array<{
       monthKey: string;
       timestamp: number;
@@ -345,7 +344,7 @@ export function BalanceChart({
     return markers;
   }, [chartData]);
 
-  const yAxisDomain = React.useMemo(() => {
+  const yAxisDomain = useMemo(() => {
     if (chartData.length === 0) return ["auto", "auto"] as const;
 
     // Helper function to round to nice numbers
@@ -414,7 +413,7 @@ export function BalanceChart({
     return [domainMin, domainMax] as const;
   }, [chartData]);
 
-  const isPositiveTrend = React.useMemo(() => {
+  const isPositiveTrend = useMemo(() => {
     if (chartData.length === 0) return true;
 
     const firstBalance = chartData.at(0)?.balance || 0;
@@ -450,62 +449,60 @@ export function BalanceChart({
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div className="flex flex-col gap-1.5">
-              <CardTitle>Balance Over Time</CardTitle>
-              <CardDescription>
-                Financial projection with conditional events
-              </CardDescription>
-            </div>
-            <div className="flex gap-2">
-              <Select
-                value={scale}
-                onValueChange={(value) =>
-                  setScale(value as "monthly" | "quarterly" | "yearly")
-                }
-              >
-                <SelectTrigger className="w-[120px]">
-                  <SelectValue placeholder="Scale" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                  <SelectItem value="quarterly">Quarterly</SelectItem>
-                  <SelectItem value="yearly">Yearly</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select
-                value={timeHorizon}
-                onValueChange={(value) =>
-                  setTimeHorizon(value as "2" | "5" | "10" | "30")
-                }
-              >
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="Time horizon" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="2">2 years</SelectItem>
-                  <SelectItem value="5">5 years</SelectItem>
-                  <SelectItem value="10">10 years</SelectItem>
-                  <SelectItem value="30">30 years</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+    <div className="space-y-4">
+      <Card className="rounded-lg shadow-xs">
+        <CardHeader className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div className="flex w-full flex-col gap-1">
+            <CardTitle>Balance Over Time</CardTitle>
+            <CardDescription>
+              Financial projection with conditional events
+            </CardDescription>
+          </div>
+          <div className="flex w-full items-center gap-2 md:justify-end">
+            <Select
+              value={scale}
+              onValueChange={(value) =>
+                setScale(value as "monthly" | "quarterly" | "yearly")
+              }
+            >
+              <SelectTrigger className="w-1/2 md:w-32">
+                <SelectValue placeholder="Scale" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="monthly">Monthly</SelectItem>
+                <SelectItem value="quarterly">Quarterly</SelectItem>
+                <SelectItem value="yearly">Yearly</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              value={timeHorizon}
+              onValueChange={(value) =>
+                setTimeHorizon(value as "2" | "5" | "10" | "30")
+              }
+            >
+              <SelectTrigger className="w-1/2 md:w-32">
+                <SelectValue placeholder="Time horizon" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="2">2 years</SelectItem>
+                <SelectItem value="5">5 years</SelectItem>
+                <SelectItem value="10">10 years</SelectItem>
+                <SelectItem value="30">30 years</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardHeader>
-        <CardContent className="h-[400px]">
+        <CardContent className="h-80">
           {scenario.events.length === 0 ? (
             <div className="relative h-full">
               {/* Demo chart in background */}
-              <div className="absolute inset-0">
+              <div className="absolute inset-0 opacity-25">
                 <DemoBalanceChart initialBalance={initialBalance} />
               </div>
 
               {/* Empty state overlay */}
-              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-                <div className="bg-accent pointer-events-auto rounded-lg p-2">
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                <div className="bg-accent rounded-lg p-2">
                   <GitBranch className="text-muted-foreground size-4" />
                 </div>
                 <p className="mt-3 font-medium">Balance Over Time</p>
@@ -513,8 +510,8 @@ export function BalanceChart({
                   Add events to see how your balance changes over time
                 </p>
                 {onAddEvent && (
-                  <Button onClick={onAddEvent} className="pointer-events-auto">
-                    <Plus className="mr-2 h-4 w-4" />
+                  <Button onClick={onAddEvent}>
+                    <Plus className="size-4" />
                     New Event
                   </Button>
                 )}
@@ -574,7 +571,7 @@ export function BalanceChart({
                     fill: "var(--muted-foreground)",
                   }}
                   domain={yAxisDomain}
-                  width={60}
+                  width={40}
                 />
                 <XAxis
                   dataKey="timestamp"
@@ -588,8 +585,7 @@ export function BalanceChart({
                   }}
                   tickFormatter={formatXAxisDate}
                   scale="time"
-                  tickCount={8}
-                  minTickGap={50}
+                  minTickGap={30}
                 />
                 <Area
                   dataKey="balance"
