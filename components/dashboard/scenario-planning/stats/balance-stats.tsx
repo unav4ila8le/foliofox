@@ -87,14 +87,14 @@ export const BalanceStats = ({
   );
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {/* Net Change */}
       <Card className="rounded-md shadow-xs">
         <CardHeader>
           <CardDescription>Net Change</CardDescription>
           <CardTitle
             className={cn(
-              "flex items-center gap-2",
+              "flex items-center gap-2 whitespace-nowrap",
               stats.netChange >= 0 ? "text-green-600" : "text-red-600",
             )}
           >
@@ -116,7 +116,7 @@ export const BalanceStats = ({
                 : "text-red-600",
             )}
           >
-            {stats.netChange >= 0 ? "+" : ""}
+            {stats.netChange >= 0 ? "+ " : ""}
             {initialBalance === 0
               ? "N/A%"
               : formatPercentage(stats.netChangePercentage / 100, 2)}
