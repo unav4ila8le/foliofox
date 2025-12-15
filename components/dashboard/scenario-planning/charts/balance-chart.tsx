@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useDeferredValue } from "react";
-import { addYears } from "date-fns";
+import { addYears, formatDate } from "date-fns";
 import { Plus, GitBranch } from "lucide-react";
 import {
   Area,
@@ -29,12 +29,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { DemoBalanceChart } from "./demo-balance-chart";
 import { BalanceStats } from "../stats/balance-stats";
 
 import { runScenario, Scenario, ScenarioEvent } from "@/lib/scenario-planning";
 import { fromJSDate } from "@/lib/local-date";
 import { formatCompactNumber, formatCurrency } from "@/lib/number-format";
+import { cn } from "@/lib/utils";
 
 const CustomEventMarker = (props: {
   cx?: number;
@@ -69,7 +71,7 @@ const CustomEventMarker = (props: {
   const showBadge = count && count > 1;
 
   return (
-    <g style={{ cursor: "pointer" }}>
+    <g>
       {/* Background circle */}
       <circle
         cx={cx}
@@ -78,7 +80,6 @@ const CustomEventMarker = (props: {
         fill={backgroundColor}
         stroke="var(--background)"
         strokeWidth={strokeWidth}
-        opacity={isHovered ? 1 : 0.95}
         style={{
           transition: "all 0.2s ease",
           filter: isHovered
@@ -437,10 +438,7 @@ export function BalanceChart({
       const quarter = Math.floor(date.getMonth() / 3) + 1;
       return `Q${quarter} ${date.getFullYear().toString().slice(2)}`;
     } else {
-      return date.toLocaleDateString("en-US", {
-        month: "short",
-        year: "2-digit",
-      });
+      return formatDate(date, "MMM yyyy");
     }
   };
 
@@ -638,10 +636,7 @@ export function BalanceChart({
                         ? monthData.date.getFullYear().toString()
                         : scale === "quarterly"
                           ? `Q${Math.floor(monthData.date.getMonth() / 3) + 1} ${monthData.date.getFullYear()}`
-                          : monthData.date.toLocaleDateString("en-US", {
-                              month: "long",
-                              year: "numeric",
-                            });
+                          : formatDate(monthData.date, "MMMM yyyy");
 
                     const cashflowLabel =
                       scale === "yearly"
@@ -688,15 +683,15 @@ export function BalanceChart({
                     }));
 
                     return (
-                      <div className="bg-background border-border flex max-w-sm flex-col gap-2 rounded-md border px-2.5 py-1.5 shadow-md">
-                        <div className="flex flex-col gap-1 border-b pb-2">
-                          <span className="text-muted-foreground text-xs">
+                      <div className="bg-background border-border flex flex-col gap-1 rounded-md border px-2.5 py-1.5">
+                        <div className="space-y-1">
+                          <p className="text-muted-foreground text-xs">
                             {periodLabel}
-                          </span>
-                          <span className="text-sm font-medium">
+                          </p>
+                          <p className="text-sm font-medium">
                             Balance:{" "}
                             {formatCurrency(monthData.balance, currency)}
-                          </span>
+                          </p>
                         </div>
 
                         {/* Cashflow */}
@@ -705,24 +700,27 @@ export function BalanceChart({
                             {cashflowLabel}
                           </span>
                           <span
-                            className={`text-xs font-medium ${
+                            className={cn(
+                              "text-xs font-medium",
                               monthData.cashflow >= 0
                                 ? "text-green-600"
-                                : "text-red-600"
-                            }`}
+                                : "text-red-600",
+                            )}
                           >
-                            {monthData.cashflow >= 0 ? "+" : ""}
+                            {monthData.cashflow >= 0 ? "+ " : ""}
                             {formatCurrency(monthData.cashflow, currency)}
                           </span>
                         </div>
 
+                        <Separator />
+
                         {/* Events */}
                         {eventsGrouped.length > 0 && (
-                          <div className="flex flex-col gap-1 border-t pt-2">
-                            <span className="text-muted-foreground text-xs font-medium">
+                          <div className="space-y-1">
+                            <p className="text-muted-foreground text-xs font-medium">
                               Events ({monthData.events.length}):
-                            </span>
-                            <div className="flex flex-col gap-1">
+                            </p>
+                            <div className="space-y-1">
                               {(() => {
                                 // Sort events by amount: negative (expenses) first, then positive (income)
                                 const sortedEvents = [...eventsGrouped].sort(
@@ -804,7 +802,10 @@ export function BalanceChart({
                                       className="flex items-center justify-between gap-2 text-xs"
                                     >
                                       <span
-                                        className={`text-muted-foreground flex items-center gap-1 truncate ${item.isTriggered ? "pl-3" : ""}`}
+                                        className={cn(
+                                          "text-muted-foreground flex items-center gap-1 truncate",
+                                          item.isTriggered ? "pl-3" : "",
+                                        )}
                                       >
                                         {item.isTriggered && "├─ "}
                                         {item.event!.name}
@@ -816,7 +817,7 @@ export function BalanceChart({
                                             : "text-red-600"
                                         }`}
                                       >
-                                        {value >= 0 ? "+" : ""}
+                                        {value >= 0 ? "+ " : ""}
                                         {formatCurrency(value, currency)}
                                       </span>
                                     </div>

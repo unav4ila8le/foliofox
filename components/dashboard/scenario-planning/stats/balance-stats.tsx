@@ -8,6 +8,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 
 import { formatCurrency, formatPercentage } from "@/lib/number-format";
 import { cn } from "@/lib/utils";
@@ -129,14 +134,28 @@ export const BalanceStats = ({
         <CardHeader>
           <CardDescription className="flex items-center gap-1">
             Lowest Balance
-            {stats.isLowestBelowInitial && (
-              <AlertTriangle className="size-3 text-red-600" />
-            )}
           </CardDescription>
           <CardTitle
-            className={stats.isLowestBelowInitial ? "text-red-600" : undefined}
+            className={cn(
+              "flex items-center gap-2",
+              stats.lowestBalance < 0
+                ? "text-red-600"
+                : stats.isLowestBelowInitial
+                  ? "text-yellow-600"
+                  : undefined,
+            )}
           >
             {formatCurrency(stats.lowestBalance, currency)}
+            {stats.isLowestBelowInitial && (
+              <Tooltip>
+                <TooltipTrigger>
+                  <AlertTriangle className="size-4" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  The lowest balance is below the initial balance
+                </TooltipContent>
+              </Tooltip>
+            )}
           </CardTitle>
           <p className="text-muted-foreground text-xs">
             {formatDate(stats.lowestBalanceDate, "MMM yyyy")}
