@@ -14,7 +14,11 @@ import {
   TooltipContent,
 } from "@/components/ui/tooltip";
 
-import { formatCurrency, formatPercentage } from "@/lib/number-format";
+import {
+  formatCurrency,
+  formatPercentage,
+  formatSignedCurrency,
+} from "@/lib/number-format";
 import { cn } from "@/lib/utils";
 
 interface CashflowEntry {
@@ -103,10 +107,7 @@ export const BalanceStats = ({
               stats.netChange >= 0 ? "text-green-600" : "text-red-600",
             )}
           >
-            <span>
-              {stats.netChange >= 0 ? "+ " : ""}
-              {formatCurrency(stats.netChange, currency)}
-            </span>
+            <span>{formatSignedCurrency(stats.netChange, currency)}</span>
             {stats.netChange >= 0 ? (
               <TrendingUp className="size-4" />
             ) : (
@@ -173,8 +174,7 @@ export const BalanceStats = ({
               stats.avgMonthlyChange >= 0 ? "text-green-600" : "text-red-600",
             )}
           >
-            {stats.avgMonthlyChange >= 0 ? "+ " : ""}
-            {formatCurrency(stats.avgMonthlyChange, currency)}
+            {formatSignedCurrency(stats.avgMonthlyChange, currency)}
           </CardTitle>
           <p className="text-muted-foreground text-xs">
             Over {stats.monthCount} months

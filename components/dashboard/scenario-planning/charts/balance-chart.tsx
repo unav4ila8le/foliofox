@@ -35,7 +35,11 @@ import { BalanceStats } from "../stats/balance-stats";
 
 import { runScenario, Scenario, ScenarioEvent } from "@/lib/scenario-planning";
 import { fromJSDate } from "@/lib/local-date";
-import { formatCompactNumber, formatCurrency } from "@/lib/number-format";
+import {
+  formatCompactNumber,
+  formatCurrency,
+  formatSignedCurrency,
+} from "@/lib/number-format";
 import { cn } from "@/lib/utils";
 
 const CustomEventMarker = (props: {
@@ -707,8 +711,7 @@ export function BalanceChart({
                                 : "text-red-600",
                             )}
                           >
-                            {monthData.cashflow >= 0 ? "+ " : ""}
-                            {formatCurrency(monthData.cashflow, currency)}
+                            {formatSignedCurrency(monthData.cashflow, currency)}
                           </span>
                         </div>
 
@@ -817,8 +820,7 @@ export function BalanceChart({
                                             : "text-red-600"
                                         }`}
                                       >
-                                        {value >= 0 ? "+ " : ""}
-                                        {formatCurrency(value, currency)}
+                                        {formatSignedCurrency(value, currency)}
                                       </span>
                                     </div>
                                   );
