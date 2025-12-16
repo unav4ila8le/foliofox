@@ -103,7 +103,7 @@ export function formatNumber(
 
   const opts = { ...defaultOptions, ...decimalOptions, ...options };
 
-  const formatter = new Intl.NumberFormat("en-US", {
+  const formatter = new Intl.NumberFormat(undefined, {
     style: "decimal",
     minimumFractionDigits: opts.minimumFractionDigits,
     maximumFractionDigits: opts.maximumFractionDigits,
@@ -130,7 +130,7 @@ export function formatCurrency(
   if (isNaN(num)) return "";
 
   if (options.display === "symbol") {
-    const formatter = new Intl.NumberFormat("en-US", {
+    const formatter = new Intl.NumberFormat(undefined, {
       style: "currency",
       currency,
       currencyDisplay: "symbol",
@@ -139,35 +139,12 @@ export function formatCurrency(
   }
 
   // For code display, we'll also use Intl.NumberFormat but with code display
-  const formatter = new Intl.NumberFormat("en-US", {
+  const formatter = new Intl.NumberFormat(undefined, {
     style: "currency",
     currency,
     currencyDisplay: "code",
   });
   return formatter.format(num);
-}
-
-/**
- * Formats a signed currency value with consistent spacing
- * @param value The monetary value to format (can be positive or negative)
- * @param currency The ISO 4217 currency code
- * @param options Currency formatting options
- * @returns Formatted currency string with sign and consistent spacing (e.g., "+ EUR 1,234.56" or "- EUR 1,234.56")
- */
-export function formatSignedCurrency(
-  value: number | string,
-  currency: string,
-  options: CurrencyFormatOptions = { display: "code" },
-): string {
-  const num =
-    typeof value === "string" ? parseFloat(value.replace(/,/g, "")) : value;
-  if (isNaN(num)) return "";
-
-  // Format the absolute value
-  const formatted = formatCurrency(Math.abs(num), currency, options);
-
-  // Add sign with consistent spacing
-  return num >= 0 ? `+ ${formatted}` : `- ${formatted}`;
 }
 
 /**
@@ -197,7 +174,7 @@ export function formatCompactNumber(value: number | string): string {
     typeof value === "string" ? parseFloat(value.replace(/,/g, "")) : value;
   if (isNaN(num)) return "";
 
-  const formatter = new Intl.NumberFormat("en-US", {
+  const formatter = new Intl.NumberFormat(undefined, {
     notation: "compact",
     maximumFractionDigits: 1,
   });
@@ -215,5 +192,5 @@ export function formatCompactCurrency(
   currency: string,
 ): string {
   const compactValue = formatCompactNumber(value);
-  return `${compactValue} ${currency}`;
+  return `${currency} ${compactValue}`;
 }

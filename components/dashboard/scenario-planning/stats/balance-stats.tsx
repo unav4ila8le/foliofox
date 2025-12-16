@@ -14,7 +14,7 @@ import {
   TooltipContent,
 } from "@/components/ui/tooltip";
 
-import { formatPercentage, formatSignedCurrency } from "@/lib/number-format";
+import { formatPercentage, formatCurrency } from "@/lib/number-format";
 import { cn } from "@/lib/utils";
 
 interface CashflowEntry {
@@ -103,7 +103,10 @@ export const BalanceStats = ({
               stats.netChange >= 0 ? "text-green-600" : "text-red-600",
             )}
           >
-            <span>{formatSignedCurrency(stats.netChange, currency)}</span>
+            <span>
+              {stats.netChange >= 0 ? "+" : ""}
+              {formatCurrency(stats.netChange, currency)}
+            </span>
             {stats.netChange >= 0 ? (
               <TrendingUp className="size-4" />
             ) : (
@@ -118,7 +121,7 @@ export const BalanceStats = ({
                 : "text-red-600",
             )}
           >
-            {stats.netChange >= 0 ? "+ " : ""}
+            {stats.netChange >= 0 ? "+" : ""}
             {initialBalance === 0
               ? "N/A%"
               : formatPercentage(stats.netChangePercentage / 100, 2)}
@@ -142,7 +145,7 @@ export const BalanceStats = ({
                   : undefined,
             )}
           >
-            {formatSignedCurrency(stats.lowestBalance, currency)}
+            {formatCurrency(stats.lowestBalance, currency)}
             {stats.isLowestBelowInitial && (
               <Tooltip>
                 <TooltipTrigger>
@@ -170,7 +173,8 @@ export const BalanceStats = ({
               stats.avgMonthlyChange >= 0 ? "text-green-600" : "text-red-600",
             )}
           >
-            {formatSignedCurrency(stats.avgMonthlyChange, currency)}
+            {stats.avgMonthlyChange >= 0 ? "+" : ""}
+            {formatCurrency(stats.avgMonthlyChange, currency)}
           </CardTitle>
           <p className="text-muted-foreground text-xs">
             Over {stats.monthCount} months
@@ -187,10 +191,20 @@ export const BalanceStats = ({
               "flex items-center gap-2",
               finalBalance >= initialBalance
                 ? "text-green-600"
-                : "text-red-600",
+                : "text-yellow-600",
             )}
           >
-            {formatSignedCurrency(finalBalance, currency)}
+            {formatCurrency(finalBalance, currency)}
+            {finalBalance < initialBalance && (
+              <Tooltip>
+                <TooltipTrigger>
+                  <AlertTriangle className="size-4" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  The final balance is below the initial balance
+                </TooltipContent>
+              </Tooltip>
+            )}
           </CardTitle>
           <p className="text-muted-foreground text-xs">
             {formatDate(endDate, "MMM yyyy")}

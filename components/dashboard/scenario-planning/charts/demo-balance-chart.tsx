@@ -189,7 +189,7 @@ export function DemoBalanceChart({
     const date = new Date(timestamp);
     if (isNaN(date.getTime())) return "";
 
-    return date.toLocaleDateString("en-US", {
+    return date.toLocaleDateString(undefined, {
       month: "short",
       year: "2-digit",
     });
