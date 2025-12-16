@@ -35,12 +35,15 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { makeOneOff, makeRecurring } from "@/lib/scenario-planning";
 import { ld, type LocalDate } from "@/lib/local-date";
+import { requiredNumberWithConstraints } from "@/lib/zod-helpers";
 import type { ScenarioEvent } from "@/lib/scenario-planning";
 
 const conditionSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("networth-is-above"),
-    amount: z.coerce.number().positive("Amount must be greater than 0"),
+    amount: requiredNumberWithConstraints("Amount is required", {
+      gte: { value: 0, error: "Amount must be greater or equal to 0" },
+    }),
   }),
   z.object({
     type: z.literal("event-happened"),
@@ -49,7 +52,9 @@ const conditionSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("income-is-above"),
     eventName: z.string().min(1, "Event name is required"),
-    amount: z.coerce.number().positive("Amount must be greater than 0"),
+    amount: requiredNumberWithConstraints("Amount is required", {
+      gte: { value: 0, error: "Amount must be greater or equal to 0" },
+    }),
   }),
 ]);
 
@@ -87,7 +92,9 @@ function extractConditionsFromEvent(event: ScenarioEvent) {
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
   type: z.enum(["income", "expense"], { error: "Type is required" }),
-  amount: z.coerce.number().positive("Amount must be greater than 0"),
+  amount: requiredNumberWithConstraints("Amount is required", {
+    gt: { value: 0, error: "Amount must be greater than 0" },
+  }),
   recurrence: z.enum(["once", "monthly", "yearly"]),
   startDate: z.date({ error: "Start date is required" }),
   endDate: z.date().optional(),
@@ -145,7 +152,7 @@ export function UpsertEventForm({
     defaultValues: {
       name: event?.name || "",
       type: (event?.type || "income") as "income" | "expense",
-      amount: event?.amount || undefined,
+      amount: event?.amount || "",
       recurrence: (event?.recurrence.type || "once") as
         | "once"
         | "monthly"
@@ -332,18 +339,8 @@ export function UpsertEventForm({
                     type="number"
                     inputMode="decimal"
                     step="any"
-                    name={field.name}
-                    ref={field.ref}
-                    onBlur={field.onBlur}
-                    disabled={field.disabled}
-                    value={(field.value as number | undefined) ?? ""}
-                    onChange={(e) => {
-                      const val =
-                        e.target.value === ""
-                          ? undefined
-                          : e.target.valueAsNumber;
-                      field.onChange(val);
-                    }}
+                    {...field}
+                    value={field.value as number}
                   />
                 </FormControl>
                 <FormMessage />
@@ -580,24 +577,12 @@ export function UpsertEventForm({
                             <FormLabel>Amount</FormLabel>
                             <FormControl>
                               <Input
-                                type="number"
                                 placeholder="E.g., 10,000"
+                                type="number"
                                 inputMode="decimal"
                                 step="any"
-                                name={field.name}
-                                ref={field.ref}
-                                onBlur={field.onBlur}
-                                disabled={field.disabled}
-                                value={
-                                  (field.value as number | undefined) ?? ""
-                                }
-                                onChange={(e) => {
-                                  const val =
-                                    e.target.value === ""
-                                      ? undefined
-                                      : e.target.valueAsNumber;
-                                  field.onChange(val);
-                                }}
+                                {...field}
+                                value={field.value as number}
                               />
                             </FormControl>
                             <FormDescription>
@@ -705,24 +690,12 @@ export function UpsertEventForm({
                               <FormLabel>Minimum Amount</FormLabel>
                               <FormControl>
                                 <Input
+                                  placeholder="E.g., 5,000"
                                   type="number"
-                                  placeholder="E.g., 5000"
                                   inputMode="decimal"
                                   step="any"
-                                  name={field.name}
-                                  ref={field.ref}
-                                  onBlur={field.onBlur}
-                                  disabled={field.disabled}
-                                  value={
-                                    (field.value as number | undefined) ?? ""
-                                  }
-                                  onChange={(e) => {
-                                    const val =
-                                      e.target.value === ""
-                                        ? undefined
-                                        : e.target.valueAsNumber;
-                                    field.onChange(val);
-                                  }}
+                                  {...field}
+                                  value={field.value as number}
                                 />
                               </FormControl>
                               <FormDescription>
@@ -747,7 +720,7 @@ export function UpsertEventForm({
             onClick={() =>
               append({
                 type: "networth-is-above",
-                amount: undefined,
+                amount: "",
               })
             }
           >
