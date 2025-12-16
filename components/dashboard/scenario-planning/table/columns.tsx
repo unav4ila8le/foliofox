@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { ArrowUpDown, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import type { ColumnDef, Row, Table } from "@tanstack/react-table";
+import { format } from "date-fns";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,8 +13,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { format } from "date-fns";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { ScenarioEvent } from "@/lib/scenario-planning";
+import { formatNumber } from "@/lib/number-format";
 
 // Extended type with id for table
 export type ScenarioEventWithId = ScenarioEvent & { id: string };
@@ -34,7 +41,7 @@ function ActionsCell({
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon">
-          <MoreHorizontal className="h-4 w-4" />
+          <MoreHorizontal className="size-4" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
@@ -46,11 +53,11 @@ function ActionsCell({
             setOpen(false);
           }}
         >
-          <Pencil className="mr-2 h-4 w-4" />
+          <Pencil />
           Edit
         </DropdownMenuItem>
         <DropdownMenuItem
-          className="text-destructive"
+          variant="destructive"
           onClick={(event) => {
             event.stopPropagation();
             // @ts-expect-error - meta is typed but onDelete is custom
@@ -58,7 +65,7 @@ function ActionsCell({
             setOpen(false);
           }}
         >
-          <Trash2 className="mr-2 h-4 w-4" />
+          <Trash2 />
           Delete
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -125,7 +132,16 @@ export const columns: ColumnDef<ScenarioEventWithId>[] = [
     },
     cell: ({ row }) => {
       const name = row.getValue<string>("name");
-      return <div className="font-medium">{name}</div>;
+      return (
+        <div className="flex w-40 sm:w-64 lg:w-80">
+          <Tooltip delayDuration={500}>
+            <TooltipTrigger asChild>
+              <div className="truncate">{name}</div>
+            </TooltipTrigger>
+            <TooltipContent>{name}</TooltipContent>
+          </Tooltip>
+        </div>
+      );
     },
   },
   {
@@ -134,7 +150,7 @@ export const columns: ColumnDef<ScenarioEventWithId>[] = [
     cell: ({ row }) => {
       const type = row.getValue<"income" | "expense">("type");
       return (
-        <Badge variant={type === "income" ? "default" : "secondary"}>
+        <Badge variant="secondary" className="capitalize">
           {type}
         </Badge>
       );
@@ -145,7 +161,7 @@ export const columns: ColumnDef<ScenarioEventWithId>[] = [
     header: ({ column }) => {
       return (
         <div
-          className="hover:text-primary flex cursor-pointer items-center justify-end gap-2 transition-colors"
+          className="hover:text-primary flex cursor-pointer items-center gap-2 transition-colors"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
           Amount
@@ -153,15 +169,13 @@ export const columns: ColumnDef<ScenarioEventWithId>[] = [
         </div>
       );
     },
-    meta: {
-      headerClassName: "text-right",
-      cellClassName: "text-right",
-    },
     cell: ({ row }) => {
       const amount = row.getValue<number>("amount");
       return (
-        <div className="font-medium tabular-nums">
-          {amount.toLocaleString()}
+        <div className="tabular-nums">
+          {formatNumber(amount, undefined, {
+            maximumFractionDigits: 6,
+          })}
         </div>
       );
     },
@@ -172,7 +186,7 @@ export const columns: ColumnDef<ScenarioEventWithId>[] = [
     cell: ({ row }) => {
       const startDate = getEventStartDate(row.original);
       if (!startDate) return <span className="text-muted-foreground">-</span>;
-      return <div className="text-sm">{format(startDate, "MMM d, yyyy")}</div>;
+      return format(startDate, "MMM d, yyyy");
     },
   },
   {
@@ -183,10 +197,10 @@ export const columns: ColumnDef<ScenarioEventWithId>[] = [
       const isRecurring = event.recurrence.type !== "once";
 
       if (!isRecurring) {
-        return <span className="text-muted-foreground text-sm">Once</span>;
+        return <div className="text-muted-foreground">Once</div>;
       }
 
-      return <div className="text-sm capitalize">{event.recurrence.type}</div>;
+      return <div className="capitalize">{event.recurrence.type}</div>;
     },
   },
   {
@@ -197,15 +211,15 @@ export const columns: ColumnDef<ScenarioEventWithId>[] = [
       const isRecurring = event.recurrence.type !== "once";
 
       if (!isRecurring) {
-        return <span className="text-muted-foreground">-</span>;
+        return <div className="text-muted-foreground">-</div>;
       }
 
       const endDate = getEventEndDate(event);
       if (!endDate) {
-        return <span className="text-muted-foreground text-sm">Never</span>;
+        return <div className="text-muted-foreground">Never</div>;
       }
 
-      return <div className="text-sm">{format(endDate, "MMM d, yyyy")}</div>;
+      return format(endDate, "MMM d, yyyy");
     },
   },
   {
@@ -214,19 +228,17 @@ export const columns: ColumnDef<ScenarioEventWithId>[] = [
     cell: ({ row }) => {
       const count = getAdditionalConditionsCount(row.original);
       if (count === 0) {
-        return (
-          <span className="text-muted-foreground text-sm">No conditions</span>
-        );
+        return <div className="text-muted-foreground">No conditions</div>;
       }
-      return (
-        <div className="text-sm">
-          {count} condition{count > 1 ? "s" : ""}
-        </div>
-      );
+      return <div>{count} condition(s)</div>;
     },
   },
   {
     id: "actions",
+    meta: {
+      headerClassName: "text-right",
+      cellClassName: "text-right",
+    },
     cell: ({ row, table }) => <ActionsCell row={row} table={table} />,
   },
 ];

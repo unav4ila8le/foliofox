@@ -1,16 +1,21 @@
-import React from "react";
+import { useMemo } from "react";
+import { TrendingUp, TrendingDown, AlertTriangle } from "lucide-react";
+import { format } from "date-fns";
+
 import {
   Card,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, AlertTriangle } from "lucide-react";
-import { formatCurrency, formatPercentage } from "@/lib/number-format";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 
-// Colors matching balance-chart.tsx
-const POSITIVE_COLOR = "oklch(0.72 0.19 150)"; // green
-const NEGATIVE_COLOR = "oklch(0.64 0.21 25)"; // red
+import { formatPercentage, formatCurrency } from "@/lib/number-format";
+import { cn } from "@/lib/utils";
 
 interface CashflowEntry {
   amount: number;
@@ -81,86 +86,92 @@ export const BalanceStats = ({
   scenarioResult,
   endDate,
 }: BalanceStatsProps) => {
-  const stats = React.useMemo(
+  const stats = useMemo(
     () => calculateStats(scenarioResult, initialBalance, finalBalance),
     [scenarioResult, initialBalance, finalBalance],
   );
 
   return (
-    <div className="grid gap-4 md:grid-cols-4">
-      <Card>
-        <CardHeader className="pb-3">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Net Change */}
+      <Card className="rounded-md shadow-xs">
+        <CardHeader>
           <CardDescription>Net Change</CardDescription>
-          <CardTitle className="flex items-center gap-2 text-2xl">
-            <span
-              style={{
-                color: stats.netChange >= 0 ? POSITIVE_COLOR : NEGATIVE_COLOR,
-              }}
-            >
+          <CardTitle
+            className={cn(
+              "flex items-center gap-2 whitespace-nowrap",
+              stats.netChange >= 0 ? "text-green-600" : "text-red-600",
+            )}
+          >
+            <span>
               {stats.netChange >= 0 ? "+" : ""}
               {formatCurrency(stats.netChange, currency)}
             </span>
             {stats.netChange >= 0 ? (
-              <TrendingUp
-                className="size-5"
-                style={{ color: POSITIVE_COLOR }}
-              />
+              <TrendingUp className="size-4" />
             ) : (
-              <TrendingDown
-                className="size-5"
-                style={{ color: NEGATIVE_COLOR }}
-              />
+              <TrendingDown className="size-4" />
             )}
           </CardTitle>
           <p
-            className="text-xs"
-            style={{
-              color: stats.netChange >= 0 ? POSITIVE_COLOR : NEGATIVE_COLOR,
-            }}
+            className={cn(
+              "text-xs",
+              stats.netChangePercentage >= 0
+                ? "text-green-600"
+                : "text-red-600",
+            )}
           >
             {stats.netChange >= 0 ? "+" : ""}
-            {formatPercentage(stats.netChangePercentage / 100, 2)}
+            {initialBalance === 0
+              ? "N/A%"
+              : formatPercentage(stats.netChangePercentage / 100, 2)}
           </p>
         </CardHeader>
       </Card>
 
-      <Card>
-        <CardHeader className="pb-3">
+      {/* Lowest Balance */}
+      <Card className="rounded-md shadow-xs">
+        <CardHeader>
           <CardDescription className="flex items-center gap-1">
             Lowest Balance
-            {stats.isLowestBelowInitial && (
-              <AlertTriangle
-                className="size-3"
-                style={{ color: NEGATIVE_COLOR }}
-              />
-            )}
           </CardDescription>
           <CardTitle
-            className="text-2xl"
-            style={{
-              color: stats.isLowestBelowInitial ? NEGATIVE_COLOR : undefined,
-            }}
+            className={cn(
+              "flex items-center gap-2",
+              stats.lowestBalance < 0
+                ? "text-red-600"
+                : stats.isLowestBelowInitial
+                  ? "text-yellow-600"
+                  : undefined,
+            )}
           >
             {formatCurrency(stats.lowestBalance, currency)}
+            {stats.isLowestBelowInitial && (
+              <Tooltip>
+                <TooltipTrigger>
+                  <AlertTriangle className="size-4" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  The lowest balance is below the initial balance
+                </TooltipContent>
+              </Tooltip>
+            )}
           </CardTitle>
           <p className="text-muted-foreground text-xs">
-            {stats.lowestBalanceDate.toLocaleDateString("en-US", {
-              month: "short",
-              year: "numeric",
-            })}
+            {format(stats.lowestBalanceDate, "MMM yyyy")}
           </p>
         </CardHeader>
       </Card>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <CardDescription>Avg Monthly Change</CardDescription>
+      {/* Avg Monthly Change */}
+      <Card className="rounded-md shadow-xs">
+        <CardHeader>
+          <CardDescription>Avg. Monthly Change</CardDescription>
           <CardTitle
-            className="text-2xl"
-            style={{
-              color:
-                stats.avgMonthlyChange >= 0 ? POSITIVE_COLOR : NEGATIVE_COLOR,
-            }}
+            className={cn(
+              "flex items-center gap-2",
+              stats.avgMonthlyChange >= 0 ? "text-green-600" : "text-red-600",
+            )}
           >
             {stats.avgMonthlyChange >= 0 ? "+" : ""}
             {formatCurrency(stats.avgMonthlyChange, currency)}
@@ -171,25 +182,32 @@ export const BalanceStats = ({
         </CardHeader>
       </Card>
 
-      <Card>
-        <CardHeader className="pb-3">
+      {/* Final Balance */}
+      <Card className="rounded-md shadow-xs">
+        <CardHeader>
           <CardDescription>Final Balance</CardDescription>
           <CardTitle
-            className="text-2xl"
-            style={{
-              color:
-                finalBalance >= initialBalance
-                  ? POSITIVE_COLOR
-                  : NEGATIVE_COLOR,
-            }}
+            className={cn(
+              "flex items-center gap-2",
+              finalBalance >= initialBalance
+                ? "text-green-600"
+                : "text-yellow-600",
+            )}
           >
             {formatCurrency(finalBalance, currency)}
+            {finalBalance < initialBalance && (
+              <Tooltip>
+                <TooltipTrigger>
+                  <AlertTriangle className="size-4" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  The final balance is below the initial balance
+                </TooltipContent>
+              </Tooltip>
+            )}
           </CardTitle>
           <p className="text-muted-foreground text-xs">
-            {endDate.toLocaleDateString("en-US", {
-              month: "short",
-              year: "numeric",
-            })}
+            {format(endDate, "MMM yyyy")}
           </p>
         </CardHeader>
       </Card>

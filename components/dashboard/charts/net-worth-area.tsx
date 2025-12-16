@@ -141,8 +141,8 @@ export function NetWorthAreaChart({
   // Define area chart color based on percentage change
   const chartColor =
     change.percentageChange >= 0
-      ? "oklch(0.72 0.19 150)"
-      : "oklch(0.64 0.21 25)";
+      ? "oklch(0.72 0.19 150)" // green
+      : "oklch(0.64 0.21 25)"; // red
 
   return (
     <Card className="flex h-80 flex-col rounded-lg shadow-xs">

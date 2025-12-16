@@ -189,7 +189,7 @@ export function DemoBalanceChart({
     const date = new Date(timestamp);
     if (isNaN(date.getTime())) return "";
 
-    return date.toLocaleDateString("en-US", {
+    return date.toLocaleDateString(undefined, {
       month: "short",
       year: "2-digit",
     });
@@ -200,54 +200,51 @@ export function DemoBalanceChart({
   };
 
   return (
-    <div className="h-full w-full opacity-25">
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={chartData}>
-          <defs>
-            <linearGradient id="demoGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={chartColor} stopOpacity={0.2} />
-              <stop offset="100%" stopColor={chartColor} stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <CartesianGrid stroke="var(--border)" vertical={false} />
-          <YAxis
-            dataKey="balance"
-            tickFormatter={formatYAxisValue}
-            axisLine={false}
-            tickLine={false}
-            tick={{
-              fontSize: 12,
-              fill: "var(--muted-foreground)",
-            }}
-            domain={yAxisDomain}
-            width={60}
-          />
-          <XAxis
-            dataKey="timestamp"
-            type="number"
-            domain={["dataMin", "dataMax"]}
-            axisLine={false}
-            tickLine={false}
-            tick={{
-              fontSize: 12,
-              fill: "var(--muted-foreground)",
-            }}
-            tickFormatter={formatXAxisDate}
-            scale="time"
-            tickCount={8}
-            minTickGap={50}
-          />
-          <Area
-            dataKey="balance"
-            stroke={chartColor}
-            strokeWidth={1.5}
-            fill="url(#demoGradient)"
-            fillOpacity={1}
-            dot={false}
-            activeDot={false}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
-    </div>
+    <ResponsiveContainer width="100%" height="100%">
+      <AreaChart data={chartData}>
+        <defs>
+          <linearGradient id="demoGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={chartColor} stopOpacity={0.2} />
+            <stop offset="100%" stopColor={chartColor} stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid stroke="var(--border)" vertical={false} />
+        <YAxis
+          dataKey="balance"
+          tickFormatter={formatYAxisValue}
+          axisLine={false}
+          tickLine={false}
+          tick={{
+            fontSize: 12,
+            fill: "var(--muted-foreground)",
+          }}
+          domain={yAxisDomain}
+          width={40}
+        />
+        <XAxis
+          dataKey="timestamp"
+          type="number"
+          domain={["dataMin", "dataMax"]}
+          axisLine={false}
+          tickLine={false}
+          tick={{
+            fontSize: 12,
+            fill: "var(--muted-foreground)",
+          }}
+          tickFormatter={formatXAxisDate}
+          scale="time"
+          minTickGap={30}
+        />
+        <Area
+          dataKey="balance"
+          stroke={chartColor}
+          strokeWidth={1.5}
+          fill="url(#demoGradient)"
+          fillOpacity={1}
+          dot={false}
+          activeDot={false}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
   );
 }
