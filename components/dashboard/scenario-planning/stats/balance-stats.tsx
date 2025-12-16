@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { TrendingUp, TrendingDown, AlertTriangle } from "lucide-react";
-import { formatDate } from "date-fns";
+import { format } from "date-fns";
 
 import {
   Card,
@@ -158,7 +158,7 @@ export const BalanceStats = ({
             )}
           </CardTitle>
           <p className="text-muted-foreground text-xs">
-            {formatDate(stats.lowestBalanceDate, "MMM yyyy")}
+            {format(stats.lowestBalanceDate, "MMM yyyy")}
           </p>
         </CardHeader>
       </Card>
@@ -207,7 +207,7 @@ export const BalanceStats = ({
             )}
           </CardTitle>
           <p className="text-muted-foreground text-xs">
-            {formatDate(endDate, "MMM yyyy")}
+            {format(endDate, "MMM yyyy")}
           </p>
         </CardHeader>
       </Card>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useDeferredValue } from "react";
-import { addYears, formatDate } from "date-fns";
+import { addYears, format } from "date-fns";
 import { Plus, GitBranch } from "lucide-react";
 import {
   Area,
@@ -438,7 +438,7 @@ export function BalanceChart({
       const quarter = Math.floor(date.getMonth() / 3) + 1;
       return `Q${quarter} ${date.getFullYear().toString().slice(2)}`;
     } else {
-      return formatDate(date, "MMM yyyy");
+      return format(date, "MMM yyyy");
     }
   };
 
@@ -636,7 +636,7 @@ export function BalanceChart({
                         ? monthData.date.getFullYear().toString()
                         : scale === "quarterly"
                           ? `Q${Math.floor(monthData.date.getMonth() / 3) + 1} ${monthData.date.getFullYear()}`
-                          : formatDate(monthData.date, "MMMM yyyy");
+                          : format(monthData.date, "MMMM yyyy");
 
                     const cashflowLabel =
                       scale === "yearly"
