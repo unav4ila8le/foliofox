@@ -14,11 +14,7 @@ import {
   TooltipContent,
 } from "@/components/ui/tooltip";
 
-import {
-  formatCurrency,
-  formatPercentage,
-  formatSignedCurrency,
-} from "@/lib/number-format";
+import { formatPercentage, formatSignedCurrency } from "@/lib/number-format";
 import { cn } from "@/lib/utils";
 
 interface CashflowEntry {
@@ -146,7 +142,7 @@ export const BalanceStats = ({
                   : undefined,
             )}
           >
-            {formatCurrency(stats.lowestBalance, currency)}
+            {formatSignedCurrency(stats.lowestBalance, currency)}
             {stats.isLowestBelowInitial && (
               <Tooltip>
                 <TooltipTrigger>
@@ -194,7 +190,7 @@ export const BalanceStats = ({
                 : "text-red-600",
             )}
           >
-            {formatCurrency(finalBalance, currency)}
+            {formatSignedCurrency(finalBalance, currency)}
           </CardTitle>
           <p className="text-muted-foreground text-xs">
             {formatDate(endDate, "MMM yyyy")}
