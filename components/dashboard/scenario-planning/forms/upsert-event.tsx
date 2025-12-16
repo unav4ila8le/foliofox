@@ -490,7 +490,7 @@ export function UpsertEventForm({
         <div className="space-y-2">
           <div>
             <h3 className="text-sm font-medium">Additional Conditions</h3>
-            <p className="text-muted-foreground text-xs">
+            <p className="text-muted-foreground text-sm">
               Add conditions that must be met for this event to occur
             </p>
           </div>
@@ -562,8 +562,10 @@ export function UpsertEventForm({
                         variant="ghost"
                         size="icon"
                         onClick={() => remove(index)}
+                        aria-label="Remove condition"
                       >
                         <Trash2 className="size-4" />
+                        <span className="sr-only">Remove condition</span>
                       </Button>
                     </div>
 
@@ -620,7 +622,7 @@ export function UpsertEventForm({
                               value={field.value}
                             >
                               <FormControl>
-                                <SelectTrigger>
+                                <SelectTrigger className="w-full">
                                   <SelectValue placeholder="Select an event" />
                                 </SelectTrigger>
                               </FormControl>

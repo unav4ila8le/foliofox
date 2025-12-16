@@ -81,7 +81,7 @@ const CustomEventMarker = (props: {
         stroke="var(--background)"
         strokeWidth={strokeWidth}
         style={{
-          transition: "all 0.2s ease",
+          transition: "all 0.1s ease",
           filter: isHovered
             ? "drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.3))"
             : "none",
@@ -96,7 +96,7 @@ const CustomEventMarker = (props: {
         fontSize={fontSize}
         style={{
           userSelect: "none",
-          transition: "all 0.2s ease",
+          transition: "all 0.1s ease",
         }}
       >
         {icon}
