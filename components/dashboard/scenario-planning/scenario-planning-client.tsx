@@ -41,7 +41,7 @@ export function ScenarioPlanningClient({
   const [displayBalance, setDisplayBalance] = useState(scenario.initialBalance);
   const [isUpdatingBalance, setIsUpdatingBalance] = useState(false);
 
-  const isBalanceDirty = initialBalance !== scenario.initialBalance.toString();
+  const isBalanceDirty = initialBalance !== displayBalance.toString();
 
   const handleEventClick = (event: ScenarioEvent, index: number) => {
     setEditingEvent({ event, index });
@@ -109,6 +109,7 @@ export function ScenarioPlanningClient({
       }
 
       setDisplayBalance(balance);
+      setInitialBalance(balance.toString());
       toast.success("Initial balance updated successfully");
     } catch (error) {
       toast.error(
@@ -124,9 +125,9 @@ export function ScenarioPlanningClient({
   return (
     <div className="space-y-4">
       {/* Initial Balance Input */}
-      <div className="space-y-2">
+      <div className="space-y-2 md:max-w-80">
         <Label htmlFor="initial-balance">Initial balance</Label>
-        <InputGroup className="md:max-w-80">
+        <InputGroup>
           <InputGroupInput
             id="initial-balance"
             placeholder="E.g., 100,000"
@@ -183,6 +184,7 @@ export function ScenarioPlanningClient({
         event={editingEvent?.event || null}
         eventIndex={editingEvent?.index ?? null}
         onSuccess={handleSuccess}
+        currency={currency}
       />
     </div>
   );

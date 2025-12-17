@@ -30,6 +30,12 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  InputGroupText,
+} from "@/components/ui/input-group";
 import { Calendar } from "@/components/ui/calendar";
 
 import { cn } from "@/lib/utils";
@@ -107,12 +113,14 @@ export function UpsertEventForm({
   existingEvents = [],
   event = null,
   eventIndex = null,
+  currency,
 }: {
   onCancel: () => void;
   onSuccess: (event: ScenarioEvent, index?: number) => void;
   existingEvents?: ScenarioEvent[];
   event?: ScenarioEvent | null;
   eventIndex?: number | null;
+  currency: string;
 }) {
   const isEditing = event !== null && eventIndex !== null;
 
@@ -332,16 +340,23 @@ export function UpsertEventForm({
             name="amount"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Amount</FormLabel>
+                <FormLabel htmlFor={field.name}>Amount</FormLabel>
                 <FormControl>
-                  <Input
-                    placeholder="E.g., 1,000"
-                    type="number"
-                    inputMode="decimal"
-                    step="any"
-                    {...field}
-                    value={field.value as number}
-                  />
+                  <InputGroup>
+                    <InputGroupInput
+                      id={field.name}
+                      placeholder="E.g., 1000"
+                      type="number"
+                      inputMode="decimal"
+                      step="any"
+                      min={0}
+                      {...field}
+                      value={field.value as number}
+                    />
+                    <InputGroupAddon align="inline-end">
+                      <InputGroupText>{currency}</InputGroupText>
+                    </InputGroupAddon>
+                  </InputGroup>
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -574,16 +589,23 @@ export function UpsertEventForm({
                         name={`conditions.${index}.amount`}
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Amount</FormLabel>
+                            <FormLabel htmlFor={field.name}>Amount</FormLabel>
                             <FormControl>
-                              <Input
-                                placeholder="E.g., 10,000"
-                                type="number"
-                                inputMode="decimal"
-                                step="any"
-                                {...field}
-                                value={field.value as number}
-                              />
+                              <InputGroup>
+                                <InputGroupInput
+                                  id={field.name}
+                                  placeholder="E.g., 1000"
+                                  type="number"
+                                  inputMode="decimal"
+                                  step="any"
+                                  min={0}
+                                  {...field}
+                                  value={field.value as number}
+                                />
+                                <InputGroupAddon align="inline-end">
+                                  <InputGroupText>{currency}</InputGroupText>
+                                </InputGroupAddon>
+                              </InputGroup>
                             </FormControl>
                             <FormDescription>
                               Event fires when net worth exceeds this amount
@@ -652,7 +674,7 @@ export function UpsertEventForm({
                                 value={field.value}
                               >
                                 <FormControl>
-                                  <SelectTrigger>
+                                  <SelectTrigger className="w-full">
                                     <SelectValue placeholder="Select an event" />
                                   </SelectTrigger>
                                 </FormControl>
@@ -687,16 +709,25 @@ export function UpsertEventForm({
                           name={`conditions.${index}.amount`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Minimum Amount</FormLabel>
+                              <FormLabel htmlFor={field.name}>
+                                Minimum Amount
+                              </FormLabel>
                               <FormControl>
-                                <Input
-                                  placeholder="E.g., 5,000"
-                                  type="number"
-                                  inputMode="decimal"
-                                  step="any"
-                                  {...field}
-                                  value={field.value as number}
-                                />
+                                <InputGroup>
+                                  <InputGroupInput
+                                    id={field.name}
+                                    placeholder="E.g., 5,000"
+                                    type="number"
+                                    inputMode="decimal"
+                                    step="any"
+                                    min={0}
+                                    {...field}
+                                    value={field.value as number}
+                                  />
+                                  <InputGroupAddon align="inline-end">
+                                    <InputGroupText>{currency}</InputGroupText>
+                                  </InputGroupAddon>
+                                </InputGroup>
                               </FormControl>
                               <FormDescription>
                                 Event fires when the selected income event
