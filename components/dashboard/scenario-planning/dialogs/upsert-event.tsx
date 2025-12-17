@@ -18,6 +18,7 @@ export function UpsertEventDialog({
   event = null,
   eventIndex = null,
   onSuccess,
+  currency,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -25,6 +26,7 @@ export function UpsertEventDialog({
   event?: ScenarioEvent | null;
   eventIndex?: number | null;
   onSuccess: (event: ScenarioEvent, index?: number) => void;
+  currency: string;
 }) {
   const isEditing = event !== null && eventIndex !== null;
 
@@ -45,6 +47,7 @@ export function UpsertEventDialog({
           existingEvents={existingEvents}
           event={event}
           eventIndex={eventIndex}
+          currency={currency}
         />
       </DialogContent>
     </Dialog>

@@ -276,6 +276,7 @@ export function NetWorthAreaChart({
                   tickLine={false}
                   tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
                   dy={5}
+                  minTickGap={20}
                 />
                 <Tooltip
                   content={({ active, payload }) => {

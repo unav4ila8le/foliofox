@@ -458,6 +458,7 @@ export function BalanceChart({
           </div>
           <div className="flex w-full items-center gap-2 md:justify-end">
             <Select
+              disabled={scenario.events.length === 0}
               value={scale}
               onValueChange={(value) =>
                 setScale(value as "monthly" | "quarterly" | "yearly")
@@ -473,6 +474,7 @@ export function BalanceChart({
               </SelectContent>
             </Select>
             <Select
+              disabled={scenario.events.length === 0}
               value={timeHorizon}
               onValueChange={(value) =>
                 setTimeHorizon(value as "2" | "5" | "10" | "30")
