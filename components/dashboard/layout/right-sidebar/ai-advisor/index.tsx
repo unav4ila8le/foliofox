@@ -12,15 +12,15 @@ import { fetchConversations } from "@/server/ai/conversations/fetch";
 
 import type { UIMessage } from "ai";
 
+import { v4 as uuidv4 } from "uuid";
+
 export function AIAdvisor() {
   // AI enabled
   const { profile } = useDashboardData();
   const isAIEnabled = profile.data_sharing_consent;
 
   // Current conversation identifier (used to scope/useChat state)
-  const [conversationId, setConversationId] = useState<string>(() =>
-    crypto.randomUUID(),
-  );
+  const [conversationId, setConversationId] = useState<string>(() => uuidv4());
   const [conversations, setConversations] = useState<
     {
       id: string;
@@ -69,7 +69,7 @@ export function AIAdvisor() {
 
   // Start a fresh conversation (clears history)
   const handleNewConversation = () => {
-    const id = crypto.randomUUID();
+    const id = uuidv4();
     setConversationId(id);
     setInitialMessages([]);
     setCopiedMessages(new Set());
