@@ -63,6 +63,7 @@
     "tailwind-merge": "^3.0.2",
     "use-debounce": "^10.0.5",
     "use-stick-to-bottom": "^1.1.1",
+    "uuid": "^13.0.0",
     "vaul": "^1.1.2",
     "yahoo-finance2": "^3.6.4",
     "zod": "^4.2.0"
