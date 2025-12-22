@@ -6,7 +6,7 @@ import { Logo } from "@/components/ui/logos/logo";
 import { GithubLogo } from "@/components/ui/logos/github-logo";
 import { CTAWrapper } from "@/components/homepage/cta-wrapper";
 
-export async function Header({ cta = "Get started" }: { cta?: string }) {
+export async function Header() {
   return (
     <header className="container mx-auto flex max-w-7xl items-center justify-between p-3">
       <Link href="/" aria-label="Foliofox - Go to homepage">
@@ -20,12 +20,7 @@ export async function Header({ cta = "Get started" }: { cta?: string }) {
         >
           Changelog
         </Link>
-        <Button
-          asChild
-          size="icon-sm"
-          variant="ghost"
-          className="hover:bg-background"
-        >
+        <Button asChild size="icon-sm" variant="ghost">
           <Link
             href="https://github.com/unav4ila8le/foliofox"
             target="_blank"
@@ -36,8 +31,8 @@ export async function Header({ cta = "Get started" }: { cta?: string }) {
         </Button>
         <Button asChild size="sm">
           <Link href="/dashboard">
-            <Suspense fallback={cta}>
-              <CTAWrapper cta={cta} />
+            <Suspense fallback="Get started">
+              <CTAWrapper />
             </Suspense>
           </Link>
         </Button>
