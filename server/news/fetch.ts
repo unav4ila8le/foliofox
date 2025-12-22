@@ -1,5 +1,7 @@
 "use server";
 
+import { v4 as uuidv4 } from "uuid";
+
 import { yahooFinance } from "@/server/yahoo-finance/client";
 import { createServiceClient } from "@/supabase/service";
 import { fetchPositions } from "@/server/positions/fetch";
@@ -212,7 +214,7 @@ export async function fetchNewsForSymbols(
           });
 
           freshArticles.push({
-            id: crypto.randomUUID(),
+            id: uuidv4(),
             yahoo_uuid: article.uuid,
             title: article.title,
             publisher: article.publisher,

@@ -15,10 +15,14 @@ A net worth tracking app with an AI-powered financial advisor that helps you mak
 
 ## Built with
 
-- Next.js 16 (App Router)
-- TypeScript (strict mode)
+- Next.js 16 (App Router, Turbopack, Cache Components)
+- TypeScript (Strict Mode)
 - Supabase (Postgres, Auth, Storage)
 - Tailwind CSS
+
+## Vision
+
+If you’re curious about why Foliofox exists and where it’s going, read the full vision here: [VISION.md](./VISION.md)
 
 ## Quick Start (Docker)
 

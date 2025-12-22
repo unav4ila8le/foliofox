@@ -187,7 +187,7 @@ export default async function PublicPortfolioPage(props: {
 
   // 4. Render page with Suspense boundaries
   return (
-    <div className="mt-4 grid w-full grid-cols-6 gap-4 md:mt-8">
+    <div className="container mx-auto grid w-full max-w-7xl grid-cols-6 gap-4 p-3">
       <div className="col-span-6">
         <PublicPortfolioHeader
           username={profile.username}
