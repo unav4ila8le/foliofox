@@ -7,6 +7,7 @@ import remarkHtml from "remark-html";
 import type { ChangelogEntry } from "./types";
 
 export async function parseChangelogs(): Promise<ChangelogEntry[]> {
+  "use cache";
   const changelogDir = join(process.cwd(), "content", "changelog");
 
   let files: string[] = [];
