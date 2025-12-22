@@ -1,6 +1,7 @@
 "use server";
 
 import { format, subYears, subDays } from "date-fns";
+import { v4 as uuidv4 } from "uuid";
 
 import { yahooFinance } from "@/server/yahoo-finance/client";
 import { createServiceClient } from "@/supabase/service";
@@ -142,7 +143,7 @@ export async function fetchDividends(
         if (chart.events?.dividends) {
           chart.events.dividends.forEach((dividend) => {
             events.push({
-              id: crypto.randomUUID(),
+              id: uuidv4(),
               symbol_id: symbolId,
               event_date: format(dividend.date, "yyyy-MM-dd"),
               gross_amount: dividend.amount,

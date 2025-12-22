@@ -14,6 +14,12 @@ export async function Header({ cta = "Get started" }: { cta?: string }) {
       </Link>
 
       <nav className="flex items-center gap-2">
+        <Link
+          href="/changelog"
+          className="text-sm font-medium hover:opacity-70"
+        >
+          Changelog
+        </Link>
         <Button
           asChild
           size="icon-sm"
