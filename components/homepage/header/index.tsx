@@ -8,7 +8,7 @@ import { CTAWrapper } from "@/components/homepage/cta-wrapper";
 
 export async function Header({ cta = "Get started" }: { cta?: string }) {
   return (
-    <header className="flex items-center justify-between">
+    <header className="container mx-auto flex max-w-7xl items-center justify-between p-3">
       <Link href="/" aria-label="Foliofox - Go to homepage">
         <Logo />
       </Link>
