@@ -6,6 +6,8 @@ import { createServiceClient } from "@/supabase/service";
 
 // Exchange rate API
 const FRANKFURTER_API = "https://api.frankfurter.app";
+const FALLBACK_API = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api"; //https://github.com/fawazahmed0/exchange-api
+const MAX_FALLBACK_LOOKBACK_DAYS = 31;
 
 /**
  * Fetch multiple exchange rates for different currencies and dates in bulk.
@@ -106,19 +108,79 @@ export async function fetchExchangeRates(
           .filter((req) => req.dateString === dateString)
           .map((req) => req.currency);
 
+        // Try Frankfurter first
         const response = await fetch(
           `${FRANKFURTER_API}/${dateString}?base=USD&symbols=${missingCurrenciesForDate.join(",")}`,
         );
         const data = await response.json();
 
-        if (!data.rates) {
-          throw new Error(`No rates data found for ${dateString}`);
+        let rates: Record<string, number> = {};
+        let missingFromFrankfurter: string[] = [];
+
+        if (data.rates) {
+          rates = data.rates;
+          // Find currencies not returned by Frankfurter
+          missingFromFrankfurter = missingCurrenciesForDate.filter(
+            (currency) => !(currency in rates),
+          );
+        } else {
+          missingFromFrankfurter = missingCurrenciesForDate;
+        }
+
+        // Fallback API for missing currencies
+        if (missingFromFrankfurter.length > 0) {
+          try {
+            const todayString = format(new Date(), "yyyy-MM-dd");
+            let fallbackDateString =
+              dateString > todayString ? todayString : dateString;
+            let remainingCurrencies = [...missingFromFrankfurter];
+
+            for (
+              let lookbackDays = 0;
+              lookbackDays <= MAX_FALLBACK_LOOKBACK_DAYS &&
+              remainingCurrencies.length > 0;
+              lookbackDays += 1
+            ) {
+              const fallbackUrl = `${FALLBACK_API}@${fallbackDateString}/v1/currencies/usd.min.json`;
+              const fallbackResponse = await fetch(fallbackUrl);
+
+              if (fallbackResponse.ok) {
+                const fallbackData = await fallbackResponse.json();
+                if (fallbackData.usd) {
+                  remainingCurrencies = remainingCurrencies.filter(
+                    (currency) => {
+                      const lowerCurrency = currency.toLowerCase();
+                      const rate = fallbackData.usd[lowerCurrency];
+                      if (rate !== undefined) {
+                        rates[currency] = rate;
+                        return false;
+                      }
+                      return true;
+                    },
+                  );
+                }
+              }
+
+              const fallbackDate = new Date(`${fallbackDateString}T00:00:00Z`);
+              fallbackDate.setUTCDate(fallbackDate.getUTCDate() - 1);
+              fallbackDateString = format(fallbackDate, "yyyy-MM-dd");
+            }
+          } catch (fallbackError) {
+            console.warn(
+              `Failed to fetch missing currencies from fallback API for ${dateString}:`,
+              fallbackError,
+            );
+          }
+        }
+
+        if (Object.keys(rates).length === 0) {
+          throw new Error(`No exchange rates found for ${dateString}`);
         }
 
         // Return the data for this date
         return {
           dateString,
-          rates: data.rates,
+          rates,
           success: true,
         };
       } catch (error) {
@@ -134,7 +196,15 @@ export async function fetchExchangeRates(
     const fetchResults = await Promise.all(fetchPromises);
 
     // Filter successful fetches and prepare for bulk insert
-    const successfulFetches = fetchResults.filter((result) => result.success);
+    const successfulFetches = fetchResults.filter(
+      (
+        result,
+      ): result is {
+        dateString: string;
+        rates: Record<string, number>;
+        success: true;
+      } => result.success,
+    );
 
     if (successfulFetches.length > 0) {
       // Prepare all rows for bulk insert
