@@ -7,6 +7,7 @@ import { createServiceClient } from "@/supabase/service";
 // Exchange rate API
 const FRANKFURTER_API = "https://api.frankfurter.app";
 const FALLBACK_API = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api"; //https://github.com/fawazahmed0/exchange-api
+const MAX_FALLBACK_LOOKBACK_DAYS = 31;
 
 /**
  * Fetch multiple exchange rates for different currencies and dates in bulk.
@@ -129,23 +130,40 @@ export async function fetchExchangeRates(
         // Fallback API for missing currencies
         if (missingFromFrankfurter.length > 0) {
           try {
-            const dateParam =
-              dateString === format(new Date(), "yyyy-MM-dd")
-                ? "latest"
-                : dateString;
-            const fallbackUrl = `${FALLBACK_API}@${dateParam}/v1/currencies/usd.min.json`;
+            const todayString = format(new Date(), "yyyy-MM-dd");
+            let fallbackDateString =
+              dateString > todayString ? todayString : dateString;
+            let remainingCurrencies = [...missingFromFrankfurter];
 
-            const fallbackResponse = await fetch(fallbackUrl);
-            if (fallbackResponse.ok) {
-              const fallbackData = await fallbackResponse.json();
-              if (fallbackData.usd) {
-                missingFromFrankfurter.forEach((currency) => {
-                  const lowerCurrency = currency.toLowerCase();
-                  if (fallbackData.usd[lowerCurrency]) {
-                    rates[currency] = fallbackData.usd[lowerCurrency];
-                  }
-                });
+            for (
+              let lookbackDays = 0;
+              lookbackDays <= MAX_FALLBACK_LOOKBACK_DAYS &&
+              remainingCurrencies.length > 0;
+              lookbackDays += 1
+            ) {
+              const fallbackUrl = `${FALLBACK_API}@${fallbackDateString}/v1/currencies/usd.min.json`;
+              const fallbackResponse = await fetch(fallbackUrl);
+
+              if (fallbackResponse.ok) {
+                const fallbackData = await fallbackResponse.json();
+                if (fallbackData.usd) {
+                  remainingCurrencies = remainingCurrencies.filter(
+                    (currency) => {
+                      const lowerCurrency = currency.toLowerCase();
+                      const rate = fallbackData.usd[lowerCurrency];
+                      if (rate !== undefined) {
+                        rates[currency] = rate;
+                        return false;
+                      }
+                      return true;
+                    },
+                  );
+                }
               }
+
+              const fallbackDate = new Date(`${fallbackDateString}T00:00:00Z`);
+              fallbackDate.setUTCDate(fallbackDate.getUTCDate() - 1);
+              fallbackDateString = format(fallbackDate, "yyyy-MM-dd");
             }
           } catch (fallbackError) {
             console.warn(
