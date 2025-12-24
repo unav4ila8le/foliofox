@@ -6,6 +6,7 @@ import { createServiceClient } from "@/supabase/service";
 
 // Exchange rate API
 const FRANKFURTER_API = "https://api.frankfurter.app";
+const FALLBACK_API = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api"; //https://github.com/fawazahmed0/exchange-api
 
 /**
  * Fetch multiple exchange rates for different currencies and dates in bulk.
@@ -106,19 +107,62 @@ export async function fetchExchangeRates(
           .filter((req) => req.dateString === dateString)
           .map((req) => req.currency);
 
+        // Try Frankfurter first
         const response = await fetch(
           `${FRANKFURTER_API}/${dateString}?base=USD&symbols=${missingCurrenciesForDate.join(",")}`,
         );
         const data = await response.json();
 
-        if (!data.rates) {
-          throw new Error(`No rates data found for ${dateString}`);
+        let rates: Record<string, number> = {};
+        let missingFromFrankfurter: string[] = [];
+
+        if (data.rates) {
+          rates = data.rates;
+          // Find currencies not returned by Frankfurter
+          missingFromFrankfurter = missingCurrenciesForDate.filter(
+            (currency) => !(currency in rates),
+          );
+        } else {
+          missingFromFrankfurter = missingCurrenciesForDate;
+        }
+
+        // Fallback API for missing currencies
+        if (missingFromFrankfurter.length > 0) {
+          try {
+            const dateParam =
+              dateString === format(new Date(), "yyyy-MM-dd")
+                ? "latest"
+                : dateString;
+            const fallbackUrl = `${FALLBACK_API}@${dateParam}/v1/currencies/usd.min.json`;
+
+            const fallbackResponse = await fetch(fallbackUrl);
+            if (fallbackResponse.ok) {
+              const fallbackData = await fallbackResponse.json();
+              if (fallbackData.usd) {
+                missingFromFrankfurter.forEach((currency) => {
+                  const lowerCurrency = currency.toLowerCase();
+                  if (fallbackData.usd[lowerCurrency]) {
+                    rates[currency] = fallbackData.usd[lowerCurrency];
+                  }
+                });
+              }
+            }
+          } catch (fallbackError) {
+            console.warn(
+              `Failed to fetch missing currencies from fallback API for ${dateString}:`,
+              fallbackError,
+            );
+          }
+        }
+
+        if (Object.keys(rates).length === 0) {
+          throw new Error(`No exchange rates found for ${dateString}`);
         }
 
         // Return the data for this date
         return {
           dateString,
-          rates: data.rates,
+          rates,
           success: true,
         };
       } catch (error) {
@@ -134,7 +178,15 @@ export async function fetchExchangeRates(
     const fetchResults = await Promise.all(fetchPromises);
 
     // Filter successful fetches and prepare for bulk insert
-    const successfulFetches = fetchResults.filter((result) => result.success);
+    const successfulFetches = fetchResults.filter(
+      (
+        result,
+      ): result is {
+        dateString: string;
+        rates: Record<string, number>;
+        success: true;
+      } => result.success,
+    );
 
     if (successfulFetches.length > 0) {
       // Prepare all rows for bulk insert
