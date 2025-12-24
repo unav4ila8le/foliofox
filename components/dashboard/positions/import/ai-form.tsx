@@ -167,7 +167,9 @@ export function AIImportForm() {
 
       {/* Extraction results */}
       {extractionResult && !isProcessing && (
-        <ImportResults result={extractionResult} />
+        <ImportResults
+          result={{ kind: "positions", result: extractionResult }}
+        />
       )}
 
       {/* Footer - Action buttons */}
