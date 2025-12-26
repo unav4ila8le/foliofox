@@ -95,17 +95,28 @@ function extractConditionsFromEvent(event: ScenarioEvent) {
     });
 }
 
-const formSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  type: z.enum(["income", "expense"], { error: "Type is required" }),
-  amount: requiredNumberWithConstraints("Amount is required", {
-    gt: { value: 0, error: "Amount must be greater than 0" },
-  }),
-  recurrence: z.enum(["once", "monthly", "yearly"]),
-  startDate: z.date({ error: "Start date is required" }),
-  endDate: z.date().optional(),
-  conditions: z.array(conditionSchema).default([]),
-});
+const formSchema = z
+  .object({
+    name: z.string().min(1, "Name is required"),
+    type: z.enum(["income", "expense"], { error: "Type is required" }),
+    amount: requiredNumberWithConstraints("Amount is required", {
+      gt: { value: 0, error: "Amount must be greater than 0" },
+    }),
+    recurrence: z.enum(["once", "monthly", "yearly"]),
+    startDate: z.date({ error: "Start date is required" }),
+    endDate: z.date().optional(),
+    conditions: z.array(conditionSchema).default([]),
+  })
+  .refine(
+    (data) => {
+      if (!data.endDate) return true;
+      return data.endDate >= data.startDate;
+    },
+    {
+      message: "End date must be after start date",
+      path: ["endDate"],
+    },
+  );
 
 export function UpsertEventForm({
   onCancel,
@@ -206,6 +217,21 @@ export function UpsertEventForm({
     control: form.control,
     name: "conditions",
   });
+  const startDate = useWatch({
+    control: form.control,
+    name: "startDate",
+  });
+  const endDate = useWatch({
+    control: form.control,
+    name: "endDate",
+  });
+
+  // Clear end date if start date moves past it
+  useEffect(() => {
+    if (startDate && endDate && startDate > endDate) {
+      form.setValue("endDate", undefined, { shouldDirty: true });
+    }
+  }, [startDate, endDate, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     // Convert Date to LocalDate
@@ -427,6 +453,8 @@ export function UpsertEventForm({
                     <Calendar
                       mode="single"
                       captionLayout="dropdown"
+                      startMonth={new Date(2000, 0)}
+                      endMonth={new Date(new Date().getFullYear() + 50, 11)}
                       selected={field.value}
                       onSelect={field.onChange}
                       autoFocus
@@ -485,6 +513,9 @@ export function UpsertEventForm({
                       <Calendar
                         mode="single"
                         captionLayout="dropdown"
+                        startMonth={new Date(2000, 0)}
+                        endMonth={new Date(new Date().getFullYear() + 50, 11)}
+                        disabled={startDate ? { before: startDate } : undefined}
                         selected={field.value}
                         onSelect={field.onChange}
                         autoFocus

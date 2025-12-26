@@ -1,6 +1,7 @@
 import { tool } from "ai";
 import { z } from "zod";
 
+// Portfolio tracking
 import { getPortfolioOverview } from "./portfolio-overview";
 import { getPositions } from "./positions";
 import { getPortfolioRecords } from "./portfolio-records";
@@ -16,6 +17,9 @@ import { getDividendYield } from "./dividend-yield";
 import { getHistoricalQuotes } from "./historical-quotes";
 import { searchSymbols } from "./search-symbols";
 import { getNews } from "./news";
+
+// Financial scenarios
+import { getFinancialScenarios } from "./financial-scenarios";
 
 export const aiTools = {
   getPortfolioOverview: tool({
@@ -312,5 +316,25 @@ export const aiTools = {
         ),
     }),
     execute: async (args) => getNews(args),
+  }),
+
+  getFinancialScenarios: tool({
+    description:
+      "Get the user's financial scenario (scenario planning) with income/expense events and optional simulation. Returns: scenario name, initial balance, events with conditions and recurrence, and optionally runs a forward simulation showing projected balances over time. Useful for analyzing financial plans, projections, and 'what-if' scenarios. Use this when the user asks about their scenario plan, future projections, or wants advice on their planned income/expense events.",
+    inputSchema: z.object({
+      runSimulation: z
+        .boolean()
+        .nullable()
+        .describe(
+          "Run a forward simulation of the scenario (default: true). Set to false to just retrieve event definitions.",
+        ),
+      simulationYears: z
+        .number()
+        .nullable()
+        .describe(
+          "Number of years to simulate ahead (default: 10, max: 30). Only used if runSimulation is true.",
+        ),
+    }),
+    execute: async (args) => getFinancialScenarios(args),
   }),
 };
