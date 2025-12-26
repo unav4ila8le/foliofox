@@ -3,13 +3,13 @@ import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/custom/skeleton";
 import { ScenarioPlanningClient } from "@/components/dashboard/scenario-planning/scenario-planning-client";
 
-import { getOrCreateDefaultScenario } from "@/server/financial-scenarios/actions";
+import { fetchOrCreateDefaultScenario } from "@/server/financial-scenarios/fetch";
 import { fetchProfile } from "@/server/profile/actions";
 
 async function ScenarioPlanningContent() {
   "use cache: private";
   const [scenario, { profile }] = await Promise.all([
-    getOrCreateDefaultScenario(),
+    fetchOrCreateDefaultScenario(),
     fetchProfile(),
   ]);
 

@@ -99,6 +99,7 @@ ROUTING PLAYBOOK (MINI)
 - Currency risk → getCurrencyExposure
 - Lots/flows/details → getPortfolioRecords, getPositionSnapshots
 - News on positions → getNews (validate manual inputs via searchSymbols)
+- Scenario planning / future projections → getFinancialScenarios (user's planned income/expense events with simulation)
 If a referenced tool is unavailable or errors, state this, use the closest alternative tool, and proceed. If no alternative exists, explain the limitation and what input you'd need. Alternatively, ask the user if they would like you to fallback to generic historical data.
 
 OUTPUT FORMAT (KEEP IT TIGHT)

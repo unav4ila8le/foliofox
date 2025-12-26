@@ -8,7 +8,21 @@ Foliofox - Project Details
 
 ## Overview
 
-Foliofox is a privacy-focused portfolio intelligence and net worth tracking app. Users can track assets, liabilities, and net worth over time with multi-currency support and clear visualizations. The app is designed for personal use, with future extensibility in mind, including AI for portfolio advisory.
+Foliofox is a privacy-focused portfolio intelligence and net worth tracking app. Users can track assets, liabilities, and net worth over time with multi-currency support and clear visualizations.
+
+**Current State**: Foliofox is a clean, simple portfolio tracker with AI capabilities. The immediate priority is building a rock-solid tracker foundation.
+
+**Long-term Vision**: The tracker provides context for the AI advisor; the AI advisor gives the tracker purpose. Foliofox aims to be a personal AI financial assistant—a thinking partner and unbiased sparring partner for financially literate users who self-manage their portfolios.
+
+**Target Audience**: Financially literate users from communities like FIRE, Bogleheads, and Personal Finance. Users who think long-term, value clarity over noise, and want a thinking partner—not hand-holding or gamification.
+
+**What Foliofox Is Not**:
+
+- A budgeting app
+- An expense tracker
+- A platform for beginners or daily traders
+
+The app is designed for personal use, with future extensibility in mind, including AI for portfolio advisory.
 
 ## Tech Stack
 
@@ -75,5 +89,6 @@ Notes:
 
 ## For More Details
 
-- See `README.md` for setup and utility function cheatsheets.
+- See `README.md` and `CONTRIBUTING.md` for setup.
+- See `VISION.md` to read more about this project's direction and philosphy.
 - See `global-rules.mdc` for code conventions and architecture.

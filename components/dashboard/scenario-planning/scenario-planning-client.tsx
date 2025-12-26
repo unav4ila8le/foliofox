@@ -18,10 +18,10 @@ import { UpsertEventDialog } from "./dialogs/upsert-event";
 import type { Scenario, ScenarioEvent } from "@/lib/scenario-planning";
 
 import {
-  upsertEvent,
-  deleteEvent,
-  updateInitialBalance,
-} from "@/server/financial-scenarios/actions";
+  upsertScenarioEvent,
+  updateScenarioInitialBalance,
+} from "@/server/financial-scenarios/upsert";
+import { deleteScenarioEvent } from "@/server/financial-scenarios/delete";
 
 export function ScenarioPlanningClient({
   scenario,
@@ -57,7 +57,7 @@ export function ScenarioPlanningClient({
 
   const handleSuccess = async (event: ScenarioEvent, index?: number) => {
     try {
-      const result = await upsertEvent(scenario.id, event, index);
+      const result = await upsertScenarioEvent(scenario.id, event, index);
 
       if (!result.success) {
         throw new Error(result.message || "Failed to save event");
@@ -78,7 +78,7 @@ export function ScenarioPlanningClient({
 
   const handleDelete = async (index: number) => {
     try {
-      const result = await deleteEvent(scenario.id, index);
+      const result = await deleteScenarioEvent(scenario.id, index);
 
       if (!result.success) {
         throw new Error(result.message || "Failed to delete event");
@@ -102,7 +102,7 @@ export function ScenarioPlanningClient({
 
     setIsUpdatingBalance(true);
     try {
-      const result = await updateInitialBalance(scenario.id, balance);
+      const result = await updateScenarioInitialBalance(scenario.id, balance);
 
       if (!result.success) {
         throw new Error(result.message || "Failed to update initial balance");
