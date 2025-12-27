@@ -1,6 +1,8 @@
 "use server";
 
 import { fetchPortfolioRecords } from "@/server/portfolio-records/fetch";
+import { resolvePositionLookup } from "@/server/positions/resolve-position-lookup";
+
 import { clampDateRange } from "@/server/ai/tools/helpers/time-range";
 
 import type { PortfolioRecordWithPosition } from "@/types/global.types";
@@ -13,7 +15,14 @@ interface GetPortfolioRecordsParams {
 }
 
 export async function getPortfolioRecords(params: GetPortfolioRecordsParams) {
-  const positionId = params.positionId ?? undefined;
+  const positionId = params.positionId
+    ? (
+        await resolvePositionLookup({
+          lookup: params.positionId,
+          includeArchived: params.includeArchived ?? true,
+        })
+      ).positionId
+    : undefined;
   const includeArchived = params.includeArchived ?? undefined;
 
   const { startDate: startDateKey, endDate: endDateKey } = clampDateRange({

@@ -4,6 +4,7 @@ import { parseISO } from "date-fns";
 
 import { fetchProfile } from "@/server/profile/actions";
 import { fetchPositions } from "@/server/positions/fetch";
+import { resolvePositionLookup } from "@/server/positions/resolve-position-lookup";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 import { resolveSymbolsBatch } from "@/server/symbols/resolver";
 
@@ -94,6 +95,22 @@ export async function getAssetsPerformance(params: GetAssetsPerformanceParams) {
     const { positions: endPositions, snapshots: snapshotsByPosition } =
       endSnapshot;
 
+    // Resolve lookups (ticker/ISIN/UUID) to actual position UUIDs if provided
+    let resolvedPositionIds: Set<string> | undefined;
+    if (params.positionIds && params.positionIds.length > 0) {
+      const resolved = await Promise.all(
+        params.positionIds.map((lookup) =>
+          resolvePositionLookup({ lookup, includeArchived: true }),
+        ),
+      );
+      resolvedPositionIds = new Set(resolved.map((r) => r.positionId));
+    }
+
+    // Filter assets if specific position IDs provided
+    const targetPositions = resolvedPositionIds
+      ? endPositions.filter((p) => resolvedPositionIds.has(p.id))
+      : endPositions;
+
     // Resolve tickers for any positions with symbols once - reuse for both start and end snapshots
     const symbolIdSet = new Set(
       endPositions
@@ -118,11 +135,6 @@ export async function getAssetsPerformance(params: GetAssetsPerformanceParams) {
         }
       });
     }
-
-    // Filter assets if specific position IDs provided
-    const targetPositions = params.positionIds
-      ? endPositions.filter((p) => params.positionIds!.includes(p.id))
-      : endPositions;
 
     if (targetPositions.length === 0) {
       return {

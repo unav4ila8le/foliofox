@@ -48,7 +48,7 @@ export const aiTools = {
         .array(z.string())
         .nullable()
         .describe(
-          "Position UUIDs (from getPortfolioOverview/getPositions positions[].id), not tickers/ISINs.",
+          "Position UUID from getPortfolioOverview or getPositions (positions[].id).",
         ),
       date: z
         .string()
@@ -66,7 +66,7 @@ export const aiTools = {
         .string()
         .nullable()
         .describe(
-          "Position UUID (from getPortfolioOverview/getPositions positions[].id), not ticker/ISIN.",
+          "Position UUID from getPortfolioOverview or getPositions (positions[].id). If omitted, returns records for all positions.",
         ),
       startDate: z.string().nullable().describe("YYYY-MM-DD format (optional)"),
       endDate: z.string().nullable().describe("YYYY-MM-DD format (optional)"),
@@ -87,7 +87,7 @@ export const aiTools = {
       positionId: z
         .string()
         .describe(
-          "Position UUID (from getPortfolioOverview/getPositions positions[].id), not ticker/ISIN.",
+          "Position UUID from getPortfolioOverview or getPositions (positions[].id).",
         ),
       startDate: z.string().nullable().describe("YYYY-MM-DD format (optional)"),
       endDate: z.string().nullable().describe("YYYY-MM-DD format (optional)"),
@@ -177,7 +177,7 @@ export const aiTools = {
         .array(z.string())
         .nullable()
         .describe(
-          "Position UUIDs (from getPortfolioOverview/getPositions positions[].id), not tickers/ISINs. If omitted, analyzes all assets.",
+          "Position UUIDs from getPortfolioOverview or getPositions (positions[].id). If omitted, analyzes all assets.",
         ),
       startDate: z
         .string()
