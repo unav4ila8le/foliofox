@@ -2,14 +2,26 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle } from "lucide-react";
 
 import type { PositionImportResult } from "@/lib/import/types";
+import type { RecordImportResult } from "@/lib/import/sources/records-csv";
+
+type ImportResult =
+  | { kind: "positions"; result: PositionImportResult }
+  | { kind: "records"; result: RecordImportResult };
 
 interface ImportResultsProps {
-  result: PositionImportResult;
+  result: ImportResult;
 }
 
 export function ImportResults({ result }: ImportResultsProps) {
-  const { success, positions, warnings = [], errors = [] } = result;
-  const positionsCount = positions.length;
+  const { kind, result: data } = result;
+  const success = data.success;
+  const warnings =
+    kind === "positions" ? ((data as PositionImportResult).warnings ?? []) : [];
+  const errors = data.errors ?? [];
+
+  const totalCount =
+    kind === "positions" ? data.positions.length : data.records.length;
+  const noun = kind === "positions" ? "position" : "record";
 
   const hasWarnings = warnings.length > 0;
   const hasErrors = errors.length > 0;
@@ -25,7 +37,8 @@ export function ImportResults({ result }: ImportResultsProps) {
             <CheckCircle className="size-4" />
             <AlertTitle>File validated successfully!</AlertTitle>
             <AlertDescription className="text-green-600">
-              Found {positionsCount} position(s) ready to import.
+              Found {totalCount} {noun}
+              {totalCount === 1 ? "" : "s"} ready to import.
             </AlertDescription>
           </Alert>
 

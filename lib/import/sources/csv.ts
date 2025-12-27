@@ -18,7 +18,7 @@ import type { PositionImportRow, PositionImportResult } from "../types";
  * @param content - Raw CSV/TSV text
  * @returns the detected delimiter: "," | "\t" | ";" (defaulting to ",")
  */
-function detectDelimiter(content: string): string {
+export function detectDelimiter(content: string): string {
   const firstLine = content.split("\n")[0];
 
   const counts = {
@@ -43,7 +43,7 @@ function detectDelimiter(content: string): string {
  * @param delimiter - The delimiter to split by
  * @returns Clean string values preserving quoted content
  */
-function parseCSVRow(row: string, delimiter: string): string[] {
+export function parseCSVRow(row: string, delimiter: string): string[] {
   const values: string[] = [];
   let currentValue = "";
   let insideQuotes = false;
