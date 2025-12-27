@@ -1,6 +1,8 @@
 "use server";
 
 import { fetchPositionSnapshots } from "@/server/position-snapshots/fetch";
+import { resolvePositionLookup } from "@/server/positions/resolve-position-lookup";
+
 import { clampDateRange } from "@/server/ai/tools/helpers/time-range";
 
 interface GetPositionSnapshotsParams {
@@ -10,7 +12,10 @@ interface GetPositionSnapshotsParams {
 }
 
 export async function getPositionSnapshots(params: GetPositionSnapshotsParams) {
-  const { positionId } = params;
+  const { positionId: lookup } = params;
+
+  // Resolve ticker/ISIN/UUID to actual position UUID
+  const { positionId } = await resolvePositionLookup({ lookup });
 
   const { startDate: startKey, endDate: endKey } = clampDateRange({
     startDate: params.startDate,

@@ -48,7 +48,12 @@ export const aiTools = {
     description:
       "Get raw positions in original currencies (no FX conversion). Optionally filter by position IDs. Uses market prices as-of the given date (defaults to today) for market-backed positions (e.g., securities, domains, etc.).",
     inputSchema: z.object({
-      positionIds: z.array(z.string()).nullable(),
+      positionIds: z
+        .array(z.string())
+        .nullable()
+        .describe(
+          "Position UUID from getPortfolioOverview or getPositions (positions[].id).",
+        ),
       date: z
         .string()
         .nullable()
@@ -61,7 +66,12 @@ export const aiTools = {
     description:
       "Get portfolio records history with optional filtering. Returns: record list with type, date, quantity, unit value, position details, and metadata. Supports filtering by position, date range, and archived status.",
     inputSchema: z.object({
-      positionId: z.string().nullable(),
+      positionId: z
+        .string()
+        .nullable()
+        .describe(
+          "Position UUID from getPortfolioOverview or getPositions (positions[].id). If omitted, returns records for all positions.",
+        ),
       startDate: z.string().nullable().describe("YYYY-MM-DD format (optional)"),
       endDate: z.string().nullable().describe("YYYY-MM-DD format (optional)"),
       includeArchived: z
@@ -80,7 +90,9 @@ export const aiTools = {
     inputSchema: z.object({
       positionId: z
         .string()
-        .describe("Required position ID to get snapshots for"),
+        .describe(
+          "Position UUID from getPortfolioOverview or getPositions (positions[].id).",
+        ),
       startDate: z.string().nullable().describe("YYYY-MM-DD format (optional)"),
       endDate: z.string().nullable().describe("YYYY-MM-DD format (optional)"),
     }),
@@ -169,7 +181,7 @@ export const aiTools = {
         .array(z.string())
         .nullable()
         .describe(
-          "Specific position IDs to analyze (assets only). If omitted, analyzes all assets. Get IDs via getPortfolioOverview or getPositions.",
+          "Position UUIDs from getPortfolioOverview or getPositions (positions[].id). If omitted, analyzes all assets.",
         ),
       startDate: z
         .string()

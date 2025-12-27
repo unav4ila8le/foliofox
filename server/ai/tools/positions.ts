@@ -1,6 +1,8 @@
 "use server";
 
 import { fetchPositions } from "@/server/positions/fetch";
+import { resolvePositionLookup } from "@/server/positions/resolve-position-lookup";
+
 import { resolveSymbolsBatch } from "@/server/symbols/resolver";
 
 interface GetPositionsParams {
@@ -16,13 +18,21 @@ interface GetPositionsParams {
 export async function getPositions(params: GetPositionsParams) {
   const asOfDate = params.date ? new Date(params.date) : new Date();
 
+  // Resolve lookups (ticker/ISIN/UUID) to actual position UUIDs
+  let resolvedIds: Set<string> | undefined;
+  if (params.positionIds && params.positionIds.length > 0) {
+    const resolved = await Promise.all(
+      params.positionIds.map((lookup) => resolvePositionLookup({ lookup })),
+    );
+    resolvedIds = new Set(resolved.map((r) => r.positionId));
+  }
+
   const all = await fetchPositions({
     includeArchived: true,
     asOfDate,
   });
 
-  const ids = params.positionIds ? new Set(params.positionIds) : undefined;
-  const filtered = ids ? all.filter((p) => ids.has(p.id)) : all;
+  const filtered = resolvedIds ? all.filter((p) => resolvedIds.has(p.id)) : all;
 
   const symbolIdSet = new Set(
     filtered.map((p) => p.symbol_id).filter((id): id is string => Boolean(id)),
