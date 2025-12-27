@@ -21,7 +21,7 @@ export interface ResolvedPositionLookup {
 export async function resolvePositionLookup(
   params: ResolvePositionLookupParams,
 ): Promise<ResolvedPositionLookup> {
-  const { lookup, includeArchived = false } = params;
+  const { lookup, includeArchived = true } = params;
   const trimmed = lookup?.trim();
 
   if (!trimmed) {

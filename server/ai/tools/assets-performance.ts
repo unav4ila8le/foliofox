@@ -99,9 +99,7 @@ export async function getAssetsPerformance(params: GetAssetsPerformanceParams) {
     let resolvedPositionIds: Set<string> | undefined;
     if (params.positionIds && params.positionIds.length > 0) {
       const resolved = await Promise.all(
-        params.positionIds.map((lookup) =>
-          resolvePositionLookup({ lookup, includeArchived: true }),
-        ),
+        params.positionIds.map((lookup) => resolvePositionLookup({ lookup })),
       );
       resolvedPositionIds = new Set(resolved.map((r) => r.positionId));
     }

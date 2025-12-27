@@ -16,12 +16,7 @@ interface GetPortfolioRecordsParams {
 
 export async function getPortfolioRecords(params: GetPortfolioRecordsParams) {
   const positionId = params.positionId
-    ? (
-        await resolvePositionLookup({
-          lookup: params.positionId,
-          includeArchived: params.includeArchived ?? true,
-        })
-      ).positionId
+    ? (await resolvePositionLookup({ lookup: params.positionId })).positionId
     : undefined;
   const includeArchived = params.includeArchived ?? undefined;
 
