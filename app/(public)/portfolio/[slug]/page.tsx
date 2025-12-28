@@ -155,7 +155,7 @@ export default async function PublicPortfolioPage(props: {
   // 2. Handle expired state
   if (!resolved.isActive) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center text-center">
+      <div className="flex flex-col items-center justify-center p-8 text-center">
         <Link href="/" aria-label="Foliofox - Go to homepage">
           <Logomark
             height={64}
