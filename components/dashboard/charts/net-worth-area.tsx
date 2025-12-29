@@ -215,7 +215,7 @@ export function NetWorthAreaChart({
                 <SelectTrigger>
                   <SelectValue placeholder="6 Months" />
                 </SelectTrigger>
-                <SelectContent align="end">
+                <SelectContent align="end" position="popper">
                   <SelectItem value="1m">
                     <span className="sm:hidden">1mo</span>
                     <span className="hidden sm:inline">1 Month</span>

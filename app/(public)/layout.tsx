@@ -6,7 +6,7 @@ export default function PublicLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-muted/10">
+    <div className="bg-primary-foreground">
       <Header />
       <main>{children}</main>
     </div>
