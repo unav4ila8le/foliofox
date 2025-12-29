@@ -49,7 +49,7 @@ export function PublicPortfolioAssetsTable({
 
   return (
     <div className="overflow-hidden rounded-lg border shadow-xs">
-      <Table className="light:bg-background [&_td:first-child]:pl-4 [&_td:last-child]:pr-4 [&_th:first-child]:pl-4 [&_th:last-child]:pr-4">
+      <Table className="bg-background dark:bg-transparent [&_td:first-child]:pl-4 [&_td:last-child]:pr-4 [&_th:first-child]:pl-4 [&_th:last-child]:pr-4">
         <TableHeader className="bg-muted/50">
           <TableRow>
             <TableHead>Name</TableHead>
