@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { format } from "date-fns";
 
 import { getCurrentUser } from "@/server/auth/actions";
 import { recalculateSnapshotsUntilNextUpdate } from "@/server/position-snapshots/recalculate";
@@ -108,7 +109,7 @@ export async function importRecordsFromCSV(
       };
     }
 
-    // Find earliest date per position and recalculate snapshots
+    // Build map of earliest imported date per position
     const positionDateMap = new Map<string, Date>();
     for (const record of inserted) {
       const date = new Date(record.date);
@@ -118,18 +119,56 @@ export async function importRecordsFromCSV(
       }
     }
 
-    // Recalculate snapshots for each affected position
-    for (const [positionId, fromDate] of positionDateMap.entries()) {
-      const recalculationResult = await recalculateSnapshotsUntilNextUpdate({
-        positionId,
-        fromDate,
-      });
+    // Query all UPDATE records for affected positions in one batch (N+1 avoidance).
+    // We need to recalculate from each UPDATE boundary to ensure all imported
+    // records get snapshotted, even if they span existing or newly imported UPDATEs.
+    const positionIds = Array.from(positionDateMap.keys());
+    const globalEarliest = new Date(
+      Math.min(...Array.from(positionDateMap.values()).map((d) => d.getTime())),
+    );
 
-      if (!recalculationResult.success) {
-        return {
-          success: false,
-          error: `Failed to recalculate snapshots for position ${positionId}`,
-        };
+    const { data: updates } = await supabase
+      .from("portfolio_records")
+      .select("position_id, date")
+      .eq("type", "update")
+      .in("position_id", positionIds)
+      .gte("date", format(globalEarliest, "yyyy-MM-dd"));
+
+    // Group UPDATE dates by position
+    const updatesByPosition = new Map<string, Date[]>();
+    for (const u of updates ?? []) {
+      const list = updatesByPosition.get(u.position_id) ?? [];
+      list.push(new Date(u.date));
+      updatesByPosition.set(u.position_id, list);
+    }
+
+    // Recalculate snapshots for each position, starting from earliest imported
+    // date and then from each UPDATE boundary to cover all segments
+    for (const [positionId, earliestDate] of positionDateMap.entries()) {
+      const dates = [
+        earliestDate,
+        ...(updatesByPosition.get(positionId) ?? []).filter(
+          (d) => d.getTime() >= earliestDate.getTime(),
+        ),
+      ];
+
+      // Dedupe and sort by date
+      const uniqueSorted = Array.from(
+        new Map(dates.map((d) => [d.getTime(), d])).values(),
+      ).sort((a, b) => a.getTime() - b.getTime());
+
+      for (const startDate of uniqueSorted) {
+        const recalculationResult = await recalculateSnapshotsUntilNextUpdate({
+          positionId,
+          fromDate: startDate,
+        });
+
+        if (!recalculationResult.success) {
+          return {
+            success: false,
+            error: `Failed to recalculate snapshots for position ${positionId}`,
+          };
+        }
       }
     }
 
