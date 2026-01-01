@@ -251,8 +251,8 @@ export function CSVImportForm() {
               <span className="text-foreground font-medium">
                 Required columns:
               </span>{" "}
-              position_name, type (buy/sell/update), date, quantity, unit_value
-              . Optional: description.
+              position_name, type (buy/sell/update), date (YYYY-MM-DD),
+              quantity, unit_value. Optional: description.
             </p>
             <p>
               Tip: use the exact position name you already have in Foliofox so

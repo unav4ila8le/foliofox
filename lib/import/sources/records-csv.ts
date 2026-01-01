@@ -92,7 +92,9 @@ export async function parseRecordsCSV(
       const values = dataRows[rowIndex];
 
       // Get required values
-      const positionName = values[columnMap.get("position_name")!] || "";
+      const positionName = (
+        values[columnMap.get("position_name")!] || ""
+      ).trim();
       const typeRaw = (values[columnMap.get("type")!] || "")
         .trim()
         .toLowerCase();
@@ -137,6 +139,28 @@ export async function parseRecordsCSV(
 
       if (!dateRaw) {
         errors.push(`Row ${rowIndex + 2}: Missing date`);
+        continue;
+      }
+
+      // Validate date format (ISO: YYYY-MM-DD)
+      const isValidDate =
+        /^\d{4}-\d{2}-\d{2}$/.test(dateRaw) &&
+        !isNaN(new Date(dateRaw).getTime());
+      if (!isValidDate) {
+        errors.push(
+          `Row ${rowIndex + 2}: Invalid date "${dateRaw}". Use YYYY-MM-DD format.`,
+        );
+        continue;
+      }
+
+      // Validate non-negative values
+      if (quantity < 0) {
+        errors.push(`Row ${rowIndex + 2}: Quantity cannot be negative`);
+        continue;
+      }
+
+      if (unitValue < 0) {
+        errors.push(`Row ${rowIndex + 2}: Unit value cannot be negative`);
         continue;
       }
 
