@@ -1,8 +1,12 @@
 import { parseNumberStrict } from "../parser/number-parser";
+import {
+  buildPortfolioRecordColumnMap,
+  hasRequiredPortfolioRecordHeaders,
+} from "../parser/records-header-mapper";
 
 import { detectDelimiter, parseCSVRow } from "./csv";
 
-export type RecordImportRow = {
+export type PortfolioRecordImportRow = {
   position_name: string; // To match the position
   type: "buy" | "sell" | "update";
   date: string;
@@ -11,9 +15,9 @@ export type RecordImportRow = {
   description: string | null;
 };
 
-export interface RecordImportResult {
+export interface PortfolioRecordImportResult {
   success: boolean;
-  records: RecordImportRow[];
+  records: PortfolioRecordImportRow[];
   warnings?: string[];
   errors?: string[];
 }
@@ -21,11 +25,11 @@ export interface RecordImportResult {
 /**
  * Parse CSV text into portfolio records data
  * @param csvContent - Raw CSV text from uploaded file
- * @returns Parsed records data or error details
+ * @returns Parsed portfolio records data or error details
  */
-export async function parseRecordsCSV(
+export async function parsePortfolioRecordsCSV(
   csvContent: string,
-): Promise<RecordImportResult> {
+): Promise<PortfolioRecordImportResult> {
   try {
     // Detect delimiter first
     const delimiter = detectDelimiter(csvContent);
@@ -49,33 +53,16 @@ export async function parseRecordsCSV(
     const headerRow = lines[0];
     const rawHeaders = parseCSVRow(headerRow, delimiter);
 
-    // Build a simple column map for records (case-insensitive)
-    const columnMap = new Map<string, number>();
-    rawHeaders.forEach((header, index) => {
-      const normalized = header.toLowerCase().trim();
-      if (!columnMap.has(normalized)) {
-        columnMap.set(normalized, index);
-      }
-    });
+    // Build canonical column map using header mapper (supports aliases)
+    const columnMap = buildPortfolioRecordColumnMap(rawHeaders);
 
-    // Required headers for portfolio records
-    const requiredHeaders = [
-      "position_name",
-      "type",
-      "date",
-      "quantity",
-      "unit_value",
-    ] as const;
-
-    const missingHeaders = requiredHeaders.filter(
-      (header) => !columnMap.has(header),
-    );
-
-    if (missingHeaders.length > 0) {
+    // Validate presence of required canonical headers
+    const requiredCheck = hasRequiredPortfolioRecordHeaders(columnMap);
+    if (!requiredCheck.ok) {
       return {
         success: false,
         records: [],
-        errors: missingHeaders.map(
+        errors: requiredCheck.missing.map(
           (header) => `Missing required column: ${header}`,
         ),
       };
@@ -85,7 +72,7 @@ export async function parseRecordsCSV(
     const dataRows = lines.slice(1).map((row) => parseCSVRow(row, delimiter));
 
     // Parse each data row
-    const parsedRecords: RecordImportRow[] = [];
+    const parsedRecords: PortfolioRecordImportRow[] = [];
     const errors: string[] = [];
 
     for (let rowIndex = 0; rowIndex < dataRows.length; rowIndex++) {
@@ -164,8 +151,8 @@ export async function parseRecordsCSV(
         continue;
       }
 
-      // Build record
-      const record: RecordImportRow = {
+      // Build portfolio record
+      const record: PortfolioRecordImportRow = {
         position_name: positionName,
         type: typeRaw as "buy" | "sell" | "update",
         date: dateRaw,

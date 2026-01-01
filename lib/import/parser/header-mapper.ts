@@ -1,22 +1,23 @@
 /**
- * CSV/TSV Header Mapper
+ * Positions CSV/TSV Header Mapper
  *
  * Purpose:
- * - Normalize many broker/user header names to our canonical headers
+ * - Normalize many broker/user header names to our canonical headers for position imports
  * - Extra/unknown columns are safely ignored
  * - Column order does not matter
  *
- * Canonical headers used by our importer:
+ * Canonical headers used by our position importer:
  *   - name
  *   - category_id
  *   - currency
- *   - current_quantity
- *   - current_unit_value
+ *   - quantity
+ *   - unit_value
+ *   - cost_basis_per_unit
  *   - symbol_lookup
  *   - description
  */
 
-export type CanonicalHeader =
+export type PositionCanonicalHeader =
   | "name"
   | "category_id"
   | "currency"
@@ -27,7 +28,7 @@ export type CanonicalHeader =
   | "description";
 
 // Common aliases from brokers and spreadsheets (DEGIRO, IBKR, Trading212, Fidelity, Vanguard, Schwab, eToro, etc.)
-const HEADER_ALIASES: Record<CanonicalHeader, string[]> = {
+const POSITION_HEADER_ALIASES: Record<PositionCanonicalHeader, string[]> = {
   // Position name/title
   name: [
     "name",
@@ -137,12 +138,12 @@ const HEADER_ALIASES: Record<CanonicalHeader, string[]> = {
   ],
 };
 
-const FLAT_HEADER_MAP: Record<string, CanonicalHeader> = {};
-Object.entries(HEADER_ALIASES).forEach(([canonical, aliases]) => {
+const FLAT_POSITION_HEADER_MAP: Record<string, PositionCanonicalHeader> = {};
+Object.entries(POSITION_HEADER_ALIASES).forEach(([canonical, aliases]) => {
   aliases.forEach((alias) => {
     const key = normalizeToken(alias);
-    if (!(key in FLAT_HEADER_MAP)) {
-      FLAT_HEADER_MAP[key] = canonical as CanonicalHeader;
+    if (!(key in FLAT_POSITION_HEADER_MAP)) {
+      FLAT_POSITION_HEADER_MAP[key] = canonical as PositionCanonicalHeader;
     }
   });
 });
@@ -165,26 +166,28 @@ function normalizeToken(raw: string): string {
 }
 
 /**
- * Map a raw header to a canonical header, or null if unknown.
+ * Map a raw header to a canonical position header, or null if unknown.
  * Unknown headers are simply ignored by the parser.
  */
-export function normalizeHeader(rawHeader: string): CanonicalHeader | null {
+export function normalizePositionHeader(
+  rawHeader: string,
+): PositionCanonicalHeader | null {
   const token = normalizeToken(rawHeader);
-  return FLAT_HEADER_MAP[token] ?? null;
+  return FLAT_POSITION_HEADER_MAP[token] ?? null;
 }
 
 /**
- * Build a canonical column map from raw CSV headers.
+ * Build a canonical column map from raw CSV headers for position imports.
  * - Extra/unknown columns are ignored
  * - The first occurrence of a canonical header wins
  */
-export function buildCanonicalColumnMap(
+export function buildPositionColumnMap(
   rawHeaders: string[],
-): Map<CanonicalHeader, number> {
-  const map = new Map<CanonicalHeader, number>();
+): Map<PositionCanonicalHeader, number> {
+  const map = new Map<PositionCanonicalHeader, number>();
 
   rawHeaders.forEach((raw, index) => {
-    const canonical = normalizeHeader(raw);
+    const canonical = normalizePositionHeader(raw);
     if (!canonical) return;
     if (!map.has(canonical)) {
       map.set(canonical, index);
@@ -195,24 +198,26 @@ export function buildCanonicalColumnMap(
 }
 
 /**
- * Minimal required canonical headers.
+ * Minimal required canonical headers for position imports.
  * Note:
  * - We do NOT require `category_id`.
  * - For cash/physical/manual items, users typically set quantity=1 and put the total into unit value.
  */
-export const REQUIRED_HEADERS: CanonicalHeader[] = [
+export const REQUIRED_POSITION_HEADERS: PositionCanonicalHeader[] = [
   "name",
   "currency",
   "quantity",
 ];
 
 /**
- * Helper: Are all required canonical headers present?
+ * Helper: Are all required position headers present?
  */
-export function hasRequiredHeaders(
-  map: Map<CanonicalHeader, number>,
-): { ok: true } | { ok: false; missing: CanonicalHeader[] } {
-  const missing = REQUIRED_HEADERS.filter((headerName) => !map.has(headerName));
+export function hasRequiredPositionHeaders(
+  map: Map<PositionCanonicalHeader, number>,
+): { ok: true } | { ok: false; missing: PositionCanonicalHeader[] } {
+  const missing = REQUIRED_POSITION_HEADERS.filter(
+    (headerName) => !map.has(headerName),
+  );
   if (missing.length === 0) return { ok: true };
   return { ok: false, missing };
 }

@@ -1,6 +1,6 @@
 import {
-  buildCanonicalColumnMap,
-  hasRequiredHeaders,
+  buildPositionColumnMap,
+  hasRequiredPositionHeaders,
 } from "../parser/header-mapper";
 import { mapCategory } from "../parser/category-mapper";
 import { parseNumberStrict } from "../parser/number-parser";
@@ -177,7 +177,7 @@ export async function parsePositionsCSV(
     const rawHeaders = parseCSVRow(headerRow, delimiter);
 
     // Build canonical header → index map (extra/unknown columns ignored)
-    const columnMap = buildCanonicalColumnMap(rawHeaders);
+    const columnMap = buildPositionColumnMap(rawHeaders);
 
     // Pre-parse data rows once (we need them for currency inference too)
     const dataRows = lines.slice(1).map((row) => parseCSVRow(row, delimiter));
@@ -194,7 +194,7 @@ export async function parsePositionsCSV(
     }
 
     // Validate presence of required canonical headers
-    const requiredCheck = hasRequiredHeaders(columnMap);
+    const requiredCheck = hasRequiredPositionHeaders(columnMap);
     if (!requiredCheck.ok) {
       return {
         success: false,

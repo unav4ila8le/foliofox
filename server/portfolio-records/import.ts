@@ -6,17 +6,17 @@ import { format } from "date-fns";
 import { getCurrentUser } from "@/server/auth/actions";
 import { recalculateSnapshotsUntilNextUpdate } from "@/server/position-snapshots/recalculate";
 
-import { parseRecordsCSV } from "@/lib/import/sources/records-csv";
+import { parsePortfolioRecordsCSV } from "@/lib/import/sources/records-csv";
 
 import type { PortfolioRecord } from "@/types/global.types";
 import { PORTFOLIO_RECORD_TYPES } from "@/types/enums";
 import type { ImportActionResult } from "@/lib/import/types";
 
-export async function importRecordsFromCSV(
+export async function importPortfolioRecordsFromCSV(
   csvContent: string,
 ): Promise<ImportActionResult> {
   try {
-    const parsed = await parseRecordsCSV(csvContent);
+    const parsed = await parsePortfolioRecordsCSV(csvContent);
     if (!parsed.success) {
       return {
         success: false,

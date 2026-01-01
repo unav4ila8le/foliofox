@@ -24,18 +24,18 @@ import { useImportPositionsDialog } from "./index";
 
 import { usePositionCategories } from "@/hooks/use-position-categories";
 import { parsePositionsCSV } from "@/lib/import/sources/csv";
-import { parseRecordsCSV } from "@/lib/import/sources/records-csv";
+import { parsePortfolioRecordsCSV } from "@/lib/import/sources/records-csv";
 import { importPositionsFromCSV } from "@/server/positions/import";
-import { importRecordsFromCSV } from "@/server/portfolio-records/import";
+import { importPortfolioRecordsFromCSV } from "@/server/portfolio-records/import";
 
 import type { PositionImportResult } from "@/lib/import/types";
-import type { RecordImportResult } from "@/lib/import/sources/records-csv";
+import type { PortfolioRecordImportResult } from "@/lib/import/sources/records-csv";
 
-type ImportMode = "positions" | "records";
+type ImportMode = "positions" | "portfolio-records";
 
 type ParseResult =
   | { kind: "positions"; result: PositionImportResult }
-  | { kind: "records"; result: RecordImportResult };
+  | { kind: "portfolio-records"; result: PortfolioRecordImportResult };
 
 export function CSVImportForm() {
   const {
@@ -69,8 +69,8 @@ export function CSVImportForm() {
           const result = await parsePositionsCSV(content);
           setParseResult({ kind: "positions", result });
         } else {
-          const result = await parseRecordsCSV(content);
-          setParseResult({ kind: "records", result });
+          const result = await parsePortfolioRecordsCSV(content);
+          setParseResult({ kind: "portfolio-records", result });
         }
       } catch (error) {
         console.error("Error parsing CSV:", error);
@@ -85,7 +85,7 @@ export function CSVImportForm() {
           });
         } else {
           setParseResult({
-            kind: "records",
+            kind: "portfolio-records",
             result: {
               success: false,
               records: [],
@@ -109,14 +109,14 @@ export function CSVImportForm() {
       const result =
         importMode === "positions"
           ? await importPositionsFromCSV(csvContent, "asset")
-          : await importRecordsFromCSV(csvContent);
+          : await importPortfolioRecordsFromCSV(csvContent);
 
       if (!result.success) {
         throw new Error(result.error);
       }
 
       toast.success(
-        `Successfully imported ${result.importedCount} ${importMode === "positions" ? "position" : "record"}(s)!`,
+        `Successfully imported ${result.importedCount} ${importMode === "positions" ? "position" : "portfolio record"}(s)!`,
       );
       setOpen(false);
     } catch (error) {
@@ -124,7 +124,7 @@ export function CSVImportForm() {
       toast.error(
         error instanceof Error
           ? error.message
-          : `Failed to import ${importMode === "positions" ? "positions" : "records"}`,
+          : `Failed to import ${importMode === "positions" ? "positions" : "portfolio records"}`,
       );
     } finally {
       setIsImporting(false);
@@ -180,7 +180,7 @@ export function CSVImportForm() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="positions">Positions</SelectItem>
-            <SelectItem value="records">Records</SelectItem>
+            <SelectItem value="portfolio-records">Portfolio Records</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -343,7 +343,7 @@ export function CSVImportForm() {
                   <Upload className="size-4" />
                   {parseResult.kind === "positions"
                     ? `Import ${parseResult.result.positions?.length ?? 0} position(s)`
-                    : `Import ${parseResult.result.records?.length ?? 0} record(s)`}
+                    : `Import ${parseResult.result.records?.length ?? 0} portfolio record(s)`}
                 </>
               )}
             </Button>

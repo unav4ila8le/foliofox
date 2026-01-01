@@ -2,11 +2,11 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle } from "lucide-react";
 
 import type { PositionImportResult } from "@/lib/import/types";
-import type { RecordImportResult } from "@/lib/import/sources/records-csv";
+import type { PortfolioRecordImportResult } from "@/lib/import/sources/records-csv";
 
 type ImportResult =
   | { kind: "positions"; result: PositionImportResult }
-  | { kind: "records"; result: RecordImportResult };
+  | { kind: "portfolio-records"; result: PortfolioRecordImportResult };
 
 interface ImportResultsProps {
   result: ImportResult;
@@ -21,7 +21,7 @@ export function ImportResults({ result }: ImportResultsProps) {
 
   const totalCount =
     kind === "positions" ? data.positions.length : data.records.length;
-  const noun = kind === "positions" ? "position" : "record";
+  const noun = kind === "positions" ? "position" : "portfolio record";
 
   const hasWarnings = warnings.length > 0;
   const hasErrors = errors.length > 0;
