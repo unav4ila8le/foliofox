@@ -1,8 +1,8 @@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle } from "lucide-react";
 
-import type { PositionImportResult } from "@/lib/import/types";
-import type { PortfolioRecordImportResult } from "@/lib/import/sources/records-csv";
+import type { PositionImportResult } from "@/lib/import/positions/types";
+import type { PortfolioRecordImportResult } from "@/lib/import/portfolio-records/types";
 
 type ImportResult =
   | { kind: "positions"; result: PositionImportResult }

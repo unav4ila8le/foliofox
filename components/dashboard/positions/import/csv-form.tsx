@@ -23,13 +23,13 @@ import { ImportResults } from "./import-results";
 import { useImportPositionsDialog } from "./index";
 
 import { usePositionCategories } from "@/hooks/use-position-categories";
-import { parsePositionsCSV } from "@/lib/import/sources/csv";
-import { parsePortfolioRecordsCSV } from "@/lib/import/sources/records-csv";
+import { parsePositionsCSV } from "@/lib/import/positions/parse-csv";
+import { parsePortfolioRecordsCSV } from "@/lib/import/portfolio-records/parse-csv";
 import { importPositionsFromCSV } from "@/server/positions/import";
 import { importPortfolioRecordsFromCSV } from "@/server/portfolio-records/import";
 
-import type { PositionImportResult } from "@/lib/import/types";
-import type { PortfolioRecordImportResult } from "@/lib/import/sources/records-csv";
+import type { PositionImportResult } from "@/lib/import/positions/types";
+import type { PortfolioRecordImportResult } from "@/lib/import/portfolio-records/types";
 
 type ImportMode = "positions" | "portfolio-records";
 

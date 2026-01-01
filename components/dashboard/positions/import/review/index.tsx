@@ -10,9 +10,9 @@ import { PositionsImportReviewTable } from "./table";
 import { useImportPositionsDialog } from "../index";
 
 import { importPositionsFromCSV } from "@/server/positions/import";
-import { positionsToCSV } from "@/lib/import/serialize";
+import { positionsToCSV } from "@/lib/import/positions/serialize";
 
-import type { PositionImportRow } from "@/lib/import/types";
+import type { PositionImportRow } from "@/lib/import/positions/types";
 
 export function ImportReviewDialog() {
   const {

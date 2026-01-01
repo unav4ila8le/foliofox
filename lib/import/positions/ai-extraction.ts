@@ -1,17 +1,18 @@
+/**
+ * Position AI Extraction
+ *
+ * AI-powered extraction of portfolio positions from unstructured documents.
+ * Uses LLM to parse PDFs, images, and other document formats.
+ */
+
 import { z } from "zod";
 
 import { fetchPositionCategories } from "@/server/position-categories/fetch";
 import { fetchCurrencies } from "@/server/currencies/fetch";
 
-import {
-  normalizePositionsArray,
-  validatePositionsArray,
-} from "@/lib/import/parser/validation";
+import { normalizePositionsArray, validatePositionsArray } from "./validation";
 
-import type {
-  PositionImportRow,
-  PositionImportResult,
-} from "@/lib/import/types";
+import type { PositionImportRow, PositionImportResult } from "./types";
 
 export type ExtractionResult = {
   success: boolean;

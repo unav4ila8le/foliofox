@@ -6,7 +6,7 @@ import {
 
 // Categories are normalized via mapper upstream; no need to validate codes here
 
-import type { PositionImportRow } from "@/lib/import/types";
+import type { PositionImportRow } from "./types";
 
 /**
  * Validates an array of positions with optional pre-validated symbol results

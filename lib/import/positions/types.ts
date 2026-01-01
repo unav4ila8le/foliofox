@@ -1,3 +1,9 @@
+/**
+ * Position Import Types
+ *
+ * Types specific to position imports.
+ */
+
 import type { SymbolValidationResult } from "@/server/symbols/validate";
 
 export type PositionImportRow = {
@@ -19,7 +25,3 @@ export interface PositionImportResult {
   symbolValidation?: Record<string, SymbolValidationResult>;
   supportedCurrencies?: string[];
 }
-
-export type ImportActionResult =
-  | { success: true; importedCount: number }
-  | { success: false; error: string };

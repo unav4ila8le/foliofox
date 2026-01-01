@@ -18,7 +18,7 @@ import { AIImportForm } from "./ai-form";
 import { ImportReviewDialog } from "./review";
 
 import type { VariantProps } from "class-variance-authority";
-import type { PositionImportRow } from "@/lib/import/types";
+import type { PositionImportRow } from "@/lib/import/positions/types";
 import type { SymbolValidationResult } from "@/server/symbols/validate";
 
 type ImportDialogContextType = {

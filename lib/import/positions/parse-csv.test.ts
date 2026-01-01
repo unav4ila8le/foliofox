@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { parsePositionsCSV } from "./csv";
+import { parsePositionsCSV } from "./parse-csv";
 
 // Mock only the currencies fetch function
 vi.mock("@/server/currencies/fetch", () => ({

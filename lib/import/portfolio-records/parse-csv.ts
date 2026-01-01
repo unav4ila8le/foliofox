@@ -1,26 +1,25 @@
-import { parseNumberStrict } from "../parser/number-parser";
+/**
+ * Portfolio Records CSV Parser
+ *
+ * Parses CSV/TSV files containing portfolio records (buy/sell/update transactions).
+ * Handles various broker export formats through flexible header mapping.
+ */
+
+import {
+  detectCSVDelimiter,
+  parseCSVRowValues,
+} from "@/lib/import/shared/csv-parser-utils";
+import { parseNumberStrict } from "@/lib/import/shared/number-parser";
+
 import {
   buildPortfolioRecordColumnMap,
   hasRequiredPortfolioRecordHeaders,
-} from "../parser/records-header-mapper";
+} from "./header-mapper";
 
-import { detectDelimiter, parseCSVRow } from "./csv";
-
-export type PortfolioRecordImportRow = {
-  position_name: string; // To match the position
-  type: "buy" | "sell" | "update";
-  date: string;
-  quantity: number;
-  unit_value: number;
-  description: string | null;
-};
-
-export interface PortfolioRecordImportResult {
-  success: boolean;
-  records: PortfolioRecordImportRow[];
-  warnings?: string[];
-  errors?: string[];
-}
+import type {
+  PortfolioRecordImportRow,
+  PortfolioRecordImportResult,
+} from "./types";
 
 /**
  * Parse CSV text into portfolio records data
@@ -32,7 +31,7 @@ export async function parsePortfolioRecordsCSV(
 ): Promise<PortfolioRecordImportResult> {
   try {
     // Detect delimiter first
-    const delimiter = detectDelimiter(csvContent);
+    const delimiter = detectCSVDelimiter(csvContent);
 
     // Split content into lines and remove empty lines
     const lines = csvContent
@@ -51,7 +50,7 @@ export async function parsePortfolioRecordsCSV(
 
     // Parse header row with the same CSV row parser (handles quotes properly)
     const headerRow = lines[0];
-    const rawHeaders = parseCSVRow(headerRow, delimiter);
+    const rawHeaders = parseCSVRowValues(headerRow, delimiter);
 
     // Build canonical column map using header mapper (supports aliases)
     const columnMap = buildPortfolioRecordColumnMap(rawHeaders);
@@ -69,7 +68,9 @@ export async function parsePortfolioRecordsCSV(
     }
 
     // Pre-parse data rows
-    const dataRows = lines.slice(1).map((row) => parseCSVRow(row, delimiter));
+    const dataRows = lines
+      .slice(1)
+      .map((row) => parseCSVRowValues(row, delimiter));
 
     // Parse each data row
     const parsedRecords: PortfolioRecordImportRow[] = [];

@@ -6,11 +6,11 @@ import { format } from "date-fns";
 import { getCurrentUser } from "@/server/auth/actions";
 import { recalculateSnapshotsUntilNextUpdate } from "@/server/position-snapshots/recalculate";
 
-import { parsePortfolioRecordsCSV } from "@/lib/import/sources/records-csv";
+import { parsePortfolioRecordsCSV } from "@/lib/import/portfolio-records/parse-csv";
 
 import type { PortfolioRecord } from "@/types/global.types";
 import { PORTFOLIO_RECORD_TYPES } from "@/types/enums";
-import type { ImportActionResult } from "@/lib/import/types";
+import type { ImportActionResult } from "@/lib/import/shared/types";
 
 export async function importPortfolioRecordsFromCSV(
   csvContent: string,
