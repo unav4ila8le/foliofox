@@ -21,6 +21,7 @@ import {
 import { DataTable } from "@/components/dashboard/tables/base/data-table";
 import { getPortfolioRecordColumns } from "@/components/dashboard/portfolio-records/table/columns";
 import { NewPortfolioRecordButton } from "@/components/dashboard/new-portfolio-record";
+import { ImportPortfolioRecordsButton } from "@/components/dashboard/portfolio-records/import";
 import { BulkActionBar } from "@/components/dashboard/tables/base/bulk-action-bar";
 import { DeletePortfolioRecordDialog } from "@/components/dashboard/portfolio-records/table/row-actions/delete-dialog";
 
@@ -215,6 +216,7 @@ export function PortfolioRecordsTable({
             variant="outline"
             preselectedPosition={position}
           />
+          <ImportPortfolioRecordsButton variant="outline" />
         </div>
       ) : (
         <DataTable

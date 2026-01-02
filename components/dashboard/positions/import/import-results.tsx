@@ -2,26 +2,13 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle } from "lucide-react";
 
 import type { PositionImportResult } from "@/lib/import/positions/types";
-import type { PortfolioRecordImportResult } from "@/lib/import/portfolio-records/types";
-
-type ImportResult =
-  | { kind: "positions"; result: PositionImportResult }
-  | { kind: "portfolio-records"; result: PortfolioRecordImportResult };
 
 interface ImportResultsProps {
-  result: ImportResult;
+  result: PositionImportResult;
 }
 
 export function ImportResults({ result }: ImportResultsProps) {
-  const { kind, result: data } = result;
-  const success = data.success;
-  const warnings =
-    kind === "positions" ? ((data as PositionImportResult).warnings ?? []) : [];
-  const errors = data.errors ?? [];
-
-  const totalCount =
-    kind === "positions" ? data.positions.length : data.records.length;
-  const noun = kind === "positions" ? "position" : "portfolio record";
+  const { success, positions, warnings = [], errors = [] } = result;
 
   const hasWarnings = warnings.length > 0;
   const hasErrors = errors.length > 0;
@@ -37,8 +24,8 @@ export function ImportResults({ result }: ImportResultsProps) {
             <CheckCircle className="size-4" />
             <AlertTitle>File validated successfully!</AlertTitle>
             <AlertDescription className="text-green-600">
-              Found {totalCount} {noun}
-              {totalCount === 1 ? "" : "s"} ready to import.
+              Found {positions.length} position
+              {positions.length === 1 ? "" : "s"} ready to import.
             </AlertDescription>
           </Alert>
 
