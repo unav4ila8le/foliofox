@@ -16,10 +16,10 @@ import { ImportResults } from "./import-results";
 import { useImportPositionsDialog } from "./index";
 
 import { usePositionCategories } from "@/hooks/use-position-categories";
-import { parsePositionsCSV } from "@/lib/import/sources/csv";
+import { parsePositionsCSV } from "@/lib/import/positions/parse-csv";
 import { importPositionsFromCSV } from "@/server/positions/import";
 
-import type { PositionImportResult } from "@/lib/import/types";
+import type { PositionImportResult } from "@/lib/import/positions/types";
 
 export function CSVImportForm() {
   const {
@@ -229,7 +229,7 @@ export function CSVImportForm() {
               ) : (
                 <>
                   <Upload className="size-4" />
-                  Import {parseResult.positions?.length} position(s)
+                  Import {parseResult.positions?.length ?? 0} position(s)
                 </>
               )}
             </Button>

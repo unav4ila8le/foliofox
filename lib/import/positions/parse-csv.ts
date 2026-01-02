@@ -1,80 +1,26 @@
+/**
+ * Position CSV Parser
+ *
+ * Parses CSV/TSV files containing portfolio positions.
+ * Handles various broker export formats through flexible header mapping.
+ */
+
 import {
-  buildCanonicalColumnMap,
-  hasRequiredHeaders,
-} from "../parser/header-mapper";
-import { mapCategory } from "../parser/category-mapper";
-import { parseNumberStrict } from "../parser/number-parser";
+  detectCSVDelimiter,
+  parseCSVRowValues,
+} from "@/lib/import/shared/csv-parser-utils";
+import { parseNumberStrict } from "@/lib/import/shared/number-parser";
+
 import {
-  normalizePositionsArray,
-  validatePositionsArray,
-} from "../parser/validation";
+  buildPositionColumnMap,
+  hasRequiredPositionHeaders,
+} from "./header-mapper";
+import { mapCategory } from "./category-mapper";
+import { normalizePositionsArray, validatePositionsArray } from "./validation";
 
 import { fetchCurrencies } from "@/server/currencies/fetch";
 
-import type { PositionImportRow, PositionImportResult } from "../types";
-
-/**
- * Detect the delimiter used in the file by scoring the first line.
- * @param content - Raw CSV/TSV text
- * @returns the detected delimiter: "," | "\t" | ";" (defaulting to ",")
- */
-function detectDelimiter(content: string): string {
-  const firstLine = content.split("\n")[0];
-
-  const counts = {
-    comma: (firstLine.match(/,/g) || []).length,
-    tab: (firstLine.match(/\t/g) || []).length,
-    semicolon: (firstLine.match(/;/g) || []).length,
-  };
-
-  // Determine the highest count
-  const maxCount = Math.max(counts.comma, counts.tab, counts.semicolon);
-
-  if (maxCount === 0) return ","; // Default fallback
-
-  if (counts.tab === maxCount) return "\t";
-  if (counts.semicolon === maxCount) return ";";
-  return ",";
-}
-
-/**
- * Parse a single CSV row, handling quoted values and embedded delimiters.
- * @param row - A single CSV line
- * @param delimiter - The delimiter to split by
- * @returns Clean string values preserving quoted content
- */
-function parseCSVRow(row: string, delimiter: string): string[] {
-  const values: string[] = [];
-  let currentValue = "";
-  let insideQuotes = false;
-
-  for (let i = 0; i < row.length; i++) {
-    const char = row[i];
-
-    if (char === '"') {
-      if (insideQuotes && row[i + 1] === '"') {
-        // Handle escaped quotes ("" becomes ")
-        currentValue += '"';
-        i++; // Skip the next quote
-      } else {
-        // Toggle quote state (entering or leaving quotes)
-        insideQuotes = !insideQuotes;
-      }
-    } else if (char === delimiter && !insideQuotes) {
-      // End of value (delimiter outside quotes)
-      values.push(currentValue.trim());
-      currentValue = "";
-    } else {
-      // Regular character, add to current value
-      currentValue += char;
-    }
-  }
-
-  // Don't forget the last value
-  values.push(currentValue.trim());
-
-  return values;
-}
+import type { PositionImportRow, PositionImportResult } from "./types";
 
 /**
  * Infer category only when mapping returned "other".
@@ -142,7 +88,7 @@ function inferCurrencyColumnIndex(
 }
 
 /**
- * Parse CSV text into structured data
+ * Parse CSV text into structured position data
  * @param csvContent - Raw CSV text from uploaded file
  * @returns Parsed positions data or error details
  */
@@ -155,7 +101,7 @@ export async function parsePositionsCSV(
     const supportedCurrencies = currencies.map((c) => c.alphabetic_code);
 
     // Detect delimiter first
-    const delimiter = detectDelimiter(csvContent);
+    const delimiter = detectCSVDelimiter(csvContent);
 
     // Split content into lines and remove empty lines
     const lines = csvContent
@@ -174,13 +120,15 @@ export async function parsePositionsCSV(
 
     // Parse header row with the same CSV row parser (handles quotes properly)
     const headerRow = lines[0];
-    const rawHeaders = parseCSVRow(headerRow, delimiter);
+    const rawHeaders = parseCSVRowValues(headerRow, delimiter);
 
     // Build canonical header → index map (extra/unknown columns ignored)
-    const columnMap = buildCanonicalColumnMap(rawHeaders);
+    const columnMap = buildPositionColumnMap(rawHeaders);
 
     // Pre-parse data rows once (we need them for currency inference too)
-    const dataRows = lines.slice(1).map((row) => parseCSVRow(row, delimiter));
+    const dataRows = lines
+      .slice(1)
+      .map((row) => parseCSVRowValues(row, delimiter));
 
     // If no explicit currency header, try to infer the column index
     if (!columnMap.has("currency")) {
@@ -194,7 +142,7 @@ export async function parsePositionsCSV(
     }
 
     // Validate presence of required canonical headers
-    const requiredCheck = hasRequiredHeaders(columnMap);
+    const requiredCheck = hasRequiredPositionHeaders(columnMap);
     if (!requiredCheck.ok) {
       return {
         success: false,
@@ -308,7 +256,7 @@ export async function parsePositionsCSV(
       positions: [],
       errors: [
         `Failed to parse CSV: ${error instanceof Error ? error.message : "Unknown error"}`,
-      ], // Array instead of string
+      ],
     };
   }
 }

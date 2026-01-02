@@ -21,6 +21,8 @@ import {
 import { DataTable } from "@/components/dashboard/tables/base/data-table";
 import { getPortfolioRecordColumns } from "@/components/dashboard/portfolio-records/table/columns";
 import { NewPortfolioRecordButton } from "@/components/dashboard/new-portfolio-record";
+import { ImportPortfolioRecordsButton } from "@/components/dashboard/portfolio-records/import";
+import { TableActionsDropdown } from "@/components/dashboard/portfolio-records/table/table-actions";
 import { BulkActionBar } from "@/components/dashboard/tables/base/bulk-action-bar";
 import { DeletePortfolioRecordDialog } from "@/components/dashboard/portfolio-records/table/row-actions/delete-dialog";
 
@@ -192,13 +194,18 @@ export function PortfolioRecordsTable({
             <Search />
           </InputGroupAddon>
         </InputGroup>
-        {/* New record button */}
-        {data.length > 0 && (
-          <NewPortfolioRecordButton
-            variant="outline"
-            preselectedPosition={position}
-          />
-        )}
+        <div className="flex items-center gap-2">
+          {/* New record button */}
+          {data.length > 0 && (
+            <>
+              <NewPortfolioRecordButton
+                variant="outline"
+                preselectedPosition={position}
+              />
+              <TableActionsDropdown />
+            </>
+          )}
+        </div>
       </div>
 
       {/* Table */}
@@ -211,10 +218,13 @@ export function PortfolioRecordsTable({
           <p className="text-muted-foreground mt-1 mb-3 text-sm">
             Records for this position will appear here
           </p>
-          <NewPortfolioRecordButton
-            variant="outline"
-            preselectedPosition={position}
-          />
+          <div className="flex items-center justify-center gap-2">
+            <NewPortfolioRecordButton
+              variant="outline"
+              preselectedPosition={position}
+            />
+            <ImportPortfolioRecordsButton variant="outline" />
+          </div>
         </div>
       ) : (
         <DataTable

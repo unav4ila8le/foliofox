@@ -7,6 +7,7 @@ import { Header } from "@/components/dashboard/layout/header";
 
 import { PrivacyModeProvider } from "@/components/dashboard/privacy-mode-provider";
 import { ImportPositionsDialogProvider } from "@/components/dashboard/positions/import";
+import { ImportPortfolioRecordsDialogProvider } from "@/components/dashboard/portfolio-records/import";
 import { NewAssetDialogProvider } from "@/components/dashboard/new-asset";
 import { NewPortfolioRecordDialogProvider } from "@/components/dashboard/new-portfolio-record";
 import { DashboardDataProvider } from "@/components/dashboard/dashboard-data-provider";
@@ -64,23 +65,25 @@ export default async function Layout({
       >
         <PrivacyModeProvider>
           <ImportPositionsDialogProvider>
-            <NewAssetDialogProvider>
-              <NewPortfolioRecordDialogProvider>
-                {/* Left sidebar */}
-                <LeftSidebar />
+            <ImportPortfolioRecordsDialogProvider>
+              <NewAssetDialogProvider>
+                <NewPortfolioRecordDialogProvider>
+                  {/* Left sidebar */}
+                  <LeftSidebar />
 
-                {/* Main content */}
-                <SidebarInset className="min-w-0">
-                  <Header />
-                  <div className="mx-auto w-full max-w-7xl p-4 pt-2">
-                    {children}
-                  </div>
-                </SidebarInset>
+                  {/* Main content */}
+                  <SidebarInset className="min-w-0">
+                    <Header />
+                    <div className="mx-auto w-full max-w-7xl p-4 pt-2">
+                      {children}
+                    </div>
+                  </SidebarInset>
 
-                {/* Right sidebar */}
-                <RightSidebar />
-              </NewPortfolioRecordDialogProvider>
-            </NewAssetDialogProvider>
+                  {/* Right sidebar */}
+                  <RightSidebar />
+                </NewPortfolioRecordDialogProvider>
+              </NewAssetDialogProvider>
+            </ImportPortfolioRecordsDialogProvider>
           </ImportPositionsDialogProvider>
         </PrivacyModeProvider>
       </SidebarProvider>

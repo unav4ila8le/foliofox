@@ -6,7 +6,7 @@ import {
   createExtractionPrompt,
   postProcessExtractedPositions,
   type ExtractionResult,
-} from "@/lib/import/sources/ai";
+} from "@/lib/import/positions/ai-extraction";
 
 export const maxDuration = 30;
 

@@ -11,9 +11,9 @@ import { ImportResults } from "./import-results";
 import { useImportPositionsDialog } from "./index";
 
 import { importPositionsFromCSV } from "@/server/positions/import";
-import { positionsToCSV } from "@/lib/import/serialize";
+import { positionsToCSV } from "@/lib/import/positions/serialize";
 
-import type { PositionImportResult } from "@/lib/import/types";
+import type { PositionImportResult } from "@/lib/import/positions/types";
 
 export function AIImportForm() {
   const {

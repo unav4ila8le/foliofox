@@ -1,4 +1,10 @@
-import type { PositionImportRow } from "@/lib/import/types";
+/**
+ * Position Serialization
+ *
+ * Serializes position import data to CSV format for download/export.
+ */
+
+import type { PositionImportRow } from "./types";
 
 function escapeCSVCell(value: string): string {
   const v = String(value ?? "");

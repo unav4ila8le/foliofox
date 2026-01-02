@@ -1,4 +1,16 @@
-// Robust numeric parser for EU/US formats; returns NaN on invalid input
+/**
+ * Shared Number Parser
+ *
+ * Robust numeric parser for EU/US formats.
+ * Used by both position and portfolio record imports.
+ */
+
+/**
+ * Parse a numeric string with support for both EU and US number formats.
+ * Handles thousands separators (comma or dot) and decimal separators.
+ * @param raw - Raw string value that may contain a number
+ * @returns Parsed number or NaN if invalid
+ */
 export function parseNumberStrict(raw: string): number {
   const input = (raw ?? "")
     .toString()

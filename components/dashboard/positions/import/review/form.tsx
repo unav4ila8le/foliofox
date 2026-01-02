@@ -38,7 +38,8 @@ import { SymbolSearch } from "@/components/dashboard/symbol-search";
 import type { PositionCategory } from "@/types/global.types";
 import type { CurrencyValidationResult } from "@/server/currencies/validate";
 import type { SymbolValidationResult } from "@/server/symbols/validate";
-import type { PositionImportRow, ImportActionResult } from "@/lib/import/types";
+import type { PositionImportRow } from "@/lib/import/positions/types";
+import type { ImportActionResult } from "@/lib/import/shared/types";
 
 interface ReviewFormProps {
   initialPositions: PositionImportRow[];

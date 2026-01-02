@@ -8,9 +8,9 @@ import { resolveSymbolInput } from "@/server/symbols/resolver";
 import { fetchSingleQuote } from "@/server/quotes/fetch";
 import { createPosition } from "@/server/positions/create";
 
-import { parsePositionsCSV } from "@/lib/import/sources/csv";
+import { parsePositionsCSV } from "@/lib/import/positions/parse-csv";
 
-import type { ImportActionResult } from "@/lib/import/types";
+import type { ImportActionResult } from "@/lib/import/shared/types";
 
 export async function importPositionsFromCSV(
   csvContent: string,
