@@ -212,11 +212,13 @@ export function PortfolioRecordsTable({
           <p className="text-muted-foreground mt-1 mb-3 text-sm">
             Records for this position will appear here
           </p>
-          <NewPortfolioRecordButton
-            variant="outline"
-            preselectedPosition={position}
-          />
-          <ImportPortfolioRecordsButton variant="outline" />
+          <div className="flex items-center justify-center gap-2">
+            <NewPortfolioRecordButton
+              variant="outline"
+              preselectedPosition={position}
+            />
+            <ImportPortfolioRecordsButton variant="outline" />
+          </div>
         </div>
       ) : (
         <DataTable
