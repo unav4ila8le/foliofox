@@ -119,16 +119,21 @@ export function CSVImportForm() {
       <div className="text-muted-foreground space-y-2 text-sm">
         <p>
           Upload a CSV or TSV file to import portfolio records. Each record must
-          refer to an existing position by name.
+          refer to an existing position by name. The first row should contain
+          the headers below.
         </p>
         <p>
           <span className="text-foreground font-medium">Required columns:</span>{" "}
           position_name, type (buy/sell/update), date (YYYY-MM-DD), quantity,
-          unit_value. Optional: description.
+          unit_value.
         </p>
         <p>
-          Tip: use the exact position name you already have in Foliofox so we
-          can match records to holdings.
+          <span className="text-foreground font-medium">Optional columns:</span>{" "}
+          description.
+        </p>
+        <p>
+          Ensure the position_name matches an existing position in your
+          portfolio.
         </p>
       </div>
 
@@ -154,8 +159,15 @@ export function CSVImportForm() {
 
       {/* Help text */}
       <div className="text-muted-foreground text-sm">
-        Ensure the position_name matches an existing position. A records CSV
-        template will be available soon.
+        Need help? Download a{" "}
+        <a
+          href="/sample-records-template.csv"
+          download
+          className="text-primary underline-offset-4 hover:underline"
+        >
+          sample template
+        </a>
+        .
       </div>
 
       {/* Footer - Action buttons */}

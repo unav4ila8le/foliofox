@@ -13,6 +13,7 @@ import { PortfolioRecordsWidget } from "@/components/dashboard/portfolio-records
 
 import { getCurrentUser } from "@/server/auth/actions";
 import { fetchProfile } from "@/server/profile/actions";
+import { fetchPositions } from "@/server/positions/fetch";
 import { calculateNetWorth } from "@/server/analysis/net-worth";
 import { fetchNetWorthHistory } from "@/server/analysis/net-worth-history";
 import { fetchNetWorthChange } from "@/server/analysis/net-worth-change";
@@ -29,6 +30,7 @@ async function GreetingsWrapper() {
   return <Greetings username={profile.username} />;
 }
 
+// Net Worth
 async function NetWorthChartWrapper() {
   "use cache: private";
   const { profile } = await fetchProfile();
@@ -59,6 +61,7 @@ async function NetWorthChartWrapper() {
   );
 }
 
+// Asset Allocation
 async function AssetAllocationChartWrapper() {
   "use cache: private";
   const { profile } = await fetchProfile();
@@ -76,6 +79,7 @@ async function AssetAllocationChartWrapper() {
   );
 }
 
+// News
 async function NewsWidgetWrapper() {
   "use cache: private";
   cacheLife("minutes");
@@ -85,6 +89,7 @@ async function NewsWidgetWrapper() {
   return <NewsWidget newsData={newsResult} />;
 }
 
+// Projected Income
 async function ProjectedIncomeWidgetWrapper() {
   "use cache: private";
   const { profile } = await fetchProfile();
@@ -100,10 +105,20 @@ async function ProjectedIncomeWidgetWrapper() {
   );
 }
 
+// Portfolio Records
 async function PortfolioRecordsWidgetWrapper() {
   "use cache: private";
-  const { records } = await fetchPortfolioRecords({ pageSize: 15 });
-  return <PortfolioRecordsWidget portfolioRecordsData={records} />;
+  const [{ records }, positions] = await Promise.all([
+    fetchPortfolioRecords({ pageSize: 15 }),
+    fetchPositions({ positionType: "asset" }),
+  ]);
+
+  return (
+    <PortfolioRecordsWidget
+      portfolioRecordsData={records}
+      hasPositions={positions.length > 0}
+    />
+  );
 }
 
 // Main page component

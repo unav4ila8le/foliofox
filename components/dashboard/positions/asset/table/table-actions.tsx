@@ -35,13 +35,13 @@ export function TableActionsDropdown({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onSelect={() => setOpenImportPositionsDialog(true)}>
-            <Upload className="size-4" /> Import
+            <Upload className="size-4" /> Import assets
           </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={() => setShowExportDialog(true)}
             disabled={!positionsCount || positionsCount === 0}
           >
-            <Download className="size-4" /> Export
+            <Download className="size-4" /> Export assets
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
             <Link href="/dashboard/assets/archived">
