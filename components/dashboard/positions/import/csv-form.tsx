@@ -27,6 +27,7 @@ import { parsePositionsCSV } from "@/lib/import/positions/parse-csv";
 import { parsePortfolioRecordsCSV } from "@/lib/import/portfolio-records/parse-csv";
 import { importPositionsFromCSV } from "@/server/positions/import";
 import { importPortfolioRecordsFromCSV } from "@/server/portfolio-records/import";
+import { validatePortfolioRecordPositionNames } from "@/server/portfolio-records/validate";
 
 import type { PositionImportResult } from "@/lib/import/positions/types";
 import type { PortfolioRecordImportResult } from "@/lib/import/portfolio-records/types";
@@ -70,6 +71,32 @@ export function CSVImportForm() {
           setParseResult({ kind: "positions", result });
         } else {
           const result = await parsePortfolioRecordsCSV(content);
+
+          // If parsing succeeded, validate that position names exist
+          if (result.success && result.records.length > 0) {
+            const uniqueNames = Array.from(
+              new Set(result.records.map((r) => r.position_name)),
+            );
+            const validation =
+              await validatePortfolioRecordPositionNames(uniqueNames);
+
+            if (!validation.valid) {
+              // Add missing positions to errors and mark as failed
+              const missingErrors = validation.missing.map(
+                (name) => `Position not found: "${name}"`,
+              );
+              setParseResult({
+                kind: "portfolio-records",
+                result: {
+                  ...result,
+                  success: false,
+                  errors: [...(result.errors ?? []), ...missingErrors],
+                },
+              });
+              return;
+            }
+          }
+
           setParseResult({ kind: "portfolio-records", result });
         }
       } catch (error) {
