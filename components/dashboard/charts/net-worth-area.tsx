@@ -190,10 +190,9 @@ export function NetWorthAreaChart({
                         <TrendingDown className="size-4" />
                       )}
                       <span>
-                        {change.absoluteChange >= 0 ? "+" : ""}
-                        {formatNumber(change.absoluteChange, undefined, {
-                          maximumFractionDigits: 2,
-                        })}{" "}
+                        {isPrivacyMode
+                          ? "* * * * * *"
+                          : `${change.absoluteChange >= 0 ? "+" : ""}${formatNumber(change.absoluteChange, undefined, { maximumFractionDigits: 2 })}`}{" "}
                         ({change.percentageChange >= 0 ? "+" : ""}
                         {change.previousValue === 0
                           ? "N/A"
