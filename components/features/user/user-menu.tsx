@@ -12,7 +12,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Spinner } from "@/components/ui/spinner";
-import { Badge } from "@/components/ui/badge";
 
 import { SettingsDialog } from "@/components/features/settings/dialog";
 import { FinancialProfileDialog } from "@/components/features/financial-profile/dialog";
@@ -86,7 +85,6 @@ export function UserMenu({
           >
             <CircleUser className="size-4" />
             Financial profile
-            <Badge className="bg-brand/10 text-brand ml-auto">New</Badge>
           </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={() => {

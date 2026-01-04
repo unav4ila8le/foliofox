@@ -134,6 +134,9 @@ export async function fetchQuotes(
       cacheKey: string;
     }> = [];
 
+    // Track symbol health: last available quote date per symbol
+    const healthUpdates: Array<{ id: string; last_quote_at: string }> = [];
+
     for (const [symbolId, dateStringsSet] of requestsBySymbol.entries()) {
       const dateStringsSorted = Array.from(dateStringsSet).sort((a, b) =>
         compareAsc(parseISO(a), parseISO(b)),
@@ -231,6 +234,23 @@ export async function fetchQuotes(
           });
         }
       }
+
+      // Track symbol health: use last chart quote date, fallback to regularMarketTime
+      if (upsert) {
+        const lastQuoteEntry = quoteEntries.at(-1);
+        const lastQuoteAt = lastQuoteEntry
+          ? new Date(`${lastQuoteEntry.dateKey}T00:00:00Z`)
+          : chartData?.meta?.regularMarketTime instanceof Date
+            ? chartData.meta.regularMarketTime
+            : null;
+
+        if (lastQuoteAt) {
+          healthUpdates.push({
+            id: symbolId,
+            last_quote_at: lastQuoteAt.toISOString(),
+          });
+        }
+      }
     }
 
     if (upsert && successfulFetches.length > 0) {
@@ -242,7 +262,6 @@ export async function fetchQuotes(
         return a.symbolId.localeCompare(b.symbolId);
       });
 
-      const supabase = await createServiceClient();
       const { error: insertError } = await supabase.from("quotes").upsert(
         successfulFetches.map(({ symbolId, dateString, price }) => ({
           symbol_id: symbolId,
@@ -254,6 +273,24 @@ export async function fetchQuotes(
 
       if (insertError) {
         console.error("Failed to bulk insert quotes:", insertError);
+      }
+    }
+
+    // Update symbol health tracking with last available quote dates
+    if (upsert && healthUpdates.length > 0) {
+      for (const { id, last_quote_at } of healthUpdates) {
+        const { error: healthError } = await supabase
+          .from("symbols")
+          .update({ last_quote_at })
+          .eq("id", id)
+          .or(`last_quote_at.is.null,last_quote_at.lt.${last_quote_at}`);
+
+        if (healthError) {
+          console.error(
+            `Failed to update symbol health for ${id}:`,
+            healthError,
+          );
+        }
       }
     }
   }
