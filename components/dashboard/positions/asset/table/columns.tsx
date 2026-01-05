@@ -41,7 +41,10 @@ function StaleIndicator({
     <Tooltip>
       <TooltipTrigger asChild>
         <div className="flex size-6 items-center justify-center rounded-full bg-yellow-500/20">
-          <TriangleAlert className="size-3.5 text-yellow-500" />
+          <TriangleAlert
+            className="size-3.5 text-yellow-500"
+            aria-label="Stale market data"
+          />
         </div>
       </TooltipTrigger>
       <TooltipContent>

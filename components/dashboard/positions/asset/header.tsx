@@ -1,4 +1,7 @@
-import { Archive, Info } from "lucide-react";
+"use client";
+
+import { useMemo } from "react";
+import { Archive, Info, TriangleAlert } from "lucide-react";
 
 import {
   Tooltip,
@@ -6,6 +9,7 @@ import {
   TooltipContent,
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
+import { useDashboardData } from "@/components/dashboard/dashboard-data-provider";
 import { EditAssetButton } from "./edit-asset-button";
 import { AssetMoreActionsButton } from "./asset-more-actions-button";
 
@@ -18,7 +22,7 @@ import type {
   PositionWithProfitLoss,
 } from "@/types/global.types";
 
-export async function AssetHeader({
+export function AssetHeader({
   position,
   symbol,
   positionWithProfitLoss,
@@ -27,6 +31,12 @@ export async function AssetHeader({
   symbol: Symbol | null;
   positionWithProfitLoss: PositionWithProfitLoss;
 }) {
+  const { stalePositions } = useDashboardData();
+  const stalePosition = useMemo(
+    () => stalePositions.find((sp) => sp.positionId === position.id),
+    [stalePositions, position.id],
+  );
+
   return (
     <div className="space-y-2">
       {/* Asset name and type */}
@@ -88,14 +98,11 @@ export async function AssetHeader({
               </p>
             </div>
             <div>
-              <p className="text-muted-foreground">
-                Market Price{" "}
+              <div className="text-muted-foreground flex items-center gap-1">
+                Market Price
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Info
-                      className="inline-block size-3.5"
-                      aria-label="Market price help"
-                    />
+                    <Info className="size-3.5" aria-label="Market price help" />
                   </TooltipTrigger>
                   <TooltipContent>
                     Market prices and exchange rates are updated daily at 10:00
@@ -104,10 +111,26 @@ export async function AssetHeader({
                     Data shown is from the previous trading day.
                   </TooltipContent>
                 </Tooltip>
-              </p>
-              <p className="font-semibold">
+              </div>
+              <div className="flex items-center gap-1 font-semibold">
                 {formatCurrency(position.current_unit_value, position.currency)}
-              </p>
+                {stalePosition && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center justify-center gap-1 rounded-full bg-yellow-500/20 px-2 py-0.5 text-xs text-yellow-500">
+                        <TriangleAlert
+                          className="size-3.5"
+                          aria-label="Stale market data"
+                        />
+                        <span>Stale</span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Market data may be stale. May need attention.
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
             </div>
             <div>
               <p className="text-muted-foreground">Cost Basis</p>
