@@ -3,12 +3,15 @@
 import { createContext, useContext, type ReactNode } from "react";
 
 import type { FinancialProfile, Profile } from "@/types/global.types";
+import type { StalePosition } from "@/server/positions/stale";
 
 type DashboardData = {
   profile: Profile;
   email: string;
   financialProfile: FinancialProfile | null;
   netWorth: number;
+  /** Positions with stale symbols (last_quote_at NULL or > 7 days old) */
+  stalePositions: StalePosition[];
 };
 
 const DashboardDataContext = createContext<DashboardData | undefined>(

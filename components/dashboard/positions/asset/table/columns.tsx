@@ -1,7 +1,8 @@
 "use client";
 
-import { ArrowUpDown } from "lucide-react";
-import type { ColumnDef } from "@tanstack/react-table";
+import { ArrowUpDown, TriangleAlert } from "lucide-react";
+
+import type { ColumnDef, Row, Table } from "@tanstack/react-table";
 
 import {
   Tooltip,
@@ -17,11 +18,40 @@ import { formatNumber, formatPercentage } from "@/lib/number-format";
 
 import type { PositionWithProfitLoss } from "@/types/global.types";
 
+type StaleMeta = { staleMap?: Map<string, string> };
+
 // Check if the position has market data (centralized server flag)
 const positionHasMarketData = (position: PositionWithProfitLoss): boolean =>
   position.has_market_data === true;
 
-export const columns: ColumnDef<PositionWithProfitLoss>[] = [
+// Stale indicator component
+function StaleIndicator({
+  row,
+  table,
+}: {
+  row: Row<PositionWithProfitLoss>;
+  table: Table<PositionWithProfitLoss>;
+}) {
+  const staleMap = (table.options.meta as StaleMeta | undefined)?.staleMap;
+  const ticker = staleMap?.get(row.original.id);
+
+  if (!ticker) return null;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className="flex size-6 items-center justify-center rounded-full bg-yellow-500/20">
+          <TriangleAlert className="size-3.5 text-yellow-500" />
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>
+        {ticker} market data may be stale. May need attention.
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+export const columns: ColumnDef<PositionWithProfitLoss, StaleMeta>[] = [
   {
     id: "select",
     header: ({ table }) => (
@@ -134,13 +164,16 @@ export const columns: ColumnDef<PositionWithProfitLoss>[] = [
       headerClassName: "text-right",
       cellClassName: "text-right",
     },
-    cell: ({ row }) => {
+    cell: ({ row, table }) => {
       const current_unit_value = row.getValue<number>("current_unit_value");
       return (
-        <div className="tabular-nums">
-          {formatNumber(current_unit_value, undefined, {
-            maximumFractionDigits: 2,
-          })}
+        <div className="flex items-center justify-end gap-2 tabular-nums">
+          <span>
+            {formatNumber(current_unit_value, undefined, {
+              maximumFractionDigits: 2,
+            })}
+          </span>
+          <StaleIndicator row={row} table={table} />
         </div>
       );
     },

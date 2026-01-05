@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Archive, Package, Trash2, Search } from "lucide-react";
 
@@ -9,6 +9,7 @@ import {
   InputGroupInput,
   InputGroupAddon,
 } from "@/components/ui/input-group";
+import { useDashboardData } from "@/components/dashboard/dashboard-data-provider";
 import { NewAssetButton } from "@/components/dashboard/new-asset";
 import { TableActionsDropdown } from "./table-actions";
 import { DeletePositionDialog } from "@/components/dashboard/positions/shared/delete-dialog";
@@ -24,15 +25,20 @@ interface AssetsTableProps {
 }
 
 export function AssetsTable({ data }: AssetsTableProps) {
+  const router = useRouter();
+  const { stalePositions } = useDashboardData();
+
+  const staleMap = useMemo(
+    () => new Map(stalePositions.map((sp) => [sp.positionId, sp.ticker])),
+    [stalePositions],
+  );
+  const tableMeta = useMemo(() => ({ staleMap }), [staleMap]);
   const [filterValue, setFilterValue] = useState("");
   const [selectedRows, setSelectedRows] = useState<PositionWithProfitLoss[]>(
     [],
   );
-
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [openArchiveDialog, setOpenArchiveDialog] = useState(false);
-
-  const router = useRouter();
 
   // Handle row click to navigate to asset page
   const handleRowClick = useCallback(
@@ -77,6 +83,7 @@ export function AssetsTable({ data }: AssetsTableProps) {
         <DataTable
           columns={columns}
           data={data}
+          meta={tableMeta}
           filterValue={filterValue}
           onRowClick={handleRowClick}
           onSelectedRowsChange={setSelectedRows}
