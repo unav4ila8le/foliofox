@@ -1,8 +1,8 @@
 "use client";
 
-import { ArrowUpDown, TriangleAlert } from "lucide-react";
+import { ArrowUpDown } from "lucide-react";
 
-import type { ColumnDef, Row, Table } from "@tanstack/react-table";
+import type { ColumnDef } from "@tanstack/react-table";
 
 import {
   Tooltip,
@@ -12,47 +12,16 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ActionsCell } from "@/components/dashboard/positions/asset/table/row-actions/actions-cell";
+import { StaleBadge } from "@/components/dashboard/positions/stale-badge";
 
 import { cn } from "@/lib/utils";
 import { formatNumber, formatPercentage } from "@/lib/number-format";
 
 import type { PositionWithProfitLoss } from "@/types/global.types";
 
-type StaleMeta = { staleMap?: Map<string, string> };
-
 // Check if the position has market data (centralized server flag)
 const positionHasMarketData = (position: PositionWithProfitLoss): boolean =>
   position.has_market_data === true;
-
-// Stale indicator component
-function StaleIndicator({
-  row,
-  table,
-}: {
-  row: Row<PositionWithProfitLoss>;
-  table: Table<PositionWithProfitLoss>;
-}) {
-  const staleMap = (table.options.meta as StaleMeta | undefined)?.staleMap;
-  const ticker = staleMap?.get(row.original.id);
-
-  if (!ticker) return null;
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <div className="flex size-6 items-center justify-center rounded-full bg-yellow-500/20">
-          <TriangleAlert
-            className="size-3.5 text-yellow-500"
-            aria-label="Stale market data"
-          />
-        </div>
-      </TooltipTrigger>
-      <TooltipContent>
-        {ticker} market data may be stale. May need attention.
-      </TooltipContent>
-    </Tooltip>
-  );
-}
 
 export const columns: ColumnDef<PositionWithProfitLoss>[] = [
   {
@@ -167,7 +136,7 @@ export const columns: ColumnDef<PositionWithProfitLoss>[] = [
       headerClassName: "text-right",
       cellClassName: "text-right",
     },
-    cell: ({ row, table }) => {
+    cell: ({ row }) => {
       const current_unit_value = row.getValue<number>("current_unit_value");
       return (
         <div className="flex items-center justify-end gap-2 tabular-nums">
@@ -176,7 +145,7 @@ export const columns: ColumnDef<PositionWithProfitLoss>[] = [
               maximumFractionDigits: 2,
             })}
           </span>
-          <StaleIndicator row={row} table={table} />
+          <StaleBadge positionId={row.original.id} />
         </div>
       );
     },

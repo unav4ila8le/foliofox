@@ -1,7 +1,4 @@
-"use client";
-
-import { useMemo } from "react";
-import { Archive, Info, TriangleAlert } from "lucide-react";
+import { Archive, Info } from "lucide-react";
 
 import {
   Tooltip,
@@ -9,7 +6,7 @@ import {
   TooltipContent,
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
-import { useDashboardData } from "@/components/dashboard/dashboard-data-provider";
+import { StaleBadge } from "@/components/dashboard/positions/stale-badge";
 import { EditAssetButton } from "./edit-asset-button";
 import { AssetMoreActionsButton } from "./asset-more-actions-button";
 
@@ -31,12 +28,6 @@ export function AssetHeader({
   symbol: Symbol | null;
   positionWithProfitLoss: PositionWithProfitLoss;
 }) {
-  const { stalePositions } = useDashboardData();
-  const stalePosition = useMemo(
-    () => stalePositions.find((sp) => sp.positionId === position.id),
-    [stalePositions, position.id],
-  );
-
   return (
     <div className="space-y-2">
       {/* Asset name and type */}
@@ -114,22 +105,7 @@ export function AssetHeader({
               </div>
               <div className="flex items-center gap-1 font-semibold">
                 {formatCurrency(position.current_unit_value, position.currency)}
-                {stalePosition && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="flex items-center justify-center gap-1 rounded-full bg-yellow-500/20 px-2 py-0.5 text-xs text-yellow-500">
-                        <TriangleAlert
-                          className="size-3.5"
-                          aria-label="Stale market data"
-                        />
-                        <span>Stale</span>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      Market data may be stale. May need attention.
-                    </TooltipContent>
-                  </Tooltip>
-                )}
+                <StaleBadge positionId={position.id} label="Stale" />
               </div>
             </div>
             <div>
