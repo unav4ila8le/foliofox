@@ -39,14 +39,27 @@ export async function fetchStalePositions(): Promise<StalePosition[]> {
     );
 
   if (error) {
-    console.error("Failed to fetch stale position IDs:", error);
+    console.error("Failed to fetch stale positions:", error);
     return [];
   }
 
   return (
-    data?.map((position) => ({
-      positionId: position.id,
-      ticker: position.symbols.ticker,
-    })) ?? []
+    data?.flatMap((position) => {
+      // Supabase joins can return symbols as either single object or array
+      // even with !inner join. Handle both cases defensively.
+      const symbol = Array.isArray(position.symbols)
+        ? position.symbols[0]
+        : position.symbols;
+
+      // Skip positions without valid ticker (defensive check)
+      if (!symbol?.ticker) return [];
+
+      return [
+        {
+          positionId: position.id,
+          ticker: symbol.ticker,
+        },
+      ];
+    }) ?? []
   );
 }

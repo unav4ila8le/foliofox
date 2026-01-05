@@ -51,7 +51,7 @@ function StaleIndicator({
   );
 }
 
-export const columns: ColumnDef<PositionWithProfitLoss, StaleMeta>[] = [
+export const columns: ColumnDef<PositionWithProfitLoss>[] = [
   {
     id: "select",
     header: ({ table }) => (
