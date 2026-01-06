@@ -150,7 +150,7 @@ export const columns: ColumnDef<ScenarioEventWithId>[] = [
     cell: ({ row }) => {
       const type = row.getValue<"income" | "expense">("type");
       return (
-        <Badge variant="secondary" className="capitalize">
+        <Badge variant="outline" className="capitalize">
           {type}
         </Badge>
       );

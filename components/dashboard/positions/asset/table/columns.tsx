@@ -81,7 +81,7 @@ export const columns: ColumnDef<PositionWithProfitLoss>[] = [
         return (
           <div className="flex items-center gap-2 font-semibold">
             {categoryName}
-            <Badge variant="secondary" className="font-semibold">
+            <Badge variant="outline" className="font-semibold">
               {row.getLeafRows().length}
             </Badge>
           </div>
@@ -108,7 +108,7 @@ export const columns: ColumnDef<PositionWithProfitLoss>[] = [
     header: "Currency",
     cell: ({ row }) => {
       const currency = row.getValue<string>("currency");
-      return <Badge variant="secondary">{currency}</Badge>;
+      return <Badge variant="outline">{currency}</Badge>;
     },
   },
   {

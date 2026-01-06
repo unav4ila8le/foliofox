@@ -103,7 +103,7 @@ export function AssetHeader({
                   </TooltipContent>
                 </Tooltip>
               </div>
-              <div className="flex items-center gap-1 font-semibold">
+              <div className="flex items-center gap-1.5 font-semibold">
                 {formatCurrency(position.current_unit_value, position.currency)}
                 <StaleBadge positionId={position.id} label="Stale" />
               </div>

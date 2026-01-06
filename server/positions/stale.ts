@@ -1,5 +1,7 @@
 "use server";
 
+import { subDays } from "date-fns";
+
 import { getCurrentUser } from "@/server/auth/actions";
 
 const STALENESS_THRESHOLD_DAYS = 7;
@@ -16,8 +18,7 @@ export type StalePosition = {
 export async function fetchStalePositions(): Promise<StalePosition[]> {
   const { supabase, user } = await getCurrentUser();
 
-  const thresholdDate = new Date();
-  thresholdDate.setDate(thresholdDate.getDate() - STALENESS_THRESHOLD_DAYS);
+  const thresholdDate = subDays(new Date(), STALENESS_THRESHOLD_DAYS);
 
   const { data, error } = await supabase
     .from("positions")

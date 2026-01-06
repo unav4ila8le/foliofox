@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { cacheLife } from "next/cache";
 
 import { SidebarInset, SidebarProvider } from "@/components/ui/custom/sidebar";
 import { LeftSidebar } from "@/components/dashboard/layout/left-sidebar";
@@ -23,6 +24,7 @@ export default async function Layout({
   children: React.ReactNode;
 }) {
   "use cache: private";
+  cacheLife("hours");
 
   const cookieStore = await cookies();
 

@@ -85,7 +85,7 @@ export function PublicPortfolioAssetsTable({
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="secondary">{position.currency}</Badge>
+                  <Badge variant="outline">{position.currency}</Badge>
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
                   {formatNumber(position.current_quantity ?? 0, undefined, {
