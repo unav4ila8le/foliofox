@@ -144,8 +144,8 @@ export async function updatePositionSymbol(
     };
   }
 
-  // 9) Revalidate dashboard layout (covers nested dashboard routes)
-  revalidatePath("/dashboard", "layout");
+  // 9) Revalidate dashboard (covers nested dashboard routes)
+  revalidatePath("/dashboard");
 
   return {
     success: true,

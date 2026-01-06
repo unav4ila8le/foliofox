@@ -10,8 +10,6 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogClose,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,6 +27,7 @@ interface StaleBadgeProps {
 export function StaleBadge({ positionId, label }: StaleBadgeProps) {
   const { stalePositions } = useDashboardData();
 
+  const [stalePositionDialogOpen, setStalePositionDialogOpen] = useState(false);
   const [updateSymbolDialogOpen, setUpdateSymbolDialogOpen] = useState(false);
 
   const stalePosition = useMemo(
@@ -38,20 +37,28 @@ export function StaleBadge({ positionId, label }: StaleBadgeProps) {
 
   if (!stalePosition) return null;
 
+  const handleUpdateSymbolSuccess = () => {
+    setStalePositionDialogOpen(false);
+    setUpdateSymbolDialogOpen(false);
+  };
+
   return (
     <>
-      <Dialog>
-        <DialogTrigger asChild>
-          <Badge
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
-            className="cursor-pointer bg-yellow-500/20 text-yellow-600 hover:bg-yellow-500/15"
-          >
-            <TriangleAlert aria-label="Stale market data" />
-            {label && <span>{label}</span>}
-          </Badge>
-        </DialogTrigger>
+      <Badge
+        onClick={(e) => {
+          e.stopPropagation();
+          setStalePositionDialogOpen(true);
+        }}
+        className="cursor-pointer bg-yellow-500/20 text-yellow-600 hover:bg-yellow-500/15"
+      >
+        <TriangleAlert aria-label="Stale market data" />
+        {label && <span>{label}</span>}
+      </Badge>
+
+      <Dialog
+        open={stalePositionDialogOpen}
+        onOpenChange={setStalePositionDialogOpen}
+      >
         <DialogContent
           // TO FIX: clicking outside of the dialog fires row actions
           onClick={(e) => {
@@ -110,9 +117,12 @@ export function StaleBadge({ positionId, label }: StaleBadgeProps) {
           </div>
 
           <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">Close</Button>
-            </DialogClose>
+            <Button
+              variant="outline"
+              onClick={() => setStalePositionDialogOpen(false)}
+            >
+              Close
+            </Button>
             <Button onClick={() => setUpdateSymbolDialogOpen(true)}>
               Change Ticker Symbol
             </Button>
@@ -125,6 +135,7 @@ export function StaleBadge({ positionId, label }: StaleBadgeProps) {
         currentSymbolTicker={stalePosition.ticker}
         open={updateSymbolDialogOpen}
         onOpenChangeAction={setUpdateSymbolDialogOpen}
+        onSuccess={handleUpdateSymbolSuccess}
       />
     </>
   );
