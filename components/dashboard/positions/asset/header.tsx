@@ -6,7 +6,7 @@ import {
   TooltipContent,
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
-import { StaleBadge } from "@/components/dashboard/positions/stale-badge";
+import { StaleBadge } from "@/components/dashboard/positions/asset/stale-badge";
 import { EditAssetButton } from "./edit-asset-button";
 import { AssetMoreActionsButton } from "./asset-more-actions-button";
 

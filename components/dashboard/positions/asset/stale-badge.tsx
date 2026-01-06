@@ -49,11 +49,9 @@ export function StaleBadge({ positionId, label }: StaleBadgeProps) {
         </Badge>
       </DialogTrigger>
       <DialogContent
+        // TO FIX: clicking outside of the dialog fires row actions
         onClick={(e) => {
           e.stopPropagation();
-        }}
-        onInteractOutside={(e) => {
-          e.preventDefault();
         }}
       >
         <DialogHeader>
@@ -65,13 +63,13 @@ export function StaleBadge({ positionId, label }: StaleBadgeProps) {
             7 days.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
+        <div className="space-y-4 text-sm">
           <div>
             <h4 className="font-medium">What this means</h4>
-            <p className="text-muted-foreground text-sm">
+            <p className="text-muted-foreground">
               Your position value is calculated using the last available market
-              data. If prices have moved significantly, your displayed values
-              may not reflect current market conditions.
+              data. If you noticed wrong prices/values, there may be market data
+              issues worth investigating.
             </p>
           </div>
 
@@ -79,7 +77,7 @@ export function StaleBadge({ positionId, label }: StaleBadgeProps) {
             <Info className="size-4" />
             <AlertTitle>Possible causes</AlertTitle>
             <AlertDescription>
-              <ul className="list-inside list-disc space-y-1">
+              <ul className="text-foreground list-inside list-disc space-y-1">
                 <li>Temporary data feed issues from our data providers</li>
                 <li>The ticker symbol may have changed</li>
                 <li>Extended market closures or trading halts</li>
@@ -90,7 +88,7 @@ export function StaleBadge({ positionId, label }: StaleBadgeProps) {
 
           <div>
             <h4 className="font-medium">What we&apos;re doing</h4>
-            <p className="text-muted-foreground text-sm">
+            <p className="text-muted-foreground">
               We automatically refresh market data daily. If this persists, our
               systems will investigate and may reach out for more details.
             </p>
@@ -98,7 +96,7 @@ export function StaleBadge({ positionId, label }: StaleBadgeProps) {
 
           <div>
             <h4 className="font-medium">What you can do</h4>
-            <p className="text-muted-foreground text-sm">
+            <p className="text-muted-foreground">
               If you suspect the ticker symbol has changed, you can update it
               below. Otherwise, fresh data should arrive with our next daily
               update.
