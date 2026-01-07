@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 
+import { useDashboardData } from "@/components/dashboard/dashboard-data-provider";
 import { createFeedback } from "@/server/feedback/create";
 
 const formSchema = z.object({
@@ -33,6 +34,7 @@ const formSchema = z.object({
 });
 
 export function FeedbackForm({ onSuccess }: { onSuccess: () => void }) {
+  const { profile, email } = useDashboardData();
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -49,6 +51,8 @@ export function FeedbackForm({ onSuccess }: { onSuccess: () => void }) {
     const formData = new FormData();
     formData.append("type", values.type);
     formData.append("message", values.message.trim());
+    formData.append("username", profile.username);
+    formData.append("email", email);
 
     const result = await createFeedback(formData);
 
