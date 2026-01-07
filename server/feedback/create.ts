@@ -22,8 +22,8 @@ export async function createFeedback(formData: FormData) {
     return { success: false, code: error.code, message: error.message };
   }
 
-  // Fire-and-forget Discord notification
-  sendFeedbackToDiscord({ type, message, username, email });
+  // Send Discord notification
+  await sendFeedbackToDiscord({ type, message, username, email });
 
   return { success: true };
 }
