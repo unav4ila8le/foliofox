@@ -14,12 +14,14 @@ import type { Position } from "@/types/global.types";
 
 interface UpdateAssetDialogProps {
   position: Position;
+  currentSymbolTicker?: string;
   open: boolean;
   onOpenChangeAction: (open: boolean) => void;
 }
 
 export function UpdateAssetDialog({
   position,
+  currentSymbolTicker,
   open,
   onOpenChangeAction,
 }: UpdateAssetDialogProps) {
@@ -34,6 +36,7 @@ export function UpdateAssetDialog({
         </DialogHeader>
         <UpdateAssetForm
           position={position}
+          currentSymbolTicker={currentSymbolTicker}
           onSuccess={() => onOpenChangeAction(false)}
         />
       </DialogContent>

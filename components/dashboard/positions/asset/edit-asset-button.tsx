@@ -10,9 +10,10 @@ import type { Position } from "@/types/global.types";
 
 interface Props {
   position: Position;
+  currentSymbolTicker?: string;
 }
 
-export function EditAssetButton({ position }: Props) {
+export function EditAssetButton({ position, currentSymbolTicker }: Props) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -28,6 +29,7 @@ export function EditAssetButton({ position }: Props) {
       </Button>
       <UpdateAssetDialog
         position={position}
+        currentSymbolTicker={currentSymbolTicker}
         open={open}
         onOpenChangeAction={setOpen}
       />

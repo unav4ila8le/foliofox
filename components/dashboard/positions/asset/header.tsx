@@ -40,7 +40,10 @@ export function AssetHeader({
               <Archive className="size-4" /> Archived
             </Badge>
           )}
-          <EditAssetButton position={position} />
+          <EditAssetButton
+            position={position}
+            currentSymbolTicker={symbol?.ticker}
+          />
           <AssetMoreActionsButton position={position} />
         </div>
       </div>

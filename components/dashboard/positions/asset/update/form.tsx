@@ -14,10 +14,17 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { PositionCategorySelector } from "@/components/dashboard/position-category-selector";
+import { UpdateSymbolDialog } from "@/components/dashboard/positions/shared/update-symbol-dialog";
 
 import { updatePosition } from "@/server/positions/update";
 
@@ -25,6 +32,7 @@ import type { Position } from "@/types/global.types";
 
 interface UpdateAssetFormProps {
   position: Position;
+  currentSymbolTicker?: string;
   onSuccess?: () => void;
 }
 
@@ -42,8 +50,13 @@ const formSchema = z.object({
     .optional(),
 });
 
-export function UpdateAssetForm({ position, onSuccess }: UpdateAssetFormProps) {
+export function UpdateAssetForm({
+  position,
+  currentSymbolTicker,
+  onSuccess,
+}: UpdateAssetFormProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [updateSymbolDialogOpen, setUpdateSymbolDialogOpen] = useState(false);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -87,81 +100,121 @@ export function UpdateAssetForm({ position, onSuccess }: UpdateAssetFormProps) {
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="E.g., Chase Savings, Rental Property, Bitcoin Holdings"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="category_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Category</FormLabel>
-              <FormControl>
-                <PositionCategorySelector field={field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description (optional)</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="Add a description of this asset"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Footer */}
-        <div className="flex justify-end gap-2">
-          <Button
-            onClick={onSuccess}
-            disabled={isLoading}
-            type="button"
-            variant="secondary"
-            className="w-1/2 sm:w-auto"
-          >
-            Cancel
-          </Button>
-          <Button
-            disabled={isLoading || !isDirty}
-            type="submit"
-            className="w-1/2 sm:w-auto"
-          >
-            {isLoading ? (
-              <>
-                <Spinner />
-                Updating...
-              </>
-            ) : (
-              "Save changes"
+    <>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Name</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="E.g., Chase Savings, Rental Property, Bitcoin Holdings"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
             )}
-          </Button>
-        </div>
-      </form>
-    </Form>
+          />
+          <FormField
+            control={form.control}
+            name="category_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Category</FormLabel>
+                <FormControl>
+                  <PositionCategorySelector field={field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Description (optional)</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Add a description of this asset"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Advanced */}
+          {currentSymbolTicker && (
+            <Accordion type="single" collapsible>
+              <AccordionItem value="advanced">
+                <AccordionTrigger className="text-muted-foreground justify-start gap-1 text-sm">
+                  Advanced
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="bg-muted/50 space-y-3 rounded-lg border p-4">
+                    <div className="space-y-1 text-sm">
+                      <h4 className="flex items-center gap-2 font-medium">
+                        Change Ticker Symbol
+                      </h4>
+                      <p className="text-muted-foreground">
+                        Update the market data symbol linked to this position.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setUpdateSymbolDialogOpen(true)}
+                    >
+                      Change Symbol
+                    </Button>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          )}
+
+          {/* Footer */}
+          <div className="flex justify-end gap-2">
+            <Button
+              onClick={onSuccess}
+              disabled={isLoading}
+              type="button"
+              variant="secondary"
+              className="w-1/2 sm:w-auto"
+            >
+              Cancel
+            </Button>
+            <Button
+              disabled={isLoading || !isDirty}
+              type="submit"
+              className="w-1/2 sm:w-auto"
+            >
+              {isLoading ? (
+                <>
+                  <Spinner />
+                  Updating...
+                </>
+              ) : (
+                "Save changes"
+              )}
+            </Button>
+          </div>
+        </form>
+      </Form>
+
+      <UpdateSymbolDialog
+        open={updateSymbolDialogOpen}
+        onOpenChangeAction={setUpdateSymbolDialogOpen}
+        positionId={position.id}
+        currentSymbolTicker={currentSymbolTicker}
+      />
+    </>
   );
 }
