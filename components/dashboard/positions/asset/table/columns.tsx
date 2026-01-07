@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowUpDown } from "lucide-react";
+
 import type { ColumnDef } from "@tanstack/react-table";
 
 import {
@@ -11,6 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ActionsCell } from "@/components/dashboard/positions/asset/table/row-actions/actions-cell";
+import { StaleBadge } from "@/components/dashboard/positions/asset/stale-badge";
 
 import { cn } from "@/lib/utils";
 import { formatNumber, formatPercentage } from "@/lib/number-format";
@@ -79,7 +81,7 @@ export const columns: ColumnDef<PositionWithProfitLoss>[] = [
         return (
           <div className="flex items-center gap-2 font-semibold">
             {categoryName}
-            <Badge variant="secondary" className="font-semibold">
+            <Badge variant="outline" className="font-semibold">
               {row.getLeafRows().length}
             </Badge>
           </div>
@@ -106,7 +108,7 @@ export const columns: ColumnDef<PositionWithProfitLoss>[] = [
     header: "Currency",
     cell: ({ row }) => {
       const currency = row.getValue<string>("currency");
-      return <Badge variant="secondary">{currency}</Badge>;
+      return <Badge variant="outline">{currency}</Badge>;
     },
   },
   {
@@ -137,10 +139,13 @@ export const columns: ColumnDef<PositionWithProfitLoss>[] = [
     cell: ({ row }) => {
       const current_unit_value = row.getValue<number>("current_unit_value");
       return (
-        <div className="tabular-nums">
-          {formatNumber(current_unit_value, undefined, {
-            maximumFractionDigits: 2,
-          })}
+        <div className="flex items-center justify-end gap-2 tabular-nums">
+          <span>
+            {formatNumber(current_unit_value, undefined, {
+              maximumFractionDigits: 2,
+            })}
+          </span>
+          <StaleBadge positionId={row.original.id} />
         </div>
       );
     },

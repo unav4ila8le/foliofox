@@ -78,7 +78,7 @@ export const columns: ColumnDef<TransformedPosition>[] = [
     cell: ({ row }) => {
       const currency = row.getValue<string>("currency");
 
-      return <Badge variant="secondary">{currency}</Badge>;
+      return <Badge variant="outline">{currency}</Badge>;
     },
   },
   {

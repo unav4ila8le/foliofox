@@ -111,7 +111,7 @@ export function getPortfolioRecordColumns({
       cell: ({ row }) => {
         const type = row.getValue<string>("type");
         return (
-          <Badge variant="secondary" className="uppercase">
+          <Badge variant="outline" className="uppercase">
             {type}
           </Badge>
         );

@@ -6,6 +6,7 @@ import {
   TooltipContent,
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
+import { StaleBadge } from "@/components/dashboard/positions/asset/stale-badge";
 import { EditAssetButton } from "./edit-asset-button";
 import { AssetMoreActionsButton } from "./asset-more-actions-button";
 
@@ -18,7 +19,7 @@ import type {
   PositionWithProfitLoss,
 } from "@/types/global.types";
 
-export async function AssetHeader({
+export function AssetHeader({
   position,
   symbol,
   positionWithProfitLoss,
@@ -88,14 +89,11 @@ export async function AssetHeader({
               </p>
             </div>
             <div>
-              <p className="text-muted-foreground">
-                Market Price{" "}
+              <div className="text-muted-foreground flex items-center gap-1">
+                Market Price
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Info
-                      className="inline-block size-3.5"
-                      aria-label="Market price help"
-                    />
+                    <Info className="size-3.5" aria-label="Market price help" />
                   </TooltipTrigger>
                   <TooltipContent>
                     Market prices and exchange rates are updated daily at 10:00
@@ -104,10 +102,11 @@ export async function AssetHeader({
                     Data shown is from the previous trading day.
                   </TooltipContent>
                 </Tooltip>
-              </p>
-              <p className="font-semibold">
+              </div>
+              <div className="flex items-center gap-1.5 font-semibold">
                 {formatCurrency(position.current_unit_value, position.currency)}
-              </p>
+                <StaleBadge positionId={position.id} label="Stale" />
+              </div>
             </div>
             <div>
               <p className="text-muted-foreground">Cost Basis</p>

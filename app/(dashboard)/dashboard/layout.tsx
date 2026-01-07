@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { cacheLife } from "next/cache";
 
 import { SidebarInset, SidebarProvider } from "@/components/ui/custom/sidebar";
 import { LeftSidebar } from "@/components/dashboard/layout/left-sidebar";
@@ -15,6 +16,7 @@ import { DashboardDataProvider } from "@/components/dashboard/dashboard-data-pro
 import { fetchProfile } from "@/server/profile/actions";
 import { fetchFinancialProfile } from "@/server/financial-profiles/actions";
 import { calculateNetWorth } from "@/server/analysis/net-worth";
+import { fetchStalePositions } from "@/server/positions/stale";
 
 export default async function Layout({
   children,
@@ -22,6 +24,7 @@ export default async function Layout({
   children: React.ReactNode;
 }) {
   "use cache: private";
+  cacheLife("hours");
 
   const cookieStore = await cookies();
 
@@ -36,8 +39,11 @@ export default async function Layout({
   const defaultOpenRight = rightSidebarCookie !== "false";
 
   const { profile, email } = await fetchProfile();
-  const financialProfile = await fetchFinancialProfile();
-  const netWorth = await calculateNetWorth(profile.display_currency);
+  const [financialProfile, netWorth, stalePositions] = await Promise.all([
+    fetchFinancialProfile(),
+    calculateNetWorth(profile.display_currency),
+    fetchStalePositions(),
+  ]);
 
   return (
     <DashboardDataProvider
@@ -46,6 +52,7 @@ export default async function Layout({
         email,
         financialProfile,
         netWorth,
+        stalePositions,
       }}
     >
       <SidebarProvider

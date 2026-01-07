@@ -24,15 +24,13 @@ interface AssetsTableProps {
 }
 
 export function AssetsTable({ data }: AssetsTableProps) {
+  const router = useRouter();
   const [filterValue, setFilterValue] = useState("");
   const [selectedRows, setSelectedRows] = useState<PositionWithProfitLoss[]>(
     [],
   );
-
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [openArchiveDialog, setOpenArchiveDialog] = useState(false);
-
-  const router = useRouter();
 
   // Handle row click to navigate to asset page
   const handleRowClick = useCallback(
