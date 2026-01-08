@@ -4,10 +4,12 @@ import { getCurrentUser } from "@/server/auth/actions";
 import { fetchYahooFinanceSymbol } from "@/server/symbols/search";
 import { fetchCurrencies } from "@/server/currencies/fetch";
 import { setPrimarySymbolAlias } from "@/server/symbols/resolver";
+import { createServiceClient } from "@/supabase/service";
 
 // Create symbol using Yahoo Finance data
 export async function createSymbol(symbolTicker: string) {
-  const { supabase } = await getCurrentUser();
+  await getCurrentUser();
+  const supabase = createServiceClient();
 
   // 1) Get symbol data from Yahoo Finance
   const yahooFinanceSymbol = await fetchYahooFinanceSymbol(symbolTicker);
