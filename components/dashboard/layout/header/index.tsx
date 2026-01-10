@@ -13,7 +13,6 @@ import {
 import { Breadcrumb } from "./breadcrumb";
 import { NewActionButton } from "./new-action-button";
 import { FeedbackButton } from "@/components/dashboard/layout/header/feedback";
-import { ThemeToggle } from "@/components/features/theme/theme-toggle";
 import { SharePortfolioButton } from "@/components/dashboard/share-portfolio";
 
 export function Header() {
@@ -45,7 +44,6 @@ export function Header() {
           <SharePortfolioButton />
         </Suspense>
         <FeedbackButton />
-        <ThemeToggle />
         <Tooltip delayDuration={500}>
           <TooltipTrigger asChild>
             <SidebarTrigger side="right" className="-mr-2" />

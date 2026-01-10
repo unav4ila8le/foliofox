@@ -15,8 +15,10 @@ import { Spinner } from "@/components/ui/spinner";
 
 import { SettingsDialog } from "@/components/features/settings/dialog";
 import { FinancialProfileDialog } from "@/components/features/financial-profile/dialog";
-import { signOut } from "@/server/auth/sign-out";
+import { ThemeToggle } from "@/components/features/theme/theme-toggle";
 import { useOptionalDashboardData } from "@/components/dashboard/dashboard-data-provider";
+
+import { signOut } from "@/server/auth/sign-out";
 
 import type { FinancialProfile, Profile } from "@/types/global.types";
 
@@ -94,6 +96,8 @@ export function UserMenu({
             <Settings className="size-4" />
             Settings
           </DropdownMenuItem>
+          <ThemeToggle />
+          <DropdownMenuSeparator />
           <DropdownMenuItem
             onSelect={(event) => {
               event.preventDefault();

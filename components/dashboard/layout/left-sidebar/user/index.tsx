@@ -4,7 +4,7 @@ import { MoreVertical } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SidebarMenuButton, useSidebar } from "@/components/ui/custom/sidebar";
-import { UserMenu } from "@/components/features/user/user-menu";
+import { UserMenu } from "@/components/dashboard/layout/left-sidebar/user/user-menu";
 import { usePrivacyMode } from "@/components/dashboard/privacy-mode-provider";
 import { useDashboardData } from "@/components/dashboard/dashboard-data-provider";
 
