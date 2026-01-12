@@ -17,180 +17,262 @@ interface DomainValuation {
   error?: string | null;
 }
 
+type ServiceClient = ReturnType<typeof createServiceClient>;
+
+type DomainValuationCacheEntry = {
+  dateKey: string;
+  dateMs: number;
+  price: number;
+};
+
+const toDateKey = (date: Date) => format(date, "yyyy-MM-dd");
+const toDateMs = (dateKey: string) =>
+  new Date(`${dateKey}T00:00:00Z`).getTime();
+
+async function fetchDomainValuationsFromReplicate(
+  supabase: ServiceClient,
+  domains: string[],
+  dateKey: string,
+  upsert: boolean,
+) {
+  const results = new Map<string, number>();
+
+  if (!domains.length) return results;
+
+  const batches: string[][] = [];
+  for (let i = 0; i < domains.length; i += 2560) {
+    batches.push(domains.slice(i, i + 2560));
+  }
+
+  for (const batch of batches) {
+    const domainsInput = batch.join(",");
+
+    const response = await fetch(REPLICATE_API, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.REPLICATE_API_TOKEN}`,
+        "Content-Type": "application/json",
+        Prefer: "wait",
+      },
+      body: JSON.stringify({
+        version: MODEL_VERSION,
+        input: {
+          domains: domainsInput,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const prediction = await response.json();
+
+    let result = prediction;
+    while (result.status === "starting" || result.status === "processing") {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const statusResponse = await fetch(`${REPLICATE_API}/${result.id}`, {
+        headers: {
+          Authorization: `Bearer ${process.env.REPLICATE_API_TOKEN}`,
+        },
+      });
+      result = await statusResponse.json();
+    }
+
+    if (result.status === "succeeded" && result.output?.valuations) {
+      result.output.valuations.forEach((valuation: DomainValuation) => {
+        if (!valuation.domain || valuation.error) return;
+        const price =
+          valuation.brokerage || valuation.marketplace || valuation.auction;
+        if (price && price > 0) {
+          results.set(valuation.domain, price);
+        }
+      });
+    }
+  }
+
+  if (upsert && results.size > 0) {
+    const rows = Array.from(results.entries()).map(([domain, price]) => ({
+      id: domain,
+      date: dateKey,
+      price,
+    }));
+
+    const { error: insertError } = await supabase
+      .from("domain_valuations")
+      .upsert(rows, { onConflict: "id,date" });
+
+    if (insertError) {
+      console.error("Failed to bulk insert domain valuations:", insertError);
+    }
+  }
+
+  return results;
+}
+
+function findClosestValuation(
+  entries: DomainValuationCacheEntry[],
+  targetMs: number,
+): DomainValuationCacheEntry | null {
+  if (!entries.length) return null;
+
+  let closest = entries[0];
+  let closestDiff = Math.abs(closest.dateMs - targetMs);
+
+  for (let i = 1; i < entries.length; i += 1) {
+    const entry = entries[i];
+    const diff = Math.abs(entry.dateMs - targetMs);
+    if (diff < closestDiff) {
+      closest = entry;
+      closestDiff = diff;
+    }
+  }
+
+  return closest;
+}
+
 /**
- * Fetch multiple domain valuations for different domains and dates in bulk.
- *
- * @param requests - Array of {domain, date} pairs to fetch
- * @param upsert - Whether to cache results in database (defaults to true)
- * @returns Map where key is "domain|date" and value is the valuation
+ * Fetch domain valuations for requested dates.
+ * Exact cache matches are used when available. Missing dates fall back to:
+ * - Today: fetch from Replicate and cache the result.
+ * - Past/Future: use the closest cached valuation.
  */
 export async function fetchDomainValuations(
   requests: Array<{ domain: string; date: Date }>,
   upsert: boolean = true,
 ) {
-  // Early return if no requests
   if (!requests.length) return new Map();
 
   const results = new Map<string, number>();
   const supabase = createServiceClient();
+  const todayKey = toDateKey(new Date());
 
-  // Prepare cache queries for all requests
-  const cacheQueries = requests.map(({ domain, date }) => ({
-    domain,
-    dateString: format(date, "yyyy-MM-dd"),
-    cacheKey: `${domain}|${format(date, "yyyy-MM-dd")}`,
-  }));
+  const normalizedRequests = requests.map((request) => {
+    const dateKey = toDateKey(request.date);
+    return {
+      domain: request.domain,
+      dateKey,
+      cacheKey: `${request.domain}|${dateKey}`,
+    };
+  });
 
-  // 1. Check database cache
-  const domains = [...new Set(cacheQueries.map((q) => q.domain))];
-  const dateStrings = [...new Set(cacheQueries.map((q) => q.dateString))];
+  const domains = Array.from(
+    new Set(normalizedRequests.map((request) => request.domain)),
+  );
+  const dateKeys = Array.from(
+    new Set(normalizedRequests.map((request) => request.dateKey)),
+  );
 
-  const { data: cachedValuations } = await supabase
+  if (!domains.length) return results;
+
+  const { data: cachedExact, error: cachedExactError } = await supabase
     .from("domain_valuations")
     .select("id, date, price")
     .in("id", domains)
-    .in("date", dateStrings);
+    .in("date", dateKeys);
 
-  // Store cached results
-  cachedValuations?.forEach((valuation) => {
-    const cacheKey = `${valuation.id}|${valuation.date}`;
-    results.set(cacheKey, valuation.price);
+  if (cachedExactError) {
+    console.error(
+      "[fetchDomainValuations] cache query error:",
+      cachedExactError,
+    );
+  }
+
+  cachedExact?.forEach((valuation) => {
+    results.set(`${valuation.id}|${valuation.date}`, valuation.price);
   });
 
-  // Find what's missing from cache
-  const missingRequests = cacheQueries.filter(
-    ({ cacheKey }) => !results.has(cacheKey),
+  const missingRequests = normalizedRequests.filter(
+    (request) => !results.has(request.cacheKey),
   );
 
-  // 2. Fetch missing valuations from API in batches
-  if (missingRequests.length > 0) {
-    // Group domains by date for batching
-    const batchesByDate = new Map<string, string[]>();
+  if (!missingRequests.length) return results;
 
-    missingRequests.forEach(({ domain, dateString }) => {
-      const existing = batchesByDate.get(dateString) || [];
-      existing.push(domain);
-      batchesByDate.set(dateString, existing);
-    });
+  const missingTodayDomains = Array.from(
+    new Set(
+      missingRequests
+        .filter((request) => request.dateKey === todayKey)
+        .map((request) => request.domain),
+    ),
+  );
 
-    const fetchPromises = Array.from(batchesByDate.entries()).map(
-      async ([dateString, domains]) => {
-        try {
-          // Create batches of up to 2560 domains
-          const batches = [];
-          for (let i = 0; i < domains.length; i += 2560) {
-            batches.push(domains.slice(i, i + 2560));
-          }
-
-          const batchResults = [];
-          for (const batch of batches) {
-            const domainsInput = batch.join(",");
-
-            const response = await fetch(REPLICATE_API, {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${process.env.REPLICATE_API_TOKEN}`,
-                "Content-Type": "application/json",
-                Prefer: "wait",
-              },
-              body: JSON.stringify({
-                version: MODEL_VERSION,
-                input: {
-                  domains: domainsInput,
-                },
-              }),
-            });
-
-            if (!response.ok) {
-              throw new Error(
-                `HTTP ${response.status}: ${response.statusText}`,
-              );
-            }
-
-            const prediction = await response.json();
-
-            // Wait for prediction to complete (API runs async)
-            let result = prediction;
-            while (
-              result.status === "starting" ||
-              result.status === "processing"
-            ) {
-              await new Promise((resolve) => setTimeout(resolve, 1000));
-              const statusResponse = await fetch(
-                `${REPLICATE_API}/${result.id}`,
-                {
-                  headers: {
-                    Authorization: `Bearer ${process.env.REPLICATE_API_TOKEN}`,
-                  },
-                },
-              );
-              result = await statusResponse.json();
-            }
-
-            if (result.status === "succeeded" && result.output?.valuations) {
-              batchResults.push(...result.output.valuations);
-            }
-          }
-
-          return { dateString, valuations: batchResults };
-        } catch (error) {
-          throw new Error(
-            error instanceof Error
-              ? `Failed to fetch domain valuations for date ${dateString}: ${error.message}`
-              : `Failed to fetch domain valuations for date ${dateString}`,
-          );
-        }
-      },
+  let fetchedTodayByDomain = new Map<string, number>();
+  if (missingTodayDomains.length > 0) {
+    fetchedTodayByDomain = await fetchDomainValuationsFromReplicate(
+      supabase,
+      missingTodayDomains,
+      todayKey,
+      upsert,
     );
 
-    // Wait for all fetches to complete
-    const fetchResults = await Promise.all(fetchPromises);
-
-    // 3. Process results and store in database
-    const successfulFetches: {
-      domain: string;
-      dateString: string;
-      price: number;
-    }[] = [];
-
-    fetchResults.forEach(({ dateString, valuations }) => {
-      valuations.forEach((valuation: DomainValuation) => {
-        if (valuation.domain && !valuation.error) {
-          // Use brokerage price as the default valuation
-          const price =
-            valuation.brokerage || valuation.marketplace || valuation.auction;
-
-          if (price && price > 0) {
-            const cacheKey = `${valuation.domain}|${dateString}`;
-            results.set(cacheKey, price);
-
-            successfulFetches.push({
-              domain: valuation.domain,
-              dateString,
-              price,
-            });
-          }
-        }
-      });
+    fetchedTodayByDomain.forEach((price, domain) => {
+      results.set(`${domain}|${todayKey}`, price);
     });
+  }
 
-    // 4. Store new valuations in database only if upsert is enabled
-    if (upsert && successfulFetches.length > 0) {
-      const { error: insertError } = await supabase
-        .from("domain_valuations")
-        .upsert(
-          successfulFetches.map(({ domain, dateString, price }) => ({
-            id: domain,
-            date: dateString,
-            price: price,
-          })),
-          { onConflict: "id,date" },
-        );
+  const remainingRequests = missingRequests.filter(
+    (request) => !results.has(request.cacheKey),
+  );
+  const pastRequests = remainingRequests.filter(
+    (request) => request.dateKey !== todayKey,
+  );
 
-      if (insertError) {
-        console.error("Failed to bulk insert domain valuations:", insertError);
+  if (!pastRequests.length) return results;
+
+  const domainsForClosest = Array.from(
+    new Set(pastRequests.map((request) => request.domain)),
+  );
+
+  const { data: cachedAll, error: cachedAllError } = await supabase
+    .from("domain_valuations")
+    .select("id, date, price")
+    .in("id", domainsForClosest);
+
+  if (cachedAllError) {
+    console.error(
+      "[fetchDomainValuations] closest cache query error:",
+      cachedAllError,
+    );
+  }
+
+  const valuationsByDomain = new Map<string, DomainValuationCacheEntry[]>();
+
+  cachedAll?.forEach((valuation) => {
+    const list = valuationsByDomain.get(valuation.id) || [];
+    list.push({
+      dateKey: valuation.date,
+      dateMs: toDateMs(valuation.date),
+      price: valuation.price,
+    });
+    valuationsByDomain.set(valuation.id, list);
+  });
+
+  if (upsert && fetchedTodayByDomain.size > 0) {
+    fetchedTodayByDomain.forEach((price, domain) => {
+      const list = valuationsByDomain.get(domain) || [];
+      if (!list.some((entry) => entry.dateKey === todayKey)) {
+        list.push({
+          dateKey: todayKey,
+          dateMs: toDateMs(todayKey),
+          price,
+        });
       }
-    }
+      valuationsByDomain.set(domain, list);
+    });
+  }
+
+  valuationsByDomain.forEach((list) => {
+    list.sort((a, b) => a.dateMs - b.dateMs);
+  });
+
+  for (const request of pastRequests) {
+    const list = valuationsByDomain.get(request.domain);
+    if (!list?.length) continue;
+
+    const closest = findClosestValuation(list, toDateMs(request.dateKey));
+    if (!closest) continue;
+
+    results.set(request.cacheKey, closest.price);
   }
 
   return results;

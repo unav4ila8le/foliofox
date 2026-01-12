@@ -28,7 +28,7 @@ export const domainHandler: MarketDataHandler = {
     if (requests.length === 0) return new Map();
 
     try {
-      return await fetchDomainValuations(requests, options?.upsert ?? true);
+      return await fetchDomainValuations(requests, options?.upsert);
     } catch {
       return new Map();
     }
@@ -62,7 +62,7 @@ export const domainHandler: MarketDataHandler = {
     if (requests.length === 0) return new Map();
 
     try {
-      return await fetchDomainValuations(requests, options?.upsert ?? true);
+      return await fetchDomainValuations(requests, options?.upsert);
     } catch {
       return new Map();
     }
