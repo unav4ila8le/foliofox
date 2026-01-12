@@ -25,7 +25,7 @@ import {
   updateProfile,
   checkUsernameAvailability,
 } from "@/server/profile/actions";
-import { useOptionalDashboardData } from "@/components/dashboard/dashboard-data-provider";
+import { useDashboardData } from "@/components/dashboard/dashboard-data-provider";
 
 interface SettingsFormProps {
   onSuccess?: () => void;
@@ -46,15 +46,9 @@ const formSchema = z.object({
 });
 
 export function SettingsForm({ onSuccess }: SettingsFormProps) {
-  const dashboardData = useOptionalDashboardData();
-  const profile = dashboardData?.profile;
-  const email = dashboardData?.email;
+  const { profile, email } = useDashboardData();
 
   const [isLoading, setIsLoading] = useState(false);
-
-  if (!profile || !email) {
-    throw new Error("SettingsForm requires a profile");
-  }
 
   const form = useForm({
     resolver: zodResolver(formSchema),

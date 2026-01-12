@@ -15,16 +15,13 @@ import { Spinner } from "@/components/ui/spinner";
 
 import { SettingsDialog } from "@/components/features/settings/dialog";
 import { FinancialProfileDialog } from "@/components/features/financial-profile/dialog";
-import { signOut } from "@/server/auth/sign-out";
-import { useOptionalDashboardData } from "@/components/dashboard/dashboard-data-provider";
+import { ThemeToggle } from "@/components/features/theme/theme-toggle";
+import { useDashboardData } from "@/components/dashboard/dashboard-data-provider";
 
-import type { FinancialProfile, Profile } from "@/types/global.types";
+import { signOut } from "@/server/auth/sign-out";
 
 interface UserMenuProps {
   children: ReactNode;
-  profile?: Profile;
-  financialProfile?: FinancialProfile | null;
-  email?: string;
   menuSide?: "top" | "right" | "bottom" | "left";
   menuAlign?: "start" | "center" | "end";
   menuSideOffset?: number;
@@ -32,18 +29,11 @@ interface UserMenuProps {
 
 export function UserMenu({
   children,
-  profile: profileProp,
-  financialProfile: financialProfileProp = null,
-  email,
   menuSide = "bottom",
   menuAlign = "end",
   menuSideOffset = 4,
 }: UserMenuProps) {
-  const dashboardData = useOptionalDashboardData();
-  const profile = dashboardData?.profile ?? profileProp;
-  const financialProfile =
-    dashboardData?.financialProfile ?? financialProfileProp;
-  const emailValue = dashboardData?.email ?? email;
+  const { profile, email: emailValue } = useDashboardData();
 
   const [isLoading, setIsLoading] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
@@ -94,6 +84,8 @@ export function UserMenu({
             <Settings className="size-4" />
             Settings
           </DropdownMenuItem>
+          <ThemeToggle />
+          <DropdownMenuSeparator />
           <DropdownMenuItem
             onSelect={(event) => {
               event.preventDefault();
@@ -118,8 +110,6 @@ export function UserMenu({
       <FinancialProfileDialog
         open={financialProfileDialogOpen}
         onOpenChange={setFinancialProfileDialogOpen}
-        profile={profile}
-        financialProfile={financialProfile}
       />
       <SettingsDialog
         open={settingsDialogOpen}
