@@ -7,20 +7,14 @@ import {
 } from "@/components/ui/dialog";
 import { FinancialProfileForm } from "./form";
 
-import type { FinancialProfile, Profile } from "@/types/global.types";
-
 interface FinancialProfileDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  profile?: Profile;
-  financialProfile?: FinancialProfile | null;
 }
 
 export function FinancialProfileDialog({
   open,
   onOpenChange,
-  profile,
-  financialProfile,
 }: FinancialProfileDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -35,11 +29,7 @@ export function FinancialProfileDialog({
             financial situation and respond with more relevant guidance.
           </DialogDescription>
         </DialogHeader>
-        <FinancialProfileForm
-          profile={profile}
-          financialProfile={financialProfile}
-          onSuccess={() => onOpenChange(false)}
-        />
+        <FinancialProfileForm onSuccess={() => onOpenChange(false)} />
       </DialogContent>
     </Dialog>
   );

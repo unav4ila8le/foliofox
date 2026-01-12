@@ -32,8 +32,7 @@ import { CurrencySelector } from "@/components/dashboard/currency-selector";
 import { upsertFinancialProfile } from "@/server/financial-profiles/actions";
 
 import { AGE_BANDS, RISK_PREFERENCES } from "@/types/enums";
-import { useOptionalDashboardData } from "@/components/dashboard/dashboard-data-provider";
-import type { FinancialProfile, Profile } from "@/types/global.types";
+import { useDashboardData } from "@/components/dashboard/dashboard-data-provider";
 
 const RISK_PREFERENCES_DESCRIPTIONS = {
   [RISK_PREFERENCES[0]]: "Focus on preserving capital with minimal volatility.",
@@ -46,8 +45,6 @@ const RISK_PREFERENCES_DESCRIPTIONS = {
 };
 
 interface FinancialProfileFormProps {
-  profile?: Profile;
-  financialProfile?: FinancialProfile | null;
   onSuccess?: () => void;
 }
 
@@ -72,13 +69,7 @@ const formSchema = z.object({
 });
 
 export function FinancialProfileForm({ onSuccess }: FinancialProfileFormProps) {
-  const dashboardData = useOptionalDashboardData();
-  const profile = dashboardData?.profile;
-  const financialProfile = dashboardData?.financialProfile ?? null;
-
-  if (!profile) {
-    throw new Error("FinancialProfileForm requires a profile");
-  }
+  const { profile, financialProfile } = useDashboardData();
   const [isLoading, setIsLoading] = useState(false);
 
   // Initialize form with React Hook Form

@@ -41,7 +41,3 @@ export function useDashboardData() {
   }
   return context;
 }
-
-export function useOptionalDashboardData() {
-  return useContext(DashboardDataContext);
-}
