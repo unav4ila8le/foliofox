@@ -32,10 +32,12 @@ export async function fetchNetWorthHistory({
   const totalDaysBack = Math.max(1, Math.trunc(daysBack));
 
   const end = new Date();
+  const endDateKey = format(end, "yyyy-MM-dd");
   const start = subDays(end, totalDaysBack - 1);
   const dates: Date[] = Array.from({ length: totalDaysBack }, (_, index) =>
     addDays(start, index),
   );
+  const dateKeys = dates.map((date) => format(date, "yyyy-MM-dd"));
   const mapDatesToZeroHistory = (dateList: Date[]) =>
     dateList.map((date) => ({ date, value: 0 }));
 
@@ -61,7 +63,7 @@ export async function fetchNetWorthHistory({
     .select("position_id, date, quantity, unit_value, created_at")
     .eq("user_id", user.id)
     .in("position_id", positionIds)
-    .lte("date", format(end, "yyyy-MM-dd"))
+    .lte("date", endDateKey)
     .order("position_id")
     .order("date", { ascending: true })
     .order("created_at", { ascending: true });
@@ -91,13 +93,13 @@ export async function fetchNetWorthHistory({
   }, null);
 
   let processingDates = dates;
+  let processingDateKeys = dateKeys;
   let paddingCount = 0;
 
   if (earliestSnapshotDate) {
-    const firstActiveIndex = dates.findIndex((date) => {
-      const dateKey = format(date, "yyyy-MM-dd");
-      return dateKey >= earliestSnapshotDate;
-    });
+    const firstActiveIndex = dateKeys.findIndex(
+      (dateKey) => dateKey >= earliestSnapshotDate,
+    );
 
     if (firstActiveIndex === -1) {
       return mapDatesToZeroHistory(dates);
@@ -106,6 +108,7 @@ export async function fetchNetWorthHistory({
     if (firstActiveIndex > 0) {
       paddingCount = firstActiveIndex;
       processingDates = dates.slice(firstActiveIndex);
+      processingDateKeys = dateKeys.slice(firstActiveIndex);
     }
   }
 
@@ -113,16 +116,20 @@ export async function fetchNetWorthHistory({
     return mapDatesToZeroHistory(dates);
   }
 
+  const activePositions = positions.filter((position) => {
+    const snaps = snapshotsByPosition.get(position.id);
+    return Boolean(snaps && snaps.length > 0);
+  });
+
   // 3) Determine which positions need market data on which dates
   const pointerPrepass = new Map<string, number>();
   const eligibleDateIndices = new Set<number>();
   const eligibleDateKeysByPosition = new Map<string, Set<string>>();
 
   for (let dateIdx = 0; dateIdx < processingDates.length; dateIdx += 1) {
-    const date = processingDates[dateIdx];
-    const dateKey = format(date, "yyyy-MM-dd");
+    const dateKey = processingDateKeys[dateIdx];
 
-    for (const position of positions) {
+    for (const position of activePositions) {
       const snaps = snapshotsByPosition.get(position.id);
       if (!snaps?.length) continue;
 
@@ -155,7 +162,7 @@ export async function fetchNetWorthHistory({
   );
   const marketDataDates = marketDateIndices.map((idx) => processingDates[idx]);
 
-  const marketEligiblePositions = positions.filter((position) => {
+  const marketEligiblePositions = activePositions.filter((position) => {
     if (!position.symbol_id && !position.domain_id) return false;
     const allowedDates = eligibleDateKeysByPosition.get(position.id);
     return Boolean(allowedDates && allowedDates.size > 0);
@@ -184,17 +191,17 @@ export async function fetchNetWorthHistory({
 
   // 4) FX for all currencies and dates (dedup requests)
   const currencies = new Set<string>([targetCurrency!]);
-  positions.forEach((p) => currencies.add(p.currency));
+  activePositions.forEach((p) => currencies.add(p.currency));
 
   const fxRequests: { currency: string; date: Date }[] = [];
   const fxDedup = new Set<string>();
   for (const currency of currencies) {
-    for (const date of processingDates) {
-      const dateKey = format(date, "yyyy-MM-dd");
+    for (let dateIdx = 0; dateIdx < processingDates.length; dateIdx += 1) {
+      const dateKey = processingDateKeys[dateIdx];
       const dedupKey = `${currency}|${dateKey}`;
       if (fxDedup.has(dedupKey)) continue;
       fxDedup.add(dedupKey);
-      fxRequests.push({ currency, date });
+      fxRequests.push({ currency, date: processingDates[dateIdx] });
     }
   }
 
@@ -204,11 +211,12 @@ export async function fetchNetWorthHistory({
   const indexByPosition = new Map<string, number>();
   const history: NetWorthHistoryData[] = [];
 
-  for (const date of processingDates) {
-    const dateKey = format(date, "yyyy-MM-dd");
+  for (let dateIdx = 0; dateIdx < processingDates.length; dateIdx += 1) {
+    const date = processingDates[dateIdx];
+    const dateKey = processingDateKeys[dateIdx];
     let total = 0;
 
-    for (const position of positions) {
+    for (const position of activePositions) {
       const snaps = snapshotsByPosition.get(position.id);
       if (!snaps?.length) continue;
 
