@@ -5,6 +5,7 @@ import {
   differenceInCalendarDays,
   startOfYear,
   subMonths,
+  subYears,
   format,
 } from "date-fns";
 import { TrendingUp, TrendingDown } from "lucide-react";
@@ -99,6 +100,14 @@ export function NetWorthAreaChart({
         }
         case "ytd": {
           daysBack = differenceInCalendarDays(today, startOfYear(today)) + 1;
+          break;
+        }
+        case "1y": {
+          daysBack = differenceInCalendarDays(today, subYears(today, 1)) + 1;
+          break;
+        }
+        case "2y": {
+          daysBack = differenceInCalendarDays(today, subYears(today, 2)) + 1;
           break;
         }
         default: {
@@ -228,6 +237,14 @@ export function NetWorthAreaChart({
                     <span className="hidden sm:inline">6 Months</span>
                   </SelectItem>
                   <SelectItem value="ytd">YTD</SelectItem>
+                  <SelectItem value="1y">
+                    <span className="sm:hidden">1y</span>
+                    <span className="hidden sm:inline">1 Year</span>
+                  </SelectItem>
+                  <SelectItem value="2y">
+                    <span className="sm:hidden">2y</span>
+                    <span className="hidden sm:inline">2 Years</span>
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
