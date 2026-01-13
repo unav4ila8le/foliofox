@@ -247,7 +247,7 @@ export async function fetchDomainValuations(
     valuationsByDomain.set(valuation.id, list);
   });
 
-  if (upsert && fetchedTodayByDomain.size > 0) {
+  if (fetchedTodayByDomain.size > 0) {
     fetchedTodayByDomain.forEach((price, domain) => {
       const list = valuationsByDomain.get(domain) || [];
       if (!list.some((entry) => entry.dateKey === todayKey)) {
