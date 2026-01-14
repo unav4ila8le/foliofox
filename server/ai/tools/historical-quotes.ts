@@ -3,7 +3,7 @@
 import { addDays, differenceInCalendarDays, format, parseISO } from "date-fns";
 
 import { fetchQuotes } from "@/server/quotes/fetch";
-import { resolveSymbolInput } from "@/server/symbols/resolver";
+import { ensureSymbol } from "@/server/symbols/ensure";
 
 const DEFAULT_WINDOW_DAYS = 30;
 const MAX_WINDOW_DAYS = 365;
@@ -24,14 +24,16 @@ export async function getHistoricalQuotes({
     throw new Error("symbol lookup is required");
   }
 
-  const resolved = await resolveSymbolInput(normalizedLookup);
-  if (!resolved?.symbol?.id) {
-    throw new Error(`Unable to resolve symbol "${symbolLookup}".`);
+  const ensuredSymbol = await ensureSymbol(normalizedLookup);
+  if (!ensuredSymbol?.symbol?.id) {
+    throw new Error(`Symbol "${symbolLookup}" not found.`);
   }
 
-  const canonicalId = resolved.symbol.id;
+  const canonicalId = ensuredSymbol.symbol.id;
   const displayTicker =
-    resolved.primaryAlias?.value ?? resolved.symbol?.ticker ?? normalizedLookup;
+    ensuredSymbol.primaryAlias?.value ??
+    ensuredSymbol.symbol?.ticker ??
+    normalizedLookup;
 
   const resolvedEnd = endDate ? parseISO(endDate) : new Date();
   if (Number.isNaN(resolvedEnd.getTime())) {

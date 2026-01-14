@@ -4,22 +4,44 @@ import {
   resolveSymbolInput,
   type CanonicalSymbol,
   type ResolveSymbolOptions,
-} from "@/server/symbols/resolver";
-import { normalizeSymbol } from "@/server/symbols/validate";
+} from "@/server/symbols/resolve";
 import { createSymbol } from "@/server/symbols/create";
+import { validateSymbol } from "@/server/symbols/validate";
 
 export async function ensureSymbol(
   input: string,
   options: ResolveSymbolOptions = {},
 ): Promise<CanonicalSymbol | null> {
-  const resolved = await resolveSymbolInput(input, options);
-  if (resolved?.symbol?.id) return resolved;
+  const resolvedSymbol = await resolveSymbolInput(input, options);
+  if (resolvedSymbol?.symbol?.id) {
+    return resolvedSymbol;
+  }
 
-  const normalized = await normalizeSymbol(input);
-  if (!normalized) return null;
+  const validationResult = await validateSymbol(input);
+  const validatedSymbol = validationResult.valid
+    ? validationResult.normalized
+    : null;
 
-  const created = await createSymbol(normalized);
-  if (!created.success) return null;
+  const suggestedSymbols = validationResult.suggestions ?? [];
+  const suggestedSymbol =
+    !validatedSymbol && suggestedSymbols.length === 1
+      ? suggestedSymbols[0]
+      : null;
 
-  return resolveSymbolInput(normalized, options);
+  const candidateSymbol = validatedSymbol ?? suggestedSymbol;
+  if (!candidateSymbol) {
+    return null;
+  }
+
+  const resolvedCandidate = await resolveSymbolInput(candidateSymbol, options);
+  if (resolvedCandidate?.symbol?.id) {
+    return resolvedCandidate;
+  }
+
+  const createdSymbol = await createSymbol(candidateSymbol);
+  if (!createdSymbol.success) {
+    return null;
+  }
+
+  return resolveSymbolInput(candidateSymbol, options);
 }

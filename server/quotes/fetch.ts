@@ -7,7 +7,7 @@ import { createServiceClient } from "@/supabase/service";
 import {
   resolveSymbolInput,
   resolveSymbolsBatch,
-} from "@/server/symbols/resolver";
+} from "@/server/symbols/resolve";
 import {
   chunkArray,
   formatUtcDateKey,

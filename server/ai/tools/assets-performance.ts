@@ -6,7 +6,7 @@ import { fetchProfile } from "@/server/profile/actions";
 import { fetchPositions } from "@/server/positions/fetch";
 import { resolvePositionLookup } from "@/server/positions/resolve-position-lookup";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
-import { resolveSymbolsBatch } from "@/server/symbols/resolver";
+import { resolveSymbolsBatch } from "@/server/symbols/resolve";
 
 import { calculateProfitLoss } from "@/lib/profit-loss";
 import { convertCurrency } from "@/lib/currency-conversion";
