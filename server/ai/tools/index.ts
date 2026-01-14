@@ -186,7 +186,7 @@ export const aiTools = {
       startDate: z
         .string()
         .nullable()
-        .describe("YYYY-MM-DD format (optional, defaults to 180 days ago)"),
+        .describe("YYYY-MM-DD format (optional, defaults to 365 days ago)"),
       endDate: z
         .string()
         .nullable()
