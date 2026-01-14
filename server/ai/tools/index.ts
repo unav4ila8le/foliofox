@@ -293,7 +293,7 @@ export const aiTools = {
 
   searchSymbols: tool({
     description:
-      "Find the correct Yahoo Finance symbol for a company name or validate a symbol. Returns: matching symbols with company names, exchanges, and types. Use this to convert company names to valid symbols before using them in other tools like getNews. Essential for ensuring symbols work correctly in the system.",
+      "Find the correct Yahoo Finance symbol for a company name or validate a symbol. Returns: matching symbols with company names, exchanges, and types. Use this to convert company names to valid symbols before using them in other tools like getNews. Essential for ensuring symbols work correctly in the system. Use a higher limit for ambiguous names (e.g., 5-10) and a lower limit for clear tickers (e.g., 3).",
     inputSchema: z.object({
       query: z
         .string()
