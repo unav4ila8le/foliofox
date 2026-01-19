@@ -1,7 +1,8 @@
 "use server";
 
-import { addDays, differenceInCalendarDays, format, parseISO } from "date-fns";
+import { addDays, differenceInCalendarDays } from "date-fns";
 
+import { formatUtcDateKey, parseUtcDateKey } from "@/lib/date-format";
 import { fetchQuotes } from "@/server/quotes/fetch";
 import { ensureSymbol } from "@/server/symbols/ensure";
 
@@ -35,13 +36,13 @@ export async function getHistoricalQuotes({
     ensuredSymbol.symbol?.ticker ??
     normalizedLookup;
 
-  const resolvedEnd = endDate ? parseISO(endDate) : new Date();
+  const resolvedEnd = endDate ? parseUtcDateKey(endDate) : new Date();
   if (Number.isNaN(resolvedEnd.getTime())) {
     throw new Error("endDate is invalid");
   }
 
   const resolvedStart = startDate
-    ? parseISO(startDate)
+    ? parseUtcDateKey(startDate)
     : addDays(resolvedEnd, -DEFAULT_WINDOW_DAYS);
   if (Number.isNaN(resolvedStart.getTime())) {
     throw new Error("startDate is invalid");
@@ -71,7 +72,7 @@ export async function getHistoricalQuotes({
   const quotesMap = await fetchQuotes(requests, false);
 
   const series = requests.map(({ date }) => {
-    const dateString = format(date, "yyyy-MM-dd");
+    const dateString = formatUtcDateKey(date);
     const price =
       quotesMap.get(`${canonicalId}|${dateString}`) ??
       quotesMap.get(`${symbolLookup}|${dateString}`) ??
@@ -88,8 +89,8 @@ export async function getHistoricalQuotes({
   return {
     symbolId: canonicalId,
     symbolTicker: displayTicker,
-    startDate: format(resolvedStart, "yyyy-MM-dd"),
-    endDate: format(resolvedEnd, "yyyy-MM-dd"),
+    startDate: formatUtcDateKey(resolvedStart),
+    endDate: formatUtcDateKey(resolvedEnd),
     points: series,
     metadata: {
       totalDays,
