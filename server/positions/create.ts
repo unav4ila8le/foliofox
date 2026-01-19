@@ -5,7 +5,7 @@ import { format } from "date-fns";
 
 import { getCurrentUser } from "@/server/auth/actions";
 import { createSymbol } from "@/server/symbols/create";
-import { resolveSymbolInput } from "@/server/symbols/resolver";
+import { resolveSymbolInput } from "@/server/symbols/resolve";
 import { createPositionSnapshot } from "@/server/position-snapshots/create";
 import { fetchSingleQuote } from "@/server/quotes/fetch";
 

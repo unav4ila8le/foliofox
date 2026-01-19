@@ -6,7 +6,7 @@ import {
   makeRecurring,
   makeEvent,
 } from "./index";
-import { ld } from "@/lib/local-date";
+import { ld } from "@/lib/date-format";
 
 describe("scenario planning", () => {
   test("should handle basic income and expenses", () => {

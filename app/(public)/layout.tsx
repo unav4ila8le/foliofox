@@ -6,7 +6,7 @@ export default function PublicLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-primary-foreground">
+    <div className="bg-primary-foreground min-h-screen">
       <Header />
       <main>{children}</main>
     </div>

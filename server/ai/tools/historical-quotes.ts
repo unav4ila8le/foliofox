@@ -1,9 +1,10 @@
 "use server";
 
-import { addDays, differenceInCalendarDays, format, parseISO } from "date-fns";
+import { addDays, differenceInCalendarDays } from "date-fns";
 
+import { formatUtcDateKey, parseUtcDateKey } from "@/lib/date-format";
 import { fetchQuotes } from "@/server/quotes/fetch";
-import { resolveSymbolInput } from "@/server/symbols/resolver";
+import { ensureSymbol } from "@/server/symbols/ensure";
 
 const DEFAULT_WINDOW_DAYS = 30;
 const MAX_WINDOW_DAYS = 365;
@@ -24,22 +25,24 @@ export async function getHistoricalQuotes({
     throw new Error("symbol lookup is required");
   }
 
-  const resolved = await resolveSymbolInput(normalizedLookup);
-  if (!resolved?.symbol?.id) {
-    throw new Error(`Unable to resolve symbol "${symbolLookup}".`);
+  const ensuredSymbol = await ensureSymbol(normalizedLookup);
+  if (!ensuredSymbol?.symbol?.id) {
+    throw new Error(`Symbol "${symbolLookup}" not found.`);
   }
 
-  const canonicalId = resolved.symbol.id;
+  const canonicalId = ensuredSymbol.symbol.id;
   const displayTicker =
-    resolved.primaryAlias?.value ?? resolved.symbol?.ticker ?? normalizedLookup;
+    ensuredSymbol.primaryAlias?.value ??
+    ensuredSymbol.symbol?.ticker ??
+    normalizedLookup;
 
-  const resolvedEnd = endDate ? parseISO(endDate) : new Date();
+  const resolvedEnd = endDate ? parseUtcDateKey(endDate) : new Date();
   if (Number.isNaN(resolvedEnd.getTime())) {
     throw new Error("endDate is invalid");
   }
 
   const resolvedStart = startDate
-    ? parseISO(startDate)
+    ? parseUtcDateKey(startDate)
     : addDays(resolvedEnd, -DEFAULT_WINDOW_DAYS);
   if (Number.isNaN(resolvedStart.getTime())) {
     throw new Error("startDate is invalid");
@@ -69,7 +72,7 @@ export async function getHistoricalQuotes({
   const quotesMap = await fetchQuotes(requests, false);
 
   const series = requests.map(({ date }) => {
-    const dateString = format(date, "yyyy-MM-dd");
+    const dateString = formatUtcDateKey(date);
     const price =
       quotesMap.get(`${canonicalId}|${dateString}`) ??
       quotesMap.get(`${symbolLookup}|${dateString}`) ??
@@ -86,8 +89,8 @@ export async function getHistoricalQuotes({
   return {
     symbolId: canonicalId,
     symbolTicker: displayTicker,
-    startDate: format(resolvedStart, "yyyy-MM-dd"),
-    endDate: format(resolvedEnd, "yyyy-MM-dd"),
+    startDate: formatUtcDateKey(resolvedStart),
+    endDate: formatUtcDateKey(resolvedEnd),
     points: series,
     metadata: {
       totalDays,

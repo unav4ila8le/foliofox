@@ -45,7 +45,7 @@
 
 ### Phase 3 – Resolver Layer & Server Refactor
 
-- Implement `server/symbols/resolver.ts` helpers (`resolveSymbolInput`, `getCanonicalSymbol`, `getProviderSymbolAlias`, `setPrimarySymbolAlias`) backed by `symbol_aliases`.
+- Implement `server/symbols/resolve.ts` helpers (`resolveSymbolInput`, `getCanonicalSymbol`, `getProviderSymbolAlias`, `setPrimarySymbolAlias`) backed by `symbol_aliases`.
 - Ensure `setPrimarySymbolAlias` write-through updates `symbols.ticker` whenever a new alias becomes primary (or alternatively refresh a derived view if we pick that approach).
 - Refactor all data ingress/egress (position CRUD, CSV import/export, cron fetchers, analytics jobs) to call the resolver and persist UUID foreign keys.
 - Update market data handlers (quotes, dividends, news, analytics) to request provider-specific aliases via the resolver before hitting external APIs.
@@ -84,7 +84,7 @@
 - Consider materialized views or caching if alias lookups become hot paths after rollout.
 - Finish naming pass: adopt `symbolLookup` for user-supplied identifiers during the final cleanup so future functions communicate they accept tickers/aliases/UUIDs.
 - ✅ Naming convention locked: client/server inputs use `symbolLookup`, resolver outputs use `canonicalSymbolId`/`symbol_id`.
-- ✅ **Extracted shared helper**: `resolveSymbolsBatch` in `server/symbols/resolver.ts` consolidates the repeated resolver + provider alias pattern. Updated `server/quotes/fetch.ts`, `server/dividends/fetch.ts`, `server/news/fetch.ts`, and AI tool resolvers (`assets-performance`, `portfolio-snapshot`, `positions`) to use it.
+- ✅ **Extracted shared helper**: `resolveSymbolsBatch` in `server/symbols/resolve.ts` consolidates the repeated resolver + provider alias pattern. Updated `server/quotes/fetch.ts`, `server/dividends/fetch.ts`, `server/news/fetch.ts`, and AI tool resolvers (`assets-performance`, `portfolio-snapshot`, `positions`) to use it.
 
 ## Implementation Status
 

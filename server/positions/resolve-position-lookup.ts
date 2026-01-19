@@ -1,7 +1,7 @@
 "use server";
 
 import { getCurrentUser } from "@/server/auth/actions";
-import { resolveSymbolInput } from "@/server/symbols/resolver";
+import { resolveSymbolInput } from "@/server/symbols/resolve";
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

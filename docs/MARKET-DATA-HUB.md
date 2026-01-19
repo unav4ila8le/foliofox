@@ -98,7 +98,7 @@ export async function fetchMarketDataRange(
 2. **Create a handler**
    - Add `server/market-data/sources/<source>-handler.ts`.
    - Implement `fetchForPositions` to batch requests and call your underlying service. Return `Map<handlerKey, number>`.
-     - **For symbol handlers**: You'll receive `symbol_id` as a UUID. Use the resolver layer (e.g., `resolveSymbolsBatch` in `server/symbols/resolver.ts`) to convert UUIDs to provider-specific aliases (e.g., Yahoo tickers) before calling external APIs. See `server/market-data/sources/symbol-handler.ts` for reference.
+     - **For symbol handlers**: You'll receive `symbol_id` as a UUID. Use the resolver layer (e.g., `resolveSymbolsBatch` in `server/symbols/resolve.ts`) to convert UUIDs to provider-specific aliases (e.g., Yahoo tickers) before calling external APIs. See `server/market-data/sources/symbol-handler.ts` for reference.
    - Optionally implement `fetchForPositionsRange` if the source can return many dates in a single call (improves chart queries and other bulk history workloads).
    - Implement `getKey` to build a deterministic string based on the position identifier and date (e.g., `${symbolId}|${yyyy-MM-dd}` for symbols, `${walletId}|${yyyy-MM-dd}` for wallets).
 

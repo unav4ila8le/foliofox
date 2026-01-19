@@ -1,7 +1,7 @@
 "use server";
 
 import { runScenario } from "@/lib/scenario-planning";
-import { ld } from "@/lib/local-date";
+import { ld } from "@/lib/date-format";
 import { fetchOrCreateDefaultScenario } from "@/server/financial-scenarios/fetch";
 
 interface GetFinancialScenariosParams {

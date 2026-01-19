@@ -1,9 +1,51 @@
+import { z } from "zod";
+
+const DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Format a date as a UTC date key in the format "yyyy-MM-dd".
+ * @param date - The date to format
+ * @returns The formatted date key
+ */
+export function formatUtcDateKey(date: Date): string {
+  const value = date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(value.getTime())) {
+    throw new Error("Invalid date provided to formatUtcDateKey");
+  }
+
+  return value.toISOString().slice(0, 10);
+}
+
+/**
+ * Parse a YYYY-MM-DD date key into a UTC Date.
+ * Returns Invalid Date for malformed inputs.
+ * @param dateKey - The date key to parse
+ * @returns Date at UTC midnight for the key
+ */
+export function parseUtcDateKey(dateKey: string): Date {
+  const trimmed = dateKey.trim();
+  if (!DATE_KEY_PATTERN.test(trimmed)) {
+    return new Date(NaN);
+  }
+
+  const [year, month, day] = trimmed.split("-").map(Number);
+  const value = new Date(Date.UTC(year, month - 1, day));
+
+  if (
+    value.getUTCFullYear() !== year ||
+    value.getUTCMonth() !== month - 1 ||
+    value.getUTCDate() !== day
+  ) {
+    return new Date(NaN);
+  }
+
+  return value;
+}
+
 /**
  * LocalDate: A timezone-agnostic date representation
  * Uses year, month, day components instead of timestamps to avoid timezone issues
  */
-import { z } from "zod";
-
 export type LocalDate = {
   y: number; // year
   m: number; // month (1-12)
@@ -66,7 +108,7 @@ export const isWithinIntervalLD = (
 export const fromJSDate = (date: Date): LocalDate => {
   return {
     y: date.getFullYear(),
-    m: date.getMonth() + 1, // JS months are 0–11
+    m: date.getMonth() + 1, // JS months are 0-11
     d: date.getDate(),
   };
 };

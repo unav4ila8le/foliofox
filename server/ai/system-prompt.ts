@@ -99,6 +99,7 @@ ROUTING PLAYBOOK (MINI)
 - Rebalancing / drift → getAllocationDrift
 - Currency risk → getCurrencyExposure
 - Lots/flows/details → getPortfolioRecords, getPositionSnapshots
+- Company name market data → call searchSymbols to confirm the ticker before quotes, dividends, or news.
 **If you only have a ticker/ISIN**: First call getPortfolioOverview or getPositions to get the position data (if not already available), then use the position's 'id' field (UUID) for position-specific tools.
 - News on positions → getNews (validate manual inputs via searchSymbols)
 - Scenario planning / future projections → getFinancialScenarios (user's planned income/expense events with simulation)

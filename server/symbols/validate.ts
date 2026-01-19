@@ -18,7 +18,7 @@ export interface SymbolValidationResult {
  */
 export async function validateSymbol(symbolId: string) {
   try {
-    // Clean up the symbol (remove exchange prefixes, etc.)
+    // Normalize the symbol (uppercase, trim)
     const cleanedSymbol = await normalizeSymbol(symbolId);
 
     // 1. Try exact match first (fastest)
@@ -92,18 +92,18 @@ export async function validateSymbolsBatch(symbols: string[]) {
 }
 
 /**
- * Normalize symbol format (remove exchange prefixes, etc.)
+ * Normalize symbol format for consistent matching.
+ *
+ * Only applies uppercase and trim - does NOT strip exchange prefixes.
+ * This ensures inputs like "NYSE:IBM" fail fast rather than silently
+ * matching a different listing (e.g., matching "IBM" when user meant
+ * a specific exchange).
+ *
  * @param symbolId - Raw symbol from user input
- * @returns Cleaned symbol
+ * @returns Cleaned symbol (uppercase, trimmed)
  */
 export async function normalizeSymbol(symbolId: string) {
   if (!symbolId) return "";
 
-  // Remove common exchange prefixes
-  const cleaned = symbolId
-    .toUpperCase()
-    .replace(/^(NYSE:|NASDAQ:|LSE:|TSE:|ASX:)/, "")
-    .trim();
-
-  return cleaned;
+  return symbolId.toUpperCase().trim();
 }

@@ -1,18 +1,15 @@
 "use server";
 
-import { addDays, compareAsc, parseISO, subDays } from "date-fns";
+import { addDays, compareAsc, subDays } from "date-fns";
 
+import { formatUtcDateKey, parseUtcDateKey } from "@/lib/date-format";
 import { yahooFinance } from "@/server/yahoo-finance/client";
 import { createServiceClient } from "@/supabase/service";
 import {
   resolveSymbolInput,
   resolveSymbolsBatch,
-} from "@/server/symbols/resolver";
-import {
-  chunkArray,
-  formatUtcDateKey,
-  normalizeChartQuoteEntries,
-} from "./utils";
+} from "@/server/symbols/resolve";
+import { chunkArray, normalizeChartQuoteEntries } from "./utils";
 
 /**
  * Fetch multiple quotes for different symbols and dates in bulk.
@@ -139,13 +136,15 @@ export async function fetchQuotes(
 
     for (const [symbolId, dateStringsSet] of requestsBySymbol.entries()) {
       const dateStringsSorted = Array.from(dateStringsSet).sort((a, b) =>
-        compareAsc(parseISO(a), parseISO(b)),
+        compareAsc(parseUtcDateKey(a), parseUtcDateKey(b)),
       );
 
       if (!dateStringsSorted.length) continue;
 
-      const earliest = parseISO(dateStringsSorted[0]);
-      const latest = parseISO(dateStringsSorted[dateStringsSorted.length - 1]);
+      const earliest = parseUtcDateKey(dateStringsSorted[0]);
+      const latest = parseUtcDateKey(
+        dateStringsSorted[dateStringsSorted.length - 1],
+      );
 
       // Include a small buffer before the earliest request so we can
       // reuse the prior trading day's quote if the first calendar day

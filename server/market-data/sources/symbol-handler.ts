@@ -1,5 +1,5 @@
 import { fetchQuotes } from "@/server/quotes/fetch";
-import { formatUtcDateKey } from "@/server/quotes/utils";
+import { formatUtcDateKey } from "@/lib/date-format";
 
 import type {
   MarketDataHandler,

@@ -6,7 +6,7 @@ import { format, addMonths, startOfMonth } from "date-fns";
 import { fetchPositions } from "@/server/positions/fetch";
 import { fetchDividends } from "@/server/dividends/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
-import { resolveSymbolInput } from "@/server/symbols/resolver";
+import { resolveSymbolInput } from "@/server/symbols/resolve";
 
 import { convertCurrency } from "@/lib/currency-conversion";
 import type { PositionsQueryContext } from "@/server/positions/fetch";

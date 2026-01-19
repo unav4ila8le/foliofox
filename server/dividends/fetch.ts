@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 
 import { yahooFinance } from "@/server/yahoo-finance/client";
 import { createServiceClient } from "@/supabase/service";
-import { resolveSymbolsBatch } from "@/server/symbols/resolver";
+import { resolveSymbolsBatch } from "@/server/symbols/resolve";
 
 import type { Dividend, DividendEvent } from "@/types/global.types";
 
