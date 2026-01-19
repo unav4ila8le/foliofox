@@ -40,7 +40,7 @@ import { Calendar } from "@/components/ui/calendar";
 
 import { cn } from "@/lib/utils";
 import { makeOneOff, makeRecurring } from "@/lib/scenario-planning";
-import { ld, type LocalDate } from "@/lib/local-date";
+import { ld, type LocalDate } from "@/lib/date-format";
 import { requiredNumberWithConstraints } from "@/lib/zod-helpers";
 import type { ScenarioEvent } from "@/lib/scenario-planning";
 

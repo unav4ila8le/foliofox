@@ -3,8 +3,8 @@
 import { addMonths } from "date-fns";
 
 import { fetchDividends } from "@/server/dividends/fetch";
-import { resolveSymbolInput } from "@/server/symbols/resolver";
 import { fetchSingleQuote } from "@/server/quotes/fetch";
+import { ensureSymbol } from "@/server/symbols/ensure";
 
 const FREQUENCY_MULTIPLIER: Record<string, number> = {
   monthly: 12,
@@ -23,14 +23,14 @@ export async function calculateSymbolDividendYield(symbolLookup: string) {
   }
 
   // 1) Resolve the identifier to a canonical symbol (UUID + aliases)
-  const resolved = await resolveSymbolInput(input);
-  if (!resolved?.symbol?.id) {
+  const ensuredSymbol = await ensureSymbol(input);
+  if (!ensuredSymbol?.symbol?.id) {
     throw new Error(`Unable to resolve symbol "${symbolLookup}".`);
   }
 
-  const canonicalId = resolved.symbol.id;
+  const canonicalId = ensuredSymbol.symbol.id;
   const displayTicker =
-    resolved.primaryAlias?.value ?? resolved.symbol.ticker ?? input;
+    ensuredSymbol.primaryAlias?.value ?? ensuredSymbol.symbol.ticker ?? input;
 
   // 2) Attempt to reuse cached dividend data when available
   const dividendsMap = await fetchDividends([{ symbolId: canonicalId }], false);

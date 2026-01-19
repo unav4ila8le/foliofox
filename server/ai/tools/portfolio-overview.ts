@@ -4,7 +4,7 @@ import { fetchProfile } from "@/server/profile/actions";
 import { fetchFinancialProfile } from "@/server/financial-profiles/actions";
 import { fetchPositions } from "@/server/positions/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
-import { resolveSymbolsBatch } from "@/server/symbols/resolver";
+import { resolveSymbolsBatch } from "@/server/symbols/resolve";
 import { calculateAssetAllocation } from "@/server/analysis/asset-allocation";
 import { convertCurrency } from "@/lib/currency-conversion";
 

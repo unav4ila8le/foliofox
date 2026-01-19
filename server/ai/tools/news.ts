@@ -1,7 +1,7 @@
 "use server";
 
 import { fetchPortfolioNews, fetchNewsForSymbols } from "@/server/news/fetch";
-import { resolveSymbolInput } from "@/server/symbols/resolver";
+import { ensureSymbol } from "@/server/symbols/ensure";
 
 interface GetNewsParams {
   symbolLookups: string[] | null;
@@ -38,8 +38,8 @@ export async function getNews(params: GetNewsParams) {
 
   const resolvedPairs = await Promise.all(
     trimmedLookups.map(async (lookup) => {
-      const resolved = await resolveSymbolInput(lookup);
-      const canonicalId = resolved?.symbol?.id ?? null;
+      const ensuredSymbol = await ensureSymbol(lookup);
+      const canonicalId = ensuredSymbol?.symbol?.id ?? null;
       return { lookup, canonicalId };
     }),
   );

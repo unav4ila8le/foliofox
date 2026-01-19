@@ -3,7 +3,7 @@
 import { getCurrentUser } from "@/server/auth/actions";
 import { fetchYahooFinanceSymbol } from "@/server/symbols/search";
 import { fetchCurrencies } from "@/server/currencies/fetch";
-import { setPrimarySymbolAlias } from "@/server/symbols/resolver";
+import { setPrimarySymbolAlias } from "@/server/symbols/resolve";
 import { createServiceClient } from "@/supabase/service";
 
 // Create symbol using Yahoo Finance data

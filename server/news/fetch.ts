@@ -8,7 +8,7 @@ import { fetchPositions } from "@/server/positions/fetch";
 import {
   resolveSymbolInput,
   resolveSymbolsBatch,
-} from "@/server/symbols/resolver";
+} from "@/server/symbols/resolve";
 
 import type { NewsArticle } from "@/types/global.types";
 import type { TablesInsert } from "@/types/database.types";

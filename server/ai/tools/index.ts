@@ -186,7 +186,7 @@ export const aiTools = {
       startDate: z
         .string()
         .nullable()
-        .describe("YYYY-MM-DD format (optional, defaults to 180 days ago)"),
+        .describe("YYYY-MM-DD format (optional, defaults to 365 days ago)"),
       endDate: z
         .string()
         .nullable()
@@ -293,18 +293,24 @@ export const aiTools = {
 
   searchSymbols: tool({
     description:
-      "Find the correct Yahoo Finance symbol for a company name or validate a symbol. Returns: matching symbols with company names, exchanges, and types. Use this to convert company names to valid symbols before using them in other tools like getNews. Essential for ensuring symbols work correctly in the system.",
+      "Find the correct Yahoo Finance symbol for a company name or validate a symbol. " +
+      "Yahoo Finance uses exchange SUFFIXES, not prefixes: RACE (NYSE), RACE.MI (Milan), " +
+      "VOD.L (London), SAP.DE (Frankfurt), RY.TO (Toronto), BHP.AX (Australia). " +
+      "When user wants a specific exchange: try the ticker with suffix directly (e.g., 'RACE.MI'), " +
+      "or search the company name with limit 5-10 and check the 'exchange' field in results. " +
+      "Returns: matching symbols with company names, exchanges, and types.",
     inputSchema: z.object({
       query: z
         .string()
         .describe(
-          "Company name (e.g., 'Apple', 'Tesla') or symbol to validate (e.g., 'AAPL', 'TSLA').",
+          "Company name (e.g., 'Apple', 'Ferrari'), ticker (e.g., 'AAPL', 'RACE'), " +
+            "or ticker with exchange suffix (e.g., 'RACE.MI' for Milan, 'VOD.L' for London).",
         ),
       limit: z
         .number()
         .nullable()
         .describe(
-          "Maximum number of symbols to return (default: 10, max: 20).",
+          "Maximum results to return. Use 5-10 for multi-exchange stocks to see all listings. Default: 10, max: 20.",
         ),
     }),
     execute: async (args) => searchSymbols(args),

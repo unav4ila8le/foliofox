@@ -3,7 +3,7 @@
 import { fetchPositions } from "@/server/positions/fetch";
 import { resolvePositionLookup } from "@/server/positions/resolve-position-lookup";
 
-import { resolveSymbolsBatch } from "@/server/symbols/resolver";
+import { resolveSymbolsBatch } from "@/server/symbols/resolve";
 
 interface GetPositionsParams {
   positionIds: string[] | null;
