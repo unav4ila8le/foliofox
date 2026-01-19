@@ -27,15 +27,16 @@ export async function ensureSymbol(
     return null;
   }
 
+  // Try to resolve existing symbol first (handles normalization of exchange prefixes)
+  const resolvedSymbol = await resolveSymbolInput(trimmedInput, options);
+  if (resolvedSymbol?.symbol?.id) {
+    return resolvedSymbol;
+  }
+
   // Guard: Don't auto-create exchange-qualified inputs (e.g., "LSE:VOD")
   // These require explicit searchSymbols to confirm the correct listing
   if (trimmedInput.includes(":")) {
     return null;
-  }
-
-  const resolvedSymbol = await resolveSymbolInput(trimmedInput, options);
-  if (resolvedSymbol?.symbol?.id) {
-    return resolvedSymbol;
   }
 
   const validationResult = await validateSymbol(trimmedInput);
