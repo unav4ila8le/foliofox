@@ -11,12 +11,9 @@ import { validateSymbol } from "@/server/symbols/validate";
 /**
  * Resolve a symbol, creating it if it doesn't exist in the local database.
  *
- * Guards against silent listing switches by refusing to auto-create when:
- * - Input contains ":" (exchange-qualified, e.g., "LSE:VOD")
- * - Normalization changes the input beyond casing (e.g., stripping prefixes)
- *
- * For ambiguous inputs (company names, exchange-qualified symbols), callers
- * should use searchSymbols first to get the exact ticker.
+ * Guards against ambiguous inputs by refusing to auto-create when input
+ * contains ":" (exchange-qualified, e.g., "LSE:VOD"). For these inputs,
+ * callers should use searchSymbols first to get the exact Yahoo ticker.
  */
 export async function ensureSymbol(
   input: string,
@@ -27,7 +24,7 @@ export async function ensureSymbol(
     return null;
   }
 
-  // Try to resolve existing symbol first (handles normalization of exchange prefixes)
+  // Try to resolve existing symbol first
   const resolvedSymbol = await resolveSymbolInput(trimmedInput, options);
   if (resolvedSymbol?.symbol?.id) {
     return resolvedSymbol;
@@ -43,12 +40,6 @@ export async function ensureSymbol(
 
   // Only proceed if validation passed directly - don't auto-pick suggestions
   if (!validationResult.valid || !validationResult.normalized) {
-    return null;
-  }
-
-  // Guard: Don't auto-create if normalization changed the input beyond casing
-  // This prevents silent listing switches (e.g., "NYSE:IBM" → "IBM")
-  if (validationResult.normalized !== trimmedInput.toUpperCase()) {
     return null;
   }
 
