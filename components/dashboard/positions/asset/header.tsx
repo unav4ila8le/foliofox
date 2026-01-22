@@ -10,7 +10,11 @@ import { StaleBadge } from "@/components/dashboard/positions/asset/stale-badge";
 import { EditAssetButton } from "./edit-asset-button";
 import { AssetMoreActionsButton } from "./asset-more-actions-button";
 
-import { formatCurrency, formatPercentage } from "@/lib/number-format";
+import {
+  formatCurrency,
+  formatNumber,
+  formatPercentage,
+} from "@/lib/number-format";
 import { cn } from "@/lib/utils";
 
 import type {
@@ -88,7 +92,9 @@ export function AssetHeader({
             <div>
               <p className="text-muted-foreground">Quantity</p>
               <p className="font-semibold">
-                {position.current_quantity.toLocaleString()}
+                {formatNumber(position.current_quantity, undefined, {
+                  maximumFractionDigits: 6,
+                })}
               </p>
             </div>
             <div>
@@ -150,7 +156,9 @@ export function AssetHeader({
             <div>
               <p className="text-muted-foreground">Quantity</p>
               <p className="font-semibold">
-                {position.current_quantity.toLocaleString()}
+                {formatNumber(position.current_quantity, undefined, {
+                  maximumFractionDigits: 6,
+                })}
               </p>
             </div>
             <div>

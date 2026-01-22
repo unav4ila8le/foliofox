@@ -29,7 +29,7 @@
  * @example
  * // Compact formatting for large numbers
  * formatCompactNumber(1234567);           // "1.2M"
- * formatCompactCurrency(1234567, "USD");  // "1.2M USD"
+ * formatCompactCurrency(1234567, "USD");  // "USD 1.2M" (locale-dependent order)
  *
  * @example
  * // String input handling
@@ -161,7 +161,12 @@ export function formatPercentage(
     typeof value === "string" ? parseFloat(value.replace(/,/g, "")) : value;
   if (isNaN(num)) return "";
 
-  return `${formatNumber(num * 100, decimals)}%`;
+  const formatter = new Intl.NumberFormat(undefined, {
+    style: "percent",
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+  return formatter.format(num);
 }
 
 /**
@@ -191,6 +196,16 @@ export function formatCompactCurrency(
   value: number | string,
   currency: string,
 ): string {
-  const compactValue = formatCompactNumber(value);
-  return `${currency} ${compactValue}`;
+  const num =
+    typeof value === "string" ? parseFloat(value.replace(/,/g, "")) : value;
+  if (isNaN(num)) return "";
+
+  const formatter = new Intl.NumberFormat(undefined, {
+    style: "currency",
+    currency,
+    currencyDisplay: "code",
+    notation: "compact",
+    maximumFractionDigits: 1,
+  });
+  return formatter.format(num);
 }

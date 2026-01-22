@@ -30,6 +30,7 @@ import { HumbleWorthLogo } from "@/components/ui/logos/humbleworth-logo";
 
 import { useNewAssetDialog } from "../index";
 
+import { formatCurrency } from "@/lib/number-format";
 import { fetchSingleDomainValuation } from "@/server/domain-valuations/fetch";
 import { createPosition } from "@/server/positions/create";
 
@@ -210,7 +211,7 @@ export function DomainForm() {
           <div className="space-y-1">
             <p className="text-sm font-medium">Valuation</p>
             <p className="font-semibold text-green-600">
-              {valuation.toLocaleString()} USD
+              {formatCurrency(valuation, "USD")}
             </p>
             <p className="text-muted-foreground text-sm">
               Valuation is provided by{" "}
