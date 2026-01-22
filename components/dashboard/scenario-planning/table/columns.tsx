@@ -48,8 +48,7 @@ function ActionsCell({
         <DropdownMenuItem
           onClick={(event) => {
             event.stopPropagation();
-            // @ts-expect-error - meta is typed but onEdit is custom
-            table.options.meta?.onEdit(row.original, index);
+            table.options.meta?.onEdit?.(row.original, index);
             setOpen(false);
           }}
         >
@@ -60,8 +59,7 @@ function ActionsCell({
           variant="destructive"
           onClick={(event) => {
             event.stopPropagation();
-            // @ts-expect-error - meta is typed but onDelete is custom
-            table.options.meta?.onDelete(index);
+            table.options.meta?.onDelete?.(index);
             setOpen(false);
           }}
         >
@@ -169,13 +167,12 @@ export const columns: ColumnDef<ScenarioEventWithId>[] = [
         </div>
       );
     },
-    cell: ({ row }) => {
+    cell: ({ row, table }) => {
+      const locale = table.options.meta?.locale;
       const amount = row.getValue<number>("amount");
       return (
         <div className="tabular-nums">
-          {formatNumber(amount, undefined, {
-            maximumFractionDigits: 6,
-          })}
+          {formatNumber(amount, { locale, maximumFractionDigits: 6 })}
         </div>
       );
     },

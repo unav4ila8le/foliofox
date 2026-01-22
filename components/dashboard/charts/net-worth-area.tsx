@@ -53,6 +53,7 @@ import {
   formatCurrency,
   formatNumber,
 } from "@/lib/number-format";
+import { useLocale } from "@/hooks/use-locale";
 import { cn } from "@/lib/utils";
 
 export function NetWorthAreaChart({
@@ -73,6 +74,7 @@ export function NetWorthAreaChart({
   const [isLoading, setIsLoading] = useState(false);
 
   const { isPrivacyMode } = usePrivacyMode();
+  const locale = useLocale();
 
   // Display custom time range data or fall back to default initial data (6 months)
   const history = customTimeRange?.history ?? initialHistory;
@@ -144,7 +146,7 @@ export function NetWorthAreaChart({
 
   // Format value for display on Y-axis
   const formatYAxisValue = (value: number) => {
-    return formatCompactNumber(value);
+    return formatCompactNumber(value, { locale });
   };
 
   // Define area chart color based on percentage change
@@ -180,7 +182,7 @@ export function NetWorthAreaChart({
                     <h2 className="text-xl font-semibold">
                       {isPrivacyMode
                         ? "* * * * * * * *"
-                        : formatCurrency(netWorth, currency)}
+                        : formatCurrency(netWorth, currency, { locale })}
                     </h2>
                     <PrivacyModeButton className="text-muted-foreground size-6" />
                   </div>
@@ -201,7 +203,7 @@ export function NetWorthAreaChart({
                       <span>
                         {isPrivacyMode
                           ? "* * * * * *"
-                          : `${change.absoluteChange >= 0 ? "+" : ""}${formatNumber(change.absoluteChange, undefined, { maximumFractionDigits: 2 })}`}{" "}
+                          : `${change.absoluteChange >= 0 ? "+" : ""}${formatNumber(change.absoluteChange, { locale, maximumFractionDigits: 2 })}`}{" "}
                         ({change.percentageChange >= 0 ? "+" : ""}
                         {change.previousValue === 0
                           ? "N/A"
@@ -305,7 +307,9 @@ export function NetWorthAreaChart({
                           {format(data.payload.date, "PPP")}
                         </span>
                         <span className="text-sm">
-                          {formatCurrency(Number(data.value), currency)}
+                          {formatCurrency(Number(data.value), currency, {
+                            locale,
+                          })}
                         </span>
                       </div>
                     );

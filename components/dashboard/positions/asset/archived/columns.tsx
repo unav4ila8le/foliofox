@@ -88,13 +88,12 @@ export const columns: ColumnDef<TransformedPosition>[] = [
       headerClassName: "text-right",
       cellClassName: "text-right",
     },
-    cell: ({ row }) => {
+    cell: ({ row, table }) => {
+      const locale = table.options.meta?.locale;
       const current_quantity = row.getValue<number>("current_quantity");
       return (
         <div className="tabular-nums">
-          {formatNumber(current_quantity, undefined, {
-            maximumFractionDigits: 6,
-          })}
+          {formatNumber(current_quantity, { locale, maximumFractionDigits: 6 })}
         </div>
       );
     },
@@ -106,12 +105,13 @@ export const columns: ColumnDef<TransformedPosition>[] = [
       headerClassName: "text-right",
       cellClassName: "text-right",
     },
-    cell: ({ row }) => {
+    cell: ({ row, table }) => {
+      const locale = table.options.meta?.locale;
       const unit_value = row.getValue<number>("current_unit_value");
 
       return (
         <div className="tabular-nums">
-          {formatNumber(unit_value, undefined, { maximumFractionDigits: 2 })}
+          {formatNumber(unit_value, { locale, maximumFractionDigits: 2 })}
         </div>
       );
     },
@@ -123,12 +123,13 @@ export const columns: ColumnDef<TransformedPosition>[] = [
       headerClassName: "text-right",
       cellClassName: "text-right",
     },
-    cell: ({ row }) => {
+    cell: ({ row, table }) => {
+      const locale = table.options.meta?.locale;
       const total_value = row.getValue<number>("total_value");
 
       return (
         <div className="tabular-nums">
-          {formatNumber(total_value, undefined, { maximumFractionDigits: 2 })}
+          {formatNumber(total_value, { locale, maximumFractionDigits: 2 })}
         </div>
       );
     },

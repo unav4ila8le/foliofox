@@ -26,7 +26,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+import { useLocale } from "@/hooks/use-locale";
 import { cn } from "@/lib/utils";
+
+// Extend TableMeta to include locale
+declare module "@tanstack/react-table" {
+  interface TableMeta<TData> {
+    locale?: string;
+    onEdit?: (row: TData, index: number) => void;
+    onDelete?: (index: number) => void;
+  }
+}
 
 // Helper type to ensure data has an id field for row identification
 type DataWithId = { id: string | number };
@@ -56,6 +66,7 @@ export function DataTable<TData extends DataWithId, TValue>({
   meta,
   defaultSorting = [],
 }: DataTableProps<TData, TValue>) {
+  const locale = useLocale();
   const [sorting, setSorting] = useState<SortingState>(defaultSorting);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [expanded, setExpanded] = useState<ExpandedState>(true);
@@ -100,7 +111,7 @@ export function DataTable<TData extends DataWithId, TValue>({
     autoResetExpanded: false,
     autoResetPageIndex: false,
     getRowId: (row) => String(row.id),
-    meta,
+    meta: { ...meta, locale },
     state: {
       sorting,
       columnFilters,

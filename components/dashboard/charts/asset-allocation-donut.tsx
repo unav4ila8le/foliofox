@@ -1,14 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import {
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Label,
-  Tooltip,
-} from "recharts";
+import { ResponsiveContainer, PieChart, Pie, Label, Tooltip } from "recharts";
 import { ChartPie } from "lucide-react";
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -19,6 +12,7 @@ import {
   formatCurrency,
   formatPercentage,
 } from "@/lib/number-format";
+import { useLocale } from "@/hooks/use-locale";
 import { cn } from "@/lib/utils";
 
 const COLORS = [
@@ -54,8 +48,17 @@ function AssetAllocationDonutBase({
   className,
   maskValues = false,
 }: AssetAllocationDonutBaseProps) {
+  const locale = useLocale();
+
   const totalAssetsValue = useMemo(() => {
     return assetAllocation.reduce((sum, item) => sum + item.total_value, 0);
+  }, [assetAllocation]);
+
+  const chartData = useMemo(() => {
+    return assetAllocation.map((item, index) => ({
+      ...item,
+      fill: COLORS[index % COLORS.length],
+    }));
   }, [assetAllocation]);
 
   return (
@@ -85,7 +88,7 @@ function AssetAllocationDonutBase({
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={assetAllocation}
+                    data={chartData}
                     dataKey="total_value"
                     nameKey="name"
                     innerRadius={"80%"}
@@ -93,19 +96,15 @@ function AssetAllocationDonutBase({
                     paddingAngle={2}
                     cornerRadius={99}
                     labelLine={false}
+                    stroke="none"
                   >
-                    {assetAllocation.map((_, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={COLORS[index % COLORS.length]}
-                        stroke="none"
-                      />
-                    ))}
                     <Label
                       value={
                         maskValues
                           ? "* * * * * * * *"
-                          : formatCompactCurrency(netWorth, currency)
+                          : formatCompactCurrency(netWorth, currency, {
+                              locale,
+                            })
                       }
                       position="center"
                       style={{
@@ -141,7 +140,9 @@ function AssetAllocationDonutBase({
                             {data.payload.name}
                           </span>
                           <span className="text-foreground text-xs font-semibold">
-                            {formatCurrency(Number(data.value), currency)}
+                            {formatCurrency(Number(data.value), currency, {
+                              locale,
+                            })}
                           </span>
                         </div>
                       );
@@ -170,6 +171,7 @@ function AssetAllocationDonutBase({
                               totalAssetsValue === 0
                                 ? 0
                                 : item.total_value / totalAssetsValue,
+                              { locale },
                             )}
                           </span>
                         </span>
