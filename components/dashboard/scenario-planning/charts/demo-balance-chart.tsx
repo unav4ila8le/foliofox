@@ -18,6 +18,7 @@ import {
   YAxis,
 } from "recharts";
 import { formatCompactNumber } from "@/lib/number-format";
+import { useLocale } from "@/hooks/use-locale";
 
 // Demo scenario with realistic events showing growth and drops
 const DEMO_SCENARIO: Scenario = {
@@ -111,6 +112,7 @@ export function DemoBalanceChart({
 }: {
   initialBalance: number;
 }) {
+  const locale = useLocale();
   const endDate = React.useMemo(() => {
     return addYears(new Date(), 5);
   }, []);
@@ -196,7 +198,7 @@ export function DemoBalanceChart({
   };
 
   const formatYAxisValue = (value: number) => {
-    return formatCompactNumber(value);
+    return formatCompactNumber(value, { locale });
   };
 
   return (

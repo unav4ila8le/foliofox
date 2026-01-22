@@ -9,11 +9,13 @@ import { usePrivacyMode } from "@/components/dashboard/privacy-mode-provider";
 import { useDashboardData } from "@/components/dashboard/dashboard-data-provider";
 
 import { formatCurrency } from "@/lib/number-format";
+import { useLocale } from "@/hooks/use-locale";
 
 export function User() {
   const { profile, netWorth } = useDashboardData();
   const { isMobile } = useSidebar();
   const { isPrivacyMode } = usePrivacyMode();
+  const locale = useLocale();
 
   const avatarUrl = profile?.avatar_url || undefined;
   const username = profile?.username || "User";
@@ -34,7 +36,7 @@ export function User() {
           <span className="text-muted-foreground truncate text-xs tabular-nums">
             {isPrivacyMode
               ? "* * * * * * * *"
-              : formatCurrency(netWorth, profile.display_currency)}
+              : formatCurrency(netWorth, profile.display_currency, { locale })}
           </span>
         </div>
         <MoreVertical className="ml-auto size-4" />

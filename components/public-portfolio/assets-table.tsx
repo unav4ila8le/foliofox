@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 
 import { cn } from "@/lib/utils";
 import { formatNumber, formatPercentage } from "@/lib/number-format";
+import { getRequestLocale } from "@/lib/locale/resolve-locale";
 
 import type { PositionWithProfitLoss } from "@/types/global.types";
 
@@ -28,9 +29,10 @@ type PublicPortfolioAssetsTableProps = {
 const hasMarketData = (position: PositionWithProfitLoss) =>
   position.has_market_data === true;
 
-export function PublicPortfolioAssetsTable({
+export async function PublicPortfolioAssetsTable({
   positions,
 }: PublicPortfolioAssetsTableProps) {
+  const locale = await getRequestLocale();
   if (positions.length === 0) {
     return (
       <Card className="flex h-80 flex-col gap-4 rounded-lg shadow-xs">
@@ -88,22 +90,23 @@ export function PublicPortfolioAssetsTable({
                   <Badge variant="outline">{position.currency}</Badge>
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
-                  {formatNumber(position.current_quantity ?? 0, undefined, {
+                  {formatNumber(position.current_quantity ?? 0, {
+                    locale,
                     maximumFractionDigits: 6,
                   })}
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
-                  {formatNumber(position.current_unit_value ?? 0, undefined, {
+                  {formatNumber(position.current_unit_value ?? 0, {
+                    locale,
                     maximumFractionDigits: 2,
                   })}
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
                   {marketDataAvailable
-                    ? formatNumber(
-                        position.cost_basis_per_unit ?? 0,
-                        undefined,
-                        { maximumFractionDigits: 2 },
-                      )
+                    ? formatNumber(position.cost_basis_per_unit ?? 0, {
+                        locale,
+                        maximumFractionDigits: 2,
+                      })
                     : "-"}
                 </TableCell>
                 <TableCell
@@ -117,7 +120,8 @@ export function PublicPortfolioAssetsTable({
                   )}
                 >
                   {marketDataAvailable
-                    ? formatNumber(profitLoss, undefined, {
+                    ? formatNumber(profitLoss, {
+                        locale,
                         maximumFractionDigits: 2,
                       })
                     : "-"}
@@ -133,7 +137,7 @@ export function PublicPortfolioAssetsTable({
                   )}
                 >
                   {marketDataAvailable
-                    ? formatPercentage(profitLossPercent)
+                    ? formatPercentage(profitLossPercent, { locale })
                     : "-"}
                 </TableCell>
               </TableRow>

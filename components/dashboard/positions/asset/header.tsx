@@ -15,6 +15,7 @@ import {
   formatNumber,
   formatPercentage,
 } from "@/lib/number-format";
+import { getRequestLocale } from "@/lib/locale/resolve-locale";
 import { cn } from "@/lib/utils";
 
 import type {
@@ -23,7 +24,7 @@ import type {
   PositionWithProfitLoss,
 } from "@/types/global.types";
 
-export function AssetHeader({
+export async function AssetHeader({
   position,
   symbol,
   positionWithProfitLoss,
@@ -32,6 +33,7 @@ export function AssetHeader({
   symbol: Symbol | null;
   positionWithProfitLoss: PositionWithProfitLoss;
 }) {
+  const locale = await getRequestLocale();
   return (
     <div className="space-y-2">
       {/* Asset name and type */}
@@ -92,7 +94,8 @@ export function AssetHeader({
             <div>
               <p className="text-muted-foreground">Quantity</p>
               <p className="font-semibold">
-                {formatNumber(position.current_quantity, undefined, {
+                {formatNumber(position.current_quantity, {
+                  locale,
                   maximumFractionDigits: 6,
                 })}
               </p>
@@ -113,7 +116,13 @@ export function AssetHeader({
                 </Tooltip>
               </div>
               <div className="flex items-center gap-1.5 font-semibold">
-                {formatCurrency(position.current_unit_value, position.currency)}
+                {formatCurrency(
+                  position.current_unit_value,
+                  position.currency,
+                  {
+                    locale,
+                  },
+                )}
                 <StaleBadge positionId={position.id} label="Stale" />
               </div>
             </div>
@@ -123,6 +132,7 @@ export function AssetHeader({
                 {formatCurrency(
                   positionWithProfitLoss.cost_basis_per_unit ?? 0,
                   position.currency,
+                  { locale },
                 )}
               </p>
             </div>
@@ -139,11 +149,13 @@ export function AssetHeader({
                 {formatCurrency(
                   positionWithProfitLoss.profit_loss,
                   position.currency,
+                  { locale },
                 )}
                 <span className="ml-1">
                   (
                   {formatPercentage(
                     positionWithProfitLoss.profit_loss_percentage,
+                    { locale },
                   )}
                   )
                 </span>
@@ -156,7 +168,8 @@ export function AssetHeader({
             <div>
               <p className="text-muted-foreground">Quantity</p>
               <p className="font-semibold">
-                {formatNumber(position.current_quantity, undefined, {
+                {formatNumber(position.current_quantity, {
+                  locale,
                   maximumFractionDigits: 6,
                 })}
               </p>
@@ -164,7 +177,13 @@ export function AssetHeader({
             <div>
               <p className="text-muted-foreground">Unit Value</p>
               <p className="font-semibold">
-                {formatCurrency(position.current_unit_value, position.currency)}
+                {formatCurrency(
+                  position.current_unit_value,
+                  position.currency,
+                  {
+                    locale,
+                  },
+                )}
               </p>
             </div>
           </>

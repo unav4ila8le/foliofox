@@ -12,6 +12,7 @@ import {
 } from "recharts";
 
 import { formatCompactNumber, formatCurrency } from "@/lib/number-format";
+import { useLocale } from "@/hooks/use-locale";
 
 import type { ProjectedIncomeData } from "@/types/global.types";
 
@@ -24,6 +25,7 @@ export function ProjectedIncomeBarChart({
   data,
   currency,
 }: ProjectedIncomeBarChartProps) {
+  const locale = useLocale();
   // Format date for display on X-axis
   const formatXAxisDate = (date: Date) => {
     return format(date, "MMM yy");
@@ -31,7 +33,7 @@ export function ProjectedIncomeBarChart({
 
   // Format value for display on Y-axis
   const formatYAxisValue = (value: number) => {
-    return formatCompactNumber(value);
+    return formatCompactNumber(value, { locale });
   };
 
   return (
@@ -65,7 +67,7 @@ export function ProjectedIncomeBarChart({
                   {format(data.payload.date, "MMMM yyyy")}
                 </span>
                 <span className="text-sm">
-                  {formatCurrency(Number(data.value), currency)}
+                  {formatCurrency(Number(data.value), currency, { locale })}
                 </span>
               </div>
             );

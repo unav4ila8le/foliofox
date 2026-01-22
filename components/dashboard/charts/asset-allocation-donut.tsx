@@ -12,6 +12,7 @@ import {
   formatCurrency,
   formatPercentage,
 } from "@/lib/number-format";
+import { useLocale } from "@/hooks/use-locale";
 import { cn } from "@/lib/utils";
 
 const COLORS = [
@@ -47,6 +48,8 @@ function AssetAllocationDonutBase({
   className,
   maskValues = false,
 }: AssetAllocationDonutBaseProps) {
+  const locale = useLocale();
+
   const totalAssetsValue = useMemo(() => {
     return assetAllocation.reduce((sum, item) => sum + item.total_value, 0);
   }, [assetAllocation]);
@@ -99,7 +102,9 @@ function AssetAllocationDonutBase({
                       value={
                         maskValues
                           ? "* * * * * * * *"
-                          : formatCompactCurrency(netWorth, currency)
+                          : formatCompactCurrency(netWorth, currency, {
+                              locale,
+                            })
                       }
                       position="center"
                       style={{
@@ -135,7 +140,9 @@ function AssetAllocationDonutBase({
                             {data.payload.name}
                           </span>
                           <span className="text-foreground text-xs font-semibold">
-                            {formatCurrency(Number(data.value), currency)}
+                            {formatCurrency(Number(data.value), currency, {
+                              locale,
+                            })}
                           </span>
                         </div>
                       );
@@ -164,6 +171,7 @@ function AssetAllocationDonutBase({
                               totalAssetsValue === 0
                                 ? 0
                                 : item.total_value / totalAssetsValue,
+                              { locale },
                             )}
                           </span>
                         </span>

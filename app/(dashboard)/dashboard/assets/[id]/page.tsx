@@ -17,6 +17,7 @@ import { calculateSymbolDividendYield } from "@/server/analysis/dividend-yield";
 
 import { calculateProfitLoss } from "@/lib/profit-loss";
 import { formatPercentage, formatCurrency } from "@/lib/number-format";
+import { getRequestLocale } from "@/lib/locale/resolve-locale";
 
 import type {
   PositionSnapshot,
@@ -56,6 +57,9 @@ async function AssetContent({
   page: number;
 }) {
   "use cache: private";
+
+  // Get locale for formatting
+  const locale = await getRequestLocale();
 
   // Fetch position with snapshots to calculate P/L
   let position: TransformedPosition;
@@ -151,7 +155,9 @@ async function AssetContent({
                   Dividend Yield{" "}
                   <span className="text-foreground font-medium">
                     {dividendYield?.dividendYield
-                      ? formatPercentage(dividendYield.dividendYield)
+                      ? formatPercentage(dividendYield.dividendYield, {
+                          locale,
+                        })
                       : "N/A"}
                   </span>
                 </p>
@@ -160,7 +166,9 @@ async function AssetContent({
                 <p className="text-muted-foreground">Est. Annual</p>
                 <p className="text-green-600">
                   {totalAnnualIncome > 0
-                    ? formatCurrency(totalAnnualIncome, dividendCurrency)
+                    ? formatCurrency(totalAnnualIncome, dividendCurrency, {
+                        locale,
+                      })
                     : "N/A"}
                 </p>
               </div>

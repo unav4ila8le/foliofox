@@ -4,40 +4,48 @@
  * A comprehensive set of functions for formatting numbers, currencies, and percentages
  * in a consistent way across the application. Numbers and strings are supported.
  *
+ * All functions accept an options object with `locale` for consistent server/client rendering.
+ * - Server Components: pass locale from `await getRequestLocale()`
+ * - Client Components: pass locale from `useLocale()` hook
+ *
  * @example
  * // Basic number formatting
- * formatNumber(1234.5678);        // "1,235"
- * formatNumber(1234.5678, 2);     // "1,234.57"
- * formatNumber(1234.5678, 0);     // "1,235"
+ * formatNumber(1234.5678);                          // "1,235" (browser default locale)
+ * formatNumber(1234.5678, { locale });              // "1,235" (explicit locale)
+ * formatNumber(1234.5678, { locale, decimals: 2 }); // "1,234.57"
  *
  * @example
  * // Currency formatting (automatic decimal places)
- * formatCurrency(1234.56, "USD");  // "USD 1,234.56"  (2 decimals)
- * formatCurrency(1234.56, "JPY");  // "JPY 1,235"     (0 decimals)
- * formatCurrency(1234.56, "BHD");  // "BHD 1,234.560" (3 decimals)
+ * formatCurrency(1234.56, "USD", { locale });  // "USD 1,234.56"
+ * formatCurrency(1234.56, "JPY", { locale });  // "JPY 1,235"
  *
  * @example
  * // Currency with symbols
- * formatCurrency(1234.56, "USD", { display: "symbol" }); // "$1,234.56"
- * formatCurrency(1234.56, "JPY", { display: "symbol" }); // "¥1,235"
+ * formatCurrency(1234.56, "USD", { locale, display: "symbol" }); // "$1,234.56"
  *
  * @example
  * // Percentage formatting
- * formatPercentage(0.1234);     // "12.34%"
- * formatPercentage(0.1234, 1);  // "12.3%"
+ * formatPercentage(0.1234, { locale });              // "12.34%"
+ * formatPercentage(0.1234, { locale, decimals: 1 }); // "12.3%"
  *
  * @example
  * // Compact formatting for large numbers
- * formatCompactNumber(1234567);           // "1.2M"
- * formatCompactCurrency(1234567, "USD");  // "USD 1.2M" (locale-dependent order)
- *
- * @example
- * // String input handling
- * formatNumber("1,234.56");         // "1,235"
- * formatCurrency("invalid", "USD"); // "" (empty string for invalid input)
+ * formatCompactNumber(1234567, { locale });           // "1.2M"
+ * formatCompactCurrency(1234567, "USD", { locale });  // "USD 1.2M"
  */
 
+/**
+ * Options for number formatting
+ */
 type FormatNumberOptions = {
+  /**
+   * Locale for formatting (e.g., "en-US", "de-DE")
+   */
+  locale?: string;
+  /**
+   * Shorthand for setting both min and max fraction digits
+   */
+  decimals?: number;
   /**
    * Minimum number of decimal places
    */
@@ -56,7 +64,11 @@ type FormatNumberOptions = {
 /**
  * Options for currency formatting
  */
-type CurrencyFormatOptions = {
+type FormatCurrencyOptions = {
+  /**
+   * Locale for formatting (e.g., "en-US", "de-DE")
+   */
+  locale?: string;
   /**
    * How to display the currency
    * - 'code': Shows the ISO currency code (e.g., "1,234.56 USD")
@@ -67,9 +79,34 @@ type CurrencyFormatOptions = {
 };
 
 /**
+ * Options for percentage formatting
+ */
+type FormatPercentageOptions = {
+  /**
+   * Locale for formatting (e.g., "en-US", "de-DE")
+   */
+  locale?: string;
+  /**
+   * Number of decimal places
+   * @default 2
+   */
+  decimals?: number;
+};
+
+/**
+ * Options for compact number formatting
+ */
+type FormatCompactOptions = {
+  /**
+   * Locale for formatting (e.g., "en-US", "de-DE")
+   */
+  locale?: string;
+};
+
+/**
  * Default options for number formatting
  */
-const defaultOptions: FormatNumberOptions = {
+const defaultNumberOptions = {
   minimumFractionDigits: 0,
   maximumFractionDigits: 0,
   useGrouping: true,
@@ -78,19 +115,19 @@ const defaultOptions: FormatNumberOptions = {
 /**
  * Formats a number according to the specified options
  * @param value The number or string to format
- * @param decimals Shorthand for setting both min and max fraction digits
- * @param options Additional formatting options
+ * @param options Formatting options including locale, decimals, and other settings
  * @returns Formatted number string
  */
 export function formatNumber(
   value: number | string,
-  decimals?: number,
   options?: FormatNumberOptions,
 ): string {
   // Handle string input
   const num =
     typeof value === "string" ? parseFloat(value.replace(/,/g, "")) : value;
   if (isNaN(num)) return "";
+
+  const { locale, decimals, ...restOptions } = options ?? {};
 
   // If decimals is provided, use it for both min and max
   const decimalOptions =
@@ -101,9 +138,9 @@ export function formatNumber(
         }
       : {};
 
-  const opts = { ...defaultOptions, ...decimalOptions, ...options };
+  const opts = { ...defaultNumberOptions, ...decimalOptions, ...restOptions };
 
-  const formatter = new Intl.NumberFormat(undefined, {
+  const formatter = new Intl.NumberFormat(locale, {
     style: "decimal",
     minimumFractionDigits: opts.minimumFractionDigits,
     maximumFractionDigits: opts.maximumFractionDigits,
@@ -117,72 +154,75 @@ export function formatNumber(
  * Formats a monetary value with the specified currency
  * @param value The monetary value to format
  * @param currency The ISO 4217 currency code
- * @param options Currency formatting options
+ * @param options Formatting options including locale and display style
  * @returns Formatted currency string
  */
 export function formatCurrency(
   value: number | string,
   currency: string,
-  options: CurrencyFormatOptions = { display: "code" },
+  options?: FormatCurrencyOptions,
 ): string {
   const num =
     typeof value === "string" ? parseFloat(value.replace(/,/g, "")) : value;
   if (isNaN(num)) return "";
 
-  if (options.display === "symbol") {
-    const formatter = new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency,
-      currencyDisplay: "symbol",
-    });
-    return formatter.format(num);
-  }
+  const { locale, display = "code" } = options ?? {};
 
-  // For code display, we'll also use Intl.NumberFormat but with code display
-  const formatter = new Intl.NumberFormat(undefined, {
+  const formatter = new Intl.NumberFormat(locale, {
     style: "currency",
     currency,
-    currencyDisplay: "code",
+    currencyDisplay: display === "symbol" ? "symbol" : "code",
   });
+
   return formatter.format(num);
 }
 
 /**
  * Formats a percentage value
  * @param value The decimal value to format as percentage
- * @param decimals Number of decimal places (default: 2)
+ * @param options Formatting options including locale and decimal places
  * @returns Formatted percentage string
  */
 export function formatPercentage(
   value: number | string,
-  decimals: number = 2,
+  options?: FormatPercentageOptions,
 ): string {
   const num =
     typeof value === "string" ? parseFloat(value.replace(/,/g, "")) : value;
   if (isNaN(num)) return "";
 
-  const formatter = new Intl.NumberFormat(undefined, {
+  const { locale, decimals = 2 } = options ?? {};
+
+  const formatter = new Intl.NumberFormat(locale, {
     style: "percent",
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   });
+
   return formatter.format(num);
 }
 
 /**
  * Formats a large number in a human-readable format
  * @param value The number to format
+ * @param options Formatting options including locale
  * @returns Formatted string with K, M, B suffix
  */
-export function formatCompactNumber(value: number | string): string {
+export function formatCompactNumber(
+  value: number | string,
+  options?: FormatCompactOptions,
+): string {
   const num =
     typeof value === "string" ? parseFloat(value.replace(/,/g, "")) : value;
   if (isNaN(num)) return "";
 
-  const formatter = new Intl.NumberFormat(undefined, {
+  const { locale } = options ?? {};
+
+  const formatter = new Intl.NumberFormat(locale, {
     notation: "compact",
     maximumFractionDigits: 1,
   });
+
   return formatter.format(num);
 }
 
@@ -190,22 +230,27 @@ export function formatCompactNumber(value: number | string): string {
  * Formats a monetary value in compact notation with currency code
  * @param value The monetary value to format
  * @param currency The ISO 4217 currency code
+ * @param options Formatting options including locale
  * @returns Formatted compact currency string (e.g., "1.2M USD")
  */
 export function formatCompactCurrency(
   value: number | string,
   currency: string,
+  options?: FormatCompactOptions,
 ): string {
   const num =
     typeof value === "string" ? parseFloat(value.replace(/,/g, "")) : value;
   if (isNaN(num)) return "";
 
-  const formatter = new Intl.NumberFormat(undefined, {
+  const { locale } = options ?? {};
+
+  const formatter = new Intl.NumberFormat(locale, {
     style: "currency",
     currency,
     currencyDisplay: "code",
     notation: "compact",
     maximumFractionDigits: 1,
   });
+
   return formatter.format(num);
 }

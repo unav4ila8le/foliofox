@@ -118,13 +118,12 @@ export const columns: ColumnDef<PositionWithProfitLoss>[] = [
       headerClassName: "text-right",
       cellClassName: "text-right",
     },
-    cell: ({ row }) => {
+    cell: ({ row, table }) => {
+      const locale = table.options.meta?.locale;
       const current_quantity = row.getValue<number>("current_quantity");
       return (
         <div className="tabular-nums">
-          {formatNumber(current_quantity, undefined, {
-            maximumFractionDigits: 6,
-          })}
+          {formatNumber(current_quantity, { locale, maximumFractionDigits: 6 })}
         </div>
       );
     },
@@ -136,12 +135,14 @@ export const columns: ColumnDef<PositionWithProfitLoss>[] = [
       headerClassName: "text-right",
       cellClassName: "text-right",
     },
-    cell: ({ row }) => {
+    cell: ({ row, table }) => {
+      const locale = table.options.meta?.locale;
       const current_unit_value = row.getValue<number>("current_unit_value");
       return (
         <div className="flex items-center justify-end gap-2 tabular-nums">
           <span>
-            {formatNumber(current_unit_value, undefined, {
+            {formatNumber(current_unit_value, {
+              locale,
               maximumFractionDigits: 2,
             })}
           </span>
@@ -157,7 +158,8 @@ export const columns: ColumnDef<PositionWithProfitLoss>[] = [
       headerClassName: "text-right",
       cellClassName: "text-right",
     },
-    cell: ({ row }) => {
+    cell: ({ row, table }) => {
+      const locale = table.options.meta?.locale;
       const hasMarketData = positionHasMarketData(row.original);
       if (!hasMarketData) {
         return <span className="text-muted-foreground">-</span>;
@@ -166,7 +168,8 @@ export const columns: ColumnDef<PositionWithProfitLoss>[] = [
       const cost_basis_per_unit = row.getValue<number>("cost_basis_per_unit");
       return (
         <div className="tabular-nums">
-          {formatNumber(cost_basis_per_unit, undefined, {
+          {formatNumber(cost_basis_per_unit, {
+            locale,
             maximumFractionDigits: 2,
           })}
         </div>
@@ -190,7 +193,8 @@ export const columns: ColumnDef<PositionWithProfitLoss>[] = [
         </div>
       );
     },
-    cell: ({ row }) => {
+    cell: ({ row, table }) => {
+      const locale = table.options.meta?.locale;
       const hasMarketData = positionHasMarketData(row.original);
       if (!hasMarketData) {
         return <span className="text-muted-foreground">-</span>;
@@ -207,7 +211,7 @@ export const columns: ColumnDef<PositionWithProfitLoss>[] = [
           )}
         >
           {isPositive ? "+" : ""}
-          {formatNumber(profit_loss, undefined, { maximumFractionDigits: 2 })}
+          {formatNumber(profit_loss, { locale, maximumFractionDigits: 2 })}
         </div>
       );
     },
@@ -229,7 +233,8 @@ export const columns: ColumnDef<PositionWithProfitLoss>[] = [
         </div>
       );
     },
-    cell: ({ row }) => {
+    cell: ({ row, table }) => {
+      const locale = table.options.meta?.locale;
       const hasMarketData = positionHasMarketData(row.original);
       if (!hasMarketData) {
         return <span className="text-muted-foreground">-</span>;
@@ -248,7 +253,7 @@ export const columns: ColumnDef<PositionWithProfitLoss>[] = [
           )}
         >
           {isPositive ? "+" : ""}
-          {formatPercentage(profit_loss_percentage)}
+          {formatPercentage(profit_loss_percentage, { locale })}
         </div>
       );
     },
@@ -270,13 +275,12 @@ export const columns: ColumnDef<PositionWithProfitLoss>[] = [
         </div>
       );
     },
-    cell: ({ row }) => {
+    cell: ({ row, table }) => {
+      const locale = table.options.meta?.locale;
       const total_value = row.getValue<number>("total_value");
       return (
         <div className="tabular-nums">
-          {formatNumber(total_value, undefined, {
-            maximumFractionDigits: 2,
-          })}
+          {formatNumber(total_value, { locale, maximumFractionDigits: 2 })}
         </div>
       );
     },

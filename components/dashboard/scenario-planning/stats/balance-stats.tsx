@@ -1,3 +1,5 @@
+"use client";
+
 import { useMemo } from "react";
 import { TrendingUp, TrendingDown, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
@@ -15,6 +17,7 @@ import {
 } from "@/components/ui/tooltip";
 
 import { formatPercentage, formatCurrency } from "@/lib/number-format";
+import { useLocale } from "@/hooks/use-locale";
 import { cn } from "@/lib/utils";
 
 interface CashflowEntry {
@@ -86,6 +89,7 @@ export const BalanceStats = ({
   scenarioResult,
   endDate,
 }: BalanceStatsProps) => {
+  const locale = useLocale();
   const stats = useMemo(
     () => calculateStats(scenarioResult, initialBalance, finalBalance),
     [scenarioResult, initialBalance, finalBalance],
@@ -105,7 +109,7 @@ export const BalanceStats = ({
           >
             <span>
               {stats.netChange >= 0 ? "+" : ""}
-              {formatCurrency(stats.netChange, currency)}
+              {formatCurrency(stats.netChange, currency, { locale })}
             </span>
             {stats.netChange >= 0 ? (
               <TrendingUp className="size-4" />
@@ -124,7 +128,7 @@ export const BalanceStats = ({
             {stats.netChange >= 0 ? "+" : ""}
             {initialBalance === 0
               ? "N/A%"
-              : formatPercentage(stats.netChangePercentage / 100, 2)}
+              : formatPercentage(stats.netChangePercentage / 100, { locale })}
           </p>
         </CardHeader>
       </Card>
@@ -145,7 +149,7 @@ export const BalanceStats = ({
                   : undefined,
             )}
           >
-            {formatCurrency(stats.lowestBalance, currency)}
+            {formatCurrency(stats.lowestBalance, currency, { locale })}
             {stats.isLowestBelowInitial && (
               <Tooltip>
                 <TooltipTrigger>
@@ -174,7 +178,7 @@ export const BalanceStats = ({
             )}
           >
             {stats.avgMonthlyChange >= 0 ? "+" : ""}
-            {formatCurrency(stats.avgMonthlyChange, currency)}
+            {formatCurrency(stats.avgMonthlyChange, currency, { locale })}
           </CardTitle>
           <p className="text-muted-foreground text-xs">
             Over {stats.monthCount} months
@@ -194,7 +198,7 @@ export const BalanceStats = ({
                 : "text-yellow-600",
             )}
           >
-            {formatCurrency(finalBalance, currency)}
+            {formatCurrency(finalBalance, currency, { locale })}
             {finalBalance < initialBalance && (
               <Tooltip>
                 <TooltipTrigger>

@@ -36,6 +36,7 @@ import { BalanceStats } from "../stats/balance-stats";
 import { runScenario, Scenario, ScenarioEvent } from "@/lib/scenario-planning";
 import { fromJSDate } from "@/lib/date-format";
 import { formatCompactNumber, formatCurrency } from "@/lib/number-format";
+import { useLocale } from "@/hooks/use-locale";
 import { cn } from "@/lib/utils";
 
 const CustomEventMarker = (props: {
@@ -141,6 +142,7 @@ export function BalanceChart({
   initialBalance: number;
   onAddEvent?: () => void;
 }) {
+  const locale = useLocale();
   const [timeHorizon, setTimeHorizon] = useState<"2" | "5" | "10" | "30">("5");
   const [scale, setScale] = useState<"monthly" | "quarterly" | "yearly">(
     "monthly",
@@ -443,7 +445,7 @@ export function BalanceChart({
   };
 
   const formatYAxisValue = (value: number) => {
-    return formatCompactNumber(value);
+    return formatCompactNumber(value, { locale });
   };
 
   return (
@@ -699,7 +701,9 @@ export function BalanceChart({
                                   : undefined
                               }
                             >
-                              {formatCurrency(monthData.balance, currency)}
+                              {formatCurrency(monthData.balance, currency, {
+                                locale,
+                              })}
                             </span>
                           </p>
                         </div>
@@ -718,7 +722,9 @@ export function BalanceChart({
                             )}
                           >
                             {monthData.cashflow >= 0 ? "+" : ""}
-                            {formatCurrency(monthData.cashflow, currency)}
+                            {formatCurrency(monthData.cashflow, currency, {
+                              locale,
+                            })}
                           </span>
                         </div>
 
@@ -828,7 +834,9 @@ export function BalanceChart({
                                         }`}
                                       >
                                         {value >= 0 ? "+" : ""}
-                                        {formatCurrency(value, currency)}
+                                        {formatCurrency(value, currency, {
+                                          locale,
+                                        })}
                                       </span>
                                     </div>
                                   );

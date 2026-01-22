@@ -31,6 +31,7 @@ import { HumbleWorthLogo } from "@/components/ui/logos/humbleworth-logo";
 import { useNewAssetDialog } from "../index";
 
 import { formatCurrency } from "@/lib/number-format";
+import { useLocale } from "@/hooks/use-locale";
 import { fetchSingleDomainValuation } from "@/server/domain-valuations/fetch";
 import { createPosition } from "@/server/positions/create";
 
@@ -59,6 +60,7 @@ const formSchema = z.object({
 export function DomainForm() {
   // Props destructuring and context hooks
   const { setOpenFormDialog, setOpenSelectionDialog } = useNewAssetDialog();
+  const locale = useLocale();
 
   // State declarations
   const [isLoading, setIsLoading] = useState(false);
@@ -211,7 +213,7 @@ export function DomainForm() {
           <div className="space-y-1">
             <p className="text-sm font-medium">Valuation</p>
             <p className="font-semibold text-green-600">
-              {formatCurrency(valuation, "USD")}
+              {formatCurrency(valuation, "USD", { locale })}
             </p>
             <p className="text-muted-foreground text-sm">
               Valuation is provided by{" "}

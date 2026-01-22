@@ -120,11 +120,12 @@ export function getPortfolioRecordColumns({
     {
       accessorKey: "quantity",
       header: "Quantity",
-      cell: ({ row }) => {
+      cell: ({ row, table }) => {
+        const locale = table.options.meta?.locale;
         const quantity = row.getValue<number>("quantity");
         return (
           <div className="tabular-nums">
-            {formatNumber(quantity, undefined, { maximumFractionDigits: 6 })}
+            {formatNumber(quantity, { locale, maximumFractionDigits: 6 })}
           </div>
         );
       },
@@ -132,11 +133,12 @@ export function getPortfolioRecordColumns({
     {
       accessorKey: "unit_value",
       header: "Unit Value",
-      cell: ({ row }) => {
+      cell: ({ row, table }) => {
+        const locale = table.options.meta?.locale;
         const unit_value = row.getValue<number>("unit_value");
         return (
           <div className="tabular-nums">
-            {formatNumber(unit_value, undefined, { maximumFractionDigits: 2 })}
+            {formatNumber(unit_value, { locale, maximumFractionDigits: 2 })}
           </div>
         );
       },
@@ -144,13 +146,14 @@ export function getPortfolioRecordColumns({
     {
       id: "total_value",
       header: "Total Value",
-      cell: ({ row }) => {
+      cell: ({ row, table }) => {
+        const locale = table.options.meta?.locale;
         const quantity = row.getValue<number>("quantity") ?? 0;
         const unit_value = row.getValue<number>("unit_value") ?? 0;
         const total_value = quantity * unit_value;
         return (
           <div className="tabular-nums">
-            {formatNumber(total_value, undefined, { maximumFractionDigits: 2 })}
+            {formatNumber(total_value, { locale, maximumFractionDigits: 2 })}
           </div>
         );
       },

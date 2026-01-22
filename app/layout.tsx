@@ -2,10 +2,13 @@ import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
 import { Suspense } from "react";
 
-import { PostHogProvider } from "@/components/features/posthog/posthog-provider";
-import { ThemeProvider } from "@/components/features/theme/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 
+import { LocaleProvider } from "@/components/features/locale/locale-provider";
+import { PostHogProvider } from "@/components/features/posthog/posthog-provider";
+import { ThemeProvider } from "@/components/features/theme/theme-provider";
+
+import { resolveLocale } from "@/lib/locale/resolve-locale";
 import { getOptionalUser } from "@/server/auth/actions";
 
 import "./globals.css";
@@ -40,7 +43,17 @@ async function PostHogUserProvider({
   return <PostHogProvider user={userData}>{children}</PostHogProvider>;
 }
 
-export default function RootLayout({
+// Async wrapper that resolves locale and wraps children
+async function LocaleProviderWrapper({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const locale = await resolveLocale();
+  return <LocaleProvider locale={locale}>{children}</LocaleProvider>;
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -56,8 +69,10 @@ export default function RootLayout({
               enableSystem
               disableTransitionOnChange
             >
-              <Toaster />
-              {children}
+              <LocaleProviderWrapper>
+                <Toaster />
+                {children}
+              </LocaleProviderWrapper>
             </ThemeProvider>
           </PostHogUserProvider>
         </Suspense>

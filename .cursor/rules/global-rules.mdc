@@ -82,7 +82,7 @@ alwaysApply: true
    }
 
    // Component with explicit return type
-   export function ComponentName({ prop1, prop2 }: Props): JSX.Element {
+   export function ComponentName({ prop1, prop2 }: Props) {
      // 1. Hooks
      // 2. Derived state
      // 3. Event handlers

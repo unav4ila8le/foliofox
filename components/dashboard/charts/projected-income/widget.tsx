@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ProjectedIncomeBarChart } from "./chart";
 
 import { formatCurrency } from "@/lib/number-format";
+import { useLocale } from "@/hooks/use-locale";
 import { cn } from "@/lib/utils";
 
 import type { ProjectedIncomeResult } from "@/server/analysis/projected-income";
@@ -21,6 +22,7 @@ export function ProjectedIncomeWidget({
   currency,
   className,
 }: ProjectedIncomeWidgetProps) {
+  const locale = useLocale();
   // Handle error state
   if (!projectedIncome.success) {
     return (
@@ -80,7 +82,7 @@ export function ProjectedIncomeWidget({
         <div className="text-right">
           <p className="text-muted-foreground text-xs">Est. Annual</p>
           <p className="text-sm text-green-600">
-            {formatCurrency(totalAnnualIncome, currency)}
+            {formatCurrency(totalAnnualIncome, currency, { locale })}
           </p>
         </div>
       </CardHeader>
