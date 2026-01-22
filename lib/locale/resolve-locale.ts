@@ -3,22 +3,43 @@ import { cookies, headers } from "next/headers";
 
 import { DEFAULT_LOCALE } from "@/lib/locale/locale-constants";
 
+function normalizeLocale(value?: string | null): string | null {
+  if (!value) {
+    return null;
+  }
+
+  const candidate = value.split(",")[0]?.split(";")[0]?.trim();
+  if (!candidate || candidate === "*") {
+    return null;
+  }
+
+  try {
+    const [supported] = Intl.NumberFormat.supportedLocalesOf([candidate]);
+    return supported || null;
+  } catch {
+    return null;
+  }
+}
+
 export const resolveLocale = cache(
   async (preferredLocale?: string | null): Promise<string> => {
-    if (preferredLocale) {
-      return preferredLocale;
+    const resolvedPreferredLocale = normalizeLocale(preferredLocale);
+    if (resolvedPreferredLocale) {
+      return resolvedPreferredLocale;
     }
 
     const cookieStore = await cookies();
-    const cookieLocale = cookieStore.get("locale")?.value;
-    if (cookieLocale) {
-      return cookieLocale;
+    const resolvedCookieLocale = normalizeLocale(
+      cookieStore.get("locale")?.value,
+    );
+    if (resolvedCookieLocale) {
+      return resolvedCookieLocale;
     }
 
     const headerStore = await headers();
     const acceptLanguage = headerStore.get("accept-language");
-    const headerLocale = acceptLanguage?.split(",")[0]?.trim();
-    return headerLocale || DEFAULT_LOCALE;
+    const resolvedHeaderLocale = normalizeLocale(acceptLanguage);
+    return resolvedHeaderLocale || DEFAULT_LOCALE;
   },
 );
 
