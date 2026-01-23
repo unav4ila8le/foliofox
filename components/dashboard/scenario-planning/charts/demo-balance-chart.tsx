@@ -8,7 +8,7 @@ import {
   type Scenario,
 } from "@/lib/scenario-planning";
 import { addYears } from "date-fns";
-import { fromJSDate, ld } from "@/lib/date-format";
+import { fromJSDate, ld } from "@/lib/date/date-utils";
 import {
   Area,
   AreaChart,

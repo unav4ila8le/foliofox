@@ -1,6 +1,6 @@
 import { Database } from "@/types/database.types";
 import { z } from "zod";
-import { LocalDate } from "@/lib/date-format";
+import { LocalDate } from "@/lib/date/date-utils";
 
 //-- Schemas
 const CashflowConditions = z.discriminatedUnion("type", [

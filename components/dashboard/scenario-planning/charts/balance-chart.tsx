@@ -34,7 +34,7 @@ import { DemoBalanceChart } from "./demo-balance-chart";
 import { BalanceStats } from "../stats/balance-stats";
 
 import { runScenario, Scenario, ScenarioEvent } from "@/lib/scenario-planning";
-import { fromJSDate } from "@/lib/date-format";
+import { fromJSDate } from "@/lib/date/date-utils";
 import { formatCompactNumber, formatCurrency } from "@/lib/number-format";
 import { useLocale } from "@/hooks/use-locale";
 import { cn } from "@/lib/utils";

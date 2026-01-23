@@ -1,15 +1,25 @@
 import { z } from "zod";
 
+type DateInput = Date | string | number;
+
 const DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+function toDate(value: DateInput): Date | null {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+  return date;
+}
 
 /**
  * Format a date as a UTC date key in the format "yyyy-MM-dd".
  * @param date - The date to format
  * @returns The formatted date key
  */
-export function formatUtcDateKey(date: Date): string {
-  const value = date instanceof Date ? date : new Date(date);
-  if (Number.isNaN(value.getTime())) {
+export function formatUtcDateKey(date: DateInput): string {
+  const value = toDate(date);
+  if (!value) {
     throw new Error("Invalid date provided to formatUtcDateKey");
   }
 
@@ -43,8 +53,9 @@ export function parseUtcDateKey(dateKey: string): Date {
 }
 
 /**
- * LocalDate: A timezone-agnostic date representation
- * Uses year, month, day components instead of timestamps to avoid timezone issues
+ * LocalDate: A timezone-agnostic date representation.
+ * Uses year, month, day components instead of timestamps to avoid timezone issues.
+ * LocalDate is locale-agnostic; localization happens when formatting for display.
  */
 export type LocalDate = {
   y: number; // year

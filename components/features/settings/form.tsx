@@ -15,6 +15,13 @@ import {
   FormMessage,
   FormDescription,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -138,7 +145,7 @@ export function SettingsForm({ onSuccess }: SettingsFormProps) {
           name="display_currency"
           render={({ field }) => (
             <FormItem className="sm:w-1/2">
-              <FormLabel>Default currency</FormLabel>
+              <FormLabel>Base currency</FormLabel>
               <FormControl>
                 <CurrencySelector field={field} />
               </FormControl>
@@ -147,16 +154,32 @@ export function SettingsForm({ onSuccess }: SettingsFormProps) {
           )}
         />
 
+        <FormItem className="sm:w-1/2">
+          <FormLabel>Locale</FormLabel>
+          <FormControl>
+            <Select disabled value="auto">
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="auto">Auto</SelectItem>
+              </SelectContent>
+            </Select>
+          </FormControl>
+          <FormMessage />
+          <FormDescription>Date and number format.</FormDescription>
+        </FormItem>
+
         {/* Read-only email field */}
         <FormItem>
           <FormLabel>Email</FormLabel>
           <FormControl>
             <Input value={email} disabled />
           </FormControl>
+          <FormMessage />
           <FormDescription>
             If you need to change your email, please contact support.
           </FormDescription>
-          <FormMessage />
         </FormItem>
 
         <div className="flex justify-end gap-2">
