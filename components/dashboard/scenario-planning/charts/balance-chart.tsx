@@ -521,7 +521,11 @@ export function BalanceChart({
               </div>
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer
+              width="100%"
+              height="100%"
+              initialDimension={{ width: 256, height: 128 }}
+            >
               <AreaChart
                 data={chartData}
                 onMouseMove={(state) => {

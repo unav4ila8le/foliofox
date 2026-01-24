@@ -37,7 +37,11 @@ export function ProjectedIncomeBarChart({
   };
 
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ResponsiveContainer
+      width="100%"
+      height="100%"
+      initialDimension={{ width: 256, height: 128 }}
+    >
       <BarChart data={data}>
         <XAxis
           dataKey="date"
