@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { format } from "date-fns";
 
 import { parseChangelogs } from "@/lib/changelog/parse";
+import { formatDate } from "@/lib/date/date-format";
+import { getRequestLocale } from "@/lib/locale/resolve-locale";
 
 export const metadata: Metadata = {
   title: "Changelog",
@@ -10,6 +11,7 @@ export const metadata: Metadata = {
 
 export default async function ChangelogPage() {
   const changelogs = await parseChangelogs();
+  const locale = await getRequestLocale();
 
   if (changelogs.length === 0) {
     return <p className="text-muted-foreground">No changelog entries found.</p>;
@@ -27,7 +29,7 @@ export default async function ChangelogPage() {
             <div className="sticky top-8">
               <h1 className="text-lg font-semibold">{entry.title}</h1>
               <time className="text-muted-foreground text-sm">
-                {format(new Date(entry.date), "MMM d, yyyy")}
+                {formatDate(entry.date, { locale })}
               </time>
             </div>
           </div>

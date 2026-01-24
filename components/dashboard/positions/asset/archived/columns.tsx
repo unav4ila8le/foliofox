@@ -1,7 +1,6 @@
 "use client";
 
 import { ArrowUpDown } from "lucide-react";
-import { format } from "date-fns";
 
 import {
   Tooltip,
@@ -12,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ActionsCell } from "@/components/dashboard/positions/asset/table/row-actions/actions-cell";
 
+import { formatDate } from "@/lib/date/date-format";
 import { formatNumber } from "@/lib/number-format";
 
 import type { ColumnDef } from "@tanstack/react-table";
@@ -151,10 +151,11 @@ export const columns: ColumnDef<TransformedPosition>[] = [
         </div>
       );
     },
-    cell: ({ row }) => {
+    cell: ({ row, table }) => {
+      const locale = table.options.meta?.locale;
       const archived_at = row.getValue<Date>("archived_at");
 
-      return format(archived_at, "PPP");
+      return formatDate(archived_at, { locale });
     },
   },
   {

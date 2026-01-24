@@ -8,7 +8,7 @@ import {
   type Scenario,
 } from "@/lib/scenario-planning";
 import { addYears } from "date-fns";
-import { fromJSDate, ld } from "@/lib/date-format";
+import { fromJSDate, ld } from "@/lib/date/date-utils";
 import {
   Area,
   AreaChart,
@@ -17,6 +17,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { formatMonthYear } from "@/lib/date/date-format";
 import { formatCompactNumber } from "@/lib/number-format";
 import { useLocale } from "@/hooks/use-locale";
 
@@ -191,10 +192,7 @@ export function DemoBalanceChart({
     const date = new Date(timestamp);
     if (isNaN(date.getTime())) return "";
 
-    return date.toLocaleDateString(undefined, {
-      month: "short",
-      year: "2-digit",
-    });
+    return formatMonthYear(date, { locale, month: "short", year: "2-digit" });
   };
 
   const formatYAxisValue = (value: number) => {

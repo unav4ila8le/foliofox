@@ -2,7 +2,6 @@
 
 import { useMemo } from "react";
 import { TrendingUp, TrendingDown, AlertTriangle } from "lucide-react";
-import { format } from "date-fns";
 
 import {
   Card,
@@ -16,6 +15,7 @@ import {
   TooltipContent,
 } from "@/components/ui/tooltip";
 
+import { formatMonthYear } from "@/lib/date/date-format";
 import { formatPercentage, formatCurrency } from "@/lib/number-format";
 import { useLocale } from "@/hooks/use-locale";
 import { cn } from "@/lib/utils";
@@ -162,7 +162,11 @@ export const BalanceStats = ({
             )}
           </CardTitle>
           <p className="text-muted-foreground text-xs">
-            {format(stats.lowestBalanceDate, "MMM yyyy")}
+            {formatMonthYear(stats.lowestBalanceDate, {
+              locale,
+              month: "short",
+              year: "numeric",
+            })}
           </p>
         </CardHeader>
       </Card>
@@ -211,7 +215,11 @@ export const BalanceStats = ({
             )}
           </CardTitle>
           <p className="text-muted-foreground text-xs">
-            {format(endDate, "MMM yyyy")}
+            {formatMonthYear(endDate, {
+              locale,
+              month: "short",
+              year: "numeric",
+            })}
           </p>
         </CardHeader>
       </Card>

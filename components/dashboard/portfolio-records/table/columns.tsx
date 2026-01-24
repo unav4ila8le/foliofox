@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { ArrowUpDown } from "lucide-react";
-import { format } from "date-fns";
 
 import { ActionsCell } from "./row-actions/actions-cell";
 
 import { formatNumber } from "@/lib/number-format";
+import { formatDate } from "@/lib/date/date-format";
 
 import {
   Tooltip,
@@ -61,9 +61,10 @@ export function getPortfolioRecordColumns({
           <ArrowUpDown className="size-4" />
         </div>
       ),
-      cell: ({ row }) => {
+      cell: ({ row, table }) => {
+        const locale = table.options.meta?.locale;
         const date = new Date(row.getValue<string>("date"));
-        return format(date, "PPP");
+        return formatDate(date, { locale });
       },
     },
   ];

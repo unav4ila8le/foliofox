@@ -1,4 +1,4 @@
-import { formatUtcDateKey } from "@/lib/date-format";
+import { formatUtcDateKey } from "@/lib/date/date-utils";
 
 /**
  * Chunk an array into smaller arrays of a given size.

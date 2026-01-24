@@ -6,7 +6,6 @@ import {
   startOfYear,
   subMonths,
   subYears,
-  format,
 } from "date-fns";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
@@ -53,6 +52,7 @@ import {
   formatCurrency,
   formatNumber,
 } from "@/lib/number-format";
+import { formatDate, formatMonthDay } from "@/lib/date/date-format";
 import { useLocale } from "@/hooks/use-locale";
 import { cn } from "@/lib/utils";
 
@@ -141,7 +141,7 @@ export function NetWorthAreaChart({
 
   // Format date for display on X-axis
   const formatXAxisDate = (date: Date) => {
-    return format(date, "MMM d");
+    return formatMonthDay(date, { locale, month: "short", day: "numeric" });
   };
 
   // Format value for display on Y-axis
@@ -304,7 +304,7 @@ export function NetWorthAreaChart({
                     return (
                       <div className="bg-background border-border flex flex-col gap-1 rounded-md border px-2.5 py-1.5">
                         <span className="text-muted-foreground text-xs">
-                          {format(data.payload.date, "PPP")}
+                          {formatDate(data.payload.date, { locale })}
                         </span>
                         <span className="text-sm">
                           {formatCurrency(Number(data.value), currency, {

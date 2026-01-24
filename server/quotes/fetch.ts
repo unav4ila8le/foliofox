@@ -2,7 +2,7 @@
 
 import { addDays, compareAsc, subDays } from "date-fns";
 
-import { formatUtcDateKey, parseUtcDateKey } from "@/lib/date-format";
+import { formatUtcDateKey, parseUtcDateKey } from "@/lib/date/date-utils";
 import { yahooFinance } from "@/server/yahoo-finance/client";
 import { createServiceClient } from "@/supabase/service";
 import {

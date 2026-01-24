@@ -11,6 +11,8 @@ import {
 import { EditSharing, type EditSharingFormValues } from "./edit-sharing";
 
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
+import { useLocale } from "@/hooks/use-locale";
+import { formatDateTime } from "@/lib/date/date-format";
 import { cn } from "@/lib/utils";
 
 import type { PublicPortfolioMetadata } from "@/types/global.types";
@@ -27,6 +29,7 @@ export function ActiveSharing({
   isUpdating = false,
 }: ActiveSharingProps) {
   const { copyToClipboard, isCopied } = useCopyToClipboard();
+  const locale = useLocale();
 
   return (
     <div className="space-y-4">
@@ -66,9 +69,9 @@ export function ActiveSharing({
           {shareMetadata.neverExpires
             ? "Never expires"
             : shareMetadata.expiresAt
-              ? `Expires on ${new Date(
-                  shareMetadata.expiresAt,
-                ).toLocaleString()}`
+              ? `Expires on ${formatDateTime(shareMetadata.expiresAt, {
+                  locale,
+                })}`
               : "No expiration date set"}
         </p>
       </div>
