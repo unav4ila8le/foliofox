@@ -126,6 +126,9 @@ Microsoft,5,EUR`;
 
   it("should handle errors gracefully when currencies fetch fails", async () => {
     const { fetchCurrencies } = await import("@/server/currencies/fetch");
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
 
     vi.mocked(fetchCurrencies).mockRejectedValueOnce(
       new Error("Database error"),
@@ -139,5 +142,10 @@ Apple Inc,10,USD`;
     expect(result.success).toBe(false);
     expect(result.errors).toBeDefined();
     expect(result.errors?.[0]).toContain("Failed to parse CSV");
+    expect(consoleError).toHaveBeenCalledWith(
+      "Unexpected error during CSV parsing:",
+      expect.any(Error),
+    );
+    consoleError.mockRestore();
   });
 });
