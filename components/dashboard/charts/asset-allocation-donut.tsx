@@ -85,7 +85,11 @@ function AssetAllocationDonutBase({
           </CardHeader>
           <CardContent className="flex flex-1 gap-2">
             <div className="w-1/2 min-w-24 shrink-0">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer
+                width="100%"
+                height="100%"
+                initialDimension={{ width: 128, height: 128 }}
+              >
                 <PieChart>
                   <Pie
                     data={chartData}

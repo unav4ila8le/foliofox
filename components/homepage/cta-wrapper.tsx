@@ -1,9 +1,21 @@
-import { createClient } from "@/supabase/server";
+"use client";
 
-export async function CTAWrapper() {
-  "use cache: private";
-  const supabase = await createClient();
+import { useEffect, useState } from "react";
+import { createClient } from "@/supabase/client";
 
-  const { data } = await supabase.auth.getClaims();
-  return data?.claims ? "Dashboard" : "Get started";
+export function CTAWrapper() {
+  const [label, setLabel] = useState("Get started");
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    const refreshLabel = async () => {
+      const { data } = await supabase.auth.getClaims();
+      setLabel(data?.claims ? "Dashboard" : "Get started");
+    };
+
+    refreshLabel();
+  }, []);
+
+  return label;
 }
