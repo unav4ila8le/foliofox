@@ -18,8 +18,9 @@ export function FeedbackButton() {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="icon">
+        <Button variant="outline">
           <MessageCircleQuestionMark />
+          <span className="hidden lg:inline">Feedback</span>
           <span className="sr-only">Send feedback</span>
         </Button>
       </PopoverTrigger>
