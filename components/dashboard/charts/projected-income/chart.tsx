@@ -1,6 +1,5 @@
 "use client";
 
-import { format } from "date-fns";
 import {
   ResponsiveContainer,
   Bar,
@@ -11,6 +10,7 @@ import {
   YAxis,
 } from "recharts";
 
+import { formatMonthYear } from "@/lib/date/date-format";
 import { formatCompactNumber, formatCurrency } from "@/lib/number-format";
 import { useLocale } from "@/hooks/use-locale";
 
@@ -28,7 +28,7 @@ export function ProjectedIncomeBarChart({
   const locale = useLocale();
   // Format date for display on X-axis
   const formatXAxisDate = (date: Date) => {
-    return format(date, "MMM yy");
+    return formatMonthYear(date, { locale, month: "short", year: "2-digit" });
   };
 
   // Format value for display on Y-axis
@@ -64,7 +64,11 @@ export function ProjectedIncomeBarChart({
             return (
               <div className="bg-background border-border flex flex-col gap-1 rounded-md border px-2.5 py-1.5">
                 <span className="text-muted-foreground text-xs">
-                  {format(data.payload.date, "MMMM yyyy")}
+                  {formatMonthYear(data.payload.date, {
+                    locale,
+                    month: "long",
+                    year: "numeric",
+                  })}
                 </span>
                 <span className="text-sm">
                   {formatCurrency(Number(data.value), currency, { locale })}

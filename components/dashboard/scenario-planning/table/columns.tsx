@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { ArrowUpDown, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import type { ColumnDef, Row, Table } from "@tanstack/react-table";
-import { format } from "date-fns";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,6 +18,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import type { ScenarioEvent } from "@/lib/scenario-planning";
+import { formatDate } from "@/lib/date/date-format";
 import { formatNumber } from "@/lib/number-format";
 
 // Extended type with id for table
@@ -180,10 +180,11 @@ export const columns: ColumnDef<ScenarioEventWithId>[] = [
   {
     id: "startDate",
     header: "Start Date",
-    cell: ({ row }) => {
+    cell: ({ row, table }) => {
+      const locale = table.options.meta?.locale;
       const startDate = getEventStartDate(row.original);
       if (!startDate) return <span className="text-muted-foreground">-</span>;
-      return format(startDate, "MMM d, yyyy");
+      return formatDate(startDate, { locale });
     },
   },
   {
@@ -203,7 +204,8 @@ export const columns: ColumnDef<ScenarioEventWithId>[] = [
   {
     id: "endDate",
     header: "End Date",
-    cell: ({ row }) => {
+    cell: ({ row, table }) => {
+      const locale = table.options.meta?.locale;
       const event = row.original;
       const isRecurring = event.recurrence.type !== "once";
 
@@ -216,7 +218,7 @@ export const columns: ColumnDef<ScenarioEventWithId>[] = [
         return <div className="text-muted-foreground">Never</div>;
       }
 
-      return format(endDate, "MMM d, yyyy");
+      return formatDate(endDate, { locale });
     },
   },
   {
