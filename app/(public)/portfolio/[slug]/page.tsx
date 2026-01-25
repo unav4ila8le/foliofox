@@ -17,6 +17,7 @@ import { calculateAssetAllocation } from "@/server/analysis/asset-allocation";
 import { calculateProjectedIncome } from "@/server/analysis/projected-income";
 import { fetchPositions } from "@/server/positions/fetch";
 import { calculateProfitLoss } from "@/lib/profit-loss";
+import { getRequestLocale } from "@/lib/locale/resolve-locale";
 
 import type { PositionsQueryContext } from "@/server/positions/fetch";
 
@@ -109,7 +110,13 @@ async function ProjectedIncomeWrapper({
   );
 }
 
-async function PositionsWrapper({ userId }: { userId: string }) {
+async function PositionsWrapper({
+  userId,
+  locale,
+}: {
+  userId: string;
+  locale: string;
+}) {
   "use cache";
 
   const supabaseClient = createServiceClient();
@@ -130,7 +137,12 @@ async function PositionsWrapper({ userId }: { userId: string }) {
     positionsResult.snapshots,
   );
 
-  return <PublicPortfolioAssetsTable positions={positionsWithProfitLoss} />;
+  return (
+    <PublicPortfolioAssetsTable
+      positions={positionsWithProfitLoss}
+      locale={locale}
+    />
+  );
 }
 
 // --- Main Page Component ---
@@ -145,6 +157,7 @@ export default async function PublicPortfolioPage(props: {
 
   // 1. Fetch metadata first (fast)
   const resolved = await fetchPublicPortfolioBySlug(slug);
+  const locale = await getRequestLocale();
 
   if (!resolved) {
     notFound();
@@ -214,7 +227,7 @@ export default async function PublicPortfolioPage(props: {
       </div>
       <div className="col-span-6">
         <Suspense fallback={<Skeleton className="h-96" />}>
-          <PositionsWrapper userId={profile.user_id} />
+          <PositionsWrapper userId={profile.user_id} locale={locale} />
         </Suspense>
       </div>
     </div>
