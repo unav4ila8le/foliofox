@@ -18,21 +18,21 @@ import { Badge } from "@/components/ui/badge";
 
 import { cn } from "@/lib/utils";
 import { formatNumber, formatPercentage } from "@/lib/number-format";
-import { getRequestLocale } from "@/lib/locale/resolve-locale";
 
 import type { PositionWithProfitLoss } from "@/types/global.types";
 
 type PublicPortfolioAssetsTableProps = {
   positions: PositionWithProfitLoss[];
+  locale: string;
 };
 
 const hasMarketData = (position: PositionWithProfitLoss) =>
   position.has_market_data === true;
 
-export async function PublicPortfolioAssetsTable({
+export function PublicPortfolioAssetsTable({
   positions,
+  locale,
 }: PublicPortfolioAssetsTableProps) {
-  const locale = await getRequestLocale();
   if (positions.length === 0) {
     return (
       <Card className="flex h-80 flex-col gap-4 rounded-lg shadow-xs">
