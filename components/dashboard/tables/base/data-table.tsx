@@ -53,6 +53,7 @@ interface DataTableProps<TData extends DataWithId, TValue> {
   groupBy?: string[];
   meta?: TableMeta<TData>;
   defaultSorting?: SortingState;
+  // Optional extra rows rendered inside <tfoot>.
   footer?: React.ReactNode;
 }
 

@@ -117,6 +117,7 @@ async function PortfolioRecordsWidgetWrapper() {
     <PortfolioRecordsWidget
       portfolioRecordsData={portfolioRecordsPage.records}
       hasPositions={positions.length > 0}
+      // Pass pagination so the widget summary reflects total records.
       pagination={{
         page: portfolioRecordsPage.page,
         pageSize: portfolioRecordsPage.pageSize,

@@ -154,6 +154,7 @@ export function PortfolioRecordsTable({
     [pagination, pathname, searchParams],
   );
 
+  // Paginated views use URL-driven search so results come from the server.
   const isServerSearchEnabled =
     Boolean(pagination) && enableSearch && !readOnly;
   const showSearch = enableSearch && !readOnly;
@@ -232,6 +233,7 @@ export function PortfolioRecordsTable({
 
   const columns = getPortfolioRecordColumns({ showPositionColumn, readOnly });
 
+  // Optional table-native "View all" footer (used in dashboard widget).
   const footer = viewAllFooter ? (
     <TableRow>
       <TableCell colSpan={columns.length} className="p-0">
