@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useMemo, useCallback, useTransition } from "react";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { FileText, Trash2, Search } from "lucide-react";
@@ -18,6 +19,7 @@ import {
   InputGroupInput,
   InputGroupAddon,
 } from "@/components/ui/input-group";
+import { TableCell, TableRow } from "@/components/ui/table";
 import { DataTable } from "@/components/dashboard/tables/base/data-table";
 import { getPortfolioRecordColumns } from "@/components/dashboard/portfolio-records/table/columns";
 import { NewPortfolioRecordButton } from "@/components/dashboard/new-portfolio-record";
@@ -39,6 +41,11 @@ interface PortfolioRecordsTableProps {
   showPositionColumn?: boolean;
   readOnly?: boolean;
   enableSearch?: boolean;
+  emptyStateDescription?: string;
+  viewAllFooter?: {
+    href: string;
+    label?: string;
+  };
   pagination?: {
     page: number;
     pageSize: number;
@@ -48,7 +55,6 @@ interface PortfolioRecordsTableProps {
     hasPreviousPage: boolean;
     baseHref?: string;
   };
-  emptyStateDescription?: string;
 }
 
 type PaginationEntry = number | "ellipsis";
@@ -88,8 +94,9 @@ export function PortfolioRecordsTable({
   showPositionColumn = false,
   readOnly = false,
   enableSearch = true,
-  pagination,
   emptyStateDescription,
+  viewAllFooter,
+  pagination,
 }: PortfolioRecordsTableProps) {
   const [filterValue, setFilterValue] = useState("");
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
@@ -225,6 +232,19 @@ export function PortfolioRecordsTable({
 
   const columns = getPortfolioRecordColumns({ showPositionColumn, readOnly });
 
+  const footer = viewAllFooter ? (
+    <TableRow>
+      <TableCell colSpan={columns.length} className="p-0">
+        <Link
+          href={viewAllFooter.href}
+          className="text-muted-foreground hover:text-foreground block w-full px-3 py-2 text-center text-sm"
+        >
+          {viewAllFooter.label ?? "View all"}
+        </Link>
+      </TableCell>
+    </TableRow>
+  ) : null;
+
   return (
     <div
       className={cn("space-y-4", isPending && "pointer-events-none opacity-50")}
@@ -303,6 +323,7 @@ export function PortfolioRecordsTable({
           filterValue={isServerSearchEnabled ? "" : filterValue}
           filterColumnId="description"
           onSelectedRowsChange={handleSelectedRowsChange}
+          footer={footer}
         />
       )}
 

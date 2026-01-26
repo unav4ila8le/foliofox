@@ -20,6 +20,7 @@ import {
 import {
   Table,
   TableBody,
+  TableFooter,
   TableCell,
   TableHead,
   TableHeader,
@@ -52,6 +53,7 @@ interface DataTableProps<TData extends DataWithId, TValue> {
   groupBy?: string[];
   meta?: TableMeta<TData>;
   defaultSorting?: SortingState;
+  footer?: React.ReactNode;
 }
 
 export function DataTable<TData extends DataWithId, TValue>({
@@ -65,6 +67,7 @@ export function DataTable<TData extends DataWithId, TValue>({
   groupBy = [],
   meta,
   defaultSorting = [],
+  footer,
 }: DataTableProps<TData, TValue>) {
   const locale = useLocale();
   const [sorting, setSorting] = useState<SortingState>(defaultSorting);
@@ -250,6 +253,7 @@ export function DataTable<TData extends DataWithId, TValue>({
             </TableRow>
           )}
         </TableBody>
+        {footer && <TableFooter>{footer}</TableFooter>}
       </Table>
     </div>
   );

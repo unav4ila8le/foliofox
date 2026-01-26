@@ -1,9 +1,6 @@
-import Link from "next/link";
 import { ArrowLeftRight } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-
 import { PortfolioRecordsTable } from "@/components/dashboard/portfolio-records/table/portfolio-records-table";
 import { NewPortfolioRecordButton } from "@/components/dashboard/new-portfolio-record";
 import { ImportPortfolioRecordsButton } from "@/components/dashboard/portfolio-records/import";
@@ -44,18 +41,15 @@ export function PortfolioRecordsWidget({
 
   // Display portfolio records
   return (
-    <div className="space-y-3">
-      <PortfolioRecordsTable
-        data={portfolioRecordsData}
-        showPositionColumn
-        readOnly
-        enableSearch={false}
-      />
-      <div className="flex justify-end">
-        <Button asChild variant="link" className="h-auto p-0">
-          <Link href="/dashboard/portfolio-records">View all</Link>
-        </Button>
-      </div>
-    </div>
+    <PortfolioRecordsTable
+      data={portfolioRecordsData}
+      showPositionColumn
+      readOnly
+      enableSearch={false}
+      viewAllFooter={{
+        href: "/dashboard/portfolio-records",
+        label: "View all",
+      }}
+    />
   );
 }
