@@ -1,4 +1,4 @@
-name: Lint & Format Check
+name: Lint, Format & Type Check
 
 on:
   pull_request:
@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   lint:
-    name: ESLint & Prettier check
+    name: Lint, Format & Type
     runs-on: ubuntu-latest
 
     steps:
@@ -37,3 +37,6 @@ jobs:
 
       - name: Check Prettier formatting
         run: npm run format:check
+
+      - name: Run typecheck
+        run: npm run type

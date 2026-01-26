@@ -43,13 +43,14 @@ function createSnapshot(
   date: string,
   costBasis: number | null,
   unitValue: number = 100,
+  createdAt: string = date,
 ): PositionSnapshot {
   return {
     id,
     date,
     cost_basis_per_unit: costBasis,
     unit_value: unitValue,
-    created_at: date, // simplify by matching date
+    created_at: createdAt,
     // defaults
     position_id: "pos-1",
     quantity: 10,
@@ -142,6 +143,31 @@ describe("calculateProfitLoss", () => {
 
     // It should look back and find the $100 basis
     expect(result.cost_basis_per_unit).toBe(100);
+  });
+
+  it("breaks ties by created_at when dates match", () => {
+    const position = createPosition("pos-1", 10, 2000);
+
+    const olderSnap = createSnapshot(
+      "snap-1",
+      "2024-01-01",
+      50,
+      100,
+      "2024-01-01T00:00:00Z",
+    );
+    const newerSnap = createSnapshot(
+      "snap-2",
+      "2024-01-01",
+      150,
+      100,
+      "2024-01-02T00:00:00Z",
+    );
+
+    const snapshots = new Map([["pos-1", [olderSnap, newerSnap]]]);
+
+    const [result] = calculateProfitLoss([position], snapshots);
+
+    expect(result.cost_basis_per_unit).toBe(150);
   });
 
   // 3. Fallback Logic

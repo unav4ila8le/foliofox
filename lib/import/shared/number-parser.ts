@@ -32,16 +32,30 @@ export function parseNumberStrict(raw: string): number {
     return NaN;
   }
 
+  const compact = normalized.replace(/[\s]/g, "");
+
   if (hasComma && !hasDot) {
     // EU: "52.673,82" or "52673,82" (dots might be thousands)
-    // But reject if multiple commas (e.g., "1,2,3,4")
-    if ((normalized.match(/,/g) || []).length > 1) return NaN;
-    normalized = normalized.replace(/\./g, "").replace(",", ".");
+    // If multiple commas, only accept valid thousands grouping (e.g., "1,000,000")
+    const commaCount = (compact.match(/,/g) || []).length;
+    if (commaCount > 1) {
+      const thousandsPattern = /^-?\d{1,3}(?:,\d{3})+$/;
+      if (!thousandsPattern.test(compact)) return NaN;
+      normalized = compact.replace(/,/g, "");
+    } else {
+      normalized = compact.replace(",", ".");
+    }
   } else if (!hasComma && hasDot) {
     // US: "52,673.82" or "52673.82" (commas might be thousands)
-    // But reject if multiple dots (e.g., "1.2.3.4")
-    if ((normalized.match(/\./g) || []).length > 1) return NaN;
-    normalized = normalized.replace(/,/g, "");
+    // If multiple dots, only accept valid thousands grouping (e.g., "1.000.000")
+    const dotCount = (compact.match(/\./g) || []).length;
+    if (dotCount > 1) {
+      const thousandsPattern = /^-?\d{1,3}(?:\.\d{3})+$/;
+      if (!thousandsPattern.test(compact)) return NaN;
+      normalized = compact.replace(/\./g, "");
+    } else {
+      normalized = compact;
+    }
   } else if (hasComma && hasDot) {
     // Decide by last separator position
     const lastComma = normalized.lastIndexOf(",");

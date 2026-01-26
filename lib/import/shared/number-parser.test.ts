@@ -75,5 +75,7 @@ describe("parseNumberStrict", () => {
   it("should handle very large numbers", () => {
     expect(parseNumberStrict("1000000.99")).toBe(1000000.99);
     expect(parseNumberStrict("1.000.000,99")).toBe(1000000.99);
+    expect(parseNumberStrict("1,000,000")).toBe(1000000);
+    expect(parseNumberStrict("1.000.000")).toBe(1000000);
   });
 });
