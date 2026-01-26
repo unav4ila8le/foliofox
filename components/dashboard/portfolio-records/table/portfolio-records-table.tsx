@@ -37,6 +37,8 @@ interface PortfolioRecordsTableProps {
   data: PortfolioRecordWithPosition[];
   position?: TransformedPosition;
   showPositionColumn?: boolean;
+  readOnly?: boolean;
+  enableSearch?: boolean;
   pagination?: {
     page: number;
     pageSize: number;
@@ -46,6 +48,7 @@ interface PortfolioRecordsTableProps {
     hasPreviousPage: boolean;
     baseHref?: string;
   };
+  emptyStateDescription?: string;
 }
 
 type PaginationEntry = number | "ellipsis";
@@ -83,7 +86,10 @@ export function PortfolioRecordsTable({
   data,
   position,
   showPositionColumn = false,
+  readOnly = false,
+  enableSearch = true,
   pagination,
+  emptyStateDescription,
 }: PortfolioRecordsTableProps) {
   const [filterValue, setFilterValue] = useState("");
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
@@ -141,6 +147,48 @@ export function PortfolioRecordsTable({
     [pagination, pathname, searchParams],
   );
 
+  const isServerSearchEnabled =
+    Boolean(pagination) && enableSearch && !readOnly;
+  const showSearch = enableSearch && !readOnly;
+
+  const searchParamKey = "q";
+  const searchParamValue = searchParams.get(searchParamKey) ?? "";
+
+  const handleSearchSubmit = useCallback(
+    (nextInput?: string) => {
+      if (!isServerSearchEnabled) return;
+
+      const nextValue = (nextInput ?? filterValue).trim();
+      const params = new URLSearchParams(searchParams.toString());
+
+      if (nextValue) {
+        params.set(searchParamKey, nextValue);
+      } else {
+        params.delete(searchParamKey);
+      }
+
+      params.delete("page");
+
+      const nextQuery = params.toString();
+      if (nextQuery === searchParams.toString()) {
+        return;
+      }
+
+      const basePath = pagination?.baseHref ?? pathname;
+      startTransition(() => {
+        router.push(nextQuery ? `${basePath}?${nextQuery}` : basePath);
+      });
+    },
+    [
+      filterValue,
+      isServerSearchEnabled,
+      pagination,
+      pathname,
+      router,
+      searchParams,
+    ],
+  );
+
   const handlePageChange = useCallback(
     (targetPage: number) => {
       if (!pagination || targetPage === pagination.page) return;
@@ -175,38 +223,58 @@ export function PortfolioRecordsTable({
       )
     : "#";
 
-  const columns = getPortfolioRecordColumns({ showPositionColumn });
+  const columns = getPortfolioRecordColumns({ showPositionColumn, readOnly });
 
   return (
     <div
       className={cn("space-y-4", isPending && "pointer-events-none opacity-50")}
     >
       {/* Toolbar */}
-      <div className="flex items-center justify-between gap-2">
-        {/* Search */}
-        <InputGroup className="max-w-sm">
-          <InputGroupInput
-            placeholder="Search records..."
-            value={filterValue}
-            onChange={(e) => setFilterValue(e.target.value)}
-          />
-          <InputGroupAddon>
-            <Search />
-          </InputGroupAddon>
-        </InputGroup>
-        <div className="flex items-center gap-2">
-          {/* New record button */}
-          {data.length > 0 && (
-            <>
-              <NewPortfolioRecordButton
-                variant="outline"
-                preselectedPosition={position}
+      {(showSearch || (!readOnly && data.length > 0)) && (
+        <div className="flex items-center justify-between gap-2">
+          {/* Search */}
+          {showSearch && (
+            <InputGroup
+              className="max-w-sm"
+              key={isServerSearchEnabled ? searchParamValue : "client"}
+            >
+              <InputGroupInput
+                placeholder="Search records..."
+                {...(isServerSearchEnabled
+                  ? { defaultValue: searchParamValue }
+                  : {
+                      value: filterValue,
+                      onChange: (event) => setFilterValue(event.target.value),
+                    })}
+                onKeyDown={(event) => {
+                  if (event.key !== "Enter") return;
+                  event.preventDefault();
+                  if (isServerSearchEnabled) {
+                    handleSearchSubmit(event.currentTarget.value);
+                    return;
+                  }
+                  handleSearchSubmit();
+                }}
               />
-              <TableActionsDropdown />
-            </>
+              <InputGroupAddon>
+                <Search />
+              </InputGroupAddon>
+            </InputGroup>
           )}
+          <div className="flex items-center gap-2">
+            {/* New record button */}
+            {!readOnly && data.length > 0 && (
+              <>
+                <NewPortfolioRecordButton
+                  variant="outline"
+                  preselectedPosition={position}
+                />
+                <TableActionsDropdown />
+              </>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Table */}
       {data.length === 0 ? (
@@ -216,7 +284,8 @@ export function PortfolioRecordsTable({
           </div>
           <p className="mt-3 font-medium">No records found</p>
           <p className="text-muted-foreground mt-1 mb-3 text-sm">
-            Records for this position will appear here
+            {emptyStateDescription ||
+              "Records for this position will appear here"}
           </p>
           <div className="flex items-center justify-center gap-2">
             <NewPortfolioRecordButton
@@ -231,14 +300,14 @@ export function PortfolioRecordsTable({
           key={tableKey}
           columns={columns}
           data={data}
-          filterValue={filterValue}
+          filterValue={isServerSearchEnabled ? "" : filterValue}
           filterColumnId="description"
           onSelectedRowsChange={handleSelectedRowsChange}
         />
       )}
 
       {/* Pagination */}
-      {pagination && pagination.pageCount > 1 && (
+      {!readOnly && pagination && pagination.pageCount > 1 && (
         <Pagination className="justify-end">
           <PaginationContent>
             <PaginationItem>
@@ -313,7 +382,7 @@ export function PortfolioRecordsTable({
       </p>
 
       {/* Floating bulk action bar */}
-      {selectedRows.length > 0 && (
+      {!readOnly && selectedRows.length > 0 && (
         <BulkActionBar
           selectedCount={selectedRows.length}
           actions={[
@@ -328,14 +397,16 @@ export function PortfolioRecordsTable({
       )}
 
       {/* Delete dialog */}
-      <DeletePortfolioRecordDialog
-        open={openDeleteDialog}
-        onOpenChangeAction={setOpenDeleteDialog}
-        portfolioRecords={selectedRows.map(({ id }) => ({ id }))} // Minimal DTO
-        onCompleted={() => {
-          setSelectionState({ key: tableKey, rows: [] });
-        }}
-      />
+      {!readOnly && (
+        <DeletePortfolioRecordDialog
+          open={openDeleteDialog}
+          onOpenChangeAction={setOpenDeleteDialog}
+          portfolioRecords={selectedRows.map(({ id }) => ({ id }))} // Minimal DTO
+          onCompleted={() => {
+            setSelectionState({ key: tableKey, rows: [] });
+          }}
+        />
+      )}
     </div>
   );
 }

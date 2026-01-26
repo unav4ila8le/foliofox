@@ -9,6 +9,8 @@ interface FetchPortfolioRecordsOptions {
   includeArchived?: boolean;
   startDate?: Date;
   endDate?: Date;
+  q?: string;
+  includePositionNameInSearch?: boolean;
   page?: number;
   pageSize?: number;
 }
@@ -24,6 +26,8 @@ export const fetchPortfolioRecords = cache(
       includeArchived = true,
       startDate,
       endDate,
+      q,
+      includePositionNameInSearch = false,
       page = 1,
       pageSize = 50,
     } = options;
@@ -63,6 +67,40 @@ export const fetchPortfolioRecords = cache(
     if (startDate) query.gte("date", startDate.toISOString().slice(0, 10));
     if (endDate) query.lte("date", endDate.toISOString().slice(0, 10));
     if (!includeArchived) query.is("positions.archived_at", null);
+    const searchQuery = q?.trim();
+    if (searchQuery) {
+      if (includePositionNameInSearch) {
+        const positionsQuery = supabase
+          .from("positions")
+          .select("id")
+          .eq("user_id", user.id)
+          .ilike("name", `%${searchQuery}%`);
+
+        if (!includeArchived) {
+          positionsQuery.is("archived_at", null);
+        }
+
+        const { data: matchingPositions, error: positionsError } =
+          await positionsQuery;
+
+        if (positionsError) {
+          throw new Error(
+            `Failed to search positions: ${positionsError.message}`,
+          );
+        }
+
+        const positionIds = matchingPositions?.map((position) => position.id);
+        if (positionIds && positionIds.length > 0) {
+          query.or(
+            `description.ilike.%${searchQuery}%,position_id.in.(${positionIds.join(",")})`,
+          );
+        } else {
+          query.ilike("description", `%${searchQuery}%`);
+        }
+      } else {
+        query.ilike("description", `%${searchQuery}%`);
+      }
+    }
 
     const { data, error, count } = await query
       .order("date", { ascending: false })

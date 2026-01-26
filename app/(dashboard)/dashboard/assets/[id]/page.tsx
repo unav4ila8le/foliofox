@@ -52,9 +52,11 @@ function PageSkeleton() {
 async function AssetContent({
   positionId,
   page,
+  q,
 }: {
   positionId: string;
   page: number;
+  q?: string;
 }) {
   "use cache: private";
 
@@ -92,7 +94,7 @@ async function AssetContent({
 
   // Batch remaining requests
   const [portfolioRecordsPage, symbol, newsResult] = await Promise.all([
-    fetchPortfolioRecords({ positionId, page, pageSize: 50 }),
+    fetchPortfolioRecords({ positionId, page, pageSize: 50, q }),
     position.symbol_id
       ? fetchSymbol(position.symbol_id)
       : Promise.resolve(null),
@@ -219,14 +221,18 @@ export default async function AssetPage(
   const pageParam = Array.isArray(resolvedSearchParams?.page)
     ? resolvedSearchParams.page[0]
     : resolvedSearchParams?.page;
+  const queryParam = Array.isArray(resolvedSearchParams?.q)
+    ? resolvedSearchParams.q[0]
+    : resolvedSearchParams?.q;
 
   const parsedPage = Number(pageParam);
   const page =
     Number.isFinite(parsedPage) && parsedPage > 0 ? Math.floor(parsedPage) : 1;
+  const q = typeof queryParam === "string" ? queryParam : undefined;
 
   return (
     <Suspense fallback={<PageSkeleton />}>
-      <AssetContent positionId={positionId} page={page} />
+      <AssetContent positionId={positionId} page={page} q={q} />
     </Suspense>
   );
 }
