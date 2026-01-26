@@ -49,14 +49,13 @@ async function RecordsTableWrapper({ page, q }: { page: number; q?: string }) {
 
 export default async function RecordsPage(props: RecordsPageProps) {
   const searchParams = await props.searchParams;
-  const resolvedSearchParams = searchParams ? await searchParams : undefined;
 
-  const pageParam = Array.isArray(resolvedSearchParams?.page)
-    ? resolvedSearchParams.page[0]
-    : resolvedSearchParams?.page;
-  const queryParam = Array.isArray(resolvedSearchParams?.q)
-    ? resolvedSearchParams.q[0]
-    : resolvedSearchParams?.q;
+  const pageParam = Array.isArray(searchParams?.page)
+    ? searchParams.page[0]
+    : searchParams?.page;
+  const queryParam = Array.isArray(searchParams?.q)
+    ? searchParams.q[0]
+    : searchParams?.q;
 
   const parsedPage = Number(pageParam);
   const page =

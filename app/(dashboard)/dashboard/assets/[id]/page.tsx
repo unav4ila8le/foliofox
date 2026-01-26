@@ -216,14 +216,13 @@ export default async function AssetPage(
 ) {
   const searchParams = await props.searchParams;
   const { id: positionId } = await props.params;
-  const resolvedSearchParams = searchParams ? await searchParams : undefined;
 
-  const pageParam = Array.isArray(resolvedSearchParams?.page)
-    ? resolvedSearchParams.page[0]
-    : resolvedSearchParams?.page;
-  const queryParam = Array.isArray(resolvedSearchParams?.q)
-    ? resolvedSearchParams.q[0]
-    : resolvedSearchParams?.q;
+  const pageParam = Array.isArray(searchParams?.page)
+    ? searchParams.page[0]
+    : searchParams?.page;
+  const queryParam = Array.isArray(searchParams?.q)
+    ? searchParams.q[0]
+    : searchParams?.q;
 
   const parsedPage = Number(pageParam);
   const page =
