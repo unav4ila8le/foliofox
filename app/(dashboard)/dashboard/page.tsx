@@ -108,15 +108,23 @@ async function ProjectedIncomeWidgetWrapper() {
 // Portfolio Records
 async function PortfolioRecordsWidgetWrapper() {
   "use cache: private";
-  const [{ records }, positions] = await Promise.all([
+  const [portfolioRecordsPage, positions] = await Promise.all([
     fetchPortfolioRecords({ pageSize: 15 }),
     fetchPositions({ positionType: "asset" }),
   ]);
 
   return (
     <PortfolioRecordsWidget
-      portfolioRecordsData={records}
+      portfolioRecordsData={portfolioRecordsPage.records}
       hasPositions={positions.length > 0}
+      pagination={{
+        page: portfolioRecordsPage.page,
+        pageSize: portfolioRecordsPage.pageSize,
+        pageCount: portfolioRecordsPage.pageCount,
+        total: portfolioRecordsPage.total,
+        hasNextPage: portfolioRecordsPage.hasNextPage,
+        hasPreviousPage: portfolioRecordsPage.hasPreviousPage,
+      }}
     />
   );
 }
