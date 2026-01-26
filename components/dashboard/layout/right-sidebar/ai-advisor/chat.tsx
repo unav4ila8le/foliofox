@@ -167,7 +167,10 @@ export function Chat({
           isLoadingConversation && "pointer-events-none opacity-50",
         )}
       >
-        <ConversationContent className="gap-4 p-2">
+        <ConversationContent
+          className="gap-4 p-2"
+          scrollClassName="![scrollbar-gutter:auto]"
+        >
           {messages.length === 0 ? (
             isAIEnabled ? (
               <ConversationEmptyState
