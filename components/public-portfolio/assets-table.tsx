@@ -57,8 +57,9 @@ export function PublicPortfolioAssetsTable({
             <TableHead>Name</TableHead>
             <TableHead>Currency</TableHead>
             <TableHead className="text-right">Quantity</TableHead>
-            <TableHead className="text-right">Unit value</TableHead>
             <TableHead className="text-right">Cost basis</TableHead>
+            <TableHead className="text-right">Unit value</TableHead>
+            <TableHead className="text-right">Total value</TableHead>
             <TableHead className="text-right">P/L</TableHead>
             <TableHead className="text-right">P/L %</TableHead>
           </TableRow>
@@ -71,6 +72,7 @@ export function PublicPortfolioAssetsTable({
 
             return (
               <TableRow key={position.id}>
+                {/* Name */}
                 <TableCell className="max-w-48 md:max-w-64 lg:max-w-80">
                   <div>
                     <Tooltip delayDuration={500}>
@@ -86,21 +88,21 @@ export function PublicPortfolioAssetsTable({
                     )}
                   </div>
                 </TableCell>
+
+                {/* Currency */}
                 <TableCell>
                   <Badge variant="outline">{position.currency}</Badge>
                 </TableCell>
+
+                {/* Quantity */}
                 <TableCell className="text-right tabular-nums">
                   {formatNumber(position.current_quantity ?? 0, {
                     locale,
                     maximumFractionDigits: 6,
                   })}
                 </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {formatNumber(position.current_unit_value ?? 0, {
-                    locale,
-                    maximumFractionDigits: 2,
-                  })}
-                </TableCell>
+
+                {/* Cost basis per unit */}
                 <TableCell className="text-right tabular-nums">
                   {marketDataAvailable
                     ? formatNumber(position.cost_basis_per_unit ?? 0, {
@@ -109,6 +111,24 @@ export function PublicPortfolioAssetsTable({
                       })
                     : "-"}
                 </TableCell>
+
+                {/* Current unit value */}
+                <TableCell className="text-right tabular-nums">
+                  {formatNumber(position.current_unit_value ?? 0, {
+                    locale,
+                    maximumFractionDigits: 2,
+                  })}
+                </TableCell>
+
+                {/* Total value */}
+                <TableCell className="text-right tabular-nums">
+                  {formatNumber(position.total_value ?? 0, {
+                    locale,
+                    maximumFractionDigits: 2,
+                  })}
+                </TableCell>
+
+                {/* Profit loss */}
                 <TableCell
                   className={cn(
                     "text-right tabular-nums",
@@ -126,6 +146,8 @@ export function PublicPortfolioAssetsTable({
                       })
                     : "-"}
                 </TableCell>
+
+                {/* Profit loss percentage */}
                 <TableCell
                   className={cn(
                     "text-right tabular-nums",
