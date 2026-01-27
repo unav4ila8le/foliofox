@@ -90,7 +90,7 @@ function ServerSearchInput({ initialValue, onSearch }: ServerSearchInputProps) {
   }, [debouncedValue, initialValue, onSearch]);
 
   return (
-    <InputGroup className="max-w-sm">
+    <InputGroup className="max-w-64">
       <InputGroupInput
         placeholder="Search records..."
         value={inputValue}
@@ -149,7 +149,6 @@ export function PortfolioRecordsTable({
   viewAllFooter,
   pagination,
 }: PortfolioRecordsTableProps) {
-  const [filterValue, setFilterValue] = useState("");
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -207,7 +206,7 @@ export function PortfolioRecordsTable({
 
   // Paginated views use URL-driven controls so results come from the server.
   const isServerQueryEnabled = Boolean(pagination) && enableSearch && !readOnly;
-  const showSearch = enableSearch && !readOnly;
+  const showSearch = isServerQueryEnabled;
   const showTypeFilter = isServerQueryEnabled;
 
   const searchParamKey = "q";
@@ -229,10 +228,10 @@ export function PortfolioRecordsTable({
   );
 
   const handleSearchSubmit = useCallback(
-    (nextInput?: string) => {
+    (nextInput: string) => {
       if (!isServerQueryEnabled) return;
 
-      const nextValue = (nextInput ?? filterValue).trim();
+      const nextValue = nextInput.trim();
       const params = buildSearchParams(searchParams, {
         [searchParamKey]: nextValue || undefined,
         page: undefined,
@@ -248,14 +247,7 @@ export function PortfolioRecordsTable({
         router.push(nextQuery ? `${basePath}?${nextQuery}` : basePath);
       });
     },
-    [
-      filterValue,
-      isServerQueryEnabled,
-      pagination,
-      pathname,
-      router,
-      searchParams,
-    ],
+    [isServerQueryEnabled, pagination, pathname, router, searchParams],
   );
 
   const handleTypeFilterChange = useCallback(
@@ -368,26 +360,14 @@ export function PortfolioRecordsTable({
       {/* Toolbar */}
       {(showSearch || showTypeFilter || (!readOnly && data.length > 0)) && (
         <div className="flex items-center justify-between gap-2">
-          {/* Search */}
-          <div className="flex items-center gap-2">
-            {showSearch &&
-              (isServerQueryEnabled ? (
-                <ServerSearchInput
-                  initialValue={searchParamValue}
-                  onSearch={handleSearchSubmit}
-                />
-              ) : (
-                <InputGroup className="max-w-sm">
-                  <InputGroupInput
-                    placeholder="Search records..."
-                    value={filterValue}
-                    onChange={(event) => setFilterValue(event.target.value)}
-                  />
-                  <InputGroupAddon>
-                    <Search />
-                  </InputGroupAddon>
-                </InputGroup>
-              ))}
+          {/* Search and filters */}
+          <div className="flex flex-1 items-center gap-2">
+            {showSearch && (
+              <ServerSearchInput
+                initialValue={searchParamValue}
+                onSearch={handleSearchSubmit}
+              />
+            )}
             {showTypeFilter && (
               <PortfolioRecordTypeFilter
                 selectedTypes={selectedTypes}
@@ -435,8 +415,6 @@ export function PortfolioRecordsTable({
             key={tableKey}
             columns={columns}
             data={data}
-            filterValue={isServerQueryEnabled ? "" : filterValue}
-            filterColumnId="description"
             onSelectedRowsChange={handleSelectedRowsChange}
             footer={footer}
           />
