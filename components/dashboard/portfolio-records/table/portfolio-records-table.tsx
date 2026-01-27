@@ -30,6 +30,7 @@ import { TableCell, TableRow } from "@/components/ui/table";
 import { DataTable } from "@/components/dashboard/tables/base/data-table";
 import { getPortfolioRecordColumns } from "@/components/dashboard/portfolio-records/table/columns";
 import { PortfolioRecordTypeFilter } from "@/components/dashboard/portfolio-records/table/filters/type-filter";
+import { PortfolioRecordDateFilter } from "@/components/dashboard/portfolio-records/table/filters/date-filter";
 import { NewPortfolioRecordButton } from "@/components/dashboard/new-portfolio-record";
 import { ImportPortfolioRecordsButton } from "@/components/dashboard/portfolio-records/import";
 import { TableActionsDropdown } from "@/components/dashboard/portfolio-records/table/table-actions";
@@ -37,6 +38,7 @@ import { BulkActionBar } from "@/components/dashboard/tables/base/bulk-action-ba
 import { DeletePortfolioRecordDialog } from "@/components/dashboard/portfolio-records/table/row-actions/delete-dialog";
 
 import { cn } from "@/lib/utils";
+import { formatLocalDateKey, parseLocalDateKey } from "@/lib/date/date-utils";
 import {
   normalizePortfolioRecordTypes,
   parsePortfolioRecordTypes,
@@ -48,6 +50,7 @@ import type {
   PortfolioRecordWithPosition,
   TransformedPosition,
 } from "@/types/global.types";
+import type { DateRange } from "react-day-picker";
 
 interface PortfolioRecordsTableProps {
   data: PortfolioRecordWithPosition[];
@@ -208,10 +211,13 @@ export function PortfolioRecordsTable({
   const isServerQueryEnabled = Boolean(pagination) && enableSearch && !readOnly;
   const showSearch = isServerQueryEnabled;
   const showTypeFilter = isServerQueryEnabled;
+  const showDateFilter = isServerQueryEnabled;
 
   const searchParamKey = "q";
   const searchParamValue = searchParams.get(searchParamKey) ?? "";
   const typeParamValue = searchParams.get("type") ?? "";
+  const dateFromParamValue = searchParams.get("dateFrom");
+  const dateToParamValue = searchParams.get("dateTo");
 
   const sortParam = searchParams.get("sort");
   const directionParam = searchParams.get("dir");
@@ -226,6 +232,24 @@ export function PortfolioRecordsTable({
     () => parsePortfolioRecordTypes(typeParamValue),
     [typeParamValue],
   );
+  const selectedDateRange = useMemo<DateRange | undefined>(() => {
+    const parsedFrom = dateFromParamValue
+      ? parseLocalDateKey(dateFromParamValue)
+      : undefined;
+    const parsedTo = dateToParamValue
+      ? parseLocalDateKey(dateToParamValue)
+      : undefined;
+
+    const from =
+      parsedFrom && !Number.isNaN(parsedFrom.getTime())
+        ? parsedFrom
+        : undefined;
+    const to =
+      parsedTo && !Number.isNaN(parsedTo.getTime()) ? parsedTo : undefined;
+
+    if (!from && !to) return undefined;
+    return { from, to };
+  }, [dateFromParamValue, dateToParamValue]);
 
   const handleSearchSubmit = useCallback(
     (nextInput: string) => {
@@ -265,6 +289,36 @@ export function PortfolioRecordsTable({
       if (nextQuery === searchParams.toString()) {
         return;
       }
+      const basePath = pagination?.baseHref ?? pathname;
+      startTransition(() => {
+        router.push(nextQuery ? `${basePath}?${nextQuery}` : basePath);
+      });
+    },
+    [isServerQueryEnabled, pagination, pathname, router, searchParams],
+  );
+
+  const handleDateRangeChange = useCallback(
+    (nextRange?: DateRange) => {
+      if (!isServerQueryEnabled) return;
+
+      const nextFrom = nextRange?.from
+        ? formatLocalDateKey(nextRange.from)
+        : undefined;
+      const nextTo = nextRange?.to
+        ? formatLocalDateKey(nextRange.to)
+        : undefined;
+
+      const params = buildSearchParams(searchParams, {
+        dateFrom: nextFrom,
+        dateTo: nextTo,
+        page: undefined,
+      });
+
+      const nextQuery = params.toString();
+      if (nextQuery === searchParams.toString()) {
+        return;
+      }
+
       const basePath = pagination?.baseHref ?? pathname;
       startTransition(() => {
         router.push(nextQuery ? `${basePath}?${nextQuery}` : basePath);
@@ -372,6 +426,12 @@ export function PortfolioRecordsTable({
               <PortfolioRecordTypeFilter
                 selectedTypes={selectedTypes}
                 onSelectionChange={handleTypeFilterChange}
+              />
+            )}
+            {showDateFilter && (
+              <PortfolioRecordDateFilter
+                value={selectedDateRange}
+                onChange={handleDateRangeChange}
               />
             )}
           </div>

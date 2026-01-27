@@ -11,6 +11,7 @@ import {
   type PortfolioRecordType,
 } from "@/lib/portfolio-records/filters";
 import { getSearchParam } from "@/lib/search-params";
+import { parseUtcDateKey } from "@/lib/date/date-utils";
 
 interface RecordsPageProps {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -20,12 +21,16 @@ async function RecordsTableWrapper({
   page,
   q,
   recordTypes,
+  startDate,
+  endDate,
   sortBy,
   sortDirection,
 }: {
   page: number;
   q?: string;
   recordTypes?: PortfolioRecordType[];
+  startDate?: Date;
+  endDate?: Date;
   sortBy?: "date" | "created_at";
   sortDirection?: "asc" | "desc";
 }) {
@@ -37,6 +42,8 @@ async function RecordsTableWrapper({
     q,
     includePositionNameInSearch: true,
     recordTypes,
+    startDate,
+    endDate,
     sortBy,
     sortDirection,
   });
@@ -75,6 +82,8 @@ export default async function RecordsPage(props: RecordsPageProps) {
   const pageParam = getSearchParam(searchParams, "page");
   const queryParam = getSearchParam(searchParams, "q");
   const typeParam = getSearchParam(searchParams, "type");
+  const dateFromParam = getSearchParam(searchParams, "dateFrom");
+  const dateToParam = getSearchParam(searchParams, "dateTo");
   const sortParam = getSearchParam(searchParams, "sort");
   const directionParam = getSearchParam(searchParams, "dir");
 
@@ -83,6 +92,18 @@ export default async function RecordsPage(props: RecordsPageProps) {
     Number.isFinite(parsedPage) && parsedPage > 0 ? Math.floor(parsedPage) : 1;
   const q = typeof queryParam === "string" ? queryParam : undefined;
   const recordTypes = parsePortfolioRecordTypes(typeParam);
+  const parsedStartDate = dateFromParam
+    ? parseUtcDateKey(dateFromParam)
+    : undefined;
+  const parsedEndDate = dateToParam ? parseUtcDateKey(dateToParam) : undefined;
+  const startDate =
+    parsedStartDate && !Number.isNaN(parsedStartDate.getTime())
+      ? parsedStartDate
+      : undefined;
+  const endDate =
+    parsedEndDate && !Number.isNaN(parsedEndDate.getTime())
+      ? parsedEndDate
+      : undefined;
   const sortBy =
     sortParam === "date" || sortParam === "created_at" ? sortParam : undefined;
   const sortDirection =
@@ -103,6 +124,8 @@ export default async function RecordsPage(props: RecordsPageProps) {
           page={page}
           q={q}
           recordTypes={recordTypes.length > 0 ? recordTypes : undefined}
+          startDate={startDate}
+          endDate={endDate}
           sortBy={sortBy}
           sortDirection={sortDirection}
         />

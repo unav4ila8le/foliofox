@@ -27,6 +27,22 @@ export function formatUtcDateKey(date: DateInput): string {
 }
 
 /**
+ * Format a date as a local date key in the format "yyyy-MM-dd".
+ * Uses local date components to avoid timezone shifts in the UI.
+ */
+export function formatLocalDateKey(date: DateInput): string {
+  const value = toDate(date);
+  if (!value) {
+    throw new Error("Invalid date provided to formatLocalDateKey");
+  }
+
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+/**
  * Parse a YYYY-MM-DD date key into a UTC Date.
  * Returns Invalid Date for malformed inputs.
  * @param dateKey - The date key to parse
@@ -45,6 +61,30 @@ export function parseUtcDateKey(dateKey: string): Date {
     value.getUTCFullYear() !== year ||
     value.getUTCMonth() !== month - 1 ||
     value.getUTCDate() !== day
+  ) {
+    return new Date(NaN);
+  }
+
+  return value;
+}
+
+/**
+ * Parse a YYYY-MM-DD date key into a local Date (midnight).
+ * Returns Invalid Date for malformed inputs.
+ */
+export function parseLocalDateKey(dateKey: string): Date {
+  const trimmed = dateKey.trim();
+  if (!DATE_KEY_PATTERN.test(trimmed)) {
+    return new Date(NaN);
+  }
+
+  const [year, month, day] = trimmed.split("-").map(Number);
+  const value = new Date(year, month - 1, day);
+
+  if (
+    value.getFullYear() !== year ||
+    value.getMonth() !== month - 1 ||
+    value.getDate() !== day
   ) {
     return new Date(NaN);
   }
