@@ -6,6 +6,10 @@ import { PortfolioRecordsTable } from "@/components/dashboard/portfolio-records/
 
 import { fetchPortfolioRecords } from "@/server/portfolio-records/fetch";
 
+import {
+  parsePortfolioRecordTypes,
+  type PortfolioRecordType,
+} from "@/lib/portfolio-records/filters";
 import { getSearchParam } from "@/lib/search-params";
 
 interface RecordsPageProps {
@@ -15,11 +19,13 @@ interface RecordsPageProps {
 async function RecordsTableWrapper({
   page,
   q,
+  recordTypes,
   sortBy,
   sortDirection,
 }: {
   page: number;
   q?: string;
+  recordTypes?: PortfolioRecordType[];
   sortBy?: "date" | "created_at";
   sortDirection?: "asc" | "desc";
 }) {
@@ -30,6 +36,7 @@ async function RecordsTableWrapper({
     pageSize: 50,
     q,
     includePositionNameInSearch: true,
+    recordTypes,
     sortBy,
     sortDirection,
   });
@@ -67,6 +74,7 @@ export default async function RecordsPage(props: RecordsPageProps) {
 
   const pageParam = getSearchParam(searchParams, "page");
   const queryParam = getSearchParam(searchParams, "q");
+  const typeParam = getSearchParam(searchParams, "type");
   const sortParam = getSearchParam(searchParams, "sort");
   const directionParam = getSearchParam(searchParams, "dir");
 
@@ -74,6 +82,7 @@ export default async function RecordsPage(props: RecordsPageProps) {
   const page =
     Number.isFinite(parsedPage) && parsedPage > 0 ? Math.floor(parsedPage) : 1;
   const q = typeof queryParam === "string" ? queryParam : undefined;
+  const recordTypes = parsePortfolioRecordTypes(typeParam);
   const sortBy =
     sortParam === "date" || sortParam === "created_at" ? sortParam : undefined;
   const sortDirection =
@@ -93,6 +102,7 @@ export default async function RecordsPage(props: RecordsPageProps) {
         <RecordsTableWrapper
           page={page}
           q={q}
+          recordTypes={recordTypes.length > 0 ? recordTypes : undefined}
           sortBy={sortBy}
           sortDirection={sortDirection}
         />

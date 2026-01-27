@@ -4,6 +4,8 @@ import { cache } from "react";
 
 import { getCurrentUser } from "@/server/auth/actions";
 
+import type { PortfolioRecordType } from "@/lib/portfolio-records/filters";
+
 interface FetchPortfolioRecordsOptions {
   positionId?: string;
   includeArchived?: boolean;
@@ -11,6 +13,7 @@ interface FetchPortfolioRecordsOptions {
   endDate?: Date;
   q?: string;
   includePositionNameInSearch?: boolean;
+  recordTypes?: PortfolioRecordType[];
   sortBy?: "date" | "created_at";
   sortDirection?: "asc" | "desc";
   page?: number;
@@ -30,6 +33,7 @@ export const fetchPortfolioRecords = cache(
       endDate,
       q,
       includePositionNameInSearch = false,
+      recordTypes,
       sortBy,
       sortDirection,
       page = 1,
@@ -71,6 +75,9 @@ export const fetchPortfolioRecords = cache(
     if (startDate) query.gte("date", startDate.toISOString().slice(0, 10));
     if (endDate) query.lte("date", endDate.toISOString().slice(0, 10));
     if (!includeArchived) query.is("positions.archived_at", null);
+    if (recordTypes && recordTypes.length > 0) {
+      query.in("type", recordTypes);
+    }
     const searchQuery = q?.trim();
     if (searchQuery) {
       if (includePositionNameInSearch) {

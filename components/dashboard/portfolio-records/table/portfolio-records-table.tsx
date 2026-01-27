@@ -29,6 +29,7 @@ import {
 import { TableCell, TableRow } from "@/components/ui/table";
 import { DataTable } from "@/components/dashboard/tables/base/data-table";
 import { getPortfolioRecordColumns } from "@/components/dashboard/portfolio-records/table/columns";
+import { PortfolioRecordTypeFilter } from "@/components/dashboard/portfolio-records/table/filters/type-filter";
 import { NewPortfolioRecordButton } from "@/components/dashboard/new-portfolio-record";
 import { ImportPortfolioRecordsButton } from "@/components/dashboard/portfolio-records/import";
 import { TableActionsDropdown } from "@/components/dashboard/portfolio-records/table/table-actions";
@@ -36,6 +37,12 @@ import { BulkActionBar } from "@/components/dashboard/tables/base/bulk-action-ba
 import { DeletePortfolioRecordDialog } from "@/components/dashboard/portfolio-records/table/row-actions/delete-dialog";
 
 import { cn } from "@/lib/utils";
+import {
+  normalizePortfolioRecordTypes,
+  parsePortfolioRecordTypes,
+  type PortfolioRecordType,
+} from "@/lib/portfolio-records/filters";
+import { buildSearchParams } from "@/lib/search-params";
 
 import type {
   PortfolioRecordWithPosition,
@@ -198,13 +205,14 @@ export function PortfolioRecordsTable({
     [pagination, pathname, searchParams],
   );
 
-  // Paginated views use URL-driven search so results come from the server.
-  const isServerSearchEnabled =
-    Boolean(pagination) && enableSearch && !readOnly;
+  // Paginated views use URL-driven controls so results come from the server.
+  const isServerQueryEnabled = Boolean(pagination) && enableSearch && !readOnly;
   const showSearch = enableSearch && !readOnly;
+  const showTypeFilter = isServerQueryEnabled;
 
   const searchParamKey = "q";
   const searchParamValue = searchParams.get(searchParamKey) ?? "";
+  const typeParamValue = searchParams.get("type") ?? "";
 
   const sortParam = searchParams.get("sort");
   const directionParam = searchParams.get("dir");
@@ -215,21 +223,20 @@ export function PortfolioRecordsTable({
     directionParam === "asc" || directionParam === "desc"
       ? directionParam
       : undefined;
+  const selectedTypes = useMemo(
+    () => parsePortfolioRecordTypes(typeParamValue),
+    [typeParamValue],
+  );
 
   const handleSearchSubmit = useCallback(
     (nextInput?: string) => {
-      if (!isServerSearchEnabled) return;
+      if (!isServerQueryEnabled) return;
 
       const nextValue = (nextInput ?? filterValue).trim();
-      const params = new URLSearchParams(searchParams.toString());
-
-      if (nextValue) {
-        params.set(searchParamKey, nextValue);
-      } else {
-        params.delete(searchParamKey);
-      }
-
-      params.delete("page");
+      const params = buildSearchParams(searchParams, {
+        [searchParamKey]: nextValue || undefined,
+        page: undefined,
+      });
 
       const nextQuery = params.toString();
       if (nextQuery === searchParams.toString()) {
@@ -243,7 +250,7 @@ export function PortfolioRecordsTable({
     },
     [
       filterValue,
-      isServerSearchEnabled,
+      isServerQueryEnabled,
       pagination,
       pathname,
       router,
@@ -251,17 +258,41 @@ export function PortfolioRecordsTable({
     ],
   );
 
+  const handleTypeFilterChange = useCallback(
+    (nextTypes: PortfolioRecordType[]) => {
+      if (!isServerQueryEnabled) return;
+
+      const normalizedTypes = normalizePortfolioRecordTypes(nextTypes);
+      const params = buildSearchParams(searchParams, {
+        type:
+          normalizedTypes.length > 0 ? normalizedTypes.join(",") : undefined,
+        page: undefined,
+      });
+
+      const nextQuery = params.toString();
+      if (nextQuery === searchParams.toString()) {
+        return;
+      }
+      const basePath = pagination?.baseHref ?? pathname;
+      startTransition(() => {
+        router.push(nextQuery ? `${basePath}?${nextQuery}` : basePath);
+      });
+    },
+    [isServerQueryEnabled, pagination, pathname, router, searchParams],
+  );
+
   const handleDateSortToggle = useCallback(() => {
     if (!isServerSortingEnabled) return;
 
-    const params = new URLSearchParams(searchParams.toString());
     const currentDirection =
       sortBy === "date" ? (sortDirection ?? "desc") : "desc";
     const nextDirection = currentDirection === "desc" ? "asc" : "desc";
 
-    params.set("sort", "date");
-    params.set("dir", nextDirection);
-    params.delete("page");
+    const params = buildSearchParams(searchParams, {
+      sort: "date",
+      dir: nextDirection,
+      page: undefined,
+    });
 
     const nextQuery = params.toString();
     const basePath = pagination?.baseHref ?? pathname;
@@ -335,27 +366,35 @@ export function PortfolioRecordsTable({
   return (
     <div className="space-y-4">
       {/* Toolbar */}
-      {(showSearch || (!readOnly && data.length > 0)) && (
+      {(showSearch || showTypeFilter || (!readOnly && data.length > 0)) && (
         <div className="flex items-center justify-between gap-2">
           {/* Search */}
-          {showSearch &&
-            (isServerSearchEnabled ? (
-              <ServerSearchInput
-                initialValue={searchParamValue}
-                onSearch={handleSearchSubmit}
-              />
-            ) : (
-              <InputGroup className="max-w-sm">
-                <InputGroupInput
-                  placeholder="Search records..."
-                  value={filterValue}
-                  onChange={(event) => setFilterValue(event.target.value)}
+          <div className="flex items-center gap-2">
+            {showSearch &&
+              (isServerQueryEnabled ? (
+                <ServerSearchInput
+                  initialValue={searchParamValue}
+                  onSearch={handleSearchSubmit}
                 />
-                <InputGroupAddon>
-                  <Search />
-                </InputGroupAddon>
-              </InputGroup>
-            ))}
+              ) : (
+                <InputGroup className="max-w-sm">
+                  <InputGroupInput
+                    placeholder="Search records..."
+                    value={filterValue}
+                    onChange={(event) => setFilterValue(event.target.value)}
+                  />
+                  <InputGroupAddon>
+                    <Search />
+                  </InputGroupAddon>
+                </InputGroup>
+              ))}
+            {showTypeFilter && (
+              <PortfolioRecordTypeFilter
+                selectedTypes={selectedTypes}
+                onSelectionChange={handleTypeFilterChange}
+              />
+            )}
+          </div>
           <div className="flex items-center gap-2">
             {/* New record button */}
             {!readOnly && data.length > 0 && (
@@ -396,7 +435,7 @@ export function PortfolioRecordsTable({
             key={tableKey}
             columns={columns}
             data={data}
-            filterValue={isServerSearchEnabled ? "" : filterValue}
+            filterValue={isServerQueryEnabled ? "" : filterValue}
             filterColumnId="description"
             onSelectedRowsChange={handleSelectedRowsChange}
             footer={footer}

@@ -18,6 +18,10 @@ import { calculateSymbolDividendYield } from "@/server/analysis/dividend-yield";
 import { calculateProfitLoss } from "@/lib/profit-loss";
 import { formatPercentage, formatCurrency } from "@/lib/number-format";
 import { getRequestLocale } from "@/lib/locale/resolve-locale";
+import {
+  parsePortfolioRecordTypes,
+  type PortfolioRecordType,
+} from "@/lib/portfolio-records/filters";
 import { getSearchParam } from "@/lib/search-params";
 
 import type {
@@ -56,12 +60,14 @@ async function AssetContent({
   q,
   sortBy,
   sortDirection,
+  recordTypes,
 }: {
   positionId: string;
   page: number;
   q?: string;
   sortBy?: "date" | "created_at";
   sortDirection?: "asc" | "desc";
+  recordTypes?: PortfolioRecordType[];
 }) {
   "use cache: private";
 
@@ -104,6 +110,7 @@ async function AssetContent({
       page,
       pageSize: 50,
       q,
+      recordTypes,
       sortBy,
       sortDirection,
     }),
@@ -231,6 +238,7 @@ export default async function AssetPage(
 
   const pageParam = getSearchParam(searchParams, "page");
   const queryParam = getSearchParam(searchParams, "q");
+  const typeParam = getSearchParam(searchParams, "type");
   const sortParam = getSearchParam(searchParams, "sort");
   const directionParam = getSearchParam(searchParams, "dir");
 
@@ -238,6 +246,7 @@ export default async function AssetPage(
   const page =
     Number.isFinite(parsedPage) && parsedPage > 0 ? Math.floor(parsedPage) : 1;
   const q = typeof queryParam === "string" ? queryParam : undefined;
+  const recordTypes = parsePortfolioRecordTypes(typeParam);
   const sortBy =
     sortParam === "date" || sortParam === "created_at" ? sortParam : undefined;
   const sortDirection =
@@ -253,6 +262,7 @@ export default async function AssetPage(
         q={q}
         sortBy={sortBy}
         sortDirection={sortDirection}
+        recordTypes={recordTypes.length > 0 ? recordTypes : undefined}
       />
     </Suspense>
   );
