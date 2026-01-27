@@ -22,9 +22,11 @@ import type { PortfolioRecordWithPosition } from "@/types/global.types";
 export function getPortfolioRecordColumns({
   showPositionColumn = false,
   readOnly = false,
+  onDateSort,
 }: {
   showPositionColumn?: boolean;
   readOnly?: boolean;
+  onDateSort?: () => void;
 }): ColumnDef<PortfolioRecordWithPosition>[] {
   const selectionColumn: ColumnDef<PortfolioRecordWithPosition> = {
     id: "select",
@@ -57,7 +59,13 @@ export function getPortfolioRecordColumns({
     header: ({ column }) => (
       <div
         className="hover:text-primary flex cursor-pointer items-center gap-2 transition-colors"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        onClick={() => {
+          if (onDateSort) {
+            onDateSort();
+            return;
+          }
+          column.toggleSorting(column.getIsSorted() === "asc");
+        }}
       >
         Date
         <ArrowUpDown className="size-4" />
@@ -68,6 +76,7 @@ export function getPortfolioRecordColumns({
       const date = new Date(row.getValue<string>("date"));
       return formatDate(date, { locale });
     },
+    enableSorting: !onDateSort,
   };
 
   const base: ColumnDef<PortfolioRecordWithPosition>[] = readOnly

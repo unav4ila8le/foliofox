@@ -206,6 +206,16 @@ export function PortfolioRecordsTable({
   const searchParamKey = "q";
   const searchParamValue = searchParams.get(searchParamKey) ?? "";
 
+  const sortParam = searchParams.get("sort");
+  const directionParam = searchParams.get("dir");
+  const isServerSortingEnabled = Boolean(pagination) && !readOnly;
+  const sortBy =
+    sortParam === "date" || sortParam === "created_at" ? sortParam : undefined;
+  const sortDirection =
+    directionParam === "asc" || directionParam === "desc"
+      ? directionParam
+      : undefined;
+
   const handleSearchSubmit = useCallback(
     (nextInput?: string) => {
       if (!isServerSearchEnabled) return;
@@ -241,6 +251,33 @@ export function PortfolioRecordsTable({
     ],
   );
 
+  const handleDateSortToggle = useCallback(() => {
+    if (!isServerSortingEnabled) return;
+
+    const params = new URLSearchParams(searchParams.toString());
+    const currentDirection =
+      sortBy === "date" ? (sortDirection ?? "desc") : "desc";
+    const nextDirection = currentDirection === "desc" ? "asc" : "desc";
+
+    params.set("sort", "date");
+    params.set("dir", nextDirection);
+    params.delete("page");
+
+    const nextQuery = params.toString();
+    const basePath = pagination?.baseHref ?? pathname;
+    startTransition(() => {
+      router.push(nextQuery ? `${basePath}?${nextQuery}` : basePath);
+    });
+  }, [
+    isServerSortingEnabled,
+    pagination,
+    pathname,
+    router,
+    searchParams,
+    sortBy,
+    sortDirection,
+  ]);
+
   const handlePageChange = useCallback(
     (targetPage: number) => {
       if (!pagination || targetPage === pagination.page) return;
@@ -275,7 +312,11 @@ export function PortfolioRecordsTable({
       )
     : "#";
 
-  const columns = getPortfolioRecordColumns({ showPositionColumn, readOnly });
+  const columns = getPortfolioRecordColumns({
+    showPositionColumn,
+    readOnly,
+    onDateSort: isServerSortingEnabled ? handleDateSortToggle : undefined,
+  });
 
   // Optional table-native "View all" footer (used in dashboard widget).
   const footer = viewAllFooter ? (

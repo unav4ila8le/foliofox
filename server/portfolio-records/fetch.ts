@@ -11,6 +11,8 @@ interface FetchPortfolioRecordsOptions {
   endDate?: Date;
   q?: string;
   includePositionNameInSearch?: boolean;
+  sortBy?: "date" | "created_at";
+  sortDirection?: "asc" | "desc";
   page?: number;
   pageSize?: number;
 }
@@ -28,6 +30,8 @@ export const fetchPortfolioRecords = cache(
       endDate,
       q,
       includePositionNameInSearch = false,
+      sortBy,
+      sortDirection,
       page = 1,
       pageSize = 50,
     } = options;
@@ -102,10 +106,22 @@ export const fetchPortfolioRecords = cache(
       }
     }
 
-    const { data, error, count } = await query
-      .order("date", { ascending: false })
-      .order("created_at", { ascending: false })
-      .range(from, to);
+    const direction = sortDirection === "asc" ? "asc" : "desc";
+    if (sortBy === "date") {
+      query
+        .order("date", { ascending: direction === "asc" })
+        .order("created_at", { ascending: direction === "asc" });
+    } else if (sortBy === "created_at") {
+      query
+        .order("created_at", { ascending: direction === "asc" })
+        .order("date", { ascending: direction === "asc" });
+    } else {
+      query
+        .order("date", { ascending: false })
+        .order("created_at", { ascending: false });
+    }
+
+    const { data, error, count } = await query.range(from, to);
 
     if (error) {
       throw new Error(`Failed to fetch portfolio records: ${error.message}`);

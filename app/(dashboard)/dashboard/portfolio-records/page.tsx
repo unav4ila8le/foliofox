@@ -9,7 +9,17 @@ interface RecordsPageProps {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }
 
-async function RecordsTableWrapper({ page, q }: { page: number; q?: string }) {
+async function RecordsTableWrapper({
+  page,
+  q,
+  sortBy,
+  sortDirection,
+}: {
+  page: number;
+  q?: string;
+  sortBy?: "date" | "created_at";
+  sortDirection?: "asc" | "desc";
+}) {
   "use cache: private";
 
   const portfolioRecordsPage = await fetchPortfolioRecords({
@@ -17,6 +27,8 @@ async function RecordsTableWrapper({ page, q }: { page: number; q?: string }) {
     pageSize: 50,
     q,
     includePositionNameInSearch: true,
+    sortBy,
+    sortDirection,
   });
 
   const {
@@ -56,11 +68,23 @@ export default async function RecordsPage(props: RecordsPageProps) {
   const queryParam = Array.isArray(searchParams?.q)
     ? searchParams.q[0]
     : searchParams?.q;
+  const sortParam = Array.isArray(searchParams?.sort)
+    ? searchParams.sort[0]
+    : searchParams?.sort;
+  const directionParam = Array.isArray(searchParams?.dir)
+    ? searchParams.dir[0]
+    : searchParams?.dir;
 
   const parsedPage = Number(pageParam);
   const page =
     Number.isFinite(parsedPage) && parsedPage > 0 ? Math.floor(parsedPage) : 1;
   const q = typeof queryParam === "string" ? queryParam : undefined;
+  const sortBy =
+    sortParam === "date" || sortParam === "created_at" ? sortParam : undefined;
+  const sortDirection =
+    directionParam === "asc" || directionParam === "desc"
+      ? directionParam
+      : undefined;
 
   return (
     <div className="flex flex-col gap-4">
@@ -71,7 +95,12 @@ export default async function RecordsPage(props: RecordsPageProps) {
         </p>
       </div>
       <Suspense fallback={<Skeleton className="h-96" />}>
-        <RecordsTableWrapper page={page} q={q} />
+        <RecordsTableWrapper
+          page={page}
+          q={q}
+          sortBy={sortBy}
+          sortDirection={sortDirection}
+        />
       </Suspense>
     </div>
   );

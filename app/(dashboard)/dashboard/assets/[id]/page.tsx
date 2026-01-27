@@ -53,10 +53,14 @@ async function AssetContent({
   positionId,
   page,
   q,
+  sortBy,
+  sortDirection,
 }: {
   positionId: string;
   page: number;
   q?: string;
+  sortBy?: "date" | "created_at";
+  sortDirection?: "asc" | "desc";
 }) {
   "use cache: private";
 
@@ -94,7 +98,14 @@ async function AssetContent({
 
   // Batch remaining requests
   const [portfolioRecordsPage, symbol, newsResult] = await Promise.all([
-    fetchPortfolioRecords({ positionId, page, pageSize: 50, q }),
+    fetchPortfolioRecords({
+      positionId,
+      page,
+      pageSize: 50,
+      q,
+      sortBy,
+      sortDirection,
+    }),
     position.symbol_id
       ? fetchSymbol(position.symbol_id)
       : Promise.resolve(null),
@@ -223,15 +234,33 @@ export default async function AssetPage(
   const queryParam = Array.isArray(searchParams?.q)
     ? searchParams.q[0]
     : searchParams?.q;
+  const sortParam = Array.isArray(searchParams?.sort)
+    ? searchParams.sort[0]
+    : searchParams?.sort;
+  const directionParam = Array.isArray(searchParams?.dir)
+    ? searchParams.dir[0]
+    : searchParams?.dir;
 
   const parsedPage = Number(pageParam);
   const page =
     Number.isFinite(parsedPage) && parsedPage > 0 ? Math.floor(parsedPage) : 1;
   const q = typeof queryParam === "string" ? queryParam : undefined;
+  const sortBy =
+    sortParam === "date" || sortParam === "created_at" ? sortParam : undefined;
+  const sortDirection =
+    directionParam === "asc" || directionParam === "desc"
+      ? directionParam
+      : undefined;
 
   return (
     <Suspense fallback={<PageSkeleton />}>
-      <AssetContent positionId={positionId} page={page} q={q} />
+      <AssetContent
+        positionId={positionId}
+        page={page}
+        q={q}
+        sortBy={sortBy}
+        sortDirection={sortDirection}
+      />
     </Suspense>
   );
 }
