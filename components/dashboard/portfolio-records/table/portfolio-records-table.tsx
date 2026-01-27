@@ -1,9 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useMemo, useCallback, useTransition } from "react";
+import {
+  useState,
+  useMemo,
+  useCallback,
+  useTransition,
+  useEffect,
+} from "react";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { FileText, Trash2, Search } from "lucide-react";
+import { useDebounce } from "use-debounce";
 
 import {
   Pagination,
@@ -55,6 +62,43 @@ interface PortfolioRecordsTableProps {
     hasPreviousPage: boolean;
     baseHref?: string;
   };
+}
+
+interface ServerSearchInputProps {
+  initialValue: string;
+  onSearch: (value: string) => void;
+}
+
+function ServerSearchInput({ initialValue, onSearch }: ServerSearchInputProps) {
+  const [inputValue, setInputValue] = useState(initialValue);
+  const [debouncedValue] = useDebounce(inputValue, 400);
+
+  useEffect(() => {
+    setInputValue(initialValue);
+  }, [initialValue]);
+
+  useEffect(() => {
+    if (debouncedValue.trim() === initialValue.trim()) return;
+    onSearch(debouncedValue);
+  }, [debouncedValue, initialValue, onSearch]);
+
+  return (
+    <InputGroup className="max-w-sm">
+      <InputGroupInput
+        placeholder="Search records..."
+        value={inputValue}
+        onChange={(event) => setInputValue(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key !== "Enter") return;
+          event.preventDefault();
+          onSearch(event.currentTarget.value);
+        }}
+      />
+      <InputGroupAddon>
+        <Search />
+      </InputGroupAddon>
+    </InputGroup>
+  );
 }
 
 type PaginationEntry = number | "ellipsis";
@@ -248,41 +292,29 @@ export function PortfolioRecordsTable({
   ) : null;
 
   return (
-    <div
-      className={cn("space-y-4", isPending && "pointer-events-none opacity-50")}
-    >
+    <div className="space-y-4">
       {/* Toolbar */}
       {(showSearch || (!readOnly && data.length > 0)) && (
         <div className="flex items-center justify-between gap-2">
           {/* Search */}
-          {showSearch && (
-            <InputGroup
-              className="max-w-sm"
-              key={isServerSearchEnabled ? searchParamValue : "client"}
-            >
-              <InputGroupInput
-                placeholder="Search records..."
-                {...(isServerSearchEnabled
-                  ? { defaultValue: searchParamValue }
-                  : {
-                      value: filterValue,
-                      onChange: (event) => setFilterValue(event.target.value),
-                    })}
-                onKeyDown={(event) => {
-                  if (event.key !== "Enter") return;
-                  event.preventDefault();
-                  if (isServerSearchEnabled) {
-                    handleSearchSubmit(event.currentTarget.value);
-                    return;
-                  }
-                  handleSearchSubmit();
-                }}
+          {showSearch &&
+            (isServerSearchEnabled ? (
+              <ServerSearchInput
+                initialValue={searchParamValue}
+                onSearch={handleSearchSubmit}
               />
-              <InputGroupAddon>
-                <Search />
-              </InputGroupAddon>
-            </InputGroup>
-          )}
+            ) : (
+              <InputGroup className="max-w-sm">
+                <InputGroupInput
+                  placeholder="Search records..."
+                  value={filterValue}
+                  onChange={(event) => setFilterValue(event.target.value)}
+                />
+                <InputGroupAddon>
+                  <Search />
+                </InputGroupAddon>
+              </InputGroup>
+            ))}
           <div className="flex items-center gap-2">
             {/* New record button */}
             {!readOnly && data.length > 0 && (
@@ -299,35 +331,37 @@ export function PortfolioRecordsTable({
       )}
 
       {/* Table */}
-      {data.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="bg-accent rounded-lg p-2">
-            <FileText className="text-muted-foreground size-4" />
+      <div className={cn(isPending && "pointer-events-none opacity-50")}>
+        {data.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="bg-accent rounded-lg p-2">
+              <FileText className="text-muted-foreground size-4" />
+            </div>
+            <p className="mt-3 font-medium">No records found</p>
+            <p className="text-muted-foreground mt-1 mb-3 text-sm">
+              {emptyStateDescription ||
+                "Records for this position will appear here"}
+            </p>
+            <div className="flex items-center justify-center gap-2">
+              <NewPortfolioRecordButton
+                variant="outline"
+                preselectedPosition={position}
+              />
+              <ImportPortfolioRecordsButton variant="outline" />
+            </div>
           </div>
-          <p className="mt-3 font-medium">No records found</p>
-          <p className="text-muted-foreground mt-1 mb-3 text-sm">
-            {emptyStateDescription ||
-              "Records for this position will appear here"}
-          </p>
-          <div className="flex items-center justify-center gap-2">
-            <NewPortfolioRecordButton
-              variant="outline"
-              preselectedPosition={position}
-            />
-            <ImportPortfolioRecordsButton variant="outline" />
-          </div>
-        </div>
-      ) : (
-        <DataTable
-          key={tableKey}
-          columns={columns}
-          data={data}
-          filterValue={isServerSearchEnabled ? "" : filterValue}
-          filterColumnId="description"
-          onSelectedRowsChange={handleSelectedRowsChange}
-          footer={footer}
-        />
-      )}
+        ) : (
+          <DataTable
+            key={tableKey}
+            columns={columns}
+            data={data}
+            filterValue={isServerSearchEnabled ? "" : filterValue}
+            filterColumnId="description"
+            onSelectedRowsChange={handleSelectedRowsChange}
+            footer={footer}
+          />
+        )}
+      </div>
 
       {/* Pagination */}
       {!readOnly && pagination && pagination.pageCount > 1 && (
