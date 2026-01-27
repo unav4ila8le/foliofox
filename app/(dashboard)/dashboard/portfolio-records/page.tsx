@@ -1,9 +1,12 @@
 import { Suspense } from "react";
 
 import { Skeleton } from "@/components/ui/custom/skeleton";
+
 import { PortfolioRecordsTable } from "@/components/dashboard/portfolio-records/table/portfolio-records-table";
 
 import { fetchPortfolioRecords } from "@/server/portfolio-records/fetch";
+
+import { getSearchParam } from "@/lib/search-params";
 
 interface RecordsPageProps {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -62,18 +65,10 @@ async function RecordsTableWrapper({
 export default async function RecordsPage(props: RecordsPageProps) {
   const searchParams = await props.searchParams;
 
-  const pageParam = Array.isArray(searchParams?.page)
-    ? searchParams.page[0]
-    : searchParams?.page;
-  const queryParam = Array.isArray(searchParams?.q)
-    ? searchParams.q[0]
-    : searchParams?.q;
-  const sortParam = Array.isArray(searchParams?.sort)
-    ? searchParams.sort[0]
-    : searchParams?.sort;
-  const directionParam = Array.isArray(searchParams?.dir)
-    ? searchParams.dir[0]
-    : searchParams?.dir;
+  const pageParam = getSearchParam(searchParams, "page");
+  const queryParam = getSearchParam(searchParams, "q");
+  const sortParam = getSearchParam(searchParams, "sort");
+  const directionParam = getSearchParam(searchParams, "dir");
 
   const parsedPage = Number(pageParam);
   const page =

@@ -18,6 +18,7 @@ import { calculateSymbolDividendYield } from "@/server/analysis/dividend-yield";
 import { calculateProfitLoss } from "@/lib/profit-loss";
 import { formatPercentage, formatCurrency } from "@/lib/number-format";
 import { getRequestLocale } from "@/lib/locale/resolve-locale";
+import { getSearchParam } from "@/lib/search-params";
 
 import type {
   PositionSnapshot,
@@ -228,18 +229,10 @@ export default async function AssetPage(
   const searchParams = await props.searchParams;
   const { id: positionId } = await props.params;
 
-  const pageParam = Array.isArray(searchParams?.page)
-    ? searchParams.page[0]
-    : searchParams?.page;
-  const queryParam = Array.isArray(searchParams?.q)
-    ? searchParams.q[0]
-    : searchParams?.q;
-  const sortParam = Array.isArray(searchParams?.sort)
-    ? searchParams.sort[0]
-    : searchParams?.sort;
-  const directionParam = Array.isArray(searchParams?.dir)
-    ? searchParams.dir[0]
-    : searchParams?.dir;
+  const pageParam = getSearchParam(searchParams, "page");
+  const queryParam = getSearchParam(searchParams, "q");
+  const sortParam = getSearchParam(searchParams, "sort");
+  const directionParam = getSearchParam(searchParams, "dir");
 
   const parsedPage = Number(pageParam);
   const page =
