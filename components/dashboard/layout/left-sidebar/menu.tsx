@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { GitBranch, Home, TrendingUp } from "lucide-react";
+import { FileText, GitBranch, Home, TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 import {
@@ -23,6 +23,11 @@ const items = [
     title: "Assets",
     url: "/dashboard/assets",
     icon: TrendingUp,
+  },
+  {
+    title: "Portfolio Records",
+    url: "/dashboard/portfolio-records",
+    icon: FileText,
   },
   {
     title: "Scenario Planning",

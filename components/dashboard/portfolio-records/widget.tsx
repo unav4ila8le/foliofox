@@ -10,11 +10,21 @@ import type { PortfolioRecordWithPosition } from "@/types/global.types";
 interface PortfolioRecordsWidgetProps {
   portfolioRecordsData: PortfolioRecordWithPosition[];
   hasPositions: boolean;
+  pagination?: {
+    page: number;
+    pageSize: number;
+    pageCount: number;
+    total: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+    baseHref?: string;
+  };
 }
 
 export function PortfolioRecordsWidget({
   portfolioRecordsData,
   hasPositions,
+  pagination,
 }: PortfolioRecordsWidgetProps) {
   // Handle empty state
   if (!portfolioRecordsData || portfolioRecordsData.length === 0) {
@@ -41,6 +51,16 @@ export function PortfolioRecordsWidget({
 
   // Display portfolio records
   return (
-    <PortfolioRecordsTable data={portfolioRecordsData} showPositionColumn />
+    <PortfolioRecordsTable
+      data={portfolioRecordsData}
+      showPositionColumn
+      readOnly
+      enableSearch={false}
+      pagination={pagination}
+      viewAllFooter={{
+        href: "/dashboard/portfolio-records",
+        label: "View all",
+      }}
+    />
   );
 }

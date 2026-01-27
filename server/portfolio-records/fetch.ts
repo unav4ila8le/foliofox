@@ -4,11 +4,18 @@ import { cache } from "react";
 
 import { getCurrentUser } from "@/server/auth/actions";
 
+import type { PortfolioRecordType } from "@/lib/portfolio-records/filters";
+
 interface FetchPortfolioRecordsOptions {
   positionId?: string;
   includeArchived?: boolean;
   startDate?: Date;
   endDate?: Date;
+  q?: string;
+  includePositionNameInSearch?: boolean;
+  recordTypes?: PortfolioRecordType[];
+  sortBy?: "date" | "created_at";
+  sortDirection?: "asc" | "desc";
   page?: number;
   pageSize?: number;
 }
@@ -24,6 +31,11 @@ export const fetchPortfolioRecords = cache(
       includeArchived = true,
       startDate,
       endDate,
+      q,
+      includePositionNameInSearch = false,
+      recordTypes,
+      sortBy,
+      sortDirection,
       page = 1,
       pageSize = 50,
     } = options;
@@ -63,11 +75,60 @@ export const fetchPortfolioRecords = cache(
     if (startDate) query.gte("date", startDate.toISOString().slice(0, 10));
     if (endDate) query.lte("date", endDate.toISOString().slice(0, 10));
     if (!includeArchived) query.is("positions.archived_at", null);
+    if (recordTypes && recordTypes.length > 0) {
+      query.in("type", recordTypes);
+    }
+    const searchQuery = q?.trim();
+    if (searchQuery) {
+      if (includePositionNameInSearch) {
+        const positionsQuery = supabase
+          .from("positions")
+          .select("id")
+          .eq("user_id", user.id)
+          .ilike("name", `%${searchQuery}%`);
 
-    const { data, error, count } = await query
-      .order("date", { ascending: false })
-      .order("created_at", { ascending: false })
-      .range(from, to);
+        if (!includeArchived) {
+          positionsQuery.is("archived_at", null);
+        }
+
+        const { data: matchingPositions, error: positionsError } =
+          await positionsQuery;
+
+        if (positionsError) {
+          throw new Error(
+            `Failed to search positions: ${positionsError.message}`,
+          );
+        }
+
+        const positionIds = matchingPositions?.map((position) => position.id);
+        if (positionIds && positionIds.length > 0) {
+          query.or(
+            `description.ilike.%${searchQuery}%,position_id.in.(${positionIds.join(",")})`,
+          );
+        } else {
+          query.ilike("description", `%${searchQuery}%`);
+        }
+      } else {
+        query.ilike("description", `%${searchQuery}%`);
+      }
+    }
+
+    const direction = sortDirection === "asc" ? "asc" : "desc";
+    if (sortBy === "date") {
+      query
+        .order("date", { ascending: direction === "asc" })
+        .order("created_at", { ascending: direction === "asc" });
+    } else if (sortBy === "created_at") {
+      query
+        .order("created_at", { ascending: direction === "asc" })
+        .order("date", { ascending: direction === "asc" });
+    } else {
+      query
+        .order("date", { ascending: false })
+        .order("created_at", { ascending: false });
+    }
+
+    const { data, error, count } = await query.range(from, to);
 
     if (error) {
       throw new Error(`Failed to fetch portfolio records: ${error.message}`);

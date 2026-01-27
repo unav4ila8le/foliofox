@@ -18,6 +18,12 @@ import { calculateSymbolDividendYield } from "@/server/analysis/dividend-yield";
 import { calculateProfitLoss } from "@/lib/profit-loss";
 import { formatPercentage, formatCurrency } from "@/lib/number-format";
 import { getRequestLocale } from "@/lib/locale/resolve-locale";
+import {
+  parsePortfolioRecordTypes,
+  type PortfolioRecordType,
+} from "@/lib/portfolio-records/filters";
+import { getSearchParam } from "@/lib/search-params";
+import { parseUtcDateKey } from "@/lib/date/date-utils";
 
 import type {
   PositionSnapshot,
@@ -52,9 +58,21 @@ function PageSkeleton() {
 async function AssetContent({
   positionId,
   page,
+  q,
+  startDate,
+  endDate,
+  sortBy,
+  sortDirection,
+  recordTypes,
 }: {
   positionId: string;
   page: number;
+  q?: string;
+  startDate?: Date;
+  endDate?: Date;
+  sortBy?: "date" | "created_at";
+  sortDirection?: "asc" | "desc";
+  recordTypes?: PortfolioRecordType[];
 }) {
   "use cache: private";
 
@@ -92,7 +110,17 @@ async function AssetContent({
 
   // Batch remaining requests
   const [portfolioRecordsPage, symbol, newsResult] = await Promise.all([
-    fetchPortfolioRecords({ positionId, page, pageSize: 50 }),
+    fetchPortfolioRecords({
+      positionId,
+      page,
+      pageSize: 50,
+      q,
+      recordTypes,
+      startDate,
+      endDate,
+      sortBy,
+      sortDirection,
+    }),
     position.symbol_id
       ? fetchSymbol(position.symbol_id)
       : Promise.resolve(null),
@@ -214,19 +242,51 @@ export default async function AssetPage(
 ) {
   const searchParams = await props.searchParams;
   const { id: positionId } = await props.params;
-  const resolvedSearchParams = searchParams ? await searchParams : undefined;
 
-  const pageParam = Array.isArray(resolvedSearchParams?.page)
-    ? resolvedSearchParams.page[0]
-    : resolvedSearchParams?.page;
+  const pageParam = getSearchParam(searchParams, "page");
+  const queryParam = getSearchParam(searchParams, "q");
+  const typeParam = getSearchParam(searchParams, "type");
+  const dateFromParam = getSearchParam(searchParams, "dateFrom");
+  const dateToParam = getSearchParam(searchParams, "dateTo");
+  const sortParam = getSearchParam(searchParams, "sort");
+  const directionParam = getSearchParam(searchParams, "dir");
 
   const parsedPage = Number(pageParam);
   const page =
     Number.isFinite(parsedPage) && parsedPage > 0 ? Math.floor(parsedPage) : 1;
+  const q = typeof queryParam === "string" ? queryParam : undefined;
+  const recordTypes = parsePortfolioRecordTypes(typeParam);
+  const parsedStartDate = dateFromParam
+    ? parseUtcDateKey(dateFromParam)
+    : undefined;
+  const parsedEndDate = dateToParam ? parseUtcDateKey(dateToParam) : undefined;
+  const startDate =
+    parsedStartDate && !Number.isNaN(parsedStartDate.getTime())
+      ? parsedStartDate
+      : undefined;
+  const endDate =
+    parsedEndDate && !Number.isNaN(parsedEndDate.getTime())
+      ? parsedEndDate
+      : undefined;
+  const sortBy =
+    sortParam === "date" || sortParam === "created_at" ? sortParam : undefined;
+  const sortDirection =
+    directionParam === "asc" || directionParam === "desc"
+      ? directionParam
+      : undefined;
 
   return (
     <Suspense fallback={<PageSkeleton />}>
-      <AssetContent positionId={positionId} page={page} />
+      <AssetContent
+        positionId={positionId}
+        page={page}
+        q={q}
+        startDate={startDate}
+        endDate={endDate}
+        sortBy={sortBy}
+        sortDirection={sortDirection}
+        recordTypes={recordTypes.length > 0 ? recordTypes : undefined}
+      />
     </Suspense>
   );
 }

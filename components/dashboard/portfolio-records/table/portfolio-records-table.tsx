@@ -1,8 +1,16 @@
 "use client";
 
-import { useState, useMemo, useCallback, useTransition } from "react";
+import Link from "next/link";
+import {
+  useState,
+  useMemo,
+  useCallback,
+  useTransition,
+  useEffect,
+} from "react";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { FileText, Trash2, Search } from "lucide-react";
+import { useDebounce } from "use-debounce";
 
 import {
   Pagination,
@@ -18,8 +26,11 @@ import {
   InputGroupInput,
   InputGroupAddon,
 } from "@/components/ui/input-group";
+import { TableCell, TableRow } from "@/components/ui/table";
 import { DataTable } from "@/components/dashboard/tables/base/data-table";
 import { getPortfolioRecordColumns } from "@/components/dashboard/portfolio-records/table/columns";
+import { PortfolioRecordTypeFilter } from "@/components/dashboard/portfolio-records/table/filters/type-filter";
+import { PortfolioRecordDateFilter } from "@/components/dashboard/portfolio-records/table/filters/date-filter";
 import { NewPortfolioRecordButton } from "@/components/dashboard/new-portfolio-record";
 import { ImportPortfolioRecordsButton } from "@/components/dashboard/portfolio-records/import";
 import { TableActionsDropdown } from "@/components/dashboard/portfolio-records/table/table-actions";
@@ -27,16 +38,31 @@ import { BulkActionBar } from "@/components/dashboard/tables/base/bulk-action-ba
 import { DeletePortfolioRecordDialog } from "@/components/dashboard/portfolio-records/table/row-actions/delete-dialog";
 
 import { cn } from "@/lib/utils";
+import { formatLocalDateKey, parseLocalDateKey } from "@/lib/date/date-utils";
+import {
+  normalizePortfolioRecordTypes,
+  parsePortfolioRecordTypes,
+  type PortfolioRecordType,
+} from "@/lib/portfolio-records/filters";
+import { buildSearchParams } from "@/lib/search-params";
 
 import type {
   PortfolioRecordWithPosition,
   TransformedPosition,
 } from "@/types/global.types";
+import type { DateRange } from "react-day-picker";
 
 interface PortfolioRecordsTableProps {
   data: PortfolioRecordWithPosition[];
   position?: TransformedPosition;
   showPositionColumn?: boolean;
+  readOnly?: boolean;
+  enableSearch?: boolean;
+  emptyStateDescription?: string;
+  viewAllFooter?: {
+    href: string;
+    label?: string;
+  };
   pagination?: {
     page: number;
     pageSize: number;
@@ -46,6 +72,43 @@ interface PortfolioRecordsTableProps {
     hasPreviousPage: boolean;
     baseHref?: string;
   };
+}
+
+interface ServerSearchInputProps {
+  initialValue: string;
+  onSearch: (value: string) => void;
+}
+
+function ServerSearchInput({ initialValue, onSearch }: ServerSearchInputProps) {
+  const [inputValue, setInputValue] = useState(initialValue);
+  const [debouncedValue] = useDebounce(inputValue, 400);
+
+  useEffect(() => {
+    setInputValue(initialValue);
+  }, [initialValue]);
+
+  useEffect(() => {
+    if (debouncedValue.trim() === initialValue.trim()) return;
+    onSearch(debouncedValue);
+  }, [debouncedValue, initialValue, onSearch]);
+
+  return (
+    <InputGroup className="max-w-64">
+      <InputGroupInput
+        placeholder="Search records..."
+        value={inputValue}
+        onChange={(event) => setInputValue(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key !== "Enter") return;
+          event.preventDefault();
+          onSearch(event.currentTarget.value);
+        }}
+      />
+      <InputGroupAddon>
+        <Search />
+      </InputGroupAddon>
+    </InputGroup>
+  );
 }
 
 type PaginationEntry = number | "ellipsis";
@@ -83,9 +146,12 @@ export function PortfolioRecordsTable({
   data,
   position,
   showPositionColumn = false,
+  readOnly = false,
+  enableSearch = true,
+  emptyStateDescription,
+  viewAllFooter,
   pagination,
 }: PortfolioRecordsTableProps) {
-  const [filterValue, setFilterValue] = useState("");
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -141,6 +207,154 @@ export function PortfolioRecordsTable({
     [pagination, pathname, searchParams],
   );
 
+  // Paginated views use URL-driven controls so results come from the server.
+  const isServerQueryEnabled = Boolean(pagination) && enableSearch && !readOnly;
+  const showSearch = isServerQueryEnabled;
+  const showTypeFilter = isServerQueryEnabled;
+  const showDateFilter = isServerQueryEnabled;
+
+  const searchParamKey = "q";
+  const searchParamValue = searchParams.get(searchParamKey) ?? "";
+  const typeParamValue = searchParams.get("type") ?? "";
+  const dateFromParamValue = searchParams.get("dateFrom");
+  const dateToParamValue = searchParams.get("dateTo");
+
+  const sortParam = searchParams.get("sort");
+  const directionParam = searchParams.get("dir");
+  const isServerSortingEnabled = Boolean(pagination) && !readOnly;
+  const sortBy =
+    sortParam === "date" || sortParam === "created_at" ? sortParam : undefined;
+  const sortDirection =
+    directionParam === "asc" || directionParam === "desc"
+      ? directionParam
+      : undefined;
+  const selectedTypes = useMemo(
+    () => parsePortfolioRecordTypes(typeParamValue),
+    [typeParamValue],
+  );
+  const selectedDateRange = useMemo<DateRange | undefined>(() => {
+    const parsedFrom = dateFromParamValue
+      ? parseLocalDateKey(dateFromParamValue)
+      : undefined;
+    const parsedTo = dateToParamValue
+      ? parseLocalDateKey(dateToParamValue)
+      : undefined;
+
+    const from =
+      parsedFrom && !Number.isNaN(parsedFrom.getTime())
+        ? parsedFrom
+        : undefined;
+    const to =
+      parsedTo && !Number.isNaN(parsedTo.getTime()) ? parsedTo : undefined;
+
+    if (!from && !to) return undefined;
+    return { from, to };
+  }, [dateFromParamValue, dateToParamValue]);
+
+  const handleSearchSubmit = useCallback(
+    (nextInput: string) => {
+      if (!isServerQueryEnabled) return;
+
+      const nextValue = nextInput.trim();
+      const params = buildSearchParams(searchParams, {
+        [searchParamKey]: nextValue || undefined,
+        page: undefined,
+      });
+
+      const nextQuery = params.toString();
+      if (nextQuery === searchParams.toString()) {
+        return;
+      }
+
+      const basePath = pagination?.baseHref ?? pathname;
+      startTransition(() => {
+        router.push(nextQuery ? `${basePath}?${nextQuery}` : basePath);
+      });
+    },
+    [isServerQueryEnabled, pagination, pathname, router, searchParams],
+  );
+
+  const handleTypeFilterChange = useCallback(
+    (nextTypes: PortfolioRecordType[]) => {
+      if (!isServerQueryEnabled) return;
+
+      const normalizedTypes = normalizePortfolioRecordTypes(nextTypes);
+      const params = buildSearchParams(searchParams, {
+        type:
+          normalizedTypes.length > 0 ? normalizedTypes.join(",") : undefined,
+        page: undefined,
+      });
+
+      const nextQuery = params.toString();
+      if (nextQuery === searchParams.toString()) {
+        return;
+      }
+      const basePath = pagination?.baseHref ?? pathname;
+      startTransition(() => {
+        router.push(nextQuery ? `${basePath}?${nextQuery}` : basePath);
+      });
+    },
+    [isServerQueryEnabled, pagination, pathname, router, searchParams],
+  );
+
+  const handleDateRangeChange = useCallback(
+    (nextRange?: DateRange) => {
+      if (!isServerQueryEnabled) return;
+
+      const nextFrom = nextRange?.from
+        ? formatLocalDateKey(nextRange.from)
+        : undefined;
+      const nextTo = nextRange?.to
+        ? formatLocalDateKey(nextRange.to)
+        : undefined;
+
+      const params = buildSearchParams(searchParams, {
+        dateFrom: nextFrom,
+        dateTo: nextTo,
+        page: undefined,
+      });
+
+      const nextQuery = params.toString();
+      if (nextQuery === searchParams.toString()) {
+        return;
+      }
+
+      const basePath = pagination?.baseHref ?? pathname;
+      startTransition(() => {
+        router.push(nextQuery ? `${basePath}?${nextQuery}` : basePath);
+      });
+    },
+    [isServerQueryEnabled, pagination, pathname, router, searchParams],
+  );
+
+  const handleDateSortToggle = useCallback(() => {
+    if (!isServerSortingEnabled) return;
+
+    const currentDirection =
+      sortBy === "date" ? (sortDirection ?? "desc") : "desc";
+    const nextDirection = currentDirection === "desc" ? "asc" : "desc";
+
+    const params = buildSearchParams(searchParams, {
+      sort: "date",
+      dir: nextDirection,
+      page: undefined,
+    });
+
+    const nextQuery = params.toString();
+    const basePath = pagination?.baseHref ?? pathname;
+    startTransition(() => {
+      router.push(nextQuery ? `${basePath}?${nextQuery}` : basePath);
+    });
+  }, [
+    isServerSortingEnabled,
+    pagination,
+    pathname,
+    router,
+    searchParams,
+    sortBy,
+    sortDirection,
+  ]);
+
   const handlePageChange = useCallback(
     (targetPage: number) => {
       if (!pagination || targetPage === pagination.page) return;
@@ -175,70 +389,100 @@ export function PortfolioRecordsTable({
       )
     : "#";
 
-  const columns = getPortfolioRecordColumns({ showPositionColumn });
+  const columns = getPortfolioRecordColumns({
+    showPositionColumn,
+    readOnly,
+    onDateSort: isServerSortingEnabled ? handleDateSortToggle : undefined,
+  });
+
+  // Optional table-native "View all" footer (used in dashboard widget).
+  const footer = viewAllFooter ? (
+    <TableRow>
+      <TableCell colSpan={columns.length} className="p-0">
+        <Link
+          href={viewAllFooter.href}
+          className="text-muted-foreground hover:text-foreground block w-full px-3 py-2 text-center text-sm"
+        >
+          {viewAllFooter.label ?? "View all"}
+        </Link>
+      </TableCell>
+    </TableRow>
+  ) : null;
 
   return (
-    <div
-      className={cn("space-y-4", isPending && "pointer-events-none opacity-50")}
-    >
+    <div className="space-y-4">
       {/* Toolbar */}
-      <div className="flex items-center justify-between gap-2">
-        {/* Search */}
-        <InputGroup className="max-w-sm">
-          <InputGroupInput
-            placeholder="Search records..."
-            value={filterValue}
-            onChange={(e) => setFilterValue(e.target.value)}
-          />
-          <InputGroupAddon>
-            <Search />
-          </InputGroupAddon>
-        </InputGroup>
-        <div className="flex items-center gap-2">
-          {/* New record button */}
-          {data.length > 0 && (
-            <>
+      {(showSearch || showTypeFilter || (!readOnly && data.length > 0)) && (
+        <div className="flex items-center justify-between gap-2">
+          {/* Search and filters */}
+          <div className="flex flex-1 items-center gap-2">
+            {showSearch && (
+              <ServerSearchInput
+                initialValue={searchParamValue}
+                onSearch={handleSearchSubmit}
+              />
+            )}
+            {showTypeFilter && (
+              <PortfolioRecordTypeFilter
+                selectedTypes={selectedTypes}
+                onSelectionChange={handleTypeFilterChange}
+              />
+            )}
+            {showDateFilter && (
+              <PortfolioRecordDateFilter
+                value={selectedDateRange}
+                onChange={handleDateRangeChange}
+              />
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {/* New record button */}
+            {!readOnly && data.length > 0 && (
+              <>
+                <NewPortfolioRecordButton
+                  variant="outline"
+                  preselectedPosition={position}
+                />
+                <TableActionsDropdown />
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Table */}
+      <div className={cn(isPending && "pointer-events-none opacity-50")}>
+        {data.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="bg-accent rounded-lg p-2">
+              <FileText className="text-muted-foreground size-4" />
+            </div>
+            <p className="mt-3 font-medium">No records found</p>
+            <p className="text-muted-foreground mt-1 mb-3 text-sm">
+              {emptyStateDescription ||
+                "Records for this position will appear here"}
+            </p>
+            <div className="flex items-center justify-center gap-2">
               <NewPortfolioRecordButton
                 variant="outline"
                 preselectedPosition={position}
               />
-              <TableActionsDropdown />
-            </>
-          )}
-        </div>
+              <ImportPortfolioRecordsButton variant="outline" />
+            </div>
+          </div>
+        ) : (
+          <DataTable
+            key={tableKey}
+            columns={columns}
+            data={data}
+            onSelectedRowsChange={handleSelectedRowsChange}
+            footer={footer}
+          />
+        )}
       </div>
 
-      {/* Table */}
-      {data.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="bg-accent rounded-lg p-2">
-            <FileText className="text-muted-foreground size-4" />
-          </div>
-          <p className="mt-3 font-medium">No records found</p>
-          <p className="text-muted-foreground mt-1 mb-3 text-sm">
-            Records for this position will appear here
-          </p>
-          <div className="flex items-center justify-center gap-2">
-            <NewPortfolioRecordButton
-              variant="outline"
-              preselectedPosition={position}
-            />
-            <ImportPortfolioRecordsButton variant="outline" />
-          </div>
-        </div>
-      ) : (
-        <DataTable
-          key={tableKey}
-          columns={columns}
-          data={data}
-          filterValue={filterValue}
-          filterColumnId="description"
-          onSelectedRowsChange={handleSelectedRowsChange}
-        />
-      )}
-
       {/* Pagination */}
-      {pagination && pagination.pageCount > 1 && (
+      {!readOnly && pagination && pagination.pageCount > 1 && (
         <Pagination className="justify-end">
           <PaginationContent>
             <PaginationItem>
@@ -313,7 +557,7 @@ export function PortfolioRecordsTable({
       </p>
 
       {/* Floating bulk action bar */}
-      {selectedRows.length > 0 && (
+      {!readOnly && selectedRows.length > 0 && (
         <BulkActionBar
           selectedCount={selectedRows.length}
           actions={[
@@ -328,14 +572,16 @@ export function PortfolioRecordsTable({
       )}
 
       {/* Delete dialog */}
-      <DeletePortfolioRecordDialog
-        open={openDeleteDialog}
-        onOpenChangeAction={setOpenDeleteDialog}
-        portfolioRecords={selectedRows.map(({ id }) => ({ id }))} // Minimal DTO
-        onCompleted={() => {
-          setSelectionState({ key: tableKey, rows: [] });
-        }}
-      />
+      {!readOnly && (
+        <DeletePortfolioRecordDialog
+          open={openDeleteDialog}
+          onOpenChangeAction={setOpenDeleteDialog}
+          portfolioRecords={selectedRows.map(({ id }) => ({ id }))} // Minimal DTO
+          onCompleted={() => {
+            setSelectionState({ key: tableKey, rows: [] });
+          }}
+        />
+      )}
     </div>
   );
 }

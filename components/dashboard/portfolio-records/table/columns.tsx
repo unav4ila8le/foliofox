@@ -3,11 +3,6 @@
 import Link from "next/link";
 import { ArrowUpDown } from "lucide-react";
 
-import { ActionsCell } from "./row-actions/actions-cell";
-
-import { formatNumber } from "@/lib/number-format";
-import { formatDate } from "@/lib/date/date-format";
-
 import {
   Tooltip,
   TooltipContent,
@@ -16,58 +11,77 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 
+import { ActionsCell } from "./row-actions/actions-cell";
+
+import { formatNumber } from "@/lib/number-format";
+import { formatDate } from "@/lib/date/date-format";
+
 import type { ColumnDef } from "@tanstack/react-table";
 import type { PortfolioRecordWithPosition } from "@/types/global.types";
 
 export function getPortfolioRecordColumns({
   showPositionColumn = false,
+  readOnly = false,
+  onDateSort,
 }: {
   showPositionColumn?: boolean;
+  readOnly?: boolean;
+  onDateSort?: () => void;
 }): ColumnDef<PortfolioRecordWithPosition>[] {
-  const base: ColumnDef<PortfolioRecordWithPosition>[] = [
-    {
-      id: "select",
-      header: ({ table }) => (
-        <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
+  const selectionColumn: ColumnDef<PortfolioRecordWithPosition> = {
+    id: "select",
+    header: ({ table }) => (
+      <Checkbox
+        checked={
+          table.getIsAllPageRowsSelected() ||
+          (table.getIsSomePageRowsSelected() && "indeterminate")
+        }
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        onClick={(e) => e.stopPropagation()}
+        aria-label="Select all"
+      />
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+        onClick={(e) => e.stopPropagation()}
+        aria-label="Select row"
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+    size: 32,
+  };
+
+  const dateColumn: ColumnDef<PortfolioRecordWithPosition> = {
+    accessorKey: "date",
+    header: ({ column }) => (
+      <div
+        className="hover:text-primary flex cursor-pointer items-center gap-2 transition-colors"
+        onClick={() => {
+          if (onDateSort) {
+            onDateSort();
+            return;
           }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          onClick={(e) => e.stopPropagation()}
-          aria-label="Select all"
-        />
-      ),
-      cell: ({ row }) => (
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          onClick={(e) => e.stopPropagation()}
-          aria-label="Select row"
-        />
-      ),
-      enableSorting: false,
-      enableHiding: false,
-      size: 32,
+          column.toggleSorting(column.getIsSorted() === "asc");
+        }}
+      >
+        Date
+        <ArrowUpDown className="size-4" />
+      </div>
+    ),
+    cell: ({ row, table }) => {
+      const locale = table.options.meta?.locale;
+      const date = new Date(row.getValue<string>("date"));
+      return formatDate(date, { locale });
     },
-    {
-      accessorKey: "date",
-      header: ({ column }) => (
-        <div
-          className="hover:text-primary flex cursor-pointer items-center gap-2 transition-colors"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Date
-          <ArrowUpDown className="size-4" />
-        </div>
-      ),
-      cell: ({ row, table }) => {
-        const locale = table.options.meta?.locale;
-        const date = new Date(row.getValue<string>("date"));
-        return formatDate(date, { locale });
-      },
-    },
-  ];
+    enableSorting: !onDateSort,
+  };
+
+  const base: ColumnDef<PortfolioRecordWithPosition>[] = readOnly
+    ? [dateColumn]
+    : [selectionColumn, dateColumn];
 
   const positionCol: ColumnDef<PortfolioRecordWithPosition> = {
     id: "position",
@@ -194,7 +208,13 @@ export function getPortfolioRecordColumns({
     },
   ];
 
-  return showPositionColumn
+  const columns = showPositionColumn
     ? [...base, positionCol, ...rest]
     : [...base, ...rest];
+
+  if (readOnly) {
+    return columns.filter((column) => column.id !== "actions");
+  }
+
+  return columns;
 }
