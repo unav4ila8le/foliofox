@@ -117,7 +117,7 @@ export function CSVImportForm() {
       <div className="text-muted-foreground space-y-2 text-sm">
         <p>
           Upload a CSV or TSV file to import your positions. The first row
-          should contain the headers below.
+          should contain the headers listed below.
         </p>
         <p>
           <span className="text-foreground font-medium">Required columns:</span>{" "}

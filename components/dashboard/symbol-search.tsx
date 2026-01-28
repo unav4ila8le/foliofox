@@ -89,22 +89,22 @@ export function SymbolSearch({
           typeDisp: "Equity",
         },
         {
-          id: "GOOGL",
-          nameDisp: "Alphabet Inc.",
-          exchange: "NMS",
-          typeDisp: "Equity",
-        },
-        {
-          id: "AMZN",
-          nameDisp: "Amazon.com Inc.",
-          exchange: "NMS",
-          typeDisp: "Equity",
-        },
-        {
           id: "TSLA",
           nameDisp: "Tesla Inc.",
           exchange: "NMS",
           typeDisp: "Equity",
+        },
+        {
+          id: "VWCE.DE",
+          nameDisp: "Vanguard FTSE All-World UCITS ETF USD Accumulation",
+          exchange: "GER",
+          typeDisp: "ETF",
+        },
+        {
+          id: "BTC-USD",
+          nameDisp: "Bitcoin USD",
+          exchange: "CCC",
+          typeDisp: "Cryptocurrency",
         },
       ]);
       return;

@@ -17,6 +17,9 @@ export async function validatePortfolioRecordPositionNames(
     return { valid: true };
   }
 
+  const normalizePositionName = (value: string) =>
+    value.trim().replace(/\s+/g, " ").toLowerCase();
+
   const { supabase, user } = await getCurrentUser();
 
   const { data: positions, error } = await supabase
@@ -24,8 +27,7 @@ export async function validatePortfolioRecordPositionNames(
     .select("name")
     .eq("user_id", user.id)
     .eq("type", "asset")
-    .is("archived_at", null)
-    .in("name", positionNames);
+    .is("archived_at", null);
 
   if (error) {
     console.error("Error validating position names:", error);
@@ -33,8 +35,12 @@ export async function validatePortfolioRecordPositionNames(
     return { valid: true };
   }
 
-  const foundNames = new Set(positions?.map((p) => p.name) ?? []);
-  const missing = positionNames.filter((name) => !foundNames.has(name));
+  const foundNames = new Set(
+    positions?.map((p) => normalizePositionName(p.name)) ?? [],
+  );
+  const missing = positionNames.filter(
+    (name) => !foundNames.has(normalizePositionName(name)),
+  );
 
   if (missing.length > 0) {
     return { valid: false, missing };

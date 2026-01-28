@@ -25,6 +25,8 @@ export async function importPortfolioRecordsFromCSV(
     }
 
     const rows = parsed.records;
+    const normalizePositionName = (value: string) =>
+      value.trim().replace(/\s+/g, " ").toLowerCase();
     const uniqueNames = Array.from(new Set(rows.map((r) => r.position_name)));
 
     const { supabase, user } = await getCurrentUser();
@@ -34,8 +36,7 @@ export async function importPortfolioRecordsFromCSV(
       .select("id, name")
       .eq("user_id", user.id)
       .eq("type", "asset")
-      .is("archived_at", null)
-      .in("name", uniqueNames);
+      .is("archived_at", null);
 
     if (fetchError) {
       return {
@@ -44,12 +45,31 @@ export async function importPortfolioRecordsFromCSV(
       };
     }
 
-    const nameToId = new Map<string, string>();
+    const nameToId = new Map<string, { id: string; name: string }>();
+    const duplicateNames = new Set<string>();
     for (const position of positions ?? []) {
-      nameToId.set(position.name, position.id);
+      const normalized = normalizePositionName(position.name);
+      const existing = nameToId.get(normalized);
+      if (existing && existing.id !== position.id) {
+        duplicateNames.add(position.name);
+        duplicateNames.add(existing.name);
+        continue;
+      }
+      nameToId.set(normalized, { id: position.id, name: position.name });
     }
 
-    const missingNames = uniqueNames.filter((name) => !nameToId.has(name));
+    if (duplicateNames.size > 0) {
+      return {
+        success: false,
+        error:
+          "Cannot import records. Multiple positions share the same name when compared case-insensitively: " +
+          Array.from(duplicateNames).join(", "),
+      };
+    }
+
+    const missingNames = uniqueNames.filter(
+      (name) => !nameToId.has(normalizePositionName(name)),
+    );
     if (missingNames.length > 0) {
       return {
         success: false,
@@ -71,8 +91,10 @@ export async function importPortfolioRecordsFromCSV(
     > = [];
 
     for (const row of rows) {
-      const positionId = nameToId.get(row.position_name);
-      if (!positionId) {
+      const positionEntry = nameToId.get(
+        normalizePositionName(row.position_name),
+      );
+      if (!positionEntry) {
         return {
           success: false,
           error: `Position not found for record row: ${row.position_name}`,
@@ -80,7 +102,7 @@ export async function importPortfolioRecordsFromCSV(
       }
 
       recordsToInsert.push({
-        position_id: positionId,
+        position_id: positionEntry.id,
         type: row.type as (typeof PORTFOLIO_RECORD_TYPES)[number],
         date: row.date,
         quantity: row.quantity,
