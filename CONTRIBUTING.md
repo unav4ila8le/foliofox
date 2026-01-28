@@ -107,7 +107,7 @@ Visit <http://localhost:3000>
 
 ### Option 2: Local Node.js Setup
 
-For more faster development, we suggest using the traditional local setup:
+For faster development, we suggest using the traditional local setup:
 
 #### 1) Clone and install npm dependencies
 
