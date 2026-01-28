@@ -57,10 +57,7 @@ export function PortfolioRecordsWidget({
       readOnly
       enableSearch={false}
       pagination={pagination}
-      viewAllFooter={{
-        href: "/dashboard/portfolio-records",
-        label: "View all",
-      }}
+      viewAllFooter
     />
   );
 }
