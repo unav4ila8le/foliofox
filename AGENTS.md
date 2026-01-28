@@ -2,11 +2,11 @@
 
 ## Project Context
 
-- Next.js App Router application for portfolio intelligence and net worth tracking
+- Foliofox is a Next.js App Router application for portfolio intelligence and net worth tracking
 - Stack: TypeScript, Supabase, Shadcn UI, Tailwind CSS
 - Deployment: Vercel
 - Data Strategy: Daily cron refreshes for market data/FX and manual updates (no WebSocket)
-- Canonical data model: positions (assets and liabilities), portfolio_records (buy|sell|update), position_snapshots
+- Canonical data model: positions (assets and future liabilities), portfolio_records (buy|sell|update), position_snapshots
 
 ## Development Principles
 
@@ -32,10 +32,10 @@
 - Use descriptive names with auxiliary verbs (isLoading, hasError)
 - Follow functional programming patterns
 - Avoid unnecessary class usage and type casting
-- Prefer maps or objects over enums
+- Prefer maps or const objects over TypeScript enums
 - Avoid wrapping async functions in explicit `new Promise`
 - Prefer explicit named boolean flags (e.g., `includeSnapshots: true`) over positional booleans
-- Centralize runtime enums in `types/enums.ts` and import where needed
+- Centralize runtime enums in `types/enums.ts` (DB-backed constants), and import where needed
 - Prefer explicit and self-descriptive code; avoid abbreviations or initials
 
 ## File Structure
@@ -114,7 +114,7 @@ export function ComponentName({ prop1, prop2 }: Props) {
 ## Performance
 
 - Implement Suspense boundaries for loading states
-- Leverage Next.js Cache Components when possible (https://nextjs.org/docs/app/getting-started/cache-components)
+- Use Next.js/React cache primitives where appropriate (e.g., fetch caching, `"use cache"` https://nextjs.org/docs/app/getting-started/cache-components)
 - Use dynamic imports for heavy components
 - Optimize images with next/image
 - Monitor and optimize Core Web Vitals
@@ -125,7 +125,7 @@ export function ComponentName({ prop1, prop2 }: Props) {
 
 - Use kebab-case for files and directories
 - Suffix test files with .test.ts
-- Group related components in feature directories
+- Group cross-route, shared components in `components/features/`
 
 ## Positions Fetching Guidelines
 
