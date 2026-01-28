@@ -1,10 +1,4 @@
----
-description: Global edits and additions
-globs:
-alwaysApply: true
----
-
-# Foliofox - Global Development Rules
+# AGENTS Guidelines for This Repository
 
 ## Project Context
 
@@ -111,6 +105,7 @@ alwaysApply: true
 
 7. **Performance**
    - Implement Suspense boundaries for loading states
+   - Leverage Next.js Cache Components when possible (https://nextjs.org/docs/app/getting-started/cache-components)
    - Use dynamic imports for heavy components
    - Optimize images with next/image
    - Monitor and optimize Core Web Vitals
@@ -121,8 +116,6 @@ alwaysApply: true
    - Use kebab-case for files and directories
    - Suffix test files with .test.ts
    - Group related components in feature directories
-
-ALWAYS begin your response by telling me what AI model you are using. Just say the name of the model.
 
 ## Positions Fetching Guidelines
 
