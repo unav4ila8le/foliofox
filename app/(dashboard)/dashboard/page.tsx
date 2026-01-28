@@ -37,8 +37,8 @@ async function NetWorthChartWrapper() {
 
   const today = new Date();
   const defaultDaysBack =
-    differenceInCalendarDays(today, subMonths(today, 6)) + 1;
-  // Fetch both history and change for default period (6 calendar months)
+    differenceInCalendarDays(today, subMonths(today, 3)) + 1;
+  // Fetch both history and change for default period (3 calendar months)
   const [netWorth, netWorthHistory, netWorthChange] = await Promise.all([
     calculateNetWorth(profile.display_currency),
     fetchNetWorthHistory({

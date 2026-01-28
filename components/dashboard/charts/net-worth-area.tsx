@@ -76,7 +76,7 @@ export function NetWorthAreaChart({
   const { isPrivacyMode } = usePrivacyMode();
   const locale = useLocale();
 
-  // Display custom time range data or fall back to default initial data (6 months)
+  // Display custom time range data or fall back to default initial data (3 months)
   const history = customTimeRange?.history ?? initialHistory;
   const change = customTimeRange?.change ?? initialChange;
 
@@ -113,7 +113,7 @@ export function NetWorthAreaChart({
           break;
         }
         default: {
-          daysBack = differenceInCalendarDays(today, subMonths(today, 6)) + 1;
+          daysBack = differenceInCalendarDays(today, subMonths(today, 3)) + 1;
           break;
         }
       }
@@ -218,12 +218,12 @@ export function NetWorthAreaChart({
                 </div>
               </div>
               <Select
-                defaultValue="6m"
+                defaultValue="3m"
                 onValueChange={handleRangeChange}
                 disabled={isLoading}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="6 Months" />
+                  <SelectValue placeholder="3 Months" />
                 </SelectTrigger>
                 <SelectContent align="end" position="popper">
                   <SelectItem value="1m">

@@ -59,10 +59,7 @@ interface PortfolioRecordsTableProps {
   readOnly?: boolean;
   enableSearch?: boolean;
   emptyStateDescription?: string;
-  viewAllFooter?: {
-    href: string;
-    label?: string;
-  };
+  viewAllFooter?: boolean;
   pagination?: {
     page: number;
     pageSize: number;
@@ -396,18 +393,23 @@ export function PortfolioRecordsTable({
   });
 
   // Optional table-native "View all" footer (used in dashboard widget).
-  const footer = viewAllFooter ? (
-    <TableRow>
-      <TableCell colSpan={columns.length} className="p-0">
-        <Link
-          href={viewAllFooter.href}
-          className="text-muted-foreground hover:text-foreground block w-full px-3 py-2 text-center text-sm"
-        >
-          {viewAllFooter.label ?? "View all"}
-        </Link>
-      </TableCell>
-    </TableRow>
-  ) : null;
+  const hasMoreRecords =
+    pagination && pagination.total > pagination.pageSize
+      ? true
+      : !pagination && data.length > 15;
+  const footer =
+    viewAllFooter && hasMoreRecords ? (
+      <TableRow>
+        <TableCell colSpan={columns.length} className="p-0">
+          <Link
+            href="/dashboard/portfolio-records"
+            className="text-muted-foreground hover:text-foreground block w-full px-3 py-2 text-center text-sm"
+          >
+            View all
+          </Link>
+        </TableCell>
+      </TableRow>
+    ) : null;
 
   return (
     <div className="space-y-4">
