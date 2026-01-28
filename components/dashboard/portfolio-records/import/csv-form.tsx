@@ -118,10 +118,11 @@ export function CSVImportForm() {
     <div className="space-y-4">
       <div className="text-muted-foreground space-y-2 text-sm">
         <p>
-          Upload a CSV or TSV file to import portfolio records. Each record must
-          refer to an existing position by name. The first row should contain
-          the headers below.
+          Upload a CSV or TSV file to import portfolio records. You can include
+          records for multiple positions in one file. Each record must refer to
+          an existing position by name.
         </p>
+        <p>The first row should contain the headers listed below.</p>
         <p>
           <span className="text-foreground font-medium">Required columns:</span>{" "}
           position_name, type (buy/sell/update), date (YYYY-MM-DD), quantity,
