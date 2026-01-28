@@ -9,8 +9,8 @@ A net worth tracking app with an AI-powered financial advisor that helps you mak
 - **Interactive portfolio visualization** - See your wealth grow with engaging charts and tables, not boring spreadsheets
 - **AI-powered financial insights** - Get personalized advice, not generic market data
 - **Multi-currency support** - Automatic exchange rates for global portfolios
-- **Smart portfolio import** - One-click import from any broker or spreadsheet
-- **Real-time market data** - Powered by Yahoo Finance
+- **Smart portfolio import** - One-click import from any broker or spreadsheet with AI
+- **Daily market data** - Powered by Yahoo Finance
 - **Secure, private and open source** - Your data stays yours
 
 ## Built with
