@@ -337,7 +337,7 @@ function Sidebar({
   side = "left",
   variant = "sidebar",
   collapsible = "offcanvas",
-  showMobileClose = false,
+  showCloseButton = false,
   mobileBreakpoint,
   className,
   children,
@@ -347,7 +347,7 @@ function Sidebar({
   side?: "left" | "right";
   variant?: "sidebar" | "floating" | "inset";
   collapsible?: "offcanvas" | "icon" | "none";
-  showMobileClose?: boolean;
+  showCloseButton?: boolean;
   mobileBreakpoint?: string;
 }) {
   const {
@@ -446,12 +446,10 @@ function Sidebar({
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className={cn(
-            "bg-sidebar text-sidebar-foreground w-(--sidebar-width) p-0",
-            !showMobileClose && "[&>button]:hidden",
-          )}
+          className="bg-sidebar text-sidebar-foreground w-(--sidebar-width) p-0"
           style={widthVarsMobile}
           side={side}
+          showCloseButton={showCloseButton}
         >
           <SidebarInstanceContext.Provider value={{ isSheetMobile }}>
             <SidebarSectionContext.Provider value={side}>

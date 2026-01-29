@@ -5,7 +5,7 @@ export function RightSidebar() {
   return (
     <Sidebar
       side="right"
-      showMobileClose
+      showCloseButton
       mobileBreakpoint="(max-width: 1279px)"
     >
       <AIAdvisor />

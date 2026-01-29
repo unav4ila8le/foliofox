@@ -56,7 +56,7 @@
     "react-day-picker": "^9.13.0",
     "react-dom": "^19.2.4",
     "react-dropzone": "^14.3.8",
-    "react-hook-form": "^7.70.0",
+    "react-hook-form": "^7.71.1",
     "recharts": "^3.6.0",
     "remark": "^15.0.1",
     "remark-html": "^16.0.1",
@@ -69,7 +69,7 @@
     "uuid": "^13.0.0",
     "vaul": "^1.1.2",
     "yahoo-finance2": "^3.6.4",
-    "zod": "^4.3.5"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.0.8",

@@ -59,7 +59,7 @@ export default async function Layout({
         defaultOpen={defaultOpenLeft}
         defaultOpenRight={defaultOpenRight}
         resizable={{ right: true }}
-        defaultLeftWidth="max(16rem, 14vw)"
+        defaultLeftWidth="max(16rem, 12vw)"
         defaultRightWidth="max(16rem, 20vw)"
         minRightWidth="16rem"
         maxRightWidth="24vw"
