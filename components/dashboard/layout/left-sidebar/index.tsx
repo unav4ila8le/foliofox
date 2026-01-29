@@ -19,7 +19,7 @@ export function LeftSidebar() {
   return (
     <Sidebar
       collapsible="icon"
-      style={{ "--sidebar-width-mobile": "max(18rem, 80vw)" } as CSSProperties}
+      style={{ "--sidebar-width-mobile": "max(18rem, 64vw)" } as CSSProperties}
     >
       <SidebarHeader>
         <UISidebarMenu>
