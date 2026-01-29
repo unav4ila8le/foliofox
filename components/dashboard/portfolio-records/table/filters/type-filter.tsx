@@ -21,17 +21,21 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 
+import { cn } from "@/lib/utils";
+
 import { type PortfolioRecordType } from "@/lib/portfolio-records/filters";
 import { PORTFOLIO_RECORD_TYPES } from "@/types/enums";
 
 interface PortfolioRecordTypeFilterProps {
   selectedTypes: PortfolioRecordType[];
   onSelectionChange: (types: PortfolioRecordType[]) => void;
+  className?: string;
 }
 
 export function PortfolioRecordTypeFilter({
   selectedTypes,
   onSelectionChange,
+  className,
 }: PortfolioRecordTypeFilterProps) {
   const [open, setOpen] = useState(false);
   const selectedSet = useMemo(() => new Set(selectedTypes), [selectedTypes]);
@@ -55,7 +59,10 @@ export function PortfolioRecordTypeFilter({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" className="border-dashed px-2">
+        <Button
+          variant="outline"
+          className={cn("border-dashed px-2", className)}
+        >
           {selectedTypes.length > 0 ? (
             <span
               className="text-muted-foreground hover:text-foreground"

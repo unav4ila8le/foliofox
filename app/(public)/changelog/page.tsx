@@ -36,7 +36,7 @@ export default async function ChangelogPage() {
 
           {/* Main content */}
           <div
-            className="prose prose-neutral dark:prose-invert col-span-12 md:col-span-6 [&_img]:rounded-sm"
+            className="prose prose-neutral dark:prose-invert col-span-12 md:col-span-6 [&_h2]:font-semibold [&_img]:rounded-sm"
             dangerouslySetInnerHTML={{ __html: entry.content }}
           />
         </article>

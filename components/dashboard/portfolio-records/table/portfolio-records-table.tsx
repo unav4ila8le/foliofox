@@ -422,26 +422,30 @@ export function PortfolioRecordsTable({
       {(showSearch || showTypeFilter || (!readOnly && data.length > 0)) && (
         <div className="flex flex-col justify-between gap-2 md:flex-row lg:items-center">
           {/* Search and filters */}
-          <div className="flex flex-1 items-center gap-2">
+          <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
             {showSearch && (
               <ServerSearchInput
                 initialValue={searchParamValue}
                 onSearch={handleSearchSubmit}
-                className="flex-1 md:flex-none"
+                className="flex-1"
               />
             )}
-            {showTypeFilter && (
-              <PortfolioRecordTypeFilter
-                selectedTypes={selectedTypes}
-                onSelectionChange={handleTypeFilterChange}
-              />
-            )}
-            {showDateFilter && (
-              <PortfolioRecordDateFilter
-                value={selectedDateRange}
-                onChange={handleDateRangeChange}
-              />
-            )}
+            <div className="flex flex-1 items-center gap-2 sm:flex-none">
+              {showTypeFilter && (
+                <PortfolioRecordTypeFilter
+                  selectedTypes={selectedTypes}
+                  onSelectionChange={handleTypeFilterChange}
+                  className="flex-1 sm:flex-none"
+                />
+              )}
+              {showDateFilter && (
+                <PortfolioRecordDateFilter
+                  value={selectedDateRange}
+                  onChange={handleDateRangeChange}
+                  className="flex-1 sm:flex-none"
+                />
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-2 self-end">
             {/* New record button */}

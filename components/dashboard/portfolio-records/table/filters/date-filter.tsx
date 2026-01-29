@@ -13,15 +13,18 @@ import {
 
 import { useLocale } from "@/hooks/use-locale";
 import { formatDate } from "@/lib/date/date-format";
+import { cn } from "@/lib/utils";
 
 interface PortfolioRecordDateFilterProps {
   value?: DateRange;
   onChange: (range?: DateRange) => void;
+  className?: string;
 }
 
 export function PortfolioRecordDateFilter({
   value,
   onChange,
+  className,
 }: PortfolioRecordDateFilterProps) {
   const locale = useLocale();
   const label = (() => {
@@ -37,7 +40,7 @@ export function PortfolioRecordDateFilter({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="outline" className="border-dashed">
+        <Button variant="outline" className={cn("border-dashed", className)}>
           {value?.from || value?.to ? (
             <span
               className="text-muted-foreground hover:text-foreground"
