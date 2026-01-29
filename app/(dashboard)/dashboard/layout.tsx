@@ -63,12 +63,6 @@ export default async function Layout({
         defaultRightWidth="max(16rem, 20vw)"
         minRightWidth="16rem"
         maxRightWidth="24vw"
-        style={
-          {
-            "--sidebar-left-width-mobile": "max(18rem, 80vw)",
-            "--sidebar-right-width-mobile": "max(18rem, 80vw)",
-          } as React.CSSProperties
-        }
       >
         <PrivacyModeProvider>
           <ImportPositionsDialogProvider>

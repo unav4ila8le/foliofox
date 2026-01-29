@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 import {
   Sidebar,
   SidebarContent,
@@ -15,7 +17,10 @@ import { Menu } from "./menu";
 
 export function LeftSidebar() {
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar
+      collapsible="icon"
+      style={{ "--sidebar-width-mobile": "max(18rem, 80vw)" } as CSSProperties}
+    >
       <SidebarHeader>
         <UISidebarMenu>
           <SidebarMenuItem>

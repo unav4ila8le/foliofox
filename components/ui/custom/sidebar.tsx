@@ -5,7 +5,7 @@ import { Slot } from "@radix-ui/react-slot";
 import { VariantProps, cva } from "class-variance-authority";
 import { PanelLeftIcon, PanelRightIcon } from "lucide-react";
 
-import { useIsMobile } from "@/hooks/use-mobile";
+import { MOBILE_MEDIA_QUERY, useIsMobile } from "@/hooks/use-mobile";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,7 @@ const SIDEBAR_WIDTH_MOBILE = "18rem";
 const SIDEBAR_WIDTH_ICON = "3rem";
 const SIDEBAR_LEFT_KEYBOARD_SHORTCUT = "b";
 const SIDEBAR_RIGHT_KEYBOARD_SHORTCUT = "i";
+const EMPTY_STYLE: React.CSSProperties = {};
 
 type SidebarContext = {
   // Back-compat (maps to left)
@@ -102,6 +103,15 @@ function useSidebarSection(): "left" | "right" {
   return React.useContext(SidebarSectionContext) ?? "left";
 }
 
+function getCssVariableValue(
+  style: React.CSSProperties,
+  variable: string,
+): string | undefined {
+  const value = style[variable as keyof React.CSSProperties];
+  if (value == null) return undefined;
+  return typeof value === "string" ? value : `${value}`;
+}
+
 function SidebarProvider({
   // Back-compat: defaultOpen maps to left
   defaultOpen = true,
@@ -146,6 +156,13 @@ function SidebarProvider({
   maxRightWidth?: string;
 }) {
   const isMobile = useIsMobile();
+  const initialIsMobile =
+    typeof window !== "undefined"
+      ? window.matchMedia(MOBILE_MEDIA_QUERY).matches
+      : false;
+
+  const initialLeftOpen = initialIsMobile ? false : defaultOpen;
+  const initialRightOpen = initialIsMobile ? false : defaultOpenRight;
 
   // Mobile open states (per side)
   const [openMobileLeft, setOpenMobileLeft] = React.useState(false);
@@ -156,7 +173,7 @@ function SidebarProvider({
   const [rightWidth, setRightWidth] = React.useState(defaultRightWidth);
 
   // Desktop open states (per side)
-  const [_openLeft, _setOpenLeft] = React.useState(defaultOpen);
+  const [_openLeft, _setOpenLeft] = React.useState(initialLeftOpen);
   const openLeft = openLeftProp ?? _openLeft;
   const setOpenLeft = React.useCallback(
     (value: boolean | ((v: boolean) => boolean)) => {
@@ -172,7 +189,7 @@ function SidebarProvider({
     [openLeft, setOpenLeftProp],
   );
 
-  const [_openRight, _setOpenRight] = React.useState(defaultOpenRight);
+  const [_openRight, _setOpenRight] = React.useState(initialRightOpen);
   const openRight = openRightProp ?? _openRight;
   const setOpenRight = React.useCallback(
     (value: boolean | ((v: boolean) => boolean)) => {
@@ -313,10 +330,8 @@ function SidebarProvider({
               // Per-side CSS variables; each Sidebar instance maps these to its local --sidebar-width vars.
               "--sidebar-left-width": leftWidth,
               "--sidebar-left-width-icon": SIDEBAR_WIDTH_ICON,
-              "--sidebar-left-width-mobile": SIDEBAR_WIDTH_MOBILE,
               "--sidebar-right-width": rightWidth,
               "--sidebar-right-width-icon": SIDEBAR_WIDTH_ICON,
-              "--sidebar-right-width-mobile": SIDEBAR_WIDTH_MOBILE,
               ...style,
             } as React.CSSProperties
           }
@@ -394,6 +409,22 @@ function Sidebar({
     // We intentionally depend on all to catch toggles
   }, [isSheetMobile, open, openMobile, setOpen, setOpenMobile]);
 
+  const styleVars = style ?? EMPTY_STYLE;
+  const mobileWidth =
+    getCssVariableValue(
+      styleVars,
+      side === "right"
+        ? "--sidebar-right-width-mobile"
+        : "--sidebar-left-width-mobile",
+    ) ??
+    getCssVariableValue(styleVars, "--sidebar-width-mobile") ??
+    SIDEBAR_WIDTH_MOBILE;
+
+  const sheetStyle = {
+    ...styleVars,
+    "--sidebar-width": mobileWidth,
+  } as React.CSSProperties;
+
   // Map per-side width vars to the shared --sidebar-width vars for this instance
   const widthVars =
     side === "right"
@@ -404,15 +435,6 @@ function Sidebar({
       : ({
           "--sidebar-width": "var(--sidebar-left-width)",
           "--sidebar-width-icon": "var(--sidebar-left-width-icon)",
-        } as React.CSSProperties);
-
-  const widthVarsMobile =
-    side === "right"
-      ? ({
-          "--sidebar-width": "var(--sidebar-right-width-mobile)",
-        } as React.CSSProperties)
-      : ({
-          "--sidebar-width": "var(--sidebar-left-width-mobile)",
         } as React.CSSProperties);
 
   if (collapsible === "none") {
@@ -443,7 +465,7 @@ function Sidebar({
           data-slot="sidebar"
           data-mobile="true"
           className="bg-sidebar text-sidebar-foreground w-(--sidebar-width) p-0"
-          style={widthVarsMobile}
+          style={sheetStyle}
           side={side}
           showCloseButton={showCloseButton}
         >
@@ -663,7 +685,7 @@ function SidebarInset({ className, ...props }: React.ComponentProps<"main">) {
     <main
       data-slot="sidebar-inset"
       className={cn(
-        "bg-background relative flex min-h-0 w-full flex-1 flex-col overflow-auto",
+        "bg-background relative flex h-svh min-h-0 flex-1 flex-col overflow-auto",
         "peer-data-[variant=inset]:min-h-[calc(100svh-(--spacing(4)))] md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2",
         className,
       )}

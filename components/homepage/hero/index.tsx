@@ -20,7 +20,7 @@ export function Hero() {
         <Button
           asChild
           size="lg"
-          className="bg-brand hover:bg-brand/90 dark:text-primary mt-8 rounded-lg px-8 text-base"
+          className="bg-brand hover:bg-brand/90 dark:text-primary mt-8 rounded-lg px-6 text-base"
         >
           <Link href="/dashboard">
             <Suspense fallback="Get Started">
