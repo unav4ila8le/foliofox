@@ -438,10 +438,6 @@ function Sidebar({
   if (isSheetMobile) {
     return (
       <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
-        <SheetHeader className="sr-only">
-          <SheetTitle>Sidebar</SheetTitle>
-          <SheetDescription>Mobile sidebar.</SheetDescription>
-        </SheetHeader>
         <SheetContent
           data-sidebar="sidebar"
           data-slot="sidebar"
@@ -451,6 +447,10 @@ function Sidebar({
           side={side}
           showCloseButton={showCloseButton}
         >
+          <SheetHeader className="sr-only">
+            <SheetTitle>Sidebar</SheetTitle>
+            <SheetDescription>Displays the mobile sidebar.</SheetDescription>
+          </SheetHeader>
           <SidebarInstanceContext.Provider value={{ isSheetMobile }}>
             <SidebarSectionContext.Provider value={side}>
               <div className="flex h-full w-full flex-col">{children}</div>
@@ -475,6 +475,7 @@ function Sidebar({
         >
           {/* This is the desktop spacer/gap */}
           <div
+            data-slot="sidebar-gap"
             className={cn(
               "relative h-svh w-(--sidebar-width) bg-transparent transition-[width] duration-200 ease-linear group-data-[sidebar-resizing=true]/sidebar-wrapper:transition-none",
               "group-data-[collapsible=offcanvas]:w-0",
@@ -486,6 +487,7 @@ function Sidebar({
           />
           {/* Fixed panel */}
           <div
+            data-slot="sidebar-container"
             className={cn(
               "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear group-data-[sidebar-resizing=true]/sidebar-wrapper:transition-none md:flex",
               side === "left"
@@ -500,6 +502,7 @@ function Sidebar({
           >
             <div
               data-sidebar="sidebar"
+              data-slot="sidebar-inner"
               className="bg-sidebar group-data-[variant=floating]:border-sidebar-border flex h-full w-full flex-col group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:shadow-sm"
             >
               {children}
@@ -525,7 +528,7 @@ function SidebarTrigger({
       data-slot="sidebar-trigger"
       variant="ghost"
       size="icon"
-      className={className}
+      className={cn("size-7", className)}
       onClick={(event) => {
         onClick?.(event);
         if (side === "right") {
@@ -660,7 +663,7 @@ function SidebarInset({ className, ...props }: React.ComponentProps<"main">) {
     <main
       data-slot="sidebar-inset"
       className={cn(
-        "bg-background relative flex h-svh min-h-0 flex-1 flex-col overflow-auto",
+        "bg-background relative flex min-h-0 w-full flex-1 flex-col overflow-auto",
         "peer-data-[variant=inset]:min-h-[calc(100svh-(--spacing(4)))] md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2",
         className,
       )}
@@ -952,11 +955,6 @@ function SidebarMenuBadge({
   );
 }
 
-// Random width between 50 to 90%
-function getRandomSkeletonWidth() {
-  return `${Math.floor(Math.random() * 40) + 50}%`;
-}
-
 function SidebarMenuSkeleton({
   className,
   showIcon = false,
@@ -964,7 +962,10 @@ function SidebarMenuSkeleton({
 }: React.ComponentProps<"div"> & {
   showIcon?: boolean;
 }) {
-  const width = getRandomSkeletonWidth();
+  // Random width between 50 to 90%.
+  const [width] = React.useState(() => {
+    return `${Math.floor(Math.random() * 40) + 50}%`;
+  });
 
   return (
     <div
