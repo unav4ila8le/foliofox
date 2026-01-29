@@ -114,7 +114,7 @@ export function LoginForm() {
               render={({ field }) => (
                 <FormItem>
                   <div className="flex items-center justify-between gap-4">
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel htmlFor="login-password">Password</FormLabel>
                     <Link
                       href="/auth/forgot-password"
                       className="text-sm underline-offset-4 hover:underline"
@@ -125,6 +125,7 @@ export function LoginForm() {
                   <FormControl>
                     <InputGroup>
                       <InputGroupInput
+                        id="login-password"
                         {...field}
                         type={showPassword ? "text" : "password"}
                       />
