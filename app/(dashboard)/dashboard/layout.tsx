@@ -59,16 +59,10 @@ export default async function Layout({
         defaultOpen={defaultOpenLeft}
         defaultOpenRight={defaultOpenRight}
         resizable={{ right: true }}
-        defaultLeftWidth="max(16rem, 14vw)"
+        defaultLeftWidth="max(16rem, 12vw)"
         defaultRightWidth="max(16rem, 20vw)"
         minRightWidth="16rem"
         maxRightWidth="24vw"
-        style={
-          {
-            "--sidebar-left-width-mobile": "max(18rem, 80vw)",
-            "--sidebar-right-width-mobile": "max(18rem, 80vw)",
-          } as React.CSSProperties
-        }
       >
         <PrivacyModeProvider>
           <ImportPositionsDialogProvider>

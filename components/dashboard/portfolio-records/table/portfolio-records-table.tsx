@@ -74,9 +74,14 @@ interface PortfolioRecordsTableProps {
 interface ServerSearchInputProps {
   initialValue: string;
   onSearch: (value: string) => void;
+  className?: string;
 }
 
-function ServerSearchInput({ initialValue, onSearch }: ServerSearchInputProps) {
+function ServerSearchInput({
+  initialValue,
+  onSearch,
+  className,
+}: ServerSearchInputProps) {
   const [inputValue, setInputValue] = useState(initialValue);
   const [debouncedValue] = useDebounce(inputValue, 400);
 
@@ -90,7 +95,7 @@ function ServerSearchInput({ initialValue, onSearch }: ServerSearchInputProps) {
   }, [debouncedValue, initialValue, onSearch]);
 
   return (
-    <InputGroup className="max-w-64">
+    <InputGroup className={cn("sm:max-w-64", className)}>
       <InputGroupInput
         placeholder="Search records..."
         value={inputValue}
@@ -415,13 +420,14 @@ export function PortfolioRecordsTable({
     <div className="space-y-4">
       {/* Toolbar */}
       {(showSearch || showTypeFilter || (!readOnly && data.length > 0)) && (
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-col justify-between gap-2 md:flex-row lg:items-center">
           {/* Search and filters */}
           <div className="flex flex-1 items-center gap-2">
             {showSearch && (
               <ServerSearchInput
                 initialValue={searchParamValue}
                 onSearch={handleSearchSubmit}
+                className="flex-1 md:flex-none"
               />
             )}
             {showTypeFilter && (
@@ -437,7 +443,7 @@ export function PortfolioRecordsTable({
               />
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 self-end">
             {/* New record button */}
             {!readOnly && data.length > 0 && (
               <>
