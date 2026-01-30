@@ -4,25 +4,38 @@ import { BanknoteArrowDown } from "lucide-react";
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ProjectedIncomeBarChart } from "./chart";
+import { ProjectedIncomeStackedBarChart } from "./stacked-chart";
 
 import { formatCurrency } from "@/lib/number-format";
 import { useLocale } from "@/hooks/use-locale";
 import { cn } from "@/lib/utils";
 
-import type { ProjectedIncomeResult } from "@/server/analysis/projected-income/projected-income";
+import type {
+  ProjectedIncomeResult,
+  ProjectedIncomeStackedResult,
+} from "@/server/analysis/projected-income/projected-income";
 
 interface ProjectedIncomeWidgetProps {
   projectedIncome: ProjectedIncomeResult;
+  projectedIncomeByAsset?: ProjectedIncomeStackedResult;
   currency: string;
   className?: string;
 }
 
 export function ProjectedIncomeWidget({
   projectedIncome,
+  projectedIncomeByAsset,
   currency,
   className,
 }: ProjectedIncomeWidgetProps) {
   const locale = useLocale();
+  const hasStackedSeries =
+    projectedIncomeByAsset?.success &&
+    projectedIncomeByAsset.data &&
+    projectedIncomeByAsset.data.length > 0 &&
+    projectedIncomeByAsset.series &&
+    projectedIncomeByAsset.series.length > 0;
+
   // Handle error state
   if (!projectedIncome.success) {
     return (
@@ -87,10 +100,18 @@ export function ProjectedIncomeWidget({
         </div>
       </CardHeader>
       <CardContent className="flex-1">
-        <ProjectedIncomeBarChart
-          data={projectedIncome.data}
-          currency={currency}
-        />
+        {hasStackedSeries ? (
+          <ProjectedIncomeStackedBarChart
+            data={projectedIncomeByAsset.data!}
+            series={projectedIncomeByAsset.series!}
+            currency={currency}
+          />
+        ) : (
+          <ProjectedIncomeBarChart
+            data={projectedIncome.data}
+            currency={currency}
+          />
+        )}
       </CardContent>
     </Card>
   );

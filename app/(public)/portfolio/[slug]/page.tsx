@@ -98,9 +98,6 @@ async function ProjectedIncomeWrapper({
     calculateProjectedIncomeByAsset(currency, 12, context),
   ]);
 
-  // Keep stacked data ready for the upcoming chart without UI changes yet.
-  void projectedIncomeByAsset;
-
   return (
     <ProjectedIncomeWidget
       projectedIncome={{
@@ -109,6 +106,7 @@ async function ProjectedIncomeWrapper({
         message: projectedIncomeResult.message,
         currency: projectedIncomeResult.currency ?? currency,
       }}
+      projectedIncomeByAsset={projectedIncomeByAsset}
       currency={projectedIncomeResult.currency ?? currency}
       className="h-72!"
     />

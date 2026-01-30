@@ -101,12 +101,10 @@ async function ProjectedIncomeWidgetWrapper() {
     calculateProjectedIncomeByAsset(profile.display_currency),
   ]);
 
-  // Keep stacked data ready for the upcoming chart without UI changes yet.
-  void projectedIncomeByAsset;
-
   return (
     <ProjectedIncomeWidget
       projectedIncome={projectedData}
+      projectedIncomeByAsset={projectedIncomeByAsset}
       currency={profile.display_currency}
     />
   );

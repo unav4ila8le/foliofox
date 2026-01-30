@@ -1,5 +1,3 @@
-"use server";
-
 import { parseUtcDateKey } from "@/lib/date/date-utils";
 
 import type {
