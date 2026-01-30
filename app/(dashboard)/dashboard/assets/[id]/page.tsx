@@ -12,7 +12,7 @@ import { fetchSinglePosition } from "@/server/positions/fetch";
 import { fetchPortfolioRecords } from "@/server/portfolio-records/fetch";
 import { fetchSymbol } from "@/server/symbols/fetch";
 import { fetchSymbolNews } from "@/server/news/fetch";
-import { calculateSymbolProjectedIncome } from "@/server/analysis/projected-income";
+import { calculateSymbolProjectedIncome } from "@/server/analysis/projected-income/projected-income";
 import { calculateSymbolDividendYield } from "@/server/analysis/dividend-yield";
 
 import { calculateProfitLoss } from "@/lib/profit-loss";

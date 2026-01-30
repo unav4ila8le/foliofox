@@ -15,7 +15,7 @@ import { DashboardDataProvider } from "@/components/dashboard/dashboard-data-pro
 
 import { fetchProfile } from "@/server/profile/actions";
 import { fetchFinancialProfile } from "@/server/financial-profiles/actions";
-import { calculateNetWorth } from "@/server/analysis/net-worth";
+import { calculateNetWorth } from "@/server/analysis/net-worth/net-worth";
 import { fetchStalePositions } from "@/server/positions/stale";
 
 export default async function Layout({

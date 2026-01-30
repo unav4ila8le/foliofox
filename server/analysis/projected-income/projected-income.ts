@@ -16,7 +16,7 @@ import {
   buildDividendProjectionBasis,
   buildProjectionBasisBySymbolId,
   calculateMonthlyDividend,
-} from "@/server/analysis/projected-income-utils";
+} from "@/server/analysis/projected-income/utils";
 
 import type { DividendEvent, ProjectedIncomeData } from "@/types/global.types";
 

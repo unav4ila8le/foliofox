@@ -1,6 +1,6 @@
 "use server";
 
-import { calculateProjectedIncome } from "@/server/analysis/projected-income";
+import { calculateProjectedIncome } from "@/server/analysis/projected-income/projected-income";
 import { fetchProfile } from "@/server/profile/actions";
 
 interface GetProjectedIncomeParams {

@@ -12,9 +12,12 @@ import { ProjectedIncomeWidget } from "@/components/dashboard/charts/projected-i
 
 import { fetchPublicPortfolioBySlug } from "@/server/public-portfolios/fetch";
 import { createServiceClient } from "@/supabase/service";
-import { calculateNetWorth } from "@/server/analysis/net-worth";
+import { calculateNetWorth } from "@/server/analysis/net-worth/net-worth";
 import { calculateAssetAllocation } from "@/server/analysis/asset-allocation";
-import { calculateProjectedIncome } from "@/server/analysis/projected-income";
+import {
+  calculateProjectedIncome,
+  calculateProjectedIncomeByAsset,
+} from "@/server/analysis/projected-income/projected-income";
 import { fetchPositions } from "@/server/positions/fetch";
 import { calculateProfitLoss } from "@/lib/profit-loss";
 import { getRequestLocale } from "@/lib/locale/resolve-locale";
@@ -90,11 +93,13 @@ async function ProjectedIncomeWrapper({
   const supabaseClient = createServiceClient();
   const context: PositionsQueryContext = { supabaseClient, userId };
 
-  const projectedIncomeResult = await calculateProjectedIncome(
-    currency,
-    12,
-    context,
-  );
+  const [projectedIncomeResult, projectedIncomeByAsset] = await Promise.all([
+    calculateProjectedIncome(currency, 12, context),
+    calculateProjectedIncomeByAsset(currency, 12, context),
+  ]);
+
+  // Keep stacked data ready for the upcoming chart without UI changes yet.
+  void projectedIncomeByAsset;
 
   return (
     <ProjectedIncomeWidget

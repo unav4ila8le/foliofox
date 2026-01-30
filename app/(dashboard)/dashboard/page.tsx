@@ -14,12 +14,15 @@ import { PortfolioRecordsWidget } from "@/components/dashboard/portfolio-records
 import { getCurrentUser } from "@/server/auth/actions";
 import { fetchProfile } from "@/server/profile/actions";
 import { fetchPositions } from "@/server/positions/fetch";
-import { calculateNetWorth } from "@/server/analysis/net-worth";
-import { fetchNetWorthHistory } from "@/server/analysis/net-worth-history";
-import { fetchNetWorthChange } from "@/server/analysis/net-worth-change";
+import { calculateNetWorth } from "@/server/analysis/net-worth/net-worth";
+import { fetchNetWorthHistory } from "@/server/analysis/net-worth/net-worth-history";
+import { fetchNetWorthChange } from "@/server/analysis/net-worth/net-worth-change";
 import { calculateAssetAllocation } from "@/server/analysis/asset-allocation";
 import { fetchPortfolioNews } from "@/server/news/fetch";
-import { calculateProjectedIncome } from "@/server/analysis/projected-income";
+import {
+  calculateProjectedIncome,
+  calculateProjectedIncomeByAsset,
+} from "@/server/analysis/projected-income/projected-income";
 import { fetchPortfolioRecords } from "@/server/portfolio-records/fetch";
 
 // Separate components for data fetching with suspense
@@ -93,9 +96,13 @@ async function NewsWidgetWrapper() {
 async function ProjectedIncomeWidgetWrapper() {
   "use cache: private";
   const { profile } = await fetchProfile();
-  const projectedData = await calculateProjectedIncome(
-    profile.display_currency,
-  );
+  const [projectedData, projectedIncomeByAsset] = await Promise.all([
+    calculateProjectedIncome(profile.display_currency),
+    calculateProjectedIncomeByAsset(profile.display_currency),
+  ]);
+
+  // Keep stacked data ready for the upcoming chart without UI changes yet.
+  void projectedIncomeByAsset;
 
   return (
     <ProjectedIncomeWidget

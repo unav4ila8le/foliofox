@@ -126,7 +126,7 @@ describe("projected income", () => {
     );
 
     const { calculateProjectedIncome } =
-      await import("@/server/analysis/projected-income");
+      await import("@/server/analysis/projected-income/projected-income");
 
     const result = await calculateProjectedIncome("USD", 12);
 
@@ -169,7 +169,7 @@ describe("projected income", () => {
     );
 
     const { calculateSymbolProjectedIncome } =
-      await import("@/server/analysis/projected-income");
+      await import("@/server/analysis/projected-income/projected-income");
 
     resolveSymbolInputMock.mockResolvedValue({
       symbol: { id: "sym-1" },
@@ -207,7 +207,7 @@ describe("projected income", () => {
     );
 
     const { calculateProjectedIncome } =
-      await import("@/server/analysis/projected-income");
+      await import("@/server/analysis/projected-income/projected-income");
 
     const result = await calculateProjectedIncome("USD", 1);
 
@@ -248,7 +248,7 @@ describe("projected income", () => {
     );
 
     const { calculateProjectedIncomeByAsset } =
-      await import("@/server/analysis/projected-income");
+      await import("@/server/analysis/projected-income/projected-income");
 
     const result = await calculateProjectedIncomeByAsset("USD", 1);
 

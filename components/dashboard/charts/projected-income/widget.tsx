@@ -9,7 +9,7 @@ import { formatCurrency } from "@/lib/number-format";
 import { useLocale } from "@/hooks/use-locale";
 import { cn } from "@/lib/utils";
 
-import type { ProjectedIncomeResult } from "@/server/analysis/projected-income";
+import type { ProjectedIncomeResult } from "@/server/analysis/projected-income/projected-income";
 
 interface ProjectedIncomeWidgetProps {
   projectedIncome: ProjectedIncomeResult;
