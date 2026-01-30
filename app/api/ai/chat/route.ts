@@ -36,7 +36,7 @@ export async function POST(req: Request) {
 
   const result = streamText({
     model: aiModel(chatModelId),
-    messages: convertToModelMessages(messages),
+    messages: await convertToModelMessages(messages),
     tools: aiTools,
     system,
     stopWhen: stepCountIs(24),
