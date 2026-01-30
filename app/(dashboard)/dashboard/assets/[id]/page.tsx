@@ -134,7 +134,12 @@ async function AssetContent({
   // Calculate both projected income and dividend yield for symbols
   const [projectedIncome, dividendYield] = hasSymbol
     ? await Promise.all([
-        calculateSymbolProjectedIncome(symbol!.id, position.current_quantity),
+        calculateSymbolProjectedIncome(
+          symbol!.id,
+          position.current_quantity,
+          12,
+          position.current_unit_value,
+        ),
         calculateSymbolDividendYield(symbol!.id),
       ])
     : [{ success: true, data: [], currency: position.currency }, null];

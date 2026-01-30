@@ -1,7 +1,7 @@
 "use server";
 
 import { cache } from "react";
-import { format, addMonths, startOfMonth } from "date-fns";
+import { addMonths, startOfMonth } from "date-fns";
 
 import { fetchPositions } from "@/server/positions/fetch";
 import { fetchDividends } from "@/server/dividends/fetch";
@@ -9,6 +9,11 @@ import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 import { resolveSymbolInput } from "@/server/symbols/resolve";
 
 import { convertCurrency } from "@/lib/currency-conversion";
+import {
+  formatLocalDateKey,
+  parseLocalDateKey,
+  parseUtcDateKey,
+} from "@/lib/date/date-utils";
 import type { PositionsQueryContext } from "@/server/positions/fetch";
 
 import type {
@@ -24,6 +29,13 @@ export interface ProjectedIncomeResult {
   currency?: string;
 }
 
+interface DividendProjectionBasis {
+  annualAmount: number;
+  frequency: Dividend["inferred_frequency"] | null;
+  lastPaymentMonth: number | null;
+  currency: string;
+}
+
 /**
  * Calculate projected monthly income for user's portfolio
  */
@@ -37,7 +49,7 @@ export const calculateProjectedIncome = cache(
       const positions = await fetchPositions(
         {
           positionType: "asset",
-          includeArchived: true,
+          includeArchived: false,
         },
         context,
       );
@@ -58,16 +70,39 @@ export const calculateProjectedIncome = cache(
         symbolIds.map((symbolId) => ({ symbolId })),
       );
 
-      // Check if any positions have dividend data
-      const positionsWithDividends = positions.filter((position) => {
-        if (!position.symbol_id) return false;
+      const projectionBasisBySymbolId = new Map<
+        string,
+        DividendProjectionBasis
+      >();
+
+      positions.forEach((position) => {
+        if (!position.symbol_id) return;
+        if (projectionBasisBySymbolId.has(position.symbol_id)) return;
+
         const dividendData = dividendsMap.get(position.symbol_id);
-        if (!dividendData?.summary) return false;
-        if (dividendData.summary.pays_dividends === false) return false;
-        return dividendData.events.length > 0;
+        if (!dividendData?.summary) return;
+        if (
+          dividendData.summary.pays_dividends === false &&
+          dividendData.events.length === 0
+        ) {
+          return;
+        }
+
+        const basis = buildDividendProjectionBasis(
+          dividendData.summary,
+          dividendData.events,
+          {
+            currentUnitValue: position.current_unit_value,
+            fallbackCurrency: position.currency,
+          },
+        );
+
+        if (basis) {
+          projectionBasisBySymbolId.set(position.symbol_id, basis);
+        }
       });
 
-      if (positionsWithDividends.length === 0) {
+      if (projectionBasisBySymbolId.size === 0) {
         return {
           success: true,
           data: [],
@@ -100,43 +135,79 @@ export const calculateProjectedIncome = cache(
       // Calculate monthly projected income
       const monthlyIncome = new Map<string, number>();
       const today = new Date();
+      const fxDateKey = formatLocalDateKey(today);
+      let missingFxConversions = 0;
+      const missingFxDetails = new Map<
+        string,
+        {
+          symbolId: string;
+          positionName: string;
+          sourceCurrency: string;
+          targetCurrency: string;
+        }
+      >();
+
+      const tryConvertCurrency = (
+        amount: number,
+        sourceCurrency: string,
+        targetCurrency: string,
+        context: { symbolId: string; positionName: string },
+      ) => {
+        if (sourceCurrency === targetCurrency) return amount;
+
+        const toUsdKey = `${sourceCurrency}|${fxDateKey}`;
+        const fromUsdKey = `${targetCurrency}|${fxDateKey}`;
+
+        if (
+          !exchangeRatesMap.has(toUsdKey) ||
+          !exchangeRatesMap.has(fromUsdKey)
+        ) {
+          missingFxConversions += 1;
+          const detailKey = `${context.symbolId}|${sourceCurrency}|${targetCurrency}`;
+          if (!missingFxDetails.has(detailKey)) {
+            missingFxDetails.set(detailKey, {
+              symbolId: context.symbolId,
+              positionName: context.positionName,
+              sourceCurrency,
+              targetCurrency,
+            });
+          }
+          return null;
+        }
+
+        return convertCurrency(
+          amount,
+          sourceCurrency,
+          targetCurrency,
+          exchangeRatesMap,
+          fxDateKey,
+        );
+      };
 
       for (let i = 0; i < monthsAhead; i++) {
         const monthStart = startOfMonth(addMonths(today, i));
-        const monthKey = format(monthStart, "yyyy-MM");
+        const monthKey = formatLocalDateKey(monthStart).slice(0, 7);
         let monthTotal = 0;
 
         positions.forEach((position) => {
           if (!position.symbol_id) return;
 
-          const dividendData = dividendsMap.get(position.symbol_id);
-          if (!dividendData?.summary) return;
-          if (dividendData.summary.pays_dividends === false) return;
+          const basis = projectionBasisBySymbolId.get(position.symbol_id);
+          if (!basis) return;
 
-          const { summary } = dividendData;
-
-          // Calculate expected dividend for this month based on frequency
-          const monthlyDividend = calculateMonthlyDividend(
-            summary,
-            monthStart,
-            dividendData.events,
-          );
+          // Calculate expected dividend for this month based on frequency.
+          const monthlyDividend = calculateMonthlyDividend(monthStart, basis);
           const positionDividendIncome =
             monthlyDividend * position.current_quantity;
 
-          // Get the currency from dividend events (use most recent event's currency)
-          const dividendCurrency =
-            dividendData.events.length > 0
-              ? dividendData.events[0].currency
-              : position.currency;
-
-          // Handle currency conversion
-          const convertedValue = convertCurrency(
+          const convertedValue = tryConvertCurrency(
             positionDividendIncome,
-            dividendCurrency,
+            basis.currency,
             targetCurrency,
-            exchangeRatesMap,
-            format(new Date(), "yyyy-MM-dd"),
+            {
+              symbolId: position.symbol_id,
+              positionName: position.name,
+            },
           );
 
           if (convertedValue !== null) {
@@ -147,13 +218,27 @@ export const calculateProjectedIncome = cache(
         monthlyIncome.set(monthKey, monthTotal);
       }
 
+      if (missingFxDetails.size > 0) {
+        // Keep a single, structured log for easier debugging later.
+        console.warn("[projected-income] Missing FX rates", {
+          fxDateKey,
+          targetCurrency,
+          missing: Array.from(missingFxDetails.values()),
+        });
+      }
+
       return {
         success: true,
         data: Array.from(monthlyIncome.entries()).map(([month, income]) => ({
-          date: new Date(month + "-01"),
+          // Use local date keys to avoid timezone shifts in the chart UI.
+          date: parseLocalDateKey(`${month}-01`),
           income,
         })),
         currency: targetCurrency,
+        message:
+          missingFxConversions > 0
+            ? "Some payouts were omitted due to missing FX rates."
+            : undefined,
       };
     } catch (error) {
       console.error("Error calculating projected income:", error);
@@ -175,6 +260,7 @@ export async function calculateSymbolProjectedIncome(
   symbolLookup: string,
   quantity: number,
   monthsAhead: number = 12,
+  unitValue?: number,
 ) {
   try {
     const resolved = await resolveSymbolInput(symbolLookup);
@@ -191,9 +277,17 @@ export async function calculateSymbolProjectedIncome(
     const dividendsMap = await fetchDividends([{ symbolId: canonicalId }]);
     const dividendData = dividendsMap.get(canonicalId);
 
+    if (!dividendData?.summary) {
+      return {
+        success: true,
+        data: [],
+        message: "No dividend information available for this symbol",
+      };
+    }
+
     if (
-      !dividendData?.summary ||
-      dividendData.summary.pays_dividends === false
+      dividendData.summary.pays_dividends === false &&
+      dividendData.events.length === 0
     ) {
       return {
         success: true,
@@ -202,17 +296,22 @@ export async function calculateSymbolProjectedIncome(
       };
     }
 
-    if (dividendData.events.length === 0) {
+    const projectionBasis = buildDividendProjectionBasis(
+      dividendData.summary,
+      dividendData.events,
+      {
+        currentUnitValue: unitValue,
+        fallbackCurrency: "USD",
+      },
+    );
+
+    if (!projectionBasis) {
       return {
         success: true,
         data: [],
-        message: "No dividend history available for this symbol",
+        message: "No dividend data available for this symbol",
       };
     }
-
-    // Get the symbol's currency from the dividend data
-    const symbolCurrency =
-      dividendData.events.length > 0 ? dividendData.events[0].currency : "USD";
 
     // Calculate monthly projected income in the dividend's own currency
     const monthlyIncome = new Map<string, number>();
@@ -220,13 +319,11 @@ export async function calculateSymbolProjectedIncome(
 
     for (let i = 0; i < monthsAhead; i++) {
       const monthStart = startOfMonth(addMonths(today, i));
-      const monthKey = format(monthStart, "yyyy-MM");
+      const monthKey = formatLocalDateKey(monthStart).slice(0, 7);
 
-      const { summary } = dividendData;
       const monthlyDividend = calculateMonthlyDividend(
-        summary,
         monthStart,
-        dividendData.events,
+        projectionBasis,
       );
       const symbolDividendIncome = monthlyDividend * quantity;
 
@@ -237,10 +334,11 @@ export async function calculateSymbolProjectedIncome(
     return {
       success: true,
       data: Array.from(monthlyIncome.entries()).map(([month, income]) => ({
-        date: new Date(month + "-01"),
+        // Use local date keys to avoid timezone shifts in the chart UI.
+        date: parseLocalDateKey(`${month}-01`),
         income,
       })),
-      currency: symbolCurrency,
+      currency: projectionBasis.currency,
     };
   } catch (error) {
     console.error(
@@ -258,17 +356,88 @@ export async function calculateSymbolProjectedIncome(
   }
 }
 
-// Removed local convertCurrency in favor of shared helper
-
 /**
  * Calculate monthly dividend amount based on frequency
  */
 function calculateMonthlyDividend(
-  summary: Dividend,
   month: Date,
-  events: DividendEvent[],
+  basis: DividendProjectionBasis,
 ): number {
-  // Prefer provider amounts unless they are clearly inflated compared to payouts we observed
+  if (!basis.annualAmount || basis.annualAmount <= 0) {
+    return 0;
+  }
+
+  const frequency = basis.frequency;
+  const lastPaymentMonth = basis.lastPaymentMonth;
+  const currentMonth = month.getMonth();
+
+  switch (frequency) {
+    case "monthly":
+      return basis.annualAmount / 12;
+    case "quarterly":
+      if (lastPaymentMonth === null) {
+        return basis.annualAmount / 12;
+      }
+      // Check if this month aligns with quarterly pattern
+      const monthsSinceLastPayment =
+        (currentMonth - lastPaymentMonth + 12) % 12;
+      return monthsSinceLastPayment % 3 === 0 ? basis.annualAmount / 4 : 0;
+    case "semiannual":
+      if (lastPaymentMonth === null) {
+        return basis.annualAmount / 12;
+      }
+      // Check if this month aligns with semiannual pattern (every 6 months)
+      const monthsSinceLastPaymentSemi =
+        (currentMonth - lastPaymentMonth + 12) % 12;
+      return monthsSinceLastPaymentSemi % 6 === 0 ? basis.annualAmount / 2 : 0;
+    case "annual":
+      if (lastPaymentMonth === null) {
+        return basis.annualAmount / 12;
+      }
+      // Return full annual amount only in the payment month
+      return currentMonth === lastPaymentMonth ? basis.annualAmount : 0;
+    case "irregular":
+      return basis.annualAmount / 12;
+    default:
+      return basis.annualAmount / 12;
+  }
+}
+
+function buildDividendProjectionBasis(
+  summary: Dividend,
+  events: DividendEvent[],
+  options: {
+    currentUnitValue?: number;
+    fallbackCurrency: string;
+  },
+): DividendProjectionBasis | null {
+  const annualAmount = resolveAnnualDividendAmount(
+    summary,
+    events,
+    options.currentUnitValue,
+  );
+
+  if (!annualAmount || annualAmount <= 0) {
+    return null;
+  }
+
+  const latestEvent = getLatestDividendEvent(events);
+  const lastPaymentMonth = resolveLastPaymentMonth(summary, latestEvent);
+
+  return {
+    annualAmount,
+    frequency: summary.inferred_frequency ?? "irregular",
+    lastPaymentMonth,
+    currency: latestEvent?.currency ?? options.fallbackCurrency,
+  };
+}
+
+function resolveAnnualDividendAmount(
+  summary: Dividend,
+  events: DividendEvent[],
+  currentUnitValue?: number,
+): number {
+  // Prefer provider amounts unless they are clearly inflated compared to payouts we observed.
   const oneYearAgo = new Date();
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
@@ -292,7 +461,7 @@ function calculateMonthlyDividend(
       : true;
 
   // Keep TTM when it aligns with payouts (±10%); otherwise prefer events, then forward.
-  const annualAmount =
+  let annualAmount =
     providerTtm > 0 && ttmWithinTolerance
       ? providerTtm
       : hasEvents
@@ -301,34 +470,42 @@ function calculateMonthlyDividend(
           ? providerForward
           : providerTtm;
 
-  if (!annualAmount || annualAmount <= 0) {
-    return 0;
+  if (annualAmount <= 0) {
+    // Yahoo dividend_yield is an annual rate (decimal, e.g. 0.04 = 4%).
+    const yieldRate = summary.dividend_yield ?? 0;
+    if (yieldRate > 0 && currentUnitValue && currentUnitValue > 0) {
+      annualAmount = yieldRate * currentUnitValue;
+    }
   }
 
-  const frequency = summary.inferred_frequency;
+  return annualAmount > 0 ? annualAmount : 0;
+}
 
-  const lastPaymentMonth = summary.last_dividend_date
-    ? new Date(summary.last_dividend_date).getMonth()
-    : 0;
-  const currentMonth = month.getMonth();
+function resolveLastPaymentMonth(
+  summary: Dividend,
+  latestEvent: DividendEvent | null,
+): number | null {
+  const lastDividendDate =
+    summary.last_dividend_date ?? latestEvent?.event_date ?? null;
 
-  switch (frequency) {
-    case "monthly":
-      return annualAmount / 12;
-    case "quarterly":
-      // Check if this month aligns with quarterly pattern
-      const monthsSinceLastPayment =
-        (currentMonth - lastPaymentMonth + 12) % 12;
-      return monthsSinceLastPayment % 3 === 0 ? annualAmount / 4 : 0;
-    case "semiannual":
-      // Check if this month aligns with semiannual pattern (every 6 months)
-      const monthsSinceLastPaymentSemi =
-        (currentMonth - lastPaymentMonth + 12) % 12;
-      return monthsSinceLastPaymentSemi % 6 === 0 ? annualAmount / 2 : 0;
-    case "annual":
-      // Return full annual amount only in the payment month
-      return currentMonth === lastPaymentMonth ? annualAmount : 0;
-    default:
-      return 0;
-  }
+  if (!lastDividendDate) return null;
+
+  const parsed = parseUtcDateKey(lastDividendDate);
+  if (Number.isNaN(parsed.getTime())) return null;
+
+  return parsed.getUTCMonth();
+}
+
+function getLatestDividendEvent(events: DividendEvent[]): DividendEvent | null {
+  if (events.length === 0) return null;
+
+  return events.reduce(
+    (latest, current) => {
+      if (!latest) return current;
+      return new Date(current.event_date) > new Date(latest.event_date)
+        ? current
+        : latest;
+    },
+    null as DividendEvent | null,
+  );
 }
