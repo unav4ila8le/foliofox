@@ -86,9 +86,11 @@ export function ProjectedIncomeStackedBarChart({
             if (!active || !payload?.length) return null;
 
             const first = payload[0];
-            const payloadRows = payload.filter(
-              (item) => typeof item.value === "number" && item.value !== 0,
-            );
+            const payloadRows = payload
+              .filter(
+                (item) => typeof item.value === "number" && item.value !== 0,
+              )
+              .sort((a, b) => Number(b.value ?? 0) - Number(a.value ?? 0));
 
             return (
               <div className="bg-background border-border flex flex-col gap-1 rounded-md border px-2.5 py-1.5">
