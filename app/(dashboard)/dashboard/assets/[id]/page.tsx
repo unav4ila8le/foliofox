@@ -139,6 +139,7 @@ async function AssetContent({
           position.current_quantity,
           12,
           position.current_unit_value,
+          position.currency,
         ),
         calculateSymbolDividendYield(symbol!.id),
       ])

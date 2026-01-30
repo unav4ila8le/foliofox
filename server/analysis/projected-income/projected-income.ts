@@ -457,6 +457,7 @@ export async function calculateSymbolProjectedIncome(
   quantity: number,
   monthsAhead: number = 12,
   unitValue?: number,
+  fallbackCurrency: string = "USD",
 ) {
   try {
     const resolved = await resolveSymbolInput(symbolLookup);
@@ -497,7 +498,7 @@ export async function calculateSymbolProjectedIncome(
       dividendData.events,
       {
         currentUnitValue: unitValue,
-        fallbackCurrency: "USD",
+        fallbackCurrency,
       },
     );
 
