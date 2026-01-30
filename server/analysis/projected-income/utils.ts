@@ -181,9 +181,14 @@ function resolveLastPaymentMonth(
   if (!lastDividendDate) return null;
 
   const parsed = parseUtcDateKey(lastDividendDate);
-  if (Number.isNaN(parsed.getTime())) return null;
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed.getUTCMonth();
+  }
 
-  return parsed.getUTCMonth();
+  const fallback = new Date(lastDividendDate);
+  if (Number.isNaN(fallback.getTime())) return null;
+
+  return fallback.getUTCMonth();
 }
 
 function getLatestDividendEvent(events: DividendEvent[]): DividendEvent | null {
