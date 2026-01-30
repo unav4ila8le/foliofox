@@ -9,7 +9,7 @@ import {
   useEffect,
 } from "react";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
-import { FileText, Trash2, Search } from "lucide-react";
+import { ArrowLeftRight, Trash2, Search } from "lucide-react";
 import { useDebounce } from "use-debounce";
 
 import {
@@ -467,7 +467,7 @@ export function PortfolioRecordsTable({
         {data.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <div className="bg-accent rounded-lg p-2">
-              <FileText className="text-muted-foreground size-4" />
+              <ArrowLeftRight className="text-muted-foreground size-4" />
             </div>
             <p className="mt-3 font-medium">No records found</p>
             <p className="text-muted-foreground mt-1 mb-3 text-sm">

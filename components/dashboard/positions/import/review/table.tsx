@@ -52,9 +52,7 @@ export function PositionsImportReviewTable({
     const map: Record<string, SymbolValidationResult> = {};
     usedSymbols.forEach((s) => {
       const v = precomputedSymbolValidation?.[s];
-      map[s] = v
-        ? { valid: v.valid, error: v.error }
-        : { valid: false, error: "Invalid symbol" };
+      map[s] = v ? v : { valid: false, error: "Invalid symbol" };
     });
     return map;
   }, [usedSymbols, precomputedSymbolValidation]);
