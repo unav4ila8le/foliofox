@@ -12,11 +12,11 @@ import { TrendingUp, TrendingDown } from "lucide-react";
 import {
   fetchNetWorthHistory,
   NetWorthHistoryData,
-} from "@/server/analysis/net-worth-history";
+} from "@/server/analysis/net-worth/net-worth-history";
 import {
   fetchNetWorthChange,
   NetWorthChangeData,
-} from "@/server/analysis/net-worth-change";
+} from "@/server/analysis/net-worth/net-worth-change";
 
 import {
   ResponsiveContainer,

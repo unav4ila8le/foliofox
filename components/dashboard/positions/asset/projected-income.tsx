@@ -2,7 +2,7 @@ import { BanknoteArrowDown } from "lucide-react";
 
 import { ProjectedIncomeBarChart } from "@/components/dashboard/charts/projected-income/chart";
 
-import type { ProjectedIncomeResult } from "@/server/analysis/projected-income";
+import type { ProjectedIncomeResult } from "@/server/analysis/projected-income/projected-income";
 
 interface AssetProjectedIncomeProps {
   projectedIncome: ProjectedIncomeResult;

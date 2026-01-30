@@ -1,7 +1,7 @@
 "use server";
 
 import { fetchProfile } from "@/server/profile/actions";
-import { calculateNetWorth } from "@/server/analysis/net-worth";
+import { calculateNetWorth } from "@/server/analysis/net-worth/net-worth";
 
 export interface NetWorthChangeData {
   currentValue: number;

@@ -12,7 +12,7 @@ import { fetchSinglePosition } from "@/server/positions/fetch";
 import { fetchPortfolioRecords } from "@/server/portfolio-records/fetch";
 import { fetchSymbol } from "@/server/symbols/fetch";
 import { fetchSymbolNews } from "@/server/news/fetch";
-import { calculateSymbolProjectedIncome } from "@/server/analysis/projected-income";
+import { calculateSymbolProjectedIncome } from "@/server/analysis/projected-income/projected-income";
 import { calculateSymbolDividendYield } from "@/server/analysis/dividend-yield";
 
 import { calculateProfitLoss } from "@/lib/profit-loss";
@@ -134,7 +134,13 @@ async function AssetContent({
   // Calculate both projected income and dividend yield for symbols
   const [projectedIncome, dividendYield] = hasSymbol
     ? await Promise.all([
-        calculateSymbolProjectedIncome(symbol!.id, position.current_quantity),
+        calculateSymbolProjectedIncome(
+          symbol!.id,
+          position.current_quantity,
+          12,
+          position.current_unit_value,
+          position.currency,
+        ),
         calculateSymbolDividendYield(symbol!.id),
       ])
     : [{ success: true, data: [], currency: position.currency }, null];

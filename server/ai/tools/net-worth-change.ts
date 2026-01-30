@@ -1,6 +1,6 @@
 "use server";
 
-import { fetchNetWorthChange } from "@/server/analysis/net-worth-change";
+import { fetchNetWorthChange } from "@/server/analysis/net-worth/net-worth-change";
 import { clampDaysBack } from "@/server/ai/tools/helpers/time-range";
 
 interface GetNetWorthChangeParams {
