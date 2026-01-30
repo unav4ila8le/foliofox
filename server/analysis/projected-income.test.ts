@@ -215,4 +215,53 @@ describe("projected income", () => {
     expect(result.data?.length).toBe(1);
     expect(result.data?.[0]?.income).toBeCloseTo(0.8333, 3);
   });
+
+  it("returns stacked series data per asset", async () => {
+    const fxDateKey = formatLocalDateKey(new Date());
+
+    fetchPositionsMock.mockResolvedValue([
+      createPosition({
+        id: "pos-1",
+        name: "Alpha Asset",
+        symbol_id: "sym-1",
+        current_quantity: 2,
+      }),
+    ]);
+
+    fetchDividendsMock.mockResolvedValue(
+      new Map([
+        [
+          "sym-1",
+          {
+            summary: createDividendSummary({
+              trailing_ttm_dividend: 12,
+              inferred_frequency: "monthly",
+            }),
+            events: [],
+          },
+        ],
+      ]),
+    );
+
+    fetchExchangeRatesMock.mockResolvedValue(
+      new Map([[`USD|${fxDateKey}`, 1]]),
+    );
+
+    const { calculateProjectedIncomeByAsset } =
+      await import("@/server/analysis/projected-income");
+
+    const result = await calculateProjectedIncomeByAsset("USD", 1);
+
+    expect(result.success).toBe(true);
+    expect(result.series?.length).toBe(1);
+    expect(result.series?.[0]).toEqual({
+      key: "pos-1",
+      positionId: "pos-1",
+      symbolId: "sym-1",
+      name: "Alpha Asset",
+    });
+    expect(result.data?.length).toBe(1);
+    expect(result.data?.[0]?.values["pos-1"]).toBeCloseTo(2, 6);
+    expect(result.data?.[0]?.total).toBeCloseTo(2, 6);
+  });
 });

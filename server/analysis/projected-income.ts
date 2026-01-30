@@ -9,18 +9,16 @@ import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 import { resolveSymbolInput } from "@/server/symbols/resolve";
 
 import { convertCurrency } from "@/lib/currency-conversion";
-import {
-  formatLocalDateKey,
-  parseLocalDateKey,
-  parseUtcDateKey,
-} from "@/lib/date/date-utils";
+import { formatLocalDateKey, parseLocalDateKey } from "@/lib/date/date-utils";
 import type { PositionsQueryContext } from "@/server/positions/fetch";
 
-import type {
-  Dividend,
-  DividendEvent,
-  ProjectedIncomeData,
-} from "@/types/global.types";
+import {
+  buildDividendProjectionBasis,
+  buildProjectionBasisBySymbolId,
+  calculateMonthlyDividend,
+} from "@/server/analysis/projected-income-utils";
+
+import type { DividendEvent, ProjectedIncomeData } from "@/types/global.types";
 
 export interface ProjectedIncomeResult {
   success: boolean;
@@ -29,11 +27,25 @@ export interface ProjectedIncomeResult {
   currency?: string;
 }
 
-interface DividendProjectionBasis {
-  annualAmount: number;
-  frequency: Dividend["inferred_frequency"] | null;
-  lastPaymentMonth: number | null;
-  currency: string;
+export interface ProjectedIncomeStackedSeries {
+  key: string;
+  positionId: string;
+  symbolId: string;
+  name: string;
+}
+
+export interface ProjectedIncomeStackedMonth {
+  date: Date;
+  total: number;
+  values: Record<string, number>;
+}
+
+export interface ProjectedIncomeStackedResult {
+  success: boolean;
+  data?: ProjectedIncomeStackedMonth[];
+  series?: ProjectedIncomeStackedSeries[];
+  message?: string;
+  currency?: string;
 }
 
 /**
@@ -70,37 +82,10 @@ export const calculateProjectedIncome = cache(
         symbolIds.map((symbolId) => ({ symbolId })),
       );
 
-      const projectionBasisBySymbolId = new Map<
-        string,
-        DividendProjectionBasis
-      >();
-
-      positions.forEach((position) => {
-        if (!position.symbol_id) return;
-        if (projectionBasisBySymbolId.has(position.symbol_id)) return;
-
-        const dividendData = dividendsMap.get(position.symbol_id);
-        if (!dividendData?.summary) return;
-        if (
-          dividendData.summary.pays_dividends === false &&
-          dividendData.events.length === 0
-        ) {
-          return;
-        }
-
-        const basis = buildDividendProjectionBasis(
-          dividendData.summary,
-          dividendData.events,
-          {
-            currentUnitValue: position.current_unit_value,
-            fallbackCurrency: position.currency,
-          },
-        );
-
-        if (basis) {
-          projectionBasisBySymbolId.set(position.symbol_id, basis);
-        }
-      });
+      const projectionBasisBySymbolId = buildProjectionBasisBySymbolId(
+        positions,
+        dividendsMap,
+      );
 
       if (projectionBasisBySymbolId.size === 0) {
         return {
@@ -254,6 +239,217 @@ export const calculateProjectedIncome = cache(
 );
 
 /**
+ * Calculate projected income by asset for stacked bar charts.
+ */
+export const calculateProjectedIncomeByAsset = cache(
+  async (
+    targetCurrency: string,
+    monthsAhead: number = 12,
+    context?: PositionsQueryContext,
+  ): Promise<ProjectedIncomeStackedResult> => {
+    try {
+      const positions = await fetchPositions(
+        {
+          positionType: "asset",
+          includeArchived: false,
+        },
+        context,
+      );
+
+      const symbolIds = positions
+        .filter((position) => position.symbol_id)
+        .map((position) => position.symbol_id!);
+
+      if (symbolIds.length === 0) {
+        return {
+          success: true,
+          data: [],
+          series: [],
+          message: "No positions with market data found",
+        };
+      }
+
+      const dividendsMap = await fetchDividends(
+        symbolIds.map((symbolId) => ({ symbolId })),
+      );
+
+      const projectionBasisBySymbolId = buildProjectionBasisBySymbolId(
+        positions,
+        dividendsMap,
+      );
+
+      if (projectionBasisBySymbolId.size === 0) {
+        return {
+          success: true,
+          data: [],
+          series: [],
+          message: "No dividend-paying positions found in your portfolio",
+        };
+      }
+
+      const uniqueCurrencies = new Set<string>();
+      positions.forEach((position) => {
+        uniqueCurrencies.add(position.currency);
+      });
+      dividendsMap.forEach(({ events }) => {
+        events.forEach((event: DividendEvent) => {
+          uniqueCurrencies.add(event.currency);
+        });
+      });
+      uniqueCurrencies.add(targetCurrency);
+
+      const exchangeRequests = Array.from(uniqueCurrencies).map((currency) => ({
+        currency,
+        date: new Date(),
+      }));
+
+      const exchangeRatesMap = await fetchExchangeRates(exchangeRequests);
+
+      const today = new Date();
+      const fxDateKey = formatLocalDateKey(today);
+      let missingFxConversions = 0;
+      const missingFxDetails = new Map<
+        string,
+        {
+          symbolId: string;
+          positionName: string;
+          sourceCurrency: string;
+          targetCurrency: string;
+        }
+      >();
+
+      const tryConvertCurrency = (
+        amount: number,
+        sourceCurrency: string,
+        targetCurrency: string,
+        context: { symbolId: string; positionName: string },
+      ) => {
+        if (sourceCurrency === targetCurrency) return amount;
+
+        const toUsdKey = `${sourceCurrency}|${fxDateKey}`;
+        const fromUsdKey = `${targetCurrency}|${fxDateKey}`;
+
+        if (
+          !exchangeRatesMap.has(toUsdKey) ||
+          !exchangeRatesMap.has(fromUsdKey)
+        ) {
+          missingFxConversions += 1;
+          const detailKey = `${context.symbolId}|${sourceCurrency}|${targetCurrency}`;
+          if (!missingFxDetails.has(detailKey)) {
+            missingFxDetails.set(detailKey, {
+              symbolId: context.symbolId,
+              positionName: context.positionName,
+              sourceCurrency,
+              targetCurrency,
+            });
+          }
+          return null;
+        }
+
+        return convertCurrency(
+          amount,
+          sourceCurrency,
+          targetCurrency,
+          exchangeRatesMap,
+          fxDateKey,
+        );
+      };
+
+      const positionSeries = positions
+        .filter((position) => position.symbol_id)
+        .map((position) => ({
+          key: position.id,
+          positionId: position.id,
+          symbolId: position.symbol_id!,
+          name: position.name,
+          quantity: position.current_quantity,
+        }));
+
+      const hasSeriesValue = new Map<string, boolean>();
+      const monthlyRows: ProjectedIncomeStackedMonth[] = [];
+
+      for (let i = 0; i < monthsAhead; i++) {
+        const monthStart = startOfMonth(addMonths(today, i));
+        const monthKey = formatLocalDateKey(monthStart).slice(0, 7);
+        const values: Record<string, number> = {};
+        let monthTotal = 0;
+
+        positionSeries.forEach((series) => {
+          const basis = projectionBasisBySymbolId.get(series.symbolId);
+          if (!basis) return;
+
+          const monthlyDividend = calculateMonthlyDividend(monthStart, basis);
+          const positionDividendIncome = monthlyDividend * series.quantity;
+
+          const convertedValue = tryConvertCurrency(
+            positionDividendIncome,
+            basis.currency,
+            targetCurrency,
+            {
+              symbolId: series.symbolId,
+              positionName: series.name,
+            },
+          );
+
+          if (convertedValue === null) return;
+
+          values[series.key] = convertedValue;
+          monthTotal += convertedValue;
+
+          if (convertedValue > 0) {
+            hasSeriesValue.set(series.key, true);
+          }
+        });
+
+        monthlyRows.push({
+          // Use local date keys to avoid timezone shifts in the chart UI.
+          date: parseLocalDateKey(`${monthKey}-01`),
+          total: monthTotal,
+          values,
+        });
+      }
+
+      if (missingFxDetails.size > 0) {
+        console.warn("[projected-income] Missing FX rates", {
+          fxDateKey,
+          targetCurrency,
+          missing: Array.from(missingFxDetails.values()),
+        });
+      }
+
+      const series: ProjectedIncomeStackedSeries[] = positionSeries
+        .filter((item) => hasSeriesValue.get(item.key))
+        .map((item) => ({
+          key: item.key,
+          positionId: item.positionId,
+          symbolId: item.symbolId,
+          name: item.name,
+        }));
+
+      return {
+        success: true,
+        data: monthlyRows,
+        series,
+        currency: targetCurrency,
+        message:
+          missingFxConversions > 0
+            ? "Some payouts were omitted due to missing FX rates."
+            : undefined,
+      };
+    } catch (error) {
+      console.error("Error calculating projected income by asset:", error);
+      return {
+        success: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to calculate projected income",
+      };
+    }
+  },
+);
+
+/**
  * Calculate projected income for a specific symbol
  */
 export async function calculateSymbolProjectedIncome(
@@ -354,158 +550,4 @@ export async function calculateSymbolProjectedIncome(
           : "Failed to calculate projected income",
     };
   }
-}
-
-/**
- * Calculate monthly dividend amount based on frequency
- */
-function calculateMonthlyDividend(
-  month: Date,
-  basis: DividendProjectionBasis,
-): number {
-  if (!basis.annualAmount || basis.annualAmount <= 0) {
-    return 0;
-  }
-
-  const frequency = basis.frequency;
-  const lastPaymentMonth = basis.lastPaymentMonth;
-  const currentMonth = month.getMonth();
-
-  switch (frequency) {
-    case "monthly":
-      return basis.annualAmount / 12;
-    case "quarterly":
-      if (lastPaymentMonth === null) {
-        return basis.annualAmount / 12;
-      }
-      // Check if this month aligns with quarterly pattern
-      const monthsSinceLastPayment =
-        (currentMonth - lastPaymentMonth + 12) % 12;
-      return monthsSinceLastPayment % 3 === 0 ? basis.annualAmount / 4 : 0;
-    case "semiannual":
-      if (lastPaymentMonth === null) {
-        return basis.annualAmount / 12;
-      }
-      // Check if this month aligns with semiannual pattern (every 6 months)
-      const monthsSinceLastPaymentSemi =
-        (currentMonth - lastPaymentMonth + 12) % 12;
-      return monthsSinceLastPaymentSemi % 6 === 0 ? basis.annualAmount / 2 : 0;
-    case "annual":
-      if (lastPaymentMonth === null) {
-        return basis.annualAmount / 12;
-      }
-      // Return full annual amount only in the payment month
-      return currentMonth === lastPaymentMonth ? basis.annualAmount : 0;
-    case "irregular":
-      return basis.annualAmount / 12;
-    default:
-      return basis.annualAmount / 12;
-  }
-}
-
-function buildDividendProjectionBasis(
-  summary: Dividend,
-  events: DividendEvent[],
-  options: {
-    currentUnitValue?: number;
-    fallbackCurrency: string;
-  },
-): DividendProjectionBasis | null {
-  const annualAmount = resolveAnnualDividendAmount(
-    summary,
-    events,
-    options.currentUnitValue,
-  );
-
-  if (!annualAmount || annualAmount <= 0) {
-    return null;
-  }
-
-  const latestEvent = getLatestDividendEvent(events);
-  const lastPaymentMonth = resolveLastPaymentMonth(summary, latestEvent);
-
-  return {
-    annualAmount,
-    frequency: summary.inferred_frequency ?? "irregular",
-    lastPaymentMonth,
-    currency: latestEvent?.currency ?? options.fallbackCurrency,
-  };
-}
-
-function resolveAnnualDividendAmount(
-  summary: Dividend,
-  events: DividendEvent[],
-  currentUnitValue?: number,
-): number {
-  // Prefer provider amounts unless they are clearly inflated compared to payouts we observed.
-  const oneYearAgo = new Date();
-  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-
-  const recentEvents = events.filter(
-    (event) => new Date(event.event_date) >= oneYearAgo,
-  );
-
-  const eventAnnualAmount =
-    recentEvents.length > 0
-      ? recentEvents.reduce((sum, event) => sum + event.gross_amount, 0)
-      : 0;
-
-  const providerTtm = summary.trailing_ttm_dividend || 0;
-  const providerForward = summary.forward_annual_dividend || 0;
-
-  const hasEvents = eventAnnualAmount > 0;
-  const ttmWithinTolerance =
-    providerTtm > 0 && hasEvents
-      ? providerTtm >= eventAnnualAmount * 0.9 &&
-        providerTtm <= eventAnnualAmount * 1.1
-      : true;
-
-  // Keep TTM when it aligns with payouts (±10%); otherwise prefer events, then forward.
-  let annualAmount =
-    providerTtm > 0 && ttmWithinTolerance
-      ? providerTtm
-      : hasEvents
-        ? eventAnnualAmount
-        : providerForward > 0
-          ? providerForward
-          : providerTtm;
-
-  if (annualAmount <= 0) {
-    // Yahoo dividend_yield is an annual rate (decimal, e.g. 0.04 = 4%).
-    const yieldRate = summary.dividend_yield ?? 0;
-    if (yieldRate > 0 && currentUnitValue && currentUnitValue > 0) {
-      annualAmount = yieldRate * currentUnitValue;
-    }
-  }
-
-  return annualAmount > 0 ? annualAmount : 0;
-}
-
-function resolveLastPaymentMonth(
-  summary: Dividend,
-  latestEvent: DividendEvent | null,
-): number | null {
-  const lastDividendDate =
-    summary.last_dividend_date ?? latestEvent?.event_date ?? null;
-
-  if (!lastDividendDate) return null;
-
-  const parsed = parseUtcDateKey(lastDividendDate);
-  if (Number.isNaN(parsed.getTime())) return null;
-
-  return parsed.getUTCMonth();
-}
-
-function getLatestDividendEvent(events: DividendEvent[]): DividendEvent | null {
-  if (events.length === 0) return null;
-
-  return events.reduce(
-    (latest, current) => {
-      if (!latest) return current;
-      return new Date(current.event_date) > new Date(latest.event_date)
-        ? current
-        : latest;
-    },
-    null as DividendEvent | null,
-  );
 }
