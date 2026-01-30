@@ -111,7 +111,7 @@ export function ProjectedIncomeStackedBarChart({
                     key={item.dataKey}
                     className="flex items-center justify-between gap-3 text-xs"
                   >
-                    <span className="text-muted-foreground max-w-32 truncate">
+                    <span className="text-muted-foreground max-w-40 truncate">
                       {series.find((entry) => entry.key === item.dataKey)
                         ?.name ?? item.dataKey}
                     </span>

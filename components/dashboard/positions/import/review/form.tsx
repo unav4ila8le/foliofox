@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -35,6 +35,8 @@ import { PositionCategorySelector } from "@/components/dashboard/position-catego
 import { CurrencySelector } from "@/components/dashboard/currency-selector";
 import { SymbolSearch } from "@/components/dashboard/symbol-search";
 
+import { validateSymbol } from "@/server/symbols/validate";
+
 import type { PositionCategory } from "@/types/global.types";
 import type { CurrencyValidationResult } from "@/server/currencies/validate";
 import type { SymbolValidationResult } from "@/server/symbols/validate";
@@ -64,6 +66,8 @@ export function ReviewForm({
     null,
   );
   const [isImporting, setIsImporting] = useState(false);
+  const [symbolValidationMap, setSymbolValidationMap] =
+    useState<Record<string, SymbolValidationResult>>(symbolValidation);
 
   // Create validation schema with dynamic categories
   const categoryIds = categories.map((cat) => cat.id) as [string, ...string[]];
@@ -110,7 +114,7 @@ export function ReviewForm({
         .optional()
         .superRefine((val, ctx) => {
           if (!val) return;
-          const v = symbolValidation[val];
+          const v = symbolValidationMap[val];
           if (v && !v.valid) {
             ctx.addIssue({
               code: "custom",
@@ -163,29 +167,45 @@ export function ReviewForm({
   });
 
   const { isDirty } = form.formState;
+  const watchedPositions = useWatch({
+    control: form.control,
+    name: "positions",
+  });
 
   // Watch for symbol changes and auto-update currency
   useEffect(() => {
-    // Watch symbol changes
-    const watchedSymbols =
-      form.watch("positions")?.map((p) => p.symbolLookup) || [];
+    if (!watchedPositions) return;
 
-    // Auto-update currency
-    watchedSymbols.forEach((symbolId, index) => {
-      if (
-        symbolId &&
-        symbolValidation[symbolId]?.valid &&
-        symbolValidation[symbolId]?.currency
-      ) {
-        const symbolCurrency = symbolValidation[symbolId].currency!;
-        const currentCurrency = form.getValues(`positions.${index}.currency`);
+    watchedPositions.forEach((position, index) => {
+      const symbolId = position?.symbolLookup?.trim();
+      if (!symbolId) return;
+      const validation = symbolValidationMap[symbolId];
+      if (!validation?.valid || !validation.currency) return;
 
-        if (currentCurrency !== symbolCurrency) {
-          form.setValue(`positions.${index}.currency`, symbolCurrency);
-        }
+      const currentCurrency = form.getValues(`positions.${index}.currency`);
+      if (currentCurrency !== validation.currency) {
+        form.setValue(`positions.${index}.currency`, validation.currency, {
+          shouldDirty: true,
+          shouldValidate: true,
+        });
       }
     });
-  }, [form, symbolValidation]);
+  }, [form, symbolValidationMap, watchedPositions]);
+
+  const handleSymbolSelect = async (symbolId: string, index: number) => {
+    const result = await validateSymbol(symbolId);
+    setSymbolValidationMap((prev) => ({
+      ...prev,
+      [symbolId]: result,
+    }));
+
+    if (result.currency) {
+      form.setValue(`positions.${index}.currency`, result.currency, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    }
+  };
 
   // Apply initial errors so they're visible immediately on mount
   useEffect(() => {
@@ -460,6 +480,9 @@ export function ReviewForm({
                                 ...field,
                                 value: field.value || "",
                               }}
+                              onSymbolSelect={(symbolId) =>
+                                handleSymbolSelect(symbolId, index)
+                              }
                               popoverWidth="w-64"
                             />
                           </FormControl>
