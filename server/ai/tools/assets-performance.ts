@@ -1,7 +1,5 @@
 "use server";
 
-import { parseISO } from "date-fns";
-
 import { fetchProfile } from "@/server/profile/actions";
 import { fetchPositions } from "@/server/positions/fetch";
 import { resolvePositionLookup } from "@/server/positions/resolve-position-lookup";
@@ -10,6 +8,7 @@ import { resolveSymbolsBatch } from "@/server/symbols/resolve";
 
 import { calculateProfitLoss } from "@/lib/profit-loss";
 import { convertCurrency } from "@/lib/currency-conversion";
+import { parseUTCDateKey } from "@/lib/date/date-utils";
 import { clampDateRange } from "@/server/ai/tools/helpers/time-range";
 
 interface GetAssetsPerformanceParams {
@@ -74,8 +73,8 @@ export async function getAssetsPerformance(params: GetAssetsPerformanceParams) {
       startDate: params.startDate,
       endDate: params.endDate,
     });
-    const startDate = parseISO(startDateKey);
-    const endDate = parseISO(endDateKey);
+    const startDate = parseUTCDateKey(startDateKey);
+    const endDate = parseUTCDateKey(endDateKey);
 
     // Fetch end-date positions (with snapshots for P/L) and start-date positions (no snapshots needed)
     const [endSnapshot, startPositions] = await Promise.all([

@@ -1,6 +1,5 @@
-import { format } from "date-fns";
-
 import { fetchDomainValuations } from "@/server/domain-valuations/fetch";
+import { formatUTCDateKey } from "@/lib/date/date-utils";
 
 import type {
   MarketDataHandler,
@@ -43,7 +42,7 @@ export const domainHandler: MarketDataHandler = {
     const dedup = new Set<string>();
 
     for (const date of dates) {
-      const dateKey = format(date, "yyyy-MM-dd");
+      const dateKey = formatUTCDateKey(date);
 
       for (const position of positions) {
         if (!position.domain_id) continue;
@@ -70,6 +69,6 @@ export const domainHandler: MarketDataHandler = {
 
   getKey(position: MarketDataPosition, date: Date) {
     if (!position.domain_id) return null;
-    return `${position.domain_id}|${format(date, "yyyy-MM-dd")}`;
+    return `${position.domain_id}|${formatUTCDateKey(date)}`;
   },
 };

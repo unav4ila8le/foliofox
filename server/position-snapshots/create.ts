@@ -1,9 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { format } from "date-fns";
-
 import { getCurrentUser } from "@/server/auth/actions";
+import { formatUTCDateKey } from "@/lib/date/date-utils";
 
 import type { TablesInsert } from "@/types/database.types";
 
@@ -23,7 +22,7 @@ export async function createPositionSnapshot(
 ) {
   const { supabase, user } = await getCurrentUser();
 
-  const normalizedDate = format(new Date(params.date), "yyyy-MM-dd");
+  const normalizedDate = formatUTCDateKey(new Date(params.date));
 
   const { error } = await supabase.from("position_snapshots").insert({
     user_id: user.id,

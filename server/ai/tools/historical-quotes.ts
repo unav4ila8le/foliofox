@@ -1,8 +1,11 @@
 "use server";
 
-import { addDays, differenceInCalendarDays } from "date-fns";
-
-import { formatUtcDateKey, parseUtcDateKey } from "@/lib/date/date-utils";
+import {
+  addUTCDays,
+  formatUTCDateKey,
+  parseUTCDateKey,
+  startOfUTCDay,
+} from "@/lib/date/date-utils";
 import { fetchQuotes } from "@/server/quotes/fetch";
 import { ensureSymbol } from "@/server/symbols/ensure";
 
@@ -36,14 +39,16 @@ export async function getHistoricalQuotes({
     ensuredSymbol.symbol?.ticker ??
     normalizedLookup;
 
-  const resolvedEnd = endDate ? parseUtcDateKey(endDate) : new Date();
+  const resolvedEnd = endDate
+    ? parseUTCDateKey(endDate)
+    : startOfUTCDay(new Date());
   if (Number.isNaN(resolvedEnd.getTime())) {
     throw new Error("endDate is invalid");
   }
 
   const resolvedStart = startDate
-    ? parseUtcDateKey(startDate)
-    : addDays(resolvedEnd, -DEFAULT_WINDOW_DAYS);
+    ? parseUTCDateKey(startDate)
+    : addUTCDays(resolvedEnd, -DEFAULT_WINDOW_DAYS);
   if (Number.isNaN(resolvedStart.getTime())) {
     throw new Error("startDate is invalid");
   }
@@ -52,7 +57,9 @@ export async function getHistoricalQuotes({
     throw new Error("startDate must be before or equal to endDate");
   }
 
-  const totalDays = differenceInCalendarDays(resolvedEnd, resolvedStart) + 1;
+  const totalDays =
+    Math.floor((resolvedEnd.getTime() - resolvedStart.getTime()) / 86400000) +
+    1;
   if (totalDays > MAX_WINDOW_DAYS) {
     throw new Error(
       `Date range is too large. Maximum supported window is ${MAX_WINDOW_DAYS} days.`,
@@ -63,7 +70,7 @@ export async function getHistoricalQuotes({
   for (
     let cursor = resolvedStart;
     cursor <= resolvedEnd;
-    cursor = addDays(cursor, 1)
+    cursor = addUTCDays(cursor, 1)
   ) {
     requests.push({ symbolLookup: canonicalId, date: cursor });
   }
@@ -72,7 +79,7 @@ export async function getHistoricalQuotes({
   const quotesMap = await fetchQuotes(requests, false);
 
   const series = requests.map(({ date }) => {
-    const dateString = formatUtcDateKey(date);
+    const dateString = formatUTCDateKey(date);
     const price =
       quotesMap.get(`${canonicalId}|${dateString}`) ??
       quotesMap.get(`${symbolLookup}|${dateString}`) ??
@@ -89,8 +96,8 @@ export async function getHistoricalQuotes({
   return {
     symbolId: canonicalId,
     symbolTicker: displayTicker,
-    startDate: formatUtcDateKey(resolvedStart),
-    endDate: formatUtcDateKey(resolvedEnd),
+    startDate: formatUTCDateKey(resolvedStart),
+    endDate: formatUTCDateKey(resolvedEnd),
     points: series,
     metadata: {
       totalDays,

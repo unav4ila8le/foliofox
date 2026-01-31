@@ -7,6 +7,7 @@ import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 import { resolveSymbolsBatch } from "@/server/symbols/resolve";
 import { calculateAssetAllocation } from "@/server/analysis/asset-allocation";
 import { convertCurrency } from "@/lib/currency-conversion";
+import { parseUTCDateKey, startOfUTCDay } from "@/lib/date/date-utils";
 
 /**
  * Get portfolio overview for AI analysis
@@ -24,7 +25,11 @@ export async function getPortfolioOverview(params: {
       params.baseCurrency ?? (await fetchProfile()).profile.display_currency;
 
     // Use a single date across quotes and FX for consistency
-    const asOfDate = params.date ? new Date(params.date) : new Date();
+    const parsedDate = params.date ? parseUTCDateKey(params.date) : null;
+    const asOfDate =
+      parsedDate && !Number.isNaN(parsedDate.getTime())
+        ? parsedDate
+        : startOfUTCDay(new Date());
 
     // Fetch user's financial profile
     const financialProfile = await fetchFinancialProfile();

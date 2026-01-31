@@ -1,9 +1,12 @@
 "use server";
 
-import { format } from "date-fns";
-
 import { fetchProfile } from "@/server/profile/actions";
 import { calculateAssetAllocation } from "@/server/analysis/asset-allocation";
+import {
+  formatUTCDateKey,
+  parseUTCDateKey,
+  startOfUTCDay,
+} from "@/lib/date/date-utils";
 
 interface GetAllocationDriftParams {
   baseCurrency: string | null;
@@ -28,10 +31,13 @@ export async function getAllocationDrift(params: GetAllocationDriftParams) {
     const baseCurrency =
       params.baseCurrency ?? (await fetchProfile()).profile.display_currency;
 
-    const compareDate = new Date(params.compareToDate);
-    const currentDate = new Date();
-    const compareKey = format(compareDate, "yyyy-MM-dd");
-    const currentKey = format(currentDate, "yyyy-MM-dd");
+    const parsedCompare = parseUTCDateKey(params.compareToDate);
+    const compareDate = !Number.isNaN(parsedCompare.getTime())
+      ? parsedCompare
+      : startOfUTCDay(new Date());
+    const currentDate = startOfUTCDay(new Date());
+    const compareKey = formatUTCDateKey(compareDate);
+    const currentKey = formatUTCDateKey(currentDate);
 
     // Get asset allocations for both dates using centralized function
     const [previousAllocation, currentAllocation] = await Promise.all([

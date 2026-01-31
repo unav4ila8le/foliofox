@@ -2,7 +2,7 @@
 
 import { addDays, compareAsc, subDays } from "date-fns";
 
-import { formatUtcDateKey, parseUtcDateKey } from "@/lib/date/date-utils";
+import { formatUTCDateKey, parseUTCDateKey } from "@/lib/date/date-utils";
 import { yahooFinance } from "@/server/yahoo-finance/client";
 import { createServiceClient } from "@/supabase/service";
 import {
@@ -44,7 +44,7 @@ export async function fetchQuotes(
       );
     }
 
-    const dateString = formatUtcDateKey(date);
+    const dateString = formatUTCDateKey(date);
 
     return {
       inputLookup: symbolLookup,
@@ -136,13 +136,13 @@ export async function fetchQuotes(
 
     for (const [symbolId, dateStringsSet] of requestsBySymbol.entries()) {
       const dateStringsSorted = Array.from(dateStringsSet).sort((a, b) =>
-        compareAsc(parseUtcDateKey(a), parseUtcDateKey(b)),
+        compareAsc(parseUTCDateKey(a), parseUTCDateKey(b)),
       );
 
       if (!dateStringsSorted.length) continue;
 
-      const earliest = parseUtcDateKey(dateStringsSorted[0]);
-      const latest = parseUtcDateKey(
+      const earliest = parseUTCDateKey(dateStringsSorted[0]);
+      const latest = parseUTCDateKey(
         dateStringsSorted[dateStringsSorted.length - 1],
       );
 
@@ -218,7 +218,7 @@ export async function fetchQuotes(
           fallbackPrice > 0 &&
           fallbackTime instanceof Date
         ) {
-          const marketDateKey = formatUtcDateKey(fallbackTime);
+          const marketDateKey = formatUTCDateKey(fallbackTime);
           const fallbackDateKey = requestedSet.has(marketDateKey)
             ? marketDateKey
             : dateStringsSorted.at(-1)!;
@@ -330,7 +330,7 @@ export async function fetchSingleQuote(
   }
 
   const canonicalId = resolved.symbol.id;
-  const dateKey = formatUtcDateKey(date);
+  const dateKey = formatUTCDateKey(date);
   const quotes = await fetchQuotes(
     [{ symbolLookup: canonicalId, date }],
     upsert,

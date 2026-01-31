@@ -9,7 +9,12 @@ import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 import { resolveSymbolInput } from "@/server/symbols/resolve";
 
 import { convertCurrency } from "@/lib/currency-conversion";
-import { formatLocalDateKey, parseLocalDateKey } from "@/lib/date/date-utils";
+import {
+  formatLocalDateKey,
+  formatUTCDateKey,
+  parseLocalDateKey,
+  startOfUTCDay,
+} from "@/lib/date/date-utils";
 import type { PositionsQueryContext } from "@/server/positions/fetch";
 
 import {
@@ -109,9 +114,10 @@ export const calculateProjectedIncome = cache(
       uniqueCurrencies.add(targetCurrency);
 
       // Create exchange rate requests for unique currencies only
+      const fxDate = startOfUTCDay(new Date());
       const exchangeRequests = Array.from(uniqueCurrencies).map((currency) => ({
         currency,
-        date: new Date(),
+        date: fxDate,
       }));
 
       // Fetch exchange rates
@@ -120,7 +126,7 @@ export const calculateProjectedIncome = cache(
       // Calculate monthly projected income
       const monthlyIncome = new Map<string, number>();
       const today = new Date();
-      const fxDateKey = formatLocalDateKey(today);
+      const fxDateKey = formatUTCDateKey(fxDate);
       let missingFxConversions = 0;
       const missingFxDetails = new Map<
         string,
@@ -298,15 +304,16 @@ export const calculateProjectedIncomeByAsset = cache(
       });
       uniqueCurrencies.add(targetCurrency);
 
+      const fxDate = startOfUTCDay(new Date());
       const exchangeRequests = Array.from(uniqueCurrencies).map((currency) => ({
         currency,
-        date: new Date(),
+        date: fxDate,
       }));
 
       const exchangeRatesMap = await fetchExchangeRates(exchangeRequests);
 
       const today = new Date();
-      const fxDateKey = formatLocalDateKey(today);
+      const fxDateKey = formatUTCDateKey(fxDate);
       let missingFxConversions = 0;
       const missingFxDetails = new Map<
         string,

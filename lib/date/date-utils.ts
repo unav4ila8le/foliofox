@@ -17,13 +17,50 @@ function toDate(value: DateInput): Date | null {
  * @param date - The date to format
  * @returns The formatted date key
  */
-export function formatUtcDateKey(date: DateInput): string {
+export function formatUTCDateKey(date: DateInput): string {
   const value = toDate(date);
   if (!value) {
-    throw new Error("Invalid date provided to formatUtcDateKey");
+    throw new Error("Invalid date provided to formatUTCDateKey");
   }
 
   return value.toISOString().slice(0, 10);
+}
+
+/**
+ * Get the start of the UTC day for a given date.
+ * @param date - The date to normalize
+ * @returns Date at UTC midnight
+ */
+export function startOfUTCDay(date: DateInput): Date {
+  const value = toDate(date);
+  if (!value) {
+    throw new Error("Invalid date provided to startOfUTCDay");
+  }
+
+  return new Date(
+    Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()),
+  );
+}
+
+/**
+ * Add days in UTC (keeps date at UTC midnight).
+ * @param date - The base date
+ * @param days - Number of days to add (can be negative)
+ * @returns Date at UTC midnight
+ */
+export function addUTCDays(date: DateInput, days: number): Date {
+  const value = toDate(date);
+  if (!value) {
+    throw new Error("Invalid date provided to addUTCDays");
+  }
+
+  return new Date(
+    Date.UTC(
+      value.getUTCFullYear(),
+      value.getUTCMonth(),
+      value.getUTCDate() + days,
+    ),
+  );
 }
 
 /**
@@ -48,7 +85,7 @@ export function formatLocalDateKey(date: DateInput): string {
  * @param dateKey - The date key to parse
  * @returns Date at UTC midnight for the key
  */
-export function parseUtcDateKey(dateKey: string): Date {
+export function parseUTCDateKey(dateKey: string): Date {
   const trimmed = dateKey.trim();
   if (!DATE_KEY_PATTERN.test(trimmed)) {
     return new Date(NaN);

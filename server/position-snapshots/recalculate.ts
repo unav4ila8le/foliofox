@@ -1,8 +1,7 @@
 "use server";
 
-import { format } from "date-fns";
-
 import { createServiceClient } from "@/supabase/service";
+import { formatUTCDateKey } from "@/lib/date/date-utils";
 
 import type { PortfolioRecord } from "@/types/global.types";
 
@@ -44,7 +43,7 @@ export async function recalculateSnapshotsUntilNextUpdate(
     .select("date")
     .eq("position_id", positionId)
     .eq("type", "update")
-    .gt("date", format(fromDate, "yyyy-MM-dd"))
+    .gt("date", formatUTCDateKey(fromDate))
     .order("date", { ascending: true })
     .limit(1)
     .maybeSingle();
@@ -56,7 +55,7 @@ export async function recalculateSnapshotsUntilNextUpdate(
     .from("portfolio_records")
     .select("*")
     .eq("position_id", positionId)
-    .gte("date", format(fromDate, "yyyy-MM-dd"));
+    .gte("date", formatUTCDateKey(fromDate));
 
   if (boundaryDate)
     portfolioRecordsQuery = portfolioRecordsQuery.lt("date", boundaryDate);
@@ -87,7 +86,7 @@ export async function recalculateSnapshotsUntilNextUpdate(
       "quantity, cost_basis_per_unit, date, created_at, portfolio_record_id",
     )
     .eq("position_id", positionId)
-    .lte("date", format(fromDate, "yyyy-MM-dd"))
+    .lte("date", formatUTCDateKey(fromDate))
     .order("date", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(1)
@@ -113,7 +112,7 @@ export async function recalculateSnapshotsUntilNextUpdate(
     baseSnapshot = previousSnapshot ?? null;
   }
 
-  const fromDateStr = format(fromDate, "yyyy-MM-dd");
+  const fromDateStr = formatUTCDateKey(fromDate);
 
   const costBasisByRecordId = new Map<string, number | null>();
 

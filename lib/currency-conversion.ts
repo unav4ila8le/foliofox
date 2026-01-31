@@ -1,4 +1,6 @@
-import { format } from "date-fns";
+import { formatUTCDateKey, parseUTCDateKey } from "@/lib/date/date-utils";
+
+const DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
  * Convert amount between currencies using USD as base currency
@@ -21,7 +23,20 @@ export function convertCurrency(
   // Same currency, no conversion needed
   if (sourceCurrency === targetCurrency) return amount;
 
-  const dateKey = typeof date === "string" ? date : format(date, "yyyy-MM-dd");
+  let dateKey: string;
+  if (typeof date === "string") {
+    const trimmed = date.trim();
+    if (DATE_KEY_PATTERN.test(trimmed)) {
+      dateKey = trimmed;
+    } else {
+      const parsed = parseUTCDateKey(trimmed);
+      dateKey = Number.isNaN(parsed.getTime())
+        ? formatUTCDateKey(new Date(trimmed))
+        : formatUTCDateKey(parsed);
+    }
+  } else {
+    dateKey = formatUTCDateKey(date);
+  }
   const toUsdKey = `${sourceCurrency}|${dateKey}`;
   const fromUsdKey = `${targetCurrency}|${dateKey}`;
 

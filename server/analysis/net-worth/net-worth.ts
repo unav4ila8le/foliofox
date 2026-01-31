@@ -1,15 +1,14 @@
 "use server";
 
 import { cache } from "react";
-import { startOfDay } from "date-fns";
-
 import { fetchPositions } from "@/server/positions/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 
 import { convertCurrency } from "@/lib/currency-conversion";
+import { startOfUTCDay } from "@/lib/date/date-utils";
 import type { PositionsQueryContext } from "@/server/positions/fetch";
 
-const getDefaultAsOfDate = cache(() => startOfDay(new Date()));
+const getDefaultAsOfDate = cache(() => startOfUTCDay(new Date()));
 
 /**
  * Calculate total net worth in specified target currency at a specific date.

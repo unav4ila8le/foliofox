@@ -2,6 +2,7 @@
 
 import { fetchProfile } from "@/server/profile/actions";
 import { calculateNetWorth } from "@/server/analysis/net-worth/net-worth";
+import { addUTCDays, startOfUTCDay } from "@/lib/date/date-utils";
 
 export interface NetWorthChangeData {
   currentValue: number;
@@ -27,10 +28,9 @@ export async function fetchNetWorthChange({
   }
 
   // Calculate comparison date
-  const today = new Date();
-  const comparisonDate = new Date(today);
   const totalDaysBack = Math.max(1, Math.trunc(daysBack));
-  comparisonDate.setDate(today.getDate() - totalDaysBack);
+  const today = startOfUTCDay(new Date());
+  const comparisonDate = addUTCDays(today, -totalDaysBack);
 
   // Calculate net worth at both dates in parallel
   const [currentValue, previousValue] = await Promise.all([

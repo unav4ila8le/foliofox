@@ -7,7 +7,7 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
-import { DefaultChatTransport, isToolUIPart, type UIMessage } from "ai";
+import { DefaultChatTransport, isStaticToolUIPart, type UIMessage } from "ai";
 import { useChat } from "@ai-sdk/react";
 import { Check, Copy, RefreshCcw, Sparkles } from "lucide-react";
 
@@ -239,7 +239,7 @@ export function Chat({
                         </Fragment>
                       );
                     default:
-                      if (isToolUIPart(part)) {
+                      if (isStaticToolUIPart(part)) {
                         return (
                           <Tool
                             key={`${message.id}-part-${i}`}

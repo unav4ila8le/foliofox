@@ -1,8 +1,7 @@
 "use server";
 
-import { format } from "date-fns";
-
 import { createServiceClient } from "@/supabase/service";
+import { formatUTCDateKey } from "@/lib/date/date-utils";
 
 // Replicate API configuration
 const REPLICATE_API = "https://api.replicate.com/v1/predictions";
@@ -25,7 +24,7 @@ type DomainValuationCacheEntry = {
   price: number;
 };
 
-const toDateKey = (date: Date) => format(date, "yyyy-MM-dd");
+const toDateKey = (date: Date) => formatUTCDateKey(date);
 const toDateMs = (dateKey: string) =>
   new Date(`${dateKey}T00:00:00Z`).getTime();
 
@@ -295,6 +294,6 @@ export async function fetchSingleDomainValuation(
   const { date = new Date(), upsert = true } = options;
 
   const valuations = await fetchDomainValuations([{ domain, date }], upsert);
-  const key = `${domain}|${format(date, "yyyy-MM-dd")}`;
+  const key = `${domain}|${formatUTCDateKey(date)}`;
   return valuations.get(key) || 0;
 }

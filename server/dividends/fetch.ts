@@ -1,11 +1,12 @@
 "use server";
 
-import { format, subYears, subDays } from "date-fns";
+import { subDays, subYears } from "date-fns";
 import { v4 as uuidv4 } from "uuid";
 
 import { yahooFinance } from "@/server/yahoo-finance/client";
 import { createServiceClient } from "@/supabase/service";
 import { resolveSymbolsBatch } from "@/server/symbols/resolve";
+import { formatUTCDateKey } from "@/lib/date/date-utils";
 
 import type { Dividend, DividendEvent } from "@/types/global.types";
 
@@ -145,7 +146,7 @@ export async function fetchDividends(
             events.push({
               id: uuidv4(),
               symbol_id: symbolId,
-              event_date: format(dividend.date, "yyyy-MM-dd"),
+              event_date: formatUTCDateKey(dividend.date),
               gross_amount: dividend.amount,
               currency: chart.meta.currency || "USD",
               source: "yahoo",
@@ -179,7 +180,7 @@ export async function fetchDividends(
               summary.summaryDetail?.trailingAnnualDividendRate || null,
             dividend_yield: summary.summaryDetail?.dividendYield || null,
             ex_dividend_date: summary.calendarEvents?.exDividendDate
-              ? format(summary.calendarEvents.exDividendDate, "yyyy-MM-dd")
+              ? formatUTCDateKey(summary.calendarEvents.exDividendDate)
               : null,
             last_dividend_date,
             inferred_frequency,

@@ -1,4 +1,9 @@
-import { format, isValid, parseISO, subDays } from "date-fns";
+import {
+  addUTCDays,
+  formatUTCDateKey,
+  parseUTCDateKey,
+  startOfUTCDay,
+} from "@/lib/date/date-utils";
 
 export const DEFAULT_MAX_HISTORY_DAYS = 365; // ~1 year
 
@@ -30,18 +35,19 @@ export function clampDateRange({
   endDate,
   maxDays = DEFAULT_MAX_HISTORY_DAYS,
 }: ClampDateRangeOptions): { startDate: string; endDate: string } {
-  const today = new Date();
-  const parsedEnd = endDate ? parseISO(endDate) : today;
-  const safeEnd = isValid(parsedEnd)
-    ? parsedEnd > today
-      ? today
-      : parsedEnd
-    : today;
+  const today = startOfUTCDay(new Date());
+  const parsedEnd = endDate ? parseUTCDateKey(endDate) : today;
+  const safeEnd =
+    !Number.isNaN(parsedEnd.getTime()) && parsedEnd <= today
+      ? parsedEnd
+      : today;
 
-  const maxLookbackStart = subDays(safeEnd, Math.max(0, maxDays - 1));
+  const maxLookbackStart = addUTCDays(safeEnd, -Math.max(0, maxDays - 1));
 
-  const parsedStart = startDate ? parseISO(startDate) : maxLookbackStart;
-  let safeStart = isValid(parsedStart) ? parsedStart : maxLookbackStart;
+  const parsedStart = startDate ? parseUTCDateKey(startDate) : maxLookbackStart;
+  let safeStart = !Number.isNaN(parsedStart.getTime())
+    ? parsedStart
+    : maxLookbackStart;
 
   if (safeStart > safeEnd) {
     safeStart = maxLookbackStart;
@@ -52,7 +58,7 @@ export function clampDateRange({
   }
 
   return {
-    startDate: format(safeStart, "yyyy-MM-dd"),
-    endDate: format(safeEnd, "yyyy-MM-dd"),
+    startDate: formatUTCDateKey(safeStart),
+    endDate: formatUTCDateKey(safeEnd),
   };
 }

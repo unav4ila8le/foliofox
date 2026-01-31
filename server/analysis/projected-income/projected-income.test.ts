@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-import { formatLocalDateKey } from "@/lib/date/date-utils";
+import { formatUTCDateKey } from "@/lib/date/date-utils";
 
 import type {
   Dividend,
@@ -102,7 +102,7 @@ describe("projected income", () => {
   });
 
   it("projects monthly income using annual dividend data", async () => {
-    const fxDateKey = formatLocalDateKey(new Date());
+    const fxDateKey = formatUTCDateKey(new Date());
 
     fetchPositionsMock.mockResolvedValue([createPosition()]);
 
@@ -138,7 +138,7 @@ describe("projected income", () => {
   });
 
   it("falls back to dividend_yield * unit value when no annual data exists", async () => {
-    const fxDateKey = formatLocalDateKey(new Date());
+    const fxDateKey = formatUTCDateKey(new Date());
 
     fetchPositionsMock.mockResolvedValue([
       createPosition({
@@ -183,7 +183,7 @@ describe("projected income", () => {
   });
 
   it("prefers recent payout events when TTM looks inflated", async () => {
-    const fxDateKey = formatLocalDateKey(new Date());
+    const fxDateKey = formatUTCDateKey(new Date());
 
     fetchPositionsMock.mockResolvedValue([createPosition()]);
 
@@ -217,7 +217,7 @@ describe("projected income", () => {
   });
 
   it("returns stacked series data per asset", async () => {
-    const fxDateKey = formatLocalDateKey(new Date());
+    const fxDateKey = formatUTCDateKey(new Date());
 
     fetchPositionsMock.mockResolvedValue([
       createPosition({
