@@ -1,4 +1,4 @@
-import { formatUtcDateKey } from "@/lib/date/date-utils";
+import { formatUTCDateKey } from "@/lib/date/date-utils";
 
 /**
  * Chunk an array into smaller arrays of a given size.
@@ -44,7 +44,7 @@ export function normalizeChartQuoteEntries(
       if (!value || value <= 0) return null;
 
       return {
-        dateKey: formatUtcDateKey(quote.date),
+        dateKey: formatUTCDateKey(quote.date),
         price: value,
       };
     })

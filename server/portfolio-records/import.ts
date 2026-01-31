@@ -1,12 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { format } from "date-fns";
-
 import { getCurrentUser } from "@/server/auth/actions";
 import { recalculateSnapshotsUntilNextUpdate } from "@/server/position-snapshots/recalculate";
 
 import { parsePortfolioRecordsCSV } from "@/lib/import/portfolio-records/parse-csv";
+import { formatUTCDateKey } from "@/lib/date/date-utils";
 
 import type { PortfolioRecord } from "@/types/global.types";
 import { PORTFOLIO_RECORD_TYPES } from "@/types/enums";
@@ -154,7 +153,7 @@ export async function importPortfolioRecordsFromCSV(
       .select("position_id, date")
       .eq("type", "update")
       .in("position_id", positionIds)
-      .gte("date", format(globalEarliest, "yyyy-MM-dd"));
+      .gte("date", formatUTCDateKey(globalEarliest));
 
     // Group UPDATE dates by position
     const updatesByPosition = new Map<string, Date[]>();

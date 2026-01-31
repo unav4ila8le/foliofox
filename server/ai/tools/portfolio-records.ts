@@ -4,6 +4,7 @@ import { fetchPortfolioRecords } from "@/server/portfolio-records/fetch";
 import { resolvePositionLookup } from "@/server/positions/resolve-position-lookup";
 
 import { clampDateRange } from "@/server/ai/tools/helpers/time-range";
+import { formatUTCDateKey, parseUTCDateKey } from "@/lib/date/date-utils";
 
 import type { PortfolioRecordWithPosition } from "@/types/global.types";
 
@@ -26,8 +27,8 @@ export async function getPortfolioRecords(params: GetPortfolioRecordsParams) {
     maxDays: positionId ? 730 : undefined,
   });
 
-  const startDate = startDateKey ? new Date(startDateKey) : undefined;
-  const endDate = endDateKey ? new Date(endDateKey) : undefined;
+  const startDate = startDateKey ? parseUTCDateKey(startDateKey) : undefined;
+  const endDate = endDateKey ? parseUTCDateKey(endDateKey) : undefined;
 
   const pageSize = 100;
   let page = 1;
@@ -67,8 +68,8 @@ export async function getPortfolioRecords(params: GetPortfolioRecordsParams) {
     total: allRecords.length,
     returned: items.length,
     range: {
-      start: startDate?.toISOString().split("T")[0] ?? null,
-      end: endDate?.toISOString().split("T")[0] ?? null,
+      start: startDate ? formatUTCDateKey(startDate) : null,
+      end: endDate ? formatUTCDateKey(endDate) : null,
     },
     positionId: params.positionId,
     includeArchived: params.includeArchived ?? true,

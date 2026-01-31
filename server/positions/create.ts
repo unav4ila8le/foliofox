@@ -1,13 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { format } from "date-fns";
-
 import { getCurrentUser } from "@/server/auth/actions";
 import { createSymbol } from "@/server/symbols/create";
 import { resolveSymbolInput } from "@/server/symbols/resolve";
 import { createPositionSnapshot } from "@/server/position-snapshots/create";
 import { fetchSingleQuote } from "@/server/quotes/fetch";
+import { formatUTCDateKey } from "@/lib/date/date-utils";
 
 import type { Position } from "@/types/global.types";
 
@@ -169,7 +168,7 @@ export async function createPosition(formData: FormData) {
   // Initial snapshot via helper (synthetic)
   const snapshotResult = await createPositionSnapshot({
     position_id: positionRow.id,
-    date: format(snapshotDate, "yyyy-MM-dd"),
+    date: formatUTCDateKey(snapshotDate),
     quantity,
     unit_value: finalUnitValue,
     cost_basis_per_unit: finalCostBasis,

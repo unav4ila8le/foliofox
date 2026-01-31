@@ -1,7 +1,5 @@
 "use server";
 
-import { addDays, format, subDays } from "date-fns";
-
 import { getCurrentUser } from "@/server/auth/actions";
 import { fetchProfile } from "@/server/profile/actions";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
@@ -10,6 +8,11 @@ import {
   toMarketDataPositions,
 } from "@/server/market-data/fetch";
 import { convertCurrency } from "@/lib/currency-conversion";
+import {
+  addUTCDays,
+  formatUTCDateKey,
+  startOfUTCDay,
+} from "@/lib/date/date-utils";
 
 export interface NetWorthHistoryData {
   date: Date;
@@ -31,13 +34,13 @@ export async function fetchNetWorthHistory({
   // Validate and enforce minimum daysBack
   const totalDaysBack = Math.max(1, Math.trunc(daysBack));
 
-  const end = new Date();
-  const endDateKey = format(end, "yyyy-MM-dd");
-  const start = subDays(end, totalDaysBack - 1);
+  const end = startOfUTCDay(new Date());
+  const endDateKey = formatUTCDateKey(end);
+  const start = addUTCDays(end, -(totalDaysBack - 1));
   const dates: Date[] = Array.from({ length: totalDaysBack }, (_, index) =>
-    addDays(start, index),
+    addUTCDays(start, index),
   );
-  const dateKeys = dates.map((date) => format(date, "yyyy-MM-dd"));
+  const dateKeys = dates.map((date) => formatUTCDateKey(date));
   const mapDatesToZeroHistory = (dateList: Date[]) =>
     dateList.map((date) => ({ date, value: 0 }));
 

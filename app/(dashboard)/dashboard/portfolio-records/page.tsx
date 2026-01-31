@@ -11,7 +11,7 @@ import {
   type PortfolioRecordType,
 } from "@/lib/portfolio-records/filters";
 import { getSearchParam } from "@/lib/search-params";
-import { parseUtcDateKey } from "@/lib/date/date-utils";
+import { parseUTCDateKey } from "@/lib/date/date-utils";
 
 interface RecordsPageProps {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -93,9 +93,9 @@ export default async function RecordsPage(props: RecordsPageProps) {
   const q = typeof queryParam === "string" ? queryParam : undefined;
   const recordTypes = parsePortfolioRecordTypes(typeParam);
   const parsedStartDate = dateFromParam
-    ? parseUtcDateKey(dateFromParam)
+    ? parseUTCDateKey(dateFromParam)
     : undefined;
-  const parsedEndDate = dateToParam ? parseUtcDateKey(dateToParam) : undefined;
+  const parsedEndDate = dateToParam ? parseUTCDateKey(dateToParam) : undefined;
   const startDate =
     parsedStartDate && !Number.isNaN(parsedStartDate.getTime())
       ? parsedStartDate

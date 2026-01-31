@@ -4,6 +4,7 @@ import { fetchPositions } from "@/server/positions/fetch";
 import { resolvePositionLookup } from "@/server/positions/resolve-position-lookup";
 
 import { resolveSymbolsBatch } from "@/server/symbols/resolve";
+import { parseUTCDateKey, startOfUTCDay } from "@/lib/date/date-utils";
 
 interface GetPositionsParams {
   positionIds: string[] | null;
@@ -16,7 +17,11 @@ interface GetPositionsParams {
  * - Values are as-of the provided date (or today) via latest snapshots/market-backed pricing
  */
 export async function getPositions(params: GetPositionsParams) {
-  const asOfDate = params.date ? new Date(params.date) : new Date();
+  const parsedDate = params.date ? parseUTCDateKey(params.date) : null;
+  const asOfDate =
+    parsedDate && !Number.isNaN(parsedDate.getTime())
+      ? parsedDate
+      : startOfUTCDay(new Date());
 
   // Resolve lookups (ticker/ISIN/UUID) to actual position UUIDs
   let resolvedIds: Set<string> | undefined;

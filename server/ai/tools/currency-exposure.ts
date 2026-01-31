@@ -1,12 +1,15 @@
 "use server";
 
-import { format } from "date-fns";
-
 import { fetchProfile } from "@/server/profile/actions";
 import { fetchPositions } from "@/server/positions/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 
 import { convertCurrency } from "@/lib/currency-conversion";
+import {
+  formatUTCDateKey,
+  parseUTCDateKey,
+  startOfUTCDay,
+} from "@/lib/date/date-utils";
 
 interface GetCurrencyExposureParams {
   baseCurrency: string | null;
@@ -43,8 +46,12 @@ export async function getCurrencyExposure(
     const baseCurrency =
       params.baseCurrency ?? (await fetchProfile()).profile.display_currency;
 
-    const date = params.date ? new Date(params.date) : new Date();
-    const dateKey = format(date, "yyyy-MM-dd");
+    const parsedDate = params.date ? parseUTCDateKey(params.date) : null;
+    const date =
+      parsedDate && !Number.isNaN(parsedDate.getTime())
+        ? parsedDate
+        : startOfUTCDay(new Date());
+    const dateKey = formatUTCDateKey(date);
 
     // Fetch positions (assets) valued as-of the date
     const positions = await fetchPositions({

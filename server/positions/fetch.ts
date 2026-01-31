@@ -1,7 +1,6 @@
 "use server";
 
 import { cache } from "react";
-import { format } from "date-fns";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { getCurrentUser } from "@/server/auth/actions";
@@ -10,6 +9,7 @@ import {
   toMarketDataPositions,
 } from "@/server/market-data/fetch";
 import { resolveMarketDataForPositions } from "@/server/market-data/sources/resolver";
+import { formatUTCDateKey } from "@/lib/date/date-utils";
 
 import type {
   Position,
@@ -157,7 +157,7 @@ async function fetchPositionsImpl(
     .order("created_at", { ascending: false });
 
   if (asOfDate) {
-    snapshotsQuery = snapshotsQuery.lte("date", format(asOfDate, "yyyy-MM-dd"));
+    snapshotsQuery = snapshotsQuery.lte("date", formatUTCDateKey(asOfDate));
   }
 
   const { data: snapshots, error: snapshotsError } = await snapshotsQuery;

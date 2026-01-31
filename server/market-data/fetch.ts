@@ -1,11 +1,10 @@
 "use server";
 
-import { format } from "date-fns";
-
 import {
   resolveMarketDataForPositions,
   type MarketDataResolution,
 } from "./sources/resolver";
+import { formatUTCDateKey } from "@/lib/date/date-utils";
 
 import type { MarketDataPosition } from "./sources/types";
 import type { TransformedPosition } from "@/types/global.types";
@@ -97,7 +96,7 @@ export async function fetchMarketDataRange(
   const seenDateKeys = new Set<string>();
   for (const rawDate of dates) {
     const date = new Date(rawDate);
-    const dateKey = format(date, "yyyy-MM-dd");
+    const dateKey = formatUTCDateKey(date);
     if (seenDateKeys.has(dateKey)) continue;
     seenDateKeys.add(dateKey);
     uniqueDates.push(date);
@@ -145,7 +144,7 @@ export async function fetchMarketDataRange(
     } else {
       const aggregated = new Map<string, number>();
       for (const date of uniqueDates) {
-        const dateKey = format(date, "yyyy-MM-dd");
+        const dateKey = formatUTCDateKey(date);
         const positionsForDate = posForHandler.filter((position) => {
           if (!eligibleDates) return true;
           if (!position.id) return false;
@@ -185,7 +184,7 @@ export async function fetchMarketDataRange(
       const allowedDates = eligibleDates?.get(position.id);
 
       for (const date of uniqueDates) {
-        const dateKey = format(date, "yyyy-MM-dd");
+        const dateKey = formatUTCDateKey(date);
         if (allowedDates && !allowedDates.has(dateKey)) continue;
 
         const handlerKey = handler.getKey(position, date);

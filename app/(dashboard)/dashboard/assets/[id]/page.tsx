@@ -23,7 +23,7 @@ import {
   type PortfolioRecordType,
 } from "@/lib/portfolio-records/filters";
 import { getSearchParam } from "@/lib/search-params";
-import { parseUtcDateKey } from "@/lib/date/date-utils";
+import { parseUTCDateKey } from "@/lib/date/date-utils";
 
 import type {
   PositionSnapshot,
@@ -263,9 +263,9 @@ export default async function AssetPage(
   const q = typeof queryParam === "string" ? queryParam : undefined;
   const recordTypes = parsePortfolioRecordTypes(typeParam);
   const parsedStartDate = dateFromParam
-    ? parseUtcDateKey(dateFromParam)
+    ? parseUTCDateKey(dateFromParam)
     : undefined;
-  const parsedEndDate = dateToParam ? parseUtcDateKey(dateToParam) : undefined;
+  const parsedEndDate = dateToParam ? parseUTCDateKey(dateToParam) : undefined;
   const startDate =
     parsedStartDate && !Number.isNaN(parsedStartDate.getTime())
       ? parsedStartDate

@@ -4,6 +4,7 @@ import { fetchPositionSnapshots } from "@/server/position-snapshots/fetch";
 import { resolvePositionLookup } from "@/server/positions/resolve-position-lookup";
 
 import { clampDateRange } from "@/server/ai/tools/helpers/time-range";
+import { formatUTCDateKey, parseUTCDateKey } from "@/lib/date/date-utils";
 
 interface GetPositionSnapshotsParams {
   positionId: string; // Required - position snapshots are always for a specific position
@@ -22,8 +23,8 @@ export async function getPositionSnapshots(params: GetPositionSnapshotsParams) {
     endDate: params.endDate,
     maxDays: 1095, // allow up to ~3 years for single-position detail
   });
-  const startDate = startKey ? new Date(startKey) : undefined;
-  const endDate = endKey ? new Date(endKey) : undefined;
+  const startDate = startKey ? parseUTCDateKey(startKey) : undefined;
+  const endDate = endKey ? parseUTCDateKey(endKey) : undefined;
 
   const snapshots = await fetchPositionSnapshots({
     positionId,
@@ -47,8 +48,8 @@ export async function getPositionSnapshots(params: GetPositionSnapshotsParams) {
     returned: items.length,
     positionId,
     range: {
-      start: startDate?.toISOString().split("T")[0] ?? null,
-      end: endDate?.toISOString().split("T")[0] ?? null,
+      start: startDate ? formatUTCDateKey(startDate) : null,
+      end: endDate ? formatUTCDateKey(endDate) : null,
     },
     items,
   };

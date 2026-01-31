@@ -1,4 +1,4 @@
-import { parseUtcDateKey } from "@/lib/date/date-utils";
+import { parseUTCDateKey } from "@/lib/date/date-utils";
 
 import type {
   Dividend,
@@ -180,7 +180,7 @@ function resolveLastPaymentMonth(
 
   if (!lastDividendDate) return null;
 
-  const parsed = parseUtcDateKey(lastDividendDate);
+  const parsed = parseUTCDateKey(lastDividendDate);
   if (!Number.isNaN(parsed.getTime())) {
     return parsed.getUTCMonth();
   }

@@ -2,6 +2,11 @@
 
 import { fetchNetWorthChange } from "@/server/analysis/net-worth/net-worth-change";
 import { clampDaysBack } from "@/server/ai/tools/helpers/time-range";
+import {
+  addUTCDays,
+  formatUTCDateKey,
+  startOfUTCDay,
+} from "@/lib/date/date-utils";
 
 interface GetNetWorthChangeParams {
   baseCurrency: string | null;
@@ -16,21 +21,18 @@ export async function getNetWorthChange(params: GetNetWorthChangeParams) {
     targetCurrency: baseCurrency,
     daysBack,
   });
+  const today = startOfUTCDay(new Date());
 
   return {
     baseCurrency,
     daysBack,
     comparison: {
       current: {
-        date: new Date().toISOString().split("T")[0],
+        date: formatUTCDateKey(today),
         value: change.currentValue,
       },
       previous: {
-        date: (() => {
-          const previousDate = new Date();
-          previousDate.setDate(previousDate.getDate() - daysBack);
-          return previousDate.toISOString().split("T")[0];
-        })(),
+        date: formatUTCDateKey(addUTCDays(today, -daysBack)),
         value: change.previousValue,
       },
     },

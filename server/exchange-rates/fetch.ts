@@ -1,8 +1,7 @@
 "use server";
 
-import { format } from "date-fns";
-
 import { createServiceClient } from "@/supabase/service";
+import { formatUTCDateKey } from "@/lib/date/date-utils";
 
 // Exchange rate API
 const FRANKFURTER_API = "https://api.frankfurter.app";
@@ -25,7 +24,7 @@ export async function fetchExchangeRates(
 
   // Handle USD requests immediately (rate = 1)
   const nonUsdRequests = requests.filter((req) => {
-    const cacheKey = `${req.currency}|${format(req.date, "yyyy-MM-dd")}`;
+    const cacheKey = `${req.currency}|${formatUTCDateKey(req.date)}`;
     if (req.currency === "USD") {
       results.set(cacheKey, 1);
       return false;
@@ -40,8 +39,8 @@ export async function fetchExchangeRates(
   // 1. Check what's already cached in database
   const cacheQueries = nonUsdRequests.map(({ currency, date }) => ({
     currency,
-    dateString: format(date, "yyyy-MM-dd"),
-    cacheKey: `${currency}|${format(date, "yyyy-MM-dd")}`,
+    dateString: formatUTCDateKey(date),
+    cacheKey: `${currency}|${formatUTCDateKey(date)}`,
   }));
 
   // Get unique currencies and dates for efficient query
@@ -130,7 +129,7 @@ export async function fetchExchangeRates(
         // Fallback API for missing currencies
         if (missingFromFrankfurter.length > 0) {
           try {
-            const todayString = format(new Date(), "yyyy-MM-dd");
+            const todayString = formatUTCDateKey(new Date());
             let fallbackDateString =
               dateString > todayString ? todayString : dateString;
             let remainingCurrencies = [...missingFromFrankfurter];
@@ -163,7 +162,7 @@ export async function fetchExchangeRates(
 
               const fallbackDate = new Date(`${fallbackDateString}T00:00:00Z`);
               fallbackDate.setUTCDate(fallbackDate.getUTCDate() - 1);
-              fallbackDateString = format(fallbackDate, "yyyy-MM-dd");
+              fallbackDateString = formatUTCDateKey(fallbackDate);
             }
           } catch (fallbackError) {
             console.warn(
@@ -257,6 +256,6 @@ export async function fetchSingleExchangeRate(
   date: Date = new Date(),
 ) {
   const rates = await fetchExchangeRates([{ currency, date }]);
-  const key = `${currency}|${format(date, "yyyy-MM-dd")}`;
+  const key = `${currency}|${formatUTCDateKey(date)}`;
   return rates.get(key) || 1;
 }
