@@ -249,10 +249,12 @@ export function DomainForm() {
           </div>
         )}
 
+        {/* Capital gains tax rate */}
         <CapitalGainsTaxRateField
           control={form.control}
           setValue={form.setValue}
           disabled={isLoading}
+          className="sm:w-1/2"
         />
 
         {/* Description */}

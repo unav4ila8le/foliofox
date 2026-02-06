@@ -52,6 +52,9 @@ export function CapitalGainsTaxRateField<TFieldValues extends FieldValues>({
       control={control}
       name={fieldName}
       render={({ field }) => {
+        const hasInputValue =
+          field.value != null && String(field.value).trim() !== "";
+
         return (
           <FormItem className={className}>
             <div className="flex items-center gap-1">
@@ -79,34 +82,36 @@ export function CapitalGainsTaxRateField<TFieldValues extends FieldValues>({
                   {...field}
                   value={field.value ?? ""}
                 />
-                <InputGroupAddon align="inline-end">
-                  {" "}
-                  <div className="flex items-center gap-1">
-                    {CAPITAL_GAINS_TAX_RATE_PRESETS.map((presetRate) => (
-                      <Button
-                        key={presetRate}
-                        disabled={disabled}
-                        variant="secondary"
-                        size="xs"
-                        className="rounded-full"
-                        onClick={() => {
-                          setValue(
-                            fieldName,
-                            String(
-                              presetRate,
-                            ) as TFieldValues[FieldPath<TFieldValues>],
-                            {
-                              shouldDirty: true,
-                              shouldValidate: true,
-                            },
-                          );
-                        }}
-                      >
-                        {presetRate}
-                      </Button>
-                    ))}
-                  </div>
-                </InputGroupAddon>
+                {!hasInputValue ? (
+                  <InputGroupAddon align="inline-end">
+                    <div className="flex items-center gap-1">
+                      {CAPITAL_GAINS_TAX_RATE_PRESETS.map((presetRate) => (
+                        <Button
+                          key={presetRate}
+                          type="button"
+                          disabled={disabled}
+                          variant="secondary"
+                          size="xs"
+                          className="rounded-full"
+                          onClick={() => {
+                            setValue(
+                              fieldName,
+                              String(
+                                presetRate,
+                              ) as TFieldValues[FieldPath<TFieldValues>],
+                              {
+                                shouldDirty: true,
+                                shouldValidate: true,
+                              },
+                            );
+                          }}
+                        >
+                          {presetRate}
+                        </Button>
+                      ))}
+                    </div>
+                  </InputGroupAddon>
+                ) : null}
                 <InputGroupAddon align="inline-end">%</InputGroupAddon>
               </InputGroup>
             </FormControl>
