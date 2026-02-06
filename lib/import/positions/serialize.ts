@@ -20,6 +20,7 @@ export function positionsToCSV(rows: PositionImportRow[]): string {
     "quantity",
     "unit_value",
     "cost_basis_per_unit",
+    "capital_gains_tax_rate",
     "symbol_lookup",
     "description",
   ];
@@ -37,6 +38,11 @@ export function positionsToCSV(rows: PositionImportRow[]): string {
       p.cost_basis_per_unit != null && Number.isFinite(p.cost_basis_per_unit)
         ? String(p.cost_basis_per_unit)
         : "";
+    const capitalGainsTaxRate =
+      p.capital_gains_tax_rate != null &&
+      Number.isFinite(p.capital_gains_tax_rate)
+        ? String(p.capital_gains_tax_rate)
+        : "";
 
     const cells = [
       p.name,
@@ -45,6 +51,7 @@ export function positionsToCSV(rows: PositionImportRow[]): string {
       qty,
       unit,
       cost,
+      capitalGainsTaxRate,
       p.symbolLookup ?? "",
       p.description ?? "",
     ].map(escapeCSVCell);

@@ -1,5 +1,6 @@
 import { tool } from "ai";
 import { z } from "zod";
+import { NET_WORTH_MODES } from "@/server/analysis/net-worth/types";
 
 // Portfolio tracking
 import { getPortfolioOverview } from "./portfolio-overview";
@@ -24,7 +25,7 @@ import { getFinancialScenarios } from "./financial-scenarios";
 export const aiTools = {
   getPortfolioOverview: tool({
     description:
-      "Get a comprehensive portfolio overview including the user's financial profile, net worth, asset allocation, and all positions at any given date. Returns: summary, financial profile, net worth value, positions count, asset categories with percentages, and detailed position information with values converted to base currency. Use this for both current and historical portfolio snapshots - for deeper analysis also use the other specialized tools.",
+      "Get a comprehensive portfolio overview including the user's financial profile, gross net worth, asset allocation, and all positions at any given date. Optionally include net worth after estimated capital gains taxes. Returns: summary, financial profile, net worth values, positions count, asset categories with percentages, and detailed position information with values converted to base currency.",
     inputSchema: z.object({
       baseCurrency: z
         .string()
@@ -37,6 +38,12 @@ export const aiTools = {
         .nullable()
         .describe(
           "Date for historical analysis in YYYY-MM-DD format (e.g., 2024-07-22). Leave empty to use the current date.",
+        ),
+      includeAfterTax: z
+        .boolean()
+        .nullable()
+        .describe(
+          "Set true to also compute netWorthAfterCapitalGains and estimatedCapitalGainsTax. Default is false.",
         ),
     }),
     execute: async (args) => {
@@ -103,7 +110,7 @@ export const aiTools = {
 
   getNetWorthHistory: tool({
     description:
-      "Get net worth history over time to analyze financial trends. Returns: chronological list of net worth values with dates, total data points, and period information. Shows portfolio growth/decline patterns.",
+      "Get net worth history over time to analyze financial trends. Supports gross mode or after-capital-gains-tax mode. Returns chronological values with dates, total data points, and period information. Shows portfolio growth/decline patterns.",
     inputSchema: z.object({
       baseCurrency: z
         .string()
@@ -117,6 +124,12 @@ export const aiTools = {
         .describe(
           "Number of days to look back (default: 180 days = ~6 months)",
         ),
+      mode: z
+        .enum(NET_WORTH_MODES)
+        .nullable()
+        .describe(
+          "Net worth mode: 'gross' or 'after_capital_gains'. Leave empty for gross.",
+        ),
     }),
     execute: async (args) => {
       return getNetWorthHistory(args);
@@ -125,7 +138,7 @@ export const aiTools = {
 
   getNetWorthChange: tool({
     description:
-      "Get net worth change over a specified period to analyze portfolio performance. Returns: current vs previous values, absolute change amount, percentage change, and direction (positive/negative). Shows portfolio growth rate and momentum.",
+      "Get net worth change over a specified period to analyze portfolio performance. Supports gross mode or after-capital-gains-tax mode. Returns current vs previous values, absolute change amount, percentage change, and direction. Shows portfolio growth rate and momentum.",
     inputSchema: z.object({
       baseCurrency: z
         .string()
@@ -138,6 +151,12 @@ export const aiTools = {
         .nullable()
         .describe(
           "Number of days to compare back (default: 180 days ≈ 6 months)",
+        ),
+      mode: z
+        .enum(NET_WORTH_MODES)
+        .nullable()
+        .describe(
+          "Net worth mode: 'gross' or 'after_capital_gains'. Leave empty for gross.",
         ),
     }),
     execute: async (args) => {

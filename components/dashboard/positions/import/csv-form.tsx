@@ -148,7 +148,7 @@ export function CSVImportForm() {
               {categories.map((category) => category.id).join(", ")}
             </TooltipContent>
           </Tooltip>
-          , cost_basis_per_unit,{" "}
+          , cost_basis_per_unit, capital_gains_tax_rate,{" "}
           <Tooltip>
             <TooltipTrigger asChild>
               <span className="text-foreground inline-block cursor-help underline-offset-4 hover:underline">

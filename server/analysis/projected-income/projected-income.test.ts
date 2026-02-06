@@ -85,6 +85,7 @@ const createPosition = (
   total_value: 1000,
   has_market_data: true,
   ...overrides,
+  capital_gains_tax_rate: overrides.capital_gains_tax_rate ?? null,
 });
 
 describe("projected income", () => {

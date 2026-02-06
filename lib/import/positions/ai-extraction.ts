@@ -23,6 +23,7 @@ export type ExtractionResult = {
     quantity: number;
     unit_value?: number | null;
     cost_basis_per_unit?: number | null;
+    capital_gains_tax_rate?: number | null;
     symbolLookup?: string | null;
     description?: string | null;
   }>;
@@ -45,6 +46,7 @@ async function createPositionRowSchema() {
     quantity: z.number().gte(0),
     unit_value: z.number().gte(0).nullable().optional(),
     cost_basis_per_unit: z.number().gte(0).nullable().optional(),
+    capital_gains_tax_rate: z.number().gte(0).lte(100).nullable().optional(),
     symbolLookup: z.string().nullable().optional(),
     description: z.string().max(256).nullable().optional(),
   });
@@ -83,6 +85,7 @@ Return data that strictly matches the provided JSON schema. Do not invent values
 - For listed securities with a recognizable symbol (Yahoo Finance tickers, e.g., AAPL, VT, VWCE.DE), set symbolLookup and you MAY set unit_value to null (it will be fetched).
 - If a row looks like a tradable ticker (uppercase letters/numbers 1–8 chars, e.g., PLTR, NVDA, QQQ), you MUST set symbolLookup to that ticker. If uncertain, set your best guess and add a warning like "symbol uncertain". Do not leave symbolLookup empty for listed securities.
 - cost_basis_per_unit: if an explicit "avg cost"/"average price"/"cost basis"/etc. column exists, set it; otherwise set null. It must be in the same currency as "currency".
+- capital_gains_tax_rate: if a tax rate column or tax information is present, extract it as either decimal (0..1) or percentage (0..100). If missing, set null.
  - If multiple rows refer to the same symbol/name, prefer a single merged position summing quantities. If cost basis differs across rows, set cost_basis_per_unit to null and add a warning.
 - Use full company names for the "name" field (e.g., "Ford Motor Company", "Toyota Motor Corporation"), not ticker symbols. Symbols go in "symbolLookup".
 
@@ -118,6 +121,7 @@ export async function postProcessExtractedPositions(
     quantity: p.quantity,
     unit_value: p.unit_value ?? null,
     cost_basis_per_unit: p.cost_basis_per_unit ?? null,
+    capital_gains_tax_rate: p.capital_gains_tax_rate ?? null,
     symbolLookup: p.symbolLookup ?? null,
     description: p.description ?? null,
   }));

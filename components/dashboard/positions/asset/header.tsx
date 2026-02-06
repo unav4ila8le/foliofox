@@ -10,6 +10,7 @@ import { StaleBadge } from "@/components/dashboard/positions/asset/stale-badge";
 import { EditAssetButton } from "./edit-asset-button";
 import { AssetMoreActionsButton } from "./asset-more-actions-button";
 
+import { calculateCapitalGainsTaxAmount } from "@/server/analysis/net-worth/capital-gains-tax";
 import {
   formatCurrency,
   formatNumber,
@@ -34,6 +35,16 @@ export async function AssetHeader({
   positionWithProfitLoss: PositionWithProfitLoss;
 }) {
   const locale = await getRequestLocale();
+  const estimatedCapitalGainsTax = calculateCapitalGainsTaxAmount({
+    positionType: position.type,
+    capitalGainsTaxRate: position.capital_gains_tax_rate,
+    unrealizedGain: positionWithProfitLoss.profit_loss,
+  });
+  const positionValueAfterTax = Math.max(
+    0,
+    position.total_value - estimatedCapitalGainsTax,
+  );
+
   return (
     <div className="space-y-2">
       {/* Asset name and type */}
@@ -189,6 +200,28 @@ export async function AssetHeader({
           </>
         )}
       </div>
+
+      {/* After-tax information */}
+      {position.capital_gains_tax_rate != null ? (
+        <div className="bg-card text-muted-foreground flex flex-wrap items-center gap-x-6 gap-y-1 rounded-lg border px-4 py-2 text-xs">
+          <p>
+            Est. Capital Gains Tax
+            <span className="text-foreground ml-1 font-medium">
+              {formatCurrency(estimatedCapitalGainsTax, position.currency, {
+                locale,
+              })}
+            </span>
+          </p>
+          <p>
+            Value After Tax
+            <span className="text-foreground ml-1 font-medium">
+              {formatCurrency(positionValueAfterTax, position.currency, {
+                locale,
+              })}
+            </span>
+          </p>
+        </div>
+      ) : null}
     </div>
   );
 }

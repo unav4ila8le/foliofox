@@ -30,10 +30,15 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { PositionCategorySelector } from "@/components/dashboard/position-category-selector";
+import { CapitalGainsTaxRateField } from "@/components/dashboard/positions/shared/capital-gains-tax-rate-field";
 import { CurrencySelector } from "@/components/dashboard/currency-selector";
 
 import { useNewAssetDialog } from "../index";
 
+import {
+  capitalGainsTaxRatePercentSchema,
+  parseCapitalGainsTaxRatePercent,
+} from "@/lib/capital-gains-tax-rate";
 import { requiredNumberWithConstraints } from "@/lib/zod-helpers";
 
 import { createPosition } from "@/server/positions/create";
@@ -63,6 +68,7 @@ const formSchema = z.object({
     .refine((v) => v === undefined || v.trim() === "" || Number(v) > 0, {
       error: "Cost basis per unit must be greater than 0",
     }),
+  capital_gains_tax_rate: capitalGainsTaxRatePercentSchema,
   description: z
     .string()
     .max(256, {
@@ -89,6 +95,7 @@ export function ManualEntryForm() {
       unit_value: "",
       quantity: "",
       cost_basis_per_unit: "",
+      capital_gains_tax_rate: "",
       description: "",
     },
   });
@@ -112,6 +119,16 @@ export function ManualEntryForm() {
         formData.append(
           "cost_basis_per_unit",
           values.cost_basis_per_unit.toString(),
+        );
+      }
+
+      const capitalGainsTaxRate = parseCapitalGainsTaxRatePercent(
+        values.capital_gains_tax_rate,
+      );
+      if (capitalGainsTaxRate != null) {
+        formData.append(
+          "capital_gains_tax_rate",
+          capitalGainsTaxRate.toString(),
         );
       }
 
@@ -277,6 +294,12 @@ export function ManualEntryForm() {
               <FormMessage />
             </FormItem>
           )}
+        />
+
+        <CapitalGainsTaxRateField
+          control={form.control}
+          setValue={form.setValue}
+          disabled={isLoading}
         />
 
         {/* Description */}

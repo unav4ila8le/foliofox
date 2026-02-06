@@ -189,6 +189,14 @@ export async function parsePositionsCSV(
         : "";
       const parsedCostBasis = parseNumberStrict(costBasisRaw);
 
+      // Optional capital gains tax rate (accepts decimal or percentage input)
+      const capitalGainsTaxRateRaw = columnMap.has("capital_gains_tax_rate")
+        ? values[columnMap.get("capital_gains_tax_rate")!]
+        : "";
+      const parsedCapitalGainsTaxRate = (capitalGainsTaxRateRaw ?? "").trim()
+        ? parseNumberStrict(capitalGainsTaxRateRaw)
+        : null;
+
       // Build position
       const position: PositionImportRow = {
         name: nameValue,
@@ -197,6 +205,7 @@ export async function parsePositionsCSV(
         quantity: parseNumberStrict(values[columnMap.get("quantity")!]),
         unit_value: isNaN(parsedUnitValue) ? null : parsedUnitValue,
         cost_basis_per_unit: isNaN(parsedCostBasis) ? null : parsedCostBasis,
+        capital_gains_tax_rate: parsedCapitalGainsTaxRate,
         symbolLookup: symbolRaw || null,
         description: descriptionRaw || null,
       };

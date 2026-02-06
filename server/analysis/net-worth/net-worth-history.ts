@@ -7,12 +7,14 @@ import {
   fetchMarketDataRange,
   toMarketDataPositions,
 } from "@/server/market-data/fetch";
+import { calculateCapitalGainsTaxAmount } from "@/server/analysis/net-worth/capital-gains-tax";
 import { convertCurrency } from "@/lib/currency-conversion";
 import {
   addUTCDays,
   formatUTCDateKey,
   startOfUTCDay,
 } from "@/lib/date/date-utils";
+import type { NetWorthMode } from "@/server/analysis/net-worth/types";
 
 export interface NetWorthHistoryData {
   date: Date;
@@ -22,9 +24,11 @@ export interface NetWorthHistoryData {
 export async function fetchNetWorthHistory({
   targetCurrency,
   daysBack = 180,
+  mode = "gross",
 }: {
   targetCurrency?: string;
   daysBack?: number;
+  mode?: NetWorthMode;
 }): Promise<NetWorthHistoryData[]> {
   if (!targetCurrency) {
     const { profile } = await fetchProfile();
@@ -49,7 +53,9 @@ export async function fetchNetWorthHistory({
   // 1) Fetch positions once (include archived by not filtering archived_at)
   const { data: positions, error: positionsError } = await supabase
     .from("positions")
-    .select("id, currency, symbol_id, domain_id, user_id")
+    .select(
+      "id, currency, symbol_id, domain_id, user_id, type, capital_gains_tax_rate",
+    )
     .eq("user_id", user.id);
 
   if (positionsError) throw new Error(positionsError.message);
@@ -63,7 +69,9 @@ export async function fetchNetWorthHistory({
   // 2) Fetch all snapshots for the full range once
   const { data: snapshots, error: snapshotsError } = await supabase
     .from("position_snapshots")
-    .select("position_id, date, quantity, unit_value, created_at")
+    .select(
+      "position_id, date, quantity, unit_value, created_at, cost_basis_per_unit",
+    )
     .eq("user_id", user.id)
     .in("position_id", positionIds)
     .lte("date", endDateKey)
@@ -81,11 +89,21 @@ export async function fetchNetWorthHistory({
 
   const snapshotsByPosition = new Map<
     string,
-    { date: string; quantity: number; unit_value: number }[]
+    {
+      date: string;
+      quantity: number;
+      unit_value: number;
+      cost_basis_per_unit: number | null;
+    }[]
   >();
   snapshots.forEach((s) => {
     const arr = snapshotsByPosition.get(s.position_id) || [];
-    arr.push({ date: s.date, quantity: s.quantity, unit_value: s.unit_value });
+    arr.push({
+      date: s.date,
+      quantity: s.quantity,
+      unit_value: s.unit_value,
+      cost_basis_per_unit: s.cost_basis_per_unit ?? null,
+    });
     snapshotsByPosition.set(s.position_id, arr);
   });
 
@@ -212,25 +230,38 @@ export async function fetchNetWorthHistory({
 
   // 5) Compute daily values using two-pointer per position to find latest snapshot <= date
   const indexByPosition = new Map<string, number>();
+  // Track the latest explicit basis encountered up to each date.
+  const basisByPosition = new Map<string, number | null>();
   const history: NetWorthHistoryData[] = [];
 
   for (let dateIdx = 0; dateIdx < processingDates.length; dateIdx += 1) {
     const date = processingDates[dateIdx];
     const dateKey = processingDateKeys[dateIdx];
     let total = 0;
+    let taxTotal = 0;
 
     for (const position of activePositions) {
       const snaps = snapshotsByPosition.get(position.id);
       if (!snaps?.length) continue;
 
       let idx = indexByPosition.get(position.id) ?? 0;
+      let lastExplicitBasis = basisByPosition.get(position.id) ?? null;
       while (idx + 1 < snaps.length && snaps[idx + 1].date <= dateKey) {
         idx += 1;
+        const nextSnapshot = snaps[idx];
+        // Persist basis across price-only snapshots with null cost basis.
+        if (nextSnapshot?.cost_basis_per_unit != null) {
+          lastExplicitBasis = nextSnapshot.cost_basis_per_unit;
+        }
       }
       indexByPosition.set(position.id, idx);
 
       const snapshot = snaps[idx];
       if (!snapshot || snapshot.date > dateKey) continue;
+      if (snapshot.cost_basis_per_unit != null) {
+        lastExplicitBasis = snapshot.cost_basis_per_unit;
+      }
+      basisByPosition.set(position.id, lastExplicitBasis);
 
       const marketKey = `${position.id}|${dateKey}`;
       const marketUnit = marketPricesByPositionDate.get(marketKey);
@@ -246,9 +277,32 @@ export async function fetchNetWorthHistory({
         fxMap,
         dateKey,
       );
+
+      if (mode === "after_capital_gains") {
+        // Fallback to snapshot unit value when basis was never explicitly set.
+        const basisPerUnit = lastExplicitBasis ?? snapshot.unit_value ?? 0;
+        const totalCostBasis = basisPerUnit * quantity;
+        const localTax = calculateCapitalGainsTaxAmount({
+          positionType: position.type,
+          capitalGainsTaxRate: position.capital_gains_tax_rate,
+          unrealizedGain: localValue - totalCostBasis,
+        });
+        if (localTax <= 0) continue;
+
+        taxTotal += convertCurrency(
+          localTax,
+          position.currency,
+          targetCurrency!,
+          fxMap,
+          dateKey,
+        );
+      }
     }
 
-    history.push({ date, value: total });
+    history.push({
+      date,
+      value: mode === "after_capital_gains" ? total - taxTotal : total,
+    });
   }
 
   if (paddingCount > 0) {

@@ -53,7 +53,7 @@ export function ImportReviewDialog() {
     <Dialog open={reviewOpen} onOpenChange={setReviewOpen}>
       <DialogContent
         onInteractOutside={(e) => e.preventDefault()}
-        className="h-100dvh flex max-w-7xl! flex-col rounded-none border-0 md:h-[80dvh] md:rounded-lg md:border"
+        className="h-100dvh flex max-w-384! flex-col rounded-none border-0 md:h-[80dvh] md:rounded-lg md:border"
       >
         <DialogHeader className="flex-none">
           <DialogTitle>Review Import</DialogTitle>

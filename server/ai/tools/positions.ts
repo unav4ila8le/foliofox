@@ -67,6 +67,7 @@ export async function getPositions(params: GetPositionsParams) {
     category: p.category_name as string,
     symbol: p.symbol_id ? (symbolIdToTicker.get(p.symbol_id) ?? null) : null,
     currency: p.currency as string,
+    capital_gains_tax_rate: p.capital_gains_tax_rate as number | null,
     description: p.description as string | null,
     is_archived: Boolean(p.is_archived),
     archived_at: p.archived_at as string | null,

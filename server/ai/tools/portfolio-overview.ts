@@ -6,6 +6,7 @@ import { fetchPositions } from "@/server/positions/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 import { resolveSymbolsBatch } from "@/server/symbols/resolve";
 import { calculateAssetAllocation } from "@/server/analysis/asset-allocation";
+import { calculateNetWorth } from "@/server/analysis/net-worth/net-worth";
 import { convertCurrency } from "@/lib/currency-conversion";
 import { parseUTCDateKey, startOfUTCDay } from "@/lib/date/date-utils";
 
@@ -18,6 +19,7 @@ import { parseUTCDateKey, startOfUTCDay } from "@/lib/date/date-utils";
 export async function getPortfolioOverview(params: {
   baseCurrency: string | null;
   date: string | null;
+  includeAfterTax: boolean | null;
 }) {
   try {
     // Get user's profile to use their preferred currency
@@ -33,6 +35,7 @@ export async function getPortfolioOverview(params: {
 
     // Fetch user's financial profile
     const financialProfile = await fetchFinancialProfile();
+    const includeAfterTax = params.includeAfterTax === true;
 
     // Fetch positions valued as-of the target date
     const positions = await fetchPositions({
@@ -45,6 +48,10 @@ export async function getPortfolioOverview(params: {
       return {
         summary: "No positions found in portfolio",
         netWorth: 0,
+        netWorthGross: 0,
+        netWorthAfterCapitalGains: includeAfterTax ? 0 : null,
+        estimatedCapitalGainsTax: includeAfterTax ? 0 : null,
+        includeAfterTax,
         currency: baseCurrency,
         positionsCount: 0,
         categories: [],
@@ -118,6 +125,7 @@ export async function getPortfolioOverview(params: {
             : null,
           category: position.category_name!,
           categoryId: position.category_id,
+          capital_gains_tax_rate: position.capital_gains_tax_rate ?? null,
           quantity,
           unitValue: unitValueBase,
           value: totalValueBase,
@@ -137,6 +145,7 @@ export async function getPortfolioOverview(params: {
       symbol: string | null;
       category: string;
       categoryId: string;
+      capital_gains_tax_rate: number | null;
       quantity: number;
       unitValue: number;
       value: number;
@@ -147,6 +156,22 @@ export async function getPortfolioOverview(params: {
 
     // Compute net worth from computed positions (avoid duplicate heavy calls)
     const netWorth = positionsBase.reduce((sum, h) => sum + h.value, 0);
+    const netWorthGross = netWorth;
+
+    let netWorthAfterCapitalGains: number | null = null;
+    let estimatedCapitalGainsTax: number | null = null;
+    if (includeAfterTax) {
+      netWorthAfterCapitalGains = await calculateNetWorth(
+        baseCurrency,
+        asOfDate,
+        undefined,
+        "after_capital_gains",
+      );
+      estimatedCapitalGainsTax = Math.max(
+        0,
+        netWorthGross - netWorthAfterCapitalGains,
+      );
+    }
 
     // Compute allocation via centralized analysis util to mirror previous logic
     const allocation = await calculateAssetAllocation(baseCurrency, asOfDate);
@@ -162,7 +187,11 @@ export async function getPortfolioOverview(params: {
     return {
       summary: `Portfolio contains ${positionsBase.length} positions across ${categories.length} categories`,
       financialProfile,
-      netWorth,
+      netWorth: netWorthGross,
+      netWorthGross,
+      netWorthAfterCapitalGains,
+      estimatedCapitalGainsTax,
+      includeAfterTax,
       currency: baseCurrency,
       positionsCount: positionsBase.length,
       categoriesCount: categories.length,
