@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   differenceInCalendarDays,
   startOfYear,
@@ -55,17 +55,22 @@ import {
 import { formatDate, formatMonthDay } from "@/lib/date/date-format";
 import { useLocale } from "@/hooks/use-locale";
 import { cn } from "@/lib/utils";
+import type { NetWorthMode } from "@/server/analysis/net-worth/types";
 
 export function NetWorthAreaChart({
   currency,
   netWorth,
   history: initialHistory,
   change: initialChange,
+  netWorthMode,
+  estimatedCapitalGainsTax,
 }: {
   currency: string;
   netWorth: number;
   history: NetWorthHistoryData[];
   change: NetWorthChangeData;
+  netWorthMode: NetWorthMode;
+  estimatedCapitalGainsTax: number | null;
 }) {
   const [customTimeRange, setCustomTimeRange] = useState<{
     history: NetWorthHistoryData[];
@@ -79,6 +84,13 @@ export function NetWorthAreaChart({
   // Display custom time range data or fall back to default initial data (3 months)
   const history = customTimeRange?.history ?? initialHistory;
   const change = customTimeRange?.change ?? initialChange;
+  const shouldShowTaxLine = netWorthMode === "after_capital_gains";
+  const taxValue = estimatedCapitalGainsTax ?? 0;
+
+  // Reset custom range payload on mode changes to avoid mixed gross/net data.
+  useEffect(() => {
+    setCustomTimeRange(null);
+  }, [netWorthMode]);
 
   const handleRangeChange = async (value: string) => {
     setIsLoading(true);
@@ -123,10 +135,12 @@ export function NetWorthAreaChart({
         fetchNetWorthHistory({
           targetCurrency: currency,
           daysBack,
+          mode: netWorthMode,
         }),
         fetchNetWorthChange({
           targetCurrency: currency,
           daysBack,
+          mode: netWorthMode,
         }),
       ]);
 
@@ -176,7 +190,11 @@ export function NetWorthAreaChart({
           <CardHeader className="flex-none">
             <div className="flex justify-between gap-4">
               <div>
-                <CardDescription>Net Worth</CardDescription>
+                <CardDescription>
+                  {netWorthMode === "after_capital_gains"
+                    ? "Net Worth (After Tax)"
+                    : "Net Worth"}
+                </CardDescription>
                 <div className="flex flex-col md:flex-row md:items-baseline-last md:gap-3">
                   <div className="flex items-center gap-1">
                     <h2 className="text-xl font-semibold">
@@ -216,6 +234,14 @@ export function NetWorthAreaChart({
                     </span>
                   </div>
                 </div>
+                {shouldShowTaxLine ? (
+                  <p className="text-muted-foreground mt-0.5 text-xs">
+                    Est. Capital Gains Tax:{" "}
+                    {isPrivacyMode
+                      ? "* * * * * *"
+                      : `${formatCurrency(taxValue, currency, { locale })}`}
+                  </p>
+                ) : null}
               </div>
               <Select
                 defaultValue="3m"

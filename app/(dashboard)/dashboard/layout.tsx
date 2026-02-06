@@ -7,6 +7,7 @@ import { RightSidebar } from "@/components/dashboard/layout/right-sidebar";
 import { Header } from "@/components/dashboard/layout/header";
 
 import { PrivacyModeProvider } from "@/components/dashboard/privacy-mode-provider";
+import { NetWorthModeProvider } from "@/components/dashboard/net-worth-mode-provider";
 import { ImportPositionsDialogProvider } from "@/components/dashboard/positions/import";
 import { ImportPortfolioRecordsDialogProvider } from "@/components/dashboard/portfolio-records/import";
 import { NewAssetDialogProvider } from "@/components/dashboard/new-asset";
@@ -17,6 +18,10 @@ import { fetchProfile } from "@/server/profile/actions";
 import { fetchFinancialProfile } from "@/server/financial-profiles/actions";
 import { calculateNetWorth } from "@/server/analysis/net-worth/net-worth";
 import { fetchStalePositions } from "@/server/positions/stale";
+import {
+  NET_WORTH_MODE_COOKIE_NAME,
+  parseNetWorthMode,
+} from "@/server/analysis/net-worth/types";
 
 export default async function Layout({
   children,
@@ -37,6 +42,9 @@ export default async function Layout({
   const rightSidebarCookie =
     cookieStore.get("sidebar_right_state")?.value ?? "true";
   const defaultOpenRight = rightSidebarCookie !== "false";
+  const netWorthMode = parseNetWorthMode(
+    cookieStore.get(NET_WORTH_MODE_COOKIE_NAME)?.value,
+  );
 
   const { profile, email } = await fetchProfile();
   const [financialProfile, netWorth, stalePositions] = await Promise.all([
@@ -64,29 +72,31 @@ export default async function Layout({
         minRightWidth="16rem"
         maxRightWidth="24vw"
       >
-        <PrivacyModeProvider>
-          <ImportPositionsDialogProvider>
-            <ImportPortfolioRecordsDialogProvider>
-              <NewAssetDialogProvider>
-                <NewPortfolioRecordDialogProvider>
-                  {/* Left sidebar */}
-                  <LeftSidebar />
+        <NetWorthModeProvider defaultMode={netWorthMode}>
+          <PrivacyModeProvider>
+            <ImportPositionsDialogProvider>
+              <ImportPortfolioRecordsDialogProvider>
+                <NewAssetDialogProvider>
+                  <NewPortfolioRecordDialogProvider>
+                    {/* Left sidebar */}
+                    <LeftSidebar />
 
-                  {/* Main content */}
-                  <SidebarInset className="min-w-0">
-                    <Header />
-                    <div className="mx-auto w-full max-w-7xl p-4 pt-2">
-                      {children}
-                    </div>
-                  </SidebarInset>
+                    {/* Main content */}
+                    <SidebarInset className="min-w-0">
+                      <Header />
+                      <div className="mx-auto w-full max-w-7xl p-4 pt-2">
+                        {children}
+                      </div>
+                    </SidebarInset>
 
-                  {/* Right sidebar */}
-                  <RightSidebar />
-                </NewPortfolioRecordDialogProvider>
-              </NewAssetDialogProvider>
-            </ImportPortfolioRecordsDialogProvider>
-          </ImportPositionsDialogProvider>
-        </PrivacyModeProvider>
+                    {/* Right sidebar */}
+                    <RightSidebar />
+                  </NewPortfolioRecordDialogProvider>
+                </NewAssetDialogProvider>
+              </ImportPortfolioRecordsDialogProvider>
+            </ImportPositionsDialogProvider>
+          </PrivacyModeProvider>
+        </NetWorthModeProvider>
       </SidebarProvider>
     </DashboardDataProvider>
   );

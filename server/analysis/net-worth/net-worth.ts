@@ -24,11 +24,8 @@ export const calculateNetWorth = cache(
     targetCurrency: string,
     date?: Date,
     context?: PositionsQueryContext,
-    options?: {
-      mode?: NetWorthMode;
-    },
+    mode: NetWorthMode = "gross",
   ) => {
-    const mode = options?.mode ?? "gross";
     const asOfDate = date ?? startOfUTCDay(new Date());
 
     // 1. Fetch positions valued as-of the date.

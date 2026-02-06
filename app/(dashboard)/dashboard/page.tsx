@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { cacheLife } from "next/cache";
+import { cookies } from "next/headers";
 import { differenceInCalendarDays, subMonths } from "date-fns";
 
 import { Skeleton } from "@/components/ui/custom/skeleton";
@@ -10,6 +11,7 @@ import { NetWorthAreaChart } from "@/components/dashboard/charts/net-worth-area"
 import { NewsWidget } from "@/components/dashboard/news/widget";
 import { ProjectedIncomeWidget } from "@/components/dashboard/charts/projected-income/widget";
 import { PortfolioRecordsWidget } from "@/components/dashboard/portfolio-records/widget";
+import { NetWorthModeToggle } from "@/components/dashboard/layout/header/net-worth-mode-toggle";
 
 import { getCurrentUser } from "@/server/auth/actions";
 import { fetchProfile } from "@/server/profile/actions";
@@ -24,6 +26,16 @@ import {
   calculateProjectedIncomeByAsset,
 } from "@/server/analysis/projected-income/projected-income";
 import { fetchPortfolioRecords } from "@/server/portfolio-records/fetch";
+import {
+  NET_WORTH_MODE_COOKIE_NAME,
+  parseNetWorthMode,
+  type NetWorthMode,
+} from "@/server/analysis/net-worth/types";
+
+async function getNetWorthModeFromCookie(): Promise<NetWorthMode> {
+  const cookieStore = await cookies();
+  return parseNetWorthMode(cookieStore.get(NET_WORTH_MODE_COOKIE_NAME)?.value);
+}
 
 // Separate components for data fetching with suspense
 async function GreetingsWrapper() {
@@ -37,22 +49,44 @@ async function GreetingsWrapper() {
 async function NetWorthChartWrapper() {
   "use cache: private";
   const { profile } = await fetchProfile();
+  const netWorthMode = await getNetWorthModeFromCookie();
 
   const today = new Date();
   const defaultDaysBack =
     differenceInCalendarDays(today, subMonths(today, 3)) + 1;
   // Fetch both history and change for default period (3 calendar months)
-  const [netWorth, netWorthHistory, netWorthChange] = await Promise.all([
-    calculateNetWorth(profile.display_currency),
-    fetchNetWorthHistory({
-      targetCurrency: profile.display_currency,
-      daysBack: defaultDaysBack,
-    }),
-    fetchNetWorthChange({
-      targetCurrency: profile.display_currency,
-      daysBack: defaultDaysBack,
-    }),
-  ]);
+  const [netWorth, netWorthHistory, netWorthChange, grossNetWorth] =
+    await Promise.all([
+      calculateNetWorth(
+        profile.display_currency,
+        undefined,
+        undefined,
+        netWorthMode,
+      ),
+      fetchNetWorthHistory({
+        targetCurrency: profile.display_currency,
+        daysBack: defaultDaysBack,
+        mode: netWorthMode,
+      }),
+      fetchNetWorthChange({
+        targetCurrency: profile.display_currency,
+        daysBack: defaultDaysBack,
+        mode: netWorthMode,
+      }),
+      netWorthMode === "after_capital_gains"
+        ? calculateNetWorth(
+            profile.display_currency,
+            undefined,
+            undefined,
+            "gross",
+          )
+        : Promise.resolve(null),
+    ]);
+
+  const estimatedCapitalGainsTax =
+    netWorthMode === "after_capital_gains" && grossNetWorth != null
+      ? Math.max(0, grossNetWorth - netWorth)
+      : null;
 
   return (
     <NetWorthAreaChart
@@ -60,6 +94,8 @@ async function NetWorthChartWrapper() {
       netWorth={netWorth}
       history={netWorthHistory}
       change={netWorthChange}
+      netWorthMode={netWorthMode}
+      estimatedCapitalGainsTax={estimatedCapitalGainsTax}
     />
   );
 }
@@ -69,7 +105,7 @@ async function AssetAllocationChartWrapper() {
   "use cache: private";
   const { profile } = await fetchProfile();
   const [netWorth, assetAllocation] = await Promise.all([
-    calculateNetWorth(profile.display_currency),
+    calculateNetWorth(profile.display_currency, undefined, undefined, "gross"),
     calculateAssetAllocation(profile.display_currency),
   ]);
 
@@ -148,7 +184,10 @@ export default function DashboardPage() {
           </Suspense>
           <p className="text-muted-foreground">Here&apos;s your summary</p>
         </div>
-        <MarketDataDisclaimer />
+        <div className="flex items-center justify-between gap-4 lg:justify-end">
+          <MarketDataDisclaimer />
+          <NetWorthModeToggle />
+        </div>
       </div>
       <div className="grid grid-cols-6 gap-4">
         <div className="col-span-6 xl:col-span-4">

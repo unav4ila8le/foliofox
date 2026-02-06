@@ -37,8 +37,8 @@ export async function fetchNetWorthChange({
 
   // Calculate net worth at both dates in parallel
   const [currentValue, previousValue] = await Promise.all([
-    calculateNetWorth(targetCurrency, undefined, undefined, { mode }), // Current (defaults to today)
-    calculateNetWorth(targetCurrency, comparisonDate, undefined, { mode }), // Historical
+    calculateNetWorth(targetCurrency, undefined, undefined, mode), // Current (defaults to today)
+    calculateNetWorth(targetCurrency, comparisonDate, undefined, mode), // Historical
   ]);
 
   // Calculate changes
