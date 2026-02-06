@@ -28,6 +28,7 @@ function createPosition(
     updated_at: "2024-01-01",
     user_id: "user-1",
     category_id: "cat-1",
+    capital_gains_tax_rate: null,
     is_archived: false,
     current_unit_value: currentQuantity > 0 ? totalValue / currentQuantity : 0,
     has_market_data: true,

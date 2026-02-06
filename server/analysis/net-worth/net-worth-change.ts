@@ -3,6 +3,7 @@
 import { fetchProfile } from "@/server/profile/actions";
 import { calculateNetWorth } from "@/server/analysis/net-worth/net-worth";
 import { addUTCDays, startOfUTCDay } from "@/lib/date/date-utils";
+import type { NetWorthMode } from "@/server/analysis/net-worth/types";
 
 export interface NetWorthChangeData {
   currentValue: number;
@@ -14,12 +15,14 @@ export interface NetWorthChangeData {
 interface FetchNetWorthChangeParams {
   targetCurrency?: string;
   daysBack?: number;
+  mode?: NetWorthMode;
 }
 
 // Fetch net worth change between current date and a past comparison window
 export async function fetchNetWorthChange({
   targetCurrency,
   daysBack = 180,
+  mode = "gross",
 }: FetchNetWorthChangeParams) {
   // Get user's preferred currency if not specified
   if (!targetCurrency) {
@@ -34,8 +37,8 @@ export async function fetchNetWorthChange({
 
   // Calculate net worth at both dates in parallel
   const [currentValue, previousValue] = await Promise.all([
-    calculateNetWorth(targetCurrency), // Current (defaults to today)
-    calculateNetWorth(targetCurrency, comparisonDate), // Historical
+    calculateNetWorth(targetCurrency, undefined, undefined, { mode }), // Current (defaults to today)
+    calculateNetWorth(targetCurrency, comparisonDate, undefined, { mode }), // Historical
   ]);
 
   // Calculate changes

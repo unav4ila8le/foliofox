@@ -9,8 +9,6 @@ import { convertCurrency } from "@/lib/currency-conversion";
 import { startOfUTCDay } from "@/lib/date/date-utils";
 import type { PositionsQueryContext } from "@/server/positions/fetch";
 
-const getDefaultAsOfDate = cache(() => startOfUTCDay(new Date()));
-
 /**
  * Calculate asset allocation by category at a specific date.
  * Uses bulk market data fetching for optimal performance.
@@ -21,7 +19,7 @@ export const calculateAssetAllocation = cache(
     date?: Date,
     context?: PositionsQueryContext,
   ) => {
-    const asOfDate = date ?? getDefaultAsOfDate();
+    const asOfDate = date ?? startOfUTCDay(new Date());
     // 1. Fetch positions valued as-of date (no snapshots histories needed)
     const positions = await fetchPositions(
       {

@@ -37,6 +37,8 @@
 - Prefer explicit named boolean flags (e.g., `includeSnapshots: true`) over positional booleans
 - Centralize runtime enums in `types/enums.ts` (DB-backed constants), and import where needed
 - Prefer explicit and self-descriptive code; avoid abbreviations or initials
+- Add concise comments for non-obvious business logic and multi-step calculations; avoid comments that only restate code.
+- When a function already uses numbered flow comments (`1.`, `2.`, `3.`), preserve that structure when editing it.
 
 ## File Structure
 

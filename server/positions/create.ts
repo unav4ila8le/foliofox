@@ -67,6 +67,7 @@ export async function createPosition(formData: FormData) {
   const quantityRaw = formData.get("quantity");
   const unitValueRaw = formData.get("unit_value");
   const costBasisRaw = formData.get("cost_basis_per_unit");
+  const capitalGainsTaxRaw = formData.get("capital_gains_tax_rate");
   const dateRaw = (formData.get("date") as string) || null;
 
   const quantity = quantityRaw != null ? Number(quantityRaw) : 0;
@@ -77,6 +78,10 @@ export async function createPosition(formData: FormData) {
   const costBasisInput =
     costBasisRaw != null && String(costBasisRaw).trim() !== ""
       ? Number(costBasisRaw)
+      : null;
+  const capitalGainsTaxRate =
+    capitalGainsTaxRaw != null && String(capitalGainsTaxRaw).trim() !== ""
+      ? Number(capitalGainsTaxRaw)
       : null;
   const snapshotDate = dateRaw ? new Date(dateRaw) : new Date();
 
@@ -153,6 +158,7 @@ export async function createPosition(formData: FormData) {
       description,
       symbol_id: symbolUuid,
       domain_id: domainId,
+      capital_gains_tax_rate: capitalGainsTaxRate,
     })
     .select("id")
     .single();
