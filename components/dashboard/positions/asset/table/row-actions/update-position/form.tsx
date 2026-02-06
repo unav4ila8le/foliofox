@@ -18,9 +18,15 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { PositionCategorySelector } from "@/components/dashboard/position-category-selector";
+import { CapitalGainsTaxRateField } from "@/components/dashboard/positions/shared/capital-gains-tax-rate-field";
 
 import { updatePosition } from "@/server/positions/update";
 
+import {
+  capitalGainsTaxRatePercentSchema,
+  formatCapitalGainsTaxRatePercent,
+  parseCapitalGainsTaxRatePercent,
+} from "@/lib/capital-gains-tax-rate";
 import type { Position } from "@/types/global.types";
 
 interface UpdatePositionFormProps {
@@ -34,6 +40,7 @@ const formSchema = z.object({
     .min(3, { error: "Name must be at least 3 characters." })
     .max(64, { error: "Name must not exceed 64 characters." }),
   category_id: z.string().min(1, { error: "Category is required." }),
+  capital_gains_tax_rate: capitalGainsTaxRatePercentSchema,
   description: z
     .string()
     .max(256, {
@@ -53,6 +60,9 @@ export function UpdatePositionForm({
     defaultValues: {
       name: position.name,
       category_id: position.category_id,
+      capital_gains_tax_rate: formatCapitalGainsTaxRatePercent(
+        position.capital_gains_tax_rate,
+      ),
       description: position.description ?? undefined,
     },
   });
@@ -68,6 +78,13 @@ export function UpdatePositionForm({
       formData.append("name", values.name);
       formData.append("category_id", values.category_id);
       formData.append("description", values.description || "");
+      const capitalGainsTaxRate = parseCapitalGainsTaxRatePercent(
+        values.capital_gains_tax_rate,
+      );
+      formData.append(
+        "capital_gains_tax_rate",
+        capitalGainsTaxRate != null ? capitalGainsTaxRate.toString() : "",
+      );
 
       const result = await updatePosition(formData, position.id);
 
@@ -136,6 +153,12 @@ export function UpdatePositionForm({
               <FormMessage />
             </FormItem>
           )}
+        />
+
+        <CapitalGainsTaxRateField
+          control={form.control}
+          setValue={form.setValue}
+          disabled={isLoading}
         />
 
         {/* Footer */}

@@ -31,7 +31,7 @@ export function UpdateAssetDialog({
         <DialogHeader>
           <DialogTitle>Edit Asset</DialogTitle>
           <DialogDescription>
-            Edit the name, category, currency, and description for this asset.
+            Edit the name, category, tax rate, and description for this asset.
           </DialogDescription>
         </DialogHeader>
         <UpdateAssetForm

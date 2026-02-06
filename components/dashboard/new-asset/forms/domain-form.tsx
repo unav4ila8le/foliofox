@@ -27,9 +27,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { HumbleWorthLogo } from "@/components/ui/logos/humbleworth-logo";
+import { CapitalGainsTaxRateField } from "@/components/dashboard/positions/shared/capital-gains-tax-rate-field";
 
 import { useNewAssetDialog } from "../index";
 
+import {
+  capitalGainsTaxRatePercentSchema,
+  parseCapitalGainsTaxRatePercent,
+} from "@/lib/capital-gains-tax-rate";
 import { formatCurrency } from "@/lib/number-format";
 import { useLocale } from "@/hooks/use-locale";
 import { fetchSingleDomainValuation } from "@/server/domain-valuations/fetch";
@@ -49,6 +54,7 @@ function cleanDomain(domain: string): string {
 const formSchema = z.object({
   domain: z.string().regex(z.regexes.domain, { error: "Invalid domain name." }),
   valuation: z.number().gte(0).optional(),
+  capital_gains_tax_rate: capitalGainsTaxRatePercentSchema,
   description: z
     .string()
     .max(256, {
@@ -72,6 +78,7 @@ export function DomainForm() {
     defaultValues: {
       domain: "",
       valuation: undefined,
+      capital_gains_tax_rate: "",
       description: "",
     },
   });
@@ -127,6 +134,16 @@ export function DomainForm() {
       formData.append("currency", "USD");
       formData.append("quantity", "1");
       formData.append("unit_value", finalValuation.toString());
+
+      const capitalGainsTaxRate = parseCapitalGainsTaxRatePercent(
+        values.capital_gains_tax_rate,
+      );
+      if (capitalGainsTaxRate != null) {
+        formData.append(
+          "capital_gains_tax_rate",
+          capitalGainsTaxRate.toString(),
+        );
+      }
 
       // Only append description if it exists
       if (values.description) {
@@ -231,6 +248,12 @@ export function DomainForm() {
             </p>
           </div>
         )}
+
+        <CapitalGainsTaxRateField
+          control={form.control}
+          setValue={form.setValue}
+          disabled={isLoading}
+        />
 
         {/* Description */}
         <FormField

@@ -29,7 +29,8 @@ export function UpdatePositionDialog({
         <DialogHeader>
           <DialogTitle>Edit Position</DialogTitle>
           <DialogDescription>
-            Edit the name, category, and description for this position.
+            Edit the name, category, tax rate, and description for this
+            position.
           </DialogDescription>
         </DialogHeader>
         <UpdatePositionForm

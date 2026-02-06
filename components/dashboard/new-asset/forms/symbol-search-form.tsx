@@ -27,9 +27,14 @@ import { Spinner } from "@/components/ui/spinner";
 import { YahooFinanceLogo } from "@/components/ui/logos/yahoo-finance-logo";
 import { SymbolSearch } from "../../symbol-search";
 import { PositionCategorySelector } from "@/components/dashboard/position-category-selector";
+import { CapitalGainsTaxRateField } from "@/components/dashboard/positions/shared/capital-gains-tax-rate-field";
 
 import { useNewAssetDialog } from "../index";
 
+import {
+  capitalGainsTaxRatePercentSchema,
+  parseCapitalGainsTaxRatePercent,
+} from "@/lib/capital-gains-tax-rate";
 import { requiredNumberWithConstraints } from "@/lib/zod-helpers";
 
 import { fetchYahooFinanceSymbol } from "@/server/symbols/search";
@@ -60,6 +65,7 @@ const formSchema = z.object({
     .refine((v) => v === undefined || v.trim() === "" || Number(v) > 0, {
       error: "Cost basis per unit must be greater than 0",
     }),
+  capital_gains_tax_rate: capitalGainsTaxRatePercentSchema,
   description: z
     .string()
     .max(256, {
@@ -85,6 +91,7 @@ export function SymbolSearchForm() {
       currency: "",
       quantity: "",
       cost_basis_per_unit: "",
+      capital_gains_tax_rate: "",
       description: "",
     },
   });
@@ -155,6 +162,16 @@ export function SymbolSearchForm() {
         formData.append(
           "cost_basis_per_unit",
           values.cost_basis_per_unit.toString(),
+        );
+      }
+
+      const capitalGainsTaxRate = parseCapitalGainsTaxRatePercent(
+        values.capital_gains_tax_rate,
+      );
+      if (capitalGainsTaxRate != null) {
+        formData.append(
+          "capital_gains_tax_rate",
+          capitalGainsTaxRate.toString(),
         );
       }
 
@@ -309,6 +326,13 @@ export function SymbolSearchForm() {
               <FormMessage />
             </FormItem>
           )}
+        />
+
+        {/* Capital gains tax rate */}
+        <CapitalGainsTaxRateField
+          control={form.control}
+          setValue={form.setValue}
+          disabled={!isFormReady || isLoading}
         />
 
         {/* Description */}
