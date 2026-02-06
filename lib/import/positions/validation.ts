@@ -3,6 +3,7 @@ import {
   validateSymbolsBatch,
   type SymbolValidationResult,
 } from "@/server/symbols/validate";
+import { normalizeCapitalGainsTaxRateToDecimal } from "@/lib/capital-gains-tax-rate";
 
 // Categories are normalized via mapper upstream; no need to validate codes here
 
@@ -214,6 +215,18 @@ export function validatePosition(
       );
     } else if (position.unit_value < 0) {
       errors.push(`Row ${rowNumber}: Unit value must be 0 or greater`);
+    }
+  }
+
+  // Validate capital gains tax rate (optional; accepts decimal or percentage)
+  if (position.capital_gains_tax_rate != null) {
+    const normalizedTaxRate = normalizeCapitalGainsTaxRateToDecimal(
+      position.capital_gains_tax_rate,
+    );
+    if (Number.isNaN(normalizedTaxRate)) {
+      errors.push(
+        `Row ${rowNumber}: Capital gains tax rate must be between 0 and 100 (or between 0 and 1 as decimal)`,
+      );
     }
   }
 

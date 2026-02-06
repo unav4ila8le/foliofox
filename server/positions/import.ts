@@ -8,6 +8,7 @@ import { resolveSymbolInput } from "@/server/symbols/resolve";
 import { fetchSingleQuote } from "@/server/quotes/fetch";
 import { createPosition } from "@/server/positions/create";
 
+import { normalizeCapitalGainsTaxRateToDecimal } from "@/lib/capital-gains-tax-rate";
 import { parsePositionsCSV } from "@/lib/import/positions/parse-csv";
 
 import type { ImportActionResult } from "@/lib/import/shared/types";
@@ -129,6 +130,19 @@ export async function importPositionsFromCSV(
       formData.append(
         "cost_basis_per_unit",
         row.cost_basis_per_unit != null ? String(row.cost_basis_per_unit) : "",
+      );
+      const capitalGainsTaxRate = normalizeCapitalGainsTaxRateToDecimal(
+        row.capital_gains_tax_rate,
+      );
+      if (Number.isNaN(capitalGainsTaxRate)) {
+        return {
+          success: false,
+          error: `Invalid capital gains tax rate for "${row.name}". Use a value between 0 and 100 (or 0 to 1 as decimal).`,
+        };
+      }
+      formData.append(
+        "capital_gains_tax_rate",
+        capitalGainsTaxRate != null ? String(capitalGainsTaxRate) : "",
       );
       formData.append("description", row.description ?? "");
 

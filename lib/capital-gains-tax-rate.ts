@@ -45,3 +45,23 @@ export function formatCapitalGainsTaxRatePercent(
   if (value == null || !Number.isFinite(value)) return "";
   return String(value * 100);
 }
+
+/**
+ * Normalize import/edit numeric input to DB decimal format.
+ *
+ * Accepted input formats:
+ * - Decimal rate: 0..1 (stored as-is)
+ * - Percentage rate: >1..100 (stored as percentage / 100)
+ * - Empty/null: null
+ *
+ * Invalid values return NaN so callers can surface validation errors.
+ */
+export function normalizeCapitalGainsTaxRateToDecimal(
+  value: number | null | undefined,
+): number | null {
+  if (value == null) return null;
+  if (!Number.isFinite(value)) return Number.NaN;
+  if (value < 0 || value > 100) return Number.NaN;
+
+  return value > 1 ? value / 100 : value;
+}

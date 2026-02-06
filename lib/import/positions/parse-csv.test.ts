@@ -124,6 +124,31 @@ Microsoft,5,EUR`;
     expect(result.supportedCurrencies).toContain("GBP");
   });
 
+  it("should parse optional capital gains tax rate as percentage or decimal", async () => {
+    const csv = `name,quantity,currency,unit_value,capital_gains_tax_rate
+Apple Inc,10,USD,120,26
+Microsoft,5,EUR,90,0.125`;
+
+    const result = await parsePositionsCSV(csv);
+
+    expect(result.success).toBe(true);
+    expect(result.positions).toHaveLength(2);
+    expect(result.positions[0].capital_gains_tax_rate).toBe(26);
+    expect(result.positions[1].capital_gains_tax_rate).toBe(0.125);
+  });
+
+  it("should return validation error for invalid capital gains tax rate", async () => {
+    const csv = `name,quantity,currency,unit_value,capital_gains_tax_rate
+Apple Inc,10,USD,120,120`;
+
+    const result = await parsePositionsCSV(csv);
+
+    expect(result.success).toBe(false);
+    expect(
+      result.errors?.some((error) => error.includes("Capital gains tax rate")),
+    ).toBe(true);
+  });
+
   it("should handle errors gracefully when currencies fetch fails", async () => {
     const { fetchCurrencies } = await import("@/server/currencies/fetch");
     const consoleError = vi

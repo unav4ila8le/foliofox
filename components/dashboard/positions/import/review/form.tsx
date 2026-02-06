@@ -36,6 +36,7 @@ import { CurrencySelector } from "@/components/dashboard/currency-selector";
 import { SymbolSearch } from "@/components/dashboard/symbol-search";
 
 import { validateSymbol } from "@/server/symbols/validate";
+import { normalizeCapitalGainsTaxRateToDecimal } from "@/lib/capital-gains-tax-rate";
 
 import type { PositionCategory } from "@/types/global.types";
 import type { CurrencyValidationResult } from "@/server/currencies/validate";
@@ -106,6 +107,18 @@ export function ReviewForm({
       cost_basis_per_unit: z.coerce
         .number()
         .gte(0, { error: "Cost basis per unit must be 0 or greater" })
+        .nullable()
+        .optional(),
+      capital_gains_tax_rate: z.coerce
+        .number()
+        .gte(0, {
+          error:
+            "Capital gains tax rate must be between 0 and 100 (or 0 to 1 as decimal)",
+        })
+        .lte(100, {
+          error:
+            "Capital gains tax rate must be between 0 and 100 (or 0 to 1 as decimal)",
+        })
         .nullable()
         .optional(),
       symbolLookup: z
@@ -237,7 +250,23 @@ export function ReviewForm({
       }
 
       const positions = form.getValues().positions as PositionImportRow[];
-      const result = await onImport(positions);
+      const normalizedPositions = positions.map((position, index) => {
+        const normalizedTaxRate = normalizeCapitalGainsTaxRateToDecimal(
+          position.capital_gains_tax_rate,
+        );
+        if (Number.isNaN(normalizedTaxRate)) {
+          throw new Error(
+            `Row ${index + 1}: Capital gains tax rate must be between 0 and 100 (or 0 to 1 as decimal).`,
+          );
+        }
+
+        return {
+          ...position,
+          capital_gains_tax_rate: normalizedTaxRate,
+        };
+      });
+
+      const result = await onImport(normalizedPositions);
 
       if (!result.success) {
         throw new Error(result.error);
@@ -309,6 +338,20 @@ export function ReviewForm({
                     </Tooltip>
                   </span>
                 </TableHead>
+                <TableHead>
+                  <span className="flex items-center gap-1">
+                    Tax Rate
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="size-4" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Optional. You can enter either decimal (e.g., 0.26) or
+                        percentage (e.g., 26).
+                      </TooltipContent>
+                    </Tooltip>
+                  </span>
+                </TableHead>
                 <TableHead>Symbol (Optional)</TableHead>
                 <TableHead>Description (Optional)</TableHead>
                 <TableHead>
@@ -324,7 +367,7 @@ export function ReviewForm({
               {fields.map((field, index) => (
                 <TableRow key={field.id}>
                   {/* Name */}
-                  <TableCell className="w-64 align-top">
+                  <TableCell className="w-64 min-w-56 align-top">
                     <FormField
                       control={form.control}
                       name={`positions.${index}.name`}
@@ -340,7 +383,7 @@ export function ReviewForm({
                   </TableCell>
 
                   {/* Category */}
-                  <TableCell className="w-48 align-top">
+                  <TableCell className="max-w-48 align-top">
                     <FormField
                       control={form.control}
                       name={`positions.${index}.category_id`}
@@ -384,7 +427,7 @@ export function ReviewForm({
                   </TableCell>
 
                   {/* Quantity */}
-                  <TableCell className="w-32 align-top">
+                  <TableCell className="min-w-32 align-top">
                     <FormField
                       control={form.control}
                       name={`positions.${index}.quantity`}
@@ -412,7 +455,7 @@ export function ReviewForm({
                   </TableCell>
 
                   {/* Unit Value */}
-                  <TableCell className="w-32 align-top">
+                  <TableCell className="min-w-32 align-top">
                     <FormField
                       control={form.control}
                       name={`positions.${index}.unit_value`}
@@ -440,7 +483,7 @@ export function ReviewForm({
                   </TableCell>
 
                   {/* Cost Basis */}
-                  <TableCell className="align-top">
+                  <TableCell className="min-w-32 align-top">
                     <FormField
                       control={form.control}
                       name={`positions.${index}.cost_basis_per_unit`}
@@ -458,6 +501,41 @@ export function ReviewForm({
                               onChange={(e) => {
                                 const v = e.target.value;
                                 field.onChange(v === "" ? null : Number(v));
+                              }}
+                            />
+                          </FormControl>
+                          <FormMessage className="whitespace-normal" />
+                        </FormItem>
+                      )}
+                    />
+                  </TableCell>
+
+                  {/* Capital Gains Tax Rate */}
+                  <TableCell className="min-w-32 align-top">
+                    <FormField
+                      control={form.control}
+                      name={`positions.${index}.capital_gains_tax_rate`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input
+                              placeholder="E.g., 26"
+                              type="number"
+                              inputMode="decimal"
+                              min={0}
+                              max={100}
+                              step="any"
+                              {...field}
+                              value={
+                                Number.isFinite(field.value as number)
+                                  ? ((field.value ?? "") as number | "")
+                                  : ""
+                              }
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                field.onChange(
+                                  value === "" ? null : Number(value),
+                                );
                               }}
                             />
                           </FormControl>
@@ -538,6 +616,7 @@ export function ReviewForm({
                         quantity: null,
                         unit_value: null,
                         cost_basis_per_unit: null,
+                        capital_gains_tax_rate: null,
                         symbolLookup: null,
                         description: null,
                       })

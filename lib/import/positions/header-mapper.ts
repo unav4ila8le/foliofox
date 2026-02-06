@@ -13,6 +13,7 @@
  *   - quantity
  *   - unit_value
  *   - cost_basis_per_unit
+ *   - capital_gains_tax_rate
  *   - symbol_lookup
  *   - description
  */
@@ -24,6 +25,7 @@ export type PositionCanonicalHeader =
   | "quantity"
   | "unit_value"
   | "cost_basis_per_unit"
+  | "capital_gains_tax_rate"
   | "symbol_lookup"
   | "description";
 
@@ -104,6 +106,17 @@ const POSITION_HEADER_ALIASES: Record<PositionCanonicalHeader, string[]> = {
     "avg cost",
     "average cost",
     "book value",
+  ],
+
+  // Capital gains tax rate (either decimal or percentage format)
+  capital_gains_tax_rate: [
+    "capital_gains_tax_rate",
+    "capital gains tax rate",
+    "capital gains tax",
+    "tax rate",
+    "capital gain tax rate",
+    "cgt",
+    "cgt rate",
   ],
 
   // Currency code (ISO 4217 where possible)
