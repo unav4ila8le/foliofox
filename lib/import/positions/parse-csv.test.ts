@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { parsePositionsCSV } from "./parse-csv";
+import { positionsToCSV } from "./serialize";
 
 // Mock only the currencies fetch function
 vi.mock("@/server/currencies/fetch", () => ({
@@ -87,6 +88,7 @@ Microsoft,5,EUR`;
     expect(result.positions[1].name).toBe("Microsoft");
     expect(result.positions[1].quantity).toBe(5);
     expect(result.positions[1].currency).toBe("EUR");
+    expect(result.positions[0].capital_gains_tax_rate).toBeNull();
   });
 
   it("should handle CSV with quoted values containing delimiters", async () => {
@@ -135,6 +137,39 @@ Microsoft,5,EUR,90,0.125`;
     expect(result.positions).toHaveLength(2);
     expect(result.positions[0].capital_gains_tax_rate).toBe(26);
     expect(result.positions[1].capital_gains_tax_rate).toBe(0.125);
+  });
+
+  it("should keep capital gains tax rate null when column is not provided", async () => {
+    const csv = `name,quantity,currency,unit_value
+Apple Inc,10,USD,120`;
+
+    const result = await parsePositionsCSV(csv);
+
+    expect(result.success).toBe(true);
+    expect(result.positions).toHaveLength(1);
+    expect(result.positions[0].capital_gains_tax_rate).toBeNull();
+  });
+
+  it("should preserve capital gains tax rate on CSV round trip", async () => {
+    const csv = positionsToCSV([
+      {
+        name: "Apple Inc",
+        category_id: "equity",
+        currency: "USD",
+        quantity: 10,
+        unit_value: 120,
+        cost_basis_per_unit: 98.5,
+        capital_gains_tax_rate: 0.26,
+        symbolLookup: null,
+        description: null,
+      },
+    ]);
+
+    const result = await parsePositionsCSV(csv);
+
+    expect(result.success).toBe(true);
+    expect(result.positions).toHaveLength(1);
+    expect(result.positions[0].capital_gains_tax_rate).toBe(0.26);
   });
 
   it("should return validation error for invalid capital gains tax rate", async () => {

@@ -120,6 +120,7 @@ export function UpdateAssetForm({
     <>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
+          {/* Name */}
           <FormField
             control={form.control}
             name="name"
@@ -136,6 +137,8 @@ export function UpdateAssetForm({
               </FormItem>
             )}
           />
+
+          {/* Category */}
           <FormField
             control={form.control}
             name="category_id"
@@ -149,6 +152,16 @@ export function UpdateAssetForm({
               </FormItem>
             )}
           />
+
+          {/* Capital gains tax rate */}
+          <CapitalGainsTaxRateField
+            control={form.control}
+            setValue={form.setValue}
+            disabled={isLoading}
+            className="sm:w-1/2"
+          />
+
+          {/* Description */}
           <FormField
             control={form.control}
             name="description"
@@ -164,12 +177,6 @@ export function UpdateAssetForm({
                 <FormMessage />
               </FormItem>
             )}
-          />
-
-          <CapitalGainsTaxRateField
-            control={form.control}
-            setValue={form.setValue}
-            disabled={isLoading}
           />
 
           {/* Advanced */}

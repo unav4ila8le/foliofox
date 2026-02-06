@@ -207,7 +207,6 @@ export async function AssetHeader({
           <p>
             Est. Capital Gains Tax
             <span className="text-foreground ml-1 font-medium">
-              -
               {formatCurrency(estimatedCapitalGainsTax, position.currency, {
                 locale,
               })}
