@@ -11,7 +11,7 @@ import { NetWorthAreaChart } from "@/components/dashboard/charts/net-worth-area"
 import { NewsWidget } from "@/components/dashboard/news/widget";
 import { ProjectedIncomeWidget } from "@/components/dashboard/charts/projected-income/widget";
 import { PortfolioRecordsWidget } from "@/components/dashboard/portfolio-records/widget";
-import { NetWorthModeToggle } from "@/components/dashboard/layout/header/net-worth-mode-toggle";
+import { NetWorthModeToggle } from "@/components/dashboard/net-worth-mode/net-worth-mode-toggle";
 
 import { getCurrentUser } from "@/server/auth/actions";
 import { fetchProfile } from "@/server/profile/actions";

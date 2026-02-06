@@ -7,7 +7,7 @@ import { RightSidebar } from "@/components/dashboard/layout/right-sidebar";
 import { Header } from "@/components/dashboard/layout/header";
 
 import { PrivacyModeProvider } from "@/components/dashboard/privacy-mode-provider";
-import { NetWorthModeProvider } from "@/components/dashboard/net-worth-mode-provider";
+import { NetWorthModeProvider } from "@/components/dashboard/net-worth-mode/net-worth-mode-provider";
 import { ImportPositionsDialogProvider } from "@/components/dashboard/positions/import";
 import { ImportPortfolioRecordsDialogProvider } from "@/components/dashboard/portfolio-records/import";
 import { NewAssetDialogProvider } from "@/components/dashboard/new-asset";

@@ -9,7 +9,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useNetWorthMode } from "@/components/dashboard/net-worth-mode-provider";
+import { useNetWorthMode } from "@/components/dashboard/net-worth-mode/net-worth-mode-provider";
 
 export function NetWorthModeToggle() {
   const { isAfterCapitalGains, isRefreshing, setNetWorthModeAction } =

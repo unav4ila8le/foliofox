@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/select";
 import { NewAssetButton } from "@/components/dashboard/new-asset";
 import { ImportPositionsButton } from "@/components/dashboard/positions/import";
+import { useNetWorthMode } from "@/components/dashboard/net-worth-mode/net-worth-mode-provider";
 import {
   usePrivacyMode,
   PrivacyModeButton,
@@ -79,7 +80,9 @@ export function NetWorthAreaChart({
   const [isLoading, setIsLoading] = useState(false);
 
   const { isPrivacyMode } = usePrivacyMode();
+  const { isRefreshing: isModeRefreshing } = useNetWorthMode();
   const locale = useLocale();
+  const isChartLoading = isLoading || isModeRefreshing;
 
   // Display custom time range data or fall back to default initial data (3 months)
   const history = customTimeRange?.history ?? initialHistory;
@@ -246,7 +249,7 @@ export function NetWorthAreaChart({
               <Select
                 defaultValue="3m"
                 onValueChange={handleRangeChange}
-                disabled={isLoading}
+                disabled={isChartLoading}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="3 Months" />
@@ -280,7 +283,7 @@ export function NetWorthAreaChart({
           <CardContent
             className={cn(
               "flex-1 transition-opacity",
-              isLoading && "opacity-50",
+              isChartLoading && "opacity-50",
             )}
           >
             <ResponsiveContainer
