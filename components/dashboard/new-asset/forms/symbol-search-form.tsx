@@ -3,19 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { Info } from "lucide-react";
 import { toast } from "sonner";
 
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
   Tooltip,
@@ -204,180 +197,180 @@ export function SymbolSearchForm() {
   const isFormReady = Boolean(symbolLookup);
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
-        {/* Symbol */}
-        <FormField
-          control={form.control}
-          name="symbolLookup"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="flex items-center justify-between gap-2">
-                Symbol
-                <Link
-                  href="https://finance.yahoo.com/lookup/"
-                  target="_blank"
-                  aria-label="Go to Yahoo Finance website"
-                >
-                  <YahooFinanceLogo height={14} />
-                </Link>
-              </FormLabel>
-              <FormControl>
-                <SymbolSearch
-                  field={field}
-                  onSymbolSelect={handleSymbolSelect}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+    <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
+      {/* Symbol */}
+      <Controller
+        control={form.control}
+        name="symbolLookup"
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel
+              htmlFor={field.name}
+              className="flex items-center justify-between gap-2"
+            >
+              Symbol
+              <Link
+                href="https://finance.yahoo.com/lookup/"
+                target="_blank"
+                aria-label="Go to Yahoo Finance website"
+              >
+                <YahooFinanceLogo height={14} />
+              </Link>
+            </FieldLabel>
+            <SymbolSearch
+              field={field}
+              isInvalid={fieldState.invalid}
+              fieldName={field.name}
+              clearErrors={form.clearErrors as (name: string) => void}
+              onSymbolSelect={handleSymbolSelect}
+            />
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        )}
+      />
+
+      {/* Name */}
+      <Controller
+        control={form.control}
+        name="name"
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel htmlFor={field.name}>Name</FieldLabel>
+            <Input
+              id={field.name}
+              placeholder="E.g., AAPL - Apple Inc."
+              disabled={!isFormReady}
+              aria-invalid={fieldState.invalid}
+              {...field}
+            />
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        )}
+      />
+
+      {/* Category */}
+      <Controller
+        control={form.control}
+        name="category_id"
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel htmlFor={field.name}>Category</FieldLabel>
+            <PositionCategorySelector
+              field={field}
+              positionType="asset"
+              disabled={!isFormReady}
+              isInvalid={fieldState.invalid}
+            />
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        )}
+      />
+
+      {/* Quantity */}
+      <Controller
+        control={form.control}
+        name="quantity"
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid} className="sm:w-1/2 sm:pr-1">
+            <FieldLabel htmlFor={field.name}>Current quantity</FieldLabel>
+            <Input
+              id={field.name}
+              placeholder="E.g., 10"
+              type="number"
+              inputMode="decimal"
+              min={0}
+              step="any"
+              aria-invalid={fieldState.invalid}
+              {...field}
+              value={field.value as number}
+            />
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        )}
+      />
+
+      {/* Cost basis per unit */}
+      <Controller
+        control={form.control}
+        name="cost_basis_per_unit"
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid} className="sm:w-1/2 sm:pr-1">
+            <div className="flex items-center gap-1">
+              <FieldLabel htmlFor={field.name}>
+                Cost basis per unit (optional)
+              </FieldLabel>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="size-4" aria-label="Cost basis help" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  If omitted, we&apos;ll use the unit value as your initial cost
+                  basis.
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <Input
+              id={field.name}
+              placeholder="E.g., 12.41"
+              type="number"
+              inputMode="decimal"
+              min={0}
+              step="any"
+              aria-invalid={fieldState.invalid}
+              {...field}
+              value={field.value}
+            />
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        )}
+      />
+
+      {/* Capital gains tax rate */}
+      <CapitalGainsTaxRateField
+        control={form.control}
+        setValue={form.setValue}
+        disabled={!isFormReady || isLoading}
+      />
+
+      {/* Description */}
+      <Controller
+        control={form.control}
+        name="description"
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel htmlFor={field.name}>Description (optional)</FieldLabel>
+            <Input
+              id={field.name}
+              placeholder="Add a description of this asset"
+              aria-invalid={fieldState.invalid}
+              {...field}
+            />
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        )}
+      />
+
+      {/* Footer - Action buttons */}
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <Button
+          onClick={() => setOpenFormDialog(false)}
+          disabled={isLoading}
+          type="button"
+          variant="secondary"
+        >
+          Cancel
+        </Button>
+        <Button disabled={isLoading || !isDirty || !isFormReady} type="submit">
+          {isLoading ? (
+            <>
+              <Spinner />
+              Saving...
+            </>
+          ) : (
+            "Add Asset"
           )}
-        />
-
-        {/* Name */}
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="E.g., AAPL - Apple Inc."
-                  disabled={!isFormReady}
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Category */}
-        <FormField
-          control={form.control}
-          name="category_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Category</FormLabel>
-              <FormControl>
-                <PositionCategorySelector
-                  field={field}
-                  positionType="asset"
-                  disabled={!isFormReady}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Quantity */}
-        <FormField
-          control={form.control}
-          name="quantity"
-          render={({ field }) => (
-            <FormItem className="sm:w-1/2 sm:pr-1">
-              <FormLabel>Current quantity</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="E.g., 10"
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  step="any"
-                  {...field}
-                  value={field.value as number}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Cost basis per unit */}
-        <FormField
-          control={form.control}
-          name="cost_basis_per_unit"
-          render={({ field }) => (
-            <FormItem className="sm:w-1/2 sm:pr-1">
-              <div className="flex items-center gap-1">
-                <FormLabel>Cost basis per unit (optional)</FormLabel>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="size-4" aria-label="Cost basis help" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    If omitted, we&apos;ll use the unit value as your initial
-                    cost basis.
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-              <FormControl>
-                <Input
-                  placeholder="E.g., 12.41"
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  step="any"
-                  {...field}
-                  value={field.value}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Capital gains tax rate */}
-        <CapitalGainsTaxRateField
-          control={form.control}
-          setValue={form.setValue}
-          disabled={!isFormReady || isLoading}
-        />
-
-        {/* Description */}
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description (optional)</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="Add a description of this asset"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Footer - Action buttons */}
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Button
-            onClick={() => setOpenFormDialog(false)}
-            disabled={isLoading}
-            type="button"
-            variant="secondary"
-          >
-            Cancel
-          </Button>
-          <Button
-            disabled={isLoading || !isDirty || !isFormReady}
-            type="submit"
-          >
-            {isLoading ? (
-              <>
-                <Spinner />
-                Saving...
-              </>
-            ) : (
-              "Add Asset"
-            )}
-          </Button>
-        </div>
-      </form>
-    </Form>
+        </Button>
+      </div>
+    </form>
   );
 }

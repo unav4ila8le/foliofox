@@ -2,11 +2,10 @@
 
 import { useEffect } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CurrencySelector } from "@/components/dashboard/currency-selector";
-import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 
 type PublicPortfolioHeaderProps = {
   username: string | null;
@@ -71,29 +70,23 @@ export function PublicPortfolioHeader({
           <span className="font-semibold">{displayName}</span>
         </div>
       </div>
-      <Form {...form}>
-        <FormField
-          control={form.control}
-          name="currency"
-          render={({ field }) => (
-            <FormItem>
-              <FormControl>
-                <CurrencySelector
-                  field={{
-                    value: field.value,
-                    onChange: (value) => {
-                      field.onChange(value);
-                      handleCurrencyChange(value);
-                    },
-                  }}
-                  popoverAlign="end"
-                  popoverWidth="w-64"
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
-      </Form>
+      <Controller
+        control={form.control}
+        name="currency"
+        render={({ field }) => (
+          <CurrencySelector
+            field={{
+              value: field.value,
+              onChange: (value) => {
+                field.onChange(value);
+                handleCurrencyChange(value);
+              },
+            }}
+            popoverAlign="end"
+            popoverWidth="w-64"
+          />
+        )}
+      />
     </div>
   );
 }

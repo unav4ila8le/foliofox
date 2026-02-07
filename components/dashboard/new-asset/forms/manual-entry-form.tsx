@@ -2,19 +2,12 @@
 
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { Info } from "lucide-react";
 import { toast } from "sonner";
 
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import {
   Tooltip,
   TooltipTrigger,
@@ -158,190 +151,189 @@ export function ManualEntryForm() {
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
-        {/* Name */}
-        <FormField
+    <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
+      {/* Name */}
+      <Controller
+        control={form.control}
+        name="name"
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel htmlFor={field.name}>Name</FieldLabel>
+            <Input
+              id={field.name}
+              placeholder="E.g., Chase Savings, Kyoto Apartment, Vintage Wine Collection"
+              aria-invalid={fieldState.invalid}
+              {...field}
+            />
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        )}
+      />
+
+      {/* Category */}
+      <Controller
+        control={form.control}
+        name="category_id"
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel htmlFor={field.name}>Category</FieldLabel>
+            <PositionCategorySelector
+              field={field}
+              positionType="asset"
+              isInvalid={fieldState.invalid}
+            />
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        )}
+      />
+
+      {/* Currency */}
+      <Controller
+        control={form.control}
+        name="currency"
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid} className="sm:w-1/2 sm:pr-1">
+            <FieldLabel htmlFor={field.name}>Currency</FieldLabel>
+            <CurrencySelector field={field} isInvalid={fieldState.invalid} />
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        )}
+      />
+
+      <div className="grid items-start gap-x-2 gap-y-4 sm:grid-cols-2">
+        {/* Quantity */}
+        <Controller
           control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="E.g., Chase Savings, Kyoto Apartment, Vintage Wine Collection"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+          name="quantity"
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel htmlFor={field.name}>Current quantity</FieldLabel>
+              <Input
+                id={field.name}
+                placeholder="E.g., 10"
+                type="number"
+                inputMode="decimal"
+                min={0}
+                step="any"
+                aria-invalid={fieldState.invalid}
+                {...field}
+                value={field.value as number}
+              />
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
           )}
         />
 
-        {/* Category */}
-        <FormField
+        {/* Unit value */}
+        <Controller
           control={form.control}
-          name="category_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Category</FormLabel>
-              <FormControl>
-                <PositionCategorySelector field={field} positionType="asset" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Currency */}
-        <FormField
-          control={form.control}
-          name="currency"
-          render={({ field }) => (
-            <FormItem className="sm:w-1/2 sm:pr-1">
-              <FormLabel>Currency</FormLabel>
-              <FormControl>
-                <CurrencySelector field={field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="grid items-start gap-x-2 gap-y-4 sm:grid-cols-2">
-          {/* Quantity */}
-          <FormField
-            control={form.control}
-            name="quantity"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Current quantity</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="E.g., 10"
-                    type="number"
-                    inputMode="decimal"
-                    min={0}
-                    step="any"
-                    {...field}
-                    value={field.value as number}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* Unit value */}
-          <FormField
-            control={form.control}
-            name="unit_value"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel htmlFor={field.name}>Current unit value</FormLabel>
-                <FormControl>
-                  <InputGroup>
-                    <InputGroupInput
-                      id={field.name}
-                      placeholder="E.g., 420.69"
-                      type="number"
-                      inputMode="decimal"
-                      min={0}
-                      step="any"
-                      {...field}
-                      value={field.value as number}
-                    />
-                    <InputGroupAddon align="inline-end">
-                      <InputGroupText>{form.watch("currency")}</InputGroupText>
-                    </InputGroupAddon>
-                  </InputGroup>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        {/* Cost basis per unit */}
-        <FormField
-          control={form.control}
-          name="cost_basis_per_unit"
-          render={({ field }) => (
-            <FormItem className="sm:w-1/2 sm:pr-1">
-              <div className="flex items-center gap-1">
-                <FormLabel>Cost basis per unit (optional)</FormLabel>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="size-4" aria-label="Cost basis help" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    If omitted, we&apos;ll use the unit value as your initial
-                    cost basis.
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-              <FormControl>
-                <Input
-                  placeholder="E.g., 12.41"
+          name="unit_value"
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel htmlFor={field.name}>Current unit value</FieldLabel>
+              <InputGroup>
+                <InputGroupInput
+                  id={field.name}
+                  placeholder="E.g., 420.69"
                   type="number"
                   inputMode="decimal"
                   min={0}
                   step="any"
+                  aria-invalid={fieldState.invalid}
                   {...field}
-                  value={field.value}
+                  value={field.value as number}
                 />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+                <InputGroupAddon align="inline-end">
+                  <InputGroupText>{form.watch("currency")}</InputGroupText>
+                </InputGroupAddon>
+              </InputGroup>
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
           )}
         />
+      </div>
 
-        <CapitalGainsTaxRateField
-          control={form.control}
-          setValue={form.setValue}
+      {/* Cost basis per unit */}
+      <Controller
+        control={form.control}
+        name="cost_basis_per_unit"
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid} className="sm:w-1/2 sm:pr-1">
+            <div className="flex items-center gap-1">
+              <FieldLabel htmlFor={field.name}>
+                Cost basis per unit (optional)
+              </FieldLabel>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="size-4" aria-label="Cost basis help" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  If omitted, we&apos;ll use the unit value as your initial cost
+                  basis.
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <Input
+              id={field.name}
+              placeholder="E.g., 12.41"
+              type="number"
+              inputMode="decimal"
+              min={0}
+              step="any"
+              aria-invalid={fieldState.invalid}
+              {...field}
+              value={field.value}
+            />
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        )}
+      />
+
+      <CapitalGainsTaxRateField
+        control={form.control}
+        setValue={form.setValue}
+        disabled={isLoading}
+      />
+
+      {/* Description */}
+      <Controller
+        control={form.control}
+        name="description"
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel htmlFor={field.name}>Description (optional)</FieldLabel>
+            <Input
+              id={field.name}
+              placeholder="Add a description of this asset"
+              aria-invalid={fieldState.invalid}
+              {...field}
+            />
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        )}
+      />
+
+      {/* Footer - Action buttons */}
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <Button
+          onClick={() => setOpenFormDialog(false)}
           disabled={isLoading}
-        />
-
-        {/* Description */}
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description (optional)</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="Add a description of this asset"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+          type="button"
+          variant="secondary"
+        >
+          Cancel
+        </Button>
+        <Button disabled={isLoading || !isDirty} type="submit">
+          {isLoading ? (
+            <>
+              <Spinner />
+              Saving...
+            </>
+          ) : (
+            "Add Asset"
           )}
-        />
-
-        {/* Footer - Action buttons */}
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Button
-            onClick={() => setOpenFormDialog(false)}
-            disabled={isLoading}
-            type="button"
-            variant="secondary"
-          >
-            Cancel
-          </Button>
-          <Button disabled={isLoading || !isDirty} type="submit">
-            {isLoading ? (
-              <>
-                <Spinner />
-                Saving...
-              </>
-            ) : (
-              "Add Asset"
-            )}
-          </Button>
-        </div>
-      </form>
-    </Form>
+        </Button>
+      </div>
+    </form>
   );
 }

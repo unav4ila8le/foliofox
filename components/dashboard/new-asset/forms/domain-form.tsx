@@ -3,20 +3,17 @@
 import Link from "next/link";
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { Search } from "lucide-react";
 import { toast } from "sonner";
 
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-  FormDescription,
-} from "@/components/ui/form";
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
   InputGroup,
@@ -171,132 +168,129 @@ export function DomainForm() {
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
-        {/* Domain */}
-        <FormField
-          control={form.control}
-          name="domain"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel
-                htmlFor={field.name}
-                className="flex items-center justify-between gap-2"
-              >
-                Domain
-                <Link
-                  href="https://humbleworth.com"
-                  target="_blank"
-                  aria-label="Go to HumbleWorth website"
-                >
-                  <HumbleWorthLogo height={14} />
-                </Link>
-              </FormLabel>
-              <FormControl>
-                <InputGroup>
-                  <InputGroupInput
-                    id={field.name}
-                    disabled={isCheckingValuation}
-                    placeholder="E.g., foliofox.com"
-                    {...field}
-                    onChange={(e) => {
-                      const cleaned = cleanDomain(e.target.value);
-                      field.onChange(cleaned);
-                    }}
-                  />
-                  <InputGroupAddon align="inline-end">
-                    <InputGroupButton
-                      variant="secondary"
-                      onClick={checkDomainValuation}
-                      disabled={!isDomainValid || isCheckingValuation}
-                    >
-                      {isCheckingValuation ? <Spinner /> : <Search />}
-                      Check valuation
-                    </InputGroupButton>
-                  </InputGroupAddon>
-                </InputGroup>
-              </FormControl>
-              <FormDescription>
-                Do not include the &quot;https://&quot; or &quot;www.&quot;
-                prefix.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Valuation display*/}
-        {valuation && (
-          <div className="space-y-1">
-            <p className="text-sm font-medium">Valuation</p>
-            <p className="font-semibold text-green-600">
-              {formatCurrency(valuation, "USD", { locale })}
-            </p>
-            <p className="text-muted-foreground text-sm">
-              Valuation is provided by{" "}
+    <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
+      {/* Domain */}
+      <Controller
+        control={form.control}
+        name="domain"
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel
+              htmlFor={field.name}
+              className="flex items-center justify-between gap-2"
+            >
+              Domain
               <Link
                 href="https://humbleworth.com"
                 target="_blank"
-                className="hover:text-foreground underline underline-offset-2"
+                aria-label="Go to HumbleWorth website"
               >
-                HumbleWorth
+                <HumbleWorthLogo height={14} />
               </Link>
-              .
-              <br />
-              If you prefer, you can add a new custom asset to manually enter
-              your own valuation instead.
-            </p>
-          </div>
+            </FieldLabel>
+            <InputGroup>
+              <InputGroupInput
+                id={field.name}
+                disabled={isCheckingValuation}
+                placeholder="E.g., foliofox.com"
+                aria-invalid={fieldState.invalid}
+                {...field}
+                onChange={(e) => {
+                  const cleaned = cleanDomain(e.target.value);
+                  field.onChange(cleaned);
+                }}
+              />
+              <InputGroupAddon align="inline-end">
+                <InputGroupButton
+                  variant="secondary"
+                  onClick={checkDomainValuation}
+                  disabled={!isDomainValid || isCheckingValuation}
+                >
+                  {isCheckingValuation ? <Spinner /> : <Search />}
+                  Check valuation
+                </InputGroupButton>
+              </InputGroupAddon>
+            </InputGroup>
+            <FieldDescription>
+              Do not include the &quot;https://&quot; or &quot;www.&quot;
+              prefix.
+            </FieldDescription>
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
         )}
+      />
 
-        {/* Capital gains tax rate */}
-        <CapitalGainsTaxRateField
-          control={form.control}
-          setValue={form.setValue}
-          disabled={isLoading}
-          className="sm:w-1/2"
-        />
-
-        {/* Description */}
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description (optional)</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="Add a description of this asset"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Footer - Action buttons */}
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Button
-            onClick={() => setOpenFormDialog(false)}
-            disabled={isLoading}
-            type="button"
-            variant="secondary"
-          >
-            Cancel
-          </Button>
-          <Button disabled={isLoading || !isDomainValid} type="submit">
-            {isLoading ? (
-              <>
-                <Spinner />
-                Saving...
-              </>
-            ) : (
-              "Add Asset"
-            )}
-          </Button>
+      {/* Valuation display*/}
+      {valuation && (
+        <div className="space-y-1">
+          <p className="text-sm font-medium">Valuation</p>
+          <p className="font-semibold text-green-600">
+            {formatCurrency(valuation, "USD", { locale })}
+          </p>
+          <p className="text-muted-foreground text-sm">
+            Valuation is provided by{" "}
+            <Link
+              href="https://humbleworth.com"
+              target="_blank"
+              className="hover:text-foreground underline underline-offset-2"
+            >
+              HumbleWorth
+            </Link>
+            .
+            <br />
+            If you prefer, you can add a new custom asset to manually enter your
+            own valuation instead.
+          </p>
         </div>
-      </form>
-    </Form>
+      )}
+
+      {/* Capital gains tax rate */}
+      <CapitalGainsTaxRateField
+        control={form.control}
+        setValue={form.setValue}
+        disabled={isLoading}
+        className="sm:w-1/2"
+      />
+
+      {/* Description */}
+      <Controller
+        control={form.control}
+        name="description"
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel htmlFor={field.name}>Description (optional)</FieldLabel>
+            <Input
+              id={field.name}
+              placeholder="Add a description of this asset"
+              aria-invalid={fieldState.invalid}
+              {...field}
+            />
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        )}
+      />
+
+      {/* Footer - Action buttons */}
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <Button
+          onClick={() => setOpenFormDialog(false)}
+          disabled={isLoading}
+          type="button"
+          variant="secondary"
+        >
+          Cancel
+        </Button>
+        <Button disabled={isLoading || !isDomainValid} type="submit">
+          {isLoading ? (
+            <>
+              <Spinner />
+              Saving...
+            </>
+          ) : (
+            "Add Asset"
+          )}
+        </Button>
+      </div>
+    </form>
   );
 }
