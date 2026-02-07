@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { LocaleProvider } from "@/components/features/locale/locale-provider";
 import { PostHogProvider } from "@/components/features/posthog/posthog-provider";
 import { ThemeProvider } from "@/components/features/theme/theme-provider";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { resolveLocale } from "@/lib/locale/resolve-locale";
 import { getOptionalUser } from "@/server/auth/actions";
@@ -71,7 +72,7 @@ export default async function RootLayout({
             >
               <LocaleProviderWrapper>
                 <Toaster />
-                {children}
+                <TooltipProvider>{children}</TooltipProvider>
               </LocaleProviderWrapper>
             </ThemeProvider>
           </PostHogUserProvider>
