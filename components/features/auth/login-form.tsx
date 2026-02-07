@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
@@ -16,14 +16,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
   InputGroup,
@@ -93,70 +86,74 @@ export function LoginForm() {
         <CardDescription>Log in here to continue</CardDescription>
       </CardHeader>
       <CardContent>
-        <Form {...form}>
-          <form className="grid gap-4" onSubmit={form.handleSubmit(onSubmit)}>
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input placeholder="mail@example.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <div className="flex items-center justify-between gap-4">
-                    <FormLabel htmlFor="login-password">Password</FormLabel>
-                    <Link
-                      href="/auth/forgot-password"
-                      className="text-sm underline-offset-4 hover:underline"
+        <form className="grid gap-4" onSubmit={form.handleSubmit(onSubmit)}>
+          <Controller
+            control={form.control}
+            name="email"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor={field.name}>Email</FieldLabel>
+                <Input
+                  id={field.name}
+                  placeholder="mail@example.com"
+                  aria-invalid={fieldState.invalid}
+                  {...field}
+                />
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+          />
+          <Controller
+            control={form.control}
+            name="password"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <div className="flex items-center justify-between gap-4">
+                  <FieldLabel htmlFor="login-password">Password</FieldLabel>
+                  <Link
+                    href="/auth/forgot-password"
+                    className="text-sm underline-offset-4 hover:underline"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
+                <InputGroup>
+                  <InputGroupInput
+                    id="login-password"
+                    aria-invalid={fieldState.invalid}
+                    {...field}
+                    type={showPassword ? "text" : "password"}
+                  />
+                  <InputGroupAddon align="inline-end">
+                    <InputGroupButton
+                      onClick={() => setShowPassword(!showPassword)}
                     >
-                      Forgot password?
-                    </Link>
-                  </div>
-                  <FormControl>
-                    <InputGroup>
-                      <InputGroupInput
-                        id="login-password"
-                        {...field}
-                        type={showPassword ? "text" : "password"}
-                      />
-                      <InputGroupAddon align="inline-end">
-                        <InputGroupButton
-                          onClick={() => setShowPassword(!showPassword)}
-                        >
-                          {showPassword ? <EyeOff /> : <Eye />}
-                          <span className="sr-only">
-                            {showPassword ? "Hide password" : "Show password"}
-                          </span>
-                        </InputGroupButton>
-                      </InputGroupAddon>
-                    </InputGroup>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button disabled={isLoading} type="submit">
-              {isLoading ? (
-                <>
-                  <Spinner />
-                  Logging in...
-                </>
-              ) : (
-                "Log in"
-              )}
-            </Button>
-          </form>
-        </Form>
+                      {showPassword ? <EyeOff /> : <Eye />}
+                      <span className="sr-only">
+                        {showPassword ? "Hide password" : "Show password"}
+                      </span>
+                    </InputGroupButton>
+                  </InputGroupAddon>
+                </InputGroup>
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+          />
+          <Button disabled={isLoading} type="submit">
+            {isLoading ? (
+              <>
+                <Spinner />
+                Logging in...
+              </>
+            ) : (
+              "Log in"
+            )}
+          </Button>
+        </form>
         <div className="mt-4 text-center text-sm">
           Don&apos;t have an account?{" "}
           <Link href="/auth/signup" className="underline underline-offset-4">
