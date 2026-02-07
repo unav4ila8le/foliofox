@@ -2,20 +2,13 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { format } from "date-fns";
 import { CalendarIcon, Info } from "lucide-react";
 import { toast } from "sonner";
 
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import {
   Popover,
   PopoverContent,
@@ -211,191 +204,190 @@ export function UpdateForm() {
   }
 
   return (
-    <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        className="grid gap-x-2 gap-y-4"
-      >
-        {/* Date picker field */}
-        <FormField
+    <form
+      onSubmit={form.handleSubmit(onSubmit)}
+      className="grid gap-x-2 gap-y-4"
+    >
+      {/* Date picker field */}
+      <Controller
+        control={form.control}
+        name="date"
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid} className="sm:w-1/2 sm:pr-1">
+            <FieldLabel htmlFor={field.name}>Date</FieldLabel>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  id={field.name}
+                  variant="outline"
+                  aria-invalid={fieldState.invalid}
+                  className={cn(
+                    "text-left font-normal",
+                    !field.value && "text-muted-foreground",
+                  )}
+                >
+                  {field.value ? (
+                    format(field.value, "PPP")
+                  ) : (
+                    <span>Pick a date</span>
+                  )}
+                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  captionLayout="dropdown"
+                  selected={field.value}
+                  onSelect={field.onChange}
+                  disabled={(date) =>
+                    date > new Date() || date < new Date("1900-01-01")
+                  }
+                  autoFocus
+                />
+              </PopoverContent>
+            </Popover>
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        )}
+      />
+
+      {/* Unit value and quantity fields in a grid */}
+      <div className="grid items-start gap-x-2 gap-y-4 sm:grid-cols-2">
+        {/* Quantity field */}
+        <Controller
           control={form.control}
-          name="date"
-          render={({ field }) => (
-            <FormItem className="sm:w-1/2 sm:pr-1">
-              <FormLabel>Date</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "text-left font-normal",
-                        !field.value && "text-muted-foreground",
-                      )}
-                    >
-                      {field.value ? (
-                        format(field.value, "PPP")
-                      ) : (
-                        <span>Pick a date</span>
-                      )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    captionLayout="dropdown"
-                    selected={field.value}
-                    onSelect={field.onChange}
-                    disabled={(date) =>
-                      date > new Date() || date < new Date("1900-01-01")
-                    }
-                    autoFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              <FormMessage />
-            </FormItem>
+          name="quantity"
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel htmlFor={field.name}>Quantity</FieldLabel>
+              <Input
+                id={field.name}
+                placeholder="E.g., 10"
+                type="number"
+                inputMode="decimal"
+                min={0}
+                step="any"
+                aria-invalid={fieldState.invalid}
+                {...field}
+                value={field.value as number}
+              />
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
           )}
         />
 
-        {/* Unit value and quantity fields in a grid */}
-        <div className="grid items-start gap-x-2 gap-y-4 sm:grid-cols-2">
-          {/* Quantity field */}
-          <FormField
-            control={form.control}
-            name="quantity"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Quantity</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="E.g., 10"
-                    type="number"
-                    inputMode="decimal"
-                    min={0}
-                    step="any"
-                    {...field}
-                    value={field.value as number}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* Unit value field */}
-          <FormField
-            control={form.control}
-            name="unit_value"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel htmlFor={field.name}>Unit value</FormLabel>
-                <FormControl>
-                  <InputGroup>
-                    <InputGroupInput
-                      id={field.name}
-                      placeholder="E.g., 420.69"
-                      type="number"
-                      inputMode="decimal"
-                      min={0}
-                      step="any"
-                      disabled={hasSymbol} // Disabled for market assets (auto-filled)
-                      {...field}
-                      value={field.value as number}
-                    />
-                    <InputGroupAddon align="inline-end">
-                      <InputGroupText>
-                        {preselectedPosition?.currency || "N/A"}
-                      </InputGroupText>
-                    </InputGroupAddon>
-                  </InputGroup>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        {/* Optional cost basis per unit */}
-        <FormField
+        {/* Unit value field */}
+        <Controller
           control={form.control}
-          name="cost_basis_per_unit"
-          render={({ field }) => (
-            <FormItem className="sm:w-1/2 sm:pr-1">
-              <div className="flex items-center gap-1">
-                <FormLabel>Cost basis per unit (optional)</FormLabel>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="size-4" aria-label="Cost basis help" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Enter your average price paid per unit at this date. Used
-                    for P/L. If omitted, we infer it from previous records or
-                    from the unit value.
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-              <FormControl>
-                <Input
-                  placeholder="E.g., 12.41"
+          name="unit_value"
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel htmlFor={field.name}>Unit value</FieldLabel>
+              <InputGroup>
+                <InputGroupInput
+                  id={field.name}
+                  placeholder="E.g., 420.69"
                   type="number"
                   inputMode="decimal"
                   min={0}
                   step="any"
+                  disabled={hasSymbol} // Disabled for market assets (auto-filled)
+                  aria-invalid={fieldState.invalid}
                   {...field}
-                  value={field.value}
+                  value={field.value as number}
                 />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+                <InputGroupAddon align="inline-end">
+                  <InputGroupText>
+                    {preselectedPosition?.currency || "N/A"}
+                  </InputGroupText>
+                </InputGroupAddon>
+              </InputGroup>
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
           )}
         />
+      </div>
 
-        {/* Optional description field */}
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description (optional)</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="Add any notes about this update"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+      {/* Optional cost basis per unit */}
+      <Controller
+        control={form.control}
+        name="cost_basis_per_unit"
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid} className="sm:w-1/2 sm:pr-1">
+            <div className="flex items-center gap-1">
+              <FieldLabel htmlFor={field.name}>
+                Cost basis per unit (optional)
+              </FieldLabel>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="size-4" aria-label="Cost basis help" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  Enter your average price paid per unit at this date. Used for
+                  P/L. If omitted, we infer it from previous records or from the
+                  unit value.
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <Input
+              id={field.name}
+              placeholder="E.g., 12.41"
+              type="number"
+              inputMode="decimal"
+              min={0}
+              step="any"
+              aria-invalid={fieldState.invalid}
+              {...field}
+              value={field.value}
+            />
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        )}
+      />
+
+      {/* Optional description field */}
+      <Controller
+        control={form.control}
+        name="description"
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel htmlFor={field.name}>Description (optional)</FieldLabel>
+            <Input
+              id={field.name}
+              placeholder="Add any notes about this update"
+              aria-invalid={fieldState.invalid}
+              {...field}
+            />
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        )}
+      />
+
+      {/* Action buttons */}
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <Button
+          onClick={() => setOpen(false)}
+          disabled={isLoading || isFetchingQuote}
+          type="button"
+          variant="secondary"
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          disabled={isLoading || isFetchingQuote || !isDirty}
+        >
+          {isLoading ? (
+            <>
+              <Spinner />
+              Creating...
+            </>
+          ) : (
+            "Create record"
           )}
-        />
-
-        {/* Action buttons */}
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Button
-            onClick={() => setOpen(false)}
-            disabled={isLoading || isFetchingQuote}
-            type="button"
-            variant="secondary"
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            disabled={isLoading || isFetchingQuote || !isDirty}
-          >
-            {isLoading ? (
-              <>
-                <Spinner />
-                Creating...
-              </>
-            ) : (
-              "Create record"
-            )}
-          </Button>
-        </div>
-      </form>
-    </Form>
+        </Button>
+      </div>
+    </form>
   );
 }

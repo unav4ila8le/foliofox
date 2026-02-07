@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useDebounce } from "use-debounce";
-import { useFormContext } from "react-hook-form";
 import { Search, XIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -30,7 +29,6 @@ import { Spinner } from "@/components/ui/spinner";
 
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useFormField } from "@/components/ui/form";
 import { searchYahooFinanceSymbols } from "@/server/symbols/search";
 
 import type { SymbolSearchResult } from "@/types/global.types";
@@ -42,6 +40,9 @@ interface SymbolSearchProps {
     onChange: (value: string) => void;
   };
   id?: string;
+  isInvalid?: boolean;
+  fieldName?: string;
+  clearErrors?: (name: string) => void;
   onSymbolSelect?: (symbolId: string) => void;
   className?: string;
   popoverWidth?: string;
@@ -50,6 +51,9 @@ interface SymbolSearchProps {
 export function SymbolSearch({
   field,
   id,
+  isInvalid = false,
+  fieldName,
+  clearErrors,
   onSymbolSelect,
   className,
   popoverWidth = "w-(--radix-popover-trigger-width)",
@@ -61,9 +65,6 @@ export function SymbolSearch({
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery] = useDebounce(searchQuery, 300);
   const isMobile = useIsMobile();
-  const { error, name } = useFormField();
-  const isInvalid = Boolean(error);
-  const { clearErrors } = useFormContext();
 
   // Find the selected equity
   const selectedSymbol = results.find((symbol) => symbol.id === field.value);
@@ -135,7 +136,7 @@ export function SymbolSearch({
   const symbolListProps = {
     setOpen,
     onChange: (v: string) => {
-      clearErrors(name);
+      if (clearErrors && fieldName) clearErrors(fieldName);
       field.onChange(v);
     },
     onSymbolSelect,
@@ -170,7 +171,7 @@ export function SymbolSearch({
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  clearErrors(name);
+                  if (clearErrors && fieldName) clearErrors(fieldName);
                   field.onChange("");
                   setSearchQuery("");
                 }}
@@ -224,7 +225,7 @@ export function SymbolSearch({
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                clearErrors(name);
+                if (clearErrors && fieldName) clearErrors(fieldName);
                 field.onChange("");
                 setSearchQuery("");
               }}

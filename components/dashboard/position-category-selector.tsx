@@ -28,7 +28,6 @@ import {
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { usePositionCategories } from "@/hooks/use-position-categories";
-import { useFormField } from "@/components/ui/form";
 
 import type { PositionCategory } from "@/types/global.types";
 
@@ -39,6 +38,7 @@ interface CategorySelectorProps {
     onChange: (value: string) => void;
   };
   id?: string;
+  isInvalid?: boolean;
   positionType?: "asset" | "liability";
   disabled?: boolean;
   className?: string;
@@ -48,6 +48,7 @@ interface CategorySelectorProps {
 export function PositionCategorySelector({
   field,
   id,
+  isInvalid = false,
   positionType = "asset",
   disabled = false,
   className,
@@ -55,8 +56,6 @@ export function PositionCategorySelector({
 }: CategorySelectorProps) {
   const [open, setOpen] = useState(false);
   const isMobile = useIsMobile();
-  const { error } = useFormField();
-  const isInvalid = Boolean(error);
 
   // Get position categories
   const { categories, isLoading } = usePositionCategories(positionType);

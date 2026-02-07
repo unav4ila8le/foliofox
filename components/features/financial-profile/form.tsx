@@ -3,18 +3,15 @@
 import { toast } from "sonner";
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-  FormDescription,
-} from "@/components/ui/form";
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import {
   InputGroup,
@@ -123,181 +120,175 @@ export function FinancialProfileForm({ onSuccess }: FinancialProfileFormProps) {
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-6">
-        {/* Age band */}
-        <FormField
-          control={form.control}
-          name="age_band"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Age</FormLabel>
-              <FormControl>
-                <RadioGroup
-                  onValueChange={field.onChange}
-                  value={field.value}
-                  className="grid grid-cols-2 gap-2 md:grid-cols-3"
-                >
-                  {AGE_BANDS.map((band) => (
-                    <Label
-                      htmlFor={`age-${band}`}
-                      key={band}
-                      className="hover:bg-primary/5 has-data-[state=checked]:border-primary has-data-[state=checked]:bg-primary/5 flex gap-3 rounded-md border p-3 shadow-xs"
-                    >
-                      <RadioGroupItem value={band} id={`age-${band}`} />
-                      <p>{band}</p>
-                    </Label>
-                  ))}
-                </RadioGroup>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="grid items-start gap-x-2 gap-y-4 md:grid-cols-5">
-          {/* Income amount */}
-          <FormField
-            control={form.control}
-            name="income_amount"
-            render={({ field }) => (
-              <FormItem className="md:col-span-3">
-                <FormLabel htmlFor={field.name}>Yearly income</FormLabel>
-                <FormControl>
-                  <InputGroup>
-                    <InputGroupInput
-                      id={field.name}
-                      placeholder="E.g., 80,000"
-                      type="number"
-                      inputMode="decimal"
-                      min={0}
-                      step="any"
-                      {...field}
-                      value={(field.value as number) ?? ""}
-                    />
-                    <InputGroupAddon align="inline-end">
-                      <InputGroupText>
-                        {form.watch("income_currency")}
-                      </InputGroupText>
-                    </InputGroupAddon>
-                  </InputGroup>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* Income currency */}
-          <FormField
-            control={form.control}
-            name="income_currency"
-            render={({ field }) => (
-              <FormItem className="md:col-span-2">
-                <FormLabel>Income currency</FormLabel>
-                <FormControl>
-                  <CurrencySelector
-                    field={{
-                      value: field.value ?? "USD",
-                      onChange: field.onChange,
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        {/* Risk preference */}
-        <FormField
-          control={form.control}
-          name="risk_preference"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Risk preference</FormLabel>
-              <FormControl>
-                <RadioGroup
-                  onValueChange={field.onChange}
-                  value={field.value}
-                  className="grid gap-2 sm:grid-cols-2"
-                >
-                  {RISK_PREFERENCES.map((preference) => (
-                    <Label
-                      htmlFor={`risk-${preference}`}
-                      key={preference}
-                      className="hover:bg-primary/5 has-data-[state=checked]:border-primary has-data-[state=checked]:bg-primary/5 flex items-start gap-3 rounded-md border p-3 shadow-xs"
-                    >
-                      <RadioGroupItem
-                        value={preference}
-                        id={`risk-${preference}`}
-                      />
-                      <div className="space-y-1.5">
-                        <p className="capitalize">
-                          {preference.replaceAll("_", " ")}
-                        </p>
-                        <p className="text-muted-foreground text-xs">
-                          {RISK_PREFERENCES_DESCRIPTIONS[preference]}
-                        </p>
-                      </div>
-                    </Label>
-                  ))}
-                </RadioGroup>
-              </FormControl>
-            </FormItem>
-          )}
-        />
-
-        {/* About */}
-        <FormField
-          control={form.control}
-          name="about"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>What should the AI know about you?</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="E.g., saving for a home, avoiding crypto, big purchase soon, etc."
-                  {...field}
-                  value={field.value ?? ""}
-                />
-              </FormControl>
-              <FormMessage />
-              <FormDescription>
-                Describe any personal preferences, constraints, or context the
-                AI should consider when running financial analysis, generating
-                insights, or explaining decisions.
-              </FormDescription>
-            </FormItem>
-          )}
-        />
-
-        <div className="flex justify-end gap-2">
-          <DialogClose asChild>
-            <Button
-              disabled={isLoading}
-              type="button"
-              variant="secondary"
-              className="w-1/2 sm:w-auto"
+    <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-6">
+      {/* Age band */}
+      <Controller
+        control={form.control}
+        name="age_band"
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel htmlFor={field.name}>Age</FieldLabel>
+            <RadioGroup
+              onValueChange={field.onChange}
+              value={field.value}
+              className="grid grid-cols-2 gap-2 md:grid-cols-3"
             >
-              Cancel
-            </Button>
-          </DialogClose>
+              {AGE_BANDS.map((band) => (
+                <Label
+                  htmlFor={`age-${band}`}
+                  key={band}
+                  className="hover:bg-primary/5 has-data-[state=checked]:border-primary has-data-[state=checked]:bg-primary/5 flex gap-3 rounded-md border p-3 shadow-xs"
+                >
+                  <RadioGroupItem value={band} id={`age-${band}`} />
+                  <p>{band}</p>
+                </Label>
+              ))}
+            </RadioGroup>
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        )}
+      />
+
+      <div className="grid items-start gap-x-2 gap-y-4 md:grid-cols-5">
+        {/* Income amount */}
+        <Controller
+          control={form.control}
+          name="income_amount"
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid} className="md:col-span-3">
+              <FieldLabel htmlFor={field.name}>Yearly income</FieldLabel>
+              <InputGroup>
+                <InputGroupInput
+                  id={field.name}
+                  placeholder="E.g., 80,000"
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step="any"
+                  aria-invalid={fieldState.invalid}
+                  {...field}
+                  value={(field.value as number) ?? ""}
+                />
+                <InputGroupAddon align="inline-end">
+                  <InputGroupText>
+                    {form.watch("income_currency")}
+                  </InputGroupText>
+                </InputGroupAddon>
+              </InputGroup>
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        />
+
+        {/* Income currency */}
+        <Controller
+          control={form.control}
+          name="income_currency"
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid} className="md:col-span-2">
+              <FieldLabel htmlFor={field.name}>Income currency</FieldLabel>
+              <CurrencySelector
+                field={{
+                  value: field.value ?? "USD",
+                  onChange: field.onChange,
+                }}
+                isInvalid={fieldState.invalid}
+              />
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        />
+      </div>
+
+      {/* Risk preference */}
+      <Controller
+        control={form.control}
+        name="risk_preference"
+        render={({ field }) => (
+          <Field>
+            <FieldLabel htmlFor={field.name}>Risk preference</FieldLabel>
+            <RadioGroup
+              onValueChange={field.onChange}
+              value={field.value}
+              className="grid gap-2 sm:grid-cols-2"
+            >
+              {RISK_PREFERENCES.map((preference) => (
+                <Label
+                  htmlFor={`risk-${preference}`}
+                  key={preference}
+                  className="hover:bg-primary/5 has-data-[state=checked]:border-primary has-data-[state=checked]:bg-primary/5 flex items-start gap-3 rounded-md border p-3 shadow-xs"
+                >
+                  <RadioGroupItem
+                    value={preference}
+                    id={`risk-${preference}`}
+                  />
+                  <div className="space-y-1.5">
+                    <p className="capitalize">
+                      {preference.replaceAll("_", " ")}
+                    </p>
+                    <p className="text-muted-foreground text-xs">
+                      {RISK_PREFERENCES_DESCRIPTIONS[preference]}
+                    </p>
+                  </div>
+                </Label>
+              ))}
+            </RadioGroup>
+          </Field>
+        )}
+      />
+
+      {/* About */}
+      <Controller
+        control={form.control}
+        name="about"
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel htmlFor={field.name}>
+              What should the AI know about you?
+            </FieldLabel>
+            <Textarea
+              id={field.name}
+              placeholder="E.g., saving for a home, avoiding crypto, big purchase soon, etc."
+              aria-invalid={fieldState.invalid}
+              {...field}
+              value={field.value ?? ""}
+            />
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            <FieldDescription>
+              Describe any personal preferences, constraints, or context the AI
+              should consider when running financial analysis, generating
+              insights, or explaining decisions.
+            </FieldDescription>
+          </Field>
+        )}
+      />
+
+      <div className="flex justify-end gap-2">
+        <DialogClose asChild>
           <Button
-            disabled={isLoading || !isDirty}
-            type="submit"
+            disabled={isLoading}
+            type="button"
+            variant="secondary"
             className="w-1/2 sm:w-auto"
           >
-            {isLoading ? (
-              <>
-                <Spinner />
-                Saving...
-              </>
-            ) : (
-              "Save changes"
-            )}
+            Cancel
           </Button>
-        </div>
-      </form>
-    </Form>
+        </DialogClose>
+        <Button
+          disabled={isLoading || !isDirty}
+          type="submit"
+          className="w-1/2 sm:w-auto"
+        >
+          {isLoading ? (
+            <>
+              <Spinner />
+              Saving...
+            </>
+          ) : (
+            "Save changes"
+          )}
+        </Button>
+      </div>
+    </form>
   );
 }

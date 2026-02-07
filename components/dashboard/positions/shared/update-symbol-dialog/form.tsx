@@ -4,18 +4,11 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { AlertCircle, Info } from "lucide-react";
 
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -172,70 +165,71 @@ export function UpdateSymbolForm({
   }
 
   return (
-    <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit((values) => onSubmit(values))}
-        className="space-y-4"
-      >
-        {/* Warning about what changes */}
-        <Alert>
-          <Info className="size-4" />
-          <AlertTitle>What will change</AlertTitle>
-          <AlertDescription>
-            Changing the symbol updates market data, dividends, news, and
-            historical analytics. Transactions remain unchanged.
-          </AlertDescription>
-        </Alert>
+    <form
+      onSubmit={form.handleSubmit((values) => onSubmit(values))}
+      className="space-y-4"
+    >
+      {/* Warning about what changes */}
+      <Alert>
+        <Info className="size-4" />
+        <AlertTitle>What will change</AlertTitle>
+        <AlertDescription>
+          Changing the symbol updates market data, dividends, news, and
+          historical analytics. Transactions remain unchanged.
+        </AlertDescription>
+      </Alert>
 
-        {/* Current symbol info */}
-        {currentSymbolTicker && (
-          <div className="text-muted-foreground text-sm">
-            Current symbol:{" "}
-            <span className="text-foreground font-medium">
-              {currentSymbolTicker}
-            </span>
-          </div>
-        )}
-
-        {/* Symbol search field */}
-        <FormField
-          control={form.control}
-          name="symbolLookup"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>New Symbol</FormLabel>
-              <FormControl>
-                <SymbolSearch field={field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Footer */}
-        <div className="flex justify-end gap-2 pt-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-            disabled={isLoading}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            disabled={isLoading || !isDirty || !selectedSymbol}
-          >
-            {isLoading ? (
-              <>
-                <Spinner /> Updating...
-              </>
-            ) : (
-              "Update Symbol"
-            )}
-          </Button>
+      {/* Current symbol info */}
+      {currentSymbolTicker && (
+        <div className="text-muted-foreground text-sm">
+          Current symbol:{" "}
+          <span className="text-foreground font-medium">
+            {currentSymbolTicker}
+          </span>
         </div>
-      </form>
-    </Form>
+      )}
+
+      {/* Symbol search field */}
+      <Controller
+        control={form.control}
+        name="symbolLookup"
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel htmlFor={field.name}>New Symbol</FieldLabel>
+            <SymbolSearch
+              field={field}
+              isInvalid={fieldState.invalid}
+              fieldName={field.name}
+              clearErrors={form.clearErrors as (name: string) => void}
+            />
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        )}
+      />
+
+      {/* Footer */}
+      <div className="flex justify-end gap-2 pt-2">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          disabled={isLoading}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          disabled={isLoading || !isDirty || !selectedSymbol}
+        >
+          {isLoading ? (
+            <>
+              <Spinner /> Updating...
+            </>
+          ) : (
+            "Update Symbol"
+          )}
+        </Button>
+      </div>
+    </form>
   );
 }

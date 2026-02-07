@@ -2,20 +2,13 @@
 
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
 
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import {
   Popover,
   PopoverContent,
@@ -129,141 +122,142 @@ export function SellForm() {
   }
 
   return (
-    <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        className="grid gap-x-2 gap-y-4"
-      >
-        {/* Date */}
-        <FormField
+    <form
+      onSubmit={form.handleSubmit(onSubmit)}
+      className="grid gap-x-2 gap-y-4"
+    >
+      {/* Date */}
+      <Controller
+        control={form.control}
+        name="date"
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid} className="sm:w-1/2 sm:pr-1">
+            <FieldLabel htmlFor={field.name}>Date</FieldLabel>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  id={field.name}
+                  variant="outline"
+                  aria-invalid={fieldState.invalid}
+                  className={cn(
+                    "text-left font-normal",
+                    !field.value && "text-muted-foreground",
+                  )}
+                >
+                  {field.value ? (
+                    format(field.value, "PPP")
+                  ) : (
+                    <span>Pick a date</span>
+                  )}
+                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  captionLayout="dropdown"
+                  selected={field.value}
+                  onSelect={field.onChange}
+                  disabled={(date) =>
+                    date > new Date() || date < new Date("1900-01-01")
+                  }
+                  autoFocus
+                />
+              </PopoverContent>
+            </Popover>
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        )}
+      />
+
+      {/* Quantity and unit value fields in a grid */}
+      <div className="grid items-start gap-x-2 gap-y-4 sm:grid-cols-2">
+        {/* Quantity field */}
+        <Controller
           control={form.control}
-          name="date"
-          render={({ field }) => (
-            <FormItem className="sm:w-1/2 sm:pr-1">
-              <FormLabel>Date</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "text-left font-normal",
-                        !field.value && "text-muted-foreground",
-                      )}
-                    >
-                      {field.value ? (
-                        format(field.value, "PPP")
-                      ) : (
-                        <span>Pick a date</span>
-                      )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    captionLayout="dropdown"
-                    selected={field.value}
-                    onSelect={field.onChange}
-                    disabled={(date) =>
-                      date > new Date() || date < new Date("1900-01-01")
-                    }
-                    autoFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              <FormMessage />
-            </FormItem>
+          name="quantity"
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel htmlFor={field.name}>Quantity sold</FieldLabel>
+              <Input
+                id={field.name}
+                placeholder="E.g., 10"
+                type="number"
+                inputMode="decimal"
+                min={0}
+                step="any"
+                aria-invalid={fieldState.invalid}
+                {...field}
+                value={field.value as number}
+              />
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
           )}
         />
 
-        {/* Quantity and unit value fields in a grid */}
-        <div className="grid items-start gap-x-2 gap-y-4 sm:grid-cols-2">
-          {/* Quantity field */}
-          <FormField
-            control={form.control}
-            name="quantity"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Quantity sold</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="E.g., 10"
-                    type="number"
-                    inputMode="decimal"
-                    min={0}
-                    step="any"
-                    {...field}
-                    value={field.value as number}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* Unit value field */}
-          <FormField
-            control={form.control}
-            name="unit_value"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Sale price per unit</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="E.g., 420.69"
-                    type="number"
-                    inputMode="decimal"
-                    min={0}
-                    step="any"
-                    {...field}
-                    value={field.value as number}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        {/* Description */}
-        <FormField
+        {/* Unit value field */}
+        <Controller
           control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description (optional)</FormLabel>
-              <FormControl>
-                <Input placeholder="Add any notes about this sale" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+          name="unit_value"
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel htmlFor={field.name}>Sale price per unit</FieldLabel>
+              <Input
+                id={field.name}
+                placeholder="E.g., 420.69"
+                type="number"
+                inputMode="decimal"
+                min={0}
+                step="any"
+                aria-invalid={fieldState.invalid}
+                {...field}
+                value={field.value as number}
+              />
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
           )}
         />
+      </div>
 
-        {/* Action */}
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Button
-            onClick={() => setOpen(false)}
-            disabled={isLoading}
-            type="button"
-            variant="secondary"
-          >
-            Cancel
-          </Button>
-          <Button type="submit" disabled={isLoading || !isDirty}>
-            {isLoading ? (
-              <>
-                <Spinner />
-                Creating...
-              </>
-            ) : (
-              "Create record"
-            )}
-          </Button>
-        </div>
-      </form>
-    </Form>
+      {/* Description */}
+      <Controller
+        control={form.control}
+        name="description"
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel htmlFor={field.name}>Description (optional)</FieldLabel>
+            <Input
+              id={field.name}
+              placeholder="Add any notes about this sale"
+              aria-invalid={fieldState.invalid}
+              {...field}
+            />
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        )}
+      />
+
+      {/* Action */}
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <Button
+          onClick={() => setOpen(false)}
+          disabled={isLoading}
+          type="button"
+          variant="secondary"
+        >
+          Cancel
+        </Button>
+        <Button type="submit" disabled={isLoading || !isDirty}>
+          {isLoading ? (
+            <>
+              <Spinner />
+              Creating...
+            </>
+          ) : (
+            "Create record"
+          )}
+        </Button>
+      </div>
+    </form>
   );
 }

@@ -3,17 +3,10 @@
 import { toast } from "sonner";
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import {
   Accordion,
   AccordionContent,
@@ -118,126 +111,127 @@ export function UpdateAssetForm({
 
   return (
     <>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
-          {/* Name */}
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Name</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="E.g., Chase Savings, Rental Property, Bitcoin Holdings"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* Category */}
-          <FormField
-            control={form.control}
-            name="category_id"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Category</FormLabel>
-                <FormControl>
-                  <PositionCategorySelector field={field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* Capital gains tax rate */}
-          <CapitalGainsTaxRateField
-            control={form.control}
-            setValue={form.setValue}
-            disabled={isLoading}
-            className="sm:w-1/2"
-          />
-
-          {/* Description */}
-          <FormField
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Description (optional)</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="Add a description of this asset"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* Advanced */}
-          {currentSymbolTicker && (
-            <Accordion type="single" collapsible>
-              <AccordionItem value="advanced">
-                <AccordionTrigger className="text-muted-foreground justify-start gap-1 text-sm">
-                  Advanced
-                </AccordionTrigger>
-                <AccordionContent>
-                  <div className="bg-muted/50 space-y-3 rounded-lg border p-4">
-                    <div className="space-y-1 text-sm">
-                      <h4 className="flex items-center gap-2 font-medium">
-                        Change Ticker Symbol
-                      </h4>
-                      <p className="text-muted-foreground">
-                        Update the market data symbol linked to this position.
-                      </p>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setUpdateSymbolDialogOpen(true)}
-                    >
-                      Change Symbol
-                    </Button>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
+        {/* Name */}
+        <Controller
+          control={form.control}
+          name="name"
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel htmlFor={field.name}>Name</FieldLabel>
+              <Input
+                id={field.name}
+                placeholder="E.g., Chase Savings, Rental Property, Bitcoin Holdings"
+                aria-invalid={fieldState.invalid}
+                {...field}
+              />
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
           )}
+        />
 
-          {/* Footer */}
-          <div className="flex justify-end gap-2">
-            <Button
-              onClick={onSuccess}
-              disabled={isLoading}
-              type="button"
-              variant="secondary"
-              className="w-1/2 sm:w-auto"
-            >
-              Cancel
-            </Button>
-            <Button
-              disabled={isLoading || !isDirty}
-              type="submit"
-              className="w-1/2 sm:w-auto"
-            >
-              {isLoading ? (
-                <>
-                  <Spinner />
-                  Updating...
-                </>
-              ) : (
-                "Save changes"
-              )}
-            </Button>
-          </div>
-        </form>
-      </Form>
+        {/* Category */}
+        <Controller
+          control={form.control}
+          name="category_id"
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel htmlFor={field.name}>Category</FieldLabel>
+              <PositionCategorySelector
+                field={field}
+                isInvalid={fieldState.invalid}
+              />
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        />
+
+        {/* Capital gains tax rate */}
+        <CapitalGainsTaxRateField
+          control={form.control}
+          setValue={form.setValue}
+          disabled={isLoading}
+          className="sm:w-1/2"
+        />
+
+        {/* Description */}
+        <Controller
+          control={form.control}
+          name="description"
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel htmlFor={field.name}>
+                Description (optional)
+              </FieldLabel>
+              <Input
+                id={field.name}
+                placeholder="Add a description of this asset"
+                aria-invalid={fieldState.invalid}
+                {...field}
+              />
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        />
+
+        {/* Advanced */}
+        {currentSymbolTicker && (
+          <Accordion type="single" collapsible>
+            <AccordionItem value="advanced">
+              <AccordionTrigger className="text-muted-foreground justify-start gap-1 text-sm">
+                Advanced
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="bg-muted/50 space-y-3 rounded-lg border p-4">
+                  <div className="space-y-1 text-sm">
+                    <h4 className="flex items-center gap-2 font-medium">
+                      Change Ticker Symbol
+                    </h4>
+                    <p className="text-muted-foreground">
+                      Update the market data symbol linked to this position.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setUpdateSymbolDialogOpen(true)}
+                  >
+                    Change Symbol
+                  </Button>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        )}
+
+        {/* Footer */}
+        <div className="flex justify-end gap-2">
+          <Button
+            onClick={onSuccess}
+            disabled={isLoading}
+            type="button"
+            variant="secondary"
+            className="w-1/2 sm:w-auto"
+          >
+            Cancel
+          </Button>
+          <Button
+            disabled={isLoading || !isDirty}
+            type="submit"
+            className="w-1/2 sm:w-auto"
+          >
+            {isLoading ? (
+              <>
+                <Spinner />
+                Updating...
+              </>
+            ) : (
+              "Save changes"
+            )}
+          </Button>
+        </div>
+      </form>
 
       <UpdateSymbolDialog
         open={updateSymbolDialogOpen}

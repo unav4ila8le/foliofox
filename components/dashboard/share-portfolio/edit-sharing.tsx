@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Pencil, Link2 } from "lucide-react";
 import { z } from "zod";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 
@@ -26,14 +26,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-  FormDescription,
-} from "@/components/ui/form";
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from "@/components/ui/field";
 import {
   Select,
   SelectContent,
@@ -136,99 +133,101 @@ export function EditSharing({
           </DialogDescription>
         </DialogHeader>
 
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(handleSubmit)}
-            className="grid gap-4"
-          >
-            {/* Slug */}
-            <FormField
-              control={form.control}
-              name="slug"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel htmlFor={field.name}>Slug</FormLabel>
-                  <FormControl>
-                    <ButtonGroup className="w-full">
-                      <ButtonGroupText asChild>
-                        <Label>
-                          <span className="sm:hidden">/portfolio/</span>
-                          <span className="hidden sm:inline">
-                            {siteUrl}/portfolio/
-                          </span>
-                        </Label>
-                      </ButtonGroupText>
-                      <InputGroup>
-                        <InputGroupInput
-                          id={field.name}
-                          placeholder="myportfolio"
-                          {...field}
-                        />
-                        <InputGroupAddon align="inline-end">
-                          <Link2 />
-                        </InputGroupAddon>
-                      </InputGroup>
-                    </ButtonGroup>
-                  </FormControl>
-                  <FormMessage />
-                  <FormDescription>
-                    Lowercase letters and numbers only. Saving updates your
-                    portfolio&apos;s public URL and invalidates any previous
-                    link.
-                  </FormDescription>
-                </FormItem>
-              )}
-            />
-
-            {/* Expiration */}
-            <FormField
-              control={form.control}
-              name="expiration"
-              render={({ field }) => (
-                <FormItem className="sm:w-1/2 sm:pr-1">
-                  <FormLabel htmlFor={field.name}>Expire after</FormLabel>
-                  <FormControl>
-                    <Select
-                      onValueChange={(value) => field.onChange(value)}
-                      value={field.value}
-                    >
-                      <SelectTrigger className="w-full" id={field.name}>
-                        <SelectValue placeholder="Select expiration" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {PUBLIC_PORTFOLIO_EXPIRATIONS.map((value) => (
-                          <SelectItem key={value} value={value}>
-                            {labelForExpiration(value)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Footer - Action buttons */}
-            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <DialogClose asChild>
-                <Button type="button" variant="secondary" disabled={isUpdating}>
-                  Cancel
-                </Button>
-              </DialogClose>
-              <Button type="submit" disabled={isUpdating || !isDirty}>
-                {isUpdating ? (
-                  <>
-                    <Spinner />
-                    Saving...
-                  </>
-                ) : (
-                  "Save changes"
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="grid gap-4">
+          {/* Slug */}
+          <Controller
+            control={form.control}
+            name="slug"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor={field.name}>Slug</FieldLabel>
+                <ButtonGroup className="w-full">
+                  <ButtonGroupText asChild>
+                    <Label>
+                      <span className="sm:hidden">/portfolio/</span>
+                      <span className="hidden sm:inline">
+                        {siteUrl}/portfolio/
+                      </span>
+                    </Label>
+                  </ButtonGroupText>
+                  <InputGroup>
+                    <InputGroupInput
+                      id={field.name}
+                      placeholder="myportfolio"
+                      aria-invalid={fieldState.invalid}
+                      {...field}
+                    />
+                    <InputGroupAddon align="inline-end">
+                      <Link2 />
+                    </InputGroupAddon>
+                  </InputGroup>
+                </ButtonGroup>
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
                 )}
+                <FieldDescription>
+                  Lowercase letters and numbers only. Saving updates your
+                  portfolio&apos;s public URL and invalidates any previous link.
+                </FieldDescription>
+              </Field>
+            )}
+          />
+
+          {/* Expiration */}
+          <Controller
+            control={form.control}
+            name="expiration"
+            render={({ field, fieldState }) => (
+              <Field
+                data-invalid={fieldState.invalid}
+                className="sm:w-1/2 sm:pr-1"
+              >
+                <FieldLabel htmlFor={field.name}>Expire after</FieldLabel>
+                <Select
+                  onValueChange={(value) => field.onChange(value)}
+                  value={field.value}
+                >
+                  <SelectTrigger
+                    className="w-full"
+                    id={field.name}
+                    aria-invalid={fieldState.invalid}
+                  >
+                    <SelectValue placeholder="Select expiration" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PUBLIC_PORTFOLIO_EXPIRATIONS.map((value) => (
+                      <SelectItem key={value} value={value}>
+                        {labelForExpiration(value)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+          />
+
+          {/* Footer - Action buttons */}
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <DialogClose asChild>
+              <Button type="button" variant="secondary" disabled={isUpdating}>
+                Cancel
               </Button>
-            </div>
-          </form>
-        </Form>
+            </DialogClose>
+            <Button type="submit" disabled={isUpdating || !isDirty}>
+              {isUpdating ? (
+                <>
+                  <Spinner />
+                  Saving...
+                </>
+              ) : (
+                "Save changes"
+              )}
+            </Button>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   );

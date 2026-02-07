@@ -28,7 +28,6 @@ import {
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useCurrencies } from "@/hooks/use-currencies";
-import { useFormField } from "@/components/ui/form";
 
 import type { Currency } from "@/types/global.types";
 
@@ -39,6 +38,7 @@ interface CurrencySelectorProps {
     onChange: (value: string) => void;
   };
   id?: string;
+  isInvalid?: boolean;
   disabled?: boolean;
   className?: string;
   popoverAlign?: "start" | "center" | "end";
@@ -48,6 +48,7 @@ interface CurrencySelectorProps {
 export function CurrencySelector({
   field,
   id,
+  isInvalid = false,
   disabled,
   className,
   popoverAlign = "start",
@@ -55,8 +56,6 @@ export function CurrencySelector({
 }: CurrencySelectorProps) {
   const [open, setOpen] = useState(false);
   const isMobile = useIsMobile();
-  const { error } = useFormField();
-  const isInvalid = Boolean(error);
 
   // Get currencies
   const { currencies, isLoading } = useCurrencies();
