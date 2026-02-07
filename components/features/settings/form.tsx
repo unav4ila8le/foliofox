@@ -3,18 +3,9 @@
 import { toast } from "sonner";
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-  FormDescription,
-} from "@/components/ui/form";
 import {
   Select,
   SelectContent,
@@ -22,6 +13,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -124,91 +121,85 @@ export function SettingsForm({ onSuccess }: SettingsFormProps) {
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
-        <FormField
-          control={form.control}
-          name="username"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Username</FormLabel>
-              <FormControl>
-                <Input placeholder="username" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+    <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
+      <Controller
+        control={form.control}
+        name="username"
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel htmlFor={field.name}>Username</FieldLabel>
+            <Input
+              id={field.name}
+              placeholder="username"
+              aria-invalid={fieldState.invalid}
+              {...field}
+            />
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        )}
+      />
 
-        <FormField
-          control={form.control}
-          name="display_currency"
-          render={({ field }) => (
-            <FormItem className="sm:w-1/2">
-              <FormLabel>Base currency</FormLabel>
-              <FormControl>
-                <CurrencySelector field={field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <Controller
+        control={form.control}
+        name="display_currency"
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid} className="sm:w-1/2">
+            <FieldLabel htmlFor={field.name}>Base currency</FieldLabel>
+            <CurrencySelector field={field} isInvalid={fieldState.invalid} />
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        )}
+      />
 
-        <FormItem className="sm:w-1/2">
-          <FormLabel>Locale</FormLabel>
-          <FormControl>
-            <Select disabled value="auto">
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="auto">Auto</SelectItem>
-              </SelectContent>
-            </Select>
-          </FormControl>
-          <FormMessage />
-          <FormDescription>Date and number format.</FormDescription>
-        </FormItem>
+      {/* Static locale field (not connected to form) */}
+      <Field className="sm:w-1/2">
+        <FieldLabel htmlFor="locale">Locale</FieldLabel>
+        <Select disabled value="auto">
+          <SelectTrigger id="locale" className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="auto">Auto</SelectItem>
+          </SelectContent>
+        </Select>
+        <FieldDescription>Date and number format.</FieldDescription>
+      </Field>
 
-        {/* Read-only email field */}
-        <FormItem>
-          <FormLabel>Email</FormLabel>
-          <FormControl>
-            <Input value={email} disabled />
-          </FormControl>
-          <FormMessage />
-          <FormDescription>
-            If you need to change your email, please contact support.
-          </FormDescription>
-        </FormItem>
+      {/* Read-only email field */}
+      <Field>
+        <FieldLabel htmlFor="email">Email</FieldLabel>
+        <Input id="email" value={email} disabled />
+        <FieldDescription>
+          If you need to change your email, please contact support.
+        </FieldDescription>
+      </Field>
 
-        <div className="flex justify-end gap-2">
-          <DialogClose asChild>
-            <Button
-              disabled={isLoading}
-              type="button"
-              variant="secondary"
-              className="w-1/2 sm:w-auto"
-            >
-              Cancel
-            </Button>
-          </DialogClose>
+      <div className="flex justify-end gap-2">
+        <DialogClose asChild>
           <Button
-            disabled={isLoading || !isDirty}
-            type="submit"
+            disabled={isLoading}
+            type="button"
+            variant="secondary"
             className="w-1/2 sm:w-auto"
           >
-            {isLoading ? (
-              <>
-                <Spinner />
-                Saving...
-              </>
-            ) : (
-              "Save changes"
-            )}
+            Cancel
           </Button>
-        </div>
-      </form>
-    </Form>
+        </DialogClose>
+        <Button
+          disabled={isLoading || !isDirty}
+          type="submit"
+          className="w-1/2 sm:w-auto"
+        >
+          {isLoading ? (
+            <>
+              <Spinner />
+              Saving...
+            </>
+          ) : (
+            "Save changes"
+          )}
+        </Button>
+      </div>
+    </form>
   );
 }

@@ -3,18 +3,15 @@
 import { toast } from "sonner";
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-  FormDescription,
-} from "@/components/ui/form";
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from "@/components/ui/field";
 import { Switch } from "@/components/ui/switch";
 import { DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -78,64 +75,64 @@ export function AISettingsForm({ onSuccess }: AISettingsFormProps) {
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
-        <FormField
-          control={form.control}
-          name="data_sharing_consent"
-          render={({ field }) => (
-            <FormItem className="rounded-lg border px-4 py-3 text-sm">
-              <FormControl>
-                <div className="flex items-center gap-2">
-                  <Switch
-                    id="data-sharing-consent"
-                    checked={field.value}
-                    disabled={isLoading}
-                    onCheckedChange={field.onChange}
-                    className="data-[state=checked]:bg-green-500"
-                  />
-                  <FormLabel htmlFor="data-sharing-consent">
-                    AI data sharing consent
-                  </FormLabel>
-                </div>
-              </FormControl>
-              <FormDescription className="text-muted-foreground">
-                Foliofox AI Advisor can provide more relevant answers if you
-                choose to share different levels of data. This feature is
-                powered by third-party AI providers.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+    <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
+      <Controller
+        control={form.control}
+        name="data_sharing_consent"
+        render={({ field, fieldState }) => (
+          <Field
+            data-invalid={fieldState.invalid}
+            className="rounded-lg border px-4 py-3 text-sm"
+          >
+            <div className="flex items-center gap-2">
+              <Switch
+                id="data-sharing-consent"
+                checked={field.value}
+                disabled={isLoading}
+                onCheckedChange={field.onChange}
+                aria-invalid={fieldState.invalid}
+                className="data-[state=checked]:bg-green-500"
+              />
+              <FieldLabel htmlFor="data-sharing-consent">
+                AI data sharing consent
+              </FieldLabel>
+            </div>
+            <FieldDescription className="text-muted-foreground">
+              Foliofox AI Advisor can provide more relevant answers if you
+              choose to share different levels of data. This feature is powered
+              by third-party AI providers.
+            </FieldDescription>
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        )}
+      />
 
-        <div className="flex justify-end gap-2">
-          <DialogClose asChild>
-            <Button
-              disabled={isLoading}
-              type="button"
-              variant="secondary"
-              className="w-1/2 sm:w-auto"
-            >
-              Cancel
-            </Button>
-          </DialogClose>
+      <div className="flex justify-end gap-2">
+        <DialogClose asChild>
           <Button
-            disabled={isLoading || !isDirty}
-            type="submit"
+            disabled={isLoading}
+            type="button"
+            variant="secondary"
             className="w-1/2 sm:w-auto"
           >
-            {isLoading ? (
-              <>
-                <Spinner />
-                Saving...
-              </>
-            ) : (
-              "Save changes"
-            )}
+            Cancel
           </Button>
-        </div>
-      </form>
-    </Form>
+        </DialogClose>
+        <Button
+          disabled={isLoading || !isDirty}
+          type="submit"
+          className="w-1/2 sm:w-auto"
+        >
+          {isLoading ? (
+            <>
+              <Spinner />
+              Saving...
+            </>
+          ) : (
+            "Save changes"
+          )}
+        </Button>
+      </div>
+    </form>
   );
 }

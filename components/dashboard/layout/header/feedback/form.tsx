@@ -1,19 +1,13 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -68,72 +62,73 @@ export function FeedbackForm({ onSuccess }: { onSuccess: () => void }) {
   }
 
   return (
-    <Form {...form}>
-      <form className="grid gap-4" onSubmit={form.handleSubmit(onSubmit)}>
-        <FormField
-          control={form.control}
-          name="type"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>What would you like to share?</FormLabel>
-              <FormControl>
-                <RadioGroup
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                  className="flex flex-col"
-                >
-                  <FormItem className="flex items-center gap-3">
-                    <FormControl>
-                      <RadioGroupItem value="issue" />
-                    </FormControl>
-                    <FormLabel className="font-normal">Issue</FormLabel>
-                  </FormItem>
-                  <FormItem className="flex items-center gap-3">
-                    <FormControl>
-                      <RadioGroupItem value="idea" />
-                    </FormControl>
-                    <FormLabel className="font-normal">Idea</FormLabel>
-                  </FormItem>
-                  <FormItem className="flex items-center gap-3">
-                    <FormControl>
-                      <RadioGroupItem value="other" />
-                    </FormControl>
-                    <FormLabel className="font-normal">Other</FormLabel>
-                  </FormItem>
-                </RadioGroup>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="message"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Message</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Write your feedback here..."
-                  className="max-h-64"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit" disabled={isSubmitting || !isDirty}>
-          {isSubmitting ? (
-            <>
-              <Spinner />
-              Sending...
-            </>
-          ) : (
-            "Send feedback"
-          )}
-        </Button>
-      </form>
-    </Form>
+    <form className="grid gap-4" onSubmit={form.handleSubmit(onSubmit)}>
+      <Controller
+        control={form.control}
+        name="type"
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel htmlFor={field.name}>
+              What would you like to share?
+            </FieldLabel>
+            <RadioGroup
+              onValueChange={field.onChange}
+              defaultValue={field.value}
+              className="flex flex-col gap-3"
+            >
+              <Label
+                htmlFor="feedback-issue"
+                className="flex items-center gap-3 font-normal"
+              >
+                <RadioGroupItem value="issue" id="feedback-issue" />
+                Issue
+              </Label>
+              <Label
+                htmlFor="feedback-idea"
+                className="flex items-center gap-3 font-normal"
+              >
+                <RadioGroupItem value="idea" id="feedback-idea" />
+                Idea
+              </Label>
+              <Label
+                htmlFor="feedback-other"
+                className="flex items-center gap-3 font-normal"
+              >
+                <RadioGroupItem value="other" id="feedback-other" />
+                Other
+              </Label>
+            </RadioGroup>
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        )}
+      />
+      <Controller
+        control={form.control}
+        name="message"
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel htmlFor={field.name}>Message</FieldLabel>
+            <Textarea
+              id={field.name}
+              placeholder="Write your feedback here..."
+              className="max-h-64"
+              aria-invalid={fieldState.invalid}
+              {...field}
+            />
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        )}
+      />
+      <Button type="submit" disabled={isSubmitting || !isDirty}>
+        {isSubmitting ? (
+          <>
+            <Spinner />
+            Sending...
+          </>
+        ) : (
+          "Send feedback"
+        )}
+      </Button>
+    </form>
   );
 }
