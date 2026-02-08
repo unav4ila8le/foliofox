@@ -2,22 +2,29 @@
 
 import type { UIMessage } from "ai";
 import { getCurrentUser } from "@/server/auth/actions";
+import { MAX_PERSISTED_MESSAGES_PER_CONVERSATION } from "@/lib/ai/chat-guardrails-config";
 
 export async function fetchConversationMessages(
   conversationId: string,
   limit = 100,
 ): Promise<UIMessage[]> {
   const { supabase, user } = await getCurrentUser();
+  const normalizedLimit = Math.min(
+    Math.max(limit, 1),
+    MAX_PERSISTED_MESSAGES_PER_CONVERSATION,
+  );
 
   const { data } = await supabase
     .from("conversation_messages")
     .select("id, role, content, parts, order, created_at")
     .eq("conversation_id", conversationId)
     .eq("user_id", user.id)
-    .order("order", { ascending: true })
-    .limit(Math.min(Math.max(limit, 1), 200));
+    // Query newest first for an efficient bounded read.
+    .order("order", { ascending: false })
+    .limit(normalizedLimit);
 
-  return (data ?? []).map((m) => {
+  // Return chronological order for the chat UI.
+  return [...(data ?? [])].reverse().map((m) => {
     return {
       id: m.id,
       role: m.role as "user" | "assistant",

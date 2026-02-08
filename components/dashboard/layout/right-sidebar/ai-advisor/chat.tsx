@@ -9,11 +9,13 @@ import {
 } from "react";
 import { DefaultChatTransport, isStaticToolUIPart, type UIMessage } from "ai";
 import { useChat } from "@ai-sdk/react";
-import { Check, Copy, RefreshCcw, Sparkles } from "lucide-react";
+import { Check, Copy, RefreshCcw, Sparkles, TriangleAlert } from "lucide-react";
+import { toast } from "sonner";
 
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Conversation,
   ConversationContent,
@@ -60,6 +62,10 @@ import { Logomark } from "@/components/ui/logos/logomark";
 import { AISettingsDialog } from "@/components/features/ai-settings/dialog";
 
 import type { Mode } from "@/server/ai/system-prompt";
+import {
+  AI_CHAT_CONVERSATION_CAP_FRIENDLY_MESSAGE,
+  isConversationCapErrorMessage,
+} from "@/lib/ai/chat-errors";
 
 import { cn } from "@/lib/utils";
 
@@ -130,6 +136,10 @@ interface ChatProps {
   copiedMessages: Set<string>;
   setCopiedMessages: Dispatch<SetStateAction<Set<string>>>;
   isAIEnabled?: boolean;
+  isAtConversationCap?: boolean;
+  maxConversations?: number;
+  hasCurrentConversationInHistory?: boolean;
+  onConversationPersisted?: () => Promise<void> | void;
 }
 
 export function Chat({
@@ -139,8 +149,13 @@ export function Chat({
   copiedMessages,
   setCopiedMessages,
   isAIEnabled,
+  isAtConversationCap,
+  maxConversations = 20,
+  hasCurrentConversationInHistory,
+  onConversationPersisted,
 }: ChatProps) {
   const [mode, setMode] = useState<Mode>("advisory");
+  const [chatErrorMessage, setChatErrorMessage] = useState<string | null>(null);
 
   const { copyToClipboard } = useCopyToClipboard({ timeout: 4000 });
   const controller = usePromptInputController();
@@ -156,10 +171,37 @@ export function Chat({
     id: conversationId,
     messages: initialMessages,
     transport,
+    onError: (error) => {
+      // Normalize backend cap error into a stable, user-friendly message.
+      const message = isConversationCapErrorMessage(error.message)
+        ? AI_CHAT_CONVERSATION_CAP_FRIENDLY_MESSAGE
+        : error.message;
+
+      setChatErrorMessage(message);
+      toast.error(message);
+    },
+    onFinish: async ({ isAbort, isError }) => {
+      if (isAbort || isError) return;
+
+      setChatErrorMessage(null);
+      await onConversationPersisted?.();
+    },
   });
+
+  const showProactiveCapAlert =
+    Boolean(isAIEnabled) &&
+    Boolean(isAtConversationCap) &&
+    // New unsaved thread + cap reached -> block sends and guide deletion.
+    !hasCurrentConversationInHistory;
+  const isCapError = chatErrorMessage
+    ? isConversationCapErrorMessage(chatErrorMessage)
+    : false;
 
   // Quick-send a suggested prompt
   const handleSuggestionClick = (suggestion: string) => {
+    if (showProactiveCapAlert) return;
+
+    setChatErrorMessage(null);
     sendMessage({ text: suggestion });
   };
 
@@ -178,12 +220,17 @@ export function Chat({
 
   // Submit user input to the chat
   const handleSubmit = (message: PromptInputMessage) => {
+    if (showProactiveCapAlert) {
+      return;
+    }
+
     const hasText = Boolean(message.text);
 
     if (!hasText) {
       return;
     }
 
+    setChatErrorMessage(null);
     sendMessage({ text: message.text || "" });
   };
 
@@ -351,6 +398,28 @@ export function Chat({
         </div>
       )}
 
+      {(showProactiveCapAlert || chatErrorMessage) && (
+        <div className="px-2 pb-2">
+          <Alert
+            variant={
+              showProactiveCapAlert || isCapError ? "default" : "destructive"
+            }
+          >
+            <TriangleAlert />
+            <AlertTitle>
+              {showProactiveCapAlert || isCapError
+                ? "Conversation limit reached"
+                : "Chat request failed"}
+            </AlertTitle>
+            <AlertDescription>
+              {showProactiveCapAlert
+                ? `You have ${maxConversations} saved conversations. Delete an older conversation from history to start a new one.`
+                : chatErrorMessage}
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
+
       {/* Prompt Input */}
       <div
         className={cn("px-2", !isAIEnabled && "pointer-events-none opacity-50")}
@@ -397,9 +466,11 @@ export function Chat({
             <PromptInputSubmit
               status={status}
               disabled={
-                status === "streaming"
-                  ? false
-                  : controller.textInput.value.trim().length < 3
+                showProactiveCapAlert
+                  ? true
+                  : status === "streaming"
+                    ? false
+                    : controller.textInput.value.trim().length < 3
               }
               onClick={(e) => {
                 if (status === "streaming") {

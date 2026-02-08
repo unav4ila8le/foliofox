@@ -28,17 +28,34 @@ export function AIAdvisor() {
       updatedAt: string;
     }[]
   >([]);
+  const [totalConversations, setTotalConversations] = useState(0);
+  const [isAtConversationCap, setIsAtConversationCap] = useState(false);
+  const [maxConversations, setMaxConversations] = useState(20);
   const [initialMessages, setInitialMessages] = useState<UIMessage[]>([]);
   const [isLoadingConversation, setIsLoadingConversation] = useState(false);
   const [copiedMessages, setCopiedMessages] = useState<Set<string>>(new Set());
+
+  const refreshConversations = async () => {
+    // Single refresh source for list + cap metadata.
+    const result = await fetchConversations();
+    setConversations(result.conversations);
+    setTotalConversations(result.totalCount);
+    setIsAtConversationCap(result.isAtCap);
+    setMaxConversations(result.maxConversations);
+  };
 
   // Load conversation list on mount
   useEffect(() => {
     let isCancelled = false;
     (async () => {
       try {
-        const list = await fetchConversations();
-        if (!isCancelled) setConversations(list);
+        const result = await fetchConversations();
+        if (!isCancelled) {
+          setConversations(result.conversations);
+          setTotalConversations(result.totalCount);
+          setIsAtConversationCap(result.isAtCap);
+          setMaxConversations(result.maxConversations);
+        }
       } catch {
         // Ignore load errors; header will show empty state
       }
@@ -62,19 +79,20 @@ export function AIAdvisor() {
     }
   };
 
-  const refreshConversations = async () => {
-    const list = await fetchConversations();
-    setConversations(list);
-  };
-
   // Start a fresh conversation (clears history)
   const handleNewConversation = () => {
+    // Guard new thread creation in UI when cap is reached.
+    if (isAtConversationCap) return;
+
     const id = uuidv4();
     setConversationId(id);
     setInitialMessages([]);
     setCopiedMessages(new Set());
-    refreshConversations();
   };
+
+  const hasCurrentConversationInHistory = conversations.some(
+    (conversation) => conversation.id === conversationId,
+  );
 
   return (
     <div className="flex h-full flex-col">
@@ -85,6 +103,9 @@ export function AIAdvisor() {
         onConversationDeleted={refreshConversations}
         isLoadingConversation={isLoadingConversation}
         isAIEnabled={isAIEnabled}
+        isAtConversationCap={isAtConversationCap}
+        maxConversations={maxConversations}
+        totalConversations={totalConversations}
       />
       <PromptInputProvider>
         <Chat
@@ -94,6 +115,10 @@ export function AIAdvisor() {
           copiedMessages={copiedMessages}
           setCopiedMessages={setCopiedMessages}
           isAIEnabled={isAIEnabled}
+          isAtConversationCap={isAtConversationCap}
+          maxConversations={maxConversations}
+          hasCurrentConversationInHistory={hasCurrentConversationInHistory}
+          onConversationPersisted={refreshConversations}
         />
       </PromptInputProvider>
       {/* Disclaimer */}

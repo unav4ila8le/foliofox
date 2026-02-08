@@ -72,6 +72,8 @@ CRON_SECRET=generate_a_strong_random_string
 
 # Optional (used for AI features)
 OPENAI_API_KEY=your_openai_api_key
+AI_CHAT_MODEL=gpt-5-mini / or any other preferred model
+AI_EXTRACTION_MODEL=gpt-5-mini / or any other preferred model
 
 # Optional (used for domain valuations)
 REPLICATE_API_TOKEN=your_replicate_api_token

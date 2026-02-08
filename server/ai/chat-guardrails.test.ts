@@ -1,0 +1,126 @@
+import { describe, expect, it } from "vitest";
+
+import type { UIMessage } from "ai";
+import {
+  MAX_ESTIMATED_PROMPT_TOKENS,
+  MAX_MODEL_CONTEXT_MESSAGES,
+} from "@/lib/ai/chat-guardrails-config";
+import { buildGuardrailedModelContext } from "@/server/ai/chat-guardrails";
+
+function createMessage(params: {
+  id: string;
+  role: UIMessage["role"];
+  parts: UIMessage["parts"];
+}): UIMessage {
+  return {
+    id: params.id,
+    role: params.role,
+    parts: params.parts,
+  };
+}
+
+describe("buildGuardrailedModelContext", () => {
+  it("caps model context to the last 40 messages", () => {
+    const messages: UIMessage[] = Array.from({ length: 60 }, (_, index) =>
+      createMessage({
+        id: `m-${index}`,
+        role: "user",
+        parts: [{ type: "text", text: `message-${index}` }],
+      }),
+    );
+
+    const result = buildGuardrailedModelContext(messages);
+
+    expect(result.length).toBe(MAX_MODEL_CONTEXT_MESSAGES);
+    expect(result[0]?.id).toBe("m-20");
+    expect(result.at(-1)?.id).toBe("m-59");
+  });
+
+  it("enforces approximate prompt budget", () => {
+    const hugeText = "x".repeat(6000);
+    const messages: UIMessage[] = Array.from({ length: 12 }, (_, index) =>
+      createMessage({
+        id: `huge-${index}`,
+        role: "user",
+        parts: [{ type: "text", text: `${hugeText}-${index}` }],
+      }),
+    );
+
+    const result = buildGuardrailedModelContext(messages);
+
+    expect(result.length).toBeLessThan(12);
+  });
+
+  it("always keeps the latest user message even if it exceeds budget", () => {
+    const overBudgetText = "x".repeat(MAX_ESTIMATED_PROMPT_TOKENS * 4 + 50);
+    const messages: UIMessage[] = [
+      createMessage({
+        id: "assistant-old",
+        role: "assistant",
+        parts: [{ type: "text", text: "old context" }],
+      }),
+      createMessage({
+        id: "user-latest",
+        role: "user",
+        parts: [{ type: "text", text: overBudgetText }],
+      }),
+    ];
+
+    const result = buildGuardrailedModelContext(messages);
+
+    expect(result.some((message) => message.id === "user-latest")).toBe(true);
+  });
+
+  it("prunes heavy parts from older assistant messages", () => {
+    const messages: UIMessage[] = [
+      createMessage({
+        id: "assistant-heavy-old",
+        role: "assistant",
+        parts: [
+          { type: "text", text: "keep this text" },
+          { type: "reasoning", text: "drop reasoning" },
+          {
+            type: "tool-getPortfolioOverview",
+            toolCallId: "tool-1",
+            state: "output-available",
+            input: {},
+            output: { value: "drop tool output" },
+          } as unknown as UIMessage["parts"][number],
+        ],
+      }),
+      createMessage({
+        id: "assistant-tool-only-old",
+        role: "assistant",
+        parts: [
+          {
+            type: "tool-getPortfolioOverview",
+            toolCallId: "tool-2",
+            state: "output-available",
+            input: {},
+            output: { value: "tool only" },
+          } as unknown as UIMessage["parts"][number],
+        ],
+      }),
+      ...Array.from({ length: 10 }, (_, index) =>
+        createMessage({
+          id: `tail-${index}`,
+          role: "user",
+          parts: [{ type: "text", text: `tail-${index}` }],
+        }),
+      ),
+    ];
+
+    const result = buildGuardrailedModelContext(messages);
+    const heavyOldMessage = result.find(
+      (message) => message.id === "assistant-heavy-old",
+    );
+    const toolOnlyOldMessage = result.find(
+      (message) => message.id === "assistant-tool-only-old",
+    );
+
+    expect(heavyOldMessage).toBeDefined();
+    expect(heavyOldMessage?.parts).toHaveLength(1);
+    expect(heavyOldMessage?.parts[0]?.type).toBe("text");
+    expect(toolOnlyOldMessage).toBeUndefined();
+  });
+});
