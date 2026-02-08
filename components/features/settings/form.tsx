@@ -29,7 +29,7 @@ import {
   updateProfile,
   checkUsernameAvailability,
 } from "@/server/profile/actions";
-import { useDashboardData } from "@/components/dashboard/dashboard-data-provider";
+import { useDashboardData } from "@/components/dashboard/providers/dashboard-data-provider";
 
 interface SettingsFormProps {
   onSuccess?: () => void;

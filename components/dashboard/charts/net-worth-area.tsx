@@ -46,7 +46,7 @@ import { useNetWorthMode } from "@/components/dashboard/net-worth-mode/net-worth
 import {
   usePrivacyMode,
   PrivacyModeButton,
-} from "@/components/dashboard/privacy-mode-provider";
+} from "@/components/dashboard/providers/privacy-mode-provider";
 
 import {
   formatCompactNumber,

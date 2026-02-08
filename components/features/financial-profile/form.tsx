@@ -29,7 +29,7 @@ import { CurrencySelector } from "@/components/dashboard/currency-selector";
 import { upsertFinancialProfile } from "@/server/financial-profiles/actions";
 
 import { AGE_BANDS, RISK_PREFERENCES } from "@/types/enums";
-import { useDashboardData } from "@/components/dashboard/dashboard-data-provider";
+import { useDashboardData } from "@/components/dashboard/providers/dashboard-data-provider";
 
 const RISK_PREFERENCES_DESCRIPTIONS = {
   [RISK_PREFERENCES[0]]: "Focus on preserving capital with minimal volatility.",

@@ -6,13 +6,10 @@ import { LeftSidebar } from "@/components/dashboard/layout/left-sidebar";
 import { RightSidebar } from "@/components/dashboard/layout/right-sidebar";
 import { Header } from "@/components/dashboard/layout/header";
 
-import { PrivacyModeProvider } from "@/components/dashboard/privacy-mode-provider";
+import { DashboardDataProvider } from "@/components/dashboard/providers/dashboard-data-provider";
+import { DashboardDialogsProvider } from "@/components/dashboard/providers/dashboard-dialogs-provider";
+import { PrivacyModeProvider } from "@/components/dashboard/providers/privacy-mode-provider";
 import { NetWorthModeProvider } from "@/components/dashboard/net-worth-mode/net-worth-mode-provider";
-import { ImportPositionsDialogProvider } from "@/components/dashboard/positions/import";
-import { ImportPortfolioRecordsDialogProvider } from "@/components/dashboard/portfolio-records/import";
-import { NewAssetDialogProvider } from "@/components/dashboard/new-asset";
-import { NewPortfolioRecordDialogProvider } from "@/components/dashboard/new-portfolio-record";
-import { DashboardDataProvider } from "@/components/dashboard/dashboard-data-provider";
 
 import { fetchProfile } from "@/server/profile/actions";
 import { fetchFinancialProfile } from "@/server/financial-profiles/actions";
@@ -74,27 +71,21 @@ export default async function Layout({
       >
         <NetWorthModeProvider defaultMode={netWorthMode}>
           <PrivacyModeProvider>
-            <ImportPositionsDialogProvider>
-              <ImportPortfolioRecordsDialogProvider>
-                <NewAssetDialogProvider>
-                  <NewPortfolioRecordDialogProvider>
-                    {/* Left sidebar */}
-                    <LeftSidebar />
+            <DashboardDialogsProvider>
+              {/* Left sidebar */}
+              <LeftSidebar />
 
-                    {/* Main content */}
-                    <SidebarInset className="min-w-0">
-                      <Header />
-                      <div className="mx-auto w-full max-w-7xl p-4 pt-2">
-                        {children}
-                      </div>
-                    </SidebarInset>
+              {/* Main content */}
+              <SidebarInset className="min-w-0">
+                <Header />
+                <div className="mx-auto w-full max-w-7xl p-4 pt-2">
+                  {children}
+                </div>
+              </SidebarInset>
 
-                    {/* Right sidebar */}
-                    <RightSidebar />
-                  </NewPortfolioRecordDialogProvider>
-                </NewAssetDialogProvider>
-              </ImportPortfolioRecordsDialogProvider>
-            </ImportPositionsDialogProvider>
+              {/* Right sidebar */}
+              <RightSidebar />
+            </DashboardDialogsProvider>
           </PrivacyModeProvider>
         </NetWorthModeProvider>
       </SidebarProvider>

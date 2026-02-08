@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { SelectionDialog } from "./selection-dialog";
 
-import { useDashboardData } from "@/components/dashboard/dashboard-data-provider";
+import { useDashboardData } from "@/components/dashboard/providers/dashboard-data-provider";
 import type { Profile } from "@/types/global.types";
 import type { VariantProps } from "class-variance-authority";
 

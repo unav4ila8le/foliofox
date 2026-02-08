@@ -40,6 +40,11 @@ export async function POST(req: Request) {
     tools: aiTools,
     system,
     stopWhen: stepCountIs(24),
+    providerOptions: {
+      openai: {
+        reasoningSummary: "auto",
+      },
+    },
 
     // Force portfolio overview on very first assistant step
     prepareStep: async ({ stepNumber }) => {
@@ -60,6 +65,7 @@ export async function POST(req: Request) {
   });
 
   return result.toUIMessageStreamResponse({
+    sendReasoning: true,
     onFinish: async ({ messages }) => {
       if (conversationId && messages.length > 0) {
         const tokens = await result.totalUsage;

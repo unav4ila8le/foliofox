@@ -29,6 +29,11 @@ import {
 } from "@/components/ai-elements/message";
 import { MessageLoading } from "@/components/ai-elements/message-loading";
 import {
+  Reasoning,
+  ReasoningContent,
+  ReasoningTrigger,
+} from "@/components/ai-elements/reasoning";
+import {
   PromptInput,
   PromptInputTextarea,
   PromptInputSubmit,
@@ -57,6 +62,30 @@ import { AISettingsDialog } from "@/components/features/ai-settings/dialog";
 import type { Mode } from "@/server/ai/system-prompt";
 
 import { cn } from "@/lib/utils";
+
+/** Merge consecutive reasoning parts into groups, preserving other parts. */
+function groupAdjacentParts(parts: UIMessage["parts"]) {
+  const groups: Array<
+    | { kind: "reasoning"; texts: string[]; lastIndex: number }
+    | { kind: "other"; part: UIMessage["parts"][number]; index: number }
+  > = [];
+
+  parts.forEach((part, i) => {
+    if (part.type === "reasoning") {
+      const prev = groups.at(-1);
+      if (prev?.kind === "reasoning") {
+        prev.texts.push(part.text);
+        prev.lastIndex = i;
+      } else {
+        groups.push({ kind: "reasoning", texts: [part.text], lastIndex: i });
+      }
+    } else {
+      groups.push({ kind: "other", part, index: i });
+    }
+  });
+
+  return groups;
+}
 
 const suggestions = [
   "What would happen to my portfolio if the market crashes 30% tomorrow?",
@@ -184,88 +213,116 @@ export function Chat({
               <DisabledState />
             )
           ) : (
-            messages.map((message, messageIndex) => (
-              <Fragment key={message.id}>
-                {message.parts.map((part, i) => {
-                  switch (part.type) {
-                    case "text":
-                      const isLastMessage =
-                        messageIndex === messages.length - 1;
-                      const isAssistant = message.role === "assistant";
-                      const isCopied = copiedMessages.has(message.id);
+            messages.map((message, messageIndex) => {
+              const isLastMessage = messageIndex === messages.length - 1;
+              const isAssistant = message.role === "assistant";
+              const isStreaming = status === "streaming";
+              const isCopied = copiedMessages.has(message.id);
+
+              return (
+                <Fragment key={message.id}>
+                  {groupAdjacentParts(message.parts).map((group) => {
+                    if (group.kind === "reasoning") {
+                      const mergedText = group.texts
+                        .filter(Boolean)
+                        .join("\n\n");
+                      const isLastPart =
+                        group.lastIndex === message.parts.length - 1;
+                      const isReasoningStreaming =
+                        isLastMessage && isStreaming && isLastPart;
 
                       return (
-                        <Fragment key={`${message.id}-${i}`}>
-                          <Message
-                            from={message.role}
-                            className={cn(
-                              "max-w-[90%]",
-                              isAssistant && "max-w-full",
-                            )}
-                          >
-                            <MessageContent className="group-[.is-user]:bg-primary group-[.is-user]:text-primary-foreground">
-                              {isAssistant ? (
-                                <MessageResponse>{part.text}</MessageResponse>
-                              ) : (
-                                part.text
-                              )}
-                            </MessageContent>
-                          </Message>
-                          {isAssistant && status !== "streaming" && (
-                            <MessageActions className="-mt-3">
-                              {isLastMessage && (
-                                <MessageAction
-                                  onClick={() => regenerate()}
-                                  tooltip="Regenerate response"
-                                  disabled={!isAIEnabled}
-                                >
-                                  <RefreshCcw className="size-3.5" />
-                                </MessageAction>
-                              )}
-                              <MessageAction
-                                onClick={() =>
-                                  handleCopy(part.text, message.id)
-                                }
-                                tooltip={isCopied ? "Copied!" : "Copy"}
-                              >
-                                {isCopied ? (
-                                  <Check className="size-3.5" />
-                                ) : (
-                                  <Copy className="size-3.5" />
-                                )}
-                              </MessageAction>
-                            </MessageActions>
+                        <Reasoning
+                          key={`${message.id}-r-${group.lastIndex}`}
+                          className="mb-0 w-full"
+                          isStreaming={isReasoningStreaming}
+                        >
+                          <ReasoningTrigger />
+                          {mergedText && (
+                            <ReasoningContent className="mt-2 text-xs [&>*]:space-y-2">
+                              {mergedText}
+                            </ReasoningContent>
                           )}
-                        </Fragment>
+                        </Reasoning>
                       );
-                    default:
-                      if (isStaticToolUIPart(part)) {
-                        return (
-                          <Tool
-                            key={`${message.id}-part-${i}`}
-                            className="mb-0"
-                          >
-                            <ToolHeader
-                              type={part.type}
-                              state={part.state}
-                              className="truncate"
-                            />
-                            <ToolContent>
-                              <ToolInput input={part.input} />
-                              <ToolOutput
-                                output={part.output}
-                                errorText={part.errorText}
-                              />
-                            </ToolContent>
-                          </Tool>
-                        );
-                      }
+                    }
 
-                      return null;
-                  }
-                })}
-              </Fragment>
-            ))
+                    const { part, index: i } = group;
+                    switch (part.type) {
+                      case "text":
+                        return (
+                          <Fragment key={`${message.id}-${i}`}>
+                            <Message
+                              from={message.role}
+                              className={cn(
+                                "max-w-[90%]",
+                                isAssistant && "max-w-full",
+                              )}
+                            >
+                              <MessageContent className="group-[.is-user]:bg-primary group-[.is-user]:text-primary-foreground">
+                                {isAssistant ? (
+                                  <MessageResponse>{part.text}</MessageResponse>
+                                ) : (
+                                  part.text
+                                )}
+                              </MessageContent>
+                            </Message>
+                            {isAssistant && !isStreaming && (
+                              <MessageActions className="-mt-3">
+                                {isLastMessage && (
+                                  <MessageAction
+                                    onClick={() => regenerate()}
+                                    tooltip="Regenerate response"
+                                    disabled={!isAIEnabled}
+                                  >
+                                    <RefreshCcw className="size-3.5" />
+                                  </MessageAction>
+                                )}
+                                <MessageAction
+                                  onClick={() =>
+                                    handleCopy(part.text, message.id)
+                                  }
+                                  tooltip={isCopied ? "Copied!" : "Copy"}
+                                >
+                                  {isCopied ? (
+                                    <Check className="size-3.5" />
+                                  ) : (
+                                    <Copy className="size-3.5" />
+                                  )}
+                                </MessageAction>
+                              </MessageActions>
+                            )}
+                          </Fragment>
+                        );
+                      default:
+                        if (isStaticToolUIPart(part)) {
+                          return (
+                            <Tool
+                              key={`${message.id}-part-${i}`}
+                              className="mb-0"
+                            >
+                              <ToolHeader
+                                type={part.type}
+                                state={part.state}
+                                className="truncate"
+                              />
+                              <ToolContent>
+                                <ToolInput input={part.input} />
+                                <ToolOutput
+                                  output={part.output}
+                                  errorText={part.errorText}
+                                />
+                              </ToolContent>
+                            </Tool>
+                          );
+                        }
+
+                        return null;
+                    }
+                  })}
+                </Fragment>
+              );
+            })
           )}
           {(status === "submitted" || status === "streaming") && (
             <MessageLoading status={status} className="mb-2 ps-1" />

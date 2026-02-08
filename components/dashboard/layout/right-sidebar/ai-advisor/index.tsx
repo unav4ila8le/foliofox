@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 
 import { PromptInputProvider } from "@/components/ai-elements/prompt-input";
-import { useDashboardData } from "@/components/dashboard/dashboard-data-provider";
+import { useDashboardData } from "@/components/dashboard/providers/dashboard-data-provider";
 import { ChatHeader } from "./header";
 import { Chat } from "./chat";
 
