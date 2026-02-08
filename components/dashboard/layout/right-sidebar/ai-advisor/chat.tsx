@@ -63,6 +63,30 @@ import type { Mode } from "@/server/ai/system-prompt";
 
 import { cn } from "@/lib/utils";
 
+/** Merge consecutive reasoning parts into groups, preserving other parts. */
+function groupAdjacentParts(parts: UIMessage["parts"]) {
+  const groups: Array<
+    | { kind: "reasoning"; texts: string[]; lastIndex: number }
+    | { kind: "other"; part: UIMessage["parts"][number]; index: number }
+  > = [];
+
+  parts.forEach((part, i) => {
+    if (part.type === "reasoning") {
+      const prev = groups.at(-1);
+      if (prev?.kind === "reasoning") {
+        prev.texts.push(part.text);
+        prev.lastIndex = i;
+      } else {
+        groups.push({ kind: "reasoning", texts: [part.text], lastIndex: i });
+      }
+    } else {
+      groups.push({ kind: "other", part, index: i });
+    }
+  });
+
+  return groups;
+}
+
 const suggestions = [
   "What would happen to my portfolio if the market crashes 30% tomorrow?",
   "How should I rebalance my portfolio to reduce risk while maintaining growth potential?",
@@ -197,27 +221,34 @@ export function Chat({
 
               return (
                 <Fragment key={message.id}>
-                  {message.parts.map((part, i) => {
-                    switch (part.type) {
-                      case "reasoning": {
-                        // Check if this specific reasoning part is still streaming
-                        const isLastPart = i === message.parts.length - 1;
-                        const isReasoningStreaming =
-                          isLastMessage && isStreaming && isLastPart;
+                  {groupAdjacentParts(message.parts).map((group) => {
+                    if (group.kind === "reasoning") {
+                      const mergedText = group.texts
+                        .filter(Boolean)
+                        .join("\n\n");
+                      const isLastPart =
+                        group.lastIndex === message.parts.length - 1;
+                      const isReasoningStreaming =
+                        isLastMessage && isStreaming && isLastPart;
 
-                        return (
-                          <Reasoning
-                            key={`${message.id}-${i}`}
-                            className="mb-0 w-full"
-                            isStreaming={isReasoningStreaming}
-                          >
-                            <ReasoningTrigger />
-                            {part.text && (
-                              <ReasoningContent>{part.text}</ReasoningContent>
-                            )}
-                          </Reasoning>
-                        );
-                      }
+                      return (
+                        <Reasoning
+                          key={`${message.id}-r-${group.lastIndex}`}
+                          className="mb-0 w-full"
+                          isStreaming={isReasoningStreaming}
+                        >
+                          <ReasoningTrigger />
+                          {mergedText && (
+                            <ReasoningContent className="mt-2 text-xs [&>*]:space-y-2">
+                              {mergedText}
+                            </ReasoningContent>
+                          )}
+                        </Reasoning>
+                      );
+                    }
+
+                    const { part, index: i } = group;
+                    switch (part.type) {
                       case "text":
                         return (
                           <Fragment key={`${message.id}-${i}`}>
