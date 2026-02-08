@@ -6,7 +6,7 @@ import {
   useSyncExternalStore,
   useCallback,
 } from "react";
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 import { Eye, EyeOff } from "lucide-react";
 
 const PRIVACY_MODE_COOKIE_NAME = "privacy_mode";

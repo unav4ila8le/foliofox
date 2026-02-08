@@ -5,7 +5,7 @@ import { ResponsiveContainer, PieChart, Pie, Label, Tooltip } from "recharts";
 import { ChartPie } from "lucide-react";
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { usePrivacyMode } from "@/components/dashboard/privacy-mode-provider";
+import { usePrivacyMode } from "@/components/dashboard/providers/privacy-mode-provider";
 
 import {
   formatCompactCurrency,

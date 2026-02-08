@@ -16,7 +16,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { SettingsDialog } from "@/components/features/settings/dialog";
 import { FinancialProfileDialog } from "@/components/features/financial-profile/dialog";
 import { ThemeToggle } from "@/components/features/theme/theme-toggle";
-import { useDashboardData } from "@/components/dashboard/dashboard-data-provider";
+import { useDashboardData } from "@/components/dashboard/providers/dashboard-data-provider";
 
 import { signOut } from "@/server/auth/sign-out";
 
