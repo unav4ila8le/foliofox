@@ -1,5 +1,7 @@
 import type { UIMessage } from "ai";
 
+import { chatModelId } from "@/server/ai/provider";
+
 import { createClient } from "@/supabase/server";
 import { Json } from "@/types/database.types";
 
@@ -39,7 +41,7 @@ export async function persistConversationFromMessages(params: {
   messages: UIMessage[];
   model?: string;
 }): Promise<void> {
-  const { conversationId, messages, model = "gpt-4o-mini" } = params;
+  const { conversationId, messages, model = chatModelId } = params;
 
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
@@ -87,12 +89,7 @@ export async function persistAssistantMessage(params: {
   model?: string;
   usageTokens?: number;
 }): Promise<void> {
-  const {
-    conversationId,
-    messages,
-    model = "gpt-4o-mini",
-    usageTokens,
-  } = params;
+  const { conversationId, messages, model = chatModelId, usageTokens } = params;
 
   if (messages.length === 0) return;
 
