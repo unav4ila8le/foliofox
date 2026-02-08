@@ -9,8 +9,8 @@ import {
   persistAssistantMessage,
 } from "@/server/ai/conversations/persist";
 
-// Allow streaming responses up to 45 seconds
-export const maxDuration = 45;
+// Allow streaming responses up to 120 seconds (reasoning models need more time)
+export const maxDuration = 120;
 
 export async function POST(req: Request) {
   const { messages }: { messages: UIMessage[] } = await req.json();
@@ -39,6 +39,7 @@ export async function POST(req: Request) {
     messages: await convertToModelMessages(messages),
     tools: aiTools,
     system,
+    maxOutputTokens: 16000,
     stopWhen: stepCountIs(24),
     providerOptions: {
       openai: {
