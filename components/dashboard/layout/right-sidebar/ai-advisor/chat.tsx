@@ -29,6 +29,11 @@ import {
 } from "@/components/ai-elements/message";
 import { MessageLoading } from "@/components/ai-elements/message-loading";
 import {
+  Reasoning,
+  ReasoningContent,
+  ReasoningTrigger,
+} from "@/components/ai-elements/reasoning";
+import {
   PromptInput,
   PromptInputTextarea,
   PromptInputSubmit,
@@ -184,88 +189,109 @@ export function Chat({
               <DisabledState />
             )
           ) : (
-            messages.map((message, messageIndex) => (
-              <Fragment key={message.id}>
-                {message.parts.map((part, i) => {
-                  switch (part.type) {
-                    case "text":
-                      const isLastMessage =
-                        messageIndex === messages.length - 1;
-                      const isAssistant = message.role === "assistant";
-                      const isCopied = copiedMessages.has(message.id);
+            messages.map((message, messageIndex) => {
+              const isLastMessage = messageIndex === messages.length - 1;
+              const isAssistant = message.role === "assistant";
+              const isStreaming = status === "streaming";
+              const isCopied = copiedMessages.has(message.id);
 
-                      return (
-                        <Fragment key={`${message.id}-${i}`}>
-                          <Message
-                            from={message.role}
-                            className={cn(
-                              "max-w-[90%]",
-                              isAssistant && "max-w-full",
-                            )}
-                          >
-                            <MessageContent className="group-[.is-user]:bg-primary group-[.is-user]:text-primary-foreground">
-                              {isAssistant ? (
-                                <MessageResponse>{part.text}</MessageResponse>
-                              ) : (
-                                part.text
-                              )}
-                            </MessageContent>
-                          </Message>
-                          {isAssistant && status !== "streaming" && (
-                            <MessageActions className="-mt-3">
-                              {isLastMessage && (
-                                <MessageAction
-                                  onClick={() => regenerate()}
-                                  tooltip="Regenerate response"
-                                  disabled={!isAIEnabled}
-                                >
-                                  <RefreshCcw className="size-3.5" />
-                                </MessageAction>
-                              )}
-                              <MessageAction
-                                onClick={() =>
-                                  handleCopy(part.text, message.id)
-                                }
-                                tooltip={isCopied ? "Copied!" : "Copy"}
-                              >
-                                {isCopied ? (
-                                  <Check className="size-3.5" />
-                                ) : (
-                                  <Copy className="size-3.5" />
-                                )}
-                              </MessageAction>
-                            </MessageActions>
-                          )}
-                        </Fragment>
-                      );
-                    default:
-                      if (isStaticToolUIPart(part)) {
+              return (
+                <Fragment key={message.id}>
+                  {message.parts.map((part, i) => {
+                    switch (part.type) {
+                      case "reasoning": {
+                        // Check if this specific reasoning part is still streaming
+                        const isLastPart = i === message.parts.length - 1;
+                        const isReasoningStreaming =
+                          isLastMessage && isStreaming && isLastPart;
+
                         return (
-                          <Tool
-                            key={`${message.id}-part-${i}`}
-                            className="mb-0"
+                          <Reasoning
+                            key={`${message.id}-${i}`}
+                            className="mb-0 w-full"
+                            isStreaming={isReasoningStreaming}
                           >
-                            <ToolHeader
-                              type={part.type}
-                              state={part.state}
-                              className="truncate"
-                            />
-                            <ToolContent>
-                              <ToolInput input={part.input} />
-                              <ToolOutput
-                                output={part.output}
-                                errorText={part.errorText}
-                              />
-                            </ToolContent>
-                          </Tool>
+                            <ReasoningTrigger />
+                            {part.text && (
+                              <ReasoningContent>{part.text}</ReasoningContent>
+                            )}
+                          </Reasoning>
                         );
                       }
+                      case "text":
+                        return (
+                          <Fragment key={`${message.id}-${i}`}>
+                            <Message
+                              from={message.role}
+                              className={cn(
+                                "max-w-[90%]",
+                                isAssistant && "max-w-full",
+                              )}
+                            >
+                              <MessageContent className="group-[.is-user]:bg-primary group-[.is-user]:text-primary-foreground">
+                                {isAssistant ? (
+                                  <MessageResponse>{part.text}</MessageResponse>
+                                ) : (
+                                  part.text
+                                )}
+                              </MessageContent>
+                            </Message>
+                            {isAssistant && !isStreaming && (
+                              <MessageActions className="-mt-3">
+                                {isLastMessage && (
+                                  <MessageAction
+                                    onClick={() => regenerate()}
+                                    tooltip="Regenerate response"
+                                    disabled={!isAIEnabled}
+                                  >
+                                    <RefreshCcw className="size-3.5" />
+                                  </MessageAction>
+                                )}
+                                <MessageAction
+                                  onClick={() =>
+                                    handleCopy(part.text, message.id)
+                                  }
+                                  tooltip={isCopied ? "Copied!" : "Copy"}
+                                >
+                                  {isCopied ? (
+                                    <Check className="size-3.5" />
+                                  ) : (
+                                    <Copy className="size-3.5" />
+                                  )}
+                                </MessageAction>
+                              </MessageActions>
+                            )}
+                          </Fragment>
+                        );
+                      default:
+                        if (isStaticToolUIPart(part)) {
+                          return (
+                            <Tool
+                              key={`${message.id}-part-${i}`}
+                              className="mb-0"
+                            >
+                              <ToolHeader
+                                type={part.type}
+                                state={part.state}
+                                className="truncate"
+                              />
+                              <ToolContent>
+                                <ToolInput input={part.input} />
+                                <ToolOutput
+                                  output={part.output}
+                                  errorText={part.errorText}
+                                />
+                              </ToolContent>
+                            </Tool>
+                          );
+                        }
 
-                      return null;
-                  }
-                })}
-              </Fragment>
-            ))
+                        return null;
+                    }
+                  })}
+                </Fragment>
+              );
+            })
           )}
           {(status === "submitted" || status === "streaming") && (
             <MessageLoading status={status} className="mb-2 ps-1" />
