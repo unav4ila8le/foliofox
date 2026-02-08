@@ -9,6 +9,7 @@ import { Chat } from "./chat";
 
 import { fetchConversationMessages } from "@/server/ai/messages/fetch";
 import { fetchConversations } from "@/server/ai/conversations/fetch";
+import { MAX_CONVERSATIONS_PER_USER } from "@/lib/ai/chat-guardrails-config";
 
 import type { UIMessage } from "ai";
 
@@ -30,7 +31,9 @@ export function AIAdvisor() {
   >([]);
   const [totalConversations, setTotalConversations] = useState(0);
   const [isAtConversationCap, setIsAtConversationCap] = useState(false);
-  const [maxConversations, setMaxConversations] = useState(20);
+  const [maxConversations, setMaxConversations] = useState(
+    MAX_CONVERSATIONS_PER_USER,
+  );
   const [initialMessages, setInitialMessages] = useState<UIMessage[]>([]);
   const [isLoadingConversation, setIsLoadingConversation] = useState(false);
   const [copiedMessages, setCopiedMessages] = useState<Set<string>>(new Set());

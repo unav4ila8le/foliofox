@@ -118,7 +118,8 @@ describe("POST /api/ai/chat", () => {
 
   it("returns 409 with a friendly message when conversation cap is reached", async () => {
     const { POST } = await import("@/app/api/ai/chat/route");
-    const { AI_CHAT_ERROR_CODES } = await import("@/lib/ai/chat-errors");
+    const { AI_CHAT_CONVERSATION_CAP_FRIENDLY_MESSAGE, AI_CHAT_ERROR_CODES } =
+      await import("@/lib/ai/chat-errors");
 
     fetchProfileMock.mockResolvedValue({
       profile: { data_sharing_consent: true },
@@ -126,7 +127,7 @@ describe("POST /api/ai/chat", () => {
     persistConversationFromMessagesMock.mockRejectedValue(
       new MockAIChatPersistenceError(
         AI_CHAT_ERROR_CODES.conversationCapReached,
-        "You've reached the maximum of 20 conversations. Delete an older conversation to start a new one.",
+        AI_CHAT_CONVERSATION_CAP_FRIENDLY_MESSAGE,
       ),
     );
 

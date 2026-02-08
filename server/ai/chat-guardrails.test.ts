@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { UIMessage } from "ai";
 import {
+  ESTIMATED_CHARS_PER_TOKEN,
   MAX_ESTIMATED_PROMPT_TOKENS,
   MAX_MODEL_CONTEXT_MESSAGES,
 } from "@/lib/ai/chat-guardrails-config";
@@ -20,7 +21,7 @@ function createMessage(params: {
 }
 
 describe("buildGuardrailedModelContext", () => {
-  it("caps model context to the last 40 messages", () => {
+  it("caps model context to the configured max messages", () => {
     const messages: UIMessage[] = Array.from({ length: 60 }, (_, index) =>
       createMessage({
         id: `m-${index}`,
@@ -30,9 +31,10 @@ describe("buildGuardrailedModelContext", () => {
     );
 
     const result = buildGuardrailedModelContext(messages);
+    const firstExpectedIndex = messages.length - MAX_MODEL_CONTEXT_MESSAGES;
 
     expect(result.length).toBe(MAX_MODEL_CONTEXT_MESSAGES);
-    expect(result[0]?.id).toBe("m-20");
+    expect(result[0]?.id).toBe(`m-${firstExpectedIndex}`);
     expect(result.at(-1)?.id).toBe("m-59");
   });
 
@@ -52,7 +54,9 @@ describe("buildGuardrailedModelContext", () => {
   });
 
   it("always keeps the latest user message even if it exceeds budget", () => {
-    const overBudgetText = "x".repeat(MAX_ESTIMATED_PROMPT_TOKENS * 4 + 50);
+    const overBudgetText = "x".repeat(
+      MAX_ESTIMATED_PROMPT_TOKENS * ESTIMATED_CHARS_PER_TOKEN + 50,
+    );
     const messages: UIMessage[] = [
       createMessage({
         id: "assistant-old",

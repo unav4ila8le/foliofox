@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 
 import { ChatHeader } from "@/components/dashboard/layout/right-sidebar/ai-advisor/header";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { MAX_CONVERSATIONS_PER_USER } from "@/lib/ai/chat-guardrails-config";
 
 vi.mock("@/components/ui/custom/sidebar", () => ({
   useSidebar: () => ({
@@ -24,8 +25,8 @@ describe("ChatHeader", () => {
           onNewConversation={() => {}}
           isAIEnabled
           isAtConversationCap
-          maxConversations={20}
-          totalConversations={20}
+          maxConversations={MAX_CONVERSATIONS_PER_USER}
+          totalConversations={MAX_CONVERSATIONS_PER_USER}
         />
       </TooltipProvider>,
     );

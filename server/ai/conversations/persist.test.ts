@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { UIMessage } from "ai";
+import {
+  MAX_CONVERSATIONS_PER_USER,
+  MAX_PERSISTED_MESSAGES_PER_CONVERSATION,
+} from "@/lib/ai/chat-guardrails-config";
 
 type ConversationRow = {
   id: string;
@@ -288,18 +292,21 @@ describe("conversation persistence guardrails", () => {
     vi.useRealTimers();
   });
 
-  it("blocks new conversation creation when user already has 20 conversations", async () => {
+  it("blocks new conversation creation when user is already at cap", async () => {
     const { persistConversationFromMessages } =
       await import("@/server/ai/conversations/persist");
     const { AI_CHAT_ERROR_CODES } = await import("@/lib/ai/chat-errors");
 
-    fakeSupabase.conversations = Array.from({ length: 20 }, (_, index) => ({
-      id: `conv-${index}`,
-      user_id: "user-1",
-      title: `Conversation ${index}`,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }));
+    fakeSupabase.conversations = Array.from(
+      { length: MAX_CONVERSATIONS_PER_USER },
+      (_, index) => ({
+        id: `conv-${index}`,
+        user_id: "user-1",
+        title: `Conversation ${index}`,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }),
+    );
 
     await expect(
       persistConversationFromMessages({
@@ -315,13 +322,16 @@ describe("conversation persistence guardrails", () => {
     const { persistConversationFromMessages } =
       await import("@/server/ai/conversations/persist");
 
-    fakeSupabase.conversations = Array.from({ length: 20 }, (_, index) => ({
-      id: index === 0 ? "existing-conversation" : `conv-${index}`,
-      user_id: "user-1",
-      title: `Conversation ${index}`,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }));
+    fakeSupabase.conversations = Array.from(
+      { length: MAX_CONVERSATIONS_PER_USER },
+      (_, index) => ({
+        id: index === 0 ? "existing-conversation" : `conv-${index}`,
+        user_id: "user-1",
+        title: `Conversation ${index}`,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }),
+    );
 
     await persistConversationFromMessages({
       conversationId: "existing-conversation",
@@ -334,7 +344,7 @@ describe("conversation persistence guardrails", () => {
     );
   });
 
-  it("trims persisted history to latest 120 messages", async () => {
+  it("trims persisted history to configured rolling window size", async () => {
     const { persistConversationFromMessages } =
       await import("@/server/ai/conversations/persist");
 
@@ -348,7 +358,11 @@ describe("conversation persistence guardrails", () => {
       },
     ];
 
-    for (let index = 0; index < 130; index += 1) {
+    const overflowMessageCount = 10;
+    const totalInsertedMessages =
+      MAX_PERSISTED_MESSAGES_PER_CONVERSATION + overflowMessageCount;
+
+    for (let index = 0; index < totalInsertedMessages; index += 1) {
       idCounter += 1;
       await persistConversationFromMessages({
         conversationId: "trim-conversation",
@@ -360,9 +374,13 @@ describe("conversation persistence guardrails", () => {
       (left, right) => left.order - right.order,
     );
 
-    expect(orderedMessages).toHaveLength(120);
-    expect(orderedMessages[0]?.content).toBe("message-10");
-    expect(orderedMessages.at(-1)?.content).toBe("message-129");
+    expect(orderedMessages).toHaveLength(
+      MAX_PERSISTED_MESSAGES_PER_CONVERSATION,
+    );
+    expect(orderedMessages[0]?.content).toBe(`message-${overflowMessageCount}`);
+    expect(orderedMessages.at(-1)?.content).toBe(
+      `message-${totalInsertedMessages - 1}`,
+    );
   });
 
   it("replaces latest assistant response on regenerate flow", async () => {

@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/command";
 import { useSidebar } from "@/components/ui/custom/sidebar";
 import { AISettingsDialog } from "@/components/features/ai-settings/dialog";
+import { MAX_CONVERSATIONS_PER_USER } from "@/lib/ai/chat-guardrails-config";
 
 import { deleteConversation } from "@/server/ai/conversations/delete";
 
@@ -52,7 +53,7 @@ export function ChatHeader({
   isLoadingConversation,
   isAIEnabled,
   isAtConversationCap,
-  maxConversations = 20,
+  maxConversations = MAX_CONVERSATIONS_PER_USER,
   totalConversations = 0,
 }: ChatHeaderProps) {
   const [openHistory, setOpenHistory] = useState(false);

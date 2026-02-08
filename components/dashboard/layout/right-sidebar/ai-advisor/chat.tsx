@@ -66,6 +66,7 @@ import {
   AI_CHAT_CONVERSATION_CAP_FRIENDLY_MESSAGE,
   isConversationCapErrorMessage,
 } from "@/lib/ai/chat-errors";
+import { MAX_CONVERSATIONS_PER_USER } from "@/lib/ai/chat-guardrails-config";
 
 import { cn } from "@/lib/utils";
 
@@ -150,7 +151,7 @@ export function Chat({
   setCopiedMessages,
   isAIEnabled,
   isAtConversationCap,
-  maxConversations = 20,
+  maxConversations = MAX_CONVERSATIONS_PER_USER,
   hasCurrentConversationInHistory,
   onConversationPersisted,
 }: ChatProps) {

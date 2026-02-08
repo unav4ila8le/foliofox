@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import type React from "react";
 
 import { Chat } from "@/components/dashboard/layout/right-sidebar/ai-advisor/chat";
+import { MAX_CONVERSATIONS_PER_USER } from "@/lib/ai/chat-guardrails-config";
 
 const hoistedMocks = vi.hoisted(() => ({
   toastErrorMock: vi.fn(),
@@ -193,7 +194,7 @@ describe("Chat guardrail UI", () => {
         setCopiedMessages={() => {}}
         isAIEnabled
         isAtConversationCap
-        maxConversations={20}
+        maxConversations={MAX_CONVERSATIONS_PER_USER}
         hasCurrentConversationInHistory={false}
       />,
     );
@@ -218,7 +219,7 @@ describe("Chat guardrail UI", () => {
         setCopiedMessages={() => {}}
         isAIEnabled
         isAtConversationCap={false}
-        maxConversations={20}
+        maxConversations={MAX_CONVERSATIONS_PER_USER}
         hasCurrentConversationInHistory
       />,
     );
