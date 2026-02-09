@@ -7,7 +7,6 @@ const buildGuardrailedModelContextMock = vi.fn((messages) => messages);
 const fetchProfileMock = vi.fn();
 const persistConversationFromMessagesMock = vi.fn();
 const persistAssistantMessageMock = vi.fn();
-const prepareConversationForRegenerateMock = vi.fn();
 const createSystemPromptMock = vi.fn(() => "system prompt");
 
 class MockAIChatPersistenceError extends Error {
@@ -57,7 +56,6 @@ vi.mock("@/server/ai/conversations/persist", () => ({
   AIChatPersistenceError: MockAIChatPersistenceError,
   persistConversationFromMessages: persistConversationFromMessagesMock,
   persistAssistantMessage: persistAssistantMessageMock,
-  prepareConversationForRegenerate: prepareConversationForRegenerateMock,
 }));
 
 describe("POST /api/ai/chat", () => {
@@ -70,7 +68,6 @@ describe("POST /api/ai/chat", () => {
     fetchProfileMock.mockReset();
     persistConversationFromMessagesMock.mockReset();
     persistAssistantMessageMock.mockReset();
-    prepareConversationForRegenerateMock.mockReset();
     createSystemPromptMock.mockClear();
 
     streamTextMock.mockReturnValue({
@@ -157,7 +154,7 @@ describe("POST /api/ai/chat", () => {
     );
   });
 
-  it("persists only submit trigger as user turn and uses regenerate prep for regenerate trigger", async () => {
+  it("persists user turn only for submit trigger", async () => {
     const { POST } = await import("@/app/api/ai/chat/route");
     fetchProfileMock.mockResolvedValue({
       profile: { data_sharing_consent: true },
@@ -202,7 +199,16 @@ describe("POST /api/ai/chat", () => {
     await POST(regenerateRequest);
 
     expect(persistConversationFromMessagesMock).toHaveBeenCalledTimes(1);
-    expect(prepareConversationForRegenerateMock).toHaveBeenCalledTimes(1);
+    expect(persistConversationFromMessagesMock).toHaveBeenCalledWith({
+      conversationId: "76a2ace1-3165-4d5d-9552-c864ac08f130",
+      messages: [
+        {
+          id: "m-1",
+          role: "user",
+          parts: [{ type: "text", text: "hello" }],
+        },
+      ],
+    });
   });
 
   it("sends guardrailed context to model conversion and persists assistant response on finish", async () => {
@@ -263,6 +269,55 @@ describe("POST /api/ai/chat", () => {
       },
       model: "gpt-4o-mini",
       usageTokens: 222,
+      replaceLatestAssistantForRegenerate: false,
+    });
+  });
+
+  it("passes regenerate replacement metadata to assistant persistence", async () => {
+    const { POST } = await import("@/app/api/ai/chat/route");
+    fetchProfileMock.mockResolvedValue({
+      profile: { data_sharing_consent: true },
+    });
+
+    const request = new Request("http://localhost/api/ai/chat", {
+      method: "POST",
+      body: JSON.stringify({
+        messages: [
+          {
+            id: "m-user",
+            role: "user",
+            parts: [{ type: "text", text: "retry please" }],
+          },
+        ],
+        trigger: "regenerate-message",
+      }),
+      headers: {
+        "Content-Type": "application/json",
+        "x-ff-conversation-id": "76a2ace1-3165-4d5d-9552-c864ac08f130",
+      },
+    });
+
+    await POST(request);
+
+    await capturedOnFinish?.({
+      responseMessage: {
+        id: "assistant-regen",
+        role: "assistant",
+        parts: [{ type: "text", text: "replacement response" }],
+      },
+      isAborted: false,
+    });
+
+    expect(persistAssistantMessageMock).toHaveBeenCalledWith({
+      conversationId: "76a2ace1-3165-4d5d-9552-c864ac08f130",
+      message: {
+        id: "assistant-regen",
+        role: "assistant",
+        parts: [{ type: "text", text: "replacement response" }],
+      },
+      model: "gpt-4o-mini",
+      usageTokens: 222,
+      replaceLatestAssistantForRegenerate: true,
     });
   });
 });

@@ -7,7 +7,6 @@ import { createSystemPrompt, type Mode } from "@/server/ai/system-prompt";
 import { aiTools } from "@/server/ai/tools";
 import {
   AIChatPersistenceError,
-  prepareConversationForRegenerate,
   persistConversationFromMessages,
   persistAssistantMessage,
 } from "@/server/ai/conversations/persist";
@@ -29,7 +28,6 @@ const chatRequestSchema = z.looseObject({
     }),
   ),
   trigger: z.string().optional(),
-  messageId: z.string().optional().nullable(),
 });
 
 const validModes = new Set<Mode>(["educational", "advisory", "unhinged"]);
@@ -47,8 +45,6 @@ export async function POST(req: Request) {
     parsedRequest.data.trigger === "regenerate-message"
       ? "regenerate-message"
       : "submit-message";
-  // Acknowledged in schema; reserved for future message-level operations.
-  void parsedRequest.data.messageId;
 
   const modeHeader = req.headers.get("x-ff-mode")?.toLowerCase();
   const mode: Mode =
@@ -71,8 +67,8 @@ export async function POST(req: Request) {
     return new Response("AI data sharing consent required", { status: 403 });
   }
 
-  // 3. Persist user-side conversation state before model execution.
-  //    Regenerate updates only the assistant side of history.
+  // 3. Persist only submit user turns before model execution.
+  //    Regenerate replacement happens after successful assistant persistence.
   if (conversationId) {
     try {
       if (trigger === "submit-message") {
@@ -80,8 +76,6 @@ export async function POST(req: Request) {
           conversationId,
           messages,
         });
-      } else {
-        await prepareConversationForRegenerate({ conversationId });
       }
     } catch (error) {
       if (
@@ -152,6 +146,7 @@ export async function POST(req: Request) {
           message: responseMessage,
           model: chatModelId,
           usageTokens: tokens.totalTokens,
+          replaceLatestAssistantForRegenerate: trigger === "regenerate-message",
         });
       } catch (error) {
         console.error("AI chat assistant persistence error:", error);

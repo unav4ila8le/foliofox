@@ -456,11 +456,8 @@ describe("conversation persistence guardrails", () => {
   });
 
   it("replaces latest assistant response on regenerate flow", async () => {
-    const {
-      persistConversationFromMessages,
-      prepareConversationForRegenerate,
-      persistAssistantMessage,
-    } = await import("@/server/ai/conversations/persist");
+    const { persistConversationFromMessages, persistAssistantMessage } =
+      await import("@/server/ai/conversations/persist");
 
     fakeSupabase.conversations = [
       {
@@ -483,14 +480,11 @@ describe("conversation persistence guardrails", () => {
       usageTokens: 123,
     });
 
-    await prepareConversationForRegenerate({
-      conversationId: "regen-conversation",
-    });
-
     await persistAssistantMessage({
       conversationId: "regen-conversation",
       message: createAssistantMessage("a-2", "New response"),
       usageTokens: 321,
+      replaceLatestAssistantForRegenerate: true,
     });
 
     const assistantRows = fakeSupabase.conversationMessages.filter(

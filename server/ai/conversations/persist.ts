@@ -264,6 +264,54 @@ async function insertConversationMessage(params: {
   }
 }
 
+async function getLatestAssistantMessageId(params: {
+  supabase: Awaited<ReturnType<typeof createClient>>;
+  conversationId: string;
+  userId: string;
+}): Promise<string | null> {
+  const { supabase, conversationId, userId } = params;
+
+  const { data: latestAssistantMessage, error } = await supabase
+    .from("conversation_messages")
+    .select("id")
+    .eq("conversation_id", conversationId)
+    .eq("user_id", userId)
+    .eq("role", "assistant")
+    .order("order", { ascending: false })
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(
+      `Failed to fetch latest assistant message: ${error.message}`,
+    );
+  }
+
+  return latestAssistantMessage?.id ?? null;
+}
+
+async function deleteConversationMessageById(params: {
+  supabase: Awaited<ReturnType<typeof createClient>>;
+  conversationId: string;
+  userId: string;
+  messageId: string;
+}) {
+  const { supabase, conversationId, userId, messageId } = params;
+
+  const { error } = await supabase
+    .from("conversation_messages")
+    .delete()
+    .eq("id", messageId)
+    .eq("conversation_id", conversationId)
+    .eq("user_id", userId);
+
+  if (error) {
+    throw new Error(`Failed to delete conversation message: ${error.message}`);
+  }
+}
+
 /**
  * Persists the latest user turn for a conversation and enforces rolling trim.
  */
@@ -307,69 +355,40 @@ export async function persistConversationFromMessages(params: {
 }
 
 /**
- * Removes the latest assistant turn so regenerate can replace it cleanly.
- */
-export async function prepareConversationForRegenerate(params: {
-  conversationId: string;
-}): Promise<void> {
-  const { conversationId } = params;
-  const { supabase, user } = await getAuthenticatedUserAndClient();
-  if (!user) return;
-
-  const { data: latestAssistantMessage, error: fetchError } = await supabase
-    .from("conversation_messages")
-    .select("id")
-    .eq("conversation_id", conversationId)
-    .eq("user_id", user.id)
-    .eq("role", "assistant")
-    .order("order", { ascending: false })
-    .order("created_at", { ascending: false })
-    .order("id", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (fetchError) {
-    throw new Error(
-      `Failed to fetch latest assistant message: ${fetchError.message}`,
-    );
-  }
-
-  if (!latestAssistantMessage) {
-    return;
-  }
-
-  // Regenerate replaces the latest assistant response instead of appending.
-  const { error: deleteError } = await supabase
-    .from("conversation_messages")
-    .delete()
-    .eq("id", latestAssistantMessage.id)
-    .eq("user_id", user.id);
-
-  if (deleteError) {
-    throw new Error(
-      `Failed to prepare conversation regenerate: ${deleteError.message}`,
-    );
-  }
-
-  await touchConversation({ supabase, conversationId, userId: user.id });
-}
-
-/**
  * Persists a single assistant turn from stream onFinish and enforces rolling trim.
+ * When regenerate replacement is enabled, the previous assistant reply is deleted
+ * only after the new one is successfully inserted.
  */
 export async function persistAssistantMessage(params: {
   conversationId: string;
   message: UIMessage;
   model?: string;
   usageTokens?: number;
+  replaceLatestAssistantForRegenerate?: boolean;
 }): Promise<void> {
-  const { conversationId, message, model = chatModelId, usageTokens } = params;
+  const {
+    conversationId,
+    message,
+    model = chatModelId,
+    usageTokens,
+    replaceLatestAssistantForRegenerate = false,
+  } = params;
 
   // Assistant-only persistence path from stream onFinish.
   if (message.role !== "assistant") return;
 
   const { supabase, user } = await getAuthenticatedUserAndClient();
   if (!user) return;
+
+  let latestAssistantMessageIdBeforeInsert: string | null = null;
+  if (replaceLatestAssistantForRegenerate) {
+    // Read old assistant id before insert so we can safely replace after success.
+    latestAssistantMessageIdBeforeInsert = await getLatestAssistantMessageId({
+      supabase,
+      conversationId,
+      userId: user.id,
+    });
+  }
 
   await insertConversationMessage({
     supabase,
@@ -381,6 +400,19 @@ export async function persistAssistantMessage(params: {
     model,
     usageTokens,
   });
+
+  if (
+    replaceLatestAssistantForRegenerate &&
+    latestAssistantMessageIdBeforeInsert
+  ) {
+    // Delete only after successful insert to avoid losing history on failures.
+    await deleteConversationMessageById({
+      supabase,
+      conversationId,
+      userId: user.id,
+      messageId: latestAssistantMessageIdBeforeInsert,
+    });
+  }
 
   await touchConversation({ supabase, conversationId, userId: user.id });
   await trimConversationMessages({ supabase, conversationId, userId: user.id });
