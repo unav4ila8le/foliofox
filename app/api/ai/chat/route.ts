@@ -47,6 +47,7 @@ export async function POST(req: Request) {
     parsedRequest.data.trigger === "regenerate-message"
       ? "regenerate-message"
       : "submit-message";
+  // Acknowledged in schema; reserved for future message-level operations.
   void parsedRequest.data.messageId;
 
   const modeHeader = req.headers.get("x-ff-mode")?.toLowerCase();

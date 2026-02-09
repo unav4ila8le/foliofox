@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 import { PromptInputProvider } from "@/components/ai-elements/prompt-input";
 import { useDashboardData } from "@/components/dashboard/providers/dashboard-data-provider";
@@ -8,8 +8,10 @@ import { ChatHeader } from "./header";
 import { Chat } from "./chat";
 
 import { fetchConversationMessages } from "@/server/ai/messages/fetch";
-import { fetchConversations } from "@/server/ai/conversations/fetch";
-import { MAX_CONVERSATIONS_PER_USER } from "@/lib/ai/chat-guardrails-config";
+import {
+  fetchConversations,
+  type ConversationsResult,
+} from "@/server/ai/conversations/fetch";
 
 import type { UIMessage } from "ai";
 
@@ -31,43 +33,33 @@ export function AIAdvisor() {
   >([]);
   const [totalConversations, setTotalConversations] = useState(0);
   const [isAtConversationCap, setIsAtConversationCap] = useState(false);
-  const [maxConversations, setMaxConversations] = useState(
-    MAX_CONVERSATIONS_PER_USER,
-  );
+  const [maxConversations, setMaxConversations] = useState(0);
   const [initialMessages, setInitialMessages] = useState<UIMessage[]>([]);
   const [isLoadingConversation, setIsLoadingConversation] = useState(false);
   const [copiedMessages, setCopiedMessages] = useState<Set<string>>(new Set());
 
-  const refreshConversations = async () => {
+  const applyConversationsResult = useCallback(
+    (result: ConversationsResult) => {
+      setConversations(result.conversations);
+      setTotalConversations(result.totalCount);
+      setIsAtConversationCap(result.isAtCap);
+      setMaxConversations(result.maxConversations);
+    },
+    [],
+  );
+
+  const refreshConversations = useCallback(async () => {
     // Single refresh source for list + cap metadata.
     const result = await fetchConversations();
-    setConversations(result.conversations);
-    setTotalConversations(result.totalCount);
-    setIsAtConversationCap(result.isAtCap);
-    setMaxConversations(result.maxConversations);
-  };
+    applyConversationsResult(result);
+  }, [applyConversationsResult]);
 
   // Load conversation list on mount
   useEffect(() => {
-    let isCancelled = false;
-    (async () => {
-      try {
-        const result = await fetchConversations();
-        if (!isCancelled) {
-          setConversations(result.conversations);
-          setTotalConversations(result.totalCount);
-          setIsAtConversationCap(result.isAtCap);
-          setMaxConversations(result.maxConversations);
-        }
-      } catch {
-        // Ignore load errors; header will show empty state
-      }
-    })();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, []);
+    void refreshConversations().catch(() => {
+      // Ignore load errors; header will show empty state.
+    });
+  }, [refreshConversations]);
 
   // Switch to an existing conversation (loads history)
   const handleSelectConversation = async (id: string) => {
@@ -112,6 +104,7 @@ export function AIAdvisor() {
       />
       <PromptInputProvider>
         <Chat
+          key={conversationId}
           conversationId={conversationId}
           initialMessages={initialMessages}
           isLoadingConversation={isLoadingConversation}

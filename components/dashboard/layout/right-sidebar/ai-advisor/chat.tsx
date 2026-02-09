@@ -2,6 +2,7 @@
 
 import {
   useState,
+  useMemo,
   Fragment,
   useRef,
   type Dispatch,
@@ -66,7 +67,6 @@ import {
   AI_CHAT_CONVERSATION_CAP_FRIENDLY_MESSAGE,
   isConversationCapErrorMessage,
 } from "@/lib/ai/chat-errors";
-import { MAX_CONVERSATIONS_PER_USER } from "@/lib/ai/chat-guardrails-config";
 
 import { cn } from "@/lib/utils";
 
@@ -151,7 +151,7 @@ export function Chat({
   setCopiedMessages,
   isAIEnabled,
   isAtConversationCap,
-  maxConversations = MAX_CONVERSATIONS_PER_USER,
+  maxConversations = 0,
   hasCurrentConversationInHistory,
   onConversationPersisted,
 }: ChatProps) {
@@ -162,11 +162,13 @@ export function Chat({
   const controller = usePromptInputController();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Fresh transport reflects current mode + conversation
-  const transport = new DefaultChatTransport({
-    api: "/api/ai/chat",
-    headers: { "x-ff-mode": mode, "x-ff-conversation-id": conversationId },
-  });
+  // Fresh transport reflects current mode + conversation.
+  const transport = useMemo(() => {
+    return new DefaultChatTransport({
+      api: "/api/ai/chat",
+      headers: { "x-ff-mode": mode, "x-ff-conversation-id": conversationId },
+    });
+  }, [mode, conversationId]);
 
   const { messages, sendMessage, status, stop, regenerate } = useChat({
     id: conversationId,
@@ -386,7 +388,7 @@ export function Chat({
           <div className="space-y-1">
             {suggestions.map((suggestion) => (
               <Button
-                disabled={!isAIEnabled}
+                disabled={!isAIEnabled || showProactiveCapAlert}
                 key={suggestion}
                 onClick={() => handleSuggestionClick(suggestion)}
                 variant="ghost"

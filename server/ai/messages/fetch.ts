@@ -6,7 +6,7 @@ import { MAX_PERSISTED_MESSAGES_PER_CONVERSATION } from "@/lib/ai/chat-guardrail
 
 export async function fetchConversationMessages(
   conversationId: string,
-  limit = 100,
+  limit = MAX_PERSISTED_MESSAGES_PER_CONVERSATION,
 ): Promise<UIMessage[]> {
   const { supabase, user } = await getCurrentUser();
   const normalizedLimit = Math.min(
@@ -21,6 +21,8 @@ export async function fetchConversationMessages(
     .eq("user_id", user.id)
     // Query newest first for an efficient bounded read.
     .order("order", { ascending: false })
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
     .limit(normalizedLimit);
 
   // Return chronological order for the chat UI.

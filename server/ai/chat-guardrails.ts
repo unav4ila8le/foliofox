@@ -5,6 +5,7 @@ import {
   MAX_MODEL_CONTEXT_MESSAGES,
 } from "@/lib/ai/chat-guardrails-config";
 
+// Keep full-fidelity parts for only the most recent turns.
 const RECENT_FULL_CONTEXT_MESSAGE_COUNT = 8;
 const ROLE_TOKEN_OVERHEAD = 6;
 
@@ -70,6 +71,11 @@ function getLatestUserMessageId(messages: UIMessage[]): string | null {
   return lastUserMessage?.id ?? null;
 }
 
+/**
+ * Builds a model-safe chat context by:
+ * 1) capping message count, 2) pruning heavy historical parts, and
+ * 3) enforcing an approximate prompt-token budget.
+ */
 export function buildGuardrailedModelContext(
   messages: UIMessage[],
 ): UIMessage[] {
@@ -98,7 +104,8 @@ export function buildGuardrailedModelContext(
       const wouldExceedBudget =
         estimatedTokens + messageTokens > MAX_ESTIMATED_PROMPT_TOKENS;
       if (wouldExceedBudget) {
-        continue;
+        // Keep a contiguous newest-first window once budget is reached.
+        break;
       }
     }
 
@@ -111,7 +118,7 @@ export function buildGuardrailedModelContext(
     ? contextMessages.some((message) => message.id === latestUserMessageId)
     : true;
 
-  // Safety: always include the latest user message.
+  // Defensive safety net; this should rarely fire because latest user is budget-exempt.
   if (!hasLatestUserMessage && latestUserMessageId) {
     const latestUserMessage = prunedMessages.find(
       (message) => message.id === latestUserMessageId,

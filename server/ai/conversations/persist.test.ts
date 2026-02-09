@@ -38,7 +38,7 @@ class FakeQueryBuilder<T extends Record<string, unknown>> {
     column: string;
     value: unknown;
   }> = [];
-  private orderBy: { column: string; ascending: boolean } | null = null;
+  private orderBy: Array<{ column: string; ascending: boolean }> = [];
   private limitCount: number | null = null;
   private operation: "select" | "update" | "delete" = "select";
   private updatePayload: Partial<T> = {};
@@ -75,10 +75,10 @@ class FakeQueryBuilder<T extends Record<string, unknown>> {
   }
 
   order(column: string, options: { ascending: boolean }) {
-    this.orderBy = {
+    this.orderBy.push({
       column,
       ascending: options.ascending,
-    };
+    });
     return this;
   }
 
@@ -179,21 +179,18 @@ class FakeQueryBuilder<T extends Record<string, unknown>> {
       });
     });
 
-    if (this.orderBy) {
-      const { column, ascending } = this.orderBy;
+    if (this.orderBy.length > 0) {
       rows.sort((left, right) => {
-        const leftValue = left[column];
-        const rightValue = right[column];
-        if (leftValue === rightValue) return 0;
-        if (leftValue == null) return 1;
-        if (rightValue == null) return -1;
-        return ascending
-          ? leftValue > rightValue
-            ? 1
-            : -1
-          : leftValue < rightValue
-            ? 1
-            : -1;
+        for (const clause of this.orderBy) {
+          const leftValue = left[clause.column];
+          const rightValue = right[clause.column];
+          if (leftValue === rightValue) continue;
+          if (leftValue == null) return 1;
+          if (rightValue == null) return -1;
+          const compare = leftValue > rightValue ? 1 : -1;
+          return clause.ascending ? compare : -compare;
+        }
+        return 0;
       });
     }
 

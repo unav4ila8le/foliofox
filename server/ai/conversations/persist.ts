@@ -16,6 +16,9 @@ import {
 type TextPart = { type: "text"; text: string };
 type ConversationRole = "assistant" | "user" | "system" | "tool";
 
+/**
+ * Normalized persistence error with a stable code the route can map to HTTP responses.
+ */
 export class AIChatPersistenceError extends Error {
   constructor(
     public readonly code: string,
@@ -30,9 +33,8 @@ function getLastUserText(messages: UIMessage[]): string {
   const lastUser = [...messages].reverse().find((m) => m.role === "user");
   const parts =
     lastUser?.parts.filter(
-      (p): p is TextPart =>
-        (p as { type?: string }).type === "text" &&
-        typeof (p as { text?: unknown }).text === "string",
+      (part): part is TextPart =>
+        part.type === "text" && typeof part.text === "string",
     ) ?? [];
   return parts
     .map((p) => p.text)
@@ -44,11 +46,15 @@ async function getNextMessageOrder(
   supabase: Awaited<ReturnType<typeof createClient>>,
   conversationId: string,
 ): Promise<number> {
+  // TODO(paywall): Make message ordering atomic via DB sequence or unique
+  // constraint on (conversation_id, order) + conflict retry strategy.
   const { data } = await supabase
     .from("conversation_messages")
     .select("order")
     .eq("conversation_id", conversationId)
     .order("order", { ascending: false })
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
     .limit(1)
     .maybeSingle();
 
@@ -88,6 +94,9 @@ async function createConversationWithGuardrails(params: {
   const { supabase, userId, conversationId, title } = params;
 
   // Server-side cap guard: block creation once user hits the configured max.
+  // TODO(paywall): Make this atomic with either:
+  // 1) DB-level trigger/check enforcement, or
+  // 2) an atomic insert strategy that only inserts when count < cap.
   const conversationCount = await countUserConversations(supabase, userId);
 
   if (conversationCount >= MAX_CONVERSATIONS_PER_USER) {
@@ -190,6 +199,8 @@ async function trimConversationMessages(params: {
     .eq("conversation_id", conversationId)
     .eq("user_id", userId)
     .order("order", { ascending: true })
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true })
     .limit(overflowCount);
 
   if (staleRowsError) {
@@ -253,6 +264,9 @@ async function insertConversationMessage(params: {
   }
 }
 
+/**
+ * Persists the latest user turn for a conversation and enforces rolling trim.
+ */
 export async function persistConversationFromMessages(params: {
   conversationId: string;
   messages: UIMessage[];
@@ -292,6 +306,9 @@ export async function persistConversationFromMessages(params: {
   await trimConversationMessages({ supabase, conversationId, userId: user.id });
 }
 
+/**
+ * Removes the latest assistant turn so regenerate can replace it cleanly.
+ */
 export async function prepareConversationForRegenerate(params: {
   conversationId: string;
 }): Promise<void> {
@@ -306,6 +323,8 @@ export async function prepareConversationForRegenerate(params: {
     .eq("user_id", user.id)
     .eq("role", "assistant")
     .order("order", { ascending: false })
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
     .limit(1)
     .maybeSingle();
 
@@ -335,6 +354,9 @@ export async function prepareConversationForRegenerate(params: {
   await touchConversation({ supabase, conversationId, userId: user.id });
 }
 
+/**
+ * Persists a single assistant turn from stream onFinish and enforces rolling trim.
+ */
 export async function persistAssistantMessage(params: {
   conversationId: string;
   message: UIMessage;

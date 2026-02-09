@@ -25,7 +25,6 @@ import {
 } from "@/components/ui/command";
 import { useSidebar } from "@/components/ui/custom/sidebar";
 import { AISettingsDialog } from "@/components/features/ai-settings/dialog";
-import { MAX_CONVERSATIONS_PER_USER } from "@/lib/ai/chat-guardrails-config";
 
 import { deleteConversation } from "@/server/ai/conversations/delete";
 
@@ -37,7 +36,7 @@ interface ChatHeaderProps {
   }[];
   onSelectConversation: (id: string) => void;
   onNewConversation: () => void;
-  onConversationDeleted?: () => void;
+  onConversationDeleted?: () => Promise<void> | void;
   isLoadingConversation?: boolean;
   isAIEnabled?: boolean;
   isAtConversationCap?: boolean;
@@ -53,7 +52,7 @@ export function ChatHeader({
   isLoadingConversation,
   isAIEnabled,
   isAtConversationCap,
-  maxConversations = MAX_CONVERSATIONS_PER_USER,
+  maxConversations = 0,
   totalConversations = 0,
 }: ChatHeaderProps) {
   const [openHistory, setOpenHistory] = useState(false);
@@ -66,13 +65,14 @@ export function ChatHeader({
     setDeletingId(conversationId);
     try {
       await deleteConversation(conversationId);
-      onConversationDeleted?.(); // Refresh the conversation list
+      await onConversationDeleted?.(); // Refresh the conversation list
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
           : "Failed to delete conversation",
       );
+    } finally {
       setDeletingId(null);
     }
   };
