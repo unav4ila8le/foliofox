@@ -59,6 +59,8 @@ export function ChatHeader({
   const [openAISettings, setOpenAISettings] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const { rightWidth } = useSidebar();
+  const isNewConversationDisabled =
+    isLoadingConversation || !isAIEnabled || isAtConversationCap;
 
   const handleDelete = async (e: React.MouseEvent, conversationId: string) => {
     e.stopPropagation(); // Prevent selecting the conversation
@@ -113,7 +115,8 @@ export function ChatHeader({
                     {conversations.map((c) => (
                       <CommandItem
                         key={c.id}
-                        value={c.title}
+                        // Value must be unique per item for stable cmdk hover/active behavior.
+                        value={`${c.title} ${c.id}`}
                         disabled={isLoadingConversation || deletingId === c.id}
                         onSelect={() => {
                           onSelectConversation?.(c.id);
@@ -166,18 +169,21 @@ export function ChatHeader({
         {/* New conversation */}
         <Tooltip delayDuration={500}>
           <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onNewConversation}
-              aria-label="New conversation"
-              // Proactive guard: user must delete an older thread first.
-              disabled={
-                isLoadingConversation || !isAIEnabled || isAtConversationCap
-              }
+            <span
+              className="inline-flex"
+              tabIndex={isNewConversationDisabled ? 0 : undefined}
             >
-              {isLoadingConversation ? <Spinner /> : <Plus />}
-            </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onNewConversation}
+                aria-label="New conversation"
+                // Proactive guard: user must delete an older thread first.
+                disabled={isNewConversationDisabled}
+              >
+                {isLoadingConversation ? <Spinner /> : <Plus />}
+              </Button>
+            </span>
           </TooltipTrigger>
           <TooltipContent>
             {isAtConversationCap

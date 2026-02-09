@@ -289,7 +289,7 @@ export function Chat({
                         >
                           <ReasoningTrigger />
                           {mergedText && (
-                            <ReasoningContent className="mt-2 text-xs [&>*]:space-y-2">
+                            <ReasoningContent className="mt-2 text-xs *:space-y-2">
                               {mergedText}
                             </ReasoningContent>
                           )}
@@ -401,6 +401,7 @@ export function Chat({
         </div>
       )}
 
+      {/* Alert */}
       {(showProactiveCapAlert || chatErrorMessage) && (
         <div className="px-2 pb-2">
           <Alert
@@ -425,7 +426,11 @@ export function Chat({
 
       {/* Prompt Input */}
       <div
-        className={cn("px-2", !isAIEnabled && "pointer-events-none opacity-50")}
+        className={cn(
+          "px-2",
+          !isAIEnabled ||
+            (showProactiveCapAlert && "pointer-events-none opacity-50"),
+        )}
       >
         <PromptInput
           onSubmit={handleSubmit}
