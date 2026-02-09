@@ -380,6 +380,81 @@ describe("conversation persistence guardrails", () => {
     );
   });
 
+  it("skips persistence when persistAssistantMessage receives non-assistant role", async () => {
+    const { persistAssistantMessage } =
+      await import("@/server/ai/conversations/persist");
+
+    fakeSupabase.conversations = [
+      {
+        id: "assistant-skip-conversation",
+        user_id: "user-1",
+        title: "Assistant Skip Test",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    ];
+
+    await persistAssistantMessage({
+      conversationId: "assistant-skip-conversation",
+      message: createUserMessage("u-skip", "this should be ignored"),
+      usageTokens: 99,
+    });
+
+    expect(fakeSupabase.conversationMessages).toHaveLength(0);
+  });
+
+  it("persists assistant message and trims when over message cap", async () => {
+    const { persistAssistantMessage } =
+      await import("@/server/ai/conversations/persist");
+
+    fakeSupabase.conversations = [
+      {
+        id: "assistant-trim-conversation",
+        user_id: "user-1",
+        title: "Assistant Trim Test",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    ];
+
+    fakeSupabase.conversationMessages = Array.from(
+      { length: MAX_PERSISTED_MESSAGES_PER_CONVERSATION },
+      (_, index) => ({
+        id: `existing-${index}`,
+        conversation_id: "assistant-trim-conversation",
+        user_id: "user-1",
+        role: "user",
+        content: `existing-${index}`,
+        model: "seed-model",
+        usage_tokens: null,
+        created_at: new Date().toISOString(),
+        order: index,
+        parts: [{ type: "text", text: `existing-${index}` }],
+      }),
+    );
+
+    await persistAssistantMessage({
+      conversationId: "assistant-trim-conversation",
+      message: createAssistantMessage("assistant-new", "assistant newest"),
+      model: "assistant-model",
+      usageTokens: 321,
+    });
+
+    const orderedMessages = [...fakeSupabase.conversationMessages].sort(
+      (left, right) => left.order - right.order,
+    );
+    const newestAssistantMessage = orderedMessages.at(-1);
+
+    expect(orderedMessages).toHaveLength(
+      MAX_PERSISTED_MESSAGES_PER_CONVERSATION,
+    );
+    expect(orderedMessages[0]?.content).toBe("existing-1");
+    expect(newestAssistantMessage?.content).toBe("assistant newest");
+    expect(newestAssistantMessage?.role).toBe("assistant");
+    expect(newestAssistantMessage?.model).toBe("assistant-model");
+    expect(newestAssistantMessage?.usage_tokens).toBe(321);
+  });
+
   it("replaces latest assistant response on regenerate flow", async () => {
     const {
       persistConversationFromMessages,

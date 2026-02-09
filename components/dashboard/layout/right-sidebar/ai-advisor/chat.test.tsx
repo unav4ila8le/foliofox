@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type React from "react";
 
 import { Chat } from "@/components/dashboard/layout/right-sidebar/ai-advisor/chat";
@@ -7,6 +7,7 @@ import { MAX_CONVERSATIONS_PER_USER } from "@/lib/ai/chat-guardrails-config";
 
 const hoistedMocks = vi.hoisted(() => ({
   toastErrorMock: vi.fn(),
+  sendMessageMock: vi.fn(),
   chatError: null as Error | null,
 }));
 
@@ -170,7 +171,7 @@ vi.mock("@ai-sdk/react", () => ({
 
     return {
       messages: [],
-      sendMessage: vi.fn(),
+      sendMessage: hoistedMocks.sendMessageMock,
       status: "ready",
       stop: vi.fn(),
       regenerate: vi.fn(),
@@ -180,8 +181,10 @@ vi.mock("@ai-sdk/react", () => ({
 
 describe("Chat guardrail UI", () => {
   beforeEach(() => {
+    cleanup();
     hoistedMocks.chatError = null;
     hoistedMocks.toastErrorMock.mockReset();
+    hoistedMocks.sendMessageMock.mockReset();
   });
 
   it("shows proactive conversation-cap alert for unsaved thread", () => {
@@ -227,5 +230,72 @@ describe("Chat guardrail UI", () => {
     expect(screen.getByText("Chat request failed")).not.toBeNull();
     expect(screen.getByText("server exploded")).not.toBeNull();
     expect(hoistedMocks.toastErrorMock).toHaveBeenCalledWith("server exploded");
+  });
+
+  it("clears backend error after the user submits a new message", () => {
+    hoistedMocks.chatError = new Error("temporary backend error");
+
+    render(
+      <Chat
+        conversationId="conversation-3"
+        initialMessages={[]}
+        isLoadingConversation={false}
+        copiedMessages={new Set()}
+        setCopiedMessages={() => {}}
+        isAIEnabled
+        isAtConversationCap={false}
+        maxConversations={MAX_CONVERSATIONS_PER_USER}
+        hasCurrentConversationInHistory
+      />,
+    );
+
+    expect(screen.getByText("temporary backend error")).not.toBeNull();
+
+    const submitButton = screen.getAllByRole("button", { name: "Send" })[0];
+    expect(submitButton).toBeDefined();
+    fireEvent.click(submitButton as HTMLElement);
+
+    expect(hoistedMocks.sendMessageMock).toHaveBeenCalledWith({
+      text: "hello",
+    });
+    expect(screen.queryByText("temporary backend error")).toBeNull();
+  });
+
+  it("clears backend error when switching conversations with keyed remount", () => {
+    hoistedMocks.chatError = new Error("previous conversation error");
+
+    const { rerender } = render(
+      <Chat
+        key="conversation-4"
+        conversationId="conversation-4"
+        initialMessages={[]}
+        isLoadingConversation={false}
+        copiedMessages={new Set()}
+        setCopiedMessages={() => {}}
+        isAIEnabled
+        isAtConversationCap={false}
+        maxConversations={MAX_CONVERSATIONS_PER_USER}
+        hasCurrentConversationInHistory
+      />,
+    );
+
+    expect(screen.getByText("previous conversation error")).not.toBeNull();
+
+    rerender(
+      <Chat
+        key="conversation-5"
+        conversationId="conversation-5"
+        initialMessages={[]}
+        isLoadingConversation={false}
+        copiedMessages={new Set()}
+        setCopiedMessages={() => {}}
+        isAIEnabled
+        isAtConversationCap={false}
+        maxConversations={MAX_CONVERSATIONS_PER_USER}
+        hasCurrentConversationInHistory
+      />,
+    );
+
+    expect(screen.queryByText("previous conversation error")).toBeNull();
   });
 });

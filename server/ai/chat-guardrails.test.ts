@@ -75,6 +75,29 @@ describe("buildGuardrailedModelContext", () => {
     expect(result.some((message) => message.id === "user-latest")).toBe(true);
   });
 
+  it("handles assistant-only histories without dropping the latest message", () => {
+    const overBudgetText = "x".repeat(
+      MAX_ESTIMATED_PROMPT_TOKENS * ESTIMATED_CHARS_PER_TOKEN + 50,
+    );
+    const messages: UIMessage[] = [
+      createMessage({
+        id: "assistant-old",
+        role: "assistant",
+        parts: [{ type: "text", text: "older assistant context" }],
+      }),
+      createMessage({
+        id: "assistant-latest",
+        role: "assistant",
+        parts: [{ type: "text", text: overBudgetText }],
+      }),
+    ];
+
+    const result = buildGuardrailedModelContext(messages);
+
+    expect(result).toHaveLength(1);
+    expect(result[0]?.id).toBe("assistant-latest");
+  });
+
   it("prunes heavy parts from older assistant messages", () => {
     const messages: UIMessage[] = [
       createMessage({
