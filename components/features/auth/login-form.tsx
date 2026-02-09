@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
@@ -35,10 +35,12 @@ const formSchema = z.object({
 });
 
 export function LoginForm() {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isNavigating, startNavigation] = useTransition();
   const [showPassword, setShowPassword] = useState(false);
 
   const router = useRouter();
+  const isLoading = isSubmitting || isNavigating;
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -50,33 +52,46 @@ export function LoginForm() {
 
   // Submit handler
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsLoading(true);
+    setIsSubmitting(true);
 
-    const formData = new FormData();
-    formData.append("email", values.email.trim().toLowerCase());
-    formData.append("password", values.password);
+    try {
+      const formData = new FormData();
+      formData.append("email", values.email.trim().toLowerCase());
+      formData.append("password", values.password);
 
-    const result = await signIn(formData);
+      const result = await signIn(formData);
 
-    // Handle expected auth errors
-    if (!result.success) {
-      if (result.code === "invalid_credentials") {
-        form.setError("email", {
-          type: "manual",
-        });
-        form.setError("password", {
-          type: "manual",
-          message: result.message,
-        });
-      } else {
-        toast.error("Login failed", {
-          description: result.message,
-        });
+      // Handle expected auth errors
+      if (!result.success) {
+        if (result.code === "invalid_credentials") {
+          form.setError("email", {
+            type: "manual",
+          });
+          form.setError("password", {
+            type: "manual",
+            message: result.message,
+          });
+        } else {
+          toast.error("Login failed", {
+            description: result.message,
+          });
+        }
+        return;
       }
-      setIsLoading(false);
-      return;
+
+      startNavigation(() => {
+        router.replace("/dashboard");
+      });
+    } catch (error) {
+      toast.error("Login failed", {
+        description:
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred. If the problem persists, please contact support.",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
-    router.push("/dashboard");
   }
 
   return (

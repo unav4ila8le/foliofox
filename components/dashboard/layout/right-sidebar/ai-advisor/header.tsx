@@ -36,9 +36,12 @@ interface ChatHeaderProps {
   }[];
   onSelectConversation: (id: string) => void;
   onNewConversation: () => void;
-  onConversationDeleted?: () => void;
+  onConversationDeleted?: () => Promise<void> | void;
   isLoadingConversation?: boolean;
   isAIEnabled?: boolean;
+  isAtConversationCap?: boolean;
+  maxConversations?: number;
+  totalConversations?: number;
 }
 
 export function ChatHeader({
@@ -48,24 +51,30 @@ export function ChatHeader({
   onConversationDeleted,
   isLoadingConversation,
   isAIEnabled,
+  isAtConversationCap,
+  maxConversations = 0,
+  totalConversations = 0,
 }: ChatHeaderProps) {
   const [openHistory, setOpenHistory] = useState(false);
   const [openAISettings, setOpenAISettings] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const { rightWidth } = useSidebar();
+  const isNewConversationDisabled =
+    isLoadingConversation || !isAIEnabled || isAtConversationCap;
 
   const handleDelete = async (e: React.MouseEvent, conversationId: string) => {
     e.stopPropagation(); // Prevent selecting the conversation
     setDeletingId(conversationId);
     try {
       await deleteConversation(conversationId);
-      onConversationDeleted?.(); // Refresh the conversation list
+      await onConversationDeleted?.(); // Refresh the conversation list
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
           : "Failed to delete conversation",
       );
+    } finally {
       setDeletingId(null);
     }
   };
@@ -79,7 +88,12 @@ export function ChatHeader({
           <Tooltip delayDuration={500}>
             <TooltipTrigger asChild>
               <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" disabled={!isAIEnabled}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  disabled={!isAIEnabled}
+                  aria-label="Conversation history"
+                >
                   <History />
                 </Button>
               </PopoverTrigger>
@@ -101,7 +115,8 @@ export function ChatHeader({
                     {conversations.map((c) => (
                       <CommandItem
                         key={c.id}
-                        value={c.title}
+                        // Value must be unique per item for stable cmdk hover/active behavior.
+                        value={`${c.title} ${c.id}`}
                         disabled={isLoadingConversation || deletingId === c.id}
                         onSelect={() => {
                           onSelectConversation?.(c.id);
@@ -143,6 +158,7 @@ export function ChatHeader({
               variant="ghost"
               size="icon"
               onClick={() => setOpenAISettings(true)}
+              aria-label="AI settings"
             >
               <Settings />
             </Button>
@@ -153,16 +169,27 @@ export function ChatHeader({
         {/* New conversation */}
         <Tooltip delayDuration={500}>
           <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onNewConversation}
-              disabled={isLoadingConversation || !isAIEnabled}
+            <span
+              className="inline-flex"
+              tabIndex={isNewConversationDisabled ? 0 : undefined}
             >
-              {isLoadingConversation ? <Spinner /> : <Plus />}
-            </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onNewConversation}
+                aria-label="New conversation"
+                // Proactive guard: user must delete an older thread first.
+                disabled={isNewConversationDisabled}
+              >
+                {isLoadingConversation ? <Spinner /> : <Plus />}
+              </Button>
+            </span>
           </TooltipTrigger>
-          <TooltipContent>New conversation</TooltipContent>
+          <TooltipContent>
+            {isAtConversationCap
+              ? `Limit reached (${totalConversations}/${maxConversations})`
+              : "New conversation"}
+          </TooltipContent>
         </Tooltip>
       </div>
       <AISettingsDialog
