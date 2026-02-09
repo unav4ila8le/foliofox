@@ -253,6 +253,7 @@ export function Chat({
           {messages.length === 0 ? (
             isAIEnabled ? (
               <ConversationEmptyState
+                className="p-4"
                 icon={
                   <Logomark width={64} className="text-muted-foreground/25" />
                 }
