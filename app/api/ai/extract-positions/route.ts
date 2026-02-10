@@ -321,27 +321,39 @@ export async function POST(req: Request) {
     createExtractionResultSchema(),
   ]);
 
-  const result = await generateText({
-    model: aiModel(extractionModelId),
-    temperature: 0,
-    messages: [
-      {
-        role: "user",
-        content: [
-          { type: "text", text: extractionPrompt },
-          {
-            type: "file",
-            data: url,
-            mediaType: mediaType ?? "application/octet-stream",
-          },
-        ],
-      },
-    ],
-    output: Output.object({ schema }),
-  });
+  try {
+    const result = await generateText({
+      model: aiModel(extractionModelId),
+      temperature: 0,
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: extractionPrompt },
+            {
+              type: "file",
+              data: url,
+              mediaType: mediaType ?? "application/octet-stream",
+            },
+          ],
+        },
+      ],
+      output: Output.object({ schema }),
+    });
 
-  const processed = await postProcessExtractedPositions(
-    result.output as ExtractionResult,
-  );
-  return Response.json(processed);
+    const processed = await postProcessExtractedPositions(
+      result.output as ExtractionResult,
+    );
+    return Response.json(processed);
+  } catch (error) {
+    console.error("AI extraction failed:", error);
+    return Response.json(
+      {
+        success: false,
+        positions: [],
+        errors: ["Failed to process document. Please try again."],
+      } as PositionImportResult,
+      { status: 400 },
+    );
+  }
 }
