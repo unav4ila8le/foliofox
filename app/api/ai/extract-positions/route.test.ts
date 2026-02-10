@@ -305,6 +305,7 @@ describe("POST /api/ai/extract-positions", () => {
     expect(contentText).toContain("name\tquantity\tcurrency\tunit_value");
     expect(contentText).toContain("MSFT");
     expect(contentText).not.toContain("Portfolio Statement");
+    expect(contentText).not.toContain("Generated on");
   });
 
   it("keeps non-tabular (PDF) extraction path unchanged", async () => {

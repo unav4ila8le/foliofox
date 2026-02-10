@@ -43,8 +43,9 @@ export function AIImportForm() {
   };
 
   // Handler for file selection and AI extraction
-  const handleFileSelect = useCallback(async (file: File, content: string) => {
-    void content;
+  // The dropzone's onFileSelect signature includes a `content` string, but
+  // AI import reads the file as a data URL instead, so we only need the File.
+  const handleFileSelect = useCallback(async (file: File) => {
     setSelectedFile(file);
     setExtractionResult(null);
     setIsProcessing(true);
