@@ -43,6 +43,8 @@ export function AIImportForm() {
   };
 
   // Handler for file selection and AI extraction
+  // The dropzone's onFileSelect signature includes a `content` string, but
+  // AI import reads the file as a data URL instead, so we only need the File.
   const handleFileSelect = useCallback(async (file: File) => {
     setSelectedFile(file);
     setExtractionResult(null);
@@ -140,7 +142,8 @@ export function AIImportForm() {
           <span className="text-foreground font-medium">
             Supported formats:{" "}
           </span>
-          Images, screenshots, PDFs, broker statements, and more.
+          Images, screenshots, PDFs, CSV/TSV files, and Excel spreadsheets
+          (.xlsx, .xls).
         </p>
       </div>
 
@@ -151,6 +154,10 @@ export function AIImportForm() {
           "image/jpeg": [".jpg", ".jpeg"],
           "image/webp": [".webp"],
           "application/pdf": [".pdf"],
+          "text/csv": [".csv"],
+          "text/tab-separated-values": [".tsv"],
+          // Some browsers/OSes classify CSV/TSV as text/plain.
+          "text/plain": [".csv", ".tsv"],
           "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
             ".xlsx",
           ],
@@ -158,6 +165,7 @@ export function AIImportForm() {
         }}
         maxSize={10 * 1024 * 1024} // 10MB for documents
         onFileSelect={handleFileSelect}
+        readMode="none"
         selectedFile={selectedFile}
         isProcessing={isProcessing}
         onReset={handleReset}

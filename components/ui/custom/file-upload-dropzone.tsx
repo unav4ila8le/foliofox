@@ -21,6 +21,7 @@ interface FileUploadDropzoneProps {
 
   // Processing
   onFileSelect: (file: File, content: string) => Promise<void>;
+  readMode?: "text" | "none";
   disabled?: boolean;
 
   // UI customization
@@ -39,6 +40,7 @@ export function FileUploadDropzone({
   maxSize = 5 * 1024 * 1024, // 5MB default
   maxFiles = 1,
   onFileSelect,
+  readMode = "text",
   disabled = false,
   icon,
   title,
@@ -54,15 +56,14 @@ export function FileUploadDropzone({
       if (!file) return;
 
       try {
-        // Read file content based on type
-        const content = await readFileContent(file);
+        const content = readMode === "text" ? await readFileContent(file) : "";
         await onFileSelect(file, content);
       } catch (error) {
         console.error("Error reading file:", error);
         toast.error("Failed to read file");
       }
     },
-    [onFileSelect],
+    [onFileSelect, readMode],
   );
 
   // Handle file rejection

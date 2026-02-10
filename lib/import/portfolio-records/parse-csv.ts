@@ -8,6 +8,7 @@
 import {
   detectCSVDelimiter,
   parseCSVRowValues,
+  splitCSVRecords,
 } from "@/lib/import/shared/csv-parser-utils";
 import { parseNumberStrict } from "@/lib/import/shared/number-parser";
 
@@ -34,10 +35,7 @@ export async function parsePortfolioRecordsCSV(
     const delimiter = detectCSVDelimiter(csvContent);
 
     // Split content into lines and remove empty lines
-    const lines = csvContent
-      .split("\n")
-      .map((line) => line.replace(/\r$/, ""))
-      .filter((line) => line.length > 0);
+    const lines = splitCSVRecords(csvContent).filter((line) => line.length > 0);
 
     // Must have at least header + 1 data row
     if (lines.length < 2) {

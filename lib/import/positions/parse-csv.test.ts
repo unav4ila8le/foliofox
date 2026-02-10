@@ -113,6 +113,18 @@ Microsoft,5,EUR`;
     expect(result.positions[0].currency).toBe("USD");
   });
 
+  it("should parse multiline quoted cells without splitting records", async () => {
+    const csv = `name,quantity,currency,unit_value,notes
+Apple Inc,10,USD,120,"Line 1
+Line 2"`;
+
+    const result = await parsePositionsCSV(csv);
+
+    expect(result.success).toBe(true);
+    expect(result.positions).toHaveLength(1);
+    expect(result.positions[0].description).toBe("Line 1\nLine 2");
+  });
+
   it("should return supported currencies in result", async () => {
     const csv = `name,quantity,currency
 Apple Inc,10,USD

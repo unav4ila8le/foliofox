@@ -179,6 +179,18 @@ Apple Inc,buy,,10,150.50`;
     expect(result.records[0].description).toBe("Initial purchase, Q1");
   });
 
+  it("should keep multiline quoted description as a single record", async () => {
+    const csv = `position_name,type,date,quantity,unit_value,description
+Apple Inc,buy,2024-01-15,10,150.50,"First line
+Second line"`;
+
+    const result = await parsePortfolioRecordsCSV(csv);
+
+    expect(result.success).toBe(true);
+    expect(result.records).toHaveLength(1);
+    expect(result.records[0].description).toBe("First line\nSecond line");
+  });
+
   it("should normalize record type to lowercase", async () => {
     const csv = `position_name,type,date,quantity,unit_value
 Apple Inc,BUY,2024-01-15,10,150.50

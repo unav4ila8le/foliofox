@@ -17,7 +17,7 @@ import {
 } from "@/lib/ai/chat-errors";
 
 // Allow streaming responses up to 120 seconds (reasoning models need more time)
-export const maxDuration = 120;
+export const maxDuration = 160;
 
 const chatRequestSchema = z.looseObject({
   messages: z.array(

@@ -1,8 +1,9 @@
 /**
  * Position AI Extraction
  *
- * AI-powered extraction of portfolio positions from unstructured documents.
- * Uses LLM to parse PDFs, images, and other document formats.
+ * AI-powered extraction of portfolio positions from both:
+ * - unstructured documents (PDFs/images)
+ * - structured spreadsheets (normalized into AI-readable table text upstream)
  */
 
 import { z } from "zod";
@@ -16,19 +17,19 @@ import type { PositionImportRow, PositionImportResult } from "./types";
 
 export type ExtractionResult = {
   success: boolean;
-  positions?: Array<{
+  positions: Array<{
     name: string;
     category_id: string;
     currency: string;
     quantity: number;
-    unit_value?: number | null;
-    cost_basis_per_unit?: number | null;
-    capital_gains_tax_rate?: number | null;
-    symbolLookup?: string | null;
-    description?: string | null;
+    unit_value: number | null;
+    cost_basis_per_unit: number | null;
+    capital_gains_tax_rate: number | null;
+    symbolLookup: string | null;
+    description: string | null;
   }>;
-  error?: string | null;
-  warnings?: Array<string | { warning: string }> | null;
+  error: string | null;
+  warnings: Array<string | { warning: string }> | null;
 };
 
 // Warning schema
@@ -44,11 +45,13 @@ async function createPositionRowSchema() {
     category_id: z.enum(categoryIds),
     currency: z.string().length(3),
     quantity: z.number().gte(0),
-    unit_value: z.number().gte(0).nullable().optional(),
-    cost_basis_per_unit: z.number().gte(0).nullable().optional(),
-    capital_gains_tax_rate: z.number().gte(0).lte(100).nullable().optional(),
-    symbolLookup: z.string().nullable().optional(),
-    description: z.string().max(256).nullable().optional(),
+    // Keep keys required and use nullable values for compatibility with strict
+    // JSON-schema response formats used by newer OpenAI Responses models.
+    unit_value: z.number().gte(0).nullable(),
+    cost_basis_per_unit: z.number().gte(0).nullable(),
+    capital_gains_tax_rate: z.number().gte(0).lte(100).nullable(),
+    symbolLookup: z.string().nullable(),
+    description: z.string().max(256).nullable(),
   });
 }
 
@@ -58,9 +61,9 @@ export async function createExtractionResultSchema() {
 
   return z.object({
     success: z.boolean(),
-    positions: z.array(PositionRowSchema).optional(),
-    error: z.string().nullable().optional(),
-    warnings: z.array(WarningSchema).nullable().optional(),
+    positions: z.array(PositionRowSchema),
+    error: z.string().nullable(),
+    warnings: z.array(WarningSchema).nullable(),
   });
 }
 
@@ -90,8 +93,9 @@ Return data that strictly matches the provided JSON schema. Do not invent values
 - Use full company names for the "name" field (e.g., "Ford Motor Company", "Toyota Motor Corporation"), not ticker symbols. Symbols go in "symbolLookup".
 
 Output guidance:
-- Set success=false with a clear error if no positions can be extracted.
-- Otherwise success=true, include positions[], and warnings[] for any low-confidence fields.
+- Always include top-level keys: success, positions, error, warnings.
+- Set success=false with a clear error if no positions can be extracted. In this case set positions=[] and warnings to [] or null.
+- Otherwise success=true, include positions[], set error=null, and use warnings[] for any low-confidence fields (or null if none).
 - Do NOT warn when unit_value is missing for rows with symbolLookup; that value is fetched automatically.
 
 Now analyze the attached file and extract the positions.`;
