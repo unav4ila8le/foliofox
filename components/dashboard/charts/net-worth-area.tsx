@@ -190,95 +190,93 @@ export function NetWorthAreaChart({
         </CardContent>
       ) : (
         <>
-          <CardHeader className="flex-none">
-            <div className="flex justify-between gap-4">
-              <div>
-                <CardDescription>
-                  {netWorthMode === "after_capital_gains"
-                    ? "Net Worth (After Tax)"
-                    : "Net Worth"}
-                </CardDescription>
-                <div className="flex flex-col md:flex-row md:items-baseline-last md:gap-3">
-                  <div className="flex items-center gap-1">
-                    <h2 className="text-xl font-semibold">
+          <CardHeader className="flex flex-none flex-row justify-between gap-4">
+            <div>
+              <CardDescription>
+                {netWorthMode === "after_capital_gains"
+                  ? "Net Worth (After Tax)"
+                  : "Net Worth"}
+              </CardDescription>
+              <div className="flex flex-col md:flex-row md:items-baseline-last md:gap-3">
+                <div className="flex items-center gap-1">
+                  <h2 className="text-xl font-semibold">
+                    {isPrivacyMode
+                      ? "* * * * * * * *"
+                      : formatCurrency(netWorth, currency, { locale })}
+                  </h2>
+                  <PrivacyModeButton className="text-muted-foreground size-6" />
+                </div>
+                <div className="flex items-center gap-1 text-sm">
+                  <div
+                    className={cn(
+                      "flex items-center gap-1",
+                      change.absoluteChange >= 0
+                        ? "text-green-600"
+                        : "text-red-600",
+                    )}
+                  >
+                    {change.absoluteChange >= 0 ? (
+                      <TrendingUp className="size-4" />
+                    ) : (
+                      <TrendingDown className="size-4" />
+                    )}
+                    <span>
                       {isPrivacyMode
-                        ? "* * * * * * * *"
-                        : formatCurrency(netWorth, currency, { locale })}
-                    </h2>
-                    <PrivacyModeButton className="text-muted-foreground size-6" />
-                  </div>
-                  <div className="flex items-center gap-1 text-sm">
-                    <div
-                      className={cn(
-                        "flex items-center gap-1",
-                        change.absoluteChange >= 0
-                          ? "text-green-600"
-                          : "text-red-600",
-                      )}
-                    >
-                      {change.absoluteChange >= 0 ? (
-                        <TrendingUp className="size-4" />
-                      ) : (
-                        <TrendingDown className="size-4" />
-                      )}
-                      <span>
-                        {isPrivacyMode
-                          ? "* * * * * *"
-                          : `${change.absoluteChange >= 0 ? "+" : ""}${formatNumber(change.absoluteChange, { locale, maximumFractionDigits: 2 })}`}{" "}
-                        ({change.percentageChange >= 0 ? "+" : ""}
-                        {change.previousValue === 0
-                          ? "N/A"
-                          : change.percentageChange.toFixed(2)}
-                        %)
-                      </span>
-                    </div>
-                    <span className="text-muted-foreground hidden md:block">
-                      vs last period
+                        ? "* * * * * *"
+                        : `${change.absoluteChange >= 0 ? "+" : ""}${formatNumber(change.absoluteChange, { locale, maximumFractionDigits: 2 })}`}{" "}
+                      ({change.percentageChange >= 0 ? "+" : ""}
+                      {change.previousValue === 0
+                        ? "N/A"
+                        : change.percentageChange.toFixed(2)}
+                      %)
                     </span>
                   </div>
+                  <span className="text-muted-foreground hidden md:block">
+                    vs last period
+                  </span>
                 </div>
-                {shouldShowTaxLine ? (
-                  <p className="text-muted-foreground mt-0.5 text-xs">
-                    Est. Capital Gains Tax:{" "}
-                    {isPrivacyMode
-                      ? "* * * * * *"
-                      : `${formatCurrency(taxValue, currency, { locale })}`}
-                  </p>
-                ) : null}
               </div>
-              <Select
-                defaultValue="3m"
-                onValueChange={handleRangeChange}
-                disabled={isChartLoading}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="3 Months" />
-                </SelectTrigger>
-                <SelectContent align="end" position="popper">
-                  <SelectItem value="1m">
-                    <span className="sm:hidden">1mo</span>
-                    <span className="hidden sm:inline">1 Month</span>
-                  </SelectItem>
-                  <SelectItem value="3m">
-                    <span className="sm:hidden">3mo</span>
-                    <span className="hidden sm:inline">3 Months</span>
-                  </SelectItem>
-                  <SelectItem value="6m">
-                    <span className="sm:hidden">6mo</span>
-                    <span className="hidden sm:inline">6 Months</span>
-                  </SelectItem>
-                  <SelectItem value="ytd">YTD</SelectItem>
-                  <SelectItem value="1y">
-                    <span className="sm:hidden">1y</span>
-                    <span className="hidden sm:inline">1 Year</span>
-                  </SelectItem>
-                  <SelectItem value="2y">
-                    <span className="sm:hidden">2y</span>
-                    <span className="hidden sm:inline">2 Years</span>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              {shouldShowTaxLine ? (
+                <p className="text-muted-foreground mt-0.5 text-xs">
+                  Est. Capital Gains Tax:{" "}
+                  {isPrivacyMode
+                    ? "* * * * * *"
+                    : `${formatCurrency(taxValue, currency, { locale })}`}
+                </p>
+              ) : null}
             </div>
+            <Select
+              defaultValue="3m"
+              onValueChange={handleRangeChange}
+              disabled={isChartLoading}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="3 Months" />
+              </SelectTrigger>
+              <SelectContent align="end" position="popper">
+                <SelectItem value="1m">
+                  <span className="sm:hidden">1mo</span>
+                  <span className="hidden sm:inline">1 Month</span>
+                </SelectItem>
+                <SelectItem value="3m">
+                  <span className="sm:hidden">3mo</span>
+                  <span className="hidden sm:inline">3 Months</span>
+                </SelectItem>
+                <SelectItem value="6m">
+                  <span className="sm:hidden">6mo</span>
+                  <span className="hidden sm:inline">6 Months</span>
+                </SelectItem>
+                <SelectItem value="ytd">YTD</SelectItem>
+                <SelectItem value="1y">
+                  <span className="sm:hidden">1y</span>
+                  <span className="hidden sm:inline">1 Year</span>
+                </SelectItem>
+                <SelectItem value="2y">
+                  <span className="sm:hidden">2y</span>
+                  <span className="hidden sm:inline">2 Years</span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </CardHeader>
           <CardContent
             className={cn(
