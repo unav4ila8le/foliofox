@@ -234,27 +234,37 @@ export async function POST(req: Request) {
         aiTable.text,
       );
 
-      const aiResult = await generateText({
-        model: aiModel(extractionModelId),
-        temperature: 0,
-        messages: [
-          {
-            role: "user",
-            content: [{ type: "text", text: tabularPrompt }],
-          },
-        ],
-        output: Output.object({ schema }),
-      });
+      let processedByAI: PositionImportResult;
+      try {
+        const aiResult = await generateText({
+          model: aiModel(extractionModelId),
+          temperature: 0,
+          messages: [
+            {
+              role: "user",
+              content: [{ type: "text", text: tabularPrompt }],
+            },
+          ],
+          output: Output.object({ schema }),
+        });
 
-      const processedByAI = aiResult.output
-        ? await postProcessExtractedPositions(
-            aiResult.output as ExtractionResult,
-          )
-        : ({
-            success: false,
-            positions: [],
-            errors: ["AI extraction returned an empty structured response."],
-          } satisfies PositionImportResult);
+        processedByAI = aiResult.output
+          ? await postProcessExtractedPositions(
+              aiResult.output as ExtractionResult,
+            )
+          : ({
+              success: false,
+              positions: [],
+              errors: ["AI extraction returned an empty structured response."],
+            } satisfies PositionImportResult);
+      } catch (error) {
+        console.error("AI extraction failed for tabular input:", error);
+        processedByAI = {
+          success: false,
+          positions: [],
+          errors: ["AI extraction failed for this spreadsheet."],
+        };
+      }
 
       const parsingPipelineWarnings = mergeWarnings(
         parsedTabularFile.warnings,

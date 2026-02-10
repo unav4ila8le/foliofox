@@ -209,6 +209,47 @@ describe("POST /api/ai/extract-positions", () => {
     );
   });
 
+  it("falls back to deterministic parser when tabular AI call throws", async () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    generateTextMock.mockRejectedValueOnce(new Error("provider timeout"));
+    parsePositionsCSVMock.mockResolvedValueOnce({
+      success: true,
+      positions: [
+        {
+          name: "Apple Inc",
+          category_id: "equity",
+          currency: "USD",
+          quantity: 10,
+          unit_value: 120,
+          cost_basis_per_unit: null,
+          capital_gains_tax_rate: null,
+          symbolLookup: "AAPL",
+          description: null,
+        },
+      ],
+    });
+
+    const response = await callRoute({
+      url: toDataUrl(
+        "name,quantity,currency,unit_value\nApple Inc,10,USD,120\n",
+        "text/csv",
+      ),
+      mediaType: "text/csv",
+      filename: "positions.csv",
+    });
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.success).toBe(true);
+    expect(parsePositionsCSVMock).toHaveBeenCalledTimes(1);
+    expect((body.warnings ?? []).join(" ")).toContain(
+      "deterministic spreadsheet parsing was used as fallback",
+    );
+    consoleError.mockRestore();
+  });
+
   it("falls back when structured output is missing for tabular files", async () => {
     generateTextMock.mockResolvedValueOnce({ output: undefined });
     parsePositionsCSVMock.mockResolvedValueOnce({
