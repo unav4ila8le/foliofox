@@ -67,6 +67,24 @@ describe("parseTabularFileFromDataUrl", () => {
     expect(result.sheets[0].rows[1]).toEqual(["Apple", "10", "USD"]);
   });
 
+  it("parses CSV records with multiline quoted cells", () => {
+    const csv = `name,description,quantity
+Apple,"line 1
+line 2",10
+Microsoft,"single line",5`;
+    const dataUrl = `data:text/csv;base64,${Buffer.from(csv, "utf8").toString("base64")}`;
+
+    const result = parseTabularFileFromDataUrl({
+      dataUrl,
+      mediaType: "text/csv",
+      filename: "positions.csv",
+    });
+
+    expect(result.sheets[0].rows).toHaveLength(3);
+    expect(result.sheets[0].rows[1]).toEqual(["Apple", "line 1 line 2", "10"]);
+    expect(result.sheets[0].rows[2]).toEqual(["Microsoft", "single line", "5"]);
+  });
+
   it("parses TSV files", () => {
     const tsv = "name\tquantity\tcurrency\nApple\t10\tUSD\n";
     const dataUrl = `data:text/tab-separated-values;base64,${Buffer.from(tsv, "utf8").toString("base64")}`;

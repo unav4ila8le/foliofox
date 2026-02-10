@@ -6,13 +6,60 @@
  */
 
 /**
+ * Split delimited content into logical records while preserving embedded newlines
+ * inside quoted fields.
+ *
+ * This handles broker exports where a quoted cell may span multiple lines:
+ * e.g. "line 1\nline 2".
+ *
+ * @param content - Raw CSV/TSV text
+ * @returns Array of raw record strings
+ */
+export function splitCSVRecords(content: string): string[] {
+  if (!content) return [];
+
+  const normalized = content.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  const records: string[] = [];
+
+  let currentRecord = "";
+  let insideQuotes = false;
+
+  for (let i = 0; i < normalized.length; i++) {
+    const char = normalized[i];
+
+    if (char === '"') {
+      if (insideQuotes && normalized[i + 1] === '"') {
+        // Preserve escaped quotes as-is for row-level parsing.
+        currentRecord += '""';
+        i++;
+      } else {
+        insideQuotes = !insideQuotes;
+        currentRecord += char;
+      }
+      continue;
+    }
+
+    if (char === "\n" && !insideQuotes) {
+      records.push(currentRecord);
+      currentRecord = "";
+      continue;
+    }
+
+    currentRecord += char;
+  }
+
+  records.push(currentRecord);
+  return records;
+}
+
+/**
  * Detect the delimiter used in a CSV/TSV file by scoring the first line.
  * Supports comma, tab, and semicolon delimiters.
  * @param content - Raw CSV/TSV text
  * @returns The detected delimiter: "," | "\t" | ";" (defaulting to ",")
  */
 export function detectCSVDelimiter(content: string): string {
-  const firstLine = content.split("\n")[0];
+  const firstLine = splitCSVRecords(content)[0] ?? "";
 
   const counts = {
     comma: (firstLine.match(/,/g) || []).length,

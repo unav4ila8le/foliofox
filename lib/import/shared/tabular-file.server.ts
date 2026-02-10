@@ -13,6 +13,7 @@ import * as XLSX from "xlsx";
 import {
   detectCSVDelimiter,
   parseCSVRowValues,
+  splitCSVRecords,
 } from "@/lib/import/shared/csv-parser-utils";
 
 export type TabularFileKind = "csv" | "tsv" | "xlsx" | "xls";
@@ -170,10 +171,7 @@ function parseDelimitedContent(
   text: string,
   delimiterHint: "," | "\t",
 ): string[][] {
-  const lines = text
-    .split("\n")
-    .map((line) => line.replace(/\r$/, ""))
-    .filter((line) => line.length > 0);
+  const lines = splitCSVRecords(text).filter((line) => line.length > 0);
 
   if (lines.length === 0) return [];
 
