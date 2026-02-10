@@ -29,6 +29,7 @@ export const maxDuration = 30;
 
 const AI_TABLE_MAX_ROWS = 250;
 const AI_TABLE_MAX_COLUMNS = 40;
+const MAX_HEADER_CANDIDATE_ROWS = 25;
 
 interface UploadedFilePart {
   url: string;
@@ -67,7 +68,9 @@ function scoreSheetForPositions(rows: string[][]): {
   // - then prefer broader canonical header coverage
   // - then prefer rows that actually contain data
   // - slightly penalize later header rows
-  const maxHeaderCandidates = Math.min(rows.length, 10);
+  // Scan a bounded prefix of rows so we can handle broker preambles while
+  // keeping sheet scoring fast and reducing false positives deeper in data rows.
+  const maxHeaderCandidates = Math.min(rows.length, MAX_HEADER_CANDIDATE_ROWS);
   let bestScore = Number.NEGATIVE_INFINITY;
   let bestConfidence: "high" | "medium" | "low" = "low";
   let bestMetadata: PositionSheetScoreMetadata = {
@@ -273,6 +276,10 @@ export async function POST(req: Request) {
       );
 
       if (processedByAI.success) {
+        // NOTE(portfolio-records-ai): Positions files are typically small, so we
+        // currently return successful AI extraction even when aiTable warnings
+        // include row/column truncation. For future high-volume record imports,
+        // treat truncation as a trigger for deterministic reconciliation.
         return Response.json({
           ...processedByAI,
           warnings: mergeWarnings(

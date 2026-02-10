@@ -315,15 +315,18 @@ describe("POST /api/ai/extract-positions", () => {
     expect((body.errors ?? []).join(" ")).toContain("File is too large");
   });
 
-  it("supports header rows that start after introductory lines", async () => {
+  it("supports header rows that start after long introductory preambles", async () => {
+    const preambleRows: Array<Array<string | number>> = Array.from(
+      { length: 12 },
+      (_, index) => [`Portfolio Statement Line ${index + 1}`],
+    );
+
     const workbook = createWorkbookDataUrl({
       sheets: [
         {
           name: "Positions",
           rows: [
-            ["Portfolio Statement"],
-            ["Generated on", "2026-02-10"],
-            [],
+            ...preambleRows,
             ["name", "quantity", "currency", "unit_value"],
             ["MSFT", 3, "USD", 400],
           ],
@@ -345,8 +348,8 @@ describe("POST /api/ai/extract-positions", () => {
     const contentText = (payload.messages[0].content[0]?.text ?? "") as string;
     expect(contentText).toContain("name\tquantity\tcurrency\tunit_value");
     expect(contentText).toContain("MSFT");
-    expect(contentText).not.toContain("Portfolio Statement");
-    expect(contentText).not.toContain("Generated on");
+    expect(contentText).not.toContain("Portfolio Statement Line 1");
+    expect(contentText).not.toContain("Portfolio Statement Line 12");
   });
 
   it("keeps non-tabular (PDF) extraction path unchanged", async () => {

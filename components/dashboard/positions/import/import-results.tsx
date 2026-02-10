@@ -7,10 +7,20 @@ interface ImportResultsProps {
   result: PositionImportResult;
 }
 
+function isAiTruncationWarning(message: string): boolean {
+  return /^Only the first \d+ (rows|columns) were sent to AI\b/i.test(message);
+}
+
 export function ImportResults({ result }: ImportResultsProps) {
   const { success, positions, warnings = [], errors = [] } = result;
 
-  const hasWarnings = warnings.length > 0;
+  const aiTruncationWarnings = warnings.filter(isAiTruncationWarning);
+  const generalWarnings = warnings.filter(
+    (warning) => !isAiTruncationWarning(warning),
+  );
+
+  const hasAiTruncationWarnings = aiTruncationWarnings.length > 0;
+  const hasGeneralWarnings = generalWarnings.length > 0;
   const hasErrors = errors.length > 0;
 
   // Early return for no content to show
@@ -29,13 +39,31 @@ export function ImportResults({ result }: ImportResultsProps) {
             </AlertDescription>
           </Alert>
 
-          {hasWarnings && (
+          {hasAiTruncationWarnings && (
+            <Alert className="border-amber-500/50 text-amber-700">
+              <AlertCircle className="size-4" />
+              <AlertTitle>Large Spreadsheet Notice</AlertTitle>
+              <AlertDescription>
+                <p className="mb-2 text-sm">
+                  AI processed only part of this spreadsheet. Review before
+                  importing.
+                </p>
+                <ul className="ml-4 list-outside list-disc space-y-1 text-sm">
+                  {aiTruncationWarnings.map((warning, index) => (
+                    <li key={index}>{warning}</li>
+                  ))}
+                </ul>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {hasGeneralWarnings && (
             <Alert variant="default">
               <AlertCircle className="size-4" />
               <AlertTitle>Warnings</AlertTitle>
               <AlertDescription>
                 <ul className="ml-4 list-outside list-disc space-y-1 text-sm">
-                  {warnings.map((warning, index) => (
+                  {generalWarnings.map((warning, index) => (
                     <li key={index}>{warning}</li>
                   ))}
                 </ul>
