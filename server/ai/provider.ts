@@ -17,6 +17,6 @@ export const aiModel = (id: string) =>
   gatewayEnabled && gateway ? gateway(prefixForGateway(id)) : openai(id);
 
 // Optional: centralize model ids so routes don’t repeat literals
-export const chatModelId = process.env.AI_CHAT_MODEL ?? "gpt-4o-mini";
+export const chatModelId = process.env.AI_CHAT_MODEL ?? "gpt-5-mini";
 export const extractionModelId =
-  process.env.AI_EXTRACTION_MODEL ?? "gpt-4o-mini";
+  process.env.AI_EXTRACTION_MODEL ?? "gpt-5-mini";
