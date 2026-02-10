@@ -43,7 +43,8 @@ export function AIImportForm() {
   };
 
   // Handler for file selection and AI extraction
-  const handleFileSelect = useCallback(async (file: File) => {
+  const handleFileSelect = useCallback(async (file: File, content: string) => {
+    void content;
     setSelectedFile(file);
     setExtractionResult(null);
     setIsProcessing(true);
@@ -154,6 +155,7 @@ export function AIImportForm() {
           "application/pdf": [".pdf"],
           "text/csv": [".csv"],
           "text/tab-separated-values": [".tsv"],
+          // Some browsers/OSes classify CSV/TSV as text/plain.
           "text/plain": [".csv", ".tsv"],
           "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
             ".xlsx",

@@ -209,6 +209,40 @@ describe("POST /api/ai/extract-positions", () => {
     );
   });
 
+  it("falls back when structured output is missing for tabular files", async () => {
+    generateTextMock.mockResolvedValueOnce({ output: undefined });
+    parsePositionsCSVMock.mockResolvedValueOnce({
+      success: true,
+      positions: [
+        {
+          name: "Apple Inc",
+          category_id: "equity",
+          currency: "USD",
+          quantity: 10,
+          unit_value: 120,
+          cost_basis_per_unit: null,
+          capital_gains_tax_rate: null,
+          symbolLookup: "AAPL",
+          description: null,
+        },
+      ],
+    });
+
+    const response = await callRoute({
+      url: toDataUrl(
+        "name,quantity,currency,unit_value\nApple Inc,10,USD,120\n",
+        "text/csv",
+      ),
+      mediaType: "text/csv",
+      filename: "positions.csv",
+    });
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.success).toBe(true);
+    expect(parsePositionsCSVMock).toHaveBeenCalledTimes(1);
+  });
+
   it("returns structured errors for invalid spreadsheet files", async () => {
     const response = await callRoute({
       url: "data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,Zm9v",
@@ -240,6 +274,39 @@ describe("POST /api/ai/extract-positions", () => {
     expect((body.errors ?? []).join(" ")).toContain("File is too large");
   });
 
+  it("supports header rows that start after introductory lines", async () => {
+    const workbook = createWorkbookDataUrl({
+      sheets: [
+        {
+          name: "Positions",
+          rows: [
+            ["Portfolio Statement"],
+            ["Generated on", "2026-02-10"],
+            [],
+            ["name", "quantity", "currency", "unit_value"],
+            ["MSFT", 3, "USD", 400],
+          ],
+        },
+      ],
+    });
+
+    const response = await callRoute({
+      url: workbook.dataUrl,
+      mediaType: workbook.mediaType,
+      filename: "positions.xlsx",
+    });
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.success).toBe(true);
+
+    const payload = generateTextMock.mock.calls[0][0];
+    const contentText = (payload.messages[0].content[0]?.text ?? "") as string;
+    expect(contentText).toContain("name\tquantity\tcurrency\tunit_value");
+    expect(contentText).toContain("MSFT");
+    expect(contentText).not.toContain("Portfolio Statement");
+  });
+
   it("keeps non-tabular (PDF) extraction path unchanged", async () => {
     const response = await callRoute({
       url: "data:application/pdf;base64,JVBERi0xLjQK",
@@ -260,5 +327,26 @@ describe("POST /api/ai/extract-positions", () => {
     expect(content.find((part) => part.type === "file")?.mediaType).toBe(
       "application/pdf",
     );
+  });
+
+  it("returns 400 for non-tabular AI failures", async () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    generateTextMock.mockRejectedValueOnce(new Error("provider failure"));
+
+    const response = await callRoute({
+      url: "data:application/pdf;base64,JVBERi0xLjQK",
+      mediaType: "application/pdf",
+      filename: "statement.pdf",
+    });
+
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.success).toBe(false);
+    expect((body.errors ?? []).join(" ")).toContain(
+      "Failed to process document",
+    );
+    consoleError.mockRestore();
   });
 });

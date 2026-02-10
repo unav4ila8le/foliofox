@@ -1,3 +1,13 @@
+/**
+ * Shared tabular import helpers for server-side ingestion.
+ *
+ * Responsibilities:
+ * - Detect tabular file types (CSV/TSV/XLSX/XLS)
+ * - Decode and validate data URLs with size limits
+ * - Parse CSV/TSV and Excel workbooks into normalized rows
+ * - Expand merged cells and handle formula fallbacks
+ * - Provide generic sheet-selection and serialization helpers
+ */
 import * as XLSX from "xlsx";
 
 import {
@@ -71,7 +81,7 @@ interface DecodedDataUrl {
   mediaType: string | null;
 }
 
-const MAX_FILE_BYTES_DEFAULT = 10 * 1024 * 1024;
+export const TABULAR_FILE_MAX_BYTES = 10 * 1024 * 1024;
 
 const EXCEL_MIME_TYPES = new Set([
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -106,6 +116,13 @@ function getFileExtension(filename?: string | null): string | null {
   const dotIndex = trimmed.lastIndexOf(".");
   if (dotIndex < 0 || dotIndex === trimmed.length - 1) return null;
   return trimmed.slice(dotIndex + 1);
+}
+
+function toDisplaySheetName(filename?: string | null): string {
+  if (!filename) return "Data";
+  const cleaned = filename.trim();
+  if (!cleaned) return "Data";
+  return cleaned.replace(/\.[^.]+$/, "") || "Data";
 }
 
 function decodeDataUrl(dataUrl: string): DecodedDataUrl {
@@ -322,12 +339,6 @@ export function detectTabularFileKind({
   ) {
     return "xlsx";
   }
-  if (
-    normalizedMediaType === "application/vnd.ms-excel" &&
-    extension === "csv"
-  ) {
-    return "csv";
-  }
   if (EXCEL_MIME_TYPES.has(normalizedMediaType)) return "xls";
   return null;
 }
@@ -340,7 +351,7 @@ export function parseTabularFileFromDataUrl({
   dataUrl,
   mediaType,
   filename,
-  maxBytes = MAX_FILE_BYTES_DEFAULT,
+  maxBytes = TABULAR_FILE_MAX_BYTES,
 }: ParseTabularFileInput): ParsedTabularFile {
   const decoded = decodeDataUrl(dataUrl);
   if (decoded.data.byteLength > maxBytes) {
@@ -370,7 +381,7 @@ export function parseTabularFileFromDataUrl({
     const rows = parseDelimitedContent(text, kind === "tsv" ? "\t" : ",");
     sheets = [
       {
-        name: filename || "Sheet1",
+        name: toDisplaySheetName(filename),
         rows,
       },
     ];
@@ -488,6 +499,8 @@ export function buildAiTableText(
   }
 
   const text = limitedRows
+    // Values are normalized upstream; keep this pass as a safety guard for
+    // mixed input paths and future parser changes.
     .map((row) => row.map((value) => normalizeCellValue(value)).join("\t"))
     .join("\n");
 

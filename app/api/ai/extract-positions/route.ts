@@ -5,11 +5,11 @@ import {
   type PositionCanonicalHeader,
   REQUIRED_POSITION_HEADERS,
   buildPositionColumnMap,
-  hasRequiredPositionHeaders,
 } from "@/lib/import/positions/header-mapper";
 import { parsePositionsCSV } from "@/lib/import/positions/parse-csv";
 import {
   TabularFileError,
+  TABULAR_FILE_MAX_BYTES,
   buildAiTableText,
   countNonEmptyRows,
   isTabularFile,
@@ -27,7 +27,6 @@ import type { PositionImportResult } from "@/lib/import/positions/types";
 
 export const maxDuration = 30;
 
-const MAX_AI_IMPORT_FILE_BYTES = 10 * 1024 * 1024;
 const AI_TABLE_MAX_ROWS = 250;
 const AI_TABLE_MAX_COLUMNS = 40;
 
@@ -45,6 +44,7 @@ interface PositionSheetScoreMetadata {
 }
 
 function uniqueStrings(values: Array<string | null | undefined>): string[] {
+  // Filters out null, undefined, and empty-string entries.
   return Array.from(
     new Set(values.filter((value): value is string => !!value)),
   );
@@ -62,6 +62,11 @@ function scoreSheetForPositions(rows: string[][]): {
   confidence: "high" | "medium" | "low";
   metadata: PositionSheetScoreMetadata;
 } {
+  // Heuristic scoring:
+  // - prioritize required header matches heavily
+  // - then prefer broader canonical header coverage
+  // - then prefer rows that actually contain data
+  // - slightly penalize later header rows
   const maxHeaderCandidates = Math.min(rows.length, 10);
   let bestScore = Number.NEGATIVE_INFINITY;
   let bestConfidence: "high" | "medium" | "low" = "low";
@@ -80,7 +85,6 @@ function scoreSheetForPositions(rows: string[][]): {
     const rawHeaders = rows[headerRowIndex] ?? [];
     const columnMap = buildPositionColumnMap(rawHeaders);
     const mappedHeaderCount = columnMap.size;
-    const requiredCheck = hasRequiredPositionHeaders(columnMap);
     const requiredHeaderMatches = countRequiredHeaderMatches(columnMap);
     const dataRowCount = countNonEmptyRows(rows.slice(headerRowIndex + 1));
 
@@ -91,7 +95,9 @@ function scoreSheetForPositions(rows: string[][]): {
       headerRowIndex * 2;
 
     let confidence: "high" | "medium" | "low" = "low";
-    if (requiredCheck.ok && dataRowCount > 0) {
+    const hasAllRequiredHeaders =
+      requiredHeaderMatches === REQUIRED_POSITION_HEADERS.length;
+    if (hasAllRequiredHeaders && dataRowCount > 0) {
       confidence = mappedHeaderCount >= 4 ? "high" : "medium";
     } else if (requiredHeaderMatches >= 2 && dataRowCount > 0) {
       confidence = "medium";
@@ -129,6 +135,7 @@ function buildTabularPrompt(
   sheetName: string,
   tableText: string,
 ): string {
+  // Tabs are used to avoid CSV-style comma ambiguity inside cell values.
   return `${extractionPrompt}
 
 The uploaded file is a spreadsheet. The content below is a normalized, tab-separated export from sheet "${sheetName}".
@@ -180,7 +187,7 @@ export async function POST(req: Request) {
         dataUrl: url,
         mediaType,
         filename,
-        maxBytes: MAX_AI_IMPORT_FILE_BYTES,
+        maxBytes: TABULAR_FILE_MAX_BYTES,
       });
 
       const nonEmptySheets = parsedTabularFile.sheets.filter(
@@ -239,11 +246,17 @@ export async function POST(req: Request) {
         output: Output.object({ schema }),
       });
 
-      const processedByAI = await postProcessExtractedPositions(
-        aiResult.output as ExtractionResult,
-      );
+      const processedByAI = aiResult.output
+        ? await postProcessExtractedPositions(
+            aiResult.output as ExtractionResult,
+          )
+        : ({
+            success: false,
+            positions: [],
+            errors: ["AI extraction returned an empty structured response."],
+          } satisfies PositionImportResult);
 
-      const parserWarnings = mergeWarnings(
+      const parsingPipelineWarnings = mergeWarnings(
         parsedTabularFile.warnings,
         selectedSheet.warnings,
         aiTable.warnings,
@@ -252,7 +265,10 @@ export async function POST(req: Request) {
       if (processedByAI.success) {
         return Response.json({
           ...processedByAI,
-          warnings: mergeWarnings(processedByAI.warnings, parserWarnings),
+          warnings: mergeWarnings(
+            processedByAI.warnings,
+            parsingPipelineWarnings,
+          ),
         });
       }
 
@@ -264,7 +280,7 @@ export async function POST(req: Request) {
           ...fallbackParsed,
           warnings: mergeWarnings(
             fallbackParsed.warnings,
-            parserWarnings,
+            parsingPipelineWarnings,
             processedByAI.warnings,
             [
               "AI extraction for this spreadsheet was uncertain, so deterministic spreadsheet parsing was used as fallback.",
@@ -278,7 +294,7 @@ export async function POST(req: Request) {
         fallbackParsed.errors,
       );
       const combinedWarnings = mergeWarnings(
-        parserWarnings,
+        parsingPipelineWarnings,
         processedByAI.warnings,
         fallbackParsed.warnings,
       );
@@ -340,6 +356,17 @@ export async function POST(req: Request) {
       ],
       output: Output.object({ schema }),
     });
+
+    if (!result.output) {
+      return Response.json(
+        {
+          success: false,
+          positions: [],
+          errors: ["Failed to process document. Please try again."],
+        } as PositionImportResult,
+        { status: 400 },
+      );
+    }
 
     const processed = await postProcessExtractedPositions(
       result.output as ExtractionResult,
