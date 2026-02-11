@@ -8,10 +8,8 @@ vi.mock("@/supabase/service", () => ({
   createServiceClient: createServiceClientMock,
 }));
 
-import {
-  applyPortfolioRecordTransition,
-  recalculateSnapshotsUntilNextUpdate,
-} from "./recalculate";
+import { recalculateSnapshotsUntilNextUpdate } from "./recalculate";
+import { applyPortfolioRecordTransition } from "./record-transition";
 
 import type { PortfolioRecord } from "@/types/global.types";
 import type { SupabaseClient } from "@supabase/supabase-js";
