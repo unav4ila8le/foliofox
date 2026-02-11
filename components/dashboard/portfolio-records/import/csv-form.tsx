@@ -81,7 +81,8 @@ export function CSVImportForm() {
       const result = await importPortfolioRecordsFromCSV(csvContent);
 
       if (!result.success) {
-        throw new Error(result.error);
+        toast.error(result.error ?? "Failed to import portfolio records");
+        return;
       }
 
       toast.success(
