@@ -8,7 +8,7 @@ import { formatUTCDateKey } from "@/lib/date/date-utils";
 import {
   validatePortfolioRecordTimelineWindow,
   validateRecordQuantityByType,
-} from "@/server/portfolio-records/timeline-validator";
+} from "@/server/portfolio-records/validate-timeline";
 
 import type { PortfolioRecord } from "@/types/global.types";
 

@@ -6,7 +6,7 @@ import { recalculateSnapshotsUntilNextUpdate } from "@/server/position-snapshots
 
 import { parsePortfolioRecordsCSV } from "@/lib/import/portfolio-records/parse-csv";
 import { formatUTCDateKey } from "@/lib/date/date-utils";
-import { validatePortfolioRecordTimelineWindow } from "@/server/portfolio-records/timeline-validator";
+import { validatePortfolioRecordTimelineWindow } from "@/server/portfolio-records/validate-timeline";
 
 import type { PortfolioRecord } from "@/types/global.types";
 import { PORTFOLIO_RECORD_TYPES } from "@/types/enums";

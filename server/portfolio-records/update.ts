@@ -8,7 +8,7 @@ import { recalculateSnapshotsUntilNextUpdate } from "@/server/position-snapshots
 import {
   validatePortfolioRecordTimelineWindow,
   validateRecordQuantityByType,
-} from "@/server/portfolio-records/timeline-validator";
+} from "@/server/portfolio-records/validate-timeline";
 
 import type { PortfolioRecord } from "@/types/global.types";
 import { PORTFOLIO_RECORD_TYPES } from "@/types/enums";
