@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { formatUTCDateKey } from "@/lib/date/date-utils";
+import { formatUTCDateKey, parseUTCDateKey } from "@/lib/date/date-utils";
 import { getCurrentUser } from "@/server/auth/actions";
 import { recalculateSnapshotsUntilNextUpdate } from "@/server/position-snapshots/recalculate";
 import {
@@ -19,6 +19,17 @@ export async function updatePortfolioRecord(
   portfolioRecordId: string,
 ) {
   const { supabase, user } = await getCurrentUser();
+  const dateRaw = (formData.get("date") as string) ?? "";
+  const parsedDate = parseUTCDateKey(dateRaw);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return {
+      success: false,
+      code: "INVALID_DATE",
+      message: "Invalid date. Use YYYY-MM-DD.",
+    } as const;
+  }
+  const normalizedDate = formatUTCDateKey(parsedDate);
 
   // Extract incoming data
   const updateData: Pick<
@@ -26,12 +37,11 @@ export async function updatePortfolioRecord(
     "type" | "date" | "quantity" | "unit_value" | "description"
   > = {
     type: formData.get("type") as (typeof PORTFOLIO_RECORD_TYPES)[number],
-    date: formData.get("date") as string,
+    date: normalizedDate,
     quantity: Number(formData.get("quantity")),
     unit_value: Number(formData.get("unit_value")),
     description: (formData.get("description") as string) || null,
   };
-  const normalizedDate = formatUTCDateKey(updateData.date);
   const quantityValidation = validateRecordQuantityByType({
     type: updateData.type,
     quantity: updateData.quantity,
@@ -100,7 +110,7 @@ export async function updatePortfolioRecord(
         ? {
             ...record,
             type: updateData.type,
-            date: normalizedDate,
+            date: updateData.date,
             quantity: updateData.quantity,
             created_at: current.created_at,
           }
@@ -119,10 +129,7 @@ export async function updatePortfolioRecord(
   // Update portfolio record
   const { error } = await supabase
     .from("portfolio_records")
-    .update({
-      ...updateData,
-      date: normalizedDate,
-    })
+    .update(updateData)
     .eq("user_id", user.id)
     .eq("id", portfolioRecordId);
 

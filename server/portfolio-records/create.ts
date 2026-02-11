@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { getCurrentUser } from "@/server/auth/actions";
 import { recalculateSnapshotsUntilNextUpdate } from "@/server/position-snapshots/recalculate";
-import { formatUTCDateKey } from "@/lib/date/date-utils";
+import { formatUTCDateKey, parseUTCDateKey } from "@/lib/date/date-utils";
 import {
   validatePortfolioRecordTimelineWindow,
   validateRecordQuantityByType,
@@ -22,6 +22,17 @@ import { PORTFOLIO_RECORD_TYPES } from "@/types/enums";
 export async function createPortfolioRecord(formData: FormData) {
   const { supabase, user } = await getCurrentUser();
   const quantity = Number(formData.get("quantity"));
+  const dateRaw = (formData.get("date") as string) ?? "";
+  const parsedDate = parseUTCDateKey(dateRaw);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return {
+      success: false,
+      code: "INVALID_DATE",
+      message: "Invalid date. Use YYYY-MM-DD.",
+    } as const;
+  }
+  const normalizedDate = formatUTCDateKey(parsedDate);
 
   // Extract portfolio record data
   const portfolioRecordData: Pick<
@@ -30,7 +41,7 @@ export async function createPortfolioRecord(formData: FormData) {
   > = {
     position_id: formData.get("position_id") as string,
     type: formData.get("type") as (typeof PORTFOLIO_RECORD_TYPES)[number],
-    date: formData.get("date") as string,
+    date: normalizedDate,
     quantity,
     unit_value: Number(formData.get("unit_value")),
     description: (formData.get("description") as string) || null,
@@ -42,7 +53,6 @@ export async function createPortfolioRecord(formData: FormData) {
     customCostBasis != null && String(customCostBasis).trim() !== ""
       ? Number(customCostBasis)
       : null;
-  const normalizedDate = formatUTCDateKey(portfolioRecordData.date);
   const quantityValidation = validateRecordQuantityByType({
     type: portfolioRecordData.type,
     quantity: portfolioRecordData.quantity,
@@ -77,13 +87,7 @@ export async function createPortfolioRecord(formData: FormData) {
     supabase,
     userId: user.id,
     positionId: portfolioRecordData.position_id,
-    records: [
-      ...(affectedRecords ?? []),
-      {
-        ...portfolioRecordData,
-        date: normalizedDate,
-      },
-    ],
+    records: [...(affectedRecords ?? []), portfolioRecordData],
   });
 
   if (!timelineValidation.valid) {
@@ -97,7 +101,7 @@ export async function createPortfolioRecord(formData: FormData) {
   // Insert portfolio record
   const { data: inserted, error: insertError } = await supabase
     .from("portfolio_records")
-    .insert({ user_id: user.id, ...portfolioRecordData, date: normalizedDate })
+    .insert({ user_id: user.id, ...portfolioRecordData })
     .select("id, position_id, date")
     .single();
 
