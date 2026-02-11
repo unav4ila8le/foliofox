@@ -5,6 +5,67 @@ import { formatUTCDateKey } from "@/lib/date/date-utils";
 
 import type { PortfolioRecord } from "@/types/global.types";
 
+interface SnapshotTransitionState {
+  runningQuantity: number;
+  runningCostBasis: number;
+}
+
+interface ApplyPortfolioRecordTransitionOptions {
+  recordItem: Pick<PortfolioRecord, "id" | "type" | "quantity" | "unit_value">;
+  runningQuantity: number;
+  runningCostBasis: number;
+  overrideCostBasisPerUnit?: number | null;
+}
+
+/**
+ * Apply a single portfolio record transition to running snapshot state.
+ * Pure helper used by snapshot recalculation and unit tests.
+ */
+export function applyPortfolioRecordTransition({
+  recordItem,
+  runningQuantity,
+  runningCostBasis,
+  overrideCostBasisPerUnit = null,
+}: ApplyPortfolioRecordTransitionOptions): SnapshotTransitionState {
+  const quantity = Number(recordItem.quantity);
+  const unitValue = Number(recordItem.unit_value);
+  const nextState: SnapshotTransitionState = {
+    runningQuantity,
+    runningCostBasis,
+  };
+
+  if (recordItem.type === "buy") {
+    if (nextState.runningQuantity > 0) {
+      const totalCost =
+        nextState.runningQuantity * nextState.runningCostBasis +
+        quantity * unitValue;
+      nextState.runningQuantity += quantity;
+      nextState.runningCostBasis = totalCost / nextState.runningQuantity;
+    } else {
+      nextState.runningQuantity = quantity;
+      nextState.runningCostBasis = unitValue;
+    }
+
+    return nextState;
+  }
+
+  if (recordItem.type === "sell") {
+    nextState.runningQuantity = Math.max(
+      0,
+      nextState.runningQuantity - quantity,
+    );
+    return nextState;
+  }
+
+  nextState.runningQuantity = quantity;
+  nextState.runningCostBasis =
+    overrideCostBasisPerUnit != null
+      ? Number(overrideCostBasisPerUnit)
+      : Number(unitValue);
+
+  return nextState;
+}
+
 interface RecalculateOptions {
   positionId: string;
   fromDate: Date;
@@ -204,41 +265,18 @@ export async function recalculateSnapshotsUntilNextUpdate(
   let runningQuantity = Number(baseSnapshot?.quantity ?? 0);
   let runningCostBasis = Number(baseSnapshot?.cost_basis_per_unit ?? 0);
 
-  const applyRecord = (recordItem: PortfolioRecord) => {
-    const quantity = Number(recordItem.quantity);
-    const unitValue = Number(recordItem.unit_value);
-
-    if (recordItem.type === "buy") {
-      if (runningQuantity > 0) {
-        const totalCost =
-          runningQuantity * runningCostBasis + quantity * unitValue;
-        runningQuantity += quantity;
-        runningCostBasis = totalCost / runningQuantity;
-      } else {
-        runningQuantity = quantity;
-        runningCostBasis = unitValue;
-      }
-      return;
-    }
-
-    if (recordItem.type === "sell") {
-      runningQuantity = Math.max(0, runningQuantity - quantity);
-      return;
-    }
-
-    if (recordItem.type === "update") {
-      runningQuantity = quantity;
-
-      const override =
-        (recordItem.id && costBasisByRecordId.get(recordItem.id)) ?? null;
-
-      runningCostBasis =
-        override != null ? Number(override) : Number(unitValue);
-    }
-  };
-
   for (const record of windowRecords) {
-    applyRecord(record);
+    const override = record.id
+      ? (costBasisByRecordId.get(record.id) ?? null)
+      : null;
+    const nextState = applyPortfolioRecordTransition({
+      recordItem: record,
+      runningQuantity,
+      runningCostBasis,
+      overrideCostBasisPerUnit: override,
+    });
+    runningQuantity = nextState.runningQuantity;
+    runningCostBasis = nextState.runningCostBasis;
 
     const recordDate = record.date as string;
 
