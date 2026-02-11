@@ -11,6 +11,7 @@ import {
   splitCSVRecords,
 } from "@/lib/import/shared/csv-parser-utils";
 import { parseNumberStrict } from "@/lib/import/shared/number-parser";
+import { parseUTCDateKey } from "@/lib/date/date-utils";
 
 import {
   buildPortfolioRecordColumnMap,
@@ -84,7 +85,7 @@ export async function parsePortfolioRecordsCSV(
       const typeRaw = (values[columnMap.get("type")!] || "")
         .trim()
         .toLowerCase();
-      const dateRaw = values[columnMap.get("date")!] || "";
+      const dateRaw = (values[columnMap.get("date")!] || "").trim();
       const quantityRaw = values[columnMap.get("quantity")!] || "";
       const unitValueRaw = values[columnMap.get("unit_value")!] || "";
 
@@ -128,10 +129,10 @@ export async function parsePortfolioRecordsCSV(
         continue;
       }
 
-      // Validate date format (ISO: YYYY-MM-DD)
-      const isValidDate =
-        /^\d{4}-\d{2}-\d{2}$/.test(dateRaw) &&
-        !isNaN(new Date(dateRaw).getTime());
+      // Validate strict date format and calendar validity (YYYY-MM-DD).
+      // Reject overflow dates like 2026-02-31 instead of normalizing them.
+      const parsedDate = parseUTCDateKey(dateRaw);
+      const isValidDate = !isNaN(parsedDate.getTime());
       if (!isValidDate) {
         errors.push(
           `Row ${rowIndex + 2}: Invalid date "${dateRaw}". Use YYYY-MM-DD format.`,

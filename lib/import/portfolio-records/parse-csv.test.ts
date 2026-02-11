@@ -262,6 +262,19 @@ Apple Inc,buy,15-01-2024,10,150.50`;
     ).toBe(true);
   });
 
+  it("should return error for overflow calendar dates", async () => {
+    const csv = `position_name,type,date,quantity,unit_value
+Apple Inc,buy,2026-02-31,10,150.50`;
+
+    const result = await parsePortfolioRecordsCSV(csv);
+
+    expect(result.success).toBe(false);
+    expect(result.errors).toBeDefined();
+    expect(
+      result.errors?.some((err) => err.includes("Use YYYY-MM-DD format")),
+    ).toBe(true);
+  });
+
   // Non-negative validation tests
   it("should return error for negative quantity", async () => {
     const csv = `position_name,type,date,quantity,unit_value

@@ -33,18 +33,11 @@ export function SellForm() {
   // Local state
   const [isLoading, setIsLoading] = useState(false);
 
-  // Get current position quantity for validation
-  const currentQuantity = preselectedPosition?.current_quantity || 0;
-
-  // Create dynamic form schema based on current quantity
+  // Create form schema
   const formSchema = z.object({
     date: z.date({ error: "A date is required." }),
     quantity: requiredNumberWithConstraints("Quantity is required.", {
       gt: { value: 0, error: "Quantity must be greater than 0." },
-      lte: {
-        value: currentQuantity,
-        error: `You currently have ${currentQuantity} units.`,
-      },
     }),
     unit_value: requiredNumberWithConstraints("Unit value is required.", {
       gt: { value: 0, error: "Value must be greater than 0." },
@@ -75,12 +68,6 @@ export function SellForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!preselectedPosition) {
       toast.error("No position selected!");
-      return;
-    }
-
-    // Check quantity validation
-    if (values.quantity > currentQuantity) {
-      toast.error(`Cannot sell more than ${currentQuantity} units`);
       return;
     }
 

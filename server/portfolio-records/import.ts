@@ -6,6 +6,7 @@ import { recalculateSnapshotsUntilNextUpdate } from "@/server/position-snapshots
 
 import { parsePortfolioRecordsCSV } from "@/lib/import/portfolio-records/parse-csv";
 import { formatUTCDateKey } from "@/lib/date/date-utils";
+import { validatePortfolioRecordTimelineWindow } from "@/server/portfolio-records/validate-timeline";
 
 import type { PortfolioRecord } from "@/types/global.types";
 import { PORTFOLIO_RECORD_TYPES } from "@/types/enums";
@@ -86,10 +87,25 @@ export async function importPortfolioRecordsFromCSV(
         | "quantity"
         | "unit_value"
         | "description"
+        | "created_at"
       >
     > = [];
+    const importedTimelineByPosition = new Map<
+      string,
+      Array<{
+        position_id: string;
+        type: (typeof PORTFOLIO_RECORD_TYPES)[number];
+        date: string;
+        quantity: number;
+        created_at: string;
+        sourceLabel: string;
+      }>
+    >();
+    const earliestImportedDateByPosition = new Map<string, string>();
+    const importTimestampBase = Date.now();
 
-    for (const row of rows) {
+    for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+      const row = rows[rowIndex];
       const positionEntry = nameToId.get(
         normalizePositionName(row.position_name),
       );
@@ -100,14 +116,106 @@ export async function importPortfolioRecordsFromCSV(
         };
       }
 
-      recordsToInsert.push({
+      const normalizedDate = formatUTCDateKey(row.date);
+      const createdAt = new Date(importTimestampBase + rowIndex).toISOString();
+      const timelineRecord = {
         position_id: positionEntry.id,
         type: row.type as (typeof PORTFOLIO_RECORD_TYPES)[number],
-        date: row.date,
+        date: normalizedDate,
         quantity: row.quantity,
         unit_value: row.unit_value,
         description: row.description ?? null,
+        // Persist this synthetic timestamp so DB replay order matches validation order.
+        created_at: createdAt,
+      };
+
+      recordsToInsert.push(timelineRecord);
+
+      const importedForPosition =
+        importedTimelineByPosition.get(positionEntry.id) ?? [];
+      importedForPosition.push({
+        ...timelineRecord,
+        sourceLabel: `Row ${rowIndex + 2}`,
       });
+      importedTimelineByPosition.set(positionEntry.id, importedForPosition);
+
+      const earliestDate = earliestImportedDateByPosition.get(positionEntry.id);
+      if (!earliestDate || normalizedDate < earliestDate) {
+        earliestImportedDateByPosition.set(positionEntry.id, normalizedDate);
+      }
+    }
+
+    const affectedPositionIds = Array.from(
+      earliestImportedDateByPosition.keys(),
+    );
+    const globalEarliestImportedDate = Array.from(
+      earliestImportedDateByPosition.values(),
+    ).sort()[0];
+
+    if (affectedPositionIds.length > 0 && globalEarliestImportedDate) {
+      const {
+        data: existingAffectedRecords,
+        error: existingAffectedRecordsError,
+      } = await supabase
+        .from("portfolio_records")
+        .select("id, position_id, type, date, quantity, created_at")
+        .eq("user_id", user.id)
+        .in("position_id", affectedPositionIds)
+        .gte("date", globalEarliestImportedDate);
+
+      if (existingAffectedRecordsError) {
+        return {
+          success: false,
+          error:
+            existingAffectedRecordsError.message ??
+            "Failed to validate imported record timelines",
+        };
+      }
+
+      type ExistingTimelineRecord = {
+        id: string;
+        position_id: string;
+        type: (typeof PORTFOLIO_RECORD_TYPES)[number];
+        date: string;
+        quantity: number;
+        created_at: string;
+      };
+
+      const existingRecordsByPosition = new Map<
+        string,
+        ExistingTimelineRecord[]
+      >();
+      for (const record of existingAffectedRecords ?? []) {
+        const positionEarliestDate = earliestImportedDateByPosition.get(
+          record.position_id,
+        );
+        if (!positionEarliestDate || record.date < positionEarliestDate) {
+          continue;
+        }
+
+        const list = existingRecordsByPosition.get(record.position_id) ?? [];
+        list.push(record);
+        existingRecordsByPosition.set(record.position_id, list);
+      }
+
+      for (const positionId of affectedPositionIds) {
+        const timelineValidation = await validatePortfolioRecordTimelineWindow({
+          supabase,
+          userId: user.id,
+          positionId,
+          records: [
+            ...(existingRecordsByPosition.get(positionId) ?? []),
+            ...(importedTimelineByPosition.get(positionId) ?? []),
+          ],
+        });
+
+        if (!timelineValidation.valid) {
+          return {
+            success: false,
+            error: timelineValidation.message,
+          };
+        }
+      }
     }
 
     // Batch insert all records

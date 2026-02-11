@@ -2,6 +2,7 @@
 
 import { createServiceClient } from "@/supabase/service";
 import { formatUTCDateKey } from "@/lib/date/date-utils";
+import { applyPortfolioRecordTransition } from "@/server/position-snapshots/record-transition";
 
 import type { PortfolioRecord } from "@/types/global.types";
 
@@ -62,7 +63,8 @@ export async function recalculateSnapshotsUntilNextUpdate(
 
   let { data: affectedRecords } = await portfolioRecordsQuery
     .order("date", { ascending: true })
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true });
 
   if (!affectedRecords || affectedRecords.length === 0) {
     return { success: true } as const;
@@ -161,7 +163,8 @@ export async function recalculateSnapshotsUntilNextUpdate(
 
   const { data: windowRecordsRaw } = await windowQuery
     .order("date", { ascending: true })
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true });
 
   const baseSnapshotDate = (baseSnapshot?.date as string) ?? null;
   const baseSnapshotCreatedAt = (baseSnapshot?.created_at as string) ?? null;
@@ -204,41 +207,18 @@ export async function recalculateSnapshotsUntilNextUpdate(
   let runningQuantity = Number(baseSnapshot?.quantity ?? 0);
   let runningCostBasis = Number(baseSnapshot?.cost_basis_per_unit ?? 0);
 
-  const applyRecord = (recordItem: PortfolioRecord) => {
-    const quantity = Number(recordItem.quantity);
-    const unitValue = Number(recordItem.unit_value);
-
-    if (recordItem.type === "buy") {
-      if (runningQuantity > 0) {
-        const totalCost =
-          runningQuantity * runningCostBasis + quantity * unitValue;
-        runningQuantity += quantity;
-        runningCostBasis = totalCost / runningQuantity;
-      } else {
-        runningQuantity = quantity;
-        runningCostBasis = unitValue;
-      }
-      return;
-    }
-
-    if (recordItem.type === "sell") {
-      runningQuantity = Math.max(0, runningQuantity - quantity);
-      return;
-    }
-
-    if (recordItem.type === "update") {
-      runningQuantity = quantity;
-
-      const override =
-        (recordItem.id && costBasisByRecordId.get(recordItem.id)) ?? null;
-
-      runningCostBasis =
-        override != null ? Number(override) : Number(unitValue);
-    }
-  };
-
   for (const record of windowRecords) {
-    applyRecord(record);
+    const override = record.id
+      ? (costBasisByRecordId.get(record.id) ?? null)
+      : null;
+    const nextState = applyPortfolioRecordTransition({
+      recordItem: record,
+      runningQuantity,
+      runningCostBasis,
+      overrideCostBasisPerUnit: override,
+    });
+    runningQuantity = nextState.runningQuantity;
+    runningCostBasis = nextState.runningCostBasis;
 
     const recordDate = record.date as string;
 

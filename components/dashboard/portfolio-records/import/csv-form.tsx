@@ -12,7 +12,7 @@ import { useImportPortfolioRecordsDialog } from "./index";
 
 import { parsePortfolioRecordsCSV } from "@/lib/import/portfolio-records/parse-csv";
 import { importPortfolioRecordsFromCSV } from "@/server/portfolio-records/import";
-import { validatePortfolioRecordPositionNames } from "@/server/portfolio-records/validate";
+import { validatePortfolioRecordPositionNames } from "@/server/portfolio-records/validate-position-names";
 
 import type { PortfolioRecordImportResult } from "@/lib/import/portfolio-records/types";
 
@@ -81,7 +81,8 @@ export function CSVImportForm() {
       const result = await importPortfolioRecordsFromCSV(csvContent);
 
       if (!result.success) {
-        throw new Error(result.error);
+        toast.error(result.error ?? "Failed to import portfolio records");
+        return;
       }
 
       toast.success(
