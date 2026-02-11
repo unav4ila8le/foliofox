@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { getCurrentUser } from "@/server/auth/actions";
 import { recalculateSnapshotsUntilNextUpdate } from "@/server/position-snapshots/recalculate";
+import { formatUTCDateKey } from "@/lib/date/date-utils";
 
 import type { PortfolioRecord } from "@/types/global.types";
 
@@ -16,6 +17,7 @@ import { PORTFOLIO_RECORD_TYPES } from "@/types/enums";
  */
 export async function createPortfolioRecord(formData: FormData) {
   const { supabase, user } = await getCurrentUser();
+  const quantity = Number(formData.get("quantity"));
 
   // Extract portfolio record data
   const portfolioRecordData: Pick<
@@ -25,10 +27,38 @@ export async function createPortfolioRecord(formData: FormData) {
     position_id: formData.get("position_id") as string,
     type: formData.get("type") as (typeof PORTFOLIO_RECORD_TYPES)[number],
     date: formData.get("date") as string,
-    quantity: Number(formData.get("quantity")),
+    quantity,
     unit_value: Number(formData.get("unit_value")),
     description: (formData.get("description") as string) || null,
   };
+
+  if (!Number.isFinite(quantity)) {
+    return {
+      success: false,
+      code: "INVALID_QUANTITY",
+      message: "Quantity must be a valid number.",
+    } as const;
+  }
+
+  if (
+    (portfolioRecordData.type === "buy" ||
+      portfolioRecordData.type === "sell") &&
+    quantity <= 0
+  ) {
+    return {
+      success: false,
+      code: "INVALID_QUANTITY",
+      message: `${portfolioRecordData.type === "sell" ? "Sell" : "Buy"} quantity must be greater than 0.`,
+    } as const;
+  }
+
+  if (portfolioRecordData.type === "update" && quantity < 0) {
+    return {
+      success: false,
+      code: "INVALID_QUANTITY",
+      message: "Update quantity must be 0 or greater.",
+    } as const;
+  }
 
   // Extract custom cost basis if provided (for UPDATE records)
   const customCostBasis = formData.get("cost_basis_per_unit");
@@ -36,11 +66,42 @@ export async function createPortfolioRecord(formData: FormData) {
     customCostBasis != null && String(customCostBasis).trim() !== ""
       ? Number(customCostBasis)
       : null;
+  const normalizedDate = formatUTCDateKey(portfolioRecordData.date);
+
+  if (portfolioRecordData.type === "sell") {
+    const { data: snapshotAtDate, error: snapshotError } = await supabase
+      .from("position_snapshots")
+      .select("quantity")
+      .eq("user_id", user.id)
+      .eq("position_id", portfolioRecordData.position_id)
+      .lte("date", normalizedDate)
+      .order("date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (snapshotError) {
+      return {
+        success: false,
+        code: snapshotError.code ?? "SNAPSHOT_FETCH_FAILED",
+        message: snapshotError.message ?? "Failed to validate sell quantity",
+      } as const;
+    }
+
+    const availableQuantity = Number(snapshotAtDate?.quantity ?? 0);
+    if (portfolioRecordData.quantity > availableQuantity) {
+      return {
+        success: false,
+        code: "INSUFFICIENT_QUANTITY",
+        message: `Cannot sell more than ${availableQuantity} units on ${normalizedDate}.`,
+      } as const;
+    }
+  }
 
   // Insert portfolio record
   const { data: inserted, error: insertError } = await supabase
     .from("portfolio_records")
-    .insert({ user_id: user.id, ...portfolioRecordData })
+    .insert({ user_id: user.id, ...portfolioRecordData, date: normalizedDate })
     .select("id, position_id, date")
     .single();
 
