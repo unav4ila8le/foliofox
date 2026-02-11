@@ -63,7 +63,8 @@ export async function recalculateSnapshotsUntilNextUpdate(
 
   let { data: affectedRecords } = await portfolioRecordsQuery
     .order("date", { ascending: true })
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true });
 
   if (!affectedRecords || affectedRecords.length === 0) {
     return { success: true } as const;
@@ -162,7 +163,8 @@ export async function recalculateSnapshotsUntilNextUpdate(
 
   const { data: windowRecordsRaw } = await windowQuery
     .order("date", { ascending: true })
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true });
 
   const baseSnapshotDate = (baseSnapshot?.date as string) ?? null;
   const baseSnapshotCreatedAt = (baseSnapshot?.created_at as string) ?? null;

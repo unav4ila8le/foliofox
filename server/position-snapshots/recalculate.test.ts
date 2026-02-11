@@ -593,4 +593,50 @@ describe("recalculateSnapshotsUntilNextUpdate", () => {
     expect(updateSnapshot?.quantity).toBe(8);
     expect(updateSnapshot?.cost_basis_per_unit).toBe(70);
   });
+
+  it("uses id as deterministic tie-break when date and created_at are equal", async () => {
+    const fakeSupabase = new FakeRecalculateSupabase({
+      portfolioRecords: [
+        // Intentionally out-of-order in input array. Deterministic replay should
+        // process a-buy before b-sell because of the id tie-break order.
+        {
+          id: "b-sell",
+          user_id: "user-1",
+          position_id: "position-1",
+          type: "sell",
+          date: "2026-01-15",
+          quantity: 1,
+          unit_value: 120,
+          created_at: "2026-01-15T10:00:00.000Z",
+        },
+        {
+          id: "a-buy",
+          user_id: "user-1",
+          position_id: "position-1",
+          type: "buy",
+          date: "2026-01-15",
+          quantity: 2,
+          unit_value: 100,
+          created_at: "2026-01-15T10:00:00.000Z",
+        },
+      ],
+      positionSnapshots: [],
+    });
+
+    createServiceClientMock.mockResolvedValue(
+      fakeSupabase as unknown as SupabaseClient<Database>,
+    );
+
+    const result = await recalculateSnapshotsUntilNextUpdate({
+      positionId: "position-1",
+      fromDate: new Date("2026-01-01"),
+    });
+
+    expect(result).toEqual({ success: true });
+
+    const sellSnapshot = fakeSupabase.positionSnapshots.find(
+      (snapshot) => snapshot.portfolio_record_id === "b-sell",
+    );
+    expect(sellSnapshot?.quantity).toBe(1);
+  });
 });

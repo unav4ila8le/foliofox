@@ -87,6 +87,7 @@ export async function importPortfolioRecordsFromCSV(
         | "quantity"
         | "unit_value"
         | "description"
+        | "created_at"
       >
     > = [];
     const importedTimelineByPosition = new Map<
@@ -116,6 +117,7 @@ export async function importPortfolioRecordsFromCSV(
       }
 
       const normalizedDate = formatUTCDateKey(row.date);
+      const createdAt = new Date(importTimestampBase + rowIndex).toISOString();
       const timelineRecord = {
         position_id: positionEntry.id,
         type: row.type as (typeof PORTFOLIO_RECORD_TYPES)[number],
@@ -123,6 +125,8 @@ export async function importPortfolioRecordsFromCSV(
         quantity: row.quantity,
         unit_value: row.unit_value,
         description: row.description ?? null,
+        // Persist this synthetic timestamp so DB replay order matches validation order.
+        created_at: createdAt,
       };
 
       recordsToInsert.push(timelineRecord);
@@ -131,7 +135,6 @@ export async function importPortfolioRecordsFromCSV(
         importedTimelineByPosition.get(positionEntry.id) ?? [];
       importedForPosition.push({
         ...timelineRecord,
-        created_at: new Date(importTimestampBase + rowIndex).toISOString(),
         sourceLabel: `Row ${rowIndex + 2}`,
       });
       importedTimelineByPosition.set(positionEntry.id, importedForPosition);
