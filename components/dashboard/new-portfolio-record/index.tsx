@@ -23,8 +23,6 @@ import { BuyForm } from "./forms/buy-form";
 import { SellForm } from "./forms/sell-form";
 import { UpdateForm } from "./forms/update-form";
 
-import { cn } from "@/lib/utils";
-
 import type { TransformedPosition } from "@/types/global.types";
 import type { VariantProps } from "class-variance-authority";
 import { PORTFOLIO_RECORD_TYPES } from "@/types/enums";
@@ -107,7 +105,7 @@ export function NewPortfolioRecordDialogProvider({
           </StickyDialogHeader>
 
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            {/* position selector */}
+            {/* Position selector */}
             <div className="mb-4 px-6">
               <PositionSelector
                 onPositionSelect={setPreselectedPosition}
@@ -119,96 +117,86 @@ export function NewPortfolioRecordDialogProvider({
               />
             </div>
 
-            {/* Record type content area (alert or tabbed forms) */}
-            <div
-              className={cn(
-                "min-h-0 flex-1 overflow-hidden",
-                !preselectedPosition && "pointer-events-none opacity-50",
-              )}
-            >
-              {/* Domain-sourced positions are auto-valued and don't accept manual records */}
-              {preselectedPosition && availableTypes.length === 0 ? (
-                <div className="mb-4 px-6">
-                  <Alert>
-                    <Info className="size-4" />
-                    <AlertTitle className="line-clamp-none">
-                      Domain values are updated automatically. Manual records
-                      aren&apos;t needed.
-                    </AlertTitle>
-                    <AlertDescription>
-                      <p>
-                        Domain valuations are provided by{" "}
-                        <Link
-                          href="https://humbleworth.com"
-                          target="_blank"
-                          className="hover:text-primary underline underline-offset-2"
+            {/* Domain-sourced positions are auto-valued and don't accept manual records */}
+            {preselectedPosition && availableTypes.length === 0 ? (
+              <div className="mb-4 px-6">
+                <Alert>
+                  <Info className="size-4" />
+                  <AlertTitle className="line-clamp-none">
+                    Domain values are updated automatically. Manual records
+                    aren&apos;t needed.
+                  </AlertTitle>
+                  <AlertDescription>
+                    <p>
+                      Domain valuations are provided by{" "}
+                      <Link
+                        href="https://humbleworth.com"
+                        target="_blank"
+                        className="hover:text-primary underline underline-offset-2"
+                      >
+                        HumbleWorth
+                      </Link>
+                      .
+                      <br />
+                      If you prefer, you can add a new custom position to
+                      manually enter your own valuation instead.
+                    </p>
+                  </AlertDescription>
+                </Alert>
+              </div>
+            ) : availableTypes.length > 0 ? (
+              // Tabs for record types
+              <Tabs
+                key={defaultTab}
+                defaultValue={defaultTab}
+                className="flex min-h-0 flex-1 flex-col gap-4"
+              >
+                <div className="px-6">
+                  <TabsList
+                    className={availableTypes.length > 1 ? "w-full" : "hidden"}
+                  >
+                    {availableTypes.map((type) => {
+                      const Icon = RECORD_TYPE_ICONS[type];
+                      return (
+                        <TabsTrigger
+                          key={type}
+                          value={`${type}-form`}
+                          disabled={!preselectedPosition}
+                          className="capitalize"
                         >
-                          HumbleWorth
-                        </Link>
-                        .
-                        <br />
-                        If you prefer, you can add a new custom position to
-                        manually enter your own valuation instead.
-                      </p>
-                    </AlertDescription>
-                  </Alert>
+                          <Icon className="size-4" />
+                          {type}
+                        </TabsTrigger>
+                      );
+                    })}
+                  </TabsList>
                 </div>
-              ) : availableTypes.length > 0 ? (
-                // Tabs for record types
-                <Tabs
-                  key={defaultTab}
-                  defaultValue={defaultTab}
-                  className="flex min-h-0 flex-1 flex-col gap-4"
-                >
-                  <div className="px-6">
-                    <TabsList
-                      className={
-                        availableTypes.length > 1 ? "w-full" : "hidden"
-                      }
-                    >
-                      {availableTypes.map((type) => {
-                        const Icon = RECORD_TYPE_ICONS[type];
-                        return (
-                          <TabsTrigger
-                            key={type}
-                            value={`${type}-form`}
-                            disabled={!preselectedPosition}
-                            className="capitalize"
-                          >
-                            <Icon className="size-4" />
-                            {type}
-                          </TabsTrigger>
-                        );
-                      })}
-                    </TabsList>
-                  </div>
-                  {availableTypes.includes("buy") && (
-                    <TabsContent
-                      value="buy-form"
-                      className="min-h-0 flex-1 overflow-hidden"
-                    >
-                      <BuyForm />
-                    </TabsContent>
-                  )}
-                  {availableTypes.includes("sell") && (
-                    <TabsContent
-                      value="sell-form"
-                      className="min-h-0 flex-1 overflow-hidden"
-                    >
-                      <SellForm />
-                    </TabsContent>
-                  )}
-                  {availableTypes.includes("update") && (
-                    <TabsContent
-                      value="update-form"
-                      className="min-h-0 flex-1 overflow-hidden"
-                    >
-                      <UpdateForm />
-                    </TabsContent>
-                  )}
-                </Tabs>
-              ) : null}
-            </div>
+                {availableTypes.includes("buy") && (
+                  <TabsContent
+                    value="buy-form"
+                    className="flex min-h-0 flex-1 flex-col overflow-hidden"
+                  >
+                    <BuyForm />
+                  </TabsContent>
+                )}
+                {availableTypes.includes("sell") && (
+                  <TabsContent
+                    value="sell-form"
+                    className="flex min-h-0 flex-1 flex-col overflow-hidden"
+                  >
+                    <SellForm />
+                  </TabsContent>
+                )}
+                {availableTypes.includes("update") && (
+                  <TabsContent
+                    value="update-form"
+                    className="flex min-h-0 flex-1 flex-col overflow-hidden"
+                  >
+                    <UpdateForm />
+                  </TabsContent>
+                )}
+              </Tabs>
+            ) : null}
           </div>
         </StickyDialogContent>
       </Dialog>
