@@ -1,10 +1,8 @@
+import { Dialog, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+  StickyDialogContent,
+  StickyDialogHeader,
+} from "@/components/ui/custom/sticky-dialog";
 import { FinancialProfileForm } from "./form";
 
 interface FinancialProfileDialogProps {
@@ -18,19 +16,19 @@ export function FinancialProfileDialog({
 }: FinancialProfileDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
+      <StickyDialogContent
         onOpenAutoFocus={(e) => e.preventDefault()}
-        className="max-h-[calc(100dvh-1rem)] overflow-y-auto md:max-w-2xl"
+        className="md:max-w-2xl"
       >
-        <DialogHeader>
+        <StickyDialogHeader>
           <DialogTitle>Financial profile</DialogTitle>
           <DialogDescription>
             Update this form to help Foliofox AI Advisor understand your
             financial situation and respond with more relevant guidance.
           </DialogDescription>
-        </DialogHeader>
+        </StickyDialogHeader>
         <FinancialProfileForm onSuccess={() => onOpenChange(false)} />
-      </DialogContent>
+      </StickyDialogContent>
     </Dialog>
   );
 }
