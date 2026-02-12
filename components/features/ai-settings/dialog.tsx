@@ -1,12 +1,10 @@
 import { Sparkles } from "lucide-react";
 
+import { Dialog, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+  StickyDialogContent,
+  StickyDialogHeader,
+} from "@/components/ui/custom/sticky-dialog";
 import { AISettingsForm } from "./form";
 
 interface AISettingsDialogProps {
@@ -20,17 +18,17 @@ export function AISettingsDialog({
 }: AISettingsDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
-        <DialogHeader>
+      <StickyDialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
+        <StickyDialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="size-5" /> Foliofox AI Advisor
           </DialogTitle>
           <DialogDescription>
             Update your AI settings and data sharing preferences here.
           </DialogDescription>
-        </DialogHeader>
+        </StickyDialogHeader>
         <AISettingsForm onSuccess={() => onOpenChange(false)} />
-      </DialogContent>
+      </StickyDialogContent>
     </Dialog>
   );
 }

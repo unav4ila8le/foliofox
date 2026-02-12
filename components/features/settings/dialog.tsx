@@ -1,10 +1,8 @@
+import { Dialog, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+  StickyDialogContent,
+  StickyDialogHeader,
+} from "@/components/ui/custom/sticky-dialog";
 import { SettingsForm } from "./form";
 
 import type { Profile } from "@/types/global.types";
@@ -19,15 +17,15 @@ interface SettingsDialogProps {
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
-        <DialogHeader>
+      <StickyDialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
+        <StickyDialogHeader>
           <DialogTitle>Settings</DialogTitle>
           <DialogDescription>
             Change here your profile information
           </DialogDescription>
-        </DialogHeader>
+        </StickyDialogHeader>
         <SettingsForm onSuccess={() => onOpenChange(false)} />
-      </DialogContent>
+      </StickyDialogContent>
     </Dialog>
   );
 }

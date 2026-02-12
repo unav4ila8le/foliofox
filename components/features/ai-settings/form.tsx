@@ -16,6 +16,10 @@ import { Switch } from "@/components/ui/switch";
 import { DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import {
+  StickyDialogBody,
+  StickyDialogFooter,
+} from "@/components/ui/custom/sticky-dialog";
 
 import { updateAISettings } from "@/server/profile/actions";
 import { useDashboardData } from "@/components/dashboard/providers/dashboard-data-provider";
@@ -75,44 +79,53 @@ export function AISettingsForm({ onSuccess }: AISettingsFormProps) {
   }
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
-      <Controller
-        control={form.control}
-        name="data_sharing_consent"
-        render={({ field, fieldState }) => (
-          <Field
-            data-invalid={fieldState.invalid}
-            className="rounded-lg border px-4 py-3 text-sm"
-          >
-            <div className="flex items-center gap-2">
-              <Switch
-                id="data-sharing-consent"
-                checked={field.value}
-                disabled={isLoading}
-                onCheckedChange={field.onChange}
-                aria-invalid={fieldState.invalid}
-                className="data-[state=checked]:bg-green-500"
-              />
-              <FieldLabel htmlFor="data-sharing-consent">
-                AI data sharing consent
-              </FieldLabel>
-            </div>
-            <FieldDescription className="text-muted-foreground">
-              Foliofox AI Advisor can provide more relevant answers if you
-              choose to share different levels of data. This feature is powered
-              by third-party AI providers.
-            </FieldDescription>
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )}
-      />
+    <form
+      onSubmit={form.handleSubmit(onSubmit)}
+      className="flex min-h-0 flex-1 flex-col overflow-hidden"
+    >
+      <StickyDialogBody>
+        <div className="grid gap-4">
+          <Controller
+            control={form.control}
+            name="data_sharing_consent"
+            render={({ field, fieldState }) => (
+              <Field
+                data-invalid={fieldState.invalid}
+                className="rounded-lg border px-4 py-3 text-sm"
+              >
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="data-sharing-consent"
+                    checked={field.value}
+                    disabled={isLoading}
+                    onCheckedChange={field.onChange}
+                    aria-invalid={fieldState.invalid}
+                    className="data-[state=checked]:bg-green-500"
+                  />
+                  <FieldLabel htmlFor="data-sharing-consent">
+                    AI data sharing consent
+                  </FieldLabel>
+                </div>
+                <FieldDescription className="text-muted-foreground">
+                  Foliofox AI Advisor can provide more relevant answers if you
+                  choose to share different levels of data. This feature is
+                  powered by third-party AI providers.
+                </FieldDescription>
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+          />
+        </div>
+      </StickyDialogBody>
 
-      <div className="flex justify-end gap-2">
+      <StickyDialogFooter>
         <DialogClose asChild>
           <Button
             disabled={isLoading}
             type="button"
-            variant="secondary"
+            variant="outline"
             className="w-1/2 sm:w-auto"
           >
             Cancel
@@ -132,7 +145,7 @@ export function AISettingsForm({ onSuccess }: AISettingsFormProps) {
             "Save changes"
           )}
         </Button>
-      </div>
+      </StickyDialogFooter>
     </form>
   );
 }
