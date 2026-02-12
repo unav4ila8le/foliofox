@@ -11,13 +11,11 @@ import {
 } from "lucide-react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Dialog, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  StickyDialogContent,
+  StickyDialogHeader,
+} from "@/components/ui/custom/sticky-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { PositionSelector } from "./position-selector";
@@ -96,8 +94,8 @@ export function NewPortfolioRecordDialogProvider({
     >
       {children}
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto">
-          <DialogHeader>
+        <StickyDialogContent>
+          <StickyDialogHeader>
             <DialogTitle>
               {preselectedPosition
                 ? `New Record for ${preselectedPosition.name}`
@@ -106,91 +104,113 @@ export function NewPortfolioRecordDialogProvider({
             <DialogDescription>
               Update the value and quantity of your positions.
             </DialogDescription>
-          </DialogHeader>
+          </StickyDialogHeader>
 
-          {/* position selector */}
-          <PositionSelector
-            onPositionSelect={setPreselectedPosition}
-            preselectedPosition={preselectedPosition}
-            field={{
-              value: preselectedPosition?.id || "",
-              onChange: () => {},
-            }}
-          />
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            {/* position selector */}
+            <div className="mb-4 px-6">
+              <PositionSelector
+                onPositionSelect={setPreselectedPosition}
+                preselectedPosition={preselectedPosition}
+                field={{
+                  value: preselectedPosition?.id || "",
+                  onChange: () => {},
+                }}
+              />
+            </div>
 
-          {/* Tabs for record types */}
-          <div
-            className={cn(
-              !preselectedPosition && "pointer-events-none opacity-50",
-            )}
-          >
-            {preselectedPosition && availableTypes.length === 0 ? (
-              <Alert>
-                <Info className="size-4" />
-                <AlertTitle className="line-clamp-none">
-                  Domain values are updated automatically. Manual records
-                  aren&apos;t needed.
-                </AlertTitle>
-                <AlertDescription>
-                  <p>
-                    Domain valuations are provided by{" "}
-                    <Link
-                      href="https://humbleworth.com"
-                      target="_blank"
-                      className="hover:text-primary underline underline-offset-2"
-                    >
-                      HumbleWorth
-                    </Link>
-                    .
-                    <br />
-                    If you prefer, you can add a new custom position to manually
-                    enter your own valuation instead.
-                  </p>
-                </AlertDescription>
-              </Alert>
-            ) : availableTypes.length > 0 ? (
-              <Tabs
-                key={defaultTab}
-                defaultValue={defaultTab}
-                className="gap-4"
-              >
-                <TabsList
-                  className={availableTypes.length > 1 ? "w-full" : "hidden"}
+            {/* Record type content area (alert or tabbed forms) */}
+            <div
+              className={cn(
+                "min-h-0 flex-1 overflow-hidden",
+                !preselectedPosition && "pointer-events-none opacity-50",
+              )}
+            >
+              {/* Domain-sourced positions are auto-valued and don't accept manual records */}
+              {preselectedPosition && availableTypes.length === 0 ? (
+                <div className="mb-4 px-6">
+                  <Alert>
+                    <Info className="size-4" />
+                    <AlertTitle className="line-clamp-none">
+                      Domain values are updated automatically. Manual records
+                      aren&apos;t needed.
+                    </AlertTitle>
+                    <AlertDescription>
+                      <p>
+                        Domain valuations are provided by{" "}
+                        <Link
+                          href="https://humbleworth.com"
+                          target="_blank"
+                          className="hover:text-primary underline underline-offset-2"
+                        >
+                          HumbleWorth
+                        </Link>
+                        .
+                        <br />
+                        If you prefer, you can add a new custom position to
+                        manually enter your own valuation instead.
+                      </p>
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              ) : availableTypes.length > 0 ? (
+                // Tabs for record types
+                <Tabs
+                  key={defaultTab}
+                  defaultValue={defaultTab}
+                  className="flex min-h-0 flex-1 flex-col gap-4"
                 >
-                  {availableTypes.map((type) => {
-                    const Icon = RECORD_TYPE_ICONS[type];
-                    return (
-                      <TabsTrigger
-                        key={type}
-                        value={`${type}-form`}
-                        disabled={!preselectedPosition}
-                        className="capitalize"
-                      >
-                        <Icon className="size-4" />
-                        {type}
-                      </TabsTrigger>
-                    );
-                  })}
-                </TabsList>
-                {availableTypes.includes("buy") && (
-                  <TabsContent value="buy-form">
-                    <BuyForm />
-                  </TabsContent>
-                )}
-                {availableTypes.includes("sell") && (
-                  <TabsContent value="sell-form">
-                    <SellForm />
-                  </TabsContent>
-                )}
-                {availableTypes.includes("update") && (
-                  <TabsContent value="update-form">
-                    <UpdateForm />
-                  </TabsContent>
-                )}
-              </Tabs>
-            ) : null}
+                  <div className="px-6">
+                    <TabsList
+                      className={
+                        availableTypes.length > 1 ? "w-full" : "hidden"
+                      }
+                    >
+                      {availableTypes.map((type) => {
+                        const Icon = RECORD_TYPE_ICONS[type];
+                        return (
+                          <TabsTrigger
+                            key={type}
+                            value={`${type}-form`}
+                            disabled={!preselectedPosition}
+                            className="capitalize"
+                          >
+                            <Icon className="size-4" />
+                            {type}
+                          </TabsTrigger>
+                        );
+                      })}
+                    </TabsList>
+                  </div>
+                  {availableTypes.includes("buy") && (
+                    <TabsContent
+                      value="buy-form"
+                      className="min-h-0 flex-1 overflow-hidden"
+                    >
+                      <BuyForm />
+                    </TabsContent>
+                  )}
+                  {availableTypes.includes("sell") && (
+                    <TabsContent
+                      value="sell-form"
+                      className="min-h-0 flex-1 overflow-hidden"
+                    >
+                      <SellForm />
+                    </TabsContent>
+                  )}
+                  {availableTypes.includes("update") && (
+                    <TabsContent
+                      value="update-form"
+                      className="min-h-0 flex-1 overflow-hidden"
+                    >
+                      <UpdateForm />
+                    </TabsContent>
+                  )}
+                </Tabs>
+              ) : null}
+            </div>
           </div>
-        </DialogContent>
+        </StickyDialogContent>
       </Dialog>
     </NewPortfolioRecordDialogContext.Provider>
   );

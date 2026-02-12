@@ -23,6 +23,10 @@ import {
 } from "@/components/ui/input-group";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import {
+  StickyDialogBody,
+  StickyDialogFooter,
+} from "@/components/ui/custom/sticky-dialog";
 import { HumbleWorthLogo } from "@/components/ui/logos/humbleworth-logo";
 import { CapitalGainsTaxRateField } from "@/components/dashboard/positions/shared/capital-gains-tax-rate-field";
 
@@ -168,115 +172,128 @@ export function DomainForm() {
   }
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
-      {/* Domain */}
-      <Controller
-        control={form.control}
-        name="domain"
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid}>
-            <FieldLabel
-              htmlFor={field.name}
-              className="flex items-center justify-between gap-2"
-            >
-              Domain
-              <Link
-                href="https://humbleworth.com"
-                target="_blank"
-                aria-label="Go to HumbleWorth website"
-              >
-                <HumbleWorthLogo height={14} />
-              </Link>
-            </FieldLabel>
-            <InputGroup>
-              <InputGroupInput
-                id={field.name}
-                disabled={isCheckingValuation}
-                placeholder="E.g., foliofox.com"
-                aria-invalid={fieldState.invalid}
-                {...field}
-                onChange={(e) => {
-                  const cleaned = cleanDomain(e.target.value);
-                  field.onChange(cleaned);
-                }}
-              />
-              <InputGroupAddon align="inline-end">
-                <InputGroupButton
-                  variant="secondary"
-                  onClick={checkDomainValuation}
-                  disabled={!isDomainValid || isCheckingValuation}
+    <form
+      onSubmit={form.handleSubmit(onSubmit)}
+      className="flex min-h-0 flex-1 flex-col overflow-hidden"
+    >
+      <StickyDialogBody>
+        <div className="grid gap-4">
+          {/* Domain */}
+          <Controller
+            control={form.control}
+            name="domain"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel
+                  htmlFor={field.name}
+                  className="flex items-center justify-between gap-2"
                 >
-                  {isCheckingValuation ? <Spinner /> : <Search />}
-                  Check valuation
-                </InputGroupButton>
-              </InputGroupAddon>
-            </InputGroup>
-            <FieldDescription>
-              Do not include the &quot;https://&quot; or &quot;www.&quot;
-              prefix.
-            </FieldDescription>
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )}
-      />
+                  Domain
+                  <Link
+                    href="https://humbleworth.com"
+                    target="_blank"
+                    aria-label="Go to HumbleWorth website"
+                  >
+                    <HumbleWorthLogo height={14} />
+                  </Link>
+                </FieldLabel>
+                <InputGroup>
+                  <InputGroupInput
+                    id={field.name}
+                    disabled={isCheckingValuation}
+                    placeholder="E.g., foliofox.com"
+                    aria-invalid={fieldState.invalid}
+                    {...field}
+                    onChange={(e) => {
+                      const cleaned = cleanDomain(e.target.value);
+                      field.onChange(cleaned);
+                    }}
+                  />
+                  <InputGroupAddon align="inline-end">
+                    <InputGroupButton
+                      variant="secondary"
+                      onClick={checkDomainValuation}
+                      disabled={!isDomainValid || isCheckingValuation}
+                    >
+                      {isCheckingValuation ? <Spinner /> : <Search />}
+                      Check valuation
+                    </InputGroupButton>
+                  </InputGroupAddon>
+                </InputGroup>
+                <FieldDescription>
+                  Do not include the &quot;https://&quot; or &quot;www.&quot;
+                  prefix.
+                </FieldDescription>
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+          />
 
-      {/* Valuation display*/}
-      {valuation && (
-        <div className="space-y-1">
-          <p className="text-sm font-medium">Valuation</p>
-          <p className="font-semibold text-green-600">
-            {formatCurrency(valuation, "USD", { locale })}
-          </p>
-          <p className="text-muted-foreground text-sm">
-            Valuation is provided by{" "}
-            <Link
-              href="https://humbleworth.com"
-              target="_blank"
-              className="hover:text-foreground underline underline-offset-2"
-            >
-              HumbleWorth
-            </Link>
-            .
-            <br />
-            If you prefer, you can add a new custom asset to manually enter your
-            own valuation instead.
-          </p>
+          {/* Valuation display*/}
+          {valuation && (
+            <div className="space-y-1">
+              <p className="text-sm font-medium">Valuation</p>
+              <p className="font-semibold text-green-600">
+                {formatCurrency(valuation, "USD", { locale })}
+              </p>
+              <p className="text-muted-foreground text-sm">
+                Valuation is provided by{" "}
+                <Link
+                  href="https://humbleworth.com"
+                  target="_blank"
+                  className="hover:text-foreground underline underline-offset-2"
+                >
+                  HumbleWorth
+                </Link>
+                .
+                <br />
+                If you prefer, you can add a new custom asset to manually enter
+                your own valuation instead.
+              </p>
+            </div>
+          )}
+
+          {/* Capital gains tax rate */}
+          <CapitalGainsTaxRateField
+            control={form.control}
+            setValue={form.setValue}
+            disabled={isLoading}
+            className="sm:w-1/2"
+          />
+
+          {/* Description */}
+          <Controller
+            control={form.control}
+            name="description"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor={field.name}>
+                  Description (optional)
+                </FieldLabel>
+                <Input
+                  id={field.name}
+                  placeholder="Add a description of this asset"
+                  aria-invalid={fieldState.invalid}
+                  {...field}
+                />
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+          />
         </div>
-      )}
-
-      {/* Capital gains tax rate */}
-      <CapitalGainsTaxRateField
-        control={form.control}
-        setValue={form.setValue}
-        disabled={isLoading}
-        className="sm:w-1/2"
-      />
-
-      {/* Description */}
-      <Controller
-        control={form.control}
-        name="description"
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid}>
-            <FieldLabel htmlFor={field.name}>Description (optional)</FieldLabel>
-            <Input
-              id={field.name}
-              placeholder="Add a description of this asset"
-              aria-invalid={fieldState.invalid}
-              {...field}
-            />
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )}
-      />
+      </StickyDialogBody>
 
       {/* Footer - Action buttons */}
-      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+      <StickyDialogFooter>
         <Button
           onClick={() => setOpenFormDialog(false)}
           disabled={isLoading}
           type="button"
-          variant="secondary"
+          variant="outline"
         >
           Cancel
         </Button>
@@ -290,7 +307,7 @@ export function DomainForm() {
             "Add Asset"
           )}
         </Button>
-      </div>
+      </StickyDialogFooter>
     </form>
   );
 }

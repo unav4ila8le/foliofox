@@ -4,13 +4,12 @@ import { createContext, useContext, useState } from "react";
 import { Plus } from "lucide-react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Dialog, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  StickyDialogBody,
+  StickyDialogContent,
+  StickyDialogHeader,
+} from "@/components/ui/custom/sticky-dialog";
 import { SelectionDialog } from "./selection-dialog";
 
 import { useDashboardData } from "@/components/dashboard/providers/dashboard-data-provider";
@@ -57,15 +56,17 @@ export function NewAssetDialogProvider({
     >
       {children}
       <Dialog open={openSelectionDialog} onOpenChange={setOpenSelectionDialog}>
-        <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto">
-          <DialogHeader>
+        <StickyDialogContent>
+          <StickyDialogHeader>
             <DialogTitle>New Asset</DialogTitle>
             <DialogDescription>
               Select a method to add a new asset
             </DialogDescription>
-          </DialogHeader>
-          <SelectionDialog />
-        </DialogContent>
+          </StickyDialogHeader>
+          <StickyDialogBody>
+            <SelectionDialog />
+          </StickyDialogBody>
+        </StickyDialogContent>
       </Dialog>
     </NewAssetDialogContext.Provider>
   );

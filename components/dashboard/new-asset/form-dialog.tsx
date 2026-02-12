@@ -1,10 +1,8 @@
+import { Dialog, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  StickyDialogContent,
+  StickyDialogHeader,
+} from "@/components/ui/custom/sticky-dialog";
 import { SymbolSearchForm } from "./forms/symbol-search-form";
 import { DomainForm } from "./forms/domain-form";
 import { ManualEntryForm } from "./forms/manual-entry-form";
@@ -19,15 +17,15 @@ export function FormDialog() {
 
   return (
     <Dialog open={openFormDialog} onOpenChange={setOpenFormDialog}>
-      <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto">
-        <DialogHeader>
+      <StickyDialogContent>
+        <StickyDialogHeader>
           <DialogTitle>New Asset</DialogTitle>
           <DialogDescription>Add a new asset</DialogDescription>
-        </DialogHeader>
+        </StickyDialogHeader>
         {selectedType === "symbol" && <SymbolSearchForm />}
         {selectedType === "domain" && <DomainForm />}
         {selectedType === "custom" && <ManualEntryForm />}
-      </DialogContent>
+      </StickyDialogContent>
     </Dialog>
   );
 }

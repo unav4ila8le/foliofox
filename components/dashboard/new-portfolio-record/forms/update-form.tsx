@@ -24,6 +24,10 @@ import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import { Spinner } from "@/components/ui/spinner";
 import {
+  StickyDialogBody,
+  StickyDialogFooter,
+} from "@/components/ui/custom/sticky-dialog";
+import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
@@ -206,171 +210,193 @@ export function UpdateForm() {
   return (
     <form
       onSubmit={form.handleSubmit(onSubmit)}
-      className="grid gap-x-2 gap-y-4"
+      className="flex min-h-0 flex-1 flex-col overflow-hidden"
     >
-      {/* Date picker field */}
-      <Controller
-        control={form.control}
-        name="date"
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid} className="sm:w-1/2 sm:pr-1">
-            <FieldLabel htmlFor={field.name}>Date</FieldLabel>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  id={field.name}
-                  variant="outline"
-                  aria-invalid={fieldState.invalid}
-                  className={cn(
-                    "text-left font-normal",
-                    !field.value && "text-muted-foreground",
-                  )}
-                >
-                  {field.value ? (
-                    format(field.value, "PPP")
-                  ) : (
-                    <span>Pick a date</span>
-                  )}
-                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  captionLayout="dropdown"
-                  selected={field.value}
-                  onSelect={field.onChange}
-                  disabled={(date) =>
-                    date > new Date() || date < new Date("1900-01-01")
-                  }
-                  autoFocus
-                />
-              </PopoverContent>
-            </Popover>
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )}
-      />
+      <StickyDialogBody>
+        <div className="grid gap-x-2 gap-y-4">
+          {/* Date picker field */}
+          <Controller
+            control={form.control}
+            name="date"
+            render={({ field, fieldState }) => (
+              <Field
+                data-invalid={fieldState.invalid}
+                className="sm:w-1/2 sm:pr-1"
+              >
+                <FieldLabel htmlFor={field.name}>Date</FieldLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id={field.name}
+                      variant="outline"
+                      aria-invalid={fieldState.invalid}
+                      className={cn(
+                        "text-left font-normal",
+                        !field.value && "text-muted-foreground",
+                      )}
+                    >
+                      {field.value ? (
+                        format(field.value, "PPP")
+                      ) : (
+                        <span>Pick a date</span>
+                      )}
+                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      captionLayout="dropdown"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      disabled={(date) =>
+                        date > new Date() || date < new Date("1900-01-01")
+                      }
+                      autoFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+          />
 
-      {/* Unit value and quantity fields in a grid */}
-      <div className="grid items-start gap-x-2 gap-y-4 sm:grid-cols-2">
-        {/* Quantity field */}
-        <Controller
-          control={form.control}
-          name="quantity"
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor={field.name}>Quantity</FieldLabel>
-              <Input
-                id={field.name}
-                placeholder="E.g., 10"
-                type="number"
-                inputMode="decimal"
-                min={0}
-                step="any"
-                aria-invalid={fieldState.invalid}
-                {...field}
-                value={field.value as number}
-              />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
+          {/* Unit value and quantity fields in a grid */}
+          <div className="grid items-start gap-x-2 gap-y-4 sm:grid-cols-2">
+            {/* Quantity field */}
+            <Controller
+              control={form.control}
+              name="quantity"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor={field.name}>Quantity</FieldLabel>
+                  <Input
+                    id={field.name}
+                    placeholder="E.g., 10"
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="any"
+                    aria-invalid={fieldState.invalid}
+                    {...field}
+                    value={field.value as number}
+                  />
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
 
-        {/* Unit value field */}
-        <Controller
-          control={form.control}
-          name="unit_value"
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor={field.name}>Unit value</FieldLabel>
-              <InputGroup>
-                <InputGroupInput
+            {/* Unit value field */}
+            <Controller
+              control={form.control}
+              name="unit_value"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor={field.name}>Unit value</FieldLabel>
+                  <InputGroup>
+                    <InputGroupInput
+                      id={field.name}
+                      placeholder="E.g., 420.69"
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      step="any"
+                      disabled={hasSymbol} // Disabled for market assets (auto-filled)
+                      aria-invalid={fieldState.invalid}
+                      {...field}
+                      value={field.value as number}
+                    />
+                    <InputGroupAddon align="inline-end">
+                      <InputGroupText>
+                        {preselectedPosition?.currency || "N/A"}
+                      </InputGroupText>
+                    </InputGroupAddon>
+                  </InputGroup>
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
+          </div>
+
+          {/* Optional cost basis per unit */}
+          <Controller
+            control={form.control}
+            name="cost_basis_per_unit"
+            render={({ field, fieldState }) => (
+              <Field
+                data-invalid={fieldState.invalid}
+                className="sm:w-1/2 sm:pr-1"
+              >
+                <div className="flex items-center gap-1">
+                  <FieldLabel htmlFor={field.name}>
+                    Cost basis per unit (optional)
+                  </FieldLabel>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="size-4" aria-label="Cost basis help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Enter your average price paid per unit at this date. Used
+                      for P/L. If omitted, we infer it from previous records or
+                      from the unit value.
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <Input
                   id={field.name}
-                  placeholder="E.g., 420.69"
+                  placeholder="E.g., 12.41"
                   type="number"
                   inputMode="decimal"
                   min={0}
                   step="any"
-                  disabled={hasSymbol} // Disabled for market assets (auto-filled)
                   aria-invalid={fieldState.invalid}
                   {...field}
-                  value={field.value as number}
+                  value={field.value}
                 />
-                <InputGroupAddon align="inline-end">
-                  <InputGroupText>
-                    {preselectedPosition?.currency || "N/A"}
-                  </InputGroupText>
-                </InputGroupAddon>
-              </InputGroup>
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
-      </div>
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+          />
 
-      {/* Optional cost basis per unit */}
-      <Controller
-        control={form.control}
-        name="cost_basis_per_unit"
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid} className="sm:w-1/2 sm:pr-1">
-            <div className="flex items-center gap-1">
-              <FieldLabel htmlFor={field.name}>
-                Cost basis per unit (optional)
-              </FieldLabel>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Info className="size-4" aria-label="Cost basis help" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  Enter your average price paid per unit at this date. Used for
-                  P/L. If omitted, we infer it from previous records or from the
-                  unit value.
-                </TooltipContent>
-              </Tooltip>
-            </div>
-            <Input
-              id={field.name}
-              placeholder="E.g., 12.41"
-              type="number"
-              inputMode="decimal"
-              min={0}
-              step="any"
-              aria-invalid={fieldState.invalid}
-              {...field}
-              value={field.value}
-            />
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )}
-      />
-
-      {/* Optional description field */}
-      <Controller
-        control={form.control}
-        name="description"
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid}>
-            <FieldLabel htmlFor={field.name}>Description (optional)</FieldLabel>
-            <Input
-              id={field.name}
-              placeholder="Add any notes about this update"
-              aria-invalid={fieldState.invalid}
-              {...field}
-            />
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )}
-      />
+          {/* Optional description field */}
+          <Controller
+            control={form.control}
+            name="description"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor={field.name}>
+                  Description (optional)
+                </FieldLabel>
+                <Input
+                  id={field.name}
+                  placeholder="Add any notes about this update"
+                  aria-invalid={fieldState.invalid}
+                  {...field}
+                />
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+          />
+        </div>
+      </StickyDialogBody>
 
       {/* Action buttons */}
-      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+      <StickyDialogFooter>
         <Button
           onClick={() => setOpen(false)}
           disabled={isLoading || isFetchingQuote}
           type="button"
-          variant="secondary"
+          variant="outline"
         >
           Cancel
         </Button>
@@ -387,7 +413,7 @@ export function UpdateForm() {
             "Create record"
           )}
         </Button>
-      </div>
+      </StickyDialogFooter>
     </form>
   );
 }

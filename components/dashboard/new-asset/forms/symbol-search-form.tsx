@@ -17,6 +17,10 @@ import {
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import {
+  StickyDialogBody,
+  StickyDialogFooter,
+} from "@/components/ui/custom/sticky-dialog";
 import { YahooFinanceLogo } from "@/components/ui/logos/yahoo-finance-logo";
 import { SymbolSearch } from "../../symbol-search";
 import { PositionCategorySelector } from "@/components/dashboard/position-category-selector";
@@ -197,166 +201,193 @@ export function SymbolSearchForm() {
   const isFormReady = Boolean(symbolLookup);
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
-      {/* Symbol */}
-      <Controller
-        control={form.control}
-        name="symbolLookup"
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid}>
-            <FieldLabel
-              htmlFor={field.name}
-              className="flex items-center justify-between gap-2"
-            >
-              Symbol
-              <Link
-                href="https://finance.yahoo.com/lookup/"
-                target="_blank"
-                aria-label="Go to Yahoo Finance website"
+    <form
+      onSubmit={form.handleSubmit(onSubmit)}
+      className="flex min-h-0 flex-1 flex-col overflow-hidden"
+    >
+      <StickyDialogBody>
+        <div className="grid gap-4">
+          {/* Symbol */}
+          <Controller
+            control={form.control}
+            name="symbolLookup"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel
+                  htmlFor={field.name}
+                  className="flex items-center justify-between gap-2"
+                >
+                  Symbol
+                  <Link
+                    href="https://finance.yahoo.com/lookup/"
+                    target="_blank"
+                    aria-label="Go to Yahoo Finance website"
+                  >
+                    <YahooFinanceLogo height={14} />
+                  </Link>
+                </FieldLabel>
+                <SymbolSearch
+                  field={field}
+                  isInvalid={fieldState.invalid}
+                  fieldName={field.name}
+                  clearErrors={form.clearErrors as (name: string) => void}
+                  onSymbolSelect={handleSymbolSelect}
+                />
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+          />
+
+          {/* Name */}
+          <Controller
+            control={form.control}
+            name="name"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor={field.name}>Name</FieldLabel>
+                <Input
+                  id={field.name}
+                  placeholder="E.g., AAPL - Apple Inc."
+                  disabled={!isFormReady}
+                  aria-invalid={fieldState.invalid}
+                  {...field}
+                />
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+          />
+
+          {/* Category */}
+          <Controller
+            control={form.control}
+            name="category_id"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor={field.name}>Category</FieldLabel>
+                <PositionCategorySelector
+                  field={field}
+                  positionType="asset"
+                  disabled={!isFormReady}
+                  isInvalid={fieldState.invalid}
+                />
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+          />
+
+          {/* Quantity */}
+          <Controller
+            control={form.control}
+            name="quantity"
+            render={({ field, fieldState }) => (
+              <Field
+                data-invalid={fieldState.invalid}
+                className="sm:w-1/2 sm:pr-1"
               >
-                <YahooFinanceLogo height={14} />
-              </Link>
-            </FieldLabel>
-            <SymbolSearch
-              field={field}
-              isInvalid={fieldState.invalid}
-              fieldName={field.name}
-              clearErrors={form.clearErrors as (name: string) => void}
-              onSymbolSelect={handleSymbolSelect}
-            />
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )}
-      />
+                <FieldLabel htmlFor={field.name}>Current quantity</FieldLabel>
+                <Input
+                  id={field.name}
+                  placeholder="E.g., 10"
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step="any"
+                  aria-invalid={fieldState.invalid}
+                  {...field}
+                  value={field.value as number}
+                />
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+          />
 
-      {/* Name */}
-      <Controller
-        control={form.control}
-        name="name"
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid}>
-            <FieldLabel htmlFor={field.name}>Name</FieldLabel>
-            <Input
-              id={field.name}
-              placeholder="E.g., AAPL - Apple Inc."
-              disabled={!isFormReady}
-              aria-invalid={fieldState.invalid}
-              {...field}
-            />
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )}
-      />
+          {/* Cost basis per unit */}
+          <Controller
+            control={form.control}
+            name="cost_basis_per_unit"
+            render={({ field, fieldState }) => (
+              <Field
+                data-invalid={fieldState.invalid}
+                className="sm:w-1/2 sm:pr-1"
+              >
+                <div className="flex items-center gap-1">
+                  <FieldLabel htmlFor={field.name}>
+                    Cost basis per unit (optional)
+                  </FieldLabel>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="size-4" aria-label="Cost basis help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      If omitted, we&apos;ll use the unit value as your initial
+                      cost basis.
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <Input
+                  id={field.name}
+                  placeholder="E.g., 12.41"
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step="any"
+                  aria-invalid={fieldState.invalid}
+                  {...field}
+                  value={field.value}
+                />
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+          />
 
-      {/* Category */}
-      <Controller
-        control={form.control}
-        name="category_id"
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid}>
-            <FieldLabel htmlFor={field.name}>Category</FieldLabel>
-            <PositionCategorySelector
-              field={field}
-              positionType="asset"
-              disabled={!isFormReady}
-              isInvalid={fieldState.invalid}
-            />
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )}
-      />
+          {/* Capital gains tax rate */}
+          <CapitalGainsTaxRateField
+            control={form.control}
+            setValue={form.setValue}
+            disabled={!isFormReady || isLoading}
+          />
 
-      {/* Quantity */}
-      <Controller
-        control={form.control}
-        name="quantity"
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid} className="sm:w-1/2 sm:pr-1">
-            <FieldLabel htmlFor={field.name}>Current quantity</FieldLabel>
-            <Input
-              id={field.name}
-              placeholder="E.g., 10"
-              type="number"
-              inputMode="decimal"
-              min={0}
-              step="any"
-              aria-invalid={fieldState.invalid}
-              {...field}
-              value={field.value as number}
-            />
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )}
-      />
-
-      {/* Cost basis per unit */}
-      <Controller
-        control={form.control}
-        name="cost_basis_per_unit"
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid} className="sm:w-1/2 sm:pr-1">
-            <div className="flex items-center gap-1">
-              <FieldLabel htmlFor={field.name}>
-                Cost basis per unit (optional)
-              </FieldLabel>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Info className="size-4" aria-label="Cost basis help" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  If omitted, we&apos;ll use the unit value as your initial cost
-                  basis.
-                </TooltipContent>
-              </Tooltip>
-            </div>
-            <Input
-              id={field.name}
-              placeholder="E.g., 12.41"
-              type="number"
-              inputMode="decimal"
-              min={0}
-              step="any"
-              aria-invalid={fieldState.invalid}
-              {...field}
-              value={field.value}
-            />
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )}
-      />
-
-      {/* Capital gains tax rate */}
-      <CapitalGainsTaxRateField
-        control={form.control}
-        setValue={form.setValue}
-        disabled={!isFormReady || isLoading}
-      />
-
-      {/* Description */}
-      <Controller
-        control={form.control}
-        name="description"
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid}>
-            <FieldLabel htmlFor={field.name}>Description (optional)</FieldLabel>
-            <Input
-              id={field.name}
-              placeholder="Add a description of this asset"
-              aria-invalid={fieldState.invalid}
-              {...field}
-            />
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )}
-      />
+          {/* Description */}
+          <Controller
+            control={form.control}
+            name="description"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor={field.name}>
+                  Description (optional)
+                </FieldLabel>
+                <Input
+                  id={field.name}
+                  placeholder="Add a description of this asset"
+                  aria-invalid={fieldState.invalid}
+                  {...field}
+                />
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+          />
+        </div>
+      </StickyDialogBody>
 
       {/* Footer - Action buttons */}
-      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+      <StickyDialogFooter>
         <Button
           onClick={() => setOpenFormDialog(false)}
           disabled={isLoading}
           type="button"
-          variant="secondary"
+          variant="outline"
         >
           Cancel
         </Button>
@@ -370,7 +401,7 @@ export function SymbolSearchForm() {
             "Add Asset"
           )}
         </Button>
-      </div>
+      </StickyDialogFooter>
     </form>
   );
 }
