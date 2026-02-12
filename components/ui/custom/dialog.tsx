@@ -71,7 +71,4 @@ export {
   DialogPortal,
   DialogTitle,
   DialogTrigger,
-  DialogContentPrimitive as PlainDialogContent,
-  DialogFooterPrimitive as PlainDialogFooter,
-  DialogHeaderPrimitive as PlainDialogHeader,
 };
