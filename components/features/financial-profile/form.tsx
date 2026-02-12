@@ -293,7 +293,7 @@ export function FinancialProfileForm({ onSuccess }: FinancialProfileFormProps) {
           <Button
             disabled={isLoading}
             type="button"
-            variant="secondary"
+            variant="outline"
             className="w-1/2 sm:w-auto"
           >
             Cancel

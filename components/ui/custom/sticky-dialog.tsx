@@ -35,7 +35,7 @@ function StickyDialogBody({
 }: React.ComponentProps<"div">) {
   return (
     <div
-      className={cn("min-h-0 flex-1 overflow-y-auto px-6 py-4", className)}
+      className={cn("min-h-0 flex-1 overflow-y-auto px-6 pb-4", className)}
       {...props}
     />
   );
@@ -46,7 +46,10 @@ function StickyDialogFooter({
   ...props
 }: React.ComponentProps<typeof DialogFooter>) {
   return (
-    <DialogFooter className={cn("border-t px-6 py-4", className)} {...props} />
+    <DialogFooter
+      className={cn("bg-muted/50 border-t px-6 py-4", className)}
+      {...props}
+    />
   );
 }
 
