@@ -7,13 +7,15 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { Dialog, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
-  StickyDialogBody,
-  StickyDialogContent,
-  StickyDialogFooter,
-  StickyDialogHeader,
-} from "@/components/ui/custom/sticky-dialog";
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/custom/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 import { exportPositions } from "@/server/positions/export";
@@ -71,8 +73,8 @@ export function ExportAssetsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <StickyDialogContent>
-        <StickyDialogHeader>
+      <DialogContent>
+        <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="size-5" />
             Export Assets
@@ -81,9 +83,9 @@ export function ExportAssetsDialog({
             Export your current assets to a CSV file. This will include all
             active assets with their current market values and quantities.
           </DialogDescription>
-        </StickyDialogHeader>
+        </DialogHeader>
 
-        <StickyDialogBody>
+        <DialogBody>
           <div className="space-y-4">
             <Alert>
               <Info className="size-4" />
@@ -107,9 +109,9 @@ export function ExportAssetsDialog({
               {format(new Date(), "yyyy-MM-dd")}.csv
             </div>
           </div>
-        </StickyDialogBody>
+        </DialogBody>
 
-        <StickyDialogFooter>
+        <DialogFooter>
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
@@ -130,8 +132,8 @@ export function ExportAssetsDialog({
               </>
             )}
           </Button>
-        </StickyDialogFooter>
-      </StickyDialogContent>
+        </DialogFooter>
+      </DialogContent>
     </Dialog>
   );
 }

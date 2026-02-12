@@ -17,10 +17,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import {
-  StickyDialogBody,
-  StickyDialogFooter,
-} from "@/components/ui/custom/sticky-dialog";
+import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
 import { YahooFinanceLogo } from "@/components/ui/logos/yahoo-finance-logo";
 import { SymbolSearch } from "../../symbol-search";
 import { PositionCategorySelector } from "@/components/dashboard/position-category-selector";
@@ -205,7 +202,7 @@ export function SymbolSearchForm() {
       onSubmit={form.handleSubmit(onSubmit)}
       className="flex min-h-0 flex-1 flex-col overflow-hidden"
     >
-      <StickyDialogBody>
+      <DialogBody>
         <div className="grid gap-4">
           {/* Symbol */}
           <Controller
@@ -379,10 +376,10 @@ export function SymbolSearchForm() {
             )}
           />
         </div>
-      </StickyDialogBody>
+      </DialogBody>
 
       {/* Footer - Action buttons */}
-      <StickyDialogFooter>
+      <DialogFooter>
         <Button
           onClick={() => setOpenFormDialog(false)}
           disabled={isLoading}
@@ -401,7 +398,7 @@ export function SymbolSearchForm() {
             "Add Asset"
           )}
         </Button>
-      </StickyDialogFooter>
+      </DialogFooter>
     </form>
   );
 }

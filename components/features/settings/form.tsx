@@ -20,13 +20,10 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { DialogClose } from "@/components/ui/dialog";
+import { DialogClose } from "@/components/ui/custom/dialog";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import {
-  StickyDialogBody,
-  StickyDialogFooter,
-} from "@/components/ui/custom/sticky-dialog";
+import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
 import { CurrencySelector } from "@/components/dashboard/currency-selector";
 
 import {
@@ -129,7 +126,7 @@ export function SettingsForm({ onSuccess }: SettingsFormProps) {
       onSubmit={form.handleSubmit(onSubmit)}
       className="flex min-h-0 flex-1 flex-col overflow-hidden"
     >
-      <StickyDialogBody>
+      <DialogBody>
         <div className="grid gap-4">
           <Controller
             control={form.control}
@@ -190,9 +187,9 @@ export function SettingsForm({ onSuccess }: SettingsFormProps) {
             </FieldDescription>
           </Field>
         </div>
-      </StickyDialogBody>
+      </DialogBody>
 
-      <StickyDialogFooter>
+      <DialogFooter>
         <DialogClose asChild>
           <Button
             disabled={isLoading}
@@ -217,7 +214,7 @@ export function SettingsForm({ onSuccess }: SettingsFormProps) {
             "Save changes"
           )}
         </Button>
-      </StickyDialogFooter>
+      </DialogFooter>
     </form>
   );
 }

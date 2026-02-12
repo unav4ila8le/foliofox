@@ -18,10 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import { Spinner } from "@/components/ui/spinner";
-import {
-  StickyDialogBody,
-  StickyDialogFooter,
-} from "@/components/ui/custom/sticky-dialog";
+import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
 
 import { useNewPortfolioRecordDialog } from "../index";
 
@@ -117,7 +114,7 @@ export function SellForm() {
       onSubmit={form.handleSubmit(onSubmit)}
       className="flex min-h-0 flex-1 flex-col overflow-hidden"
     >
-      <StickyDialogBody>
+      <DialogBody>
         <div className="grid gap-x-2 gap-y-4">
           {/* Date */}
           <Controller
@@ -245,10 +242,10 @@ export function SellForm() {
             )}
           />
         </div>
-      </StickyDialogBody>
+      </DialogBody>
 
       {/* Action */}
-      <StickyDialogFooter>
+      <DialogFooter>
         <Button
           onClick={() => setOpen(false)}
           disabled={isLoading}
@@ -267,7 +264,7 @@ export function SellForm() {
             "Create record"
           )}
         </Button>
-      </StickyDialogFooter>
+      </DialogFooter>
     </form>
   );
 }

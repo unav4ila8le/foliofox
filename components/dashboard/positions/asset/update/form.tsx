@@ -16,10 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import {
-  StickyDialogBody,
-  StickyDialogFooter,
-} from "@/components/ui/custom/sticky-dialog";
+import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
 import { PositionCategorySelector } from "@/components/dashboard/position-category-selector";
 import { CapitalGainsTaxRateField } from "@/components/dashboard/positions/shared/capital-gains-tax-rate-field";
 import { UpdateSymbolDialog } from "@/components/dashboard/positions/shared/update-symbol-dialog";
@@ -119,7 +116,7 @@ export function UpdateAssetForm({
         onSubmit={form.handleSubmit(onSubmit)}
         className="flex min-h-0 flex-1 flex-col overflow-hidden"
       >
-        <StickyDialogBody>
+        <DialogBody>
           <div className="grid gap-4">
             {/* Name */}
             <Controller
@@ -220,9 +217,9 @@ export function UpdateAssetForm({
               </Accordion>
             )}
           </div>
-        </StickyDialogBody>
+        </DialogBody>
 
-        <StickyDialogFooter>
+        <DialogFooter>
           <Button
             onClick={onSuccess}
             disabled={isLoading}
@@ -246,7 +243,7 @@ export function UpdateAssetForm({
               "Save changes"
             )}
           </Button>
-        </StickyDialogFooter>
+        </DialogFooter>
       </form>
 
       <UpdateSymbolDialog

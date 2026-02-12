@@ -22,10 +22,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import {
-  StickyDialogBody,
-  StickyDialogFooter,
-} from "@/components/ui/custom/sticky-dialog";
+import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
 import { PositionCategorySelector } from "@/components/dashboard/position-category-selector";
 import { CapitalGainsTaxRateField } from "@/components/dashboard/positions/shared/capital-gains-tax-rate-field";
 import { CurrencySelector } from "@/components/dashboard/currency-selector";
@@ -159,7 +156,7 @@ export function ManualEntryForm() {
       onSubmit={form.handleSubmit(onSubmit)}
       className="flex min-h-0 flex-1 flex-col overflow-hidden"
     >
-      <StickyDialogBody>
+      <DialogBody>
         <div className="grid gap-4">
           {/* Name */}
           <Controller
@@ -350,10 +347,10 @@ export function ManualEntryForm() {
             )}
           />
         </div>
-      </StickyDialogBody>
+      </DialogBody>
 
       {/* Footer - Action buttons */}
-      <StickyDialogFooter>
+      <DialogFooter>
         <Button
           onClick={() => setOpenFormDialog(false)}
           disabled={isLoading}
@@ -372,7 +369,7 @@ export function ManualEntryForm() {
             "Add Asset"
           )}
         </Button>
-      </StickyDialogFooter>
+      </DialogFooter>
     </form>
   );
 }

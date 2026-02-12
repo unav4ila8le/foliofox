@@ -30,10 +30,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  StickyDialogBody,
-  StickyDialogFooter,
-} from "@/components/ui/custom/sticky-dialog";
+import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
 import {
   InputGroup,
   InputGroupAddon,
@@ -179,7 +176,7 @@ export function UpdatePortfolioRecordForm({
       onSubmit={form.handleSubmit(onSubmit)}
       className="flex min-h-0 flex-1 flex-col overflow-hidden"
     >
-      <StickyDialogBody>
+      <DialogBody>
         <div className="grid gap-4">
           <Controller
             control={form.control}
@@ -387,9 +384,9 @@ export function UpdatePortfolioRecordForm({
             )}
           />
         </div>
-      </StickyDialogBody>
+      </DialogBody>
 
-      <StickyDialogFooter>
+      <DialogFooter>
         <Button
           onClick={onSuccess}
           disabled={isLoading}
@@ -413,7 +410,7 @@ export function UpdatePortfolioRecordForm({
             "Save changes"
           )}
         </Button>
-      </StickyDialogFooter>
+      </DialogFooter>
     </form>
   );
 }

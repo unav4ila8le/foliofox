@@ -13,13 +13,10 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Switch } from "@/components/ui/switch";
-import { DialogClose } from "@/components/ui/dialog";
+import { DialogClose } from "@/components/ui/custom/dialog";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import {
-  StickyDialogBody,
-  StickyDialogFooter,
-} from "@/components/ui/custom/sticky-dialog";
+import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
 
 import { updateAISettings } from "@/server/profile/actions";
 import { useDashboardData } from "@/components/dashboard/providers/dashboard-data-provider";
@@ -83,7 +80,7 @@ export function AISettingsForm({ onSuccess }: AISettingsFormProps) {
       onSubmit={form.handleSubmit(onSubmit)}
       className="flex min-h-0 flex-1 flex-col overflow-hidden"
     >
-      <StickyDialogBody>
+      <DialogBody>
         <div className="grid gap-4">
           <Controller
             control={form.control}
@@ -118,9 +115,9 @@ export function AISettingsForm({ onSuccess }: AISettingsFormProps) {
             )}
           />
         </div>
-      </StickyDialogBody>
+      </DialogBody>
 
-      <StickyDialogFooter>
+      <DialogFooter>
         <DialogClose asChild>
           <Button
             disabled={isLoading}
@@ -145,7 +142,7 @@ export function AISettingsForm({ onSuccess }: AISettingsFormProps) {
             "Save changes"
           )}
         </Button>
-      </StickyDialogFooter>
+      </DialogFooter>
     </form>
   );
 }

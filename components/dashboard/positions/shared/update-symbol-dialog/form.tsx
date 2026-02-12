@@ -12,10 +12,7 @@ import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import {
-  StickyDialogBody,
-  StickyDialogFooter,
-} from "@/components/ui/custom/sticky-dialog";
+import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
 import { SymbolSearch } from "@/components/dashboard/symbol-search";
 
 import { updatePositionSymbol } from "@/server/positions/update-symbol";
@@ -119,7 +116,7 @@ export function UpdateSymbolForm({
   if (currencyConfirmation) {
     return (
       <>
-        <StickyDialogBody>
+        <DialogBody>
           <Alert variant="destructive">
             <AlertCircle className="size-4" />
             <AlertTitle>Currency Mismatch</AlertTitle>
@@ -142,9 +139,9 @@ export function UpdateSymbolForm({
               </div>
             </AlertDescription>
           </Alert>
-        </StickyDialogBody>
+        </DialogBody>
 
-        <StickyDialogFooter>
+        <DialogFooter>
           <Button
             variant="outline"
             onClick={handleCancelCurrencyChange}
@@ -165,7 +162,7 @@ export function UpdateSymbolForm({
               "Confirm Change"
             )}
           </Button>
-        </StickyDialogFooter>
+        </DialogFooter>
       </>
     );
   }
@@ -175,7 +172,7 @@ export function UpdateSymbolForm({
       onSubmit={form.handleSubmit((values) => onSubmit(values))}
       className="flex min-h-0 flex-1 flex-col overflow-hidden"
     >
-      <StickyDialogBody>
+      <DialogBody>
         <div className="space-y-4">
           {/* Warning about what changes */}
           <Alert>
@@ -217,9 +214,9 @@ export function UpdateSymbolForm({
             )}
           />
         </div>
-      </StickyDialogBody>
+      </DialogBody>
 
-      <StickyDialogFooter>
+      <DialogFooter>
         <Button
           type="button"
           variant="outline"
@@ -240,7 +237,7 @@ export function UpdateSymbolForm({
             "Update Symbol"
           )}
         </Button>
-      </StickyDialogFooter>
+      </DialogFooter>
     </form>
   );
 }

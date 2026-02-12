@@ -1,8 +1,10 @@
-import { Dialog, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
-  StickyDialogContent,
-  StickyDialogHeader,
-} from "@/components/ui/custom/sticky-dialog";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/custom/dialog";
 import { SymbolSearchForm } from "./forms/symbol-search-form";
 import { DomainForm } from "./forms/domain-form";
 import { ManualEntryForm } from "./forms/manual-entry-form";
@@ -17,15 +19,15 @@ export function FormDialog() {
 
   return (
     <Dialog open={openFormDialog} onOpenChange={setOpenFormDialog}>
-      <StickyDialogContent>
-        <StickyDialogHeader>
+      <DialogContent>
+        <DialogHeader>
           <DialogTitle>New Asset</DialogTitle>
           <DialogDescription>Add a new asset</DialogDescription>
-        </StickyDialogHeader>
+        </DialogHeader>
         {selectedType === "symbol" && <SymbolSearchForm />}
         {selectedType === "domain" && <DomainForm />}
         {selectedType === "custom" && <ManualEntryForm />}
-      </StickyDialogContent>
+      </DialogContent>
     </Dialog>
   );
 }

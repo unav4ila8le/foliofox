@@ -11,11 +11,13 @@ import {
 } from "lucide-react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Dialog, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
-  StickyDialogContent,
-  StickyDialogHeader,
-} from "@/components/ui/custom/sticky-dialog";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/custom/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { PositionSelector } from "./position-selector";
@@ -92,8 +94,8 @@ export function NewPortfolioRecordDialogProvider({
     >
       {children}
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <StickyDialogContent>
-          <StickyDialogHeader>
+        <DialogContent>
+          <DialogHeader>
             <DialogTitle>
               {preselectedPosition
                 ? `New Record for ${preselectedPosition.name}`
@@ -102,7 +104,7 @@ export function NewPortfolioRecordDialogProvider({
             <DialogDescription>
               Update the value and quantity of your positions.
             </DialogDescription>
-          </StickyDialogHeader>
+          </DialogHeader>
 
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             {/* Position selector */}
@@ -198,7 +200,7 @@ export function NewPortfolioRecordDialogProvider({
               </Tabs>
             ) : null}
           </div>
-        </StickyDialogContent>
+        </DialogContent>
       </Dialog>
     </NewPortfolioRecordDialogContext.Provider>
   );

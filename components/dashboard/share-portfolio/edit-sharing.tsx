@@ -18,17 +18,15 @@ import {
 } from "@/components/ui/input-group";
 import {
   Dialog,
+  DialogBody,
   DialogClose,
+  DialogContent,
   DialogDescription,
+  DialogFooter,
+  DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  StickyDialogBody,
-  StickyDialogContent,
-  StickyDialogFooter,
-  StickyDialogHeader,
-} from "@/components/ui/custom/sticky-dialog";
+} from "@/components/ui/custom/dialog";
 import {
   Field,
   FieldDescription,
@@ -128,20 +126,20 @@ export function EditSharing({
           Edit
         </Button>
       </DialogTrigger>
-      <StickyDialogContent className="sm:max-w-lg">
-        <StickyDialogHeader>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
           <DialogTitle>Edit public link</DialogTitle>
           <DialogDescription>
             Update the slug or extend the link lifetime. Saving applies the
             changes immediately.
           </DialogDescription>
-        </StickyDialogHeader>
+        </DialogHeader>
 
         <form
           onSubmit={form.handleSubmit(handleSubmit)}
           className="flex min-h-0 flex-1 flex-col overflow-hidden"
         >
-          <StickyDialogBody>
+          <DialogBody>
             <div className="grid gap-4">
               {/* Slug */}
               <Controller
@@ -219,9 +217,9 @@ export function EditSharing({
                 )}
               />
             </div>
-          </StickyDialogBody>
+          </DialogBody>
 
-          <StickyDialogFooter>
+          <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline" disabled={isUpdating}>
                 Cancel
@@ -237,9 +235,9 @@ export function EditSharing({
                 "Save changes"
               )}
             </Button>
-          </StickyDialogFooter>
+          </DialogFooter>
         </form>
-      </StickyDialogContent>
+      </DialogContent>
     </Dialog>
   );
 }

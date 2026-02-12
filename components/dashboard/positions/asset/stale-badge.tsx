@@ -3,16 +3,20 @@
 import { useMemo, useState } from "react";
 import { TriangleAlert, Info } from "lucide-react";
 
-import { Dialog, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/custom/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import {
-  StickyDialogBody,
-  StickyDialogContent,
-  StickyDialogFooter,
-  StickyDialogHeader,
-} from "@/components/ui/custom/sticky-dialog";
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+} from "@/components/ui/custom/dialog";
 
 import { useDashboardData } from "@/components/dashboard/providers/dashboard-data-provider";
 import { UpdateSymbolDialog } from "@/components/dashboard/positions/shared/update-symbol-dialog";
@@ -58,13 +62,13 @@ export function StaleBadge({ positionId, label }: StaleBadgeProps) {
         open={stalePositionDialogOpen}
         onOpenChange={setStalePositionDialogOpen}
       >
-        <StickyDialogContent
+        <DialogContent
           // TO FIX: clicking outside of the dialog fires row actions
           onClick={(e) => {
             e.stopPropagation();
           }}
         >
-          <StickyDialogHeader>
+          <DialogHeader>
             <DialogTitle>
               {stalePosition.ticker} market data may be stale
             </DialogTitle>
@@ -72,8 +76,8 @@ export function StaleBadge({ positionId, label }: StaleBadgeProps) {
               We haven&apos;t received fresh market data for this position in
               over 7 days.
             </DialogDescription>
-          </StickyDialogHeader>
-          <StickyDialogBody>
+          </DialogHeader>
+          <DialogBody>
             <div className="space-y-4 text-sm">
               <div>
                 <h4 className="font-medium">What this means</h4>
@@ -115,9 +119,9 @@ export function StaleBadge({ positionId, label }: StaleBadgeProps) {
                 </p>
               </div>
             </div>
-          </StickyDialogBody>
+          </DialogBody>
 
-          <StickyDialogFooter>
+          <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setStalePositionDialogOpen(false)}
@@ -127,8 +131,8 @@ export function StaleBadge({ positionId, label }: StaleBadgeProps) {
             <Button onClick={() => setUpdateSymbolDialogOpen(true)}>
               Change Ticker Symbol
             </Button>
-          </StickyDialogFooter>
-        </StickyDialogContent>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
 
       <UpdateSymbolDialog
