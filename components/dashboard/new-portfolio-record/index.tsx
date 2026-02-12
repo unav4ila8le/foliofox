@@ -106,6 +106,7 @@ export function NewPortfolioRecordDialogProvider({
             </DialogDescription>
           </DialogHeader>
 
+          {/* Position selector and tabs stay fixed; only the form content inside TabsContent scrolls via DialogBody */}
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             {/* Position selector */}
             <div className="mb-4 px-6">
