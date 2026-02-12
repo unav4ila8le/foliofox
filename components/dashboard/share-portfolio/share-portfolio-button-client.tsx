@@ -5,14 +5,17 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
+  DialogBody,
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
+} from "@/components/ui/custom/dialog";
 import { ActiveSharing } from "./active-sharing";
+import { EditSharing } from "./edit-sharing";
 import { ToggleSharing } from "./toggle-sharing";
 
 import { enablePublicPortfolio } from "@/server/public-portfolios/enable";
@@ -116,21 +119,33 @@ export function SharePortfolioButtonClient({
             Generate a public link and control its availability.
           </DialogDescription>
         </DialogHeader>
-        <ToggleSharing
-          onEnable={handleEnable}
-          onDisable={handleDisable}
-          isActive={Boolean(shareMetadata?.isActive)}
-          isEnabling={isEnabling}
-          isDisabling={isDisabling}
-        />
+        <DialogBody className="space-y-4">
+          <ToggleSharing
+            onEnable={handleEnable}
+            onDisable={handleDisable}
+            isActive={Boolean(shareMetadata?.isActive)}
+            isEnabling={isEnabling}
+            isDisabling={isDisabling}
+          />
+          {shareMetadata?.isActive && (
+            <div
+              className={cn(isDisabling && "pointer-events-none opacity-50")}
+            >
+              <ActiveSharing
+                shareMetadata={shareMetadata}
+                isUpdating={isUpdating}
+              />
+            </div>
+          )}
+        </DialogBody>
         {shareMetadata?.isActive && (
-          <div className={cn(isDisabling && "pointer-events-none opacity-50")}>
-            <ActiveSharing
+          <DialogFooter>
+            <EditSharing
               shareMetadata={shareMetadata}
-              onUpdate={handleUpdate}
-              isUpdating={isUpdating}
+              onSubmit={handleUpdate}
+              isUpdating={isUpdating || isDisabling}
             />
-          </div>
+          </DialogFooter>
         )}
       </DialogContent>
     </Dialog>
