@@ -1,10 +1,10 @@
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+} from "@/components/ui/custom/dialog";
 
 import { PositionsImportReviewTable } from "./table";
 import { useImportPositionsDialog } from "../index";
@@ -53,7 +53,7 @@ export function ImportReviewDialog() {
     <Dialog open={reviewOpen} onOpenChange={setReviewOpen}>
       <DialogContent
         onInteractOutside={(e) => e.preventDefault()}
-        className="h-100dvh flex max-w-384! flex-col rounded-none border-0 md:h-[80dvh] md:rounded-lg md:border"
+        className="max-h-dvh max-w-384! rounded-none border-0 md:max-h-[80dvh] md:rounded-lg md:border"
       >
         <DialogHeader className="flex-none">
           <DialogTitle>Review Import</DialogTitle>

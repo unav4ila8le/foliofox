@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
 import { FileUploadDropzone } from "@/components/ui/custom/file-upload-dropzone";
 import { ImportResults } from "./import-results";
 import { useImportPortfolioRecordsDialog } from "./index";
@@ -116,64 +117,70 @@ export function CSVImportForm() {
   }, [open]);
 
   return (
-    <div className="space-y-4">
-      <div className="text-muted-foreground space-y-2 text-sm">
-        <p>
-          Upload a CSV or TSV file to import portfolio records. You can include
-          records for multiple positions in one file. Each record must refer to
-          an existing position by name.
-        </p>
-        <p>The first row should contain the headers listed below.</p>
-        <p>
-          <span className="text-foreground font-medium">Required columns:</span>{" "}
-          position_name, type (buy/sell/update), date (YYYY-MM-DD), quantity,
-          unit_value.
-        </p>
-        <p>
-          <span className="text-foreground font-medium">Optional columns:</span>{" "}
-          description.
-        </p>
-        <p>
-          Ensure the position_name matches an existing position in your
-          portfolio.
-        </p>
-      </div>
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <DialogBody className="space-y-4">
+        <div className="text-muted-foreground space-y-2 text-sm">
+          <p>
+            Upload a CSV or TSV file to import portfolio records. You can
+            include records for multiple positions in one file. Each record must
+            refer to an existing position by name.
+          </p>
+          <p>The first row should contain the headers listed below.</p>
+          <p>
+            <span className="text-foreground font-medium">
+              Required columns:
+            </span>{" "}
+            position_name, type (buy/sell/update), date (YYYY-MM-DD), quantity,
+            unit_value.
+          </p>
+          <p>
+            <span className="text-foreground font-medium">
+              Optional columns:
+            </span>{" "}
+            description.
+          </p>
+          <p>
+            Ensure the position_name matches an existing position in your
+            portfolio.
+          </p>
+        </div>
 
-      {/* Dropzone Section */}
-      <FileUploadDropzone
-        accept={{
-          "text/csv": [".csv"],
-          "text/tab-separated-values": [".tsv"],
-          "text/plain": [".csv", ".tsv"],
-          "application/vnd.ms-excel": [".csv"],
-        }}
-        maxSize={5 * 1024 * 1024} // 5MB for CSV files
-        onFileSelect={handleFileSelect}
-        selectedFile={selectedFile}
-        isProcessing={isProcessing}
-        onReset={handleReset}
-        disabled={isImporting}
-        title="Drop your CSV file here"
-      />
+        {/* Dropzone Section */}
+        <FileUploadDropzone
+          accept={{
+            "text/csv": [".csv"],
+            "text/tab-separated-values": [".tsv"],
+            "text/plain": [".csv", ".tsv"],
+            "application/vnd.ms-excel": [".csv"],
+          }}
+          maxSize={5 * 1024 * 1024} // 5MB for CSV files
+          onFileSelect={handleFileSelect}
+          selectedFile={selectedFile}
+          isProcessing={isProcessing}
+          onReset={handleReset}
+          disabled={isImporting}
+          title="Drop your CSV file here"
+        />
 
-      {/* Parse results */}
-      {parseResult && !isProcessing && <ImportResults result={parseResult} />}
+        {/* Parse results */}
+        {parseResult && !isProcessing && <ImportResults result={parseResult} />}
 
-      {/* Help text */}
-      <div className="text-muted-foreground text-sm">
-        Need help? Download a{" "}
-        <a
-          href="/sample-records-template.csv"
-          download
-          className="text-primary underline-offset-4 hover:underline"
-        >
-          sample template
-        </a>
-        .
-      </div>
+        {/* Help text */}
+        <div className="text-muted-foreground text-sm">
+          Need help? Download a{" "}
+          <a
+            href="/sample-records-template.csv"
+            download
+            className="text-primary underline-offset-4 hover:underline"
+          >
+            sample template
+          </a>
+          .
+        </div>
+      </DialogBody>
 
       {/* Footer - Action buttons */}
-      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+      <DialogFooter>
         <Button
           variant="outline"
           onClick={() => setOpen(false)}
@@ -197,7 +204,7 @@ export function CSVImportForm() {
             )}
           </Button>
         )}
-      </div>
+      </DialogFooter>
     </div>
   );
 }

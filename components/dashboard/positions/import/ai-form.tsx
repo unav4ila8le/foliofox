@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
 import { FileUploadDropzone } from "@/components/ui/custom/file-upload-dropzone";
 import { ImportResults } from "./import-results";
 import { useImportPositionsDialog } from "./index";
@@ -132,54 +133,55 @@ export function AIImportForm() {
   }, [open]);
 
   return (
-    <div className="space-y-4">
-      <div className="text-muted-foreground space-y-2 text-sm">
-        <p>
-          Upload a document or an image containing your portfolio positions. AI
-          will automatically extract the data.
-        </p>
-        <p>
-          <span className="text-foreground font-medium">
-            Supported formats:{" "}
-          </span>
-          Images, screenshots, PDFs, CSV/TSV files, and Excel spreadsheets
-          (.xlsx, .xls).
-        </p>
-      </div>
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <DialogBody className="space-y-4">
+        <div className="text-muted-foreground space-y-2 text-sm">
+          <p>
+            Upload a document or an image containing your portfolio positions.
+            AI will automatically extract the data.
+          </p>
+          <p>
+            <span className="text-foreground font-medium">
+              Supported formats:{" "}
+            </span>
+            Images, screenshots, PDFs, CSV/TSV files, and Excel spreadsheets
+            (.xlsx, .xls).
+          </p>
+        </div>
 
-      {/* Dropzone Section */}
-      <FileUploadDropzone
-        accept={{
-          "image/png": [".png"],
-          "image/jpeg": [".jpg", ".jpeg"],
-          "image/webp": [".webp"],
-          "application/pdf": [".pdf"],
-          "text/csv": [".csv"],
-          "text/tab-separated-values": [".tsv"],
-          // Some browsers/OSes classify CSV/TSV as text/plain.
-          "text/plain": [".csv", ".tsv"],
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
-            ".xlsx",
-          ],
-          "application/vnd.ms-excel": [".xls"],
-        }}
-        maxSize={10 * 1024 * 1024} // 10MB for documents
-        onFileSelect={handleFileSelect}
-        readMode="none"
-        selectedFile={selectedFile}
-        isProcessing={isProcessing}
-        onReset={handleReset}
-        disabled={isImporting}
-        title="Drop your document here"
-      />
+        {/* Dropzone Section */}
+        <FileUploadDropzone
+          accept={{
+            "image/png": [".png"],
+            "image/jpeg": [".jpg", ".jpeg"],
+            "image/webp": [".webp"],
+            "application/pdf": [".pdf"],
+            "text/csv": [".csv"],
+            "text/tab-separated-values": [".tsv"],
+            // Some browsers/OSes classify CSV/TSV as text/plain.
+            "text/plain": [".csv", ".tsv"],
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+              [".xlsx"],
+            "application/vnd.ms-excel": [".xls"],
+          }}
+          maxSize={10 * 1024 * 1024} // 10MB for documents
+          onFileSelect={handleFileSelect}
+          readMode="none"
+          selectedFile={selectedFile}
+          isProcessing={isProcessing}
+          onReset={handleReset}
+          disabled={isImporting}
+          title="Drop your document here"
+        />
 
-      {/* Extraction results */}
-      {extractionResult && !isProcessing && (
-        <ImportResults result={extractionResult} />
-      )}
+        {/* Extraction results */}
+        {extractionResult && !isProcessing && (
+          <ImportResults result={extractionResult} />
+        )}
+      </DialogBody>
 
       {/* Footer - Action buttons */}
-      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+      <DialogFooter>
         <Button
           variant="outline"
           onClick={() => setOpen(false)}
@@ -219,7 +221,7 @@ export function AIImportForm() {
             </Button>
           </>
         )}
-      </div>
+      </DialogFooter>
     </div>
   );
 }

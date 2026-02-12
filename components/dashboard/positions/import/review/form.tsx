@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Upload, Info, Trash2, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
 import { Spinner } from "@/components/ui/spinner";
 import { Field, FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -280,8 +281,8 @@ export function ReviewForm({
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4">
-      <div className="min-h-0 flex-1 overflow-y-auto">
+    <>
+      <DialogBody className="pt-0">
         <Table>
           <TableHeader>
             <TableRow>
@@ -647,9 +648,9 @@ export function ReviewForm({
             </TableRow>
           </TableBody>
         </Table>
-      </div>
+      </DialogBody>
 
-      <div className="flex justify-end gap-2">
+      <DialogFooter>
         <Button variant="outline" onClick={onCancel} disabled={isImporting}>
           Back
         </Button>
@@ -669,7 +670,7 @@ export function ReviewForm({
             </>
           )}
         </Button>
-      </div>
-    </div>
+      </DialogFooter>
+    </>
   );
 }

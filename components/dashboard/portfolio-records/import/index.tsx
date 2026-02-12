@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog";
+} from "@/components/ui/custom/dialog";
 
 import { CSVImportForm } from "./csv-form";
 
@@ -41,10 +41,7 @@ export function ImportPortfolioRecordsDialogProvider({
     >
       {children}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent
-          onInteractOutside={(e) => e.preventDefault()}
-          className="max-h-[calc(100dvh-1rem)] overflow-y-auto"
-        >
+        <DialogContent onInteractOutside={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Upload className="size-5" />
