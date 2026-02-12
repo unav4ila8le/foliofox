@@ -8,6 +8,7 @@ import {
   DialogBody,
   Dialog,
   DialogContent,
+  DialogClose,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -140,6 +141,9 @@ export function SharePortfolioButtonClient({
         </DialogBody>
         {shareMetadata?.isActive && (
           <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Close</Button>
+            </DialogClose>
             <EditSharing
               shareMetadata={shareMetadata}
               onSubmit={handleUpdate}
