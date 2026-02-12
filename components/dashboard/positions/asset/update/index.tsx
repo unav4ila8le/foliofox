@@ -1,12 +1,10 @@
 "use client";
 
+import { Dialog, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  StickyDialogContent,
+  StickyDialogHeader,
+} from "@/components/ui/custom/sticky-dialog";
 
 import { UpdateAssetForm } from "./form";
 
@@ -27,19 +25,19 @@ export function UpdateAssetDialog({
 }: UpdateAssetDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChangeAction}>
-      <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto">
-        <DialogHeader>
+      <StickyDialogContent>
+        <StickyDialogHeader>
           <DialogTitle>Edit Asset</DialogTitle>
           <DialogDescription>
             Edit the name, category, tax rate, and description for this asset.
           </DialogDescription>
-        </DialogHeader>
+        </StickyDialogHeader>
         <UpdateAssetForm
           position={position}
           currentSymbolTicker={currentSymbolTicker}
           onSuccess={() => onOpenChangeAction(false)}
         />
-      </DialogContent>
+      </StickyDialogContent>
     </Dialog>
   );
 }

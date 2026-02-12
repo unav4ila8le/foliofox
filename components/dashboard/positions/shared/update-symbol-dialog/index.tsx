@@ -1,12 +1,10 @@
 "use client";
 
+import { Dialog, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  StickyDialogContent,
+  StickyDialogHeader,
+} from "@/components/ui/custom/sticky-dialog";
 
 import { UpdateSymbolForm } from "./form";
 
@@ -32,22 +30,22 @@ export function UpdateSymbolDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChangeAction}>
-      <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto">
-        <DialogHeader>
+      <StickyDialogContent>
+        <StickyDialogHeader>
           <DialogTitle>Change Ticker Symbol</DialogTitle>
           <DialogDescription>
             {currentSymbolTicker
               ? `Update the ticker symbol linked to this position. Currently using ${currentSymbolTicker}.`
               : "Link a new ticker symbol to this position for market data."}
           </DialogDescription>
-        </DialogHeader>
+        </StickyDialogHeader>
         <UpdateSymbolForm
           positionId={positionId}
           currentSymbolTicker={currentSymbolTicker}
           onSuccess={handleSuccess}
           onCancel={() => onOpenChangeAction(false)}
         />
-      </DialogContent>
+      </StickyDialogContent>
     </Dialog>
   );
 }

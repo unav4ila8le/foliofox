@@ -1,12 +1,10 @@
 "use client";
 
+import { Dialog, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  StickyDialogContent,
+  StickyDialogHeader,
+} from "@/components/ui/custom/sticky-dialog";
 
 import { UpdatePortfolioRecordForm } from "./form";
 
@@ -25,19 +23,19 @@ export function UpdatePortfolioRecordDialog({
 }: UpdatePortfolioRecordDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChangeAction}>
-      <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto">
-        <DialogHeader>
+      <StickyDialogContent>
+        <StickyDialogHeader>
           <DialogTitle>Edit Record</DialogTitle>
           <DialogDescription>
             Edit the date, type, quantity, value, and description for this
             record.
           </DialogDescription>
-        </DialogHeader>
+        </StickyDialogHeader>
         <UpdatePortfolioRecordForm
           portfolioRecord={portfolioRecord}
           onSuccess={() => onOpenChangeAction(false)}
         />
-      </DialogContent>
+      </StickyDialogContent>
     </Dialog>
   );
 }

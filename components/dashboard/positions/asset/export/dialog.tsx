@@ -7,14 +7,13 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { Dialog, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  StickyDialogBody,
+  StickyDialogContent,
+  StickyDialogFooter,
+  StickyDialogHeader,
+} from "@/components/ui/custom/sticky-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 import { exportPositions } from "@/server/positions/export";
@@ -72,8 +71,8 @@ export function ExportAssetsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
+      <StickyDialogContent>
+        <StickyDialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="size-5" />
             Export Assets
@@ -82,33 +81,35 @@ export function ExportAssetsDialog({
             Export your current assets to a CSV file. This will include all
             active assets with their current market values and quantities.
           </DialogDescription>
-        </DialogHeader>
+        </StickyDialogHeader>
 
-        <div className="space-y-4">
-          <Alert>
-            <Info className="size-4" />
-            <AlertTitle>Export summary</AlertTitle>
-            <AlertDescription>
-              <ul className="list-inside list-disc text-sm">
-                <li>Asset name, category, and currency</li>
-                <li>Current quantity and market value</li>
-                <li>Cost basis and profit/loss (if applicable)</li>
-                <li>Market data information (if applicable)</li>
-                <li>Description and notes</li>
-              </ul>
-            </AlertDescription>
-          </Alert>
+        <StickyDialogBody>
+          <div className="space-y-4">
+            <Alert>
+              <Info className="size-4" />
+              <AlertTitle>Export summary</AlertTitle>
+              <AlertDescription>
+                <ul className="list-inside list-disc text-sm">
+                  <li>Asset name, category, and currency</li>
+                  <li>Current quantity and market value</li>
+                  <li>Cost basis and profit/loss (if applicable)</li>
+                  <li>Market data information (if applicable)</li>
+                  <li>Description and notes</li>
+                </ul>
+              </AlertDescription>
+            </Alert>
 
-          <div className="text-sm">
-            <span className="font-medium">File format:</span> CSV (Comma
-            Separated Values)
-            <br />
-            <span className="font-medium">Filename:</span> foliofox-assets-
-            {format(new Date(), "yyyy-MM-dd")}.csv
+            <div className="text-sm">
+              <span className="font-medium">File format:</span> CSV (Comma
+              Separated Values)
+              <br />
+              <span className="font-medium">Filename:</span> foliofox-assets-
+              {format(new Date(), "yyyy-MM-dd")}.csv
+            </div>
           </div>
-        </div>
+        </StickyDialogBody>
 
-        <DialogFooter>
+        <StickyDialogFooter>
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
@@ -129,8 +130,8 @@ export function ExportAssetsDialog({
               </>
             )}
           </Button>
-        </DialogFooter>
-      </DialogContent>
+        </StickyDialogFooter>
+      </StickyDialogContent>
     </Dialog>
   );
 }

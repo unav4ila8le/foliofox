@@ -12,6 +12,10 @@ import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  StickyDialogBody,
+  StickyDialogFooter,
+} from "@/components/ui/custom/sticky-dialog";
 import { SymbolSearch } from "@/components/dashboard/symbol-search";
 
 import { updatePositionSymbol } from "@/server/positions/update-symbol";
@@ -114,31 +118,33 @@ export function UpdateSymbolForm({
   // Show currency confirmation UI
   if (currencyConfirmation) {
     return (
-      <div className="space-y-4">
-        <Alert variant="destructive">
-          <AlertCircle className="size-4" />
-          <AlertTitle>Currency Mismatch</AlertTitle>
-          <AlertDescription>
-            <div>
-              <span className="font-medium">{selectedSymbol}</span> uses{" "}
-              <span className="font-medium">
-                {currencyConfirmation.newCurrency}
-              </span>
-              , but this position is currently in{" "}
-              <span className="font-medium">
-                {currencyConfirmation.currentCurrency}
-              </span>
-              . Changing the symbol will also update the position&apos;s
-              currency to{" "}
-              <span className="font-medium">
-                {currencyConfirmation.newCurrency}
-              </span>
-              .
-            </div>
-          </AlertDescription>
-        </Alert>
+      <>
+        <StickyDialogBody>
+          <Alert variant="destructive">
+            <AlertCircle className="size-4" />
+            <AlertTitle>Currency Mismatch</AlertTitle>
+            <AlertDescription>
+              <div>
+                <span className="font-medium">{selectedSymbol}</span> uses{" "}
+                <span className="font-medium">
+                  {currencyConfirmation.newCurrency}
+                </span>
+                , but this position is currently in{" "}
+                <span className="font-medium">
+                  {currencyConfirmation.currentCurrency}
+                </span>
+                . Changing the symbol will also update the position&apos;s
+                currency to{" "}
+                <span className="font-medium">
+                  {currencyConfirmation.newCurrency}
+                </span>
+                .
+              </div>
+            </AlertDescription>
+          </Alert>
+        </StickyDialogBody>
 
-        <div className="flex justify-end gap-2">
+        <StickyDialogFooter>
           <Button
             variant="outline"
             onClick={handleCancelCurrencyChange}
@@ -159,56 +165,61 @@ export function UpdateSymbolForm({
               "Confirm Change"
             )}
           </Button>
-        </div>
-      </div>
+        </StickyDialogFooter>
+      </>
     );
   }
 
   return (
     <form
       onSubmit={form.handleSubmit((values) => onSubmit(values))}
-      className="space-y-4"
+      className="flex min-h-0 flex-1 flex-col overflow-hidden"
     >
-      {/* Warning about what changes */}
-      <Alert>
-        <Info className="size-4" />
-        <AlertTitle>What will change</AlertTitle>
-        <AlertDescription>
-          Changing the symbol updates market data, dividends, news, and
-          historical analytics. Transactions remain unchanged.
-        </AlertDescription>
-      </Alert>
+      <StickyDialogBody>
+        <div className="space-y-4">
+          {/* Warning about what changes */}
+          <Alert>
+            <Info className="size-4" />
+            <AlertTitle>What will change</AlertTitle>
+            <AlertDescription>
+              Changing the symbol updates market data, dividends, news, and
+              historical analytics. Transactions remain unchanged.
+            </AlertDescription>
+          </Alert>
 
-      {/* Current symbol info */}
-      {currentSymbolTicker && (
-        <div className="text-muted-foreground text-sm">
-          Current symbol:{" "}
-          <span className="text-foreground font-medium">
-            {currentSymbolTicker}
-          </span>
+          {/* Current symbol info */}
+          {currentSymbolTicker && (
+            <div className="text-muted-foreground text-sm">
+              Current symbol:{" "}
+              <span className="text-foreground font-medium">
+                {currentSymbolTicker}
+              </span>
+            </div>
+          )}
+
+          {/* Symbol search field */}
+          <Controller
+            control={form.control}
+            name="symbolLookup"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor={field.name}>New Symbol</FieldLabel>
+                <SymbolSearch
+                  field={field}
+                  isInvalid={fieldState.invalid}
+                  fieldName={field.name}
+                  clearErrors={form.clearErrors as (name: string) => void}
+                />
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+          />
         </div>
-      )}
+      </StickyDialogBody>
 
-      {/* Symbol search field */}
-      <Controller
-        control={form.control}
-        name="symbolLookup"
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid}>
-            <FieldLabel htmlFor={field.name}>New Symbol</FieldLabel>
-            <SymbolSearch
-              field={field}
-              isInvalid={fieldState.invalid}
-              fieldName={field.name}
-              clearErrors={form.clearErrors as (name: string) => void}
-            />
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )}
-      />
-
-      {/* Footer */}
-      <div className="flex justify-end gap-2 pt-2">
+      <StickyDialogFooter>
         <Button
           type="button"
           variant="outline"
@@ -229,7 +240,7 @@ export function UpdateSymbolForm({
             "Update Symbol"
           )}
         </Button>
-      </div>
+      </StickyDialogFooter>
     </form>
   );
 }
