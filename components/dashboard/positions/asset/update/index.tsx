@@ -6,7 +6,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui/custom/dialog";
 
 import { UpdateAssetForm } from "./form";
 
@@ -27,7 +27,7 @@ export function UpdateAssetDialog({
 }: UpdateAssetDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChangeAction}>
-      <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Edit Asset</DialogTitle>
           <DialogDescription>

@@ -34,6 +34,7 @@ import {
   InputGroupText,
 } from "@/components/ui/input-group";
 import { Calendar } from "@/components/ui/calendar";
+import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
 
 import { cn } from "@/lib/utils";
 import { makeOneOff, makeRecurring } from "@/lib/scenario-planning";
@@ -301,444 +302,414 @@ export function UpsertEventForm({
   return (
     <form
       onSubmit={form.handleSubmit(onSubmit)}
-      className="grid gap-x-2 gap-y-4"
+      className="flex min-h-0 flex-1 flex-col overflow-hidden"
     >
-      {/* Name */}
-      <Controller
-        control={form.control}
-        name="name"
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid}>
-            <FieldLabel htmlFor={field.name}>Name</FieldLabel>
-            <Input
-              id={field.name}
-              placeholder={
-                type === "expense"
-                  ? "E.g., 🏠 Rent, 🍕 Cost of Life, 🚗 Car Payment"
-                  : "E.g., 💶 Salary, 💰 Bonus, 🧘🏻‍♂️ Investment"
-              }
-              aria-invalid={fieldState.invalid}
-              {...field}
-            />
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )}
-      />
-
-      <div className="grid items-start gap-x-2 gap-y-4 sm:grid-cols-2">
-        {/* Type */}
-        <Controller
-          control={form.control}
-          name="type"
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor={field.name}>Type</FieldLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <SelectTrigger
-                  id={field.name}
-                  className="w-full capitalize"
-                  aria-invalid={fieldState.invalid}
-                >
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="income" className="capitalize">
-                    Income
-                  </SelectItem>
-                  <SelectItem value="expense" className="capitalize">
-                    Expense
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
-
-        {/* Amount */}
-        <Controller
-          control={form.control}
-          name="amount"
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor={field.name}>Amount</FieldLabel>
-              <InputGroup>
-                <InputGroupInput
-                  id={field.name}
-                  placeholder="E.g., 1000"
-                  type="number"
-                  inputMode="decimal"
-                  step="any"
-                  min={0}
-                  aria-invalid={fieldState.invalid}
-                  {...field}
-                  value={field.value as number}
-                />
-                <InputGroupAddon align="inline-end">
-                  <InputGroupText>{currency}</InputGroupText>
-                </InputGroupAddon>
-              </InputGroup>
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
-      </div>
-
-      {/* Recurrence */}
-      <Controller
-        control={form.control}
-        name="recurrence"
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid} className="sm:w-1/2 sm:pr-1">
-            <FieldLabel htmlFor={field.name}>Recurrence</FieldLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
-              <SelectTrigger
-                id={field.name}
-                className="w-full capitalize"
-                aria-invalid={fieldState.invalid}
-              >
-                <SelectValue placeholder="Select recurrence" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="once" className="capitalize">
-                  Once
-                </SelectItem>
-                <SelectItem value="monthly" className="capitalize">
-                  Monthly
-                </SelectItem>
-                <SelectItem value="yearly" className="capitalize">
-                  Yearly
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )}
-      />
-
-      <div className="grid gap-2 sm:grid-cols-2">
-        {/* Start Date */}
-        <Controller
-          control={form.control}
-          name="startDate"
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor={field.name}>
-                {recurrence === "once" ? "Date" : "Start Date"}
-              </FieldLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    id={field.name}
-                    variant="outline"
-                    aria-invalid={fieldState.invalid}
-                    className={cn(
-                      "text-left font-normal",
-                      !field.value && "text-muted-foreground",
-                    )}
-                  >
-                    {field.value ? (
-                      format(field.value, "PPP")
-                    ) : (
-                      <span>Pick a date</span>
-                    )}
-                    <CalendarIcon className="ml-auto opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    captionLayout="dropdown"
-                    startMonth={new Date(2000, 0)}
-                    endMonth={new Date(new Date().getFullYear() + 50, 11)}
-                    selected={field.value}
-                    onSelect={field.onChange}
-                    autoFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
-        {/* End Date */}
-        {recurrence !== "once" && (
+      <DialogBody>
+        <div className="grid gap-x-2 gap-y-4">
+          {/* Name */}
           <Controller
             control={form.control}
-            name="endDate"
+            name="name"
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor={field.name}>
-                  End Date (optional)
-                </FieldLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      id={field.name}
-                      variant="outline"
-                      aria-invalid={fieldState.invalid}
-                      className={cn(
-                        "group text-left font-normal",
-                        !field.value && "text-muted-foreground",
-                      )}
-                    >
-                      {field.value ? (
-                        format(field.value, "PPP")
-                      ) : (
-                        <span>No end date</span>
-                      )}
-                      {field.value && (
-                        <div
-                          className="ml-auto hidden opacity-50 group-hover:block hover:opacity-100"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            field.onChange(undefined);
-                          }}
-                        >
-                          <X />
-                          <span className="sr-only">Clear</span>
-                        </div>
-                      )}
-                      <CalendarIcon
-                        className={cn(
-                          "ml-auto opacity-50",
-                          field.value && "group-hover:hidden",
-                        )}
-                      />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      captionLayout="dropdown"
-                      startMonth={new Date(2000, 0)}
-                      endMonth={new Date(new Date().getFullYear() + 50, 11)}
-                      disabled={startDate ? { before: startDate } : undefined}
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      autoFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+                <FieldLabel htmlFor={field.name}>Name</FieldLabel>
+                <Input
+                  id={field.name}
+                  placeholder={
+                    type === "expense"
+                      ? "E.g., 🏠 Rent, 🍕 Cost of Life, 🚗 Car Payment"
+                      : "E.g., 💶 Salary, 💰 Bonus, 🧘🏻‍♂️ Investment"
+                  }
+                  aria-invalid={fieldState.invalid}
+                  {...field}
+                />
                 {fieldState.invalid && (
                   <FieldError errors={[fieldState.error]} />
                 )}
               </Field>
             )}
           />
-        )}
-      </div>
 
-      {/* Conditions Section */}
-      <div className="space-y-2">
-        <div>
-          <h3 className="text-sm font-medium">Additional Conditions</h3>
-          <p className="text-muted-foreground text-sm">
-            Add conditions that must be met for this event to occur
-          </p>
-        </div>
-
-        {/* Conditions List */}
-        {fields.length > 0 && (
-          <div className="space-y-4">
-            {fields.map((arrayField, index) => {
-              const conditionType = conditionTypes?.[index]?.type;
-
-              return (
-                <div
-                  key={`${arrayField.id}-${conditionType}`}
-                  className="bg-card relative space-y-4 rounded-md border p-4 shadow-xs"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <Controller
-                      control={form.control}
-                      name={`conditions.${index}.type`}
-                      render={({ field, fieldState }) => (
-                        <Field
-                          data-invalid={fieldState.invalid}
-                          className="flex-1"
-                        >
-                          <FieldLabel htmlFor={field.name}>
-                            Condition Type
-                          </FieldLabel>
-                          <Select
-                            onValueChange={(value) => {
-                              // Reset fields when changing type using update method
-                              if (value === "networth-is-above") {
-                                update(index, {
-                                  type: "networth-is-above" as const,
-                                  amount: 0,
-                                });
-                              } else if (value === "event-happened") {
-                                update(index, {
-                                  type: "event-happened" as const,
-                                  eventName: "",
-                                });
-                              } else if (value === "income-is-above") {
-                                update(index, {
-                                  type: "income-is-above" as const,
-                                  eventName: "",
-                                  amount: 0,
-                                });
-                              }
-                            }}
-                            value={field.value}
-                          >
-                            <SelectTrigger
-                              id={field.name}
-                              aria-invalid={fieldState.invalid}
-                            >
-                              <SelectValue placeholder="Select condition type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="networth-is-above">
-                                Net Worth is Above
-                              </SelectItem>
-                              <SelectItem value="event-happened">
-                                Event Happened
-                              </SelectItem>
-                              <SelectItem value="income-is-above">
-                                Income is Above
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                          {fieldState.invalid && (
-                            <FieldError errors={[fieldState.error]} />
-                          )}
-                        </Field>
-                      )}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => remove(index)}
-                      aria-label="Remove condition"
+          <div className="grid items-start gap-x-2 gap-y-4 sm:grid-cols-2">
+            {/* Type */}
+            <Controller
+              control={form.control}
+              name="type"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor={field.name}>Type</FieldLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <SelectTrigger
+                      id={field.name}
+                      className="w-full capitalize"
+                      aria-invalid={fieldState.invalid}
                     >
-                      <Trash2 className="size-4" />
-                      <span className="sr-only">Remove condition</span>
-                    </Button>
-                  </div>
-
-                  {/* Condition-specific fields */}
-                  {conditionType === "networth-is-above" && (
-                    <Controller
-                      key={`${index}-networth-amount`}
-                      control={form.control}
-                      name={`conditions.${index}.amount`}
-                      render={({ field, fieldState }) => (
-                        <Field data-invalid={fieldState.invalid}>
-                          <FieldLabel htmlFor={field.name}>Amount</FieldLabel>
-                          <InputGroup>
-                            <InputGroupInput
-                              id={field.name}
-                              placeholder="E.g., 1000"
-                              type="number"
-                              inputMode="decimal"
-                              step="any"
-                              min={0}
-                              aria-invalid={fieldState.invalid}
-                              {...field}
-                              value={field.value as number}
-                            />
-                            <InputGroupAddon align="inline-end">
-                              <InputGroupText>{currency}</InputGroupText>
-                            </InputGroupAddon>
-                          </InputGroup>
-                          <FieldDescription>
-                            Event fires when net worth exceeds this amount
-                          </FieldDescription>
-                          {fieldState.invalid && (
-                            <FieldError errors={[fieldState.error]} />
-                          )}
-                        </Field>
-                      )}
-                    />
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="income" className="capitalize">
+                        Income
+                      </SelectItem>
+                      <SelectItem value="expense" className="capitalize">
+                        Expense
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
                   )}
+                </Field>
+              )}
+            />
 
-                  {conditionType === "event-happened" && (
-                    <Controller
-                      key={`${index}-event-happened`}
-                      control={form.control}
-                      name={`conditions.${index}.eventName`}
-                      render={({ field, fieldState }) => (
-                        <Field data-invalid={fieldState.invalid}>
-                          <FieldLabel htmlFor={field.name}>
-                            Event Name
-                          </FieldLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            value={field.value}
-                          >
-                            <SelectTrigger
-                              id={field.name}
-                              className="w-full"
-                              aria-invalid={fieldState.invalid}
-                            >
-                              <SelectValue placeholder="Select an event" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {existingEvents.length === 0 ? (
-                                <SelectItem value="none" disabled>
-                                  No events available
-                                </SelectItem>
-                              ) : (
-                                existingEvents.map((event) => (
-                                  <SelectItem
-                                    key={event.name}
-                                    value={event.name}
-                                  >
-                                    {event.name}
-                                  </SelectItem>
-                                ))
-                              )}
-                            </SelectContent>
-                          </Select>
-                          <FieldDescription>
-                            This event fires only after the selected event has
-                            occurred
-                          </FieldDescription>
-                          {fieldState.invalid && (
-                            <FieldError errors={[fieldState.error]} />
-                          )}
-                        </Field>
-                      )}
+            {/* Amount */}
+            <Controller
+              control={form.control}
+              name="amount"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor={field.name}>Amount</FieldLabel>
+                  <InputGroup>
+                    <InputGroupInput
+                      id={field.name}
+                      placeholder="E.g., 1000"
+                      type="number"
+                      inputMode="decimal"
+                      step="any"
+                      min={0}
+                      aria-invalid={fieldState.invalid}
+                      {...field}
+                      value={field.value as number}
                     />
+                    <InputGroupAddon align="inline-end">
+                      <InputGroupText>{currency}</InputGroupText>
+                    </InputGroupAddon>
+                  </InputGroup>
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
                   )}
+                </Field>
+              )}
+            />
+          </div>
 
-                  {conditionType === "income-is-above" && (
-                    <>
-                      <Controller
-                        key={`${index}-income-event`}
-                        control={form.control}
-                        name={`conditions.${index}.eventName`}
-                        render={({ field, fieldState }) => (
-                          <Field data-invalid={fieldState.invalid}>
-                            <FieldLabel htmlFor={field.name}>
-                              Event Name
-                            </FieldLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              value={field.value}
+          {/* Recurrence */}
+          <Controller
+            control={form.control}
+            name="recurrence"
+            render={({ field, fieldState }) => (
+              <Field
+                data-invalid={fieldState.invalid}
+                className="sm:w-1/2 sm:pr-1"
+              >
+                <FieldLabel htmlFor={field.name}>Recurrence</FieldLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <SelectTrigger
+                    id={field.name}
+                    className="w-full capitalize"
+                    aria-invalid={fieldState.invalid}
+                  >
+                    <SelectValue placeholder="Select recurrence" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="once" className="capitalize">
+                      Once
+                    </SelectItem>
+                    <SelectItem value="monthly" className="capitalize">
+                      Monthly
+                    </SelectItem>
+                    <SelectItem value="yearly" className="capitalize">
+                      Yearly
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+          />
+
+          <div className="grid gap-2 sm:grid-cols-2">
+            {/* Start Date */}
+            <Controller
+              control={form.control}
+              name="startDate"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor={field.name}>
+                    {recurrence === "once" ? "Date" : "Start Date"}
+                  </FieldLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        id={field.name}
+                        variant="outline"
+                        aria-invalid={fieldState.invalid}
+                        className={cn(
+                          "text-left font-normal",
+                          !field.value && "text-muted-foreground",
+                        )}
+                      >
+                        {field.value ? (
+                          format(field.value, "PPP")
+                        ) : (
+                          <span>Pick a date</span>
+                        )}
+                        <CalendarIcon className="ml-auto opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        captionLayout="dropdown"
+                        startMonth={new Date(2000, 0)}
+                        endMonth={new Date(new Date().getFullYear() + 50, 11)}
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        autoFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
+            {/* End Date */}
+            {recurrence !== "once" && (
+              <Controller
+                control={form.control}
+                name="endDate"
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor={field.name}>
+                      End Date (optional)
+                    </FieldLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          id={field.name}
+                          variant="outline"
+                          aria-invalid={fieldState.invalid}
+                          className={cn(
+                            "group text-left font-normal",
+                            !field.value && "text-muted-foreground",
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, "PPP")
+                          ) : (
+                            <span>No end date</span>
+                          )}
+                          {field.value && (
+                            <div
+                              className="ml-auto hidden opacity-50 group-hover:block hover:opacity-100"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                field.onChange(undefined);
+                              }}
                             >
-                              <SelectTrigger
-                                id={field.name}
-                                className="w-full"
-                                aria-invalid={fieldState.invalid}
+                              <X />
+                              <span className="sr-only">Clear</span>
+                            </div>
+                          )}
+                          <CalendarIcon
+                            className={cn(
+                              "ml-auto opacity-50",
+                              field.value && "group-hover:hidden",
+                            )}
+                          />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          captionLayout="dropdown"
+                          startMonth={new Date(2000, 0)}
+                          endMonth={new Date(new Date().getFullYear() + 50, 11)}
+                          disabled={
+                            startDate ? { before: startDate } : undefined
+                          }
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          autoFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    {fieldState.invalid && (
+                      <FieldError errors={[fieldState.error]} />
+                    )}
+                  </Field>
+                )}
+              />
+            )}
+          </div>
+
+          {/* Conditions Section */}
+          <div className="space-y-2">
+            <div>
+              <h3 className="text-sm font-medium">Additional Conditions</h3>
+              <p className="text-muted-foreground text-sm">
+                Add conditions that must be met for this event to occur
+              </p>
+            </div>
+
+            {/* Conditions List */}
+            {fields.length > 0 && (
+              <div className="space-y-4">
+                {fields.map((arrayField, index) => {
+                  const conditionType = conditionTypes?.[index]?.type;
+
+                  return (
+                    <div
+                      key={`${arrayField.id}-${conditionType}`}
+                      className="bg-card relative space-y-4 rounded-md border p-4 shadow-xs"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <Controller
+                          control={form.control}
+                          name={`conditions.${index}.type`}
+                          render={({ field, fieldState }) => (
+                            <Field
+                              data-invalid={fieldState.invalid}
+                              className="flex-1"
+                            >
+                              <FieldLabel htmlFor={field.name}>
+                                Condition Type
+                              </FieldLabel>
+                              <Select
+                                onValueChange={(value) => {
+                                  // Reset fields when changing type using update method
+                                  if (value === "networth-is-above") {
+                                    update(index, {
+                                      type: "networth-is-above" as const,
+                                      amount: 0,
+                                    });
+                                  } else if (value === "event-happened") {
+                                    update(index, {
+                                      type: "event-happened" as const,
+                                      eventName: "",
+                                    });
+                                  } else if (value === "income-is-above") {
+                                    update(index, {
+                                      type: "income-is-above" as const,
+                                      eventName: "",
+                                      amount: 0,
+                                    });
+                                  }
+                                }}
+                                value={field.value}
                               >
-                                <SelectValue placeholder="Select an event" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {existingEvents.filter(
-                                  (e) => e.type === "income",
-                                ).length === 0 ? (
-                                  <SelectItem value="none" disabled>
-                                    No income events available
+                                <SelectTrigger
+                                  id={field.name}
+                                  aria-invalid={fieldState.invalid}
+                                >
+                                  <SelectValue placeholder="Select condition type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="networth-is-above">
+                                    Net Worth is Above
                                   </SelectItem>
-                                ) : (
-                                  existingEvents
-                                    .filter((e) => e.type === "income")
-                                    .map((event) => (
+                                  <SelectItem value="event-happened">
+                                    Event Happened
+                                  </SelectItem>
+                                  <SelectItem value="income-is-above">
+                                    Income is Above
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                              {fieldState.invalid && (
+                                <FieldError errors={[fieldState.error]} />
+                              )}
+                            </Field>
+                          )}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => remove(index)}
+                          aria-label="Remove condition"
+                        >
+                          <Trash2 className="size-4" />
+                          <span className="sr-only">Remove condition</span>
+                        </Button>
+                      </div>
+
+                      {/* Condition-specific fields */}
+                      {conditionType === "networth-is-above" && (
+                        <Controller
+                          key={`${index}-networth-amount`}
+                          control={form.control}
+                          name={`conditions.${index}.amount`}
+                          render={({ field, fieldState }) => (
+                            <Field data-invalid={fieldState.invalid}>
+                              <FieldLabel htmlFor={field.name}>
+                                Amount
+                              </FieldLabel>
+                              <InputGroup>
+                                <InputGroupInput
+                                  id={field.name}
+                                  placeholder="E.g., 1000"
+                                  type="number"
+                                  inputMode="decimal"
+                                  step="any"
+                                  min={0}
+                                  aria-invalid={fieldState.invalid}
+                                  {...field}
+                                  value={field.value as number}
+                                />
+                                <InputGroupAddon align="inline-end">
+                                  <InputGroupText>{currency}</InputGroupText>
+                                </InputGroupAddon>
+                              </InputGroup>
+                              <FieldDescription>
+                                Event fires when net worth exceeds this amount
+                              </FieldDescription>
+                              {fieldState.invalid && (
+                                <FieldError errors={[fieldState.error]} />
+                              )}
+                            </Field>
+                          )}
+                        />
+                      )}
+
+                      {conditionType === "event-happened" && (
+                        <Controller
+                          key={`${index}-event-happened`}
+                          control={form.control}
+                          name={`conditions.${index}.eventName`}
+                          render={({ field, fieldState }) => (
+                            <Field data-invalid={fieldState.invalid}>
+                              <FieldLabel htmlFor={field.name}>
+                                Event Name
+                              </FieldLabel>
+                              <Select
+                                onValueChange={field.onChange}
+                                value={field.value}
+                              >
+                                <SelectTrigger
+                                  id={field.name}
+                                  className="w-full"
+                                  aria-invalid={fieldState.invalid}
+                                >
+                                  <SelectValue placeholder="Select an event" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {existingEvents.length === 0 ? (
+                                    <SelectItem value="none" disabled>
+                                      No events available
+                                    </SelectItem>
+                                  ) : (
+                                    existingEvents.map((event) => (
                                       <SelectItem
                                         key={event.name}
                                         value={event.name}
@@ -746,81 +717,139 @@ export function UpsertEventForm({
                                         {event.name}
                                       </SelectItem>
                                     ))
-                                )}
-                              </SelectContent>
-                            </Select>
-                            {fieldState.invalid && (
-                              <FieldError errors={[fieldState.error]} />
-                            )}
-                          </Field>
-                        )}
-                      />
-                      <Controller
-                        key={`${index}-income-amount`}
-                        control={form.control}
-                        name={`conditions.${index}.amount`}
-                        render={({ field, fieldState }) => (
-                          <Field data-invalid={fieldState.invalid}>
-                            <FieldLabel htmlFor={field.name}>
-                              Minimum Amount
-                            </FieldLabel>
-                            <InputGroup>
-                              <InputGroupInput
-                                id={field.name}
-                                placeholder="E.g., 5,000"
-                                type="number"
-                                inputMode="decimal"
-                                step="any"
-                                min={0}
-                                aria-invalid={fieldState.invalid}
-                                {...field}
-                                value={field.value as number}
-                              />
-                              <InputGroupAddon align="inline-end">
-                                <InputGroupText>{currency}</InputGroupText>
-                              </InputGroupAddon>
-                            </InputGroup>
-                            <FieldDescription>
-                              Event fires when the selected income event amount
-                              meets or exceeds this threshold
-                            </FieldDescription>
-                            {fieldState.invalid && (
-                              <FieldError errors={[fieldState.error]} />
-                            )}
-                          </Field>
-                        )}
-                      />
-                    </>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() =>
-            append({
-              type: "networth-is-above",
-              amount: "",
-            })
-          }
-        >
-          <Plus />
-          Add Condition
-        </Button>
-      </div>
+                                  )}
+                                </SelectContent>
+                              </Select>
+                              <FieldDescription>
+                                This event fires only after the selected event
+                                has occurred
+                              </FieldDescription>
+                              {fieldState.invalid && (
+                                <FieldError errors={[fieldState.error]} />
+                              )}
+                            </Field>
+                          )}
+                        />
+                      )}
 
-      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <Button onClick={onCancel} type="button" variant="secondary">
+                      {conditionType === "income-is-above" && (
+                        <>
+                          <Controller
+                            key={`${index}-income-event`}
+                            control={form.control}
+                            name={`conditions.${index}.eventName`}
+                            render={({ field, fieldState }) => (
+                              <Field data-invalid={fieldState.invalid}>
+                                <FieldLabel htmlFor={field.name}>
+                                  Event Name
+                                </FieldLabel>
+                                <Select
+                                  onValueChange={field.onChange}
+                                  value={field.value}
+                                >
+                                  <SelectTrigger
+                                    id={field.name}
+                                    className="w-full"
+                                    aria-invalid={fieldState.invalid}
+                                  >
+                                    <SelectValue placeholder="Select an event" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {existingEvents.filter(
+                                      (e) => e.type === "income",
+                                    ).length === 0 ? (
+                                      <SelectItem value="none" disabled>
+                                        No income events available
+                                      </SelectItem>
+                                    ) : (
+                                      existingEvents
+                                        .filter((e) => e.type === "income")
+                                        .map((event) => (
+                                          <SelectItem
+                                            key={event.name}
+                                            value={event.name}
+                                          >
+                                            {event.name}
+                                          </SelectItem>
+                                        ))
+                                    )}
+                                  </SelectContent>
+                                </Select>
+                                {fieldState.invalid && (
+                                  <FieldError errors={[fieldState.error]} />
+                                )}
+                              </Field>
+                            )}
+                          />
+                          <Controller
+                            key={`${index}-income-amount`}
+                            control={form.control}
+                            name={`conditions.${index}.amount`}
+                            render={({ field, fieldState }) => (
+                              <Field data-invalid={fieldState.invalid}>
+                                <FieldLabel htmlFor={field.name}>
+                                  Minimum Amount
+                                </FieldLabel>
+                                <InputGroup>
+                                  <InputGroupInput
+                                    id={field.name}
+                                    placeholder="E.g., 5,000"
+                                    type="number"
+                                    inputMode="decimal"
+                                    step="any"
+                                    min={0}
+                                    aria-invalid={fieldState.invalid}
+                                    {...field}
+                                    value={field.value as number}
+                                  />
+                                  <InputGroupAddon align="inline-end">
+                                    <InputGroupText>{currency}</InputGroupText>
+                                  </InputGroupAddon>
+                                </InputGroup>
+                                <FieldDescription>
+                                  Event fires when the selected income event
+                                  amount meets or exceeds this threshold
+                                </FieldDescription>
+                                {fieldState.invalid && (
+                                  <FieldError errors={[fieldState.error]} />
+                                )}
+                              </Field>
+                            )}
+                          />
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                append({
+                  type: "networth-is-above",
+                  amount: "",
+                })
+              }
+            >
+              <Plus />
+              Add Condition
+            </Button>
+          </div>
+        </div>
+      </DialogBody>
+
+      {/* Action buttons */}
+      <DialogFooter>
+        <Button onClick={onCancel} type="button" variant="outline">
           Cancel
         </Button>
         <Button type="submit" disabled={!isDirty}>
           {isEditing ? "Update event" : "Create event"}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

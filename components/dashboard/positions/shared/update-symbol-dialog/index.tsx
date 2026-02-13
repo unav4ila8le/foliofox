@@ -6,7 +6,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui/custom/dialog";
 
 import { UpdateSymbolForm } from "./form";
 
@@ -32,7 +32,7 @@ export function UpdateSymbolDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChangeAction}>
-      <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Change Ticker Symbol</DialogTitle>
           <DialogDescription>

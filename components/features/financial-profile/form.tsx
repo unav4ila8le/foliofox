@@ -21,9 +21,10 @@ import {
 } from "@/components/ui/input-group";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { DialogClose } from "@/components/ui/dialog";
+import { DialogClose } from "@/components/ui/custom/dialog";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
 import { CurrencySelector } from "@/components/dashboard/currency-selector";
 
 import { upsertFinancialProfile } from "@/server/financial-profiles/actions";
@@ -120,165 +121,177 @@ export function FinancialProfileForm({ onSuccess }: FinancialProfileFormProps) {
   }
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-6">
-      {/* Age band */}
-      <Controller
-        control={form.control}
-        name="age_band"
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid}>
-            <FieldLabel htmlFor={field.name}>Age</FieldLabel>
-            <RadioGroup
-              onValueChange={field.onChange}
-              value={field.value}
-              className="grid grid-cols-2 gap-2 md:grid-cols-3"
-            >
-              {AGE_BANDS.map((band) => (
-                <Label
-                  htmlFor={`age-${band}`}
-                  key={band}
-                  className="hover:bg-primary/5 has-data-[state=checked]:border-primary has-data-[state=checked]:bg-primary/5 flex gap-3 rounded-md border p-3 shadow-xs"
+    <form
+      onSubmit={form.handleSubmit(onSubmit)}
+      className="flex min-h-0 flex-1 flex-col overflow-hidden"
+    >
+      <DialogBody>
+        <div className="grid gap-6">
+          {/* Age band */}
+          <Controller
+            control={form.control}
+            name="age_band"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor={field.name}>Age</FieldLabel>
+                <RadioGroup
+                  onValueChange={field.onChange}
+                  value={field.value}
+                  className="grid grid-cols-2 gap-2 md:grid-cols-3"
                 >
-                  <RadioGroupItem value={band} id={`age-${band}`} />
-                  <p>{band}</p>
-                </Label>
-              ))}
-            </RadioGroup>
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )}
-      />
+                  {AGE_BANDS.map((band) => (
+                    <Label
+                      htmlFor={`age-${band}`}
+                      key={band}
+                      className="hover:bg-primary/5 has-data-[state=checked]:border-primary has-data-[state=checked]:bg-primary/5 flex gap-3 rounded-md border p-3 shadow-xs"
+                    >
+                      <RadioGroupItem value={band} id={`age-${band}`} />
+                      <p>{band}</p>
+                    </Label>
+                  ))}
+                </RadioGroup>
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+          />
 
-      <div className="grid items-start gap-x-2 gap-y-4 md:grid-cols-5">
-        {/* Income amount */}
-        <Controller
-          control={form.control}
-          name="income_amount"
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid} className="md:col-span-3">
-              <FieldLabel htmlFor={field.name}>Yearly income</FieldLabel>
-              <InputGroup>
-                <InputGroupInput
+          <div className="grid items-start gap-x-2 gap-y-4 md:grid-cols-5">
+            {/* Income amount */}
+            <Controller
+              control={form.control}
+              name="income_amount"
+              render={({ field, fieldState }) => (
+                <Field
+                  data-invalid={fieldState.invalid}
+                  className="md:col-span-3"
+                >
+                  <FieldLabel htmlFor={field.name}>Yearly income</FieldLabel>
+                  <InputGroup>
+                    <InputGroupInput
+                      id={field.name}
+                      placeholder="E.g., 80,000"
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      step="any"
+                      aria-invalid={fieldState.invalid}
+                      {...field}
+                      value={(field.value as number) ?? ""}
+                    />
+                    <InputGroupAddon align="inline-end">
+                      <InputGroupText>
+                        {form.watch("income_currency")}
+                      </InputGroupText>
+                    </InputGroupAddon>
+                  </InputGroup>
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
+
+            {/* Income currency */}
+            <Controller
+              control={form.control}
+              name="income_currency"
+              render={({ field, fieldState }) => (
+                <Field
+                  data-invalid={fieldState.invalid}
+                  className="md:col-span-2"
+                >
+                  <FieldLabel htmlFor={field.name}>Income currency</FieldLabel>
+                  <CurrencySelector
+                    field={{
+                      value: field.value ?? "USD",
+                      onChange: field.onChange,
+                    }}
+                    isInvalid={fieldState.invalid}
+                  />
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
+          </div>
+
+          {/* Risk preference */}
+          <Controller
+            control={form.control}
+            name="risk_preference"
+            render={({ field }) => (
+              <Field>
+                <FieldLabel htmlFor={field.name}>Risk preference</FieldLabel>
+                <RadioGroup
+                  onValueChange={field.onChange}
+                  value={field.value}
+                  className="grid gap-2 sm:grid-cols-2"
+                >
+                  {RISK_PREFERENCES.map((preference) => (
+                    <Label
+                      htmlFor={`risk-${preference}`}
+                      key={preference}
+                      className="hover:bg-primary/5 has-data-[state=checked]:border-primary has-data-[state=checked]:bg-primary/5 flex items-start gap-3 rounded-md border p-3 shadow-xs"
+                    >
+                      <RadioGroupItem
+                        value={preference}
+                        id={`risk-${preference}`}
+                      />
+                      <div className="space-y-1.5">
+                        <p className="capitalize">
+                          {preference.replaceAll("_", " ")}
+                        </p>
+                        <p className="text-muted-foreground text-xs">
+                          {RISK_PREFERENCES_DESCRIPTIONS[preference]}
+                        </p>
+                      </div>
+                    </Label>
+                  ))}
+                </RadioGroup>
+              </Field>
+            )}
+          />
+
+          {/* About */}
+          <Controller
+            control={form.control}
+            name="about"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor={field.name}>
+                  What should the AI know about you?
+                </FieldLabel>
+                <Textarea
                   id={field.name}
-                  placeholder="E.g., 80,000"
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  step="any"
+                  placeholder="E.g., saving for a home, avoiding crypto, big purchase soon, etc."
                   aria-invalid={fieldState.invalid}
                   {...field}
-                  value={(field.value as number) ?? ""}
+                  value={field.value ?? ""}
                 />
-                <InputGroupAddon align="inline-end">
-                  <InputGroupText>
-                    {form.watch("income_currency")}
-                  </InputGroupText>
-                </InputGroupAddon>
-              </InputGroup>
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+                <FieldDescription>
+                  Describe any personal preferences, constraints, or context the
+                  AI should consider when running financial analysis, generating
+                  insights, or explaining decisions.
+                </FieldDescription>
+              </Field>
+            )}
+          />
+        </div>
+      </DialogBody>
 
-        {/* Income currency */}
-        <Controller
-          control={form.control}
-          name="income_currency"
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid} className="md:col-span-2">
-              <FieldLabel htmlFor={field.name}>Income currency</FieldLabel>
-              <CurrencySelector
-                field={{
-                  value: field.value ?? "USD",
-                  onChange: field.onChange,
-                }}
-                isInvalid={fieldState.invalid}
-              />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
-      </div>
-
-      {/* Risk preference */}
-      <Controller
-        control={form.control}
-        name="risk_preference"
-        render={({ field }) => (
-          <Field>
-            <FieldLabel htmlFor={field.name}>Risk preference</FieldLabel>
-            <RadioGroup
-              onValueChange={field.onChange}
-              value={field.value}
-              className="grid gap-2 sm:grid-cols-2"
-            >
-              {RISK_PREFERENCES.map((preference) => (
-                <Label
-                  htmlFor={`risk-${preference}`}
-                  key={preference}
-                  className="hover:bg-primary/5 has-data-[state=checked]:border-primary has-data-[state=checked]:bg-primary/5 flex items-start gap-3 rounded-md border p-3 shadow-xs"
-                >
-                  <RadioGroupItem
-                    value={preference}
-                    id={`risk-${preference}`}
-                  />
-                  <div className="space-y-1.5">
-                    <p className="capitalize">
-                      {preference.replaceAll("_", " ")}
-                    </p>
-                    <p className="text-muted-foreground text-xs">
-                      {RISK_PREFERENCES_DESCRIPTIONS[preference]}
-                    </p>
-                  </div>
-                </Label>
-              ))}
-            </RadioGroup>
-          </Field>
-        )}
-      />
-
-      {/* About */}
-      <Controller
-        control={form.control}
-        name="about"
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid}>
-            <FieldLabel htmlFor={field.name}>
-              What should the AI know about you?
-            </FieldLabel>
-            <Textarea
-              id={field.name}
-              placeholder="E.g., saving for a home, avoiding crypto, big purchase soon, etc."
-              aria-invalid={fieldState.invalid}
-              {...field}
-              value={field.value ?? ""}
-            />
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            <FieldDescription>
-              Describe any personal preferences, constraints, or context the AI
-              should consider when running financial analysis, generating
-              insights, or explaining decisions.
-            </FieldDescription>
-          </Field>
-        )}
-      />
-
-      <div className="flex justify-end gap-2">
+      <DialogFooter>
         <DialogClose asChild>
-          <Button
-            disabled={isLoading}
-            type="button"
-            variant="secondary"
-            className="w-1/2 sm:w-auto"
-          >
+          <Button disabled={isLoading} type="button" variant="outline">
             Cancel
           </Button>
         </DialogClose>
-        <Button
-          disabled={isLoading || !isDirty}
-          type="submit"
-          className="w-1/2 sm:w-auto"
-        >
+        <Button disabled={isLoading || !isDirty} type="submit">
           {isLoading ? (
             <>
               <Spinner />
@@ -288,7 +301,7 @@ export function FinancialProfileForm({ onSuccess }: FinancialProfileFormProps) {
             "Save changes"
           )}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

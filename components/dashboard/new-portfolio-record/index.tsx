@@ -17,15 +17,13 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui/custom/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { PositionSelector } from "./position-selector";
 import { BuyForm } from "./forms/buy-form";
 import { SellForm } from "./forms/sell-form";
 import { UpdateForm } from "./forms/update-form";
-
-import { cn } from "@/lib/utils";
 
 import type { TransformedPosition } from "@/types/global.types";
 import type { VariantProps } from "class-variance-authority";
@@ -96,7 +94,7 @@ export function NewPortfolioRecordDialogProvider({
     >
       {children}
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>
               {preselectedPosition
@@ -108,82 +106,95 @@ export function NewPortfolioRecordDialogProvider({
             </DialogDescription>
           </DialogHeader>
 
-          {/* position selector */}
-          <PositionSelector
-            onPositionSelect={setPreselectedPosition}
-            preselectedPosition={preselectedPosition}
-            field={{
-              value: preselectedPosition?.id || "",
-              onChange: () => {},
-            }}
-          />
+          {/* Position selector and tabs stay fixed; only the form content inside TabsContent scrolls via DialogBody */}
+          <div className="flex min-h-0 flex-1 flex-col">
+            {/* Position selector */}
+            <div className="px-6 pb-6">
+              <PositionSelector
+                onPositionSelect={setPreselectedPosition}
+                preselectedPosition={preselectedPosition}
+                field={{
+                  value: preselectedPosition?.id || "",
+                  onChange: () => {},
+                }}
+              />
+            </div>
 
-          {/* Tabs for record types */}
-          <div
-            className={cn(
-              !preselectedPosition && "pointer-events-none opacity-50",
-            )}
-          >
+            {/* Domain-sourced positions are auto-valued and don't accept manual records */}
             {preselectedPosition && availableTypes.length === 0 ? (
-              <Alert>
-                <Info className="size-4" />
-                <AlertTitle className="line-clamp-none">
-                  Domain values are updated automatically. Manual records
-                  aren&apos;t needed.
-                </AlertTitle>
-                <AlertDescription>
-                  <p>
-                    Domain valuations are provided by{" "}
-                    <Link
-                      href="https://humbleworth.com"
-                      target="_blank"
-                      className="hover:text-primary underline underline-offset-2"
-                    >
-                      HumbleWorth
-                    </Link>
-                    .
-                    <br />
-                    If you prefer, you can add a new custom position to manually
-                    enter your own valuation instead.
-                  </p>
-                </AlertDescription>
-              </Alert>
+              <div className="px-6 pb-6">
+                <Alert>
+                  <Info className="size-4" />
+                  <AlertTitle className="line-clamp-none">
+                    Domain values are updated automatically. Manual records
+                    aren&apos;t needed.
+                  </AlertTitle>
+                  <AlertDescription>
+                    <p>
+                      Domain valuations are provided by{" "}
+                      <Link
+                        href="https://humbleworth.com"
+                        target="_blank"
+                        className="hover:text-primary underline underline-offset-2"
+                      >
+                        HumbleWorth
+                      </Link>
+                      .
+                      <br />
+                      If you prefer, you can add a new custom position to
+                      manually enter your own valuation instead.
+                    </p>
+                  </AlertDescription>
+                </Alert>
+              </div>
             ) : availableTypes.length > 0 ? (
+              // Tabs for record types
               <Tabs
                 key={defaultTab}
                 defaultValue={defaultTab}
-                className="gap-4"
+                className="flex min-h-0 flex-1 flex-col gap-4"
               >
-                <TabsList
-                  className={availableTypes.length > 1 ? "w-full" : "hidden"}
-                >
-                  {availableTypes.map((type) => {
-                    const Icon = RECORD_TYPE_ICONS[type];
-                    return (
-                      <TabsTrigger
-                        key={type}
-                        value={`${type}-form`}
-                        disabled={!preselectedPosition}
-                        className="capitalize"
-                      >
-                        <Icon className="size-4" />
-                        {type}
-                      </TabsTrigger>
-                    );
-                  })}
-                </TabsList>
+                <div className="px-6">
+                  <TabsList
+                    className={availableTypes.length > 1 ? "w-full" : "hidden"}
+                  >
+                    {availableTypes.map((type) => {
+                      const Icon = RECORD_TYPE_ICONS[type];
+                      return (
+                        <TabsTrigger
+                          key={type}
+                          value={`${type}-form`}
+                          disabled={!preselectedPosition}
+                          className="capitalize"
+                        >
+                          <Icon className="size-4" />
+                          {type}
+                        </TabsTrigger>
+                      );
+                    })}
+                  </TabsList>
+                </div>
                 {availableTypes.includes("buy") && (
-                  <TabsContent value="buy-form">
+                  <TabsContent
+                    value="buy-form"
+                    className="flex min-h-0 flex-1 flex-col overflow-hidden"
+                  >
                     <BuyForm />
                   </TabsContent>
                 )}
                 {availableTypes.includes("sell") && (
-                  <TabsContent value="sell-form">
+                  <TabsContent
+                    value="sell-form"
+                    className="flex min-h-0 flex-1 flex-col overflow-hidden"
+                  >
                     <SellForm />
                   </TabsContent>
                 )}
                 {availableTypes.includes("update") && (
-                  <TabsContent value="update-form">
+                  <TabsContent
+                    value="update-form"
+                    className="flex min-h-0 flex-1 flex-col overflow-hidden"
+                  >
                     <UpdateForm />
                   </TabsContent>
                 )}

@@ -22,6 +22,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
 import { PositionCategorySelector } from "@/components/dashboard/position-category-selector";
 import { CapitalGainsTaxRateField } from "@/components/dashboard/positions/shared/capital-gains-tax-rate-field";
 import { CurrencySelector } from "@/components/dashboard/currency-selector";
@@ -151,175 +152,210 @@ export function ManualEntryForm() {
   }
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
-      {/* Name */}
-      <Controller
-        control={form.control}
-        name="name"
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid}>
-            <FieldLabel htmlFor={field.name}>Name</FieldLabel>
-            <Input
-              id={field.name}
-              placeholder="E.g., Chase Savings, Kyoto Apartment, Vintage Wine Collection"
-              aria-invalid={fieldState.invalid}
-              {...field}
-            />
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )}
-      />
-
-      {/* Category */}
-      <Controller
-        control={form.control}
-        name="category_id"
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid}>
-            <FieldLabel htmlFor={field.name}>Category</FieldLabel>
-            <PositionCategorySelector
-              field={field}
-              positionType="asset"
-              isInvalid={fieldState.invalid}
-            />
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )}
-      />
-
-      {/* Currency */}
-      <Controller
-        control={form.control}
-        name="currency"
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid} className="sm:w-1/2 sm:pr-1">
-            <FieldLabel htmlFor={field.name}>Currency</FieldLabel>
-            <CurrencySelector field={field} isInvalid={fieldState.invalid} />
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )}
-      />
-
-      <div className="grid items-start gap-x-2 gap-y-4 sm:grid-cols-2">
-        {/* Quantity */}
-        <Controller
-          control={form.control}
-          name="quantity"
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor={field.name}>Current quantity</FieldLabel>
-              <Input
-                id={field.name}
-                placeholder="E.g., 10"
-                type="number"
-                inputMode="decimal"
-                min={0}
-                step="any"
-                aria-invalid={fieldState.invalid}
-                {...field}
-                value={field.value as number}
-              />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
-
-        {/* Unit value */}
-        <Controller
-          control={form.control}
-          name="unit_value"
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor={field.name}>Current unit value</FieldLabel>
-              <InputGroup>
-                <InputGroupInput
+    <form
+      onSubmit={form.handleSubmit(onSubmit)}
+      className="flex min-h-0 flex-1 flex-col overflow-hidden"
+    >
+      <DialogBody>
+        <div className="grid gap-4">
+          {/* Name */}
+          <Controller
+            control={form.control}
+            name="name"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor={field.name}>Name</FieldLabel>
+                <Input
                   id={field.name}
-                  placeholder="E.g., 420.69"
+                  placeholder="E.g., Chase Savings, Kyoto Apartment, Vintage Wine Collection"
+                  aria-invalid={fieldState.invalid}
+                  {...field}
+                />
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+          />
+
+          {/* Category */}
+          <Controller
+            control={form.control}
+            name="category_id"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor={field.name}>Category</FieldLabel>
+                <PositionCategorySelector
+                  field={field}
+                  positionType="asset"
+                  isInvalid={fieldState.invalid}
+                />
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+          />
+
+          {/* Currency */}
+          <Controller
+            control={form.control}
+            name="currency"
+            render={({ field, fieldState }) => (
+              <Field
+                data-invalid={fieldState.invalid}
+                className="sm:w-1/2 sm:pr-1"
+              >
+                <FieldLabel htmlFor={field.name}>Currency</FieldLabel>
+                <CurrencySelector
+                  field={field}
+                  isInvalid={fieldState.invalid}
+                />
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+          />
+
+          <div className="grid items-start gap-x-2 gap-y-4 sm:grid-cols-2">
+            {/* Quantity */}
+            <Controller
+              control={form.control}
+              name="quantity"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor={field.name}>Current quantity</FieldLabel>
+                  <Input
+                    id={field.name}
+                    placeholder="E.g., 10"
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="any"
+                    aria-invalid={fieldState.invalid}
+                    {...field}
+                    value={field.value as number}
+                  />
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
+
+            {/* Unit value */}
+            <Controller
+              control={form.control}
+              name="unit_value"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor={field.name}>
+                    Current unit value
+                  </FieldLabel>
+                  <InputGroup>
+                    <InputGroupInput
+                      id={field.name}
+                      placeholder="E.g., 420.69"
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      step="any"
+                      aria-invalid={fieldState.invalid}
+                      {...field}
+                      value={field.value as number}
+                    />
+                    <InputGroupAddon align="inline-end">
+                      <InputGroupText>{form.watch("currency")}</InputGroupText>
+                    </InputGroupAddon>
+                  </InputGroup>
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
+          </div>
+
+          {/* Cost basis per unit */}
+          <Controller
+            control={form.control}
+            name="cost_basis_per_unit"
+            render={({ field, fieldState }) => (
+              <Field
+                data-invalid={fieldState.invalid}
+                className="sm:w-1/2 sm:pr-1"
+              >
+                <div className="flex items-center gap-1">
+                  <FieldLabel htmlFor={field.name}>
+                    Cost basis per unit (optional)
+                  </FieldLabel>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="size-4" aria-label="Cost basis help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      If omitted, we&apos;ll use the unit value as your initial
+                      cost basis.
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <Input
+                  id={field.name}
+                  placeholder="E.g., 12.41"
                   type="number"
                   inputMode="decimal"
                   min={0}
                   step="any"
                   aria-invalid={fieldState.invalid}
                   {...field}
-                  value={field.value as number}
+                  value={field.value}
                 />
-                <InputGroupAddon align="inline-end">
-                  <InputGroupText>{form.watch("currency")}</InputGroupText>
-                </InputGroupAddon>
-              </InputGroup>
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
-      </div>
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+          />
 
-      {/* Cost basis per unit */}
-      <Controller
-        control={form.control}
-        name="cost_basis_per_unit"
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid} className="sm:w-1/2 sm:pr-1">
-            <div className="flex items-center gap-1">
-              <FieldLabel htmlFor={field.name}>
-                Cost basis per unit (optional)
-              </FieldLabel>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Info className="size-4" aria-label="Cost basis help" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  If omitted, we&apos;ll use the unit value as your initial cost
-                  basis.
-                </TooltipContent>
-              </Tooltip>
-            </div>
-            <Input
-              id={field.name}
-              placeholder="E.g., 12.41"
-              type="number"
-              inputMode="decimal"
-              min={0}
-              step="any"
-              aria-invalid={fieldState.invalid}
-              {...field}
-              value={field.value}
-            />
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )}
-      />
+          {/* Capital gains tax rate */}
+          <CapitalGainsTaxRateField
+            control={form.control}
+            setValue={form.setValue}
+            disabled={isLoading}
+          />
 
-      <CapitalGainsTaxRateField
-        control={form.control}
-        setValue={form.setValue}
-        disabled={isLoading}
-      />
-
-      {/* Description */}
-      <Controller
-        control={form.control}
-        name="description"
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid}>
-            <FieldLabel htmlFor={field.name}>Description (optional)</FieldLabel>
-            <Input
-              id={field.name}
-              placeholder="Add a description of this asset"
-              aria-invalid={fieldState.invalid}
-              {...field}
-            />
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )}
-      />
+          {/* Description */}
+          <Controller
+            control={form.control}
+            name="description"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor={field.name}>
+                  Description (optional)
+                </FieldLabel>
+                <Input
+                  id={field.name}
+                  placeholder="Add a description of this asset"
+                  aria-invalid={fieldState.invalid}
+                  {...field}
+                />
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+          />
+        </div>
+      </DialogBody>
 
       {/* Footer - Action buttons */}
-      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+      <DialogFooter>
         <Button
           onClick={() => setOpenFormDialog(false)}
           disabled={isLoading}
           type="button"
-          variant="secondary"
+          variant="outline"
         >
           Cancel
         </Button>
@@ -333,7 +369,7 @@ export function ManualEntryForm() {
             "Add Asset"
           )}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

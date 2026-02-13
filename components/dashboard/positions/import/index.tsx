@@ -7,10 +7,10 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+} from "@/components/ui/custom/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { CSVImportForm } from "./csv-form";
@@ -77,10 +77,7 @@ export function ImportPositionsDialogProvider({
     >
       {children}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent
-          onInteractOutside={(e) => e.preventDefault()}
-          className="max-h-[calc(100dvh-1rem)] overflow-y-auto"
-        >
+        <DialogContent onInteractOutside={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Upload className="size-5" />
@@ -90,19 +87,31 @@ export function ImportPositionsDialogProvider({
               Import your assets from a CSV file or AI.
             </DialogDescription>
           </DialogHeader>
-          <Tabs defaultValue="csv-import" className="gap-4">
-            <TabsList className="w-full">
-              <TabsTrigger value="csv-import">
-                <FileText className="size-4" /> CSV Import
-              </TabsTrigger>
-              <TabsTrigger value="ai-import">
-                <Sparkles className="size-4" /> AI Import
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="csv-import">
+
+          <Tabs
+            defaultValue="csv-import"
+            className="flex min-h-0 flex-1 flex-col gap-4"
+          >
+            <div className="px-6">
+              <TabsList className="w-full">
+                <TabsTrigger value="csv-import">
+                  <FileText className="size-4" /> CSV Import
+                </TabsTrigger>
+                <TabsTrigger value="ai-import">
+                  <Sparkles className="size-4" /> AI Import
+                </TabsTrigger>
+              </TabsList>
+            </div>
+            <TabsContent
+              value="csv-import"
+              className="flex min-h-0 flex-1 flex-col overflow-hidden"
+            >
               <CSVImportForm />
             </TabsContent>
-            <TabsContent value="ai-import">
+            <TabsContent
+              value="ai-import"
+              className="flex min-h-0 flex-1 flex-col overflow-hidden"
+            >
               <AIImportForm />
             </TabsContent>
           </Tabs>

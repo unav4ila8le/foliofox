@@ -87,7 +87,7 @@ export function PositionSelector({
             role="combobox"
             aria-expanded={open}
             className={cn(
-              "justify-between font-normal",
+              "w-full justify-between font-normal",
               !positionName && "text-muted-foreground",
             )}
             onClick={() => {
@@ -126,7 +126,7 @@ export function PositionSelector({
           role="combobox"
           aria-expanded={open}
           className={cn(
-            "justify-between font-normal",
+            "w-full justify-between font-normal",
             !positionName && "text-muted-foreground",
           )}
           onClick={() => {

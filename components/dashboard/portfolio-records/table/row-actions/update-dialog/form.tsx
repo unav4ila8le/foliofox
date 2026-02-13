@@ -30,6 +30,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Calendar } from "@/components/ui/calendar";
+import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
 import {
   InputGroup,
   InputGroupAddon,
@@ -171,192 +172,226 @@ export function UpdatePortfolioRecordForm({
   }
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
-      <Controller
-        control={form.control}
-        name="date"
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid} className="sm:w-1/2 sm:pr-1">
-            <FieldLabel htmlFor={field.name}>Date</FieldLabel>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  id={field.name}
-                  variant="outline"
-                  aria-invalid={fieldState.invalid}
-                  className={cn(
-                    "text-left font-normal",
-                    !field.value && "text-muted-foreground",
-                  )}
-                >
-                  {field.value ? (
-                    format(field.value, "PPP")
-                  ) : (
-                    <span>Pick a date</span>
-                  )}
-                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={field.value}
-                  onSelect={field.onChange}
-                  disabled={(date) =>
-                    date > new Date() || date < new Date("1900-01-01")
-                  }
-                  autoFocus
-                />
-              </PopoverContent>
-            </Popover>
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )}
-      />
-
-      <Controller
-        control={form.control}
-        name="type"
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid} className="sm:w-1/2 sm:pr-1">
-            <FieldLabel htmlFor={field.name}>Record type</FieldLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
-              <SelectTrigger
-                id={field.name}
-                className="w-full capitalize"
-                aria-invalid={fieldState.invalid}
+    <form
+      onSubmit={form.handleSubmit(onSubmit)}
+      className="flex min-h-0 flex-1 flex-col overflow-hidden"
+    >
+      <DialogBody>
+        <div className="grid gap-4">
+          <Controller
+            control={form.control}
+            name="date"
+            render={({ field, fieldState }) => (
+              <Field
+                data-invalid={fieldState.invalid}
+                className="sm:w-1/2 sm:pr-1"
               >
-                <SelectValue placeholder="Select record type" />
-              </SelectTrigger>
-              <SelectContent>
-                {PORTFOLIO_RECORD_TYPES.map((type) => (
-                  <SelectItem key={type} value={type} className="capitalize">
-                    {type}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )}
-      />
+                <FieldLabel htmlFor={field.name}>Date</FieldLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id={field.name}
+                      variant="outline"
+                      aria-invalid={fieldState.invalid}
+                      className={cn(
+                        "text-left font-normal",
+                        !field.value && "text-muted-foreground",
+                      )}
+                    >
+                      {field.value ? (
+                        format(field.value, "PPP")
+                      ) : (
+                        <span>Pick a date</span>
+                      )}
+                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      disabled={(date) =>
+                        date > new Date() || date < new Date("1900-01-01")
+                      }
+                      autoFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+          />
 
-      <div className="grid items-start gap-x-2 gap-y-4 sm:grid-cols-2">
-        <Controller
-          control={form.control}
-          name="quantity"
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor={field.name}>Quantity</FieldLabel>
-              <Input
-                id={field.name}
-                placeholder="E.g., 10"
-                type="number"
-                inputMode="decimal"
-                min={0}
-                step="any"
-                aria-invalid={fieldState.invalid}
-                {...field}
-                value={field.value as number}
-              />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
+          <Controller
+            control={form.control}
+            name="type"
+            render={({ field, fieldState }) => (
+              <Field
+                data-invalid={fieldState.invalid}
+                className="sm:w-1/2 sm:pr-1"
+              >
+                <FieldLabel htmlFor={field.name}>Record type</FieldLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <SelectTrigger
+                    id={field.name}
+                    className="w-full capitalize"
+                    aria-invalid={fieldState.invalid}
+                  >
+                    <SelectValue placeholder="Select record type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PORTFOLIO_RECORD_TYPES.map((type) => (
+                      <SelectItem
+                        key={type}
+                        value={type}
+                        className="capitalize"
+                      >
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+          />
+
+          <div className="grid items-start gap-x-2 gap-y-4 sm:grid-cols-2">
+            <Controller
+              control={form.control}
+              name="quantity"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor={field.name}>Quantity</FieldLabel>
+                  <Input
+                    id={field.name}
+                    placeholder="E.g., 10"
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="any"
+                    aria-invalid={fieldState.invalid}
+                    {...field}
+                    value={field.value as number}
+                  />
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
+
+            <Controller
+              control={form.control}
+              name="unit_value"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor={field.name}>Unit value</FieldLabel>
+                  <InputGroup>
+                    <InputGroupInput
+                      id={field.name}
+                      placeholder="E.g., 420.69"
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      step="any"
+                      aria-invalid={fieldState.invalid}
+                      {...field}
+                      value={field.value as number}
+                    />
+                    <InputGroupAddon align="inline-end">
+                      <InputGroupText>
+                        {portfolioRecord.positions.currency || "N/A"}
+                      </InputGroupText>
+                    </InputGroupAddon>
+                  </InputGroup>
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
+          </div>
+
+          {recordType === "update" && (
+            <Controller
+              control={form.control}
+              name="cost_basis_per_unit"
+              render={({ field, fieldState }) => (
+                <Field
+                  data-invalid={fieldState.invalid}
+                  className="sm:w-1/2 sm:pr-1"
+                >
+                  <div className="flex items-center gap-1">
+                    <FieldLabel htmlFor={field.name}>
+                      Cost basis per unit (optional)
+                    </FieldLabel>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="size-4" aria-label="Cost basis help" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Enter your average price paid per unit at this date.
+                        Used for P/L. If omitted, we infer it from the unit
+                        value.
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Input
+                    id={field.name}
+                    placeholder="E.g., 12.41"
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="any"
+                    aria-invalid={fieldState.invalid}
+                    {...field}
+                  />
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
           )}
-        />
 
-        <Controller
-          control={form.control}
-          name="unit_value"
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor={field.name}>Unit value</FieldLabel>
-              <InputGroup>
-                <InputGroupInput
+          <Controller
+            control={form.control}
+            name="description"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor={field.name}>
+                  Description (optional)
+                </FieldLabel>
+                <Input
                   id={field.name}
-                  placeholder="E.g., 420.69"
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  step="any"
+                  placeholder="Add a description of this record"
                   aria-invalid={fieldState.invalid}
                   {...field}
-                  value={field.value as number}
                 />
-                <InputGroupAddon align="inline-end">
-                  <InputGroupText>
-                    {portfolioRecord.positions.currency || "N/A"}
-                  </InputGroupText>
-                </InputGroupAddon>
-              </InputGroup>
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
-      </div>
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+          />
+        </div>
+      </DialogBody>
 
-      {recordType === "update" && (
-        <Controller
-          control={form.control}
-          name="cost_basis_per_unit"
-          render={({ field, fieldState }) => (
-            <Field
-              data-invalid={fieldState.invalid}
-              className="sm:w-1/2 sm:pr-1"
-            >
-              <div className="flex items-center gap-1">
-                <FieldLabel htmlFor={field.name}>
-                  Cost basis per unit (optional)
-                </FieldLabel>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="size-4" aria-label="Cost basis help" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Enter your average price paid per unit at this date. Used
-                    for P/L. If omitted, we infer it from the unit value.
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-              <Input
-                id={field.name}
-                placeholder="E.g., 12.41"
-                type="number"
-                inputMode="decimal"
-                min={0}
-                step="any"
-                aria-invalid={fieldState.invalid}
-                {...field}
-              />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
-      )}
-
-      <Controller
-        control={form.control}
-        name="description"
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid}>
-            <FieldLabel htmlFor={field.name}>Description (optional)</FieldLabel>
-            <Input
-              id={field.name}
-              placeholder="Add a description of this record"
-              aria-invalid={fieldState.invalid}
-              {...field}
-            />
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )}
-      />
-
-      {/* Footer */}
-      <div className="flex justify-end gap-2">
+      <DialogFooter>
         <Button
           onClick={onSuccess}
           disabled={isLoading}
           type="button"
-          variant="secondary"
+          variant="outline"
           className="w-1/2 sm:w-auto"
         >
           Cancel
@@ -375,7 +410,7 @@ export function UpdatePortfolioRecordForm({
             "Save changes"
           )}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

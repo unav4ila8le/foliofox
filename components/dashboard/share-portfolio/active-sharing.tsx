@@ -8,7 +8,6 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group";
-import { EditSharing, type EditSharingFormValues } from "./edit-sharing";
 
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 import { useLocale } from "@/hooks/use-locale";
@@ -19,13 +18,11 @@ import type { PublicPortfolioMetadata } from "@/types/global.types";
 
 type ActiveSharingProps = {
   shareMetadata: PublicPortfolioMetadata;
-  onUpdate: (values: EditSharingFormValues) => Promise<void> | void;
   isUpdating?: boolean;
 };
 
 export function ActiveSharing({
   shareMetadata,
-  onUpdate,
   isUpdating = false,
 }: ActiveSharingProps) {
   const { copyToClipboard, isCopied } = useCopyToClipboard();
@@ -74,14 +71,6 @@ export function ActiveSharing({
                 })}`
               : "No expiration date set"}
         </p>
-      </div>
-
-      <div className="flex items-center justify-end gap-2">
-        <EditSharing
-          shareMetadata={shareMetadata}
-          onSubmit={onUpdate}
-          isUpdating={isUpdating}
-        />
       </div>
     </div>
   );

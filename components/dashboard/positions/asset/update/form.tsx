@@ -16,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
 import { PositionCategorySelector } from "@/components/dashboard/position-category-selector";
 import { CapitalGainsTaxRateField } from "@/components/dashboard/positions/shared/capital-gains-tax-rate-field";
 import { UpdateSymbolDialog } from "@/components/dashboard/positions/shared/update-symbol-dialog";
@@ -111,116 +112,123 @@ export function UpdateAssetForm({
 
   return (
     <>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
-        {/* Name */}
-        <Controller
-          control={form.control}
-          name="name"
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor={field.name}>Name</FieldLabel>
-              <Input
-                id={field.name}
-                placeholder="E.g., Chase Savings, Rental Property, Bitcoin Holdings"
-                aria-invalid={fieldState.invalid}
-                {...field}
-              />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="flex min-h-0 flex-1 flex-col overflow-hidden"
+      >
+        <DialogBody>
+          <div className="grid gap-4">
+            {/* Name */}
+            <Controller
+              control={form.control}
+              name="name"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor={field.name}>Name</FieldLabel>
+                  <Input
+                    id={field.name}
+                    placeholder="E.g., Chase Savings, Rental Property, Bitcoin Holdings"
+                    aria-invalid={fieldState.invalid}
+                    {...field}
+                  />
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
 
-        {/* Category */}
-        <Controller
-          control={form.control}
-          name="category_id"
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor={field.name}>Category</FieldLabel>
-              <PositionCategorySelector
-                field={field}
-                isInvalid={fieldState.invalid}
-              />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
+            {/* Category */}
+            <Controller
+              control={form.control}
+              name="category_id"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor={field.name}>Category</FieldLabel>
+                  <PositionCategorySelector
+                    field={field}
+                    isInvalid={fieldState.invalid}
+                  />
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
 
-        {/* Capital gains tax rate */}
-        <CapitalGainsTaxRateField
-          control={form.control}
-          setValue={form.setValue}
-          disabled={isLoading}
-          className="sm:w-1/2"
-        />
+            {/* Capital gains tax rate */}
+            <CapitalGainsTaxRateField
+              control={form.control}
+              setValue={form.setValue}
+              disabled={isLoading}
+              className="sm:w-1/2"
+            />
 
-        {/* Description */}
-        <Controller
-          control={form.control}
-          name="description"
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor={field.name}>
-                Description (optional)
-              </FieldLabel>
-              <Input
-                id={field.name}
-                placeholder="Add a description of this asset"
-                aria-invalid={fieldState.invalid}
-                {...field}
-              />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
+            {/* Description */}
+            <Controller
+              control={form.control}
+              name="description"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor={field.name}>
+                    Description (optional)
+                  </FieldLabel>
+                  <Input
+                    id={field.name}
+                    placeholder="Add a description of this asset"
+                    aria-invalid={fieldState.invalid}
+                    {...field}
+                  />
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
 
-        {/* Advanced */}
-        {currentSymbolTicker && (
-          <Accordion type="single" collapsible>
-            <AccordionItem value="advanced">
-              <AccordionTrigger className="text-muted-foreground justify-start gap-1 text-sm">
-                Advanced
-              </AccordionTrigger>
-              <AccordionContent>
-                <div className="bg-muted/50 space-y-3 rounded-lg border p-4">
-                  <div className="space-y-1 text-sm">
-                    <h4 className="flex items-center gap-2 font-medium">
-                      Change Ticker Symbol
-                    </h4>
-                    <p className="text-muted-foreground">
-                      Update the market data symbol linked to this position.
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setUpdateSymbolDialogOpen(true)}
-                  >
-                    Change Symbol
-                  </Button>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        )}
+            {/* Advanced */}
+            {currentSymbolTicker && (
+              <Accordion type="single" collapsible>
+                <AccordionItem value="advanced">
+                  <AccordionTrigger className="text-muted-foreground justify-start gap-1 text-sm">
+                    Advanced
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="bg-muted/50 space-y-3 rounded-lg border p-4">
+                      <div className="space-y-1 text-sm">
+                        <h4 className="flex items-center gap-2 font-medium">
+                          Change Ticker Symbol
+                        </h4>
+                        <p className="text-muted-foreground">
+                          Update the market data symbol linked to this position.
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setUpdateSymbolDialogOpen(true)}
+                      >
+                        Change Symbol
+                      </Button>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            )}
+          </div>
+        </DialogBody>
 
-        {/* Footer */}
-        <div className="flex justify-end gap-2">
+        <DialogFooter>
           <Button
             onClick={onSuccess}
             disabled={isLoading}
             type="button"
-            variant="secondary"
-            className="w-1/2 sm:w-auto"
+            variant="outline"
           >
             Cancel
           </Button>
-          <Button
-            disabled={isLoading || !isDirty}
-            type="submit"
-            className="w-1/2 sm:w-auto"
-          >
+          <Button disabled={isLoading || !isDirty} type="submit">
             {isLoading ? (
               <>
                 <Spinner />
@@ -230,7 +238,7 @@ export function UpdateAssetForm({
               "Save changes"
             )}
           </Button>
-        </div>
+        </DialogFooter>
       </form>
 
       <UpdateSymbolDialog

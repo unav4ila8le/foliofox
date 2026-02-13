@@ -9,12 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui/custom/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 import { exportPositions } from "@/server/positions/export";
@@ -84,29 +85,31 @@ export function ExportAssetsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          <Alert>
-            <Info className="size-4" />
-            <AlertTitle>Export summary</AlertTitle>
-            <AlertDescription>
-              <ul className="list-inside list-disc text-sm">
-                <li>Asset name, category, and currency</li>
-                <li>Current quantity and market value</li>
-                <li>Cost basis and profit/loss (if applicable)</li>
-                <li>Market data information (if applicable)</li>
-                <li>Description and notes</li>
-              </ul>
-            </AlertDescription>
-          </Alert>
+        <DialogBody>
+          <div className="space-y-4">
+            <Alert>
+              <Info className="size-4" />
+              <AlertTitle>Export summary</AlertTitle>
+              <AlertDescription>
+                <ul className="list-inside list-disc text-sm">
+                  <li>Asset name, category, and currency</li>
+                  <li>Current quantity and market value</li>
+                  <li>Cost basis and profit/loss (if applicable)</li>
+                  <li>Market data information (if applicable)</li>
+                  <li>Description and notes</li>
+                </ul>
+              </AlertDescription>
+            </Alert>
 
-          <div className="text-sm">
-            <span className="font-medium">File format:</span> CSV (Comma
-            Separated Values)
-            <br />
-            <span className="font-medium">Filename:</span> foliofox-assets-
-            {format(new Date(), "yyyy-MM-dd")}.csv
+            <div className="text-sm">
+              <span className="font-medium">File format:</span> CSV (Comma
+              Separated Values)
+              <br />
+              <span className="font-medium">Filename:</span> foliofox-assets-
+              {format(new Date(), "yyyy-MM-dd")}.csv
+            </div>
           </div>
-        </div>
+        </DialogBody>
 
         <DialogFooter>
           <Button

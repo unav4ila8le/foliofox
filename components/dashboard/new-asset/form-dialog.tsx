@@ -4,7 +4,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui/custom/dialog";
 import { SymbolSearchForm } from "./forms/symbol-search-form";
 import { DomainForm } from "./forms/domain-form";
 import { ManualEntryForm } from "./forms/manual-entry-form";
@@ -19,7 +19,7 @@ export function FormDialog() {
 
   return (
     <Dialog open={openFormDialog} onOpenChange={setOpenFormDialog}>
-      <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>New Asset</DialogTitle>
           <DialogDescription>Add a new asset</DialogDescription>

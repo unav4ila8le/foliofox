@@ -18,13 +18,15 @@ import {
 } from "@/components/ui/input-group";
 import {
   Dialog,
+  DialogBody,
   DialogClose,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
+} from "@/components/ui/custom/dialog";
 import {
   Field,
   FieldDescription,
@@ -133,86 +135,93 @@ export function EditSharing({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="grid gap-4">
-          {/* Slug */}
-          <Controller
-            control={form.control}
-            name="slug"
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor={field.name}>Slug</FieldLabel>
-                <ButtonGroup className="w-full">
-                  <ButtonGroupText asChild>
-                    <Label>
-                      <span className="sm:hidden">/portfolio/</span>
-                      <span className="hidden sm:inline">
-                        {siteUrl}/portfolio/
-                      </span>
-                    </Label>
-                  </ButtonGroupText>
-                  <InputGroup>
-                    <InputGroupInput
-                      id={field.name}
-                      placeholder="myportfolio"
-                      aria-invalid={fieldState.invalid}
-                      {...field}
-                    />
-                    <InputGroupAddon align="inline-end">
-                      <Link2 />
-                    </InputGroupAddon>
-                  </InputGroup>
-                </ButtonGroup>
-                {fieldState.invalid && (
-                  <FieldError errors={[fieldState.error]} />
+        <form
+          onSubmit={form.handleSubmit(handleSubmit)}
+          className="flex min-h-0 flex-1 flex-col overflow-hidden"
+        >
+          <DialogBody>
+            <div className="grid gap-4">
+              {/* Slug */}
+              <Controller
+                control={form.control}
+                name="slug"
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor={field.name}>Slug</FieldLabel>
+                    <ButtonGroup className="w-full">
+                      <ButtonGroupText asChild>
+                        <Label>
+                          <span className="sm:hidden">/portfolio/</span>
+                          <span className="hidden sm:inline">
+                            {siteUrl}/portfolio/
+                          </span>
+                        </Label>
+                      </ButtonGroupText>
+                      <InputGroup>
+                        <InputGroupInput
+                          id={field.name}
+                          placeholder="myportfolio"
+                          aria-invalid={fieldState.invalid}
+                          {...field}
+                        />
+                        <InputGroupAddon align="inline-end">
+                          <Link2 />
+                        </InputGroupAddon>
+                      </InputGroup>
+                    </ButtonGroup>
+                    {fieldState.invalid && (
+                      <FieldError errors={[fieldState.error]} />
+                    )}
+                    <FieldDescription>
+                      Lowercase letters and numbers only. Saving updates your
+                      portfolio&apos;s public URL and invalidates any previous
+                      link.
+                    </FieldDescription>
+                  </Field>
                 )}
-                <FieldDescription>
-                  Lowercase letters and numbers only. Saving updates your
-                  portfolio&apos;s public URL and invalidates any previous link.
-                </FieldDescription>
-              </Field>
-            )}
-          />
+              />
 
-          {/* Expiration */}
-          <Controller
-            control={form.control}
-            name="expiration"
-            render={({ field, fieldState }) => (
-              <Field
-                data-invalid={fieldState.invalid}
-                className="sm:w-1/2 sm:pr-1"
-              >
-                <FieldLabel htmlFor={field.name}>Expire after</FieldLabel>
-                <Select
-                  onValueChange={(value) => field.onChange(value)}
-                  value={field.value}
-                >
-                  <SelectTrigger
-                    className="w-full"
-                    id={field.name}
-                    aria-invalid={fieldState.invalid}
+              {/* Expiration */}
+              <Controller
+                control={form.control}
+                name="expiration"
+                render={({ field, fieldState }) => (
+                  <Field
+                    data-invalid={fieldState.invalid}
+                    className="sm:w-1/2 sm:pr-1"
                   >
-                    <SelectValue placeholder="Select expiration" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PUBLIC_PORTFOLIO_EXPIRATIONS.map((value) => (
-                      <SelectItem key={value} value={value}>
-                        {labelForExpiration(value)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {fieldState.invalid && (
-                  <FieldError errors={[fieldState.error]} />
+                    <FieldLabel htmlFor={field.name}>Expire after</FieldLabel>
+                    <Select
+                      onValueChange={(value) => field.onChange(value)}
+                      value={field.value}
+                    >
+                      <SelectTrigger
+                        className="w-full"
+                        id={field.name}
+                        aria-invalid={fieldState.invalid}
+                      >
+                        <SelectValue placeholder="Select expiration" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PUBLIC_PORTFOLIO_EXPIRATIONS.map((value) => (
+                          <SelectItem key={value} value={value}>
+                            {labelForExpiration(value)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {fieldState.invalid && (
+                      <FieldError errors={[fieldState.error]} />
+                    )}
+                  </Field>
                 )}
-              </Field>
-            )}
-          />
+              />
+            </div>
+          </DialogBody>
 
-          {/* Footer - Action buttons */}
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <DialogFooter>
             <DialogClose asChild>
-              <Button type="button" variant="secondary" disabled={isUpdating}>
+              <Button type="button" variant="outline" disabled={isUpdating}>
                 Cancel
               </Button>
             </DialogClose>
@@ -226,7 +235,7 @@ export function EditSharing({
                 "Save changes"
               )}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

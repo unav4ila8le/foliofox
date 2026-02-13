@@ -1,10 +1,10 @@
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+} from "@/components/ui/custom/dialog";
 import { SettingsForm } from "./form";
 
 import type { Profile } from "@/types/global.types";

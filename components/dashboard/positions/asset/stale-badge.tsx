@@ -5,15 +5,18 @@ import { TriangleAlert, Info } from "lucide-react";
 
 import {
   Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
+  DialogTitle,
+} from "@/components/ui/custom/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import {
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+} from "@/components/ui/custom/dialog";
 
 import { useDashboardData } from "@/components/dashboard/providers/dashboard-data-provider";
 import { UpdateSymbolDialog } from "@/components/dashboard/positions/shared/update-symbol-dialog";
@@ -64,7 +67,6 @@ export function StaleBadge({ positionId, label }: StaleBadgeProps) {
           onClick={(e) => {
             e.stopPropagation();
           }}
-          className="max-h-[calc(100dvh-1rem)] overflow-y-auto"
         >
           <DialogHeader>
             <DialogTitle>
@@ -75,46 +77,49 @@ export function StaleBadge({ positionId, label }: StaleBadgeProps) {
               over 7 days.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 text-sm">
-            <div>
-              <h4 className="font-medium">What this means</h4>
-              <p className="text-muted-foreground">
-                Your position value is calculated using the last available
-                market data. If you noticed wrong prices/values, there may be
-                market data issues worth investigating.
-              </p>
-            </div>
+          <DialogBody>
+            <div className="space-y-4 text-sm">
+              <div>
+                <h4 className="font-medium">What this means</h4>
+                <p className="text-muted-foreground">
+                  Your position value is calculated using the last available
+                  market data. If you noticed wrong prices/values, there may be
+                  market data issues worth investigating.
+                </p>
+              </div>
 
-            <Alert>
-              <Info className="size-4" />
-              <AlertTitle>Possible causes</AlertTitle>
-              <AlertDescription>
-                <ul className="text-foreground list-inside list-disc space-y-1">
-                  <li>Temporary data feed issues from our data providers</li>
-                  <li>The ticker symbol may have changed</li>
-                  <li>Extended market closures or trading halts</li>
-                  <li>The security may have been delisted or merged</li>
-                </ul>
-              </AlertDescription>
-            </Alert>
+              <Alert>
+                <Info className="size-4" />
+                <AlertTitle>Possible causes</AlertTitle>
+                <AlertDescription>
+                  <ul className="text-foreground list-inside list-disc space-y-1">
+                    <li>Temporary data feed issues from our data providers</li>
+                    <li>The ticker symbol may have changed</li>
+                    <li>Extended market closures or trading halts</li>
+                    <li>The security may have been delisted or merged</li>
+                  </ul>
+                </AlertDescription>
+              </Alert>
 
-            <div>
-              <h4 className="font-medium">What we&apos;re doing</h4>
-              <p className="text-muted-foreground">
-                We automatically refresh market data daily. If this persists,
-                our systems will investigate and may reach out for more details.
-              </p>
-            </div>
+              <div>
+                <h4 className="font-medium">What we&apos;re doing</h4>
+                <p className="text-muted-foreground">
+                  We automatically refresh market data daily. If this persists,
+                  our systems will investigate and may reach out for more
+                  details.
+                </p>
+              </div>
 
-            <div>
-              <h4 className="font-medium">What you can do</h4>
-              <p className="text-muted-foreground">
-                If you suspect the ticker symbol has changed, you can update it
-                below. Otherwise, fresh data should arrive with our next daily
-                update.
-              </p>
+              <div>
+                <h4 className="font-medium">What you can do</h4>
+                <p className="text-muted-foreground">
+                  If you suspect the ticker symbol has changed, you can update
+                  it below. Otherwise, fresh data should arrive with our next
+                  daily update.
+                </p>
+              </div>
             </div>
-          </div>
+          </DialogBody>
 
           <DialogFooter>
             <Button

@@ -6,7 +6,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui/custom/dialog";
 import { UpsertEventForm } from "../forms/upsert-event";
 
 import type { ScenarioEvent } from "@/lib/scenario-planning";
@@ -32,7 +32,7 @@ export function UpsertEventDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>{isEditing ? "Edit Event" : "New Event"}</DialogTitle>
           <DialogDescription>

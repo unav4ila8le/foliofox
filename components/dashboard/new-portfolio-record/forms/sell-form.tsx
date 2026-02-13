@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import { Spinner } from "@/components/ui/spinner";
+import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
 
 import { useNewPortfolioRecordDialog } from "../index";
 
@@ -111,126 +112,145 @@ export function SellForm() {
   return (
     <form
       onSubmit={form.handleSubmit(onSubmit)}
-      className="grid gap-x-2 gap-y-4"
+      className="flex min-h-0 flex-1 flex-col overflow-hidden"
     >
-      {/* Date */}
-      <Controller
-        control={form.control}
-        name="date"
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid} className="sm:w-1/2 sm:pr-1">
-            <FieldLabel htmlFor={field.name}>Date</FieldLabel>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  id={field.name}
-                  variant="outline"
-                  aria-invalid={fieldState.invalid}
-                  className={cn(
-                    "text-left font-normal",
-                    !field.value && "text-muted-foreground",
+      <DialogBody>
+        <div className="grid gap-x-2 gap-y-4">
+          {/* Date */}
+          <Controller
+            control={form.control}
+            name="date"
+            render={({ field, fieldState }) => (
+              <Field
+                data-invalid={fieldState.invalid}
+                className="sm:w-1/2 sm:pr-1"
+              >
+                <FieldLabel htmlFor={field.name}>Date</FieldLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id={field.name}
+                      variant="outline"
+                      aria-invalid={fieldState.invalid}
+                      className={cn(
+                        "text-left font-normal",
+                        !field.value && "text-muted-foreground",
+                      )}
+                    >
+                      {field.value ? (
+                        format(field.value, "PPP")
+                      ) : (
+                        <span>Pick a date</span>
+                      )}
+                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      captionLayout="dropdown"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      disabled={(date) =>
+                        date > new Date() || date < new Date("1900-01-01")
+                      }
+                      autoFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+          />
+
+          {/* Quantity and unit value fields in a grid */}
+          <div className="grid items-start gap-x-2 gap-y-4 sm:grid-cols-2">
+            {/* Quantity field */}
+            <Controller
+              control={form.control}
+              name="quantity"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor={field.name}>Quantity sold</FieldLabel>
+                  <Input
+                    id={field.name}
+                    placeholder="E.g., 10"
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="any"
+                    aria-invalid={fieldState.invalid}
+                    {...field}
+                    value={field.value as number}
+                  />
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
                   )}
-                >
-                  {field.value ? (
-                    format(field.value, "PPP")
-                  ) : (
-                    <span>Pick a date</span>
-                  )}
-                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  captionLayout="dropdown"
-                  selected={field.value}
-                  onSelect={field.onChange}
-                  disabled={(date) =>
-                    date > new Date() || date < new Date("1900-01-01")
-                  }
-                  autoFocus
-                />
-              </PopoverContent>
-            </Popover>
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )}
-      />
-
-      {/* Quantity and unit value fields in a grid */}
-      <div className="grid items-start gap-x-2 gap-y-4 sm:grid-cols-2">
-        {/* Quantity field */}
-        <Controller
-          control={form.control}
-          name="quantity"
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor={field.name}>Quantity sold</FieldLabel>
-              <Input
-                id={field.name}
-                placeholder="E.g., 10"
-                type="number"
-                inputMode="decimal"
-                min={0}
-                step="any"
-                aria-invalid={fieldState.invalid}
-                {...field}
-                value={field.value as number}
-              />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
-
-        {/* Unit value field */}
-        <Controller
-          control={form.control}
-          name="unit_value"
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor={field.name}>Sale price per unit</FieldLabel>
-              <Input
-                id={field.name}
-                placeholder="E.g., 420.69"
-                type="number"
-                inputMode="decimal"
-                min={0}
-                step="any"
-                aria-invalid={fieldState.invalid}
-                {...field}
-                value={field.value as number}
-              />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
-      </div>
-
-      {/* Description */}
-      <Controller
-        control={form.control}
-        name="description"
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid}>
-            <FieldLabel htmlFor={field.name}>Description (optional)</FieldLabel>
-            <Input
-              id={field.name}
-              placeholder="Add any notes about this sale"
-              aria-invalid={fieldState.invalid}
-              {...field}
+                </Field>
+              )}
             />
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )}
-      />
+
+            {/* Unit value field */}
+            <Controller
+              control={form.control}
+              name="unit_value"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor={field.name}>
+                    Sale price per unit
+                  </FieldLabel>
+                  <Input
+                    id={field.name}
+                    placeholder="E.g., 420.69"
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="any"
+                    aria-invalid={fieldState.invalid}
+                    {...field}
+                    value={field.value as number}
+                  />
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
+          </div>
+
+          {/* Description */}
+          <Controller
+            control={form.control}
+            name="description"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor={field.name}>
+                  Description (optional)
+                </FieldLabel>
+                <Input
+                  id={field.name}
+                  placeholder="Add any notes about this sale"
+                  aria-invalid={fieldState.invalid}
+                  {...field}
+                />
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+          />
+        </div>
+      </DialogBody>
 
       {/* Action */}
-      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+      <DialogFooter>
         <Button
           onClick={() => setOpen(false)}
           disabled={isLoading}
           type="button"
-          variant="secondary"
+          variant="outline"
         >
           Cancel
         </Button>
@@ -244,7 +264,7 @@ export function SellForm() {
             "Create record"
           )}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

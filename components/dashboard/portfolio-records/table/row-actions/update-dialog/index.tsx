@@ -6,7 +6,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui/custom/dialog";
 
 import { UpdatePortfolioRecordForm } from "./form";
 
@@ -25,7 +25,7 @@ export function UpdatePortfolioRecordDialog({
 }: UpdatePortfolioRecordDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChangeAction}>
-      <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Edit Record</DialogTitle>
           <DialogDescription>
