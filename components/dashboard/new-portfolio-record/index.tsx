@@ -107,9 +107,9 @@ export function NewPortfolioRecordDialogProvider({
           </DialogHeader>
 
           {/* Position selector and tabs stay fixed; only the form content inside TabsContent scrolls via DialogBody */}
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div className="flex min-h-0 flex-1 flex-col">
             {/* Position selector */}
-            <div className="mb-4 px-6">
+            <div className="px-6 pb-6">
               <PositionSelector
                 onPositionSelect={setPreselectedPosition}
                 preselectedPosition={preselectedPosition}
@@ -122,7 +122,7 @@ export function NewPortfolioRecordDialogProvider({
 
             {/* Domain-sourced positions are auto-valued and don't accept manual records */}
             {preselectedPosition && availableTypes.length === 0 ? (
-              <div className="mb-4 px-6">
+              <div className="px-6 pb-6">
                 <Alert>
                   <Info className="size-4" />
                   <AlertTitle className="line-clamp-none">

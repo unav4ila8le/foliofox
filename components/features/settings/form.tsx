@@ -191,20 +191,11 @@ export function SettingsForm({ onSuccess }: SettingsFormProps) {
 
       <DialogFooter>
         <DialogClose asChild>
-          <Button
-            disabled={isLoading}
-            type="button"
-            variant="outline"
-            className="w-1/2 sm:w-auto"
-          >
+          <Button disabled={isLoading} type="button" variant="outline">
             Cancel
           </Button>
         </DialogClose>
-        <Button
-          disabled={isLoading || !isDirty}
-          type="submit"
-          className="w-1/2 sm:w-auto"
-        >
+        <Button disabled={isLoading || !isDirty} type="submit">
           {isLoading ? (
             <>
               <Spinner />

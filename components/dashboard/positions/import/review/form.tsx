@@ -622,7 +622,7 @@ export function ReviewForm({
 
             {/* Add position */}
             <TableRow className="hover:bg-transparent">
-              <TableCell colSpan={100} className="text-end align-top">
+              <TableCell colSpan={100} className="align-top lg:text-end">
                 <Button
                   type="button"
                   variant="ghost"

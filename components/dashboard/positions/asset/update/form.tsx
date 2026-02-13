@@ -225,15 +225,10 @@ export function UpdateAssetForm({
             disabled={isLoading}
             type="button"
             variant="outline"
-            className="w-1/2 sm:w-auto"
           >
             Cancel
           </Button>
-          <Button
-            disabled={isLoading || !isDirty}
-            type="submit"
-            className="w-1/2 sm:w-auto"
-          >
+          <Button disabled={isLoading || !isDirty} type="submit">
             {isLoading ? (
               <>
                 <Spinner />
