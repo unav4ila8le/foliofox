@@ -81,7 +81,8 @@ export async function fetchNetWorthHistory({
     .lte("date", endDateKey)
     .order("position_id")
     .order("date", { ascending: true })
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true });
 
   if (snapshotsError) {
     throw new Error(snapshotsError.message);
