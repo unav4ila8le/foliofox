@@ -128,7 +128,9 @@ export async function createPosition(formData: FormData) {
 
     if (symbolUuid && (unit_value == null || Number.isNaN(unit_value))) {
       try {
-        unit_value = await fetchSingleQuote(symbolUuid, { upsert: true });
+        unit_value = await fetchSingleQuote(symbolUuid, {
+          upsert: true,
+        });
       } catch (error) {
         console.warn(
           `Failed to fetch canonical price for symbol ${symbolUuid}:`,
