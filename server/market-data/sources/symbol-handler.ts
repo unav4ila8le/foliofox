@@ -27,7 +27,9 @@ export const symbolHandler: MarketDataHandler = {
     if (requests.length === 0) return new Map();
 
     try {
-      return await fetchQuotes(requests, options?.upsert);
+      return await fetchQuotes(requests, {
+        upsert: options?.upsert,
+      });
     } catch {
       return new Map();
     }
@@ -61,7 +63,9 @@ export const symbolHandler: MarketDataHandler = {
     if (requests.length === 0) return new Map();
 
     try {
-      return await fetchQuotes(requests, options?.upsert);
+      return await fetchQuotes(requests, {
+        upsert: options?.upsert,
+      });
     } catch {
       return new Map();
     }

@@ -21,11 +21,16 @@ export function chunkArray<T>(arr: T[], size: number): T[][] {
 
 export interface ChartQuoteEntry {
   dateKey: string;
-  price: number;
+  closePrice: number;
+  adjustedClosePrice: number;
 }
 
 /**
- * Normalize chart quote entries without applying trading-session guards.
+ * Normalize provider chart quotes into UTC date-keyed close prices.
+ *
+ * Keeps both close and adjusted close values so callers can choose the
+ * appropriate series (valuation parity vs adjusted analytics).
+ * This function does not synthesize non-trading calendar days.
  */
 export function normalizeChartQuoteEntries(
   chartData: {
@@ -40,12 +45,17 @@ export function normalizeChartQuoteEntries(
     .map((quote) => {
       if (!quote.date || !(quote.date instanceof Date)) return null;
 
-      const value = quote.adjclose ?? quote.close;
-      if (!value || value <= 0) return null;
+      const closePrice = quote.close;
+      if (!closePrice || closePrice <= 0) return null;
+
+      // Some rows can miss adjusted close; keep a valid adjusted series anyway.
+      const adjustedClosePrice =
+        quote.adjclose && quote.adjclose > 0 ? quote.adjclose : closePrice;
 
       return {
         dateKey: formatUTCDateKey(quote.date),
-        price: value,
+        closePrice,
+        adjustedClosePrice,
       };
     })
     .filter((entry): entry is ChartQuoteEntry => entry !== null)

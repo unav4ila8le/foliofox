@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse, connection } from "next/server";
 import { headers } from "next/headers";
 
+import { formatUTCDateKey, parseUTCDateKey } from "@/lib/date/date-utils";
 import { fetchSymbols } from "@/server/symbols/fetch";
 import { fetchQuotes } from "@/server/quotes/fetch";
 
@@ -20,15 +21,20 @@ export async function GET(request: NextRequest) {
     // 2. Log start
     console.log("Starting daily quote fetch cron job...");
 
-    // 3. Get date (from query param, default to tomorrow)
+    // 3. Get date (from query param, default to today UTC)
     const url = new URL(request.url);
-    const date =
-      url.searchParams.get("date") ||
-      (() => {
-        const d = new Date();
-        d.setDate(d.getDate() + 1);
-        return d.toISOString().slice(0, 10);
-      })();
+    const date = url.searchParams.get("date") ?? formatUTCDateKey(new Date());
+    const parsedDate = parseUTCDateKey(date);
+
+    if (Number.isNaN(parsedDate.getTime())) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Invalid date. Expected YYYY-MM-DD.",
+        },
+        { status: 400 },
+      );
+    }
 
     // 4. Fetch all symbol IDs from database
     const symbolIds = await fetchSymbols();
@@ -49,11 +55,14 @@ export async function GET(request: NextRequest) {
     // 5. Prepare quote requests for the target date
     const quoteRequests = symbolIds.map((symbolId) => ({
       symbolLookup: symbolId,
-      date: new Date(date),
+      date: parsedDate,
     }));
 
     // 6. Fetch quotes using your existing function
-    const quotesMap = await fetchQuotes(quoteRequests);
+    const quotesMap = await fetchQuotes(quoteRequests, {
+      upsert: true,
+      staleGuardDays: 0,
+    });
 
     // 7. Count successful fetches
     const successfulFetches = quotesMap.size;

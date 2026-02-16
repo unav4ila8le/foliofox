@@ -76,7 +76,9 @@ export async function getHistoricalQuotes({
   }
 
   // Avoid caching ad-hoc AI lookups into the primary quotes table
-  const quotesMap = await fetchQuotes(requests, false);
+  const quotesMap = await fetchQuotes(requests, {
+    upsert: false,
+  });
 
   const series = requests.map(({ date }) => {
     const dateString = formatUTCDateKey(date);
