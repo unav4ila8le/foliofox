@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const headersMock = vi.fn();
 const connectionMock = vi.fn();
 const fetchQuotesMock = vi.fn();
-const fetchActivePositionSymbolsMock = vi.fn();
+const fetchPositionSymbolsMock = vi.fn();
 const purgeUnlinkedSymbolsMock = vi.fn();
 
 vi.mock("next/headers", () => ({
@@ -26,7 +26,7 @@ vi.mock("@/server/quotes/fetch", () => ({
 }));
 
 vi.mock("@/server/symbols/fetch", () => ({
-  fetchActivePositionSymbols: fetchActivePositionSymbolsMock,
+  fetchPositionSymbols: fetchPositionSymbolsMock,
   purgeUnlinkedSymbols: purgeUnlinkedSymbolsMock,
 }));
 
@@ -41,7 +41,7 @@ describe("GET /api/admin/prewarm-quotes", () => {
     headersMock.mockReset();
     connectionMock.mockReset();
     fetchQuotesMock.mockReset();
-    fetchActivePositionSymbolsMock.mockReset();
+    fetchPositionSymbolsMock.mockReset();
     purgeUnlinkedSymbolsMock.mockReset();
 
     connectionMock.mockResolvedValue(undefined);
@@ -70,11 +70,7 @@ describe("GET /api/admin/prewarm-quotes", () => {
       new Headers({ authorization: "Bearer prewarm-secret" }),
     );
     purgeUnlinkedSymbolsMock.mockResolvedValue(4);
-    fetchActivePositionSymbolsMock.mockResolvedValue([
-      "sym-1",
-      "sym-2",
-      "sym-3",
-    ]);
+    fetchPositionSymbolsMock.mockResolvedValue(["sym-1", "sym-2", "sym-3"]);
     fetchQuotesMock.mockResolvedValue(
       new Map([
         ["sym-1|2026-02-14", 100],
@@ -122,7 +118,7 @@ describe("GET /api/admin/prewarm-quotes", () => {
     headersMock.mockResolvedValue(
       new Headers({ authorization: "Bearer prewarm-secret" }),
     );
-    fetchActivePositionSymbolsMock.mockResolvedValue(["sym-1"]);
+    fetchPositionSymbolsMock.mockResolvedValue(["sym-1"]);
     fetchQuotesMock.mockResolvedValue(new Map());
 
     const { GET } = await import("@/app/api/admin/prewarm-quotes/route");

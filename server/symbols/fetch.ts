@@ -22,24 +22,21 @@ export async function fetchSymbols() {
 }
 
 /**
- * Fetch canonical symbol IDs referenced by active positions.
- * Used by quote prewarm jobs to target symbols users actually hold.
+ * Fetch canonical symbol IDs referenced by any position (active or archived).
+ * Used by quote prewarm jobs so historical net worth symbols are included.
  *
  * @returns Sorted array of unique symbol IDs
  */
-export async function fetchActivePositionSymbols() {
+export async function fetchPositionSymbols() {
   const supabase = await createServiceClient();
 
   const { data, error } = await supabase
     .from("positions")
     .select("symbol_id")
-    .is("archived_at", null)
     .not("symbol_id", "is", null);
 
   if (error) {
-    throw new Error(
-      `Failed to fetch active position symbols: ${error.message}`,
-    );
+    throw new Error(`Failed to fetch position symbols: ${error.message}`);
   }
 
   const unique = new Set<string>();

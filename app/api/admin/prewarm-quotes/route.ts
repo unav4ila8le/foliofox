@@ -9,7 +9,7 @@ import {
 } from "@/lib/date/date-utils";
 import { fetchQuotes } from "@/server/quotes/fetch";
 import {
-  fetchActivePositionSymbols,
+  fetchPositionSymbols,
   purgeUnlinkedSymbols,
 } from "@/server/symbols/fetch";
 
@@ -104,9 +104,9 @@ export async function GET(request: NextRequest) {
       purgedOrphanSymbols = await purgeUnlinkedSymbols();
     }
 
-    // 4. Load active symbols and resolve current batch
-    const activeSymbolIds = await fetchActivePositionSymbols();
-    const totalSymbols = activeSymbolIds.length;
+    // 4. Load position-linked symbols (active + archived) and resolve current batch
+    const positionSymbolIds = await fetchPositionSymbols();
+    const totalSymbols = positionSymbolIds.length;
 
     if (cursor >= totalSymbols) {
       console.log(
@@ -135,7 +135,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const batchSymbolIds = activeSymbolIds.slice(cursor, cursor + batchSize);
+    const batchSymbolIds = positionSymbolIds.slice(cursor, cursor + batchSize);
     const startDate = addUTCDays(parsedEndDate, -(daysBack - 1));
 
     // 5. Build quote requests for this batch
