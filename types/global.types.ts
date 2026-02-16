@@ -86,10 +86,7 @@ export type SymbolSearchResult = {
 };
 
 // Quote
-export type Quote = Pick<
-  Tables<"quotes">,
-  "id" | "symbol_id" | "date" | "price"
->;
+export type Quote = Tables<"quotes">;
 
 // News
 export type NewsArticle = Tables<"news">;

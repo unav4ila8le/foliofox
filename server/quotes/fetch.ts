@@ -1,6 +1,6 @@
 "use server";
 
-import { addDays, compareAsc, subDays } from "date-fns";
+import { addDays, subDays } from "date-fns";
 
 import { formatUTCDateKey, parseUTCDateKey } from "@/lib/date/date-utils";
 import { yahooFinance } from "@/server/yahoo-finance/client";
@@ -11,83 +11,117 @@ import {
 } from "@/server/symbols/resolve";
 import { chunkArray, normalizeChartQuoteEntries } from "./utils";
 
-/**
- * Fetch multiple quotes for different symbols and dates in bulk.
- *
- * @param requests - Array of {symbolLookup, date} pairs to fetch
- * @param upsert - Whether to cache results in database (defaults to true)
- * @returns Map where key is "canonicalSymbolId|date" and value is the price
- */
-export async function fetchQuotes(
-  requests: Array<{ symbolLookup: string; date: Date }>,
-  upsert: boolean = true,
+const DEFAULT_STALE_GUARD_DAYS = 7;
+const DEFAULT_CRON_CUTOFF_HOUR_UTC = 22;
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+
+export interface FetchQuotesOptions {
+  upsert?: boolean;
+  staleGuardDays?: number;
+  cronCutoffHourUtc?: number;
+}
+
+interface ResolvedQuoteRequest {
+  inputLookup: string;
+  canonicalId: string;
+  requestedDateKey: string;
+  effectiveDateKey: string;
+}
+
+interface QuotesCacheRow {
+  symbol_id: string;
+  date: string;
+  close_price: number;
+}
+
+interface QuotesUpsertRow {
+  symbol_id: string;
+  date: string;
+  close_price: number;
+  adjusted_close_price: number;
+}
+
+function resolveFetchQuotesOptions(
+  options: FetchQuotesOptions = {},
+): Required<FetchQuotesOptions> {
+  const staleGuardDays = Math.max(
+    0,
+    Math.trunc(options.staleGuardDays ?? DEFAULT_STALE_GUARD_DAYS),
+  );
+  const cronCutoffHourUtc = Math.min(
+    23,
+    Math.max(
+      0,
+      Math.trunc(options.cronCutoffHourUtc ?? DEFAULT_CRON_CUTOFF_HOUR_UTC),
+    ),
+  );
+
+  return {
+    upsert: options.upsert ?? true,
+    staleGuardDays,
+    cronCutoffHourUtc,
+  };
+}
+
+function resolveEffectiveDateKey(
+  requestedDateKey: string,
+  cronCutoffHourUtc: number,
+  now: Date,
+): string {
+  const todayDateKey = formatUTCDateKey(now);
+  if (requestedDateKey !== todayDateKey) return requestedDateKey;
+
+  if (now.getUTCHours() >= cronCutoffHourUtc) return requestedDateKey;
+
+  return formatUTCDateKey(subDays(parseUTCDateKey(requestedDateKey), 1));
+}
+
+function isWithinStaleGuard(
+  quoteDateKey: string,
+  effectiveDateKey: string,
+  staleGuardDays: number,
+): boolean {
+  const quoteMs = parseUTCDateKey(quoteDateKey).getTime();
+  const effectiveMs = parseUTCDateKey(effectiveDateKey).getTime();
+  const ageInDays = Math.floor((effectiveMs - quoteMs) / DAY_IN_MS);
+  return ageInDays <= staleGuardDays;
+}
+
+function findLatestEntryAtOrBefore(
+  entries: ReturnType<typeof normalizeChartQuoteEntries>,
+  dateKey: string,
 ) {
-  // Early return if no requests
-  if (!requests.length) return new Map();
-
-  const results = new Map<string, number>();
-
-  // 1) Batch resolve all unique symbol identifiers
-  const uniqueLookups = [...new Set(requests.map((r) => r.symbolLookup))];
-  const { byInput, byCanonicalId } = await resolveSymbolsBatch(uniqueLookups, {
-    provider: "yahoo",
-    providerType: "ticker",
-    onError: "throw",
-  });
-
-  // 2) Map requests to normalized format with resolutions
-  const normalizedRequests = requests.map(({ symbolLookup, date }) => {
-    const resolution = byInput.get(symbolLookup);
-    if (!resolution) {
-      throw new Error(
-        `Unable to resolve symbol identifier "${symbolLookup}" to a canonical symbol.`,
-      );
+  for (let i = entries.length - 1; i >= 0; i -= 1) {
+    const entry = entries[i];
+    if (entry.dateKey <= dateKey) {
+      return entry;
     }
+  }
+  return null;
+}
 
-    const dateString = formatUTCDateKey(date);
+async function fetchCachedQuotesBySymbolsAndDates(
+  supabase: Awaited<ReturnType<typeof createServiceClient>>,
+  symbolIds: string[],
+  dateKeys: string[],
+): Promise<QuotesCacheRow[]> {
+  if (!symbolIds.length || !dateKeys.length) return [];
 
-    return {
-      inputLookup: symbolLookup,
-      canonicalId: resolution.canonicalId,
-      dateString,
-      cacheKey: `${resolution.canonicalId}|${dateString}`,
-    };
-  });
-
-  // 1. Always check database cache
-  const supabase = await createServiceClient();
-
-  // Get unique symbolIds and dateStrings for efficient query
-  const symbolIds = [
-    ...new Set(normalizedRequests.map((request) => request.canonicalId)),
-  ];
-  const dateStrings = [
-    ...new Set(normalizedRequests.map((request) => request.dateString)),
-  ];
-
-  // Chunk Supabase lookups to stay comfortably under Supabase's 1k row limit
   const MAX_ROWS_PER_QUERY = 900;
   const baseChunkSize = Math.max(1, Math.floor(Math.sqrt(MAX_ROWS_PER_QUERY)));
   const symbolChunkSize = Math.max(
     1,
     Math.min(symbolIds.length, baseChunkSize),
   );
-  const dateChunkSize = Math.max(
-    1,
-    Math.min(dateStrings.length, baseChunkSize),
-  );
+  const dateChunkSize = Math.max(1, Math.min(dateKeys.length, baseChunkSize));
 
-  const cachedQuotes: Array<{
-    symbol_id: string;
-    date: string;
-    price: number;
-  }> = [];
+  const rows: QuotesCacheRow[] = [];
 
   for (const symbolChunk of chunkArray(symbolIds, symbolChunkSize)) {
-    for (const dateChunk of chunkArray(dateStrings, dateChunkSize)) {
+    for (const dateChunk of chunkArray(dateKeys, dateChunkSize)) {
       const { data, error } = await supabase
         .from("quotes")
-        .select("symbol_id, date, price")
+        .select("symbol_id, date, close_price")
         .in("symbol_id", symbolChunk)
         .in("date", dateChunk);
 
@@ -97,63 +131,195 @@ export async function fetchQuotes(
       }
 
       if (data?.length) {
-        cachedQuotes.push(...data);
+        rows.push(...data);
       }
     }
   }
 
-  // Store cached results
-  cachedQuotes.forEach((quote) => {
-    const cacheKey = `${quote.symbol_id}|${quote.date}`;
-    results.set(cacheKey, quote.price);
+  return rows;
+}
+
+/**
+ * Fetch multiple quotes for different symbols and dates in bulk.
+ *
+ * @param requests - Array of {symbolLookup, date} pairs to fetch
+ * @param options - Quote fetch behavior options
+ * @returns Map where key is "canonicalSymbolId|requestedDate" and value is close price
+ */
+export async function fetchQuotes(
+  requests: Array<{ symbolLookup: string; date: Date }>,
+  options: FetchQuotesOptions = {},
+) {
+  if (!requests.length) return new Map();
+
+  const resolvedOptions = resolveFetchQuotesOptions(options);
+  const now = new Date();
+  const results = new Map<string, number>();
+
+  // 1. Resolve all requested symbols to canonical IDs.
+  const uniqueLookups = [...new Set(requests.map((r) => r.symbolLookup))];
+  const { byInput, byCanonicalId } = await resolveSymbolsBatch(uniqueLookups, {
+    provider: "yahoo",
+    providerType: "ticker",
+    onError: "throw",
   });
 
-  // Find what's missing from cache
-  const missingRequests = normalizedRequests.filter(
-    ({ canonicalId, dateString }) =>
-      !results.has(`${canonicalId}|${dateString}`),
+  // 2. Normalize request dates and compute effective as-of dates.
+  const normalizedRequests: ResolvedQuoteRequest[] = requests.map(
+    ({ symbolLookup, date }) => {
+      const resolution = byInput.get(symbolLookup);
+      if (!resolution) {
+        throw new Error(
+          `Unable to resolve symbol identifier "${symbolLookup}" to a canonical symbol.`,
+        );
+      }
+
+      const requestedDateKey = formatUTCDateKey(date);
+      const effectiveDateKey = resolveEffectiveDateKey(
+        requestedDateKey,
+        resolvedOptions.cronCutoffHourUtc,
+        now,
+      );
+
+      return {
+        inputLookup: symbolLookup,
+        canonicalId: resolution.canonicalId,
+        requestedDateKey,
+        effectiveDateKey,
+      };
+    },
   );
 
-  // 2. Fetch missing quotes from Yahoo Finance grouped by symbol
-  if (missingRequests.length > 0) {
-    // Group requested calendar days per symbol so we can batch chart calls
-    const requestsBySymbol = new Map<string, Set<string>>();
-    for (const { canonicalId, dateString } of missingRequests) {
-      const set = requestsBySymbol.get(canonicalId) ?? new Set();
-      set.add(dateString);
-      requestsBySymbol.set(canonicalId, set);
+  const supabase = await createServiceClient();
+
+  const symbolIds = [
+    ...new Set(normalizedRequests.map((request) => request.canonicalId)),
+  ];
+  const effectiveDateKeys = [
+    ...new Set(normalizedRequests.map((request) => request.effectiveDateKey)),
+  ];
+
+  // 3. Exact-date cache lookup using effective date keys.
+  const cachedExactRows = await fetchCachedQuotesBySymbolsAndDates(
+    supabase,
+    symbolIds,
+    effectiveDateKeys,
+  );
+
+  const exactPriceByKey = new Map<string, number>();
+  cachedExactRows.forEach((row) => {
+    exactPriceByKey.set(`${row.symbol_id}|${row.date}`, row.close_price);
+  });
+
+  const unresolvedRequests: ResolvedQuoteRequest[] = [];
+  for (const request of normalizedRequests) {
+    const exactPrice = exactPriceByKey.get(
+      `${request.canonicalId}|${request.effectiveDateKey}`,
+    );
+
+    if (exactPrice !== undefined) {
+      results.set(
+        `${request.canonicalId}|${request.requestedDateKey}`,
+        exactPrice,
+      );
+      continue;
     }
 
-    const successfulFetches: Array<{
-      symbolId: string;
-      dateString: string;
-      price: number;
-      cacheKey: string;
-    }> = [];
+    unresolvedRequests.push(request);
+  }
 
-    // Track symbol health: last available quote date per symbol
+  // 4. Prior-date cache lookup with stale guard.
+  if (unresolvedRequests.length > 0 && resolvedOptions.staleGuardDays > 0) {
+    const unresolvedSymbolIds = [
+      ...new Set(unresolvedRequests.map((request) => request.canonicalId)),
+    ];
+    const staleWindowDateKeys = new Set<string>();
+
+    unresolvedRequests.forEach((request) => {
+      const effectiveDate = parseUTCDateKey(request.effectiveDateKey);
+      for (
+        let offset = 1;
+        offset <= resolvedOptions.staleGuardDays;
+        offset += 1
+      ) {
+        staleWindowDateKeys.add(
+          formatUTCDateKey(subDays(effectiveDate, offset)),
+        );
+      }
+    });
+
+    const cachedWindowRows = await fetchCachedQuotesBySymbolsAndDates(
+      supabase,
+      unresolvedSymbolIds,
+      Array.from(staleWindowDateKeys),
+    );
+
+    const cachedRowsBySymbol = new Map<string, QuotesCacheRow[]>();
+    cachedWindowRows.forEach((row) => {
+      const existing = cachedRowsBySymbol.get(row.symbol_id) ?? [];
+      existing.push(row);
+      cachedRowsBySymbol.set(row.symbol_id, existing);
+    });
+
+    cachedRowsBySymbol.forEach((rows) => {
+      rows.sort((a, b) => b.date.localeCompare(a.date));
+    });
+
+    unresolvedRequests.forEach((request) => {
+      const rows = cachedRowsBySymbol.get(request.canonicalId);
+      if (!rows?.length) return;
+
+      const fallback = rows.find(
+        (row) =>
+          row.date <= request.effectiveDateKey &&
+          isWithinStaleGuard(
+            row.date,
+            request.effectiveDateKey,
+            resolvedOptions.staleGuardDays,
+          ),
+      );
+
+      if (fallback) {
+        results.set(
+          `${request.canonicalId}|${request.requestedDateKey}`,
+          fallback.close_price,
+        );
+      }
+    });
+  }
+
+  // 5. Live fetch remaining misses and persist only provider market-date rows.
+  const requestsNeedingLiveFetch = unresolvedRequests.filter(
+    (request) =>
+      !results.has(`${request.canonicalId}|${request.requestedDateKey}`),
+  );
+
+  if (requestsNeedingLiveFetch.length > 0) {
+    const requestsBySymbol = new Map<string, ResolvedQuoteRequest[]>();
+    requestsNeedingLiveFetch.forEach((request) => {
+      const list = requestsBySymbol.get(request.canonicalId) ?? [];
+      list.push(request);
+      requestsBySymbol.set(request.canonicalId, list);
+    });
+
+    const upsertRowsByKey = new Map<string, QuotesUpsertRow>();
     const healthUpdates: Array<{ id: string; last_quote_at: string }> = [];
 
-    for (const [symbolId, dateStringsSet] of requestsBySymbol.entries()) {
-      const dateStringsSorted = Array.from(dateStringsSet).sort((a, b) =>
-        compareAsc(parseUTCDateKey(a), parseUTCDateKey(b)),
+    for (const [symbolId, symbolRequests] of requestsBySymbol.entries()) {
+      const effectiveDateKeysSorted = [
+        ...new Set(symbolRequests.map((request) => request.effectiveDateKey)),
+      ].sort((a, b) => a.localeCompare(b));
+
+      if (!effectiveDateKeysSorted.length) continue;
+
+      const earliestEffective = parseUTCDateKey(effectiveDateKeysSorted[0]);
+      const latestEffective = parseUTCDateKey(
+        effectiveDateKeysSorted[effectiveDateKeysSorted.length - 1],
       );
 
-      if (!dateStringsSorted.length) continue;
+      const bufferedStart = subDays(earliestEffective, 7);
+      const periodEndExclusive = addDays(latestEffective, 1);
 
-      const earliest = parseUTCDateKey(dateStringsSorted[0]);
-      const latest = parseUTCDateKey(
-        dateStringsSorted[dateStringsSorted.length - 1],
-      );
-
-      // Include a small buffer before the earliest request so we can
-      // reuse the prior trading day's quote if the first calendar day
-      // falls on a weekend or holiday. Yahoo's chart API treats period2
-      // as exclusive, so we add one day after the latest request.
-      const bufferedStart = subDays(earliest, 7);
-      const periodEndExclusive = addDays(latest, 1);
-
-      let chartData;
       const resolution = byCanonicalId.get(symbolId);
       const ticker = resolution?.providerAlias;
       if (!ticker) {
@@ -163,6 +329,7 @@ export async function fetchQuotes(
         continue;
       }
 
+      let chartData;
       try {
         chartData = await yahooFinance.chart(ticker, {
           period1: bufferedStart,
@@ -177,106 +344,98 @@ export async function fetchQuotes(
         chartData = null;
       }
 
-      // Normalize chart quotes into sortable { dateKey, price } tuples
       const quoteEntries = normalizeChartQuoteEntries(chartData);
 
-      let pointer = 0;
-      let lastPrice: number | null = null;
-      const requestedSet = new Set(dateStringsSorted);
-
-      // Walk chronologically and reuse the latest available trade price
-      for (const dateString of dateStringsSorted) {
-        while (pointer < quoteEntries.length) {
-          const entry = quoteEntries[pointer];
-          if (entry.dateKey <= dateString) {
-            lastPrice = entry.price;
-            pointer += 1;
-          } else {
-            break;
-          }
-        }
-
-        if (lastPrice == null) continue;
-
-        const cacheKey = `${symbolId}|${dateString}`;
-        results.set(cacheKey, lastPrice);
-        successfulFetches.push({
-          symbolId,
-          dateString,
-          price: lastPrice,
-          cacheKey,
+      if (resolvedOptions.upsert) {
+        quoteEntries.forEach((entry) => {
+          upsertRowsByKey.set(`${symbolId}|${entry.dateKey}`, {
+            symbol_id: symbolId,
+            date: entry.dateKey,
+            close_price: entry.closePrice,
+            adjusted_close_price: entry.adjustedClosePrice,
+          });
         });
       }
 
-      // Final safety net: fallback to realtime quote when chart feed is empty
-      if (!successfulFetches.some((entry) => entry.symbolId === symbolId)) {
-        const fallbackPrice = chartData?.meta?.regularMarketPrice;
-        const fallbackTime = chartData?.meta?.regularMarketTime;
+      symbolRequests.forEach((request) => {
+        const mapKey = `${request.canonicalId}|${request.requestedDateKey}`;
+        const fallbackEntry = findLatestEntryAtOrBefore(
+          quoteEntries,
+          request.effectiveDateKey,
+        );
+        if (fallbackEntry) {
+          results.set(mapKey, fallbackEntry.closePrice);
+        }
+      });
 
-        if (
-          fallbackPrice &&
-          fallbackPrice > 0 &&
-          fallbackTime instanceof Date
-        ) {
-          const marketDateKey = formatUTCDateKey(fallbackTime);
-          const fallbackDateKey = requestedSet.has(marketDateKey)
-            ? marketDateKey
-            : dateStringsSorted.at(-1)!;
+      // Final safety net when chart rows do not resolve all requests.
+      const fallbackPrice = chartData?.meta?.regularMarketPrice;
+      const fallbackTime = chartData?.meta?.regularMarketTime;
+      const allSymbolRequestsResolved = symbolRequests.every((request) =>
+        results.has(`${request.canonicalId}|${request.requestedDateKey}`),
+      );
+      if (
+        !allSymbolRequestsResolved &&
+        fallbackPrice &&
+        fallbackPrice > 0 &&
+        fallbackTime instanceof Date
+      ) {
+        const fallbackDateKey = formatUTCDateKey(fallbackTime);
+        const fallbackRowKey = `${symbolId}|${fallbackDateKey}`;
 
-          const cacheKey = `${symbolId}|${fallbackDateKey}`;
-          results.set(cacheKey, fallbackPrice);
-          successfulFetches.push({
-            symbolId,
-            dateString: fallbackDateKey,
-            price: fallbackPrice,
-            cacheKey,
+        if (resolvedOptions.upsert && !upsertRowsByKey.has(fallbackRowKey)) {
+          upsertRowsByKey.set(fallbackRowKey, {
+            symbol_id: symbolId,
+            date: fallbackDateKey,
+            close_price: fallbackPrice,
+            adjusted_close_price: fallbackPrice,
           });
         }
+
+        symbolRequests.forEach((request) => {
+          const mapKey = `${request.canonicalId}|${request.requestedDateKey}`;
+          if (results.has(mapKey)) return;
+
+          if (fallbackDateKey <= request.effectiveDateKey) {
+            results.set(mapKey, fallbackPrice);
+          }
+        });
       }
 
-      // Track symbol health: use last chart quote date, fallback to regularMarketTime
-      if (upsert) {
-        const lastQuoteEntry = quoteEntries.at(-1);
-        const lastQuoteAt = lastQuoteEntry
-          ? new Date(`${lastQuoteEntry.dateKey}T00:00:00Z`)
-          : chartData?.meta?.regularMarketTime instanceof Date
-            ? chartData.meta.regularMarketTime
-            : null;
+      if (resolvedOptions.upsert) {
+        const latestDateKey =
+          quoteEntries[quoteEntries.length - 1]?.dateKey ??
+          (fallbackTime instanceof Date
+            ? formatUTCDateKey(fallbackTime)
+            : null);
 
-        if (lastQuoteAt) {
+        if (latestDateKey) {
           healthUpdates.push({
             id: symbolId,
-            last_quote_at: lastQuoteAt.toISOString(),
+            last_quote_at: new Date(`${latestDateKey}T00:00:00Z`).toISOString(),
           });
         }
       }
     }
 
-    if (upsert && successfulFetches.length > 0) {
-      // Sort by PK components to take locks in a stable order
-      successfulFetches.sort((a, b) => {
-        if (a.symbolId === b.symbolId) {
-          return a.dateString.localeCompare(b.dateString);
+    if (resolvedOptions.upsert && upsertRowsByKey.size > 0) {
+      const upsertRows = Array.from(upsertRowsByKey.values()).sort((a, b) => {
+        if (a.symbol_id === b.symbol_id) {
+          return a.date.localeCompare(b.date);
         }
-        return a.symbolId.localeCompare(b.symbolId);
+        return a.symbol_id.localeCompare(b.symbol_id);
       });
 
-      const { error: insertError } = await supabase.from("quotes").upsert(
-        successfulFetches.map(({ symbolId, dateString, price }) => ({
-          symbol_id: symbolId,
-          date: dateString,
-          price,
-        })),
-        { onConflict: "symbol_id,date" },
-      );
+      const { error: insertError } = await supabase
+        .from("quotes")
+        .upsert(upsertRows, { onConflict: "symbol_id,date" });
 
       if (insertError) {
         console.error("Failed to bulk insert quotes:", insertError);
       }
     }
 
-    // Update symbol health tracking with last available quote dates
-    if (upsert && healthUpdates.length > 0) {
+    if (resolvedOptions.upsert && healthUpdates.length > 0) {
       for (const { id, last_quote_at } of healthUpdates) {
         const { error: healthError } = await supabase
           .from("symbols")
@@ -294,35 +453,40 @@ export async function fetchQuotes(
     }
   }
 
-  // Populate alias keys for any original inputs that differed from canonical IDs
-  normalizedRequests.forEach(({ inputLookup, canonicalId, dateString }) => {
-    const canonicalCacheKey = `${canonicalId}|${dateString}`;
-    const aliasCacheKey = `${inputLookup}|${dateString}`;
-    if (inputLookup !== canonicalId && results.has(canonicalCacheKey)) {
-      results.set(aliasCacheKey, results.get(canonicalCacheKey)!);
+  // 6. Populate alias keys for original non-canonical lookup inputs.
+  normalizedRequests.forEach((request) => {
+    if (request.inputLookup === request.canonicalId) return;
+
+    const canonicalKey = `${request.canonicalId}|${request.requestedDateKey}`;
+    const aliasKey = `${request.inputLookup}|${request.requestedDateKey}`;
+    const canonicalValue = results.get(canonicalKey);
+
+    if (canonicalValue !== undefined) {
+      results.set(aliasKey, canonicalValue);
     }
   });
 
   return results;
 }
 
+export interface FetchSingleQuoteOptions extends FetchQuotesOptions {
+  date?: Date;
+}
+
 /**
  * Fetch a single quote for a specific symbol and date.
  *
- * @param symbolId - The symbol to fetch the quote for
+ * @param symbolLookup - Symbol ID, ticker alias, or lookup input
  * @param options - Optional configuration
- * @returns The quote price
+ * @returns Close price for the requested date key (or 0 if unavailable)
  */
 export async function fetchSingleQuote(
   symbolLookup: string,
-  options: {
-    date?: Date;
-    upsert?: boolean;
-  } = {},
+  options: FetchSingleQuoteOptions = {},
 ): Promise<number> {
-  const { date = new Date(), upsert = true } = options;
-  const resolved = await resolveSymbolInput(symbolLookup);
+  const { date = new Date(), ...fetchOptions } = options;
 
+  const resolved = await resolveSymbolInput(symbolLookup);
   if (!resolved?.symbol?.id) {
     throw new Error(
       `Unable to resolve symbol identifier "${symbolLookup}" to a canonical symbol.`,
@@ -333,7 +497,7 @@ export async function fetchSingleQuote(
   const dateKey = formatUTCDateKey(date);
   const quotes = await fetchQuotes(
     [{ symbolLookup: canonicalId, date }],
-    upsert,
+    fetchOptions,
   );
 
   return (
