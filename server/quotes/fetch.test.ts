@@ -30,6 +30,7 @@ vi.mock("@/server/yahoo-finance/client", () => ({
 function createSupabaseStub(initialQuotes: StoredQuoteRow[]) {
   const state = {
     quotes: [...initialQuotes],
+    cacheQueryCalls: [] as Array<{ symbolIds: string[]; dateKeys: string[] }>,
     upsertCalls: [] as Array<{
       rows: Array<{
         symbol_id: string;
@@ -70,6 +71,11 @@ function createSupabaseStub(initialQuotes: StoredQuoteRow[]) {
             | ((reason: unknown) => TResult2 | PromiseLike<TResult2>)
             | null,
         ) {
+          state.cacheQueryCalls.push({
+            symbolIds: [...symbolIds],
+            dateKeys: [...dateKeys],
+          });
+
           const data = state.quotes
             .filter(
               (row) =>
@@ -386,5 +392,56 @@ describe("fetchQuotes", () => {
     expect(yahooChartMock).toHaveBeenCalledTimes(1);
     expect(result.get("sym-1|2026-02-15")).toBe(151);
     expect(state.upsertCalls).toHaveLength(1);
+    expect(state.cacheQueryCalls).toHaveLength(1);
+    expect(state.cacheQueryCalls[0]).toEqual({
+      symbolIds: ["sym-1"],
+      dateKeys: ["2026-02-15"],
+    });
+  });
+
+  it("does not overwrite chart close with regularMarketPrice safety net", async () => {
+    vi.setSystemTime(new Date("2026-02-15T23:00:00.000Z"));
+
+    const { client, state } = createSupabaseStub([]);
+
+    createServiceClientMock.mockResolvedValue(client);
+    yahooChartMock.mockResolvedValue({
+      quotes: [
+        {
+          date: new Date("2026-02-14T00:00:00.000Z"),
+          close: 151,
+          adjclose: 150,
+        },
+      ],
+      meta: {
+        regularMarketPrice: 999,
+        regularMarketTime: new Date("2026-02-14T00:00:00.000Z"),
+      },
+    });
+
+    const { fetchQuotes } = await import("./fetch");
+
+    const result = await fetchQuotes(
+      [
+        {
+          symbolLookup: "sym-1",
+          date: new Date("2026-02-15T00:00:00.000Z"),
+        },
+      ],
+      { staleGuardDays: 0 },
+    );
+
+    expect(result.get("sym-1|2026-02-15")).toBe(151);
+    expect(state.upsertCalls).toHaveLength(1);
+
+    const rowForQuoteDate = state.upsertCalls[0]?.rows.find(
+      (row) => row.date === "2026-02-14",
+    );
+    expect(rowForQuoteDate).toEqual({
+      symbol_id: "sym-1",
+      date: "2026-02-14",
+      close_price: 151,
+      adjusted_close_price: 150,
+    });
   });
 });

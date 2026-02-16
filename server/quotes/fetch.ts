@@ -229,13 +229,16 @@ export async function fetchQuotes(
   }
 
   // 4. Prior-date cache lookup with stale guard.
-  if (unresolvedRequests.length > 0) {
+  if (unresolvedRequests.length > 0 && resolvedOptions.staleGuardDays > 0) {
+    const unresolvedSymbolIds = [
+      ...new Set(unresolvedRequests.map((request) => request.canonicalId)),
+    ];
     const staleWindowDateKeys = new Set<string>();
 
     unresolvedRequests.forEach((request) => {
       const effectiveDate = parseUTCDateKey(request.effectiveDateKey);
       for (
-        let offset = 0;
+        let offset = 1;
         offset <= resolvedOptions.staleGuardDays;
         offset += 1
       ) {
@@ -247,7 +250,7 @@ export async function fetchQuotes(
 
     const cachedWindowRows = await fetchCachedQuotesBySymbolsAndDates(
       supabase,
-      symbolIds,
+      unresolvedSymbolIds,
       Array.from(staleWindowDateKeys),
     );
 
@@ -365,14 +368,23 @@ export async function fetchQuotes(
         }
       });
 
-      // Final safety net when chart rows are unavailable.
+      // Final safety net when chart rows do not resolve all requests.
       const fallbackPrice = chartData?.meta?.regularMarketPrice;
       const fallbackTime = chartData?.meta?.regularMarketTime;
-      if (fallbackPrice && fallbackPrice > 0 && fallbackTime instanceof Date) {
+      const allSymbolRequestsResolved = symbolRequests.every((request) =>
+        results.has(`${request.canonicalId}|${request.requestedDateKey}`),
+      );
+      if (
+        !allSymbolRequestsResolved &&
+        fallbackPrice &&
+        fallbackPrice > 0 &&
+        fallbackTime instanceof Date
+      ) {
         const fallbackDateKey = formatUTCDateKey(fallbackTime);
+        const fallbackRowKey = `${symbolId}|${fallbackDateKey}`;
 
-        if (resolvedOptions.upsert) {
-          upsertRowsByKey.set(`${symbolId}|${fallbackDateKey}`, {
+        if (resolvedOptions.upsert && !upsertRowsByKey.has(fallbackRowKey)) {
+          upsertRowsByKey.set(fallbackRowKey, {
             symbol_id: symbolId,
             date: fallbackDateKey,
             close_price: fallbackPrice,
@@ -483,11 +495,10 @@ export async function fetchSingleQuote(
 
   const canonicalId = resolved.symbol.id;
   const dateKey = formatUTCDateKey(date);
-  const quotes = await fetchQuotes([{ symbolLookup: canonicalId, date }], {
-    upsert: fetchOptions.upsert,
-    staleGuardDays: fetchOptions.staleGuardDays,
-    cronCutoffHourUtc: fetchOptions.cronCutoffHourUtc,
-  });
+  const quotes = await fetchQuotes(
+    [{ symbolLookup: canonicalId, date }],
+    fetchOptions,
+  );
 
   return (
     quotes.get(`${canonicalId}|${dateKey}`) ??
