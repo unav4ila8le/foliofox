@@ -1,62 +1,145 @@
 "use server";
 
 import { createServiceClient } from "@/supabase/service";
-import { formatUTCDateKey } from "@/lib/date/date-utils";
+import {
+  addUTCDays,
+  formatUTCDateKey,
+  parseUTCDateKey,
+} from "@/lib/date/date-utils";
 
 // Exchange rate API
 const FRANKFURTER_API = "https://api.frankfurter.app";
 const FALLBACK_API = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api"; //https://github.com/fawazahmed0/exchange-api
 const MAX_FALLBACK_LOOKBACK_DAYS = 31;
+const DEFAULT_STALE_GUARD_DAYS = 7;
+const DEFAULT_CRON_CUTOFF_HOUR_UTC = 22;
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+
+export type FetchExchangeRatesOptions = {
+  upsert?: boolean;
+  staleGuardDays?: number;
+  cronCutoffHourUtc?: number;
+};
 
 /**
- * Fetch multiple exchange rates for different currencies and dates in bulk.
- *
- * @param requests - Array of {currency, date} pairs to fetch
- * @returns Map where key is "currency|date" and value is the rate
+ * Normalize exchange-rate fetch options and clamp numeric values to safe bounds.
  */
-export async function fetchExchangeRates(
-  requests: Array<{ currency: string; date: Date }>,
-) {
-  // Early return if no requests
-  if (!requests.length) return new Map();
+export function resolveFetchExchangeRatesOptions(
+  options: FetchExchangeRatesOptions = {},
+): Required<FetchExchangeRatesOptions> {
+  const staleGuardDays = Math.max(
+    0,
+    Math.trunc(options.staleGuardDays ?? DEFAULT_STALE_GUARD_DAYS),
+  );
+  const cronCutoffHourUtc = Math.min(
+    23,
+    Math.max(
+      0,
+      Math.trunc(options.cronCutoffHourUtc ?? DEFAULT_CRON_CUTOFF_HOUR_UTC),
+    ),
+  );
 
-  const results = new Map<string, number>();
-
-  // Handle USD requests immediately (rate = 1)
-  const nonUsdRequests = requests.filter((req) => {
-    const cacheKey = `${req.currency}|${formatUTCDateKey(req.date)}`;
-    if (req.currency === "USD") {
-      results.set(cacheKey, 1);
-      return false;
-    }
-    return true;
-  });
-
-  if (nonUsdRequests.length === 0) return results;
-
-  const supabase = await createServiceClient();
-
-  // 1. Check what's already cached in database
-  const cacheQueries = nonUsdRequests.map(({ currency, date }) => ({
-    currency,
-    dateString: formatUTCDateKey(date),
-    cacheKey: `${currency}|${formatUTCDateKey(date)}`,
-  }));
-
-  // Get unique currencies and dates for efficient query
-  const currencies = [...new Set(cacheQueries.map((q) => q.currency))];
-  const dateStrings = [...new Set(cacheQueries.map((q) => q.dateString))];
-
-  const chunkArray = <T>(arr: T[], size: number) => {
-    const chunks: T[][] = [];
-    for (let i = 0; i < arr.length; i += size) {
-      chunks.push(arr.slice(i, i + size));
-    }
-    return chunks;
+  return {
+    upsert: options.upsert ?? true,
+    staleGuardDays,
+    cronCutoffHourUtc,
   };
+}
 
-  // Chunk Supabase lookups to stay comfortably under Supabase's 1k row limit
-  const MAX_ROWS_PER_QUERY = 900;
+/**
+ * Resolve the effective date used by FX reads.
+ *
+ * For "today" requests before the configured UTC cutoff, use the previous day.
+ * For all other dates, keep the requested date unchanged.
+ */
+export function resolveEffectiveDateKey(params: {
+  requestedDateKey: string;
+  cronCutoffHourUtc: number;
+  now: Date;
+}): string {
+  const { requestedDateKey, cronCutoffHourUtc, now } = params;
+  const todayDateKey = formatUTCDateKey(now);
+
+  if (requestedDateKey !== todayDateKey) {
+    return requestedDateKey;
+  }
+
+  if (now.getUTCHours() >= cronCutoffHourUtc) {
+    return requestedDateKey;
+  }
+
+  return formatUTCDateKey(addUTCDays(parseUTCDateKey(requestedDateKey), -1));
+}
+
+type CachedExchangeRateRow = {
+  target_currency: string;
+  date: string;
+  rate: number;
+};
+
+type NormalizedExchangeRateRequest = {
+  currency: string;
+  requestedDateKey: string;
+  effectiveDateKey: string;
+  requestedCacheKey: string;
+};
+
+type ProviderRateEntry = {
+  currency: string;
+  rate: number;
+  effectiveDateKey: string;
+};
+
+const MAX_ROWS_PER_QUERY = 900;
+
+function chunkArray<T>(arr: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let index = 0; index < arr.length; index += size) {
+    chunks.push(arr.slice(index, index + size));
+  }
+  return chunks;
+}
+
+function isWithinStaleGuard(params: {
+  candidateDateKey: string;
+  effectiveDateKey: string;
+  staleGuardDays: number;
+}): boolean {
+  const { candidateDateKey, effectiveDateKey, staleGuardDays } = params;
+  const candidateMs = parseUTCDateKey(candidateDateKey).getTime();
+  const effectiveMs = parseUTCDateKey(effectiveDateKey).getTime();
+
+  if (candidateMs > effectiveMs) return false;
+
+  const ageInDays = Math.floor((effectiveMs - candidateMs) / DAY_IN_MS);
+  return ageInDays <= staleGuardDays;
+}
+
+function resolveProviderDateKey(
+  providerDateKey: unknown,
+  fallbackDateKey: string,
+): string {
+  if (typeof providerDateKey !== "string") {
+    return fallbackDateKey;
+  }
+
+  const parsed = parseUTCDateKey(providerDateKey);
+  if (Number.isNaN(parsed.getTime())) {
+    return fallbackDateKey;
+  }
+
+  return providerDateKey;
+}
+
+async function fetchCachedRatesByCurrenciesAndDates(params: {
+  supabase: Awaited<ReturnType<typeof createServiceClient>>;
+  currencies: string[];
+  dateKeys: string[];
+}): Promise<CachedExchangeRateRow[]> {
+  const { supabase, currencies, dateKeys } = params;
+  if (!currencies.length || !dateKeys.length) return [];
+
+  // Chunk Supabase lookups to stay comfortably under Supabase's 1k row limit.
   const baseChunkSize = Math.max(1, Math.floor(Math.sqrt(MAX_ROWS_PER_QUERY)));
   const currencyChunkSize = Math.max(
     1,
@@ -64,11 +147,13 @@ export async function fetchExchangeRates(
   );
   const dateChunkSize = Math.max(
     1,
-    Math.min(dateStrings.length || 1, baseChunkSize),
+    Math.min(dateKeys.length || 1, baseChunkSize),
   );
 
+  const rows: CachedExchangeRateRow[] = [];
+
   for (const currencyChunk of chunkArray(currencies, currencyChunkSize)) {
-    for (const dateChunk of chunkArray(dateStrings, dateChunkSize)) {
+    for (const dateChunk of chunkArray(dateKeys, dateChunkSize)) {
       if (!currencyChunk.length || !dateChunk.length) continue;
 
       const { data, error } = await supabase
@@ -83,29 +168,163 @@ export async function fetchExchangeRates(
         continue;
       }
 
-      data?.forEach((rate) => {
-        const cacheKey = `${rate.target_currency}|${rate.date}`;
-        results.set(cacheKey, rate.rate);
-      });
+      if (data?.length) {
+        rows.push(...data);
+      }
     }
   }
 
-  // 2. Find what's missing from cache
-  const missingRequests = cacheQueries.filter(
-    ({ cacheKey }) => !results.has(cacheKey),
+  return rows;
+}
+
+/**
+ * Fetch multiple exchange rates for different currencies and dates in bulk.
+ *
+ * @param requests - Array of {currency, date} pairs to fetch
+ * @returns Map where key is "currency|date" and value is the rate
+ */
+export async function fetchExchangeRates(
+  requests: Array<{ currency: string; date: Date }>,
+  options: FetchExchangeRatesOptions = {},
+) {
+  const resolvedOptions = resolveFetchExchangeRatesOptions(options);
+
+  // Early return if no requests
+  if (!requests.length) return new Map();
+
+  const now = new Date();
+  const results = new Map<string, number>();
+
+  const normalizedRequests: NormalizedExchangeRateRequest[] = requests.map(
+    ({ currency, date }) => {
+      const requestedDateKey = formatUTCDateKey(date);
+      const effectiveDateKey = resolveEffectiveDateKey({
+        requestedDateKey,
+        cronCutoffHourUtc: resolvedOptions.cronCutoffHourUtc,
+        now,
+      });
+
+      return {
+        currency,
+        requestedDateKey,
+        effectiveDateKey,
+        requestedCacheKey: `${currency}|${requestedDateKey}`,
+      };
+    },
   );
 
-  // 3. Fetch missing rates using frankfurter api in parallel
-  if (missingRequests.length > 0) {
+  // Handle USD requests immediately (rate = 1).
+  const nonUsdRequests = normalizedRequests.filter((request) => {
+    if (request.currency === "USD") {
+      results.set(request.requestedCacheKey, 1);
+      return false;
+    }
+    return true;
+  });
+
+  if (nonUsdRequests.length === 0) return results;
+
+  const supabase = await createServiceClient();
+
+  // 1) Exact cache lookup by effective date.
+  const exactCurrencies = [...new Set(nonUsdRequests.map((r) => r.currency))];
+  const exactDateKeys = [
+    ...new Set(nonUsdRequests.map((r) => r.effectiveDateKey)),
+  ];
+  const exactRows = await fetchCachedRatesByCurrenciesAndDates({
+    supabase,
+    currencies: exactCurrencies,
+    dateKeys: exactDateKeys,
+  });
+  const exactRateByCurrencyDate = new Map<string, number>();
+  exactRows.forEach((row) => {
+    exactRateByCurrencyDate.set(`${row.target_currency}|${row.date}`, row.rate);
+  });
+
+  nonUsdRequests.forEach((request) => {
+    const exactRate = exactRateByCurrencyDate.get(
+      `${request.currency}|${request.effectiveDateKey}`,
+    );
+    if (exactRate !== undefined) {
+      results.set(request.requestedCacheKey, exactRate);
+    }
+  });
+
+  let unresolvedRequests = nonUsdRequests.filter(
+    (request) => !results.has(request.requestedCacheKey),
+  );
+
+  // 2) Prior-date cache lookup within stale guard window.
+  if (unresolvedRequests.length > 0 && resolvedOptions.staleGuardDays > 0) {
+    const staleWindowDateKeys = new Set<string>();
+    unresolvedRequests.forEach((request) => {
+      for (
+        let offset = 1;
+        offset <= resolvedOptions.staleGuardDays;
+        offset += 1
+      ) {
+        staleWindowDateKeys.add(
+          formatUTCDateKey(
+            addUTCDays(parseUTCDateKey(request.effectiveDateKey), -offset),
+          ),
+        );
+      }
+    });
+
+    const priorRows = await fetchCachedRatesByCurrenciesAndDates({
+      supabase,
+      currencies: [...new Set(unresolvedRequests.map((r) => r.currency))],
+      dateKeys: Array.from(staleWindowDateKeys),
+    });
+
+    const priorRowsByCurrency = new Map<string, CachedExchangeRateRow[]>();
+    priorRows.forEach((row) => {
+      const entries = priorRowsByCurrency.get(row.target_currency) ?? [];
+      entries.push(row);
+      priorRowsByCurrency.set(row.target_currency, entries);
+    });
+    priorRowsByCurrency.forEach((rows) => {
+      rows.sort((a, b) => b.date.localeCompare(a.date));
+    });
+
+    unresolvedRequests.forEach((request) => {
+      const candidates = priorRowsByCurrency.get(request.currency);
+      if (!candidates?.length) return;
+
+      const matched = candidates.find((candidate) =>
+        isWithinStaleGuard({
+          candidateDateKey: candidate.date,
+          effectiveDateKey: request.effectiveDateKey,
+          staleGuardDays: resolvedOptions.staleGuardDays,
+        }),
+      );
+      if (matched) {
+        results.set(request.requestedCacheKey, matched.rate);
+      }
+    });
+  }
+
+  unresolvedRequests = unresolvedRequests.filter(
+    (request) => !results.has(request.requestedCacheKey),
+  );
+
+  // 3) Fetch unresolved rates from providers.
+  if (unresolvedRequests.length > 0) {
     // Group by unique dates for frankfurter api calls
-    const uniqueDates = [...new Set(missingRequests.map((r) => r.dateString))];
+    const uniqueDates = [
+      ...new Set(unresolvedRequests.map((r) => r.effectiveDateKey)),
+    ];
 
     // Create parallel promises for each date
     const fetchPromises = uniqueDates.map(async (dateString) => {
       try {
-        const missingCurrenciesForDate = missingRequests
-          .filter((req) => req.dateString === dateString)
-          .map((req) => req.currency);
+        const missingCurrenciesForDate = [
+          ...new Set(
+            unresolvedRequests
+              .filter((req) => req.effectiveDateKey === dateString)
+              .map((req) => req.currency),
+          ),
+        ];
 
         // Try Frankfurter first
         const response = await fetch(
@@ -113,14 +332,31 @@ export async function fetchExchangeRates(
         );
         const data = await response.json();
 
-        let rates: Record<string, number> = {};
+        const providerEntries: ProviderRateEntry[] = [];
         let missingFromFrankfurter: string[] = [];
 
         if (data.rates) {
-          rates = data.rates;
+          const frankfurterDateKey = resolveProviderDateKey(
+            data.date,
+            dateString,
+          );
+
+          missingCurrenciesForDate.forEach((currency) => {
+            const rate = data.rates[currency];
+            if (typeof rate !== "number" || !Number.isFinite(rate)) {
+              return;
+            }
+
+            providerEntries.push({
+              currency,
+              rate,
+              effectiveDateKey: frankfurterDateKey,
+            });
+          });
+
           // Find currencies not returned by Frankfurter
           missingFromFrankfurter = missingCurrenciesForDate.filter(
-            (currency) => !(currency in rates),
+            (currency) => !(currency in data.rates),
           );
         } else {
           missingFromFrankfurter = missingCurrenciesForDate;
@@ -150,8 +386,12 @@ export async function fetchExchangeRates(
                     (currency) => {
                       const lowerCurrency = currency.toLowerCase();
                       const rate = fallbackData.usd[lowerCurrency];
-                      if (rate !== undefined) {
-                        rates[currency] = rate;
+                      if (typeof rate === "number" && Number.isFinite(rate)) {
+                        providerEntries.push({
+                          currency,
+                          rate,
+                          effectiveDateKey: fallbackDateString,
+                        });
                         return false;
                       }
                       return true;
@@ -172,14 +412,13 @@ export async function fetchExchangeRates(
           }
         }
 
-        if (Object.keys(rates).length === 0) {
+        if (providerEntries.length === 0) {
           throw new Error(`No exchange rates found for ${dateString}`);
         }
 
         // Return the data for this date
         return {
-          dateString,
-          rates,
+          entries: providerEntries,
           success: true,
         };
       } catch (error) {
@@ -199,22 +438,68 @@ export async function fetchExchangeRates(
       (
         result,
       ): result is {
-        dateString: string;
-        rates: Record<string, number>;
+        entries: ProviderRateEntry[];
         success: true;
       } => result.success,
     );
 
+    // Resolve successful provider results back to original requested keys as-of.
+    const fetchedEntriesByCurrency = new Map<string, ProviderRateEntry[]>();
+    successfulFetches.forEach(({ entries }) => {
+      entries.forEach((entry) => {
+        const list = fetchedEntriesByCurrency.get(entry.currency) ?? [];
+        list.push(entry);
+        fetchedEntriesByCurrency.set(entry.currency, list);
+      });
+    });
+    fetchedEntriesByCurrency.forEach((entries) => {
+      entries.sort((a, b) =>
+        b.effectiveDateKey.localeCompare(a.effectiveDateKey),
+      );
+    });
+
+    unresolvedRequests.forEach((request) => {
+      const entries = fetchedEntriesByCurrency.get(request.currency);
+      if (!entries?.length) return;
+
+      const matched = entries.find(
+        (entry) => entry.effectiveDateKey <= request.effectiveDateKey,
+      );
+      if (matched) {
+        results.set(request.requestedCacheKey, matched.rate);
+      }
+    });
+
+    if (!resolvedOptions.upsert || successfulFetches.length === 0) {
+      return results;
+    }
+
     if (successfulFetches.length > 0) {
       // Prepare all rows for bulk insert
-      const allRows = successfulFetches.flatMap(({ dateString, rates }) =>
-        Object.entries(rates).map(([currency, rate]) => ({
-          base_currency: "USD",
-          target_currency: currency,
-          rate: Number(rate),
-          date: dateString,
-        })),
-      );
+      const rowsByCurrencyDate = new Map<
+        string,
+        {
+          base_currency: "USD";
+          target_currency: string;
+          rate: number;
+          date: string;
+        }
+      >();
+      successfulFetches.forEach(({ entries }) => {
+        entries.forEach((entry) => {
+          rowsByCurrencyDate.set(
+            `${entry.currency}|${entry.effectiveDateKey}`,
+            {
+              base_currency: "USD",
+              target_currency: entry.currency,
+              rate: Number(entry.rate),
+              date: entry.effectiveDateKey,
+            },
+          );
+        });
+      });
+
+      const allRows = Array.from(rowsByCurrencyDate.values());
 
       // Sort by PK components to avoid lock-order deadlocks
       allRows.sort((a, b) => {
@@ -232,12 +517,6 @@ export async function fetchExchangeRates(
       if (insertError) {
         console.error("Failed to bulk insert exchange rates:", insertError);
       }
-
-      // Add to results directly (no re-querying database!)
-      allRows.forEach(({ target_currency, date, rate }) => {
-        const cacheKey = `${target_currency}|${date}`;
-        results.set(cacheKey, rate);
-      });
     }
   }
 
@@ -254,8 +533,9 @@ export async function fetchExchangeRates(
 export async function fetchSingleExchangeRate(
   currency: string,
   date: Date = new Date(),
+  options: FetchExchangeRatesOptions = {},
 ) {
-  const rates = await fetchExchangeRates([{ currency, date }]);
+  const rates = await fetchExchangeRates([{ currency, date }], options);
   const key = `${currency}|${formatUTCDateKey(date)}`;
   return rates.get(key) || 1;
 }

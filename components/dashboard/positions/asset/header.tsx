@@ -119,10 +119,11 @@ export async function AssetHeader({
                     <Info className="size-3.5" aria-label="Market price help" />
                   </TooltipTrigger>
                   <TooltipContent>
-                    Market prices and exchange rates are updated daily at 10:00
-                    PM UTC.
+                    Market prices and exchange rates use the latest available
+                    close.
                     <br />
-                    Data shown is from the previous trading day.
+                    Data is typically one trading day behind and refreshes daily
+                    around 10:00 PM UTC.
                   </TooltipContent>
                 </Tooltip>
               </div>

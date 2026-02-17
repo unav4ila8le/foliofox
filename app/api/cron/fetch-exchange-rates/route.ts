@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse, connection } from "next/server";
 import { headers } from "next/headers";
 
+import { formatUTCDateKey, parseUTCDateKey } from "@/lib/date/date-utils";
 import { fetchCurrencies } from "@/server/currencies/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 
@@ -20,15 +21,20 @@ export async function GET(request: NextRequest) {
     // 2. Log start
     console.log("Starting daily exchange rate fetch cron job...");
 
-    // 3. Get date (from query param, default to tomorrow)
+    // 3. Get date (from query param, default to today UTC)
     const url = new URL(request.url);
-    const date =
-      url.searchParams.get("date") ||
-      (() => {
-        const d = new Date();
-        d.setDate(d.getDate() + 1);
-        return d.toISOString().slice(0, 10);
-      })();
+    const date = url.searchParams.get("date") ?? formatUTCDateKey(new Date());
+    const parsedDate = parseUTCDateKey(date);
+
+    if (Number.isNaN(parsedDate.getTime())) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Invalid date. Expected YYYY-MM-DD.",
+        },
+        { status: 400 },
+      );
+    }
 
     // 4. Fetch all currency codes from Supabase
     const currencies = await fetchCurrencies();
@@ -36,11 +42,14 @@ export async function GET(request: NextRequest) {
     // 5. Prepare rate requests for the target date
     const rateRequests = currencies.map((currency) => ({
       currency: currency.alphabetic_code,
-      date: new Date(date),
+      date: parsedDate,
     }));
 
     // 6. Fetch exchange rates using your existing function
-    const ratesMap = await fetchExchangeRates(rateRequests);
+    const ratesMap = await fetchExchangeRates(rateRequests, {
+      upsert: true,
+      staleGuardDays: 0,
+    });
 
     // 7. Count successful fetches
     const successfulFetches = ratesMap.size;
