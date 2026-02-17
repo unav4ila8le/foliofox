@@ -15,16 +15,16 @@ const DEFAULT_STALE_GUARD_DAYS = 7;
 const DEFAULT_CRON_CUTOFF_HOUR_UTC = 22;
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
-export type FetchExchangeRatesOptions = {
+export interface FetchExchangeRatesOptions {
   upsert?: boolean;
   staleGuardDays?: number;
   cronCutoffHourUtc?: number;
-};
+}
 
 /**
  * Normalize exchange-rate fetch options and clamp numeric values to safe bounds.
  */
-export function resolveFetchExchangeRatesOptions(
+function resolveFetchExchangeRatesOptions(
   options: FetchExchangeRatesOptions = {},
 ): Required<FetchExchangeRatesOptions> {
   const staleGuardDays = Math.max(
@@ -52,7 +52,7 @@ export function resolveFetchExchangeRatesOptions(
  * For "today" requests before the configured UTC cutoff, use the previous day.
  * For all other dates, keep the requested date unchanged.
  */
-export function resolveEffectiveDateKey(params: {
+function resolveEffectiveDateKey(params: {
   requestedDateKey: string;
   cronCutoffHourUtc: number;
   now: Date;
