@@ -11,9 +11,9 @@
 - Positions store nullable identifiers directly (e.g., `symbol_id`, `domain_id`). If all are null → custom position.
   - **Note**: `symbol_id` is a UUID (foreign key to `symbols.id`). Symbol handlers receive UUIDs and resolve them to provider-specific aliases (e.g., Yahoo tickers) internally via the resolver layer.
 
-- No hub resolution layer is needed. Reads pull identifiers directly from `positions`.
+- No extra database "hub" table is required. Reads use identifiers already stored on `positions`.
 
-- Registry-based operations route by descriptor.type:
+- Registry-based operations route by handler source:
 
 ```ts
 // server/market-data/sources/types.ts
@@ -79,7 +79,7 @@ export async function fetchMarketDataRange(
 - fetchPositions: pass `id`/`symbol_id` (UUID)/`domain_id` directly to the aggregator; lookups come back by `position.id`.
 - position-snapshots/recalculate: remains transaction-driven; uses stored unit values and does not call the market data hub.
 - positions/create: write IDs directly to `positions` (symbol_id should be a UUID).
-- `resolveMarketDataKey` / `resolveMarketDataForPositions`: shared helpers that map positions to handlers/keys so callers avoid inline branching.
+- `resolveMarketDataKey` / `resolveMarketDataForPositions`: resolver helpers that map positions to handlers/keys so callers avoid inline branching.
 - Bulk history (charts, AI tools, etc.) should call `fetchMarketDataRange` with an optional `eligibleDates` map so handlers can skip days where a position wasn't active.
 
 ## Implementation Steps
@@ -87,7 +87,7 @@ export async function fetchMarketDataRange(
 1. Add/extend a MarketDataHandler in `server/market-data/sources/*`.
 2. Register it in `server/market-data/sources/registry.ts`.
 3. Ensure DB cache table exists (quotes, valuations, etc.) and implement fetch logic (single-date **and** optional range mode if bulk history benefits from batching).
-4. Callers provide `position.id` plus any source identifiers; the hub resolves keys internally via the `fetchMarketData` adapter.
+4. Callers provide `position.id` plus any source identifiers; `fetchMarketData`/`fetchMarketDataRange` resolve keys internally through resolver utilities.
 
 ## Adding a New Source
 
