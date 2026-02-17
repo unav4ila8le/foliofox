@@ -46,7 +46,21 @@ curl -sS -H "Authorization: Bearer $CRON_SECRET" \
   "https://<your-domain>/api/cron/fetch-exchange-rates"
 ```
 
-### 4) Optional controlled historical backfill
+### 4) Backfill last 365 days (recommended one-off loop)
+
+macOS example:
+
+```bash
+for i in $(seq 0 364); do
+  date_key=$(date -u -v-"$i"d +%Y-%m-%d)
+  echo "Seeding ${date_key}"
+  curl -sS -H "Authorization: Bearer $CRON_SECRET" \
+    "https://<your-domain>/api/cron/fetch-exchange-rates?date=${date_key}" > /dev/null
+  sleep 0.1
+done
+```
+
+### 5) Optional controlled historical backfill (single date)
 
 If you need historical rows quickly (instead of waiting for lazy refill), call the same cron endpoint with `?date=YYYY-MM-DD`.
 
