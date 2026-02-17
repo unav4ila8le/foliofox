@@ -344,4 +344,48 @@ describe("fetchExchangeRates runtime behavior", () => {
       state.upsertCalls[0]?.rows.some((row) => row.date === "2026-02-16"),
     ).toBe(false);
   });
+
+  it("does not backfill live provider entries beyond stale guard in multi-date batches", async () => {
+    const { client, state } = createSupabaseStub([]);
+    createServiceClientMock.mockResolvedValue(client);
+
+    fetchMock.mockImplementation(async (input: string | URL | Request) => {
+      const url = String(input);
+
+      if (url.includes("/2026-02-18?base=USD&symbols=EUR")) {
+        throw new Error("Frankfurter unavailable for 2026-02-18");
+      }
+
+      if (url.includes("/2026-02-01?base=USD&symbols=EUR")) {
+        return {
+          json: async () => ({
+            date: "2026-02-01",
+            rates: { EUR: 0.81 },
+          }),
+        };
+      }
+
+      throw new Error(`Unexpected URL in test: ${url}`);
+    });
+
+    const result = await fetchExchangeRates(
+      [
+        { currency: "EUR", date: new Date("2026-02-18T00:00:00.000Z") },
+        { currency: "EUR", date: new Date("2026-02-01T00:00:00.000Z") },
+      ],
+      { staleGuardDays: 1 },
+    );
+
+    expect(result.get("EUR|2026-02-01")).toBe(0.81);
+    expect(result.has("EUR|2026-02-18")).toBe(false);
+    expect(state.upsertCalls).toHaveLength(1);
+    expect(state.upsertCalls[0]?.rows).toEqual([
+      {
+        base_currency: "USD",
+        target_currency: "EUR",
+        date: "2026-02-01",
+        rate: 0.81,
+      },
+    ]);
+  });
 });

@@ -418,6 +418,7 @@ export async function fetchExchangeRates(
 
         // Return the data for this date
         return {
+          requestedEffectiveDateKey: dateString,
           entries: providerEntries,
           success: true,
         };
@@ -438,34 +439,33 @@ export async function fetchExchangeRates(
       (
         result,
       ): result is {
+        requestedEffectiveDateKey: string;
         entries: ProviderRateEntry[];
         success: true;
       } => result.success,
     );
 
-    // Resolve successful provider results back to original requested keys as-of.
-    const fetchedEntriesByCurrency = new Map<string, ProviderRateEntry[]>();
-    successfulFetches.forEach(({ entries }) => {
+    // Resolve successful provider results back to original requested keys.
+    // Keep matches scoped to the same requested effective date bucket to avoid
+    // cross-date bleed in multi-date batches when one date fetch fails.
+    const fetchedEntriesByRequestAndCurrency = new Map<
+      string,
+      ProviderRateEntry
+    >();
+    successfulFetches.forEach(({ requestedEffectiveDateKey, entries }) => {
       entries.forEach((entry) => {
-        const list = fetchedEntriesByCurrency.get(entry.currency) ?? [];
-        list.push(entry);
-        fetchedEntriesByCurrency.set(entry.currency, list);
+        fetchedEntriesByRequestAndCurrency.set(
+          `${requestedEffectiveDateKey}|${entry.currency}`,
+          entry,
+        );
       });
-    });
-    fetchedEntriesByCurrency.forEach((entries) => {
-      entries.sort((a, b) =>
-        b.effectiveDateKey.localeCompare(a.effectiveDateKey),
-      );
     });
 
     unresolvedRequests.forEach((request) => {
-      const entries = fetchedEntriesByCurrency.get(request.currency);
-      if (!entries?.length) return;
-
-      const matched = entries.find(
-        (entry) => entry.effectiveDateKey <= request.effectiveDateKey,
+      const matched = fetchedEntriesByRequestAndCurrency.get(
+        `${request.effectiveDateKey}|${request.currency}`,
       );
-      if (matched) {
+      if (matched && matched.effectiveDateKey <= request.effectiveDateKey) {
         results.set(request.requestedCacheKey, matched.rate);
       }
     });
