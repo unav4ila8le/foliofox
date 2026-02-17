@@ -71,7 +71,11 @@ describe("GET /api/cron/fetch-exchange-rates", () => {
 
     expect(fetchExchangeRatesMock).toHaveBeenCalledTimes(1);
     const [requests, options] = fetchExchangeRatesMock.mock.calls[0] ?? [];
-    expect(options).toEqual({ upsert: true, staleGuardDays: 0 });
+    expect(options).toEqual({
+      upsert: true,
+      staleGuardDays: 0,
+      cronCutoffHourUtc: 22,
+    });
     expect(requests).toEqual([
       { currency: "USD", date: new Date("2026-02-15T00:00:00.000Z") },
       { currency: "EUR", date: new Date("2026-02-15T00:00:00.000Z") },

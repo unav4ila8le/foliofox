@@ -224,6 +224,40 @@ describe("fetchExchangeRates runtime behavior", () => {
     ]);
   });
 
+  it("stores Frankfurter rates under Frankfurter response date when it differs from requested date", async () => {
+    const { client, state } = createSupabaseStub([]);
+    createServiceClientMock.mockResolvedValue(client);
+    fetchMock.mockResolvedValue({
+      json: async () => ({
+        date: "2026-02-14",
+        rates: { EUR: 0.905 },
+      }),
+    });
+
+    const result = await fetchExchangeRates(
+      [{ currency: "EUR", date: new Date("2026-02-16T00:00:00.000Z") }],
+      { staleGuardDays: 0 },
+    );
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [requestUrl] = fetchMock.mock.calls[0] ?? [];
+    expect(String(requestUrl)).toContain("/2026-02-16?base=USD&symbols=EUR");
+
+    expect(result.get("EUR|2026-02-16")).toBe(0.905);
+    expect(state.upsertCalls).toHaveLength(1);
+    expect(state.upsertCalls[0]?.rows).toEqual([
+      {
+        base_currency: "USD",
+        target_currency: "EUR",
+        date: "2026-02-14",
+        rate: 0.905,
+      },
+    ]);
+    expect(
+      state.upsertCalls[0]?.rows.some((row) => row.date === "2026-02-16"),
+    ).toBe(false);
+  });
+
   it("with staleGuardDays=0 skips prior-date query and fetches live on exact miss", async () => {
     const { client, state } = createSupabaseStub([
       {

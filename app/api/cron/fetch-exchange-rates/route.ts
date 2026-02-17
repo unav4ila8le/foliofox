@@ -5,6 +5,8 @@ import { formatUTCDateKey, parseUTCDateKey } from "@/lib/date/date-utils";
 import { fetchCurrencies } from "@/server/currencies/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 
+const CRON_CUTOFF_HOUR_UTC = 22;
+
 export async function GET(request: NextRequest) {
   // Wait for incoming request before continuing (prevents prerendering)
   await connection();
@@ -49,6 +51,7 @@ export async function GET(request: NextRequest) {
     const ratesMap = await fetchExchangeRates(rateRequests, {
       upsert: true,
       staleGuardDays: 0,
+      cronCutoffHourUtc: CRON_CUTOFF_HOUR_UTC,
     });
 
     // 7. Count successful fetches
