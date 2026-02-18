@@ -247,7 +247,7 @@ export function Chat({
         )}
       >
         <ConversationContent
-          className="gap-4 p-2"
+          className="gap-4"
           scrollClassName="![scrollbar-gutter:auto]"
         >
           {messages.length === 0 ? (
@@ -384,7 +384,7 @@ export function Chat({
 
       {/* Suggestions */}
       {messages.length === 0 && (
-        <div className="space-y-2 px-2 pb-2">
+        <div className="space-y-2 px-4 pb-2">
           <p className="text-muted-foreground px-2 text-sm">Suggestions</p>
           <div className="space-y-1">
             {suggestions.map((suggestion) => (
@@ -404,7 +404,7 @@ export function Chat({
 
       {/* Alert */}
       {(showProactiveCapAlert || chatErrorMessage) && (
-        <div className="px-2 pb-2">
+        <div className="px-4 pb-2">
           <Alert
             variant={
               showProactiveCapAlert || isCapError ? "default" : "destructive"
@@ -428,7 +428,7 @@ export function Chat({
       {/* Prompt Input */}
       <div
         className={cn(
-          "px-2",
+          "px-4",
           !isAIEnabled ||
             (showProactiveCapAlert && "pointer-events-none opacity-50"),
         )}

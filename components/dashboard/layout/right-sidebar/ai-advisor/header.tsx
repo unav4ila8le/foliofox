@@ -80,7 +80,7 @@ export function ChatHeader({
   };
 
   return (
-    <div className="relative flex items-center gap-4 p-2 xl:justify-between">
+    <div className="relative flex items-center gap-4 px-4 py-2 xl:justify-between">
       <span className="text-sm font-medium">AI Chat</span>
       <div className="flex items-center gap-1">
         {/* Conversation history */}
