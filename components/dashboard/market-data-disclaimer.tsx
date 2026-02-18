@@ -14,12 +14,13 @@ export function MarketDataDisclaimer() {
           <Info className="size-3.5" />
         </TooltipTrigger>
         <TooltipContent side="bottom">
-          Market prices and exchange rates are updated daily at 10:00 PM UTC.
+          Market prices and exchange rates use the latest available close.
           <br />
-          Data shown is from the previous trading day.
+          Data is typically one trading day behind and refreshes daily around
+          10:00 PM UTC.
         </TooltipContent>
       </Tooltip>
-      <p className="text-xs">10:00 PM UTC · One day behind</p>
+      <p className="text-xs">Latest close · Typically one day behind</p>
     </div>
   );
 }
