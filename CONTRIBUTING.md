@@ -71,9 +71,15 @@ SUPABASE_SECRET_KEY=your_supabase_secret_key
 CRON_SECRET=generate_a_strong_random_string
 
 # Optional (used for AI features)
-OPENAI_API_KEY=your_openai_api_key
-AI_CHAT_MODEL=gpt-5-mini / or any other preferred model
-AI_EXTRACTION_MODEL=gpt-5-mini / or any other preferred model
+# Supported providers: openai | gateway
+AI_PROVIDER=openai
+AI_PROVIDER_API_KEY=your_provider_api_key
+AI_CHAT_MODEL_ID=gpt-5-mini
+AI_EXTRACTION_MODEL_ID=gpt-5-mini
+
+# If AI_PROVIDER=gateway, use provider/model IDs:
+# AI_CHAT_MODEL_ID=openai/gpt-5-mini
+# AI_EXTRACTION_MODEL_ID=anthropic/claude-sonnet-4
 
 # Optional (used for domain valuations)
 REPLICATE_API_TOKEN=your_replicate_api_token
