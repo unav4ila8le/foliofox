@@ -51,3 +51,4 @@ next-env.d.ts
 supabase/.temp/
 supabase/config.toml
 supabase/.branches/
+supabase/snippets/
