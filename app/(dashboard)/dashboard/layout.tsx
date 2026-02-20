@@ -65,7 +65,7 @@ export default async function Layout({
         defaultOpenRight={defaultOpenRight}
         resizable={{ right: true }}
         defaultLeftWidth="max(16rem, 12vw)"
-        defaultRightWidth="max(16rem, 20vw)"
+        defaultRightWidth="clamp(16rem, 20vw, 24vw)"
         minRightWidth="16rem"
         maxRightWidth="24vw"
       >
@@ -78,7 +78,7 @@ export default async function Layout({
               {/* Main content */}
               <SidebarInset className="min-w-0">
                 <Header />
-                <div className="mx-auto w-full max-w-7xl p-4 pt-2">
+                <div className="@container/dashboard mx-auto w-full max-w-7xl p-4 pt-2">
                   {children}
                 </div>
               </SidebarInset>

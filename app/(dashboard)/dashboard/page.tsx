@@ -175,7 +175,7 @@ async function PortfolioRecordsWidgetWrapper() {
 export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
+      <div className="flex flex-col gap-2 @[40rem]/dashboard:flex-row @[40rem]/dashboard:items-end @[40rem]/dashboard:justify-between">
         <div>
           <Suspense
             fallback={<h1 className="text-2xl font-semibold">Welcome Back</h1>}
@@ -190,27 +190,27 @@ export default function DashboardPage() {
         </div>
       </div>
       <div className="grid grid-cols-6 gap-4">
-        <div className="col-span-6 xl:col-span-4">
+        <div className="col-span-6 @[64rem]/dashboard:col-span-4">
           <Suspense fallback={<Skeleton className="h-80" />}>
             <NetWorthChartWrapper />
           </Suspense>
         </div>
-        <div className="col-span-6 lg:col-span-3 xl:col-span-2">
+        <div className="col-span-6 @[40rem]/dashboard:col-span-3 @[64rem]/dashboard:col-span-2">
           <Suspense fallback={<Skeleton className="h-80" />}>
             <AssetAllocationChartWrapper />
           </Suspense>
         </div>
-        <div className="col-span-6 lg:col-span-3">
+        <div className="col-span-6 @[40rem]/dashboard:col-span-3">
           <Suspense fallback={<Skeleton className="h-80" />}>
             <NewsWidgetWrapper />
           </Suspense>
         </div>
-        <div className="col-span-6 xl:col-span-3">
+        <div className="col-span-6 @[64rem]/dashboard:col-span-3">
           <Suspense fallback={<Skeleton className="h-80" />}>
             <ProjectedIncomeWidgetWrapper />
           </Suspense>
         </div>
-        <div className="col-span-6">
+        <div className="col-span-full">
           <Suspense fallback={<Skeleton className="h-80" />}>
             <PortfolioRecordsWidgetWrapper />
           </Suspense>
