@@ -49,6 +49,10 @@ vi.mock("@/components/ai-elements/message", () => ({
   Message: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),
+  MessageAttachments: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  MessageAttachment: () => null,
   MessageContent: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),

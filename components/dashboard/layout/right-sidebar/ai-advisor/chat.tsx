@@ -24,6 +24,8 @@ import {
 } from "@/components/ai-elements/conversation";
 import {
   Message,
+  MessageAttachment,
+  MessageAttachments,
   MessageContent,
   MessageResponse,
   MessageActions,
@@ -129,6 +131,8 @@ type MessageSourcePart = Extract<
   UIMessage["parts"][number],
   { type: "source-url" | "source-document" }
 >;
+
+type MessageFilePart = Extract<UIMessage["parts"][number], { type: "file" }>;
 
 function DisabledState() {
   const [openAISettings, setOpenAISettings] = useState(false);
@@ -309,6 +313,9 @@ export function Chat({
               const isAssistant = message.role === "assistant";
               const isStreaming = status === "streaming";
               const isCopied = copiedMessages.has(message.id);
+              const fileParts = message.parts.filter(
+                (part): part is MessageFilePart => part.type === "file",
+              );
               const sourceParts = message.parts.filter(
                 (part): part is MessageSourcePart =>
                   part.type === "source-url" || part.type === "source-document",
@@ -316,6 +323,17 @@ export function Chat({
 
               return (
                 <Fragment key={message.id}>
+                  {message.role === "user" && fileParts.length > 0 && (
+                    <MessageAttachments>
+                      {fileParts.map((attachment, attachmentIndex) => (
+                        <MessageAttachment
+                          key={`${message.id}-attachment-${attachmentIndex}`}
+                          data={attachment}
+                        />
+                      ))}
+                    </MessageAttachments>
+                  )}
+
                   {isAssistant && sourceParts.length > 0 && (
                     <Sources>
                       <SourcesTrigger count={sourceParts.length} />
