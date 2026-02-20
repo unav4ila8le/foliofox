@@ -2,13 +2,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type React from "react";
 
-import { Chat } from "@/components/dashboard/layout/right-sidebar/ai-advisor/chat";
+import { Chat } from "@/components/dashboard/ai-chat/chat";
 import { MAX_CONVERSATIONS_PER_USER } from "@/lib/ai/chat-guardrails-config";
 
 const hoistedMocks = vi.hoisted(() => ({
   sendMessageMock: vi.fn(),
+  regenerateMock: vi.fn(),
   chatError: null as Error | null,
   promptSubmitPayload: { text: "hello", files: [] as unknown[] },
+  messages: [] as unknown[],
+  status: "ready" as "ready" | "streaming" | "submitted",
 }));
 
 vi.mock("@/hooks/use-copy-to-clipboard", () => ({
@@ -50,9 +53,11 @@ vi.mock("@/components/ai-elements/message", () => ({
     <div>{children}</div>
   ),
   MessageAttachments: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
+    <div data-testid="message-attachments">{children}</div>
   ),
-  MessageAttachment: () => null,
+  MessageAttachment: ({ data }: { data: { filename?: string } }) => (
+    <div>{`attachment:${data.filename ?? "unknown"}`}</div>
+  ),
   MessageContent: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),
@@ -71,7 +76,7 @@ vi.mock("@/components/ai-elements/message", () => ({
 }));
 
 vi.mock("@/components/ai-elements/message-loading", () => ({
-  MessageLoading: () => null,
+  MessageLoading: () => <div>Loading...</div>,
 }));
 
 vi.mock("@/components/ai-elements/reasoning", () => ({
@@ -84,14 +89,37 @@ vi.mock("@/components/ai-elements/reasoning", () => ({
   ReasoningTrigger: () => null,
 }));
 
+vi.mock("@/components/ai-elements/sources", () => ({
+  Sources: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  SourcesTrigger: ({ count }: { count: number }) => (
+    <div>{`Used ${count} sources`}</div>
+  ),
+  SourcesContent: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  Source: ({ title }: { title?: string }) => <div>{title}</div>,
+}));
+
 vi.mock("@/components/ai-elements/tool", () => ({
   Tool: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   ToolContent: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),
-  ToolHeader: () => null,
-  ToolInput: () => null,
-  ToolOutput: () => null,
+  ToolHeader: ({ type, state }: { type: string; state: string }) => (
+    <div>{`tool:${type}:${state}`}</div>
+  ),
+  ToolInput: ({ input }: { input: unknown }) => (
+    <div>{`tool-input:${JSON.stringify(input)}`}</div>
+  ),
+  ToolOutput: ({
+    output,
+    errorText,
+  }: {
+    output: unknown;
+    errorText?: string;
+  }) => <div>{`tool-output:${errorText ?? JSON.stringify(output)}`}</div>,
 }));
 
 vi.mock("@/components/ai-elements/prompt-input", () => ({
@@ -103,7 +131,7 @@ vi.mock("@/components/ai-elements/prompt-input", () => ({
     onSubmit,
   }: {
     children: React.ReactNode;
-    onSubmit: (value: { text?: string; files?: unknown[] }) => void;
+    onSubmit: (value: { text: string; files: unknown[] }) => void;
   }) => (
     <form
       onSubmit={(event) => {
@@ -164,7 +192,7 @@ vi.mock("@/components/ai-elements/prompt-input", () => ({
   PromptInputSpeechButton: () => null,
   usePromptInputController: () => ({
     textInput: {
-      value: "hello",
+      value: hoistedMocks.promptSubmitPayload.text,
       setInput: vi.fn(),
     },
     attachments: {
@@ -195,37 +223,48 @@ vi.mock("@ai-sdk/react", () => ({
     }
 
     return {
-      messages: [],
+      messages: hoistedMocks.messages,
       sendMessage: hoistedMocks.sendMessageMock,
-      status: "ready",
+      status: hoistedMocks.status,
       stop: vi.fn(),
-      regenerate: vi.fn(),
+      regenerate: hoistedMocks.regenerateMock,
     };
   },
 }));
+
+function renderChat(
+  overrides: Partial<React.ComponentProps<typeof Chat>> = {},
+) {
+  return render(
+    <Chat
+      conversationId="conversation-1"
+      initialMessages={[]}
+      isLoadingConversation={false}
+      isAIEnabled
+      isAtConversationCap={false}
+      maxConversations={MAX_CONVERSATIONS_PER_USER}
+      hasCurrentConversationInHistory
+      {...overrides}
+    />,
+  );
+}
 
 describe("Chat guardrail UI", () => {
   beforeEach(() => {
     cleanup();
     hoistedMocks.chatError = null;
     hoistedMocks.promptSubmitPayload = { text: "hello", files: [] };
+    hoistedMocks.messages = [];
+    hoistedMocks.status = "ready";
     hoistedMocks.sendMessageMock.mockReset();
+    hoistedMocks.regenerateMock.mockReset();
   });
 
   it("shows proactive conversation-cap alert for unsaved thread", () => {
-    render(
-      <Chat
-        conversationId="conversation-1"
-        initialMessages={[]}
-        isLoadingConversation={false}
-        copiedMessages={new Set()}
-        setCopiedMessages={() => {}}
-        isAIEnabled
-        isAtConversationCap
-        maxConversations={MAX_CONVERSATIONS_PER_USER}
-        hasCurrentConversationInHistory={false}
-      />,
-    );
+    renderChat({
+      isAtConversationCap: true,
+      hasCurrentConversationInHistory: false,
+    });
 
     expect(
       screen.getByText("Conversation limit reached", { exact: false }),
@@ -238,19 +277,7 @@ describe("Chat guardrail UI", () => {
   it("surfaces backend errors in the chat panel", () => {
     hoistedMocks.chatError = new Error("server exploded");
 
-    render(
-      <Chat
-        conversationId="conversation-2"
-        initialMessages={[]}
-        isLoadingConversation={false}
-        copiedMessages={new Set()}
-        setCopiedMessages={() => {}}
-        isAIEnabled
-        isAtConversationCap={false}
-        maxConversations={MAX_CONVERSATIONS_PER_USER}
-        hasCurrentConversationInHistory
-      />,
-    );
+    renderChat();
 
     expect(screen.getByText("Chat request failed")).not.toBeNull();
     expect(screen.getByText("server exploded")).not.toBeNull();
@@ -259,19 +286,7 @@ describe("Chat guardrail UI", () => {
   it("clears backend error after the user submits a new message", () => {
     hoistedMocks.chatError = new Error("temporary backend error");
 
-    render(
-      <Chat
-        conversationId="conversation-3"
-        initialMessages={[]}
-        isLoadingConversation={false}
-        copiedMessages={new Set()}
-        setCopiedMessages={() => {}}
-        isAIEnabled
-        isAtConversationCap={false}
-        maxConversations={MAX_CONVERSATIONS_PER_USER}
-        hasCurrentConversationInHistory
-      />,
-    );
+    renderChat();
 
     expect(screen.getByText("temporary backend error")).not.toBeNull();
 
@@ -294,8 +309,6 @@ describe("Chat guardrail UI", () => {
         conversationId="conversation-4"
         initialMessages={[]}
         isLoadingConversation={false}
-        copiedMessages={new Set()}
-        setCopiedMessages={() => {}}
         isAIEnabled
         isAtConversationCap={false}
         maxConversations={MAX_CONVERSATIONS_PER_USER}
@@ -311,8 +324,6 @@ describe("Chat guardrail UI", () => {
         conversationId="conversation-5"
         initialMessages={[]}
         isLoadingConversation={false}
-        copiedMessages={new Set()}
-        setCopiedMessages={() => {}}
         isAIEnabled
         isAtConversationCap={false}
         maxConversations={MAX_CONVERSATIONS_PER_USER}
@@ -336,19 +347,7 @@ describe("Chat guardrail UI", () => {
       ],
     };
 
-    render(
-      <Chat
-        conversationId="conversation-files"
-        initialMessages={[]}
-        isLoadingConversation={false}
-        copiedMessages={new Set()}
-        setCopiedMessages={() => {}}
-        isAIEnabled
-        isAtConversationCap={false}
-        maxConversations={MAX_CONVERSATIONS_PER_USER}
-        hasCurrentConversationInHistory
-      />,
-    );
+    renderChat();
 
     const submitButton = screen.getAllByRole("button", { name: "Send" })[0];
     expect(submitButton).toBeDefined();
@@ -364,5 +363,79 @@ describe("Chat guardrail UI", () => {
         },
       ],
     });
+  });
+
+  it("renders user attachments and assistant sources from message parts", () => {
+    hoistedMocks.messages = [
+      {
+        id: "message-user-1",
+        role: "user",
+        parts: [
+          {
+            type: "file",
+            mediaType: "application/pdf",
+            filename: "statement.pdf",
+            url: "data:application/pdf;base64,Zm9v",
+          },
+          { type: "text", text: "Please review this statement" },
+        ],
+      },
+      {
+        id: "message-assistant-1",
+        role: "assistant",
+        parts: [
+          {
+            type: "source-url",
+            url: "https://example.com/report",
+            title: "External report",
+          },
+          {
+            type: "source-document",
+            title: "Portfolio memo",
+            filename: "memo.pdf",
+          },
+          { type: "text", text: "Here is your summary." },
+        ],
+      },
+    ];
+
+    renderChat();
+
+    expect(screen.getByText("attachment:statement.pdf")).not.toBeNull();
+    expect(screen.getByText("Used 2 sources")).not.toBeNull();
+    expect(screen.getByText("External report")).not.toBeNull();
+    expect(screen.getByText("Portfolio memo")).not.toBeNull();
+  });
+
+  it("renders reasoning and static tool branches", () => {
+    hoistedMocks.messages = [
+      {
+        id: "message-assistant-2",
+        role: "assistant",
+        parts: [
+          { type: "reasoning", text: "Thinking step 1" },
+          { type: "reasoning", text: "Thinking step 2" },
+          {
+            type: "tool-position-lookup",
+            state: "output-available",
+            input: { ticker: "AAPL" },
+            output: { price: 123.45 },
+            errorText: undefined,
+          },
+          { type: "text", text: "AAPL is trading near 123." },
+        ],
+      },
+    ];
+
+    renderChat();
+
+    expect(
+      screen.getByText(/Thinking step 1\s+Thinking step 2/),
+    ).not.toBeNull();
+    expect(
+      screen.getByText("tool:tool-position-lookup:output-available"),
+    ).not.toBeNull();
+    expect(screen.getByText('tool-input:{"ticker":"AAPL"}')).not.toBeNull();
+    expect(screen.getByText('tool-output:{"price":123.45}')).not.toBeNull();
   });
 });
