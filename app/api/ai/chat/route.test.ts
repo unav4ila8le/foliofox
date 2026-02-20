@@ -179,6 +179,40 @@ describe("POST /api/ai/chat", () => {
     expect(fetchProfileMock).not.toHaveBeenCalled();
   });
 
+  it("returns 400 when file part mediaType does not match data url media type", async () => {
+    const { POST } = await import("@/app/api/ai/chat/route");
+
+    const request = new Request("http://localhost/api/ai/chat", {
+      method: "POST",
+      body: JSON.stringify({
+        messages: [
+          {
+            id: "m-file-mismatch",
+            role: "user",
+            parts: [
+              { type: "text", text: "check this" },
+              {
+                type: "file",
+                filename: "statement.pdf",
+                mediaType: "image/png",
+                url: "data:application/pdf;base64,AAAA",
+              },
+            ],
+          },
+        ],
+      }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(400);
+    await expect(response.text()).resolves.toBe("Invalid file payload format.");
+    expect(fetchProfileMock).not.toHaveBeenCalled();
+  });
+
   it("returns 400 when latest user message has too many file parts", async () => {
     const { POST } = await import("@/app/api/ai/chat/route");
 

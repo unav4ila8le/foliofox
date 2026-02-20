@@ -248,10 +248,11 @@ export function Chat({
     }
 
     const normalizedText = message.text.trim();
-    const hasText = normalizedText.length >= 2;
+    const hasAnyText = normalizedText.length > 0;
+    const hasLongEnoughText = normalizedText.length >= 2;
     const hasFiles = message.files.length > 0;
 
-    if (!hasText && !hasFiles) {
+    if (!hasFiles && !hasLongEnoughText) {
       return;
     }
 
@@ -262,17 +263,17 @@ export function Chat({
     }
 
     setChatErrorMessage(null);
-    if (hasText && hasFiles) {
+    if (hasFiles && hasAnyText) {
       sendMessage({ text: normalizedText, files: message.files });
       return;
     }
 
-    if (hasText) {
-      sendMessage({ text: normalizedText });
+    if (hasFiles) {
+      sendMessage({ files: message.files });
       return;
     }
 
-    sendMessage({ files: message.files });
+    sendMessage({ text: normalizedText });
   };
 
   const handlePromptInputError = ({

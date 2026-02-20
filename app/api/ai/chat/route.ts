@@ -44,6 +44,11 @@ const chatRequestSchema = z.looseObject({
 const validModes = new Set<Mode>(["educational", "advisory", "unhinged"]);
 type ChatUIMessage = UIMessage<unknown, never, InferUITools<typeof aiTools>>;
 
+function getDataUrlMediaType(dataUrl: string): string | null {
+  const match = /^data:([^;,]+)[;,]/i.exec(dataUrl);
+  return match?.[1]?.trim().toLowerCase() || null;
+}
+
 function validateLatestUserFileParts(messages: ChatUIMessage[]): string | null {
   const latestUserMessage = [...messages]
     .reverse()
@@ -69,11 +74,21 @@ function validateLatestUserFileParts(messages: ChatUIMessage[]): string | null {
       continue;
     }
 
-    if (!isAllowedChatFileMediaType(filePart.mediaType ?? "")) {
+    if (!filePart.url.startsWith("data:")) {
+      return "Invalid file payload format.";
+    }
+
+    const dataUrlMediaType = getDataUrlMediaType(filePart.url);
+    if (!dataUrlMediaType) {
+      return "Invalid file payload format.";
+    }
+
+    if (!isAllowedChatFileMediaType(dataUrlMediaType)) {
       return `One or more files have an unsupported type. Allowed file types: ${CHAT_FILE_ALLOWED_TYPES_TEXT}.`;
     }
 
-    if (!filePart.url.startsWith("data:")) {
+    const declaredMediaType = (filePart.mediaType ?? "").trim().toLowerCase();
+    if (declaredMediaType && declaredMediaType !== dataUrlMediaType) {
       return "Invalid file payload format.";
     }
 

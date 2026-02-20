@@ -378,6 +378,38 @@ describe("Chat guardrail UI", () => {
     });
   });
 
+  it("preserves short captions when submitting files", () => {
+    hoistedMocks.promptSubmitPayload = {
+      text: "a",
+      files: [
+        {
+          type: "file",
+          mediaType: "application/pdf",
+          filename: "statement.pdf",
+          url: "data:application/pdf;base64,Zm9v",
+        },
+      ],
+    };
+
+    renderChat();
+
+    const submitButton = screen.getAllByRole("button", { name: "Send" })[0];
+    expect(submitButton).toBeDefined();
+    fireEvent.click(submitButton as HTMLElement);
+
+    expect(hoistedMocks.sendMessageMock).toHaveBeenCalledWith({
+      text: "a",
+      files: [
+        {
+          type: "file",
+          mediaType: "application/pdf",
+          filename: "statement.pdf",
+          url: "data:application/pdf;base64,Zm9v",
+        },
+      ],
+    });
+  });
+
   it("blocks client-side submit when file type is unsupported", () => {
     hoistedMocks.promptSubmitPayload = {
       text: "",
