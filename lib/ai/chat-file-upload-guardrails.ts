@@ -1,12 +1,11 @@
 export const CHAT_FILE_ACCEPT_PATTERNS = [
   "image/*",
   "application/pdf",
-  "text/plain",
-  "text/markdown",
-  "text/csv",
 ] as const;
 
 export const CHAT_FILE_ACCEPT_ATTRIBUTE = CHAT_FILE_ACCEPT_PATTERNS.join(",");
+export const CHAT_FILE_ALLOWED_TYPES_TEXT =
+  CHAT_FILE_ACCEPT_PATTERNS.join(", ");
 export const MAX_CHAT_FILES_PER_MESSAGE = 3;
 export const MAX_CHAT_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 

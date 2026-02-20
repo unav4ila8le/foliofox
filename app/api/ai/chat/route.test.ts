@@ -173,7 +173,9 @@ describe("POST /api/ai/chat", () => {
     const response = await POST(request);
 
     expect(response.status).toBe(400);
-    await expect(response.text()).resolves.toContain("unsupported type");
+    await expect(response.text()).resolves.toContain(
+      "Allowed file types: image/*, application/pdf.",
+    );
     expect(fetchProfileMock).not.toHaveBeenCalled();
   });
 

@@ -24,6 +24,7 @@ import {
   AI_CHAT_ERROR_CODES,
 } from "@/lib/ai/chat-errors";
 import {
+  CHAT_FILE_ALLOWED_TYPES_TEXT,
   MAX_CHAT_FILE_SIZE_BYTES,
   MAX_CHAT_FILE_SIZE_MB,
   MAX_CHAT_FILES_PER_MESSAGE,
@@ -69,7 +70,7 @@ function validateLatestUserFileParts(messages: ChatUIMessage[]): string | null {
     }
 
     if (!isAllowedChatFileMediaType(filePart.mediaType ?? "")) {
-      return "One or more files have an unsupported type.";
+      return `One or more files have an unsupported type. Allowed file types: ${CHAT_FILE_ALLOWED_TYPES_TEXT}.`;
     }
 
     if (!filePart.url.startsWith("data:")) {
