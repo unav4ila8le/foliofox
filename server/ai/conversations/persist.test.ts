@@ -455,6 +455,92 @@ describe("conversation persistence guardrails", () => {
     expect(newestAssistantMessage?.usage_tokens).toBe(321);
   });
 
+  it("drops file parts from persisted messages", async () => {
+    const { persistConversationFromMessages, persistAssistantMessage } =
+      await import("@/server/ai/conversations/persist");
+
+    fakeSupabase.conversations = [
+      {
+        id: "file-parts-conversation",
+        user_id: "user-1",
+        title: "File Parts Test",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    ];
+
+    await persistConversationFromMessages({
+      conversationId: "file-parts-conversation",
+      messages: [
+        {
+          id: "user-with-file",
+          role: "user",
+          parts: [
+            { type: "text", text: "please review this" },
+            {
+              type: "file",
+              filename: "statement.pdf",
+              mediaType: "application/pdf",
+              url: "data:application/pdf;base64,Zm9v",
+            },
+          ],
+        } as UIMessage,
+      ],
+    });
+
+    await persistAssistantMessage({
+      conversationId: "file-parts-conversation",
+      message: {
+        id: "assistant-with-file",
+        role: "assistant",
+        parts: [
+          { type: "text", text: "I reviewed your attachment." },
+          {
+            type: "file",
+            filename: "report.pdf",
+            mediaType: "application/pdf",
+            url: "data:application/pdf;base64,YmFy",
+          },
+        ],
+      } as UIMessage,
+    });
+
+    const [firstMessage, secondMessage] = fakeSupabase.conversationMessages;
+    expect(firstMessage?.parts).toEqual([
+      { type: "text", text: "please review this" },
+    ]);
+    expect(secondMessage?.parts).toEqual([
+      { type: "text", text: "I reviewed your attachment." },
+    ]);
+  });
+
+  it("does not persist placeholder text for file-only user turns", async () => {
+    const { persistConversationFromMessages } =
+      await import("@/server/ai/conversations/persist");
+
+    await persistConversationFromMessages({
+      conversationId: "file-only-conversation",
+      messages: [
+        {
+          id: "user-file-only",
+          role: "user",
+          parts: [
+            {
+              type: "file",
+              filename: "statement.pdf",
+              mediaType: "application/pdf",
+              url: "data:application/pdf;base64,Zm9v",
+            },
+          ],
+        } as UIMessage,
+      ],
+    });
+
+    expect(fakeSupabase.conversations[0]?.title).toBe("Conversation");
+    expect(fakeSupabase.conversationMessages[0]?.content).toBe("");
+    expect(fakeSupabase.conversationMessages[0]?.parts).toEqual([]);
+  });
+
   it("replaces latest assistant response on regenerate flow", async () => {
     const { persistConversationFromMessages, persistAssistantMessage } =
       await import("@/server/ai/conversations/persist");
@@ -493,5 +579,82 @@ describe("conversation persistence guardrails", () => {
 
     expect(assistantRows).toHaveLength(1);
     expect(assistantRows[0]?.content).toBe("New response");
+  });
+
+  it("replaces targeted assistant message id during regenerate when available", async () => {
+    const { persistAssistantMessage } =
+      await import("@/server/ai/conversations/persist");
+
+    const targetAssistantId = "11111111-1111-4111-8111-111111111111";
+    const latestAssistantId = "22222222-2222-4222-8222-222222222222";
+
+    fakeSupabase.conversations = [
+      {
+        id: "regen-target-conversation",
+        user_id: "user-1",
+        title: "Regen Target Test",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    ];
+
+    fakeSupabase.conversationMessages = [
+      {
+        id: "user-seed",
+        conversation_id: "regen-target-conversation",
+        user_id: "user-1",
+        role: "user",
+        content: "Question",
+        model: "seed-model",
+        usage_tokens: null,
+        created_at: new Date().toISOString(),
+        order: 0,
+        parts: [{ type: "text", text: "Question" }],
+      },
+      {
+        id: targetAssistantId,
+        conversation_id: "regen-target-conversation",
+        user_id: "user-1",
+        role: "assistant",
+        content: "Older assistant",
+        model: "seed-model",
+        usage_tokens: null,
+        created_at: new Date().toISOString(),
+        order: 1,
+        parts: [{ type: "text", text: "Older assistant" }],
+      },
+      {
+        id: latestAssistantId,
+        conversation_id: "regen-target-conversation",
+        user_id: "user-1",
+        role: "assistant",
+        content: "Latest assistant",
+        model: "seed-model",
+        usage_tokens: null,
+        created_at: new Date().toISOString(),
+        order: 2,
+        parts: [{ type: "text", text: "Latest assistant" }],
+      },
+    ];
+
+    await persistAssistantMessage({
+      conversationId: "regen-target-conversation",
+      message: createAssistantMessage("assistant-new", "Replacement response"),
+      replaceLatestAssistantForRegenerate: true,
+      targetAssistantMessageIdForRegenerate: targetAssistantId,
+    });
+
+    const assistantRows = fakeSupabase.conversationMessages.filter(
+      (message) => message.role === "assistant",
+    );
+    const assistantIds = assistantRows.map((message) => message.id);
+
+    expect(assistantIds).not.toContain(targetAssistantId);
+    expect(assistantIds).toContain(latestAssistantId);
+    expect(
+      assistantRows.some(
+        (message) => message.content === "Replacement response",
+      ),
+    ).toBe(true);
   });
 });

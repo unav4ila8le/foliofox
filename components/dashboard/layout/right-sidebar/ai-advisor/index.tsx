@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import { PromptInputProvider } from "@/components/ai-elements/prompt-input";
 import { useDashboardData } from "@/components/dashboard/providers/dashboard-data-provider";
 import { ChatHeader } from "./header";
-import { Chat } from "./chat";
+import { Chat } from "@/components/dashboard/ai-chat/chat";
 
 import { fetchConversationMessages } from "@/server/ai/messages/fetch";
 import {
@@ -36,7 +36,6 @@ export function AIAdvisor() {
   const [maxConversations, setMaxConversations] = useState(0);
   const [initialMessages, setInitialMessages] = useState<UIMessage[]>([]);
   const [isLoadingConversation, setIsLoadingConversation] = useState(false);
-  const [copiedMessages, setCopiedMessages] = useState<Set<string>>(new Set());
 
   const applyConversationsResult = useCallback(
     (result: ConversationsResult) => {
@@ -68,7 +67,6 @@ export function AIAdvisor() {
       const msgs = await fetchConversationMessages(id);
       setConversationId(id);
       setInitialMessages(msgs);
-      setCopiedMessages(new Set());
     } finally {
       setIsLoadingConversation(false);
     }
@@ -82,7 +80,6 @@ export function AIAdvisor() {
     const id = uuidv4();
     setConversationId(id);
     setInitialMessages([]);
-    setCopiedMessages(new Set());
   };
 
   const hasCurrentConversationInHistory = conversations.some(
@@ -108,8 +105,6 @@ export function AIAdvisor() {
           conversationId={conversationId}
           initialMessages={initialMessages}
           isLoadingConversation={isLoadingConversation}
-          copiedMessages={copiedMessages}
-          setCopiedMessages={setCopiedMessages}
           isAIEnabled={isAIEnabled}
           isAtConversationCap={isAtConversationCap}
           maxConversations={maxConversations}

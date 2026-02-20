@@ -71,6 +71,33 @@ function getLatestUserMessageId(messages: UIMessage[]): string | null {
   return lastUserMessage?.id ?? null;
 }
 
+function dropHistoricalFileParts(
+  messages: UIMessage[],
+  latestUserMessageId: string | null,
+): UIMessage[] {
+  return messages
+    .map((message) => {
+      // Keep file parts only on the current user turn to avoid repeatedly
+      // re-sending large file payloads in subsequent requests.
+      if (message.id === latestUserMessageId) {
+        return message;
+      }
+
+      const modelSafeParts = message.parts.filter(
+        (part) => part.type !== "file",
+      );
+      if (modelSafeParts.length === 0) {
+        return null;
+      }
+
+      return {
+        ...message,
+        parts: modelSafeParts,
+      };
+    })
+    .filter((message): message is UIMessage => Boolean(message));
+}
+
 /**
  * Builds a model-safe chat context by:
  * 1) capping message count, 2) pruning heavy historical parts, and
@@ -88,13 +115,17 @@ export function buildGuardrailedModelContext(
   // 2) Drop heavy historical parts (reasoning/tool payloads) from older turns.
   const prunedMessages = pruneOlderHeavyParts(messageWindow);
   const latestUserMessageId = getLatestUserMessageId(prunedMessages);
+  const modelSafeMessages = dropHistoricalFileParts(
+    prunedMessages,
+    latestUserMessageId,
+  );
 
   // 3) Walk newest -> oldest until approximate token budget is full.
   const selectedMessages: UIMessage[] = [];
   let estimatedTokens = 0;
 
-  for (let index = prunedMessages.length - 1; index >= 0; index -= 1) {
-    const message = prunedMessages[index];
+  for (let index = modelSafeMessages.length - 1; index >= 0; index -= 1) {
+    const message = modelSafeMessages[index];
     if (!message) continue;
 
     const isLatestUserMessage = message.id === latestUserMessageId;
@@ -120,7 +151,7 @@ export function buildGuardrailedModelContext(
 
   // Defensive safety net; this should rarely fire because latest user is budget-exempt.
   if (!hasLatestUserMessage && latestUserMessageId) {
-    const latestUserMessage = prunedMessages.find(
+    const latestUserMessage = modelSafeMessages.find(
       (message) => message.id === latestUserMessageId,
     );
     if (latestUserMessage) {

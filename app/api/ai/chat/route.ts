@@ -1,5 +1,13 @@
 import { aiModel, chatModelId } from "@/server/ai/provider";
-import { streamText, UIMessage, convertToModelMessages, stepCountIs } from "ai";
+import {
+  streamText,
+  type FileUIPart,
+  type UIMessage,
+  type InferUITools,
+  convertToModelMessages,
+  safeValidateUIMessages,
+  stepCountIs,
+} from "ai";
 import { z } from "zod";
 
 import { fetchProfile } from "@/server/profile/actions";
@@ -15,22 +23,88 @@ import {
   AI_CHAT_CONVERSATION_CAP_FRIENDLY_MESSAGE,
   AI_CHAT_ERROR_CODES,
 } from "@/lib/ai/chat-errors";
+import {
+  CHAT_FILE_ALLOWED_TYPES_TEXT,
+  MAX_CHAT_FILE_SIZE_BYTES,
+  MAX_CHAT_FILE_SIZE_MB,
+  MAX_CHAT_FILES_PER_MESSAGE,
+  estimateDataUrlBytes,
+  isAllowedChatFileMediaType,
+} from "@/lib/ai/chat-file-upload-guardrails";
 
 // Allow streaming responses up to 120 seconds (reasoning models need more time)
 export const maxDuration = 160;
 
 const chatRequestSchema = z.looseObject({
-  messages: z.array(
-    z.looseObject({
-      id: z.string().optional(),
-      role: z.enum(["system", "user", "assistant", "tool"]),
-      parts: z.array(z.any()),
-    }),
-  ),
+  messages: z.unknown(),
   trigger: z.string().optional(),
+  messageId: z.string().optional(),
 });
 
 const validModes = new Set<Mode>(["educational", "advisory", "unhinged"]);
+type ChatUIMessage = UIMessage<unknown, never, InferUITools<typeof aiTools>>;
+
+function getDataUrlMediaType(dataUrl: string): string | null {
+  const match = /^data:([^;,]+)[;,]/i.exec(dataUrl);
+  return match?.[1]?.trim().toLowerCase() || null;
+}
+
+function validateLatestUserFileParts(messages: ChatUIMessage[]): string | null {
+  const latestUserMessage = [...messages]
+    .reverse()
+    .find((m) => m.role === "user");
+  if (!latestUserMessage) {
+    return null;
+  }
+
+  const fileParts = latestUserMessage.parts.filter(
+    (part): part is FileUIPart => part.type === "file",
+  );
+  if (fileParts.length === 0) {
+    return null;
+  }
+
+  if (fileParts.length > MAX_CHAT_FILES_PER_MESSAGE) {
+    return `You can upload up to ${MAX_CHAT_FILES_PER_MESSAGE} files per message.`;
+  }
+
+  for (let index = 0; index < fileParts.length; index += 1) {
+    const filePart = fileParts[index];
+    if (!filePart) {
+      continue;
+    }
+
+    if (!filePart.url.startsWith("data:")) {
+      return "Invalid file payload format.";
+    }
+
+    const dataUrlMediaType = getDataUrlMediaType(filePart.url);
+    if (!dataUrlMediaType) {
+      return "Invalid file payload format.";
+    }
+
+    if (!isAllowedChatFileMediaType(dataUrlMediaType)) {
+      return `One or more files have an unsupported type. Allowed file types: ${CHAT_FILE_ALLOWED_TYPES_TEXT}.`;
+    }
+
+    const declaredMediaType = (filePart.mediaType ?? "").trim().toLowerCase();
+    if (declaredMediaType && declaredMediaType !== dataUrlMediaType) {
+      return "Invalid file payload format.";
+    }
+
+    const estimatedBytes = estimateDataUrlBytes(filePart.url);
+    if (estimatedBytes == null) {
+      return "Invalid file payload.";
+    }
+
+    if (estimatedBytes > MAX_CHAT_FILE_SIZE_BYTES) {
+      const fileLabel = filePart.filename || `File ${index + 1}`;
+      return `${fileLabel} exceeds the ${MAX_CHAT_FILE_SIZE_MB}MB limit.`;
+    }
+  }
+
+  return null;
+}
 
 export async function POST(req: Request) {
   // 1. Validate request payload early to avoid malformed chat writes.
@@ -40,11 +114,29 @@ export async function POST(req: Request) {
     return new Response("Invalid chat request payload", { status: 400 });
   }
 
-  const messages = parsedRequest.data.messages as UIMessage[];
+  // Validate incoming UI messages against AI SDK structures + registered tools.
+  const validatedMessages = await safeValidateUIMessages<ChatUIMessage>({
+    messages: parsedRequest.data.messages,
+    tools: aiTools,
+  });
+  if (!validatedMessages.success) {
+    return new Response("Invalid chat message payload", { status: 400 });
+  }
+
+  const messages = validatedMessages.data;
+  const fileValidationError = validateLatestUserFileParts(messages);
+  if (fileValidationError) {
+    return new Response(fileValidationError, { status: 400 });
+  }
+
   const trigger =
     parsedRequest.data.trigger === "regenerate-message"
       ? "regenerate-message"
       : "submit-message";
+  const regenerateTargetMessageId =
+    trigger === "regenerate-message"
+      ? parsedRequest.data.messageId?.trim() || undefined
+      : undefined;
 
   const modeHeader = req.headers.get("x-ff-mode")?.toLowerCase();
   const mode: Mode =
@@ -69,6 +161,8 @@ export async function POST(req: Request) {
 
   // 3. Persist only submit user turns before model execution.
   //    Regenerate replacement happens after successful assistant persistence.
+  // TODO: Avoid orphaned user turns when model streaming fails after this write
+  // by introducing a failed-state marker or atomic user+assistant persistence flow.
   if (conversationId) {
     try {
       if (trigger === "submit-message") {
@@ -132,7 +226,10 @@ export async function POST(req: Request) {
   });
 
   return result.toUIMessageStreamResponse({
+    originalMessages: messages,
+    generateMessageId: () => crypto.randomUUID(),
     sendReasoning: true,
+    sendSources: true,
     onFinish: async ({ responseMessage, isAborted }) => {
       // 5. Persist only the assistant response that just streamed.
       if (!conversationId || isAborted) {
@@ -147,6 +244,7 @@ export async function POST(req: Request) {
           model: chatModelId,
           usageTokens: tokens.totalTokens,
           replaceLatestAssistantForRegenerate: trigger === "regenerate-message",
+          targetAssistantMessageIdForRegenerate: regenerateTargetMessageId,
         });
       } catch (error) {
         console.error("AI chat assistant persistence error:", error);
