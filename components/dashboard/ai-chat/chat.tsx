@@ -111,7 +111,7 @@ export function Chat({
     }
 
     const normalizedText = message.text.trim();
-    const hasText = normalizedText.length > 0;
+    const hasText = normalizedText.length >= 2;
     const hasFiles = message.files.length > 0;
 
     if (!hasText && !hasFiles) {

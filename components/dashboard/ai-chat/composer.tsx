@@ -34,12 +34,15 @@ export function ChatComposer({
   onModeChange,
   onStop,
 }: ChatComposerProps) {
+  const isChatInputDisabled = !isAIEnabled || showProactiveCapAlert;
+  const trimmedTextLength = controller.textInput.value.trim().length;
+  const hasAttachments = controller.attachments.files.length > 0;
+
   return (
     <div
       className={cn(
         "px-4",
-        !isAIEnabled ||
-          (showProactiveCapAlert && "pointer-events-none opacity-50"),
+        isChatInputDisabled && "pointer-events-none opacity-50",
       )}
     >
       <PromptInput onSubmit={onSubmit} className="bg-background rounded-md">
@@ -93,12 +96,11 @@ export function ChatComposer({
           <PromptInputSubmit
             status={status}
             disabled={
-              showProactiveCapAlert
+              isChatInputDisabled
                 ? true
                 : status === "streaming"
                   ? false
-                  : controller.textInput.value.trim().length === 0 &&
-                    controller.attachments.files.length === 0
+                  : trimmedTextLength < 2 && !hasAttachments
             }
             onClick={(event) => {
               if (status === "streaming") {

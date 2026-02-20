@@ -365,6 +365,32 @@ describe("Chat guardrail UI", () => {
     });
   });
 
+  it("does not submit text messages shorter than 2 characters", () => {
+    hoistedMocks.promptSubmitPayload = { text: "a", files: [] };
+
+    renderChat();
+
+    const submitButton = screen.getAllByRole("button", { name: "Send" })[0];
+    expect(submitButton).toBeDefined();
+    expect((submitButton as HTMLButtonElement).disabled).toBe(true);
+
+    fireEvent.click(submitButton as HTMLElement);
+
+    expect(hoistedMocks.sendMessageMock).not.toHaveBeenCalled();
+  });
+
+  it("disables prompt input submit when AI is disabled", () => {
+    renderChat({ isAIEnabled: false });
+
+    const submitButton = screen.getAllByRole("button", { name: "Send" })[0];
+    expect(submitButton).toBeDefined();
+    expect((submitButton as HTMLButtonElement).disabled).toBe(true);
+
+    fireEvent.click(submitButton as HTMLElement);
+
+    expect(hoistedMocks.sendMessageMock).not.toHaveBeenCalled();
+  });
+
   it("renders user attachments and assistant sources from message parts", () => {
     hoistedMocks.messages = [
       {
