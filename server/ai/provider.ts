@@ -1,11 +1,10 @@
-import { createGatewayProvider } from "@ai-sdk/gateway";
 import { createOpenAI } from "@ai-sdk/openai";
 import type { LanguageModel } from "ai";
 
-type SupportedAIProvider = "openai" | "gateway";
+type SupportedAIProvider = "openai";
 
-const DEFAULT_AI_PROVIDER: SupportedAIProvider = "openai";
 const DEFAULT_MODEL_ID = "gpt-5-mini";
+const DEFAULT_AI_PROVIDER: SupportedAIProvider = "openai";
 
 const resolveProvider = (
   rawProvider: string | undefined,
@@ -13,12 +12,12 @@ const resolveProvider = (
   const normalizedProvider =
     rawProvider?.trim().toLowerCase() ?? DEFAULT_AI_PROVIDER;
 
-  if (normalizedProvider === "openai" || normalizedProvider === "gateway") {
+  if (normalizedProvider === "openai") {
     return normalizedProvider;
   }
 
   throw new Error(
-    `Unsupported AI_PROVIDER "${rawProvider}". Supported values: openai, gateway.`,
+    `Unsupported AI_PROVIDER "${rawProvider}". Supported values: openai.`,
   );
 };
 
@@ -29,26 +28,19 @@ const normalizeOpenAIModelId = (id: string): string => {
     : normalizedId;
 };
 
-const normalizeGatewayModelId = (id: string): string => {
-  const normalizedId = id.trim();
-  return normalizedId.includes("/") ? normalizedId : `openai/${normalizedId}`;
-};
-
 const provider = resolveProvider(process.env.AI_PROVIDER);
-const providerApiKey = process.env.AI_PROVIDER_API_KEY;
 
 const openAIProvider = createOpenAI({
-  apiKey: providerApiKey ?? process.env.OPENAI_API_KEY,
+  apiKey: process.env.AI_PROVIDER_API_KEY,
 });
 
-const gatewayProvider = createGatewayProvider({
-  apiKey: providerApiKey ?? process.env.AI_GATEWAY_API_KEY,
-});
+export const aiModel = (id: string): LanguageModel => {
+  if (provider !== "openai") {
+    throw new Error(`Unsupported AI provider "${provider}".`);
+  }
 
-export const aiModel = (id: string): LanguageModel =>
-  provider === "gateway"
-    ? gatewayProvider(normalizeGatewayModelId(id))
-    : openAIProvider(normalizeOpenAIModelId(id));
+  return openAIProvider(normalizeOpenAIModelId(id));
+};
 
 // Optional: centralize model ids so routes don’t repeat literals
 export const chatModelId = process.env.AI_CHAT_MODEL_ID ?? DEFAULT_MODEL_ID;
