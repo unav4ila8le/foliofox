@@ -20,7 +20,7 @@ export function ChatSuggestions({
   }
 
   return (
-    <div className="space-y-2 px-4 pb-2">
+    <div className="space-y-2 px-3 pb-2">
       <p className="text-muted-foreground px-2 text-sm">Suggestions</p>
       <div className="space-y-1">
         {suggestions.map((suggestion) => (
