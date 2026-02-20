@@ -6,16 +6,9 @@ import { Chat } from "@/components/dashboard/layout/right-sidebar/ai-advisor/cha
 import { MAX_CONVERSATIONS_PER_USER } from "@/lib/ai/chat-guardrails-config";
 
 const hoistedMocks = vi.hoisted(() => ({
-  toastErrorMock: vi.fn(),
   sendMessageMock: vi.fn(),
   chatError: null as Error | null,
   promptSubmitPayload: { text: "hello", files: [] as unknown[] },
-}));
-
-vi.mock("sonner", () => ({
-  toast: {
-    error: hoistedMocks.toastErrorMock,
-  },
 }));
 
 vi.mock("@/hooks/use-copy-to-clipboard", () => ({
@@ -212,7 +205,6 @@ describe("Chat guardrail UI", () => {
     cleanup();
     hoistedMocks.chatError = null;
     hoistedMocks.promptSubmitPayload = { text: "hello", files: [] };
-    hoistedMocks.toastErrorMock.mockReset();
     hoistedMocks.sendMessageMock.mockReset();
   });
 
@@ -258,7 +250,6 @@ describe("Chat guardrail UI", () => {
 
     expect(screen.getByText("Chat request failed")).not.toBeNull();
     expect(screen.getByText("server exploded")).not.toBeNull();
-    expect(hoistedMocks.toastErrorMock).toHaveBeenCalledWith("server exploded");
   });
 
   it("clears backend error after the user submits a new message", () => {

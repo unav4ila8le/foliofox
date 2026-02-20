@@ -19,7 +19,6 @@ import {
   Sparkles,
   TriangleAlert,
 } from "lucide-react";
-import { toast } from "sonner";
 
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 
@@ -208,7 +207,6 @@ export function Chat({
         : error.message;
 
       setChatErrorMessage(message);
-      toast.error(message);
     },
     onFinish: async ({ isAbort, isError }) => {
       if (isAbort || isError) return;
