@@ -9,6 +9,7 @@ const hoistedMocks = vi.hoisted(() => ({
   toastErrorMock: vi.fn(),
   sendMessageMock: vi.fn(),
   chatError: null as Error | null,
+  promptSubmitPayload: { text: "hello", files: [] as unknown[] },
 }));
 
 vi.mock("sonner", () => ({
@@ -105,12 +106,12 @@ vi.mock("@/components/ai-elements/prompt-input", () => ({
     onSubmit,
   }: {
     children: React.ReactNode;
-    onSubmit: (value: { text?: string }) => void;
+    onSubmit: (value: { text?: string; files?: unknown[] }) => void;
   }) => (
     <form
       onSubmit={(event) => {
         event.preventDefault();
-        onSubmit({ text: "hello" });
+        onSubmit(hoistedMocks.promptSubmitPayload);
       }}
     >
       {children}
@@ -125,6 +126,25 @@ vi.mock("@/components/ai-elements/prompt-input", () => ({
   PromptInputTools: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),
+  PromptInputHeader: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  PromptInputAttachments: ({
+    children,
+  }: {
+    children: (attachment: unknown) => React.ReactNode;
+  }) => <div>{children({ id: "file-1" })}</div>,
+  PromptInputAttachment: () => null,
+  PromptInputActionMenu: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  PromptInputActionMenuTrigger: () => null,
+  PromptInputActionMenuContent: ({
+    children,
+  }: {
+    children: React.ReactNode;
+  }) => <div>{children}</div>,
+  PromptInputActionAddAttachments: () => null,
   PromptInputBody: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),
@@ -149,6 +169,14 @@ vi.mock("@/components/ai-elements/prompt-input", () => ({
     textInput: {
       value: "hello",
       setInput: vi.fn(),
+    },
+    attachments: {
+      files: hoistedMocks.promptSubmitPayload.files,
+      add: vi.fn(),
+      remove: vi.fn(),
+      clear: vi.fn(),
+      openFileDialog: vi.fn(),
+      fileInputRef: { current: null },
     },
   }),
 }));
@@ -183,6 +211,7 @@ describe("Chat guardrail UI", () => {
   beforeEach(() => {
     cleanup();
     hoistedMocks.chatError = null;
+    hoistedMocks.promptSubmitPayload = { text: "hello", files: [] };
     hoistedMocks.toastErrorMock.mockReset();
     hoistedMocks.sendMessageMock.mockReset();
   });
@@ -297,5 +326,48 @@ describe("Chat guardrail UI", () => {
     );
 
     expect(screen.queryByText("previous conversation error")).toBeNull();
+  });
+
+  it("submits file-only prompt payloads to useChat", () => {
+    hoistedMocks.promptSubmitPayload = {
+      text: "",
+      files: [
+        {
+          type: "file",
+          mediaType: "application/pdf",
+          filename: "statement.pdf",
+          url: "data:application/pdf;base64,Zm9v",
+        },
+      ],
+    };
+
+    render(
+      <Chat
+        conversationId="conversation-files"
+        initialMessages={[]}
+        isLoadingConversation={false}
+        copiedMessages={new Set()}
+        setCopiedMessages={() => {}}
+        isAIEnabled
+        isAtConversationCap={false}
+        maxConversations={MAX_CONVERSATIONS_PER_USER}
+        hasCurrentConversationInHistory
+      />,
+    );
+
+    const submitButton = screen.getAllByRole("button", { name: "Send" })[0];
+    expect(submitButton).toBeDefined();
+    fireEvent.click(submitButton as HTMLElement);
+
+    expect(hoistedMocks.sendMessageMock).toHaveBeenCalledWith({
+      files: [
+        {
+          type: "file",
+          mediaType: "application/pdf",
+          filename: "statement.pdf",
+          url: "data:application/pdf;base64,Zm9v",
+        },
+      ],
+    });
   });
 });

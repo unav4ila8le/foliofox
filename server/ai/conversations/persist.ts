@@ -1,4 +1,5 @@
 import type { UIMessage } from "ai";
+import { z } from "zod";
 
 import { chatModelId } from "@/server/ai/provider";
 import {
@@ -40,6 +41,26 @@ function getLastUserText(messages: UIMessage[]): string {
     .map((p) => p.text)
     .join("\n")
     .trim();
+}
+
+function toPersistableParts(
+  parts: UIMessage["parts"],
+  fallbackText?: string,
+): UIMessage["parts"] {
+  // Keep conversational/tool/source data, but drop raw file payloads to avoid
+  // storing large data URLs in the DB.
+  const persistedParts = parts.filter((part) => part.type !== "file");
+
+  if (persistedParts.length > 0) {
+    return persistedParts;
+  }
+
+  const normalizedFallbackText = fallbackText?.trim();
+  if (!normalizedFallbackText) {
+    return [];
+  }
+
+  return [{ type: "text", text: normalizedFallbackText }];
 }
 
 async function getNextMessageOrder(
@@ -292,6 +313,32 @@ async function getLatestAssistantMessageId(params: {
   return latestAssistantMessage?.id ?? null;
 }
 
+async function getAssistantMessageIdById(params: {
+  supabase: Awaited<ReturnType<typeof createClient>>;
+  conversationId: string;
+  userId: string;
+  messageId: string;
+}): Promise<string | null> {
+  const { supabase, conversationId, userId, messageId } = params;
+
+  const { data, error } = await supabase
+    .from("conversation_messages")
+    .select("id")
+    .eq("conversation_id", conversationId)
+    .eq("user_id", userId)
+    .eq("role", "assistant")
+    .eq("id", messageId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(
+      `Failed to fetch target assistant message for regenerate: ${error.message}`,
+    );
+  }
+
+  return data?.id ?? null;
+}
+
 async function deleteConversationMessageById(params: {
   supabase: Awaited<ReturnType<typeof createClient>>;
   conversationId: string;
@@ -332,6 +379,10 @@ export async function persistConversationFromMessages(params: {
   if (lastUiMessage.role !== "user") return;
 
   const lastUserText = getLastUserText(messages) || "Conversation";
+  const userPersistedParts = toPersistableParts(
+    lastUiMessage.parts,
+    lastUserText,
+  );
 
   await ensureConversationExists({
     supabase,
@@ -346,7 +397,7 @@ export async function persistConversationFromMessages(params: {
     userId: user.id,
     role: "user",
     content: lastUserText,
-    parts: lastUiMessage.parts,
+    parts: userPersistedParts,
     model,
   });
 
@@ -365,6 +416,7 @@ export async function persistAssistantMessage(params: {
   model?: string;
   usageTokens?: number;
   replaceLatestAssistantForRegenerate?: boolean;
+  targetAssistantMessageIdForRegenerate?: string;
 }): Promise<void> {
   const {
     conversationId,
@@ -372,6 +424,7 @@ export async function persistAssistantMessage(params: {
     model = chatModelId,
     usageTokens,
     replaceLatestAssistantForRegenerate = false,
+    targetAssistantMessageIdForRegenerate,
   } = params;
 
   // Assistant-only persistence path from stream onFinish.
@@ -380,14 +433,35 @@ export async function persistAssistantMessage(params: {
   const { supabase, user } = await getAuthenticatedUserAndClient();
   if (!user) return;
 
-  let latestAssistantMessageIdBeforeInsert: string | null = null;
+  const assistantPersistedParts = toPersistableParts(
+    message.parts,
+    extractTextContent(message.parts),
+  );
+
+  let assistantMessageIdToReplace: string | null = null;
   if (replaceLatestAssistantForRegenerate) {
-    // Read old assistant id before insert so we can safely replace after success.
-    latestAssistantMessageIdBeforeInsert = await getLatestAssistantMessageId({
-      supabase,
-      conversationId,
-      userId: user.id,
-    });
+    // Prefer replacing the exact assistant targeted by regenerate when possible.
+    const targetIdParse = z
+      .uuid()
+      .safeParse(targetAssistantMessageIdForRegenerate ?? "");
+
+    if (targetIdParse.success) {
+      assistantMessageIdToReplace = await getAssistantMessageIdById({
+        supabase,
+        conversationId,
+        userId: user.id,
+        messageId: targetIdParse.data,
+      });
+    }
+
+    if (!assistantMessageIdToReplace) {
+      // Fallback for non-UUID client ids or legacy conversations.
+      assistantMessageIdToReplace = await getLatestAssistantMessageId({
+        supabase,
+        conversationId,
+        userId: user.id,
+      });
+    }
   }
 
   await insertConversationMessage({
@@ -396,21 +470,18 @@ export async function persistAssistantMessage(params: {
     userId: user.id,
     role: "assistant",
     content: extractTextContent(message.parts),
-    parts: message.parts,
+    parts: assistantPersistedParts,
     model,
     usageTokens,
   });
 
-  if (
-    replaceLatestAssistantForRegenerate &&
-    latestAssistantMessageIdBeforeInsert
-  ) {
+  if (replaceLatestAssistantForRegenerate && assistantMessageIdToReplace) {
     // Delete only after successful insert to avoid losing history on failures.
     await deleteConversationMessageById({
       supabase,
       conversationId,
       userId: user.id,
-      messageId: latestAssistantMessageIdBeforeInsert,
+      messageId: assistantMessageIdToReplace,
     });
   }
 

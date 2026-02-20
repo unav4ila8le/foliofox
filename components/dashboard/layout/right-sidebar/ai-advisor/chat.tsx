@@ -10,7 +10,15 @@ import {
 } from "react";
 import { DefaultChatTransport, isStaticToolUIPart, type UIMessage } from "ai";
 import { useChat } from "@ai-sdk/react";
-import { Check, Copy, RefreshCcw, Sparkles, TriangleAlert } from "lucide-react";
+import {
+  Check,
+  Copy,
+  ExternalLink,
+  FileText,
+  RefreshCcw,
+  Sparkles,
+  TriangleAlert,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
@@ -38,10 +46,17 @@ import {
 } from "@/components/ai-elements/reasoning";
 import {
   PromptInput,
+  PromptInputActionAddAttachments,
+  PromptInputActionMenu,
+  PromptInputActionMenuContent,
+  PromptInputActionMenuTrigger,
+  PromptInputAttachment,
+  PromptInputAttachments,
   PromptInputTextarea,
   PromptInputSubmit,
   PromptInputTools,
   PromptInputBody,
+  PromptInputHeader,
   type PromptInputMessage,
   PromptInputSelect,
   PromptInputSelectTrigger,
@@ -100,6 +115,18 @@ const suggestions = [
   "What are the biggest vulnerabilities in my current investment strategy?",
   "Based on my positions and portfolio history, what's my probability of reaching $1M net worth in 10 years?",
 ];
+
+function getSourceLabel(url: string, title?: string) {
+  if (title?.trim()) {
+    return title;
+  }
+
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return url;
+  }
+}
 
 function DisabledState() {
   const [openAISettings, setOpenAISettings] = useState(false);
@@ -227,14 +254,26 @@ export function Chat({
       return;
     }
 
-    const hasText = Boolean(message.text);
+    const normalizedText = message.text.trim();
+    const hasText = normalizedText.length > 0;
+    const hasFiles = message.files.length > 0;
 
-    if (!hasText) {
+    if (!hasText && !hasFiles) {
       return;
     }
 
     setChatErrorMessage(null);
-    sendMessage({ text: message.text || "" });
+    if (hasText && hasFiles) {
+      sendMessage({ text: normalizedText, files: message.files });
+      return;
+    }
+
+    if (hasText) {
+      sendMessage({ text: normalizedText });
+      return;
+    }
+
+    sendMessage({ files: message.files });
   };
 
   return (
@@ -345,6 +384,43 @@ export function Chat({
                             )}
                           </Fragment>
                         );
+                      case "source-url":
+                        return (
+                          <Message
+                            key={`${message.id}-source-${i}`}
+                            from="assistant"
+                            className="max-w-full"
+                          >
+                            <MessageContent>
+                              <a
+                                href={part.url}
+                                target="_blank"
+                                rel="noreferrer noopener"
+                                className="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 text-xs underline-offset-4 hover:underline"
+                              >
+                                <ExternalLink className="size-3.5" />
+                                {getSourceLabel(part.url, part.title)}
+                              </a>
+                            </MessageContent>
+                          </Message>
+                        );
+                      case "source-document":
+                        return (
+                          <Message
+                            key={`${message.id}-source-doc-${i}`}
+                            from="assistant"
+                            className="max-w-full"
+                          >
+                            <MessageContent>
+                              <span className="text-muted-foreground inline-flex items-center gap-2 text-xs">
+                                <FileText className="size-3.5" />
+                                {part.title ||
+                                  part.filename ||
+                                  "Document source"}
+                              </span>
+                            </MessageContent>
+                          </Message>
+                        );
                       default:
                         if (isStaticToolUIPart(part)) {
                           return (
@@ -435,6 +511,12 @@ export function Chat({
           onSubmit={handleSubmit}
           className="bg-background rounded-md"
         >
+          <PromptInputHeader>
+            <PromptInputAttachments>
+              {(attachment) => <PromptInputAttachment data={attachment} />}
+            </PromptInputAttachments>
+          </PromptInputHeader>
+
           <PromptInputBody>
             <PromptInputTextarea
               placeholder="Ask Foliofox..."
@@ -444,6 +526,12 @@ export function Chat({
 
           <PromptInputFooter className="px-2 pb-2">
             <PromptInputTools>
+              <PromptInputActionMenu>
+                <PromptInputActionMenuTrigger />
+                <PromptInputActionMenuContent>
+                  <PromptInputActionAddAttachments />
+                </PromptInputActionMenuContent>
+              </PromptInputActionMenu>
               <PromptInputSpeechButton
                 textareaRef={textareaRef}
                 onTranscriptionChange={(text) => {
@@ -477,7 +565,8 @@ export function Chat({
                   ? true
                   : status === "streaming"
                     ? false
-                    : controller.textInput.value.trim().length < 3
+                    : controller.textInput.value.trim().length === 0 &&
+                      controller.attachments.files.length === 0
               }
               onClick={(e) => {
                 if (status === "streaming") {

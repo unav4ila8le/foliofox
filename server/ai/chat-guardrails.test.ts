@@ -150,4 +150,51 @@ describe("buildGuardrailedModelContext", () => {
     expect(heavyOldMessage?.parts[0]?.type).toBe("text");
     expect(toolOnlyOldMessage).toBeUndefined();
   });
+
+  it("drops file parts from historical turns but keeps latest user file parts", () => {
+    const messages: UIMessage[] = [
+      createMessage({
+        id: "user-old-file",
+        role: "user",
+        parts: [
+          { type: "text", text: "older user turn" },
+          {
+            type: "file",
+            filename: "old.pdf",
+            mediaType: "application/pdf",
+            url: "data:application/pdf;base64,b2xk",
+          } as unknown as UIMessage["parts"][number],
+        ],
+      }),
+      createMessage({
+        id: "user-latest-file",
+        role: "user",
+        parts: [
+          { type: "text", text: "latest user turn" },
+          {
+            type: "file",
+            filename: "latest.pdf",
+            mediaType: "application/pdf",
+            url: "data:application/pdf;base64,bGF0ZXN0",
+          } as unknown as UIMessage["parts"][number],
+        ],
+      }),
+    ];
+
+    const result = buildGuardrailedModelContext(messages);
+    const oldUserMessage = result.find(
+      (message) => message.id === "user-old-file",
+    );
+    const latestUserMessage = result.find(
+      (message) => message.id === "user-latest-file",
+    );
+
+    expect(oldUserMessage).toBeDefined();
+    expect(oldUserMessage?.parts.some((part) => part.type === "file")).toBe(
+      false,
+    );
+    expect(latestUserMessage?.parts.some((part) => part.type === "file")).toBe(
+      true,
+    );
+  });
 });

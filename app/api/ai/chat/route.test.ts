@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const streamTextMock = vi.fn();
 const convertToModelMessagesMock = vi.fn(async (messages) => messages);
+const safeValidateUIMessagesMock = vi.fn();
 const stepCountIsMock = vi.fn(() => "stop-condition");
 const buildGuardrailedModelContextMock = vi.fn((messages) => messages);
 const fetchProfileMock = vi.fn();
@@ -28,6 +29,7 @@ let capturedOnFinish:
 vi.mock("ai", () => ({
   streamText: streamTextMock,
   convertToModelMessages: convertToModelMessagesMock,
+  safeValidateUIMessages: safeValidateUIMessagesMock,
   stepCountIs: stepCountIsMock,
 }));
 
@@ -63,6 +65,7 @@ describe("POST /api/ai/chat", () => {
     capturedOnFinish = undefined;
     streamTextMock.mockReset();
     convertToModelMessagesMock.mockClear();
+    safeValidateUIMessagesMock.mockReset();
     stepCountIsMock.mockClear();
     buildGuardrailedModelContextMock.mockClear();
     fetchProfileMock.mockReset();
@@ -84,6 +87,10 @@ describe("POST /api/ai/chat", () => {
         return new Response("ok", { status: 200 });
       },
     });
+    safeValidateUIMessagesMock.mockImplementation(async ({ messages }) => ({
+      success: true,
+      data: messages,
+    }));
   });
 
   it("returns 403 when AI consent is disabled", async () => {
@@ -111,6 +118,29 @@ describe("POST /api/ai/chat", () => {
     const response = await POST(request);
 
     expect(response.status).toBe(403);
+  });
+
+  it("returns 400 when UI messages fail validation", async () => {
+    const { POST } = await import("@/app/api/ai/chat/route");
+    safeValidateUIMessagesMock.mockResolvedValueOnce({
+      success: false,
+      error: new Error("invalid"),
+    });
+
+    const request = new Request("http://localhost/api/ai/chat", {
+      method: "POST",
+      body: JSON.stringify({
+        messages: [{ id: "bad", role: "user", parts: [{ foo: "bar" }] }],
+      }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(400);
+    expect(fetchProfileMock).not.toHaveBeenCalled();
   });
 
   it("returns 409 with a friendly message when conversation cap is reached", async () => {
@@ -270,6 +300,7 @@ describe("POST /api/ai/chat", () => {
       model: "gpt-5-mini",
       usageTokens: 222,
       replaceLatestAssistantForRegenerate: false,
+      targetAssistantMessageIdForRegenerate: undefined,
     });
   });
 
@@ -290,6 +321,7 @@ describe("POST /api/ai/chat", () => {
           },
         ],
         trigger: "regenerate-message",
+        messageId: "assistant-target-id",
       }),
       headers: {
         "Content-Type": "application/json",
@@ -318,6 +350,7 @@ describe("POST /api/ai/chat", () => {
       model: "gpt-5-mini",
       usageTokens: 222,
       replaceLatestAssistantForRegenerate: true,
+      targetAssistantMessageIdForRegenerate: "assistant-target-id",
     });
   });
 });

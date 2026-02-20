@@ -1,5 +1,12 @@
 import { aiModel, chatModelId } from "@/server/ai/provider";
-import { streamText, UIMessage, convertToModelMessages, stepCountIs } from "ai";
+import {
+  streamText,
+  type UIMessage,
+  type InferUITools,
+  convertToModelMessages,
+  safeValidateUIMessages,
+  stepCountIs,
+} from "ai";
 import { z } from "zod";
 
 import { fetchProfile } from "@/server/profile/actions";
@@ -20,17 +27,13 @@ import {
 export const maxDuration = 160;
 
 const chatRequestSchema = z.looseObject({
-  messages: z.array(
-    z.looseObject({
-      id: z.string().optional(),
-      role: z.enum(["system", "user", "assistant", "tool"]),
-      parts: z.array(z.any()),
-    }),
-  ),
+  messages: z.unknown(),
   trigger: z.string().optional(),
+  messageId: z.string().optional(),
 });
 
 const validModes = new Set<Mode>(["educational", "advisory", "unhinged"]);
+type ChatUIMessage = UIMessage<unknown, never, InferUITools<typeof aiTools>>;
 
 export async function POST(req: Request) {
   // 1. Validate request payload early to avoid malformed chat writes.
@@ -40,11 +43,24 @@ export async function POST(req: Request) {
     return new Response("Invalid chat request payload", { status: 400 });
   }
 
-  const messages = parsedRequest.data.messages as UIMessage[];
+  // Validate incoming UI messages against AI SDK structures + registered tools.
+  const validatedMessages = await safeValidateUIMessages<ChatUIMessage>({
+    messages: parsedRequest.data.messages,
+    tools: aiTools,
+  });
+  if (!validatedMessages.success) {
+    return new Response("Invalid chat message payload", { status: 400 });
+  }
+
+  const messages = validatedMessages.data;
   const trigger =
     parsedRequest.data.trigger === "regenerate-message"
       ? "regenerate-message"
       : "submit-message";
+  const regenerateTargetMessageId =
+    trigger === "regenerate-message"
+      ? parsedRequest.data.messageId?.trim() || undefined
+      : undefined;
 
   const modeHeader = req.headers.get("x-ff-mode")?.toLowerCase();
   const mode: Mode =
@@ -132,7 +148,10 @@ export async function POST(req: Request) {
   });
 
   return result.toUIMessageStreamResponse({
+    originalMessages: messages,
+    generateMessageId: () => crypto.randomUUID(),
     sendReasoning: true,
+    sendSources: true,
     onFinish: async ({ responseMessage, isAborted }) => {
       // 5. Persist only the assistant response that just streamed.
       if (!conversationId || isAborted) {
@@ -147,6 +166,7 @@ export async function POST(req: Request) {
           model: chatModelId,
           usageTokens: tokens.totalTokens,
           replaceLatestAssistantForRegenerate: trigger === "regenerate-message",
+          targetAssistantMessageIdForRegenerate: regenerateTargetMessageId,
         });
       } catch (error) {
         console.error("AI chat assistant persistence error:", error);
