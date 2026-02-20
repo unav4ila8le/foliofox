@@ -514,6 +514,33 @@ describe("conversation persistence guardrails", () => {
     ]);
   });
 
+  it("does not persist placeholder text for file-only user turns", async () => {
+    const { persistConversationFromMessages } =
+      await import("@/server/ai/conversations/persist");
+
+    await persistConversationFromMessages({
+      conversationId: "file-only-conversation",
+      messages: [
+        {
+          id: "user-file-only",
+          role: "user",
+          parts: [
+            {
+              type: "file",
+              filename: "statement.pdf",
+              mediaType: "application/pdf",
+              url: "data:application/pdf;base64,Zm9v",
+            },
+          ],
+        } as UIMessage,
+      ],
+    });
+
+    expect(fakeSupabase.conversations[0]?.title).toBe("Conversation");
+    expect(fakeSupabase.conversationMessages[0]?.content).toBe("");
+    expect(fakeSupabase.conversationMessages[0]?.parts).toEqual([]);
+  });
+
   it("replaces latest assistant response on regenerate flow", async () => {
     const { persistConversationFromMessages, persistAssistantMessage } =
       await import("@/server/ai/conversations/persist");

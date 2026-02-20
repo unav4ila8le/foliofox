@@ -378,7 +378,8 @@ export async function persistConversationFromMessages(params: {
   // Only persist user turns in this path.
   if (lastUiMessage.role !== "user") return;
 
-  const lastUserText = getLastUserText(messages) || "Conversation";
+  const lastUserText = getLastUserText(messages);
+  const conversationTitle = lastUserText || "Conversation";
   const userPersistedParts = toPersistableParts(
     lastUiMessage.parts,
     lastUserText,
@@ -388,7 +389,7 @@ export async function persistConversationFromMessages(params: {
     supabase,
     userId: user.id,
     conversationId,
-    title: lastUserText,
+    title: conversationTitle,
   });
 
   await insertConversationMessage({
