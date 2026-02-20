@@ -19,6 +19,11 @@ import {
   PromptInputTextarea,
   PromptInputTools,
 } from "@/components/ai-elements/prompt-input";
+import {
+  CHAT_FILE_ACCEPT_ATTRIBUTE,
+  MAX_CHAT_FILES_PER_MESSAGE,
+  MAX_CHAT_FILE_SIZE_BYTES,
+} from "@/lib/ai/chat-file-upload-guardrails";
 import { cn } from "@/lib/utils";
 
 import type { ChatComposerProps } from "./types";
@@ -33,6 +38,7 @@ export function ChatComposer({
   onSubmit,
   onModeChange,
   onStop,
+  onInputError,
 }: ChatComposerProps) {
   const isChatInputDisabled = !isAIEnabled || showProactiveCapAlert;
   const trimmedTextLength = controller.textInput.value.trim().length;
@@ -45,7 +51,14 @@ export function ChatComposer({
         isChatInputDisabled && "pointer-events-none opacity-50",
       )}
     >
-      <PromptInput onSubmit={onSubmit} className="bg-background rounded-md">
+      <PromptInput
+        onSubmit={onSubmit}
+        onError={onInputError}
+        accept={CHAT_FILE_ACCEPT_ATTRIBUTE}
+        maxFiles={MAX_CHAT_FILES_PER_MESSAGE}
+        maxFileSize={MAX_CHAT_FILE_SIZE_BYTES}
+        className="bg-background rounded-md"
+      >
         <PromptInputHeader className="p-0">
           <PromptInputAttachments className="p-2">
             {(attachment) => <PromptInputAttachment data={attachment} />}

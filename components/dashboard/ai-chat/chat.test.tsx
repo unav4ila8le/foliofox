@@ -283,6 +283,19 @@ describe("Chat guardrail UI", () => {
     expect(screen.getByText("server exploded")).not.toBeNull();
   });
 
+  it("surfaces backend file validation error text in the chat panel", () => {
+    hoistedMocks.chatError = new Error(
+      "One or more files have an unsupported type. Allowed file types: image/*, application/pdf.",
+    );
+
+    renderChat();
+
+    expect(screen.getByText("Chat request failed")).not.toBeNull();
+    expect(
+      screen.getByText(/Allowed file types: image\/\*, application\/pdf\./),
+    ).not.toBeNull();
+  });
+
   it("clears backend error after the user submits a new message", () => {
     hoistedMocks.chatError = new Error("temporary backend error");
 
@@ -363,6 +376,31 @@ describe("Chat guardrail UI", () => {
         },
       ],
     });
+  });
+
+  it("blocks client-side submit when file type is unsupported", () => {
+    hoistedMocks.promptSubmitPayload = {
+      text: "",
+      files: [
+        {
+          type: "file",
+          mediaType: "text/csv",
+          filename: "positions.csv",
+          url: "data:text/csv;base64,Zm9v",
+        },
+      ],
+    };
+
+    renderChat();
+
+    const submitButton = screen.getAllByRole("button", { name: "Send" })[0];
+    expect(submitButton).toBeDefined();
+    fireEvent.click(submitButton as HTMLElement);
+
+    expect(hoistedMocks.sendMessageMock).not.toHaveBeenCalled();
+    expect(
+      screen.getByText(/Allowed file types: image\/\*, application\/pdf\./),
+    ).not.toBeNull();
   });
 
   it("does not submit text messages shorter than 2 characters", () => {

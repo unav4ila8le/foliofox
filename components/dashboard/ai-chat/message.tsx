@@ -82,10 +82,14 @@ export function ChatMessage({
               }
 
               return (
-                <Source
+                <div
                   key={`${message.id}-source-doc-${sourceIndex}`}
-                  title={part.title || part.filename || "Document source"}
-                />
+                  className="flex items-center gap-2"
+                >
+                  <span className="block font-medium">
+                    {part.title || part.filename || "Document source"}
+                  </span>
+                </div>
               );
             })}
           </SourcesContent>

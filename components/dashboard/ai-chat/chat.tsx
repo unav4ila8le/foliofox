@@ -1,8 +1,8 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
-import { useMemo, useRef, useState } from "react";
+import { DefaultChatTransport, type FileUIPart } from "ai";
+import { useMemo, useRef, useState, useEffect } from "react";
 
 import {
   Conversation,
@@ -18,6 +18,14 @@ import {
   AI_CHAT_CONVERSATION_CAP_FRIENDLY_MESSAGE,
   isConversationCapErrorMessage,
 } from "@/lib/ai/chat-errors";
+import {
+  CHAT_FILE_ALLOWED_TYPES_TEXT,
+  MAX_CHAT_FILE_SIZE_BYTES,
+  MAX_CHAT_FILE_SIZE_MB,
+  MAX_CHAT_FILES_PER_MESSAGE,
+  estimateDataUrlBytes,
+  isAllowedChatFileMediaType,
+} from "@/lib/ai/chat-file-upload-guardrails";
 import { cn } from "@/lib/utils";
 import type { Mode } from "@/server/ai/system-prompt";
 
@@ -27,6 +35,74 @@ import { DisabledState } from "./disabled-state";
 import { ChatSuggestions } from "./suggestions";
 import { ChatThread } from "./thread";
 import type { ChatProps } from "./types";
+
+function buildClientFileValidationError(
+  fileParts: FileUIPart[],
+): string | null {
+  if (fileParts.length > MAX_CHAT_FILES_PER_MESSAGE) {
+    return `You can upload up to ${MAX_CHAT_FILES_PER_MESSAGE} files per message.`;
+  }
+
+  for (let index = 0; index < fileParts.length; index += 1) {
+    const filePart = fileParts[index];
+    if (!filePart) {
+      continue;
+    }
+
+    if (!isAllowedChatFileMediaType(filePart.mediaType ?? "")) {
+      return `One or more files have an unsupported type. Allowed file types: ${CHAT_FILE_ALLOWED_TYPES_TEXT}.`;
+    }
+
+    if (!filePart.url.startsWith("data:")) {
+      return "Invalid file payload format.";
+    }
+
+    const estimatedBytes = estimateDataUrlBytes(filePart.url);
+    if (estimatedBytes == null) {
+      return "Invalid file payload.";
+    }
+
+    if (estimatedBytes > MAX_CHAT_FILE_SIZE_BYTES) {
+      const fileLabel = filePart.filename || `File ${index + 1}`;
+      return `${fileLabel} exceeds the ${MAX_CHAT_FILE_SIZE_MB}MB limit.`;
+    }
+  }
+
+  return null;
+}
+
+async function estimateAttachmentBytes(url: string): Promise<number | null> {
+  if (url.startsWith("data:")) {
+    return estimateDataUrlBytes(url);
+  }
+
+  if (!url.startsWith("blob:")) {
+    return null;
+  }
+
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    return blob.size;
+  } catch {
+    return null;
+  }
+}
+
+function mapPromptInputErrorToMessage(
+  errorCode: "accept" | "max_files" | "max_file_size",
+): string {
+  switch (errorCode) {
+    case "accept":
+      return `One or more files have an unsupported type. Allowed file types: ${CHAT_FILE_ALLOWED_TYPES_TEXT}.`;
+    case "max_files":
+      return `You can upload up to ${MAX_CHAT_FILES_PER_MESSAGE} files per message.`;
+    case "max_file_size":
+      return `Each file must be ${MAX_CHAT_FILE_SIZE_MB}MB or smaller.`;
+    default:
+      return "Invalid file payload.";
+  }
+}
 
 export function Chat({
   conversationId,
@@ -45,6 +121,67 @@ export function Chat({
   const { copyToClipboard } = useCopyToClipboard({ timeout: 4000 });
   const controller = usePromptInputController();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const attachmentFiles = controller.attachments.files;
+  const removeAttachment = controller.attachments.remove;
+
+  useEffect(() => {
+    const queueChatError = (message: string) => {
+      queueMicrotask(() => {
+        setChatErrorMessage(message);
+      });
+    };
+
+    const overflowAttachments = attachmentFiles.slice(
+      MAX_CHAT_FILES_PER_MESSAGE,
+    );
+    if (overflowAttachments.length > 0) {
+      overflowAttachments.forEach((attachment) => {
+        removeAttachment(attachment.id);
+      });
+      queueChatError(
+        `You can upload up to ${MAX_CHAT_FILES_PER_MESSAGE} files per message.`,
+      );
+    }
+
+    for (const attachment of attachmentFiles) {
+      if (!isAllowedChatFileMediaType(attachment.mediaType ?? "")) {
+        removeAttachment(attachment.id);
+        queueChatError(
+          `One or more files have an unsupported type. Allowed file types: ${CHAT_FILE_ALLOWED_TYPES_TEXT}.`,
+        );
+      }
+    }
+
+    let didCancel = false;
+    const validateAttachmentSizes = async () => {
+      for (const attachment of attachmentFiles) {
+        const estimatedBytes = await estimateAttachmentBytes(attachment.url);
+        if (didCancel) {
+          return;
+        }
+
+        if (estimatedBytes == null) {
+          removeAttachment(attachment.id);
+          queueChatError("Invalid file payload.");
+          continue;
+        }
+
+        if (estimatedBytes > MAX_CHAT_FILE_SIZE_BYTES) {
+          removeAttachment(attachment.id);
+          const fileLabel = attachment.filename || "Attachment";
+          queueChatError(
+            `${fileLabel} exceeds the ${MAX_CHAT_FILE_SIZE_MB}MB limit.`,
+          );
+        }
+      }
+    };
+
+    void validateAttachmentSizes();
+
+    return () => {
+      didCancel = true;
+    };
+  }, [attachmentFiles, removeAttachment]);
 
   // Fresh transport reflects current mode + conversation.
   const transport = useMemo(() => {
@@ -118,6 +255,12 @@ export function Chat({
       return;
     }
 
+    const fileValidationError = buildClientFileValidationError(message.files);
+    if (fileValidationError) {
+      setChatErrorMessage(fileValidationError);
+      return;
+    }
+
     setChatErrorMessage(null);
     if (hasText && hasFiles) {
       sendMessage({ text: normalizedText, files: message.files });
@@ -130,6 +273,15 @@ export function Chat({
     }
 
     sendMessage({ files: message.files });
+  };
+
+  const handlePromptInputError = ({
+    code,
+  }: {
+    code: "accept" | "max_files" | "max_file_size";
+    message: string;
+  }) => {
+    setChatErrorMessage(mapPromptInputErrorToMessage(code));
   };
 
   return (
@@ -195,6 +347,7 @@ export function Chat({
         onSubmit={handleSubmit}
         onModeChange={setMode}
         onStop={stop}
+        onInputError={handlePromptInputError}
       />
     </>
   );

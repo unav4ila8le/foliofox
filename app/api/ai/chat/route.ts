@@ -146,6 +146,8 @@ export async function POST(req: Request) {
 
   // 3. Persist only submit user turns before model execution.
   //    Regenerate replacement happens after successful assistant persistence.
+  // TODO: Avoid orphaned user turns when model streaming fails after this write
+  // by introducing a failed-state marker or atomic user+assistant persistence flow.
   if (conversationId) {
     try {
       if (trigger === "submit-message") {

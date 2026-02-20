@@ -1,4 +1,5 @@
 import type {
+  PromptInputProps,
   PromptInputControllerProps,
   PromptInputMessage,
 } from "@/components/ai-elements/prompt-input";
@@ -46,6 +47,7 @@ export interface ChatComposerProps {
   onSubmit: (message: PromptInputMessage) => void;
   onModeChange: (value: Mode) => void;
   onStop: () => void;
+  onInputError: NonNullable<PromptInputProps["onError"]>;
 }
 
 export interface ChatAlertsProps {
