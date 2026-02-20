@@ -1,6 +1,7 @@
 import { aiModel, chatModelId } from "@/server/ai/provider";
 import {
   streamText,
+  type FileUIPart,
   type UIMessage,
   type InferUITools,
   convertToModelMessages,
@@ -22,6 +23,13 @@ import {
   AI_CHAT_CONVERSATION_CAP_FRIENDLY_MESSAGE,
   AI_CHAT_ERROR_CODES,
 } from "@/lib/ai/chat-errors";
+import {
+  MAX_CHAT_FILE_SIZE_BYTES,
+  MAX_CHAT_FILE_SIZE_MB,
+  MAX_CHAT_FILES_PER_MESSAGE,
+  estimateDataUrlBytes,
+  isAllowedChatFileMediaType,
+} from "@/lib/ai/chat-file-guardrails";
 
 // Allow streaming responses up to 120 seconds (reasoning models need more time)
 export const maxDuration = 160;
@@ -34,6 +42,53 @@ const chatRequestSchema = z.looseObject({
 
 const validModes = new Set<Mode>(["educational", "advisory", "unhinged"]);
 type ChatUIMessage = UIMessage<unknown, never, InferUITools<typeof aiTools>>;
+
+function validateLatestUserFileParts(messages: ChatUIMessage[]): string | null {
+  const latestUserMessage = [...messages]
+    .reverse()
+    .find((m) => m.role === "user");
+  if (!latestUserMessage) {
+    return null;
+  }
+
+  const fileParts = latestUserMessage.parts.filter(
+    (part): part is FileUIPart => part.type === "file",
+  );
+  if (fileParts.length === 0) {
+    return null;
+  }
+
+  if (fileParts.length > MAX_CHAT_FILES_PER_MESSAGE) {
+    return `You can upload up to ${MAX_CHAT_FILES_PER_MESSAGE} files per message.`;
+  }
+
+  for (let index = 0; index < fileParts.length; index += 1) {
+    const filePart = fileParts[index];
+    if (!filePart) {
+      continue;
+    }
+
+    if (!isAllowedChatFileMediaType(filePart.mediaType ?? "")) {
+      return "One or more files have an unsupported type.";
+    }
+
+    if (!filePart.url.startsWith("data:")) {
+      return "Invalid file payload format.";
+    }
+
+    const estimatedBytes = estimateDataUrlBytes(filePart.url);
+    if (estimatedBytes == null) {
+      return "Invalid file payload.";
+    }
+
+    if (estimatedBytes > MAX_CHAT_FILE_SIZE_BYTES) {
+      const fileLabel = filePart.filename || `File ${index + 1}`;
+      return `${fileLabel} exceeds the ${MAX_CHAT_FILE_SIZE_MB}MB limit.`;
+    }
+  }
+
+  return null;
+}
 
 export async function POST(req: Request) {
   // 1. Validate request payload early to avoid malformed chat writes.
@@ -53,6 +108,11 @@ export async function POST(req: Request) {
   }
 
   const messages = validatedMessages.data;
+  const fileValidationError = validateLatestUserFileParts(messages);
+  if (fileValidationError) {
+    return new Response(fileValidationError, { status: 400 });
+  }
+
   const trigger =
     parsedRequest.data.trigger === "regenerate-message"
       ? "regenerate-message"

@@ -511,12 +511,14 @@ export function Chat({
           onSubmit={handleSubmit}
           className="bg-background rounded-md"
         >
-          <PromptInputHeader>
-            <PromptInputAttachments>
+          {/* Attachments */}
+          <PromptInputHeader className="p-0">
+            <PromptInputAttachments className="p-2">
               {(attachment) => <PromptInputAttachment data={attachment} />}
             </PromptInputAttachments>
           </PromptInputHeader>
 
+          {/* Text input */}
           <PromptInputBody>
             <PromptInputTextarea
               placeholder="Ask Foliofox..."
@@ -524,6 +526,7 @@ export function Chat({
             />
           </PromptInputBody>
 
+          {/* Prompt footer */}
           <PromptInputFooter className="px-2 pb-2">
             <PromptInputTools>
               <PromptInputActionMenu>

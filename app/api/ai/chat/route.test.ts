@@ -143,6 +143,92 @@ describe("POST /api/ai/chat", () => {
     expect(fetchProfileMock).not.toHaveBeenCalled();
   });
 
+  it("returns 400 when latest user message has unsupported file type", async () => {
+    const { POST } = await import("@/app/api/ai/chat/route");
+
+    const request = new Request("http://localhost/api/ai/chat", {
+      method: "POST",
+      body: JSON.stringify({
+        messages: [
+          {
+            id: "m-file",
+            role: "user",
+            parts: [
+              { type: "text", text: "check this" },
+              {
+                type: "file",
+                filename: "script.exe",
+                mediaType: "application/x-msdownload",
+                url: "data:application/x-msdownload;base64,AAAA",
+              },
+            ],
+          },
+        ],
+      }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(400);
+    await expect(response.text()).resolves.toContain("unsupported type");
+    expect(fetchProfileMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when latest user message has too many file parts", async () => {
+    const { POST } = await import("@/app/api/ai/chat/route");
+
+    const request = new Request("http://localhost/api/ai/chat", {
+      method: "POST",
+      body: JSON.stringify({
+        messages: [
+          {
+            id: "m-many-files",
+            role: "user",
+            parts: [
+              { type: "text", text: "many files" },
+              {
+                type: "file",
+                filename: "one.pdf",
+                mediaType: "application/pdf",
+                url: "data:application/pdf;base64,AAAA",
+              },
+              {
+                type: "file",
+                filename: "two.pdf",
+                mediaType: "application/pdf",
+                url: "data:application/pdf;base64,AAAA",
+              },
+              {
+                type: "file",
+                filename: "three.pdf",
+                mediaType: "application/pdf",
+                url: "data:application/pdf;base64,AAAA",
+              },
+              {
+                type: "file",
+                filename: "four.pdf",
+                mediaType: "application/pdf",
+                url: "data:application/pdf;base64,AAAA",
+              },
+            ],
+          },
+        ],
+      }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(400);
+    await expect(response.text()).resolves.toContain("up to 3 files");
+    expect(fetchProfileMock).not.toHaveBeenCalled();
+  });
+
   it("returns 409 with a friendly message when conversation cap is reached", async () => {
     const { POST } = await import("@/app/api/ai/chat/route");
     const { AI_CHAT_CONVERSATION_CAP_FRIENDLY_MESSAGE, AI_CHAT_ERROR_CODES } =
