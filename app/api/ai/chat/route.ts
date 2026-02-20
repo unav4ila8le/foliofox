@@ -29,7 +29,7 @@ import {
   MAX_CHAT_FILES_PER_MESSAGE,
   estimateDataUrlBytes,
   isAllowedChatFileMediaType,
-} from "@/lib/ai/chat-file-guardrails";
+} from "@/lib/ai/chat-file-upload-guardrails";
 
 // Allow streaming responses up to 120 seconds (reasoning models need more time)
 export const maxDuration = 160;
