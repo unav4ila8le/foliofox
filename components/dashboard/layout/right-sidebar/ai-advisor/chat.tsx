@@ -10,15 +10,7 @@ import {
 } from "react";
 import { DefaultChatTransport, isStaticToolUIPart, type UIMessage } from "ai";
 import { useChat } from "@ai-sdk/react";
-import {
-  Check,
-  Copy,
-  ExternalLink,
-  FileText,
-  RefreshCcw,
-  Sparkles,
-  TriangleAlert,
-} from "lucide-react";
+import { Check, Copy, RefreshCcw, Sparkles, TriangleAlert } from "lucide-react";
 
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 
@@ -43,6 +35,12 @@ import {
   ReasoningContent,
   ReasoningTrigger,
 } from "@/components/ai-elements/reasoning";
+import {
+  Source,
+  Sources,
+  SourcesContent,
+  SourcesTrigger,
+} from "@/components/ai-elements/sources";
 import {
   PromptInput,
   PromptInputActionAddAttachments,
@@ -126,6 +124,11 @@ function getSourceLabel(url: string, title?: string) {
     return url;
   }
 }
+
+type MessageSourcePart = Extract<
+  UIMessage["parts"][number],
+  { type: "source-url" | "source-document" }
+>;
 
 function DisabledState() {
   const [openAISettings, setOpenAISettings] = useState(false);
@@ -306,9 +309,41 @@ export function Chat({
               const isAssistant = message.role === "assistant";
               const isStreaming = status === "streaming";
               const isCopied = copiedMessages.has(message.id);
+              const sourceParts = message.parts.filter(
+                (part): part is MessageSourcePart =>
+                  part.type === "source-url" || part.type === "source-document",
+              );
 
               return (
                 <Fragment key={message.id}>
+                  {isAssistant && sourceParts.length > 0 && (
+                    <Sources>
+                      <SourcesTrigger count={sourceParts.length} />
+                      <SourcesContent>
+                        {sourceParts.map((part, sourceIndex) => {
+                          if (part.type === "source-url") {
+                            return (
+                              <Source
+                                key={`${message.id}-source-${sourceIndex}`}
+                                href={part.url}
+                                title={getSourceLabel(part.url, part.title)}
+                              />
+                            );
+                          }
+
+                          return (
+                            <Source
+                              key={`${message.id}-source-doc-${sourceIndex}`}
+                              title={
+                                part.title || part.filename || "Document source"
+                              }
+                            />
+                          );
+                        })}
+                      </SourcesContent>
+                    </Sources>
+                  )}
+
                   {groupAdjacentParts(message.parts).map((group) => {
                     if (group.kind === "reasoning") {
                       const mergedText = group.texts
@@ -383,42 +418,8 @@ export function Chat({
                           </Fragment>
                         );
                       case "source-url":
-                        return (
-                          <Message
-                            key={`${message.id}-source-${i}`}
-                            from="assistant"
-                            className="max-w-full"
-                          >
-                            <MessageContent>
-                              <a
-                                href={part.url}
-                                target="_blank"
-                                rel="noreferrer noopener"
-                                className="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 text-xs underline-offset-4 hover:underline"
-                              >
-                                <ExternalLink className="size-3.5" />
-                                {getSourceLabel(part.url, part.title)}
-                              </a>
-                            </MessageContent>
-                          </Message>
-                        );
                       case "source-document":
-                        return (
-                          <Message
-                            key={`${message.id}-source-doc-${i}`}
-                            from="assistant"
-                            className="max-w-full"
-                          >
-                            <MessageContent>
-                              <span className="text-muted-foreground inline-flex items-center gap-2 text-xs">
-                                <FileText className="size-3.5" />
-                                {part.title ||
-                                  part.filename ||
-                                  "Document source"}
-                              </span>
-                            </MessageContent>
-                          </Message>
-                        );
+                        return null;
                       default:
                         if (isStaticToolUIPart(part)) {
                           return (
