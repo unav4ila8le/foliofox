@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { Share } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -106,11 +107,12 @@ export function SharePortfolioButtonClient({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" disabled={isAnyPending}>
-          {shareMetadata?.isActive && (
+          {shareMetadata?.isActive ? (
             <span className="size-2 animate-pulse rounded-full bg-green-500" />
+          ) : (
+            <Share />
           )}
-          <span className="md:hidden">Share</span>
-          <span className="hidden md:inline">Share Portfolio</span>
+          <span>Share</span>
         </Button>
       </DialogTrigger>
       <DialogContent>

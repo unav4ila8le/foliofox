@@ -375,9 +375,7 @@ export function Chat({
               );
             })
           )}
-          {(status === "submitted" || status === "streaming") && (
-            <MessageLoading status={status} className="mb-2 ps-1" />
-          )}
+          {status === "submitted" && <MessageLoading />}
         </ConversationContent>
         <ConversationScrollButton />
       </Conversation>
