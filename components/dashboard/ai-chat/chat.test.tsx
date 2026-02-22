@@ -350,6 +350,35 @@ describe("Chat guardrail UI", () => {
     expect(screen.queryByText("previous conversation error")).toBeNull();
   });
 
+  it("does not emit stale empty draft input during initial hydration", () => {
+    hoistedMocks.promptSubmitPayload = { text: "", files: [] };
+    const onDraftInputChange = vi.fn();
+
+    renderChat({
+      initialDraftInput: "Persisted draft input",
+      onDraftInputChange,
+    });
+
+    expect(onDraftInputChange).not.toHaveBeenCalledWith("");
+  });
+
+  it("does not emit stale empty draft files during initial hydration", async () => {
+    hoistedMocks.promptSubmitPayload = { text: "", files: [] };
+    const onDraftFilesChange = vi.fn();
+
+    renderChat({
+      initialDraftFiles: [
+        new File(["persisted"], "persisted.pdf", { type: "application/pdf" }),
+      ],
+      onDraftFilesChange,
+    });
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(onDraftFilesChange).not.toHaveBeenCalledWith([]);
+  });
+
   it("submits file-only prompt payloads to useChat", () => {
     hoistedMocks.promptSubmitPayload = {
       text: "",

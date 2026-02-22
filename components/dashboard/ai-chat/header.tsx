@@ -97,13 +97,17 @@ export function ChatHeader({
         layoutMode === "page" ? "justify-between" : "xl:justify-between",
       )}
     >
-      <div
-        className={cn(
-          "flex items-center gap-2",
-          layoutMode === "page" ? "font-semibold" : "text-sm font-medium",
-        )}
-      >
-        AI Chat
+      <div className="flex items-center gap-2" aria-label="AI chat heading">
+        <h2
+          className={cn(
+            "leading-none",
+            layoutMode === "page"
+              ? "text-base font-semibold"
+              : "text-sm font-medium",
+          )}
+        >
+          AI Chat
+        </h2>
         {modeActionHref ? (
           <Button
             size="xs"

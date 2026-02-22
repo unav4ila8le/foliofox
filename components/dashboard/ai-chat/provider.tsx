@@ -23,7 +23,6 @@ interface AIChatProviderValue {
   setDraftInput: (conversationId: string, input: string) => void;
   setDraftMode: (conversationId: string, mode: Mode) => void;
   setDraftFiles: (conversationId: string, files: File[]) => void;
-  clearDraft: (conversationId: string) => void;
 }
 
 const DEFAULT_DRAFT_STATE: AIChatDraftState = {
@@ -131,18 +130,6 @@ export function AIChatProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const clearDraft = useCallback((conversationId: string) => {
-    setDraftsByConversationId((previousDrafts) => {
-      if (!previousDrafts[conversationId]) {
-        return previousDrafts;
-      }
-
-      const remainingDrafts = { ...previousDrafts };
-      delete remainingDrafts[conversationId];
-      return remainingDrafts;
-    });
-  }, []);
-
   const value = useMemo<AIChatProviderValue>(
     () => ({
       activeConversationId,
@@ -151,7 +138,6 @@ export function AIChatProvider({ children }: { children: React.ReactNode }) {
       setDraftInput,
       setDraftMode,
       setDraftFiles,
-      clearDraft,
     }),
     [
       activeConversationId,
@@ -160,7 +146,6 @@ export function AIChatProvider({ children }: { children: React.ReactNode }) {
       setDraftInput,
       setDraftMode,
       setDraftFiles,
-      clearDraft,
     ],
   );
 

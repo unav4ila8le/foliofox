@@ -140,6 +140,8 @@ export function Chat({
   const [chatErrorMessage, setChatErrorMessage] = useState<string | null>(null);
   const [copiedMessages, setCopiedMessages] = useState<Set<string>>(new Set());
   const hasHydratedDraftRef = useRef(false);
+  const hasSyncedDraftInputRef = useRef(false);
+  const hasSyncedDraftFilesRef = useRef(false);
 
   const { copyToClipboard } = useCopyToClipboard({ timeout: 4000 });
   const controller = usePromptInputController();
@@ -161,6 +163,16 @@ export function Chat({
   }, [controller, initialDraftInput, initialDraftFiles]);
 
   useEffect(() => {
+    if (!hasHydratedDraftRef.current) {
+      return;
+    }
+
+    // Skip the first sync pass to avoid emitting stale pre-hydration input.
+    if (!hasSyncedDraftInputRef.current) {
+      hasSyncedDraftInputRef.current = true;
+      return;
+    }
+
     onDraftInputChange?.(controller.textInput.value);
   }, [controller.textInput.value, onDraftInputChange]);
 
@@ -170,6 +182,16 @@ export function Chat({
 
   useEffect(() => {
     if (!onDraftFilesChange) {
+      return;
+    }
+
+    if (!hasHydratedDraftRef.current) {
+      return;
+    }
+
+    // Skip the first sync pass to avoid emitting stale pre-hydration files.
+    if (!hasSyncedDraftFilesRef.current) {
+      hasSyncedDraftFilesRef.current = true;
       return;
     }
 

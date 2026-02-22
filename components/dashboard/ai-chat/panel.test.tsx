@@ -203,6 +203,29 @@ describe("AIChatPanel continuity", () => {
     });
   });
 
+  it("loads direct-link conversation messages before history list includes the conversation", async () => {
+    hoistedMocks.fetchConversations.mockResolvedValueOnce({
+      conversations: [],
+      totalCount: 0,
+      isAtCap: false,
+      maxConversations: 10,
+    });
+
+    render(
+      <Harness
+        showPanel
+        layoutMode="page"
+        initialConversationId="conversation-z"
+      />,
+    );
+
+    await waitFor(() => {
+      expect(hoistedMocks.fetchConversationMessages).toHaveBeenCalledWith(
+        "conversation-z",
+      );
+    });
+  });
+
   it("allows switching away from initialConversationId on page mode", async () => {
     hoistedMocks.fetchConversations.mockResolvedValueOnce({
       conversations: [

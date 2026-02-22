@@ -1,5 +1,6 @@
 "use client";
 
+import type { UIMessage } from "ai";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { v4 as uuidv4 } from "uuid";
@@ -14,7 +15,6 @@ import {
   type ConversationsResult,
 } from "@/server/ai/conversations/fetch";
 
-import type { UIMessage } from "ai";
 import { buildAIChatExpandHref } from "./navigation";
 import { useAIChatState } from "./provider";
 
@@ -103,25 +103,28 @@ export function AIChatPanel({
   useEffect(() => {
     let didCancel = false;
 
-    queueMicrotask(() => {
-      if (didCancel) {
-        return;
-      }
-
-      void refreshConversations().catch(() => {
+    void fetchConversations()
+      .then((result) => {
+        if (!didCancel) {
+          applyConversationsResult(result);
+        }
+      })
+      .catch(() => {
         // Ignore load errors; header will show empty state.
       });
-    });
 
     return () => {
       didCancel = true;
     };
-  }, [refreshConversations]);
+  }, [applyConversationsResult]);
 
   const hasCurrentConversationInHistory = conversations.some(
     (conversation) =>
       conversationId != null && conversation.id === conversationId,
   );
+  const shouldLoadConversationFromDirectLink =
+    normalizedInitialConversationId != null &&
+    conversationId === normalizedInitialConversationId;
 
   useEffect(() => {
     let didCancel = false;
@@ -137,7 +140,10 @@ export function AIChatPanel({
       return;
     }
 
-    if (!hasCurrentConversationInHistory) {
+    if (
+      !hasCurrentConversationInHistory &&
+      !shouldLoadConversationFromDirectLink
+    ) {
       lastLoadedConversationIdRef.current = null;
       queueMicrotask(() => {
         if (!didCancel) {
@@ -186,7 +192,11 @@ export function AIChatPanel({
     return () => {
       didCancel = true;
     };
-  }, [conversationId, hasCurrentConversationInHistory]);
+  }, [
+    conversationId,
+    hasCurrentConversationInHistory,
+    shouldLoadConversationFromDirectLink,
+  ]);
 
   // Switch to an existing conversation (loads history).
   const handleSelectConversation = (id: string) => {
