@@ -19,17 +19,19 @@ import { buildAIChatExpandHref } from "./navigation";
 import { useAIChatState } from "./provider";
 
 interface AIChatPanelProps {
+  layoutMode: "sidebar" | "page";
   isAIEnabled?: boolean;
   historyPopoverWidth?: string;
   initialConversationId?: string | null;
-  showExpandButton?: boolean;
+  moveToSidebarHref?: string | null;
 }
 
 export function AIChatPanel({
+  layoutMode,
   isAIEnabled,
   historyPopoverWidth,
   initialConversationId,
-  showExpandButton = false,
+  moveToSidebarHref,
 }: AIChatPanelProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -194,16 +196,16 @@ export function AIChatPanel({
     return query ? `${pathname}?${query}` : pathname;
   }, [pathname, searchParams]);
 
-  const expandHref = useMemo(() => {
-    if (!showExpandButton) {
-      return null;
+  const modeActionHref = useMemo(() => {
+    if (layoutMode === "page") {
+      return moveToSidebarHref ?? null;
     }
 
     return buildAIChatExpandHref({
       conversationId,
       from: currentPathWithQuery,
     });
-  }, [showExpandButton, conversationId, currentPathWithQuery]);
+  }, [layoutMode, moveToSidebarHref, conversationId, currentPathWithQuery]);
 
   const currentDraft = draftsByConversationId[conversationId];
   const initialDraftInput = currentDraft?.input ?? "";
@@ -213,6 +215,7 @@ export function AIChatPanel({
   return (
     <div className="flex h-full min-h-0 flex-col">
       <ChatHeader
+        layoutMode={layoutMode}
         conversations={conversations}
         onSelectConversation={handleSelectConversation}
         onNewConversation={handleNewConversation}
@@ -223,7 +226,7 @@ export function AIChatPanel({
         maxConversations={maxConversations}
         totalConversations={totalConversations}
         historyPopoverWidth={historyPopoverWidth}
-        expandHref={expandHref}
+        modeActionHref={modeActionHref}
       />
       <PromptInputProvider>
         <Chat

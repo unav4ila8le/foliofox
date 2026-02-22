@@ -18,6 +18,11 @@ import { Skeleton } from "@/components/ui/custom/skeleton";
 
 // Helper function to format segment names
 function formatSegmentName(segment: string): string {
+  // Preserve acronym casing for known route labels.
+  if (segment === "ai-chat") {
+    return "AI Chat";
+  }
+
   return segment
     .split("-")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))

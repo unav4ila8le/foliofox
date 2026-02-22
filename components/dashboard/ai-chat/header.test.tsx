@@ -14,6 +14,7 @@ describe("ChatHeader", () => {
     render(
       <TooltipProvider>
         <ChatHeader
+          layoutMode="sidebar"
           conversations={[]}
           onSelectConversation={() => {}}
           onNewConversation={() => {}}
@@ -36,11 +37,12 @@ describe("ChatHeader", () => {
     render(
       <TooltipProvider>
         <ChatHeader
+          layoutMode="sidebar"
           conversations={[]}
           onSelectConversation={() => {}}
           onNewConversation={() => {}}
           isAIEnabled
-          expandHref="/dashboard/ai-chat?conversationId=conversation-1&from=%2Fdashboard%2Fassets"
+          modeActionHref="/dashboard/ai-chat?conversationId=conversation-1&from=%2Fdashboard%2Fassets"
         />
       </TooltipProvider>,
     );

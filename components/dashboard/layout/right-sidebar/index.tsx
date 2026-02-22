@@ -10,10 +10,13 @@ import {
   SidebarRail,
   useSidebar,
 } from "@/components/ui/custom/sidebar";
-import { AIAdvisor } from "./ai-advisor";
+import { useDashboardData } from "@/components/dashboard/providers/dashboard-data-provider";
+import { AIChatPanel } from "@/components/dashboard/ai-chat/panel";
 
 export function RightSidebar() {
   const pathname = usePathname();
+  const { profile } = useDashboardData();
+  const { rightWidth } = useSidebar();
   const { openRight, openMobileRight, setOpenRight, setOpenMobileRight } =
     useSidebar();
   const previousOpenRightRef = useRef<boolean | null>(null);
@@ -98,7 +101,11 @@ export function RightSidebar() {
       mobileBreakpoint="(max-width: 1279px)"
       style={{ "--sidebar-width-mobile": "100vw" } as CSSProperties}
     >
-      <AIAdvisor />
+      <AIChatPanel
+        layoutMode="sidebar"
+        isAIEnabled={profile.data_sharing_consent}
+        historyPopoverWidth={`calc(${rightWidth} - 16px)`}
+      />
       <SidebarRail side="right" />
     </Sidebar>
   );

@@ -1,7 +1,14 @@
 import type { CSSProperties } from "react";
 import { useState } from "react";
 import Link from "next/link";
-import { Expand, History, Plus, Settings, Trash2 } from "lucide-react";
+import {
+  Expand,
+  History,
+  PanelRightClose,
+  Plus,
+  Settings,
+  Trash2,
+} from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 
@@ -28,8 +35,10 @@ import {
 import { AISettingsDialog } from "@/components/features/ai-settings/dialog";
 
 import { deleteConversation } from "@/server/ai/conversations/delete";
+import { cn } from "@/lib/utils";
 
 interface ChatHeaderProps {
+  layoutMode: "sidebar" | "page";
   conversations?: {
     id: string;
     title: string;
@@ -44,10 +53,11 @@ interface ChatHeaderProps {
   maxConversations?: number;
   totalConversations?: number;
   historyPopoverWidth?: string;
-  expandHref?: string | null;
+  modeActionHref?: string | null;
 }
 
 export function ChatHeader({
+  layoutMode,
   conversations = [],
   onSelectConversation,
   onNewConversation,
@@ -58,7 +68,7 @@ export function ChatHeader({
   maxConversations = 0,
   totalConversations = 0,
   historyPopoverWidth,
-  expandHref,
+  modeActionHref,
 }: ChatHeaderProps) {
   const [openHistory, setOpenHistory] = useState(false);
   const [openAISettings, setOpenAISettings] = useState(false);
@@ -91,13 +101,36 @@ export function ChatHeader({
   };
 
   return (
-    <div className="relative flex items-center gap-4 px-4 py-2 xl:justify-between">
-      <div className="flex items-center gap-2 text-sm font-medium">
+    <div
+      className={cn(
+        "relative flex items-center gap-4 px-4 py-2",
+        layoutMode === "page" ? "justify-between" : "xl:justify-between",
+      )}
+    >
+      <div
+        className={cn(
+          "flex items-center gap-2",
+          layoutMode === "page" ? "font-semibold" : "text-sm font-medium",
+        )}
+      >
         AI Chat
-        {expandHref ? (
-          <Button size="xs" variant="outline" asChild>
-            <Link href={expandHref}>
-              <Expand /> Expand
+        {modeActionHref ? (
+          <Button
+            size="xs"
+            variant="outline"
+            asChild
+            className="hidden cursor-default xl:inline-flex"
+          >
+            <Link href={modeActionHref}>
+              {layoutMode === "page" ? (
+                <>
+                  <PanelRightClose /> Move to sidebar
+                </>
+              ) : (
+                <>
+                  <Expand /> Expand
+                </>
+              )}
             </Link>
           </Button>
         ) : null}

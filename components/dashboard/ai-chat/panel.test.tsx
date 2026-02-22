@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 
 import { AIChatPanel } from "@/components/dashboard/ai-chat/panel";
 import { AIChatProvider } from "@/components/dashboard/ai-chat/provider";
@@ -52,18 +58,18 @@ vi.mock("@/components/dashboard/ai-chat/header", () => ({
   ChatHeader: ({
     onSelectConversation,
     onNewConversation,
-    expandHref,
+    modeActionHref,
   }: {
     onSelectConversation: (id: string) => void;
     onNewConversation: () => void;
-    expandHref?: string | null;
+    modeActionHref?: string | null;
   }) => (
     <div>
       <button onClick={() => onSelectConversation("conversation-a")}>
         Select conversation A
       </button>
       <button onClick={onNewConversation}>New conversation</button>
-      {expandHref ? <a href={expandHref}>Expand</a> : null}
+      {modeActionHref ? <a href={modeActionHref}>Expand</a> : null}
     </div>
   ),
 }));
@@ -114,22 +120,21 @@ vi.mock("@/components/dashboard/ai-chat/chat", () => ({
 
 function Harness({
   showPanel = true,
-  showExpandButton = false,
+  layoutMode = "sidebar",
 }: {
   showPanel?: boolean;
-  showExpandButton?: boolean;
+  layoutMode?: "sidebar" | "page";
 }) {
   return (
     <AIChatProvider>
-      {showPanel ? (
-        <AIChatPanel isAIEnabled showExpandButton={showExpandButton} />
-      ) : null}
+      {showPanel ? <AIChatPanel isAIEnabled layoutMode={layoutMode} /> : null}
     </AIChatProvider>
   );
 }
 
 describe("AIChatPanel continuity", () => {
   beforeEach(() => {
+    cleanup();
     hoistedMocks.pathname = "/dashboard/assets";
     hoistedMocks.searchParams = "page=1";
     hoistedMocks.uuidValues = [
@@ -177,7 +182,7 @@ describe("AIChatPanel continuity", () => {
     hoistedMocks.pathname = "/dashboard/assets";
     hoistedMocks.searchParams = "page=3&type=asset";
 
-    render(<Harness showPanel showExpandButton />);
+    render(<Harness showPanel layoutMode="sidebar" />);
 
     await waitFor(() => {
       const expandLink = screen.getByRole("link", { name: "Expand" });

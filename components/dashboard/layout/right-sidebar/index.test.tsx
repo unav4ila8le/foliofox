@@ -29,8 +29,16 @@ vi.mock("next/navigation", () => ({
   usePathname: () => hoistedMocks.pathname,
 }));
 
-vi.mock("@/components/dashboard/layout/right-sidebar/ai-advisor", () => ({
-  AIAdvisor: () => <div data-testid="ai-advisor" />,
+vi.mock("@/components/dashboard/providers/dashboard-data-provider", () => ({
+  useDashboardData: () => ({
+    profile: {
+      data_sharing_consent: true,
+    },
+  }),
+}));
+
+vi.mock("@/components/dashboard/ai-chat/panel", () => ({
+  AIChatPanel: () => <div data-testid="ai-chat-panel" />,
 }));
 
 vi.mock("@/components/ui/custom/sidebar", () => ({
@@ -39,6 +47,7 @@ vi.mock("@/components/ui/custom/sidebar", () => ({
   ),
   SidebarRail: () => <div data-testid="right-sidebar-rail" />,
   useSidebar: () => ({
+    rightWidth: "24rem",
     openRight: hoistedMocks.openRight,
     openMobileRight: hoistedMocks.openMobileRight,
     setOpenRight: hoistedMocks.setOpenRight,
@@ -60,7 +69,7 @@ describe("RightSidebar", () => {
     render(<RightSidebar />);
 
     expect(screen.getByTestId("right-sidebar")).not.toBeNull();
-    expect(screen.getByTestId("ai-advisor")).not.toBeNull();
+    expect(screen.getByTestId("ai-chat-panel")).not.toBeNull();
   });
 
   it("hides the sidebar and forces closed state on /dashboard/ai-chat", () => {
