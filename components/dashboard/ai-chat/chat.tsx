@@ -263,25 +263,30 @@ export function Chat({
     });
   }, [mode, conversationId]);
 
-  const { messages, sendMessage, status, stop, regenerate } = useChat({
-    id: conversationId,
-    messages: initialMessages,
-    transport,
-    onError: (error) => {
-      // Normalize backend cap error into a stable, user-friendly message.
-      const message = isConversationCapErrorMessage(error.message)
-        ? AI_CHAT_CONVERSATION_CAP_FRIENDLY_MESSAGE
-        : error.message;
+  const { messages, setMessages, sendMessage, status, stop, regenerate } =
+    useChat({
+      id: conversationId,
+      messages: initialMessages,
+      transport,
+      onError: (error) => {
+        // Normalize backend cap error into a stable, user-friendly message.
+        const message = isConversationCapErrorMessage(error.message)
+          ? AI_CHAT_CONVERSATION_CAP_FRIENDLY_MESSAGE
+          : error.message;
 
-      setChatErrorMessage(message);
-    },
-    onFinish: async ({ isAbort, isError }) => {
-      if (isAbort || isError) return;
+        setChatErrorMessage(message);
+      },
+      onFinish: async ({ isAbort, isError }) => {
+        if (isAbort || isError) return;
 
-      setChatErrorMessage(null);
-      await onConversationPersisted?.();
-    },
-  });
+        setChatErrorMessage(null);
+        await onConversationPersisted?.();
+      },
+    });
+
+  useEffect(() => {
+    setMessages(initialMessages);
+  }, [initialMessages, setMessages]);
 
   const showProactiveCapAlert =
     Boolean(isAIEnabled) &&

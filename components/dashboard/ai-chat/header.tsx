@@ -154,7 +154,6 @@ export function ChatHeader({
             <TooltipContent>Conversation history</TooltipContent>
           </Tooltip>
           <PopoverContent
-            align="start"
             className="w-[min(32rem,calc(100vw-2rem))] p-0"
             style={popoverStyle}
           >

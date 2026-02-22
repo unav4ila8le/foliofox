@@ -8,6 +8,7 @@ import { MAX_CONVERSATIONS_PER_USER } from "@/lib/ai/chat-guardrails-config";
 const hoistedMocks = vi.hoisted(() => ({
   sendMessageMock: vi.fn(),
   regenerateMock: vi.fn(),
+  setMessagesMock: vi.fn(),
   chatError: null as Error | null,
   promptSubmitPayload: { text: "hello", files: [] as unknown[] },
   messages: [] as unknown[],
@@ -224,6 +225,7 @@ vi.mock("@ai-sdk/react", () => ({
 
     return {
       messages: hoistedMocks.messages,
+      setMessages: hoistedMocks.setMessagesMock,
       sendMessage: hoistedMocks.sendMessageMock,
       status: hoistedMocks.status,
       stop: vi.fn(),
@@ -256,6 +258,7 @@ describe("Chat guardrail UI", () => {
     hoistedMocks.promptSubmitPayload = { text: "hello", files: [] };
     hoistedMocks.messages = [];
     hoistedMocks.status = "ready";
+    hoistedMocks.setMessagesMock.mockReset();
     hoistedMocks.sendMessageMock.mockReset();
     hoistedMocks.regenerateMock.mockReset();
   });

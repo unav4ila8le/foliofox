@@ -68,6 +68,9 @@ vi.mock("@/components/dashboard/ai-chat/header", () => ({
       <button onClick={() => onSelectConversation("conversation-a")}>
         Select conversation A
       </button>
+      <button onClick={() => onSelectConversation("conversation-b")}>
+        Select conversation B
+      </button>
       <button onClick={onNewConversation}>New conversation</button>
       {modeActionHref ? <a href={modeActionHref}>Expand</a> : null}
     </div>
@@ -121,13 +124,21 @@ vi.mock("@/components/dashboard/ai-chat/chat", () => ({
 function Harness({
   showPanel = true,
   layoutMode = "sidebar",
+  initialConversationId,
 }: {
   showPanel?: boolean;
   layoutMode?: "sidebar" | "page";
+  initialConversationId?: string | null;
 }) {
   return (
     <AIChatProvider>
-      {showPanel ? <AIChatPanel isAIEnabled layoutMode={layoutMode} /> : null}
+      {showPanel ? (
+        <AIChatPanel
+          isAIEnabled
+          layoutMode={layoutMode}
+          initialConversationId={initialConversationId}
+        />
+      ) : null}
     </AIChatProvider>
   );
 }
@@ -188,6 +199,74 @@ describe("AIChatPanel continuity", () => {
       const expandLink = screen.getByRole("link", { name: "Expand" });
       expect(expandLink.getAttribute("href")).toBe(
         "/dashboard/ai-chat?conversationId=generated-conversation-1&from=%2Fdashboard%2Fassets%3Fpage%3D3%26type%3Dasset",
+      );
+    });
+  });
+
+  it("allows switching away from initialConversationId on page mode", async () => {
+    hoistedMocks.fetchConversations.mockResolvedValueOnce({
+      conversations: [
+        {
+          id: "conversation-a",
+          title: "Conversation A",
+          updatedAt: "2026-01-01T00:00:00.000Z",
+        },
+        {
+          id: "conversation-b",
+          title: "Conversation B",
+          updatedAt: "2026-01-02T00:00:00.000Z",
+        },
+      ],
+      totalCount: 2,
+      isAtCap: false,
+      maxConversations: 10,
+    });
+
+    render(
+      <Harness
+        showPanel
+        layoutMode="page"
+        initialConversationId="conversation-a"
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("conversation-id").textContent).toBe(
+        "conversation-a",
+      );
+    });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Select conversation B" }),
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("conversation-id").textContent).toBe(
+        "conversation-b",
+      );
+    });
+  });
+
+  it("allows creating a new conversation from page mode with initialConversationId", async () => {
+    render(
+      <Harness
+        showPanel
+        layoutMode="page"
+        initialConversationId="conversation-a"
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("conversation-id").textContent).toBe(
+        "conversation-a",
+      );
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "New conversation" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("conversation-id").textContent).toBe(
+        "generated-conversation-2",
       );
     });
   });

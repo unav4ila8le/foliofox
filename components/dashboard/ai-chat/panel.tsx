@@ -58,15 +58,22 @@ export function AIChatPanel({
   const [initialMessages, setInitialMessages] = useState<UIMessage[]>([]);
   const [isLoadingConversation, setIsLoadingConversation] = useState(false);
   const lastLoadedConversationIdRef = useRef<string | null>(null);
+  const lastAppliedInitialConversationIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (normalizedInitialConversationId) {
-      if (activeConversationId !== normalizedInitialConversationId) {
+      if (
+        lastAppliedInitialConversationIdRef.current !==
+        normalizedInitialConversationId
+      ) {
+        lastAppliedInitialConversationIdRef.current =
+          normalizedInitialConversationId;
         setActiveConversationId(normalizedInitialConversationId);
       }
       return;
     }
 
+    lastAppliedInitialConversationIdRef.current = null;
     if (!activeConversationId) {
       setActiveConversationId(fallbackConversationId);
     }
@@ -128,6 +135,7 @@ export function AIChatPanel({
       lastLoadedConversationIdRef.current = null;
       queueMicrotask(() => {
         if (!didCancel) {
+          setIsLoadingConversation(false);
           setInitialMessages([]);
         }
       });
@@ -177,6 +185,7 @@ export function AIChatPanel({
   // Switch to an existing conversation (loads history).
   const handleSelectConversation = (id: string) => {
     lastLoadedConversationIdRef.current = null;
+    setInitialMessages([]);
     setActiveConversationId(id);
   };
 
