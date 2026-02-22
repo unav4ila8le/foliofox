@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { useState } from "react";
 import Link from "next/link";
 import { Expand, History, Plus, Settings, Trash2 } from "lucide-react";
@@ -24,7 +25,6 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { useSidebar } from "@/components/ui/custom/sidebar";
 import { AISettingsDialog } from "@/components/features/ai-settings/dialog";
 
 import { deleteConversation } from "@/server/ai/conversations/delete";
@@ -43,6 +43,8 @@ interface ChatHeaderProps {
   isAtConversationCap?: boolean;
   maxConversations?: number;
   totalConversations?: number;
+  historyPopoverWidth?: string;
+  expandHref?: string | null;
 }
 
 export function ChatHeader({
@@ -55,13 +57,21 @@ export function ChatHeader({
   isAtConversationCap,
   maxConversations = 0,
   totalConversations = 0,
+  historyPopoverWidth,
+  expandHref,
 }: ChatHeaderProps) {
   const [openHistory, setOpenHistory] = useState(false);
   const [openAISettings, setOpenAISettings] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const { rightWidth } = useSidebar();
   const isNewConversationDisabled =
     isLoadingConversation || !isAIEnabled || isAtConversationCap;
+
+  const popoverStyle = historyPopoverWidth
+    ? ({
+        width: historyPopoverWidth,
+        marginRight: "8px",
+      } as CSSProperties)
+    : undefined;
 
   const handleDelete = async (e: React.MouseEvent, conversationId: string) => {
     e.stopPropagation(); // Prevent selecting the conversation
@@ -84,11 +94,13 @@ export function ChatHeader({
     <div className="relative flex items-center gap-4 px-4 py-2 xl:justify-between">
       <div className="flex items-center gap-2 text-sm font-medium">
         AI Chat
-        <Button size="xs" variant="outline" asChild>
-          <Link href="/dashboard/ai-chat">
-            <Expand /> Expand
-          </Link>
-        </Button>
+        {expandHref ? (
+          <Button size="xs" variant="outline" asChild>
+            <Link href={expandHref}>
+              <Expand /> Expand
+            </Link>
+          </Button>
+        ) : null}
       </div>
       <div className="flex items-center gap-1">
         {/* Conversation history */}
@@ -110,8 +122,8 @@ export function ChatHeader({
           </Tooltip>
           <PopoverContent
             align="start"
-            className="p-0"
-            style={{ width: `calc(${rightWidth} - 16px)`, marginRight: "8px" }}
+            className="w-[min(32rem,calc(100vw-2rem))] p-0"
+            style={popoverStyle}
           >
             <Command>
               <CommandInput placeholder="Search conversation..." />
