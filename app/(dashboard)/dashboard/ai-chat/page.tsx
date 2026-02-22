@@ -16,8 +16,8 @@ export default function AIChatPage() {
     sanitizeDashboardReturnPath(requestedReturnPath) ?? "/dashboard";
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col overflow-hidden">
-      <div className="bg-card min-h-0 flex-1 overflow-hidden rounded-lg border">
+    <div className="mx-auto w-full max-w-4xl">
+      <div className="bg-card rounded-lg border">
         <AIChatPanel
           layoutMode="page"
           isAIEnabled={profile.data_sharing_consent}
