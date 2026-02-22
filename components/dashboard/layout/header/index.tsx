@@ -9,8 +9,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Kbd, KbdGroup } from "@/components/ui/kbd";
 
+import { AIChatToggle } from "./ai-chat-toggle";
 import { Breadcrumb } from "./breadcrumb";
 import { NewActionButton } from "./new-action-button";
 import { FeedbackButton } from "@/components/dashboard/layout/header/feedback";
@@ -45,20 +45,7 @@ export function Header() {
           <SharePortfolioButton />
         </Suspense>
         <FeedbackButton />
-        <Tooltip delayDuration={500}>
-          <TooltipTrigger asChild>
-            <SidebarTrigger side="right" className="-mr-2" />
-          </TooltipTrigger>
-          <TooltipContent>
-            <div className="flex items-center gap-2">
-              Toggle AI Chat
-              <KbdGroup>
-                <Kbd>Ctrl</Kbd>
-                <Kbd>I</Kbd>
-              </KbdGroup>
-            </div>
-          </TooltipContent>
-        </Tooltip>
+        <AIChatToggle />
       </div>
     </header>
   );

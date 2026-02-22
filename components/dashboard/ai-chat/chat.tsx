@@ -104,25 +104,97 @@ function mapPromptInputErrorToMessage(
   }
 }
 
+async function toDraftFile(
+  filePart: FileUIPart,
+  index: number,
+): Promise<File | null> {
+  try {
+    const response = await fetch(filePart.url);
+    const blob = await response.blob();
+    const filename = filePart.filename || `attachment-${index + 1}`;
+    const mediaType =
+      filePart.mediaType || blob.type || "application/octet-stream";
+    return new File([blob], filename, { type: mediaType });
+  } catch {
+    return null;
+  }
+}
+
 export function Chat({
   conversationId,
   initialMessages,
   isLoadingConversation,
+  initialDraftInput = "",
+  initialDraftMode = "advisory",
+  initialDraftFiles = [],
   isAIEnabled,
   isAtConversationCap,
   maxConversations = 0,
   hasCurrentConversationInHistory,
   onConversationPersisted,
+  onDraftInputChange,
+  onDraftModeChange,
+  onDraftFilesChange,
 }: ChatProps) {
-  const [mode, setMode] = useState<Mode>("advisory");
+  const [mode, setMode] = useState<Mode>(initialDraftMode);
   const [chatErrorMessage, setChatErrorMessage] = useState<string | null>(null);
   const [copiedMessages, setCopiedMessages] = useState<Set<string>>(new Set());
+  const hasHydratedDraftRef = useRef(false);
 
   const { copyToClipboard } = useCopyToClipboard({ timeout: 4000 });
   const controller = usePromptInputController();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const attachmentFiles = controller.attachments.files;
   const removeAttachment = controller.attachments.remove;
+
+  useEffect(() => {
+    if (hasHydratedDraftRef.current) {
+      return;
+    }
+
+    hasHydratedDraftRef.current = true;
+    controller.textInput.setInput(initialDraftInput);
+    controller.attachments.clear();
+    if (initialDraftFiles.length > 0) {
+      controller.attachments.add(initialDraftFiles);
+    }
+  }, [controller, initialDraftInput, initialDraftFiles]);
+
+  useEffect(() => {
+    onDraftInputChange?.(controller.textInput.value);
+  }, [controller.textInput.value, onDraftInputChange]);
+
+  useEffect(() => {
+    onDraftModeChange?.(mode);
+  }, [mode, onDraftModeChange]);
+
+  useEffect(() => {
+    if (!onDraftFilesChange) {
+      return;
+    }
+
+    let didCancel = false;
+
+    const syncDraftFiles = async () => {
+      const resolvedFiles = await Promise.all(
+        attachmentFiles.map((filePart, index) => toDraftFile(filePart, index)),
+      );
+
+      if (didCancel) {
+        return;
+      }
+
+      onDraftFilesChange(
+        resolvedFiles.filter((file): file is File => file != null),
+      );
+    };
+
+    void syncDraftFiles();
+
+    return () => {
+      didCancel = true;
+    };
+  }, [attachmentFiles, onDraftFilesChange]);
 
   useEffect(() => {
     const queueChatError = (message: string) => {

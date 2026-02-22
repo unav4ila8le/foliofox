@@ -12,7 +12,7 @@ export function AIAdvisor() {
     <AIChatPanel
       isAIEnabled={profile.data_sharing_consent}
       historyPopoverWidth={`calc(${rightWidth} - 16px)`}
-      expandHref="/dashboard/ai-chat"
+      showExpandButton
     />
   );
 }

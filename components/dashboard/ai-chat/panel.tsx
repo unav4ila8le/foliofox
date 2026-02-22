@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import { v4 as uuidv4 } from "uuid";
 
 import { PromptInputProvider } from "@/components/ai-elements/prompt-input";
@@ -14,20 +15,34 @@ import {
 } from "@/server/ai/conversations/fetch";
 
 import type { UIMessage } from "ai";
+import { buildAIChatExpandHref } from "./navigation";
+import { useAIChatState } from "./provider";
 
 interface AIChatPanelProps {
   isAIEnabled?: boolean;
   historyPopoverWidth?: string;
-  expandHref?: string | null;
+  initialConversationId?: string | null;
+  showExpandButton?: boolean;
 }
 
 export function AIChatPanel({
   isAIEnabled,
   historyPopoverWidth,
-  expandHref = null,
+  initialConversationId,
+  showExpandButton = false,
 }: AIChatPanelProps) {
-  // Current conversation identifier (used to scope/useChat state)
-  const [conversationId, setConversationId] = useState<string>(() => uuidv4());
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const {
+    activeConversationId,
+    draftsByConversationId,
+    setActiveConversationId,
+    setDraftInput,
+    setDraftMode,
+    setDraftFiles,
+  } = useAIChatState();
+  const [fallbackConversationId] = useState<string>(() => uuidv4());
+  const normalizedInitialConversationId = initialConversationId?.trim() || null;
   const [conversations, setConversations] = useState<
     {
       id: string;
@@ -40,6 +55,30 @@ export function AIChatPanel({
   const [maxConversations, setMaxConversations] = useState(0);
   const [initialMessages, setInitialMessages] = useState<UIMessage[]>([]);
   const [isLoadingConversation, setIsLoadingConversation] = useState(false);
+  const lastLoadedConversationIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (normalizedInitialConversationId) {
+      if (activeConversationId !== normalizedInitialConversationId) {
+        setActiveConversationId(normalizedInitialConversationId);
+      }
+      return;
+    }
+
+    if (!activeConversationId) {
+      setActiveConversationId(fallbackConversationId);
+    }
+  }, [
+    normalizedInitialConversationId,
+    activeConversationId,
+    setActiveConversationId,
+    fallbackConversationId,
+  ]);
+
+  const conversationId =
+    activeConversationId ??
+    normalizedInitialConversationId ??
+    fallbackConversationId;
 
   const applyConversationsResult = useCallback(
     (result: ConversationsResult) => {
@@ -59,21 +98,84 @@ export function AIChatPanel({
 
   // Load conversation list on mount.
   useEffect(() => {
-    void refreshConversations().catch(() => {
-      // Ignore load errors; header will show empty state.
+    let didCancel = false;
+
+    queueMicrotask(() => {
+      if (didCancel) {
+        return;
+      }
+
+      void refreshConversations().catch(() => {
+        // Ignore load errors; header will show empty state.
+      });
     });
+
+    return () => {
+      didCancel = true;
+    };
   }, [refreshConversations]);
 
-  // Switch to an existing conversation (loads history).
-  const handleSelectConversation = async (id: string) => {
-    setIsLoadingConversation(true);
-    try {
-      const messages = await fetchConversationMessages(id);
-      setConversationId(id);
-      setInitialMessages(messages);
-    } finally {
-      setIsLoadingConversation(false);
+  const hasCurrentConversationInHistory = conversations.some(
+    (conversation) => conversation.id === conversationId,
+  );
+
+  useEffect(() => {
+    let didCancel = false;
+
+    if (!hasCurrentConversationInHistory) {
+      lastLoadedConversationIdRef.current = null;
+      queueMicrotask(() => {
+        if (!didCancel) {
+          setInitialMessages([]);
+        }
+      });
+      return;
     }
+
+    if (lastLoadedConversationIdRef.current === conversationId) {
+      return;
+    }
+
+    queueMicrotask(() => {
+      if (!didCancel) {
+        setIsLoadingConversation(true);
+      }
+    });
+
+    void fetchConversationMessages(conversationId)
+      .then((messages) => {
+        if (didCancel) {
+          return;
+        }
+
+        lastLoadedConversationIdRef.current = conversationId;
+        setInitialMessages(messages);
+      })
+      .catch(() => {
+        if (didCancel) {
+          return;
+        }
+
+        lastLoadedConversationIdRef.current = conversationId;
+        setInitialMessages([]);
+      })
+      .finally(() => {
+        if (didCancel) {
+          return;
+        }
+
+        setIsLoadingConversation(false);
+      });
+
+    return () => {
+      didCancel = true;
+    };
+  }, [conversationId, hasCurrentConversationInHistory]);
+
+  // Switch to an existing conversation (loads history).
+  const handleSelectConversation = (id: string) => {
+    lastLoadedConversationIdRef.current = null;
+    setActiveConversationId(id);
   };
 
   // Start a fresh conversation (clears history).
@@ -82,13 +184,31 @@ export function AIChatPanel({
     if (isAtConversationCap) return;
 
     const id = uuidv4();
-    setConversationId(id);
+    lastLoadedConversationIdRef.current = null;
+    setActiveConversationId(id);
     setInitialMessages([]);
   };
 
-  const hasCurrentConversationInHistory = conversations.some(
-    (conversation) => conversation.id === conversationId,
-  );
+  const currentPathWithQuery = useMemo(() => {
+    const query = searchParams.toString();
+    return query ? `${pathname}?${query}` : pathname;
+  }, [pathname, searchParams]);
+
+  const expandHref = useMemo(() => {
+    if (!showExpandButton) {
+      return null;
+    }
+
+    return buildAIChatExpandHref({
+      conversationId,
+      from: currentPathWithQuery,
+    });
+  }, [showExpandButton, conversationId, currentPathWithQuery]);
+
+  const currentDraft = draftsByConversationId[conversationId];
+  const initialDraftInput = currentDraft?.input ?? "";
+  const initialDraftMode = currentDraft?.mode ?? "advisory";
+  const initialDraftFiles = currentDraft?.files ?? [];
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -116,6 +236,18 @@ export function AIChatPanel({
           maxConversations={maxConversations}
           hasCurrentConversationInHistory={hasCurrentConversationInHistory}
           onConversationPersisted={refreshConversations}
+          initialDraftInput={initialDraftInput}
+          initialDraftMode={initialDraftMode}
+          initialDraftFiles={initialDraftFiles}
+          onDraftInputChange={(input) => {
+            setDraftInput(conversationId, input);
+          }}
+          onDraftModeChange={(mode) => {
+            setDraftMode(conversationId, mode);
+          }}
+          onDraftFilesChange={(files) => {
+            setDraftFiles(conversationId, files);
+          }}
         />
       </PromptInputProvider>
       <p className="text-muted-foreground p-2 text-center text-xs">

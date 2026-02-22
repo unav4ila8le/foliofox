@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { cacheLife } from "next/cache";
 
 import { SidebarInset, SidebarProvider } from "@/components/ui/custom/sidebar";
+import { AIChatProvider } from "@/components/dashboard/ai-chat/provider";
 import { LeftSidebar } from "@/components/dashboard/layout/left-sidebar";
 import { RightSidebar } from "@/components/dashboard/layout/right-sidebar";
 import { Header } from "@/components/dashboard/layout/header";
@@ -69,25 +70,27 @@ export default async function Layout({
         minRightWidth="16rem"
         maxRightWidth="24vw"
       >
-        <NetWorthModeProvider defaultMode={netWorthMode}>
-          <PrivacyModeProvider>
-            <DashboardDialogsProvider>
-              {/* Left sidebar */}
-              <LeftSidebar />
+        <AIChatProvider>
+          <NetWorthModeProvider defaultMode={netWorthMode}>
+            <PrivacyModeProvider>
+              <DashboardDialogsProvider>
+                {/* Left sidebar */}
+                <LeftSidebar />
 
-              {/* Main content */}
-              <SidebarInset className="min-w-0">
-                <Header />
-                <div className="@container/dashboard mx-auto w-full max-w-7xl p-4 pt-2">
-                  {children}
-                </div>
-              </SidebarInset>
+                {/* Main content */}
+                <SidebarInset className="min-w-0">
+                  <Header />
+                  <div className="@container/dashboard mx-auto w-full max-w-7xl p-4 pt-2">
+                    {children}
+                  </div>
+                </SidebarInset>
 
-              {/* Right sidebar */}
-              <RightSidebar />
-            </DashboardDialogsProvider>
-          </PrivacyModeProvider>
-        </NetWorthModeProvider>
+                {/* Right sidebar */}
+                <RightSidebar />
+              </DashboardDialogsProvider>
+            </PrivacyModeProvider>
+          </NetWorthModeProvider>
+        </AIChatProvider>
       </SidebarProvider>
     </DashboardDataProvider>
   );

@@ -31,4 +31,23 @@ describe("ChatHeader", () => {
 
     expect(newConversationButton.disabled).toBe(true);
   });
+
+  it("renders the expand link when href is provided", () => {
+    render(
+      <TooltipProvider>
+        <ChatHeader
+          conversations={[]}
+          onSelectConversation={() => {}}
+          onNewConversation={() => {}}
+          isAIEnabled
+          expandHref="/dashboard/ai-chat?conversationId=conversation-1&from=%2Fdashboard%2Fassets"
+        />
+      </TooltipProvider>,
+    );
+
+    const expandLink = screen.getByRole("link", { name: "Expand" });
+    expect(expandLink.getAttribute("href")).toBe(
+      "/dashboard/ai-chat?conversationId=conversation-1&from=%2Fdashboard%2Fassets",
+    );
+  });
 });
