@@ -1,4 +1,3 @@
-import type { CSSProperties } from "react";
 import { useState } from "react";
 import Link from "next/link";
 import {
@@ -52,7 +51,6 @@ interface ChatHeaderProps {
   isAtConversationCap?: boolean;
   maxConversations?: number;
   totalConversations?: number;
-  historyPopoverWidth?: string;
   modeActionHref?: string | null;
 }
 
@@ -67,7 +65,6 @@ export function ChatHeader({
   isAtConversationCap,
   maxConversations = 0,
   totalConversations = 0,
-  historyPopoverWidth,
   modeActionHref,
 }: ChatHeaderProps) {
   const [openHistory, setOpenHistory] = useState(false);
@@ -75,13 +72,6 @@ export function ChatHeader({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const isNewConversationDisabled =
     isLoadingConversation || !isAIEnabled || isAtConversationCap;
-
-  const popoverStyle = historyPopoverWidth
-    ? ({
-        width: historyPopoverWidth,
-        marginRight: "8px",
-      } as CSSProperties)
-    : undefined;
 
   const handleDelete = async (e: React.MouseEvent, conversationId: string) => {
     e.stopPropagation(); // Prevent selecting the conversation
@@ -154,8 +144,10 @@ export function ChatHeader({
             <TooltipContent>Conversation history</TooltipContent>
           </Tooltip>
           <PopoverContent
-            className="w-[min(32rem,calc(100vw-2rem))] p-0"
-            style={popoverStyle}
+            align="end"
+            sideOffset={8}
+            collisionPadding={8}
+            className="w-[min(40rem,calc(100vw-1rem))] p-0"
           >
             <Command>
               <CommandInput placeholder="Search conversation..." />

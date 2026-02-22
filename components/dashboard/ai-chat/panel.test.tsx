@@ -266,7 +266,7 @@ describe("AIChatPanel continuity", () => {
 
     await waitFor(() => {
       expect(screen.getByTestId("conversation-id").textContent).toBe(
-        "generated-conversation-2",
+        "generated-conversation-1",
       );
     });
   });

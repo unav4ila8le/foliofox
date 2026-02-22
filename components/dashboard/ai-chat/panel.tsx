@@ -21,7 +21,6 @@ import { useAIChatState } from "./provider";
 interface AIChatPanelProps {
   layoutMode: "sidebar" | "page";
   isAIEnabled?: boolean;
-  historyPopoverWidth?: string;
   initialConversationId?: string | null;
   moveToSidebarHref?: string | null;
 }
@@ -29,7 +28,6 @@ interface AIChatPanelProps {
 export function AIChatPanel({
   layoutMode,
   isAIEnabled,
-  historyPopoverWidth,
   initialConversationId,
   moveToSidebarHref,
 }: AIChatPanelProps) {
@@ -43,7 +41,6 @@ export function AIChatPanel({
     setDraftMode,
     setDraftFiles,
   } = useAIChatState();
-  const [fallbackConversationId] = useState<string>(() => uuidv4());
   const normalizedInitialConversationId = initialConversationId?.trim() || null;
   const [conversations, setConversations] = useState<
     {
@@ -75,19 +72,16 @@ export function AIChatPanel({
 
     lastAppliedInitialConversationIdRef.current = null;
     if (!activeConversationId) {
-      setActiveConversationId(fallbackConversationId);
+      setActiveConversationId(uuidv4());
     }
   }, [
     normalizedInitialConversationId,
     activeConversationId,
     setActiveConversationId,
-    fallbackConversationId,
   ]);
 
   const conversationId =
-    activeConversationId ??
-    normalizedInitialConversationId ??
-    fallbackConversationId;
+    activeConversationId ?? normalizedInitialConversationId;
 
   const applyConversationsResult = useCallback(
     (result: ConversationsResult) => {
@@ -125,11 +119,23 @@ export function AIChatPanel({
   }, [refreshConversations]);
 
   const hasCurrentConversationInHistory = conversations.some(
-    (conversation) => conversation.id === conversationId,
+    (conversation) =>
+      conversationId != null && conversation.id === conversationId,
   );
 
   useEffect(() => {
     let didCancel = false;
+
+    if (!conversationId) {
+      lastLoadedConversationIdRef.current = null;
+      queueMicrotask(() => {
+        if (!didCancel) {
+          setIsLoadingConversation(false);
+          setInitialMessages([]);
+        }
+      });
+      return;
+    }
 
     if (!hasCurrentConversationInHistory) {
       lastLoadedConversationIdRef.current = null;
@@ -210,13 +216,18 @@ export function AIChatPanel({
       return moveToSidebarHref ?? null;
     }
 
+    if (!conversationId) {
+      return null;
+    }
+
     return buildAIChatExpandHref({
       conversationId,
       from: currentPathWithQuery,
     });
   }, [layoutMode, moveToSidebarHref, conversationId, currentPathWithQuery]);
 
-  const currentDraft = draftsByConversationId[conversationId];
+  const currentDraft =
+    conversationId != null ? draftsByConversationId[conversationId] : undefined;
   const initialDraftInput = currentDraft?.input ?? "";
   const initialDraftMode = currentDraft?.mode ?? "advisory";
   const initialDraftFiles = currentDraft?.files ?? [];
@@ -234,33 +245,34 @@ export function AIChatPanel({
         isAtConversationCap={isAtConversationCap}
         maxConversations={maxConversations}
         totalConversations={totalConversations}
-        historyPopoverWidth={historyPopoverWidth}
         modeActionHref={modeActionHref}
       />
       <PromptInputProvider>
-        <Chat
-          key={conversationId}
-          conversationId={conversationId}
-          initialMessages={initialMessages}
-          isLoadingConversation={isLoadingConversation}
-          isAIEnabled={isAIEnabled}
-          isAtConversationCap={isAtConversationCap}
-          maxConversations={maxConversations}
-          hasCurrentConversationInHistory={hasCurrentConversationInHistory}
-          onConversationPersisted={refreshConversations}
-          initialDraftInput={initialDraftInput}
-          initialDraftMode={initialDraftMode}
-          initialDraftFiles={initialDraftFiles}
-          onDraftInputChange={(input) => {
-            setDraftInput(conversationId, input);
-          }}
-          onDraftModeChange={(mode) => {
-            setDraftMode(conversationId, mode);
-          }}
-          onDraftFilesChange={(files) => {
-            setDraftFiles(conversationId, files);
-          }}
-        />
+        {conversationId ? (
+          <Chat
+            key={conversationId}
+            conversationId={conversationId}
+            initialMessages={initialMessages}
+            isLoadingConversation={isLoadingConversation}
+            isAIEnabled={isAIEnabled}
+            isAtConversationCap={isAtConversationCap}
+            maxConversations={maxConversations}
+            hasCurrentConversationInHistory={hasCurrentConversationInHistory}
+            onConversationPersisted={refreshConversations}
+            initialDraftInput={initialDraftInput}
+            initialDraftMode={initialDraftMode}
+            initialDraftFiles={initialDraftFiles}
+            onDraftInputChange={(input) => {
+              setDraftInput(conversationId, input);
+            }}
+            onDraftModeChange={(mode) => {
+              setDraftMode(conversationId, mode);
+            }}
+            onDraftFilesChange={(files) => {
+              setDraftFiles(conversationId, files);
+            }}
+          />
+        ) : null}
       </PromptInputProvider>
       <p className="text-muted-foreground p-2 text-center text-xs">
         You are responsible for your investment decisions.
