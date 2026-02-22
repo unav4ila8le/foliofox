@@ -5,7 +5,7 @@ import type { ChatSuggestionsProps } from "./types";
 const suggestions = [
   "What would happen to my portfolio if the market crashes 30% tomorrow?",
   "How should I rebalance my portfolio to reduce risk while maintaining growth potential?",
-  "What are the biggest vulnerabilities in my current investment strategy?",
+  "Which of my positions have dropped from their highs and could be good opportunities to add more?",
   "Based on my positions and portfolio history, what's my probability of reaching $1M net worth in 10 years?",
 ];
 

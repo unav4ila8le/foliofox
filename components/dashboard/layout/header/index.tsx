@@ -9,6 +9,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Kbd, KbdGroup } from "@/components/ui/kbd";
 
 import { Breadcrumb } from "./breadcrumb";
 import { NewActionButton } from "./new-action-button";
@@ -48,7 +49,15 @@ export function Header() {
           <TooltipTrigger asChild>
             <SidebarTrigger side="right" className="-mr-2" />
           </TooltipTrigger>
-          <TooltipContent>Toggle AI Chat</TooltipContent>
+          <TooltipContent>
+            <div className="flex items-center gap-2">
+              Toggle AI Chat
+              <KbdGroup>
+                <Kbd>Ctrl</Kbd>
+                <Kbd>I</Kbd>
+              </KbdGroup>
+            </div>
+          </TooltipContent>
         </Tooltip>
       </div>
     </header>

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { History, Plus, Settings, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { Expand, History, Plus, Settings, Trash2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 
@@ -81,7 +82,14 @@ export function ChatHeader({
 
   return (
     <div className="relative flex items-center gap-4 px-4 py-2 xl:justify-between">
-      <span className="text-sm font-medium">AI Chat</span>
+      <div className="flex items-center gap-2 text-sm font-medium">
+        AI Chat
+        <Button size="xs" variant="outline" asChild>
+          <Link href="/dashboard/ai-chat">
+            <Expand /> Expand
+          </Link>
+        </Button>
+      </div>
       <div className="flex items-center gap-1">
         {/* Conversation history */}
         <Popover open={openHistory} onOpenChange={setOpenHistory}>
