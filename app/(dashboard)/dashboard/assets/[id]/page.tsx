@@ -24,6 +24,7 @@ import {
 } from "@/lib/portfolio-records/filters";
 import { getSearchParam } from "@/lib/search-params";
 import { parseUTCDateKey } from "@/lib/date/date-utils";
+import { cn } from "@/lib/utils";
 
 import type {
   PositionSnapshot,
@@ -162,9 +163,9 @@ async function AssetContent({
   } = portfolioRecordsPage;
 
   return (
-    <div className="grid grid-cols-6 gap-4">
+    <div className="grid grid-cols-6 gap-x-8 gap-y-4">
       {/* Header */}
-      <div className="col-span-6">
+      <div className="col-span-full">
         <AssetHeader
           position={position}
           symbol={symbol}
@@ -173,13 +174,7 @@ async function AssetContent({
       </div>
 
       {hasSymbol && (
-        <div className="col-span-6 space-y-4 lg:col-span-2">
-          {/* News */}
-          <div className="space-y-2">
-            <h3 className="font-semibold">News</h3>
-            <AssetNews newsData={newsResult} />
-          </div>
-          <Separator />
+        <div className="col-span-full space-y-4 @[64rem]/dashboard:col-span-2">
           {/* Projected Income */}
           <div className="space-y-3">
             <div className="flex flex-row justify-between gap-4">
@@ -212,6 +207,12 @@ async function AssetContent({
               dividendCurrency={dividendCurrency}
             />
           </div>
+          <Separator />
+          {/* News */}
+          <div className="space-y-2">
+            <h3 className="font-semibold">News</h3>
+            <AssetNews newsData={newsResult} />
+          </div>
         </div>
       )}
 
@@ -219,7 +220,10 @@ async function AssetContent({
 
       {/* Portfolio Records */}
       <div
-        className={`col-span-6 space-y-2 ${hasSymbol ? "lg:col-span-4" : "lg:col-span-6"}`}
+        className={cn(
+          "col-span-full space-y-2",
+          hasSymbol && "@[64rem]/dashboard:col-span-4",
+        )}
       >
         <h3 className="font-semibold">Records history</h3>
         <PortfolioRecordsTable
