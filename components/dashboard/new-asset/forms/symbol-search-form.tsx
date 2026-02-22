@@ -290,6 +290,7 @@ export function SymbolSearchForm() {
                 <FieldLabel htmlFor={field.name}>Current quantity</FieldLabel>
                 <Input
                   id={field.name}
+                  disabled={!isFormReady}
                   placeholder="E.g., 10"
                   type="number"
                   inputMode="decimal"
@@ -331,6 +332,7 @@ export function SymbolSearchForm() {
                 </div>
                 <Input
                   id={field.name}
+                  disabled={!isFormReady}
                   placeholder="E.g., 12.41"
                   type="number"
                   inputMode="decimal"
@@ -365,6 +367,7 @@ export function SymbolSearchForm() {
                 </FieldLabel>
                 <Input
                   id={field.name}
+                  disabled={!isFormReady}
                   placeholder="Add a description of this asset"
                   aria-invalid={fieldState.invalid}
                   {...field}
