@@ -13,7 +13,7 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from "@/components/ui/tooltip";
-import { AISettingsDialog } from "@/components/features/ai-settings/dialog";
+import { AISettingsDialog } from "@/components/dashboard/ai-chat/settings/dialog";
 import { ChatHistory } from "@/components/dashboard/ai-chat/history";
 
 import { deleteConversation } from "@/server/ai/conversations/delete";

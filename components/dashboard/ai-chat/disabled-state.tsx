@@ -4,7 +4,7 @@ import { Sparkles } from "lucide-react";
 import { useState } from "react";
 
 import { ConversationEmptyState } from "@/components/ai-elements/conversation";
-import { AISettingsDialog } from "@/components/features/ai-settings/dialog";
+import { AISettingsDialog } from "@/components/dashboard/ai-chat/settings/dialog";
 import { Button } from "@/components/ui/button";
 import { Logomark } from "@/components/ui/logos/logomark";
 
