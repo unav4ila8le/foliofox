@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
@@ -33,7 +33,7 @@ import {
   capitalGainsTaxRatePercentSchema,
   parseCapitalGainsTaxRatePercent,
 } from "@/lib/capital-gains-tax-rate";
-import { formatCurrency } from "@/lib/number-format";
+import { formatCurrency, formatNumber } from "@/lib/number-format";
 import { useLocale } from "@/hooks/use-locale";
 import { fetchSingleDomainValuation } from "@/server/domain-valuations/fetch";
 import { createPosition } from "@/server/positions/create";
@@ -87,6 +87,11 @@ export function DomainForm() {
 
   // Check if domain is valid for API call
   const isDomainValid = domain && z.regexes.domain.test(domain);
+
+  const capitalGainsTaxRatePlaceholder = useMemo(
+    () => `E.g., ${formatNumber(12.5, { locale, decimals: 1 })}`,
+    [locale],
+  );
 
   // Check domain valuation
   async function checkDomainValuation() {
@@ -256,6 +261,7 @@ export function DomainForm() {
           <CapitalGainsTaxRateField
             control={form.control}
             setValue={form.setValue}
+            placeholder={capitalGainsTaxRatePlaceholder}
             disabled={isLoading}
             className="sm:w-1/2"
           />

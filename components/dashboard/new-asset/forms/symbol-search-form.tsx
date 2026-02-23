@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
 import { YahooFinanceLogo } from "@/components/ui/logos/yahoo-finance-logo";
+import { LocalizedNumberInput } from "@/components/custom/localized-number-input";
 import { SymbolSearch } from "../../symbol-search";
 import { PositionCategorySelector } from "@/components/dashboard/position-category-selector";
 import { CapitalGainsTaxRateField } from "@/components/dashboard/positions/shared/capital-gains-tax-rate-field";
@@ -29,7 +30,9 @@ import {
   capitalGainsTaxRatePercentSchema,
   parseCapitalGainsTaxRatePercent,
 } from "@/lib/capital-gains-tax-rate";
+import { formatNumber } from "@/lib/number-format";
 import { requiredNumberWithConstraints } from "@/lib/zod-helpers";
+import { useLocale } from "@/hooks/use-locale";
 
 import { fetchYahooFinanceSymbol } from "@/server/symbols/search";
 import { createPosition } from "@/server/positions/create";
@@ -71,6 +74,7 @@ const formSchema = z.object({
 export function SymbolSearchForm() {
   // Props destructuring and context hooks
   const { setOpenFormDialog, setOpenSelectionDialog } = useNewAssetDialog();
+  const locale = useLocale();
 
   // State declarations
   const [isLoading, setIsLoading] = useState(false);
@@ -92,6 +96,15 @@ export function SymbolSearchForm() {
 
   // Get isDirty state from formState
   const { isDirty } = form.formState;
+
+  const numberPlaceholders = useMemo(
+    () => ({
+      quantity: `E.g., ${formatNumber(10, { locale })}`,
+      costBasis: `E.g., ${formatNumber(12.41, { locale, decimals: 2 })}`,
+      capitalGainsTaxRate: `E.g., ${formatNumber(12.5, { locale, decimals: 1 })}`,
+    }),
+    [locale],
+  );
 
   // Watch field changes
   const symbolLookup = form.watch("symbolLookup") || "";
@@ -288,17 +301,18 @@ export function SymbolSearchForm() {
                 className="sm:w-1/2 sm:pr-1"
               >
                 <FieldLabel htmlFor={field.name}>Current quantity</FieldLabel>
-                <Input
+                <LocalizedNumberInput
+                  mode="input"
                   id={field.name}
                   disabled={!isFormReady}
-                  placeholder="E.g., 10"
-                  type="number"
-                  inputMode="decimal"
+                  placeholder={numberPlaceholders.quantity}
                   min={0}
-                  step="any"
                   aria-invalid={fieldState.invalid}
-                  {...field}
-                  value={field.value as number}
+                  name={field.name}
+                  ref={field.ref}
+                  onBlur={field.onBlur}
+                  value={(field.value as string | number | null) ?? ""}
+                  onValueChange={(nextValue) => field.onChange(nextValue)}
                 />
                 {fieldState.invalid && (
                   <FieldError errors={[fieldState.error]} />
@@ -330,17 +344,18 @@ export function SymbolSearchForm() {
                     </TooltipContent>
                   </Tooltip>
                 </div>
-                <Input
+                <LocalizedNumberInput
+                  mode="input"
                   id={field.name}
                   disabled={!isFormReady}
-                  placeholder="E.g., 12.41"
-                  type="number"
-                  inputMode="decimal"
+                  placeholder={numberPlaceholders.costBasis}
                   min={0}
-                  step="any"
                   aria-invalid={fieldState.invalid}
-                  {...field}
-                  value={field.value}
+                  name={field.name}
+                  ref={field.ref}
+                  onBlur={field.onBlur}
+                  value={(field.value as string | number | null) ?? ""}
+                  onValueChange={(nextValue) => field.onChange(nextValue)}
                 />
                 {fieldState.invalid && (
                   <FieldError errors={[fieldState.error]} />
@@ -353,6 +368,7 @@ export function SymbolSearchForm() {
           <CapitalGainsTaxRateField
             control={form.control}
             setValue={form.setValue}
+            placeholder={numberPlaceholders.capitalGainsTaxRate}
             disabled={!isFormReady || isLoading}
           />
 

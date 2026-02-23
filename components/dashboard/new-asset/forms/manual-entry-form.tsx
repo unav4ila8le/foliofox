@@ -104,13 +104,9 @@ export function ManualEntryForm() {
   const numberPlaceholders = useMemo(
     () => ({
       quantity: `E.g., ${formatNumber(10, { locale })}`,
-      unitValue: `E.g., ${formatNumber(420.69, { locale, decimals: 2 })}`,
-      costBasis: `E.g., ${formatNumber(12.41, { locale, decimals: 2 })}`,
-      capitalGainsTaxRate: `E.g., ${formatNumber(12.5, {
-        locale,
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 1,
-      })}`,
+      unitValue: `E.g., ${formatNumber(420.69, { locale })}`,
+      costBasis: `E.g., ${formatNumber(12.41, { locale })}`,
+      capitalGainsTaxRate: `E.g., ${formatNumber(12.5, { locale })}`,
     }),
     [locale],
   );
