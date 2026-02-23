@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
@@ -33,7 +33,9 @@ import {
   capitalGainsTaxRatePercentSchema,
   parseCapitalGainsTaxRatePercent,
 } from "@/lib/capital-gains-tax-rate";
+import { formatNumber } from "@/lib/number-format";
 import { requiredNumberWithConstraints } from "@/lib/zod-helpers";
+import { useLocale } from "@/hooks/use-locale";
 
 import { createPosition } from "@/server/positions/create";
 
@@ -75,6 +77,7 @@ export function ManualEntryForm() {
   // Props destructuring and context hooks
   const { setOpenFormDialog, setOpenSelectionDialog, profile } =
     useNewAssetDialog();
+  const locale = useLocale();
 
   // State declarations
   const [isLoading, setIsLoading] = useState(false);
@@ -96,6 +99,21 @@ export function ManualEntryForm() {
 
   // Get isDirty state from formState
   const { isDirty } = form.formState;
+
+  // Number placeholders
+  const numberPlaceholders = useMemo(
+    () => ({
+      quantity: `E.g., ${formatNumber(10, { locale })}`,
+      unitValue: `E.g., ${formatNumber(420.69, { locale, decimals: 2 })}`,
+      costBasis: `E.g., ${formatNumber(12.41, { locale, decimals: 2 })}`,
+      capitalGainsTaxRate: `E.g., ${formatNumber(12.5, {
+        locale,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 1,
+      })}`,
+    }),
+    [locale],
+  );
 
   // Submit handler
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -229,7 +247,7 @@ export function ManualEntryForm() {
                   <LocalizedNumberInput
                     mode="input"
                     id={field.name}
-                    placeholder="E.g., 10"
+                    placeholder={numberPlaceholders.quantity}
                     min={0}
                     aria-invalid={fieldState.invalid}
                     name={field.name}
@@ -258,7 +276,7 @@ export function ManualEntryForm() {
                     <LocalizedNumberInput
                       mode="input-group-input"
                       id={field.name}
-                      placeholder="E.g., 420.69"
+                      placeholder={numberPlaceholders.unitValue}
                       min={0}
                       aria-invalid={fieldState.invalid}
                       name={field.name}
@@ -305,7 +323,7 @@ export function ManualEntryForm() {
                 <LocalizedNumberInput
                   mode="input"
                   id={field.name}
-                  placeholder="E.g., 12.41"
+                  placeholder={numberPlaceholders.costBasis}
                   min={0}
                   aria-invalid={fieldState.invalid}
                   name={field.name}
@@ -325,6 +343,7 @@ export function ManualEntryForm() {
           <CapitalGainsTaxRateField
             control={form.control}
             setValue={form.setValue}
+            placeholder={numberPlaceholders.capitalGainsTaxRate}
             disabled={isLoading}
           />
 

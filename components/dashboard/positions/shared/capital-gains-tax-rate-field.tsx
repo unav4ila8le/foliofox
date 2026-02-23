@@ -27,6 +27,7 @@ interface CapitalGainsTaxRateFieldProps<TFieldValues extends FieldValues> {
   name?: FieldPath<TFieldValues>;
   className?: string;
   disabled?: boolean;
+  placeholder?: string;
 }
 
 export function CapitalGainsTaxRateField<TFieldValues extends FieldValues>({
@@ -35,6 +36,7 @@ export function CapitalGainsTaxRateField<TFieldValues extends FieldValues>({
   name,
   className,
   disabled = false,
+  placeholder = "E.g., 26",
 }: CapitalGainsTaxRateFieldProps<TFieldValues>) {
   const fieldName = (name ??
     "capital_gains_tax_rate") as FieldPath<TFieldValues>;
@@ -67,7 +69,7 @@ export function CapitalGainsTaxRateField<TFieldValues extends FieldValues>({
               <LocalizedNumberInput
                 mode="input-group-input"
                 id={field.name}
-                placeholder="E.g., 26"
+                placeholder={placeholder}
                 min={0}
                 max={100}
                 disabled={disabled}
