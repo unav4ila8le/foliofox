@@ -66,8 +66,8 @@ export default async function Layout({
         defaultOpenRight={defaultOpenRight}
         resizable={{ right: true }}
         defaultLeftWidth="max(16rem, 12vw)"
-        defaultRightWidth="clamp(16rem, 20vw, 24vw)"
-        minRightWidth="16rem"
+        defaultRightWidth="clamp(20rem, 20vw, 24vw)"
+        minRightWidth="20rem"
         maxRightWidth="24vw"
       >
         <AIChatProvider>
