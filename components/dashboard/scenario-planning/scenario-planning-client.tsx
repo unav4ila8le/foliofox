@@ -1,15 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   InputGroup,
-  InputGroupInput,
   InputGroupAddon,
   InputGroupText,
   InputGroupButton,
 } from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
+import { LocalizedNumberInput } from "@/components/custom/localized-number-input";
 
 import { BalanceChart } from "./charts/balance-chart";
 import { EventsTable } from "./table/events-table";
@@ -17,6 +17,8 @@ import { UpsertEventDialog } from "./dialogs/upsert-event";
 
 import type { Scenario, ScenarioEvent } from "@/lib/scenario-planning";
 
+import { formatNumber } from "@/lib/number-format";
+import { useLocale } from "@/hooks/use-locale";
 import {
   upsertScenarioEvent,
   updateScenarioInitialBalance,
@@ -30,6 +32,7 @@ export function ScenarioPlanningClient({
   scenario: Scenario & { id: string; initialBalance: number };
   currency: string;
 }) {
+  const locale = useLocale();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<{
     event: ScenarioEvent;
@@ -42,6 +45,10 @@ export function ScenarioPlanningClient({
   const [isUpdatingBalance, setIsUpdatingBalance] = useState(false);
 
   const isBalanceDirty = initialBalance !== displayBalance.toString();
+  const initialBalancePlaceholder = useMemo(
+    () => `E.g., ${formatNumber(100000, { locale })}`,
+    [locale],
+  );
 
   const handleEventClick = (event: ScenarioEvent, index: number) => {
     setEditingEvent({ event, index });
@@ -93,7 +100,7 @@ export function ScenarioPlanningClient({
   };
 
   const handleInitialBalanceUpdate = async () => {
-    const balance = parseFloat(initialBalance);
+    const balance = Number(initialBalance);
 
     if (isNaN(balance)) {
       toast.error("Please enter a valid number");
@@ -128,15 +135,14 @@ export function ScenarioPlanningClient({
       <div className="space-y-2 md:max-w-80">
         <Label htmlFor="initial-balance">Initial balance</Label>
         <InputGroup>
-          <InputGroupInput
+          <LocalizedNumberInput
+            mode="input-group-input"
             id="initial-balance"
-            placeholder="E.g., 100,000"
-            type="number"
-            inputMode="decimal"
+            placeholder={initialBalancePlaceholder}
             min={0}
-            step="any"
+            name="initial-balance"
             value={initialBalance}
-            onChange={(e) => setInitialBalance(e.target.value)}
+            onValueChange={(nextValue) => setInitialBalance(nextValue)}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 handleInitialBalanceUpdate();

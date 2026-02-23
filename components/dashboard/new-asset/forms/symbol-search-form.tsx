@@ -100,8 +100,8 @@ export function SymbolSearchForm() {
   const numberPlaceholders = useMemo(
     () => ({
       quantity: `E.g., ${formatNumber(10, { locale })}`,
-      costBasis: `E.g., ${formatNumber(12.41, { locale, decimals: 2 })}`,
-      capitalGainsTaxRate: `E.g., ${formatNumber(12.5, { locale, decimals: 1 })}`,
+      costBasis: `E.g., ${formatNumber(12.41, { locale })}`,
+      capitalGainsTaxRate: `E.g., ${formatNumber(12.5, { locale })}`,
     }),
     [locale],
   );

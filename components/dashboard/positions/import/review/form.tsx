@@ -12,6 +12,7 @@ import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
 import { Spinner } from "@/components/ui/spinner";
 import { Field, FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { LocalizedNumberInput } from "@/components/custom/localized-number-input";
 import {
   Table,
   TableBody,
@@ -31,7 +32,9 @@ import { CurrencySelector } from "@/components/dashboard/currency-selector";
 import { SymbolSearch } from "@/components/dashboard/symbol-search";
 
 import { validateSymbol } from "@/server/symbols/validate";
+import { formatNumber } from "@/lib/number-format";
 import { normalizeCapitalGainsTaxRateToDecimal } from "@/lib/capital-gains-tax-rate";
+import { useLocale } from "@/hooks/use-locale";
 
 import type { PositionCategory } from "@/types/global.types";
 import type { CurrencyValidationResult } from "@/server/currencies/validate";
@@ -62,6 +65,7 @@ export function ReviewForm({
     null,
   );
   const [isImporting, setIsImporting] = useState(false);
+  const locale = useLocale();
   const [symbolValidationMap, setSymbolValidationMap] =
     useState<Record<string, SymbolValidationResult>>(symbolValidation);
 
@@ -163,6 +167,16 @@ export function ReviewForm({
       })),
     };
   }, [initialPositions]);
+
+  const numberPlaceholders = useMemo(
+    () => ({
+      quantity: `E.g., ${formatNumber(10, { locale })}`,
+      unitValue: `E.g., ${formatNumber(42.6, { locale })}`,
+      costBasis: `E.g., ${formatNumber(12.41, { locale })}`,
+      capitalGainsTaxRate: `E.g., ${formatNumber(26, { locale })}`,
+    }),
+    [locale],
+  );
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -429,18 +443,19 @@ export function ReviewForm({
                     name={`positions.${index}.quantity`}
                     render={({ field, fieldState }) => (
                       <Field data-invalid={fieldState.invalid}>
-                        <Input
-                          placeholder="E.g., 10"
-                          type="number"
-                          inputMode="decimal"
+                        <LocalizedNumberInput
+                          mode="input"
+                          placeholder={numberPlaceholders.quantity}
                           min={0}
-                          step="any"
                           aria-invalid={fieldState.invalid}
-                          {...field}
-                          value={(field.value ?? "") as number | ""}
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            field.onChange(v === "" ? null : Number(v));
+                          name={field.name}
+                          ref={field.ref}
+                          onBlur={field.onBlur}
+                          value={(field.value as string | number | null) ?? ""}
+                          onValueChange={(nextValue) => {
+                            field.onChange(
+                              nextValue === "" ? null : Number(nextValue),
+                            );
                           }}
                         />
                         {fieldState.invalid && (
@@ -458,18 +473,19 @@ export function ReviewForm({
                     name={`positions.${index}.unit_value`}
                     render={({ field, fieldState }) => (
                       <Field data-invalid={fieldState.invalid}>
-                        <Input
-                          placeholder="E.g., 42.6"
-                          type="number"
-                          inputMode="decimal"
+                        <LocalizedNumberInput
+                          mode="input"
+                          placeholder={numberPlaceholders.unitValue}
                           min={0}
-                          step="any"
                           aria-invalid={fieldState.invalid}
-                          {...field}
-                          value={(field.value ?? "") as number | ""}
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            field.onChange(v === "" ? null : Number(v));
+                          name={field.name}
+                          ref={field.ref}
+                          onBlur={field.onBlur}
+                          value={(field.value as string | number | null) ?? ""}
+                          onValueChange={(nextValue) => {
+                            field.onChange(
+                              nextValue === "" ? null : Number(nextValue),
+                            );
                           }}
                         />
                         {fieldState.invalid && (
@@ -490,18 +506,19 @@ export function ReviewForm({
                     name={`positions.${index}.cost_basis_per_unit`}
                     render={({ field, fieldState }) => (
                       <Field data-invalid={fieldState.invalid}>
-                        <Input
-                          placeholder="E.g., 12.41"
-                          type="number"
-                          inputMode="decimal"
+                        <LocalizedNumberInput
+                          mode="input"
+                          placeholder={numberPlaceholders.costBasis}
                           min={0}
-                          step="any"
                           aria-invalid={fieldState.invalid}
-                          {...field}
-                          value={(field.value ?? "") as number | ""}
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            field.onChange(v === "" ? null : Number(v));
+                          name={field.name}
+                          ref={field.ref}
+                          onBlur={field.onBlur}
+                          value={(field.value as string | number | null) ?? ""}
+                          onValueChange={(nextValue) => {
+                            field.onChange(
+                              nextValue === "" ? null : Number(nextValue),
+                            );
                           }}
                         />
                         {fieldState.invalid && (
@@ -522,23 +539,24 @@ export function ReviewForm({
                     name={`positions.${index}.capital_gains_tax_rate`}
                     render={({ field, fieldState }) => (
                       <Field data-invalid={fieldState.invalid}>
-                        <Input
-                          placeholder="E.g., 26"
-                          type="number"
-                          inputMode="decimal"
+                        <LocalizedNumberInput
+                          mode="input"
+                          placeholder={numberPlaceholders.capitalGainsTaxRate}
                           min={0}
                           max={100}
-                          step="any"
                           aria-invalid={fieldState.invalid}
-                          {...field}
+                          name={field.name}
+                          ref={field.ref}
+                          onBlur={field.onBlur}
                           value={
                             Number.isFinite(field.value as number)
-                              ? ((field.value ?? "") as number | "")
+                              ? ((field.value as string | number | null) ?? "")
                               : ""
                           }
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            field.onChange(value === "" ? null : Number(value));
+                          onValueChange={(nextValue) => {
+                            field.onChange(
+                              nextValue === "" ? null : Number(nextValue),
+                            );
                           }}
                         />
                         {fieldState.invalid && (

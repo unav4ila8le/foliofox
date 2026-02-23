@@ -31,15 +31,17 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Calendar } from "@/components/ui/calendar";
 import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
+import { LocalizedNumberInput } from "@/components/custom/localized-number-input";
 import {
   InputGroup,
   InputGroupAddon,
-  InputGroupInput,
   InputGroupText,
 } from "@/components/ui/input-group";
 
+import { formatNumber } from "@/lib/number-format";
 import { cn } from "@/lib/utils";
 import { requiredNumberWithConstraints } from "@/lib/zod-helpers";
+import { useLocale } from "@/hooks/use-locale";
 
 import { updatePortfolioRecord } from "@/server/portfolio-records/update";
 
@@ -92,6 +94,7 @@ export function UpdatePortfolioRecordForm({
   onSuccess,
 }: UpdatePortfolioRecordFormProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const locale = useLocale();
 
   const initialCostBasis = useMemo(() => {
     if (portfolioRecord.type !== "update") return "";
@@ -107,6 +110,15 @@ export function UpdatePortfolioRecordForm({
       ? String(snapshot.cost_basis_per_unit)
       : "";
   }, [portfolioRecord]);
+
+  const numberPlaceholders = useMemo(
+    () => ({
+      quantity: `E.g., ${formatNumber(10, { locale })}`,
+      unitValue: `E.g., ${formatNumber(420.69, { locale })}`,
+      costBasis: `E.g., ${formatNumber(12.41, { locale })}`,
+    }),
+    [locale],
+  );
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -271,16 +283,17 @@ export function UpdatePortfolioRecordForm({
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel htmlFor={field.name}>Quantity</FieldLabel>
-                  <Input
+                  <LocalizedNumberInput
+                    mode="input"
                     id={field.name}
-                    placeholder="E.g., 10"
-                    type="number"
-                    inputMode="decimal"
+                    placeholder={numberPlaceholders.quantity}
                     min={0}
-                    step="any"
                     aria-invalid={fieldState.invalid}
-                    {...field}
-                    value={field.value as number}
+                    name={field.name}
+                    ref={field.ref}
+                    onBlur={field.onBlur}
+                    value={(field.value as string | number | null) ?? ""}
+                    onValueChange={(nextValue) => field.onChange(nextValue)}
                   />
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />
@@ -296,16 +309,17 @@ export function UpdatePortfolioRecordForm({
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel htmlFor={field.name}>Unit value</FieldLabel>
                   <InputGroup>
-                    <InputGroupInput
+                    <LocalizedNumberInput
+                      mode="input-group-input"
                       id={field.name}
-                      placeholder="E.g., 420.69"
-                      type="number"
-                      inputMode="decimal"
+                      placeholder={numberPlaceholders.unitValue}
                       min={0}
-                      step="any"
                       aria-invalid={fieldState.invalid}
-                      {...field}
-                      value={field.value as number}
+                      name={field.name}
+                      ref={field.ref}
+                      onBlur={field.onBlur}
+                      value={(field.value as string | number | null) ?? ""}
+                      onValueChange={(nextValue) => field.onChange(nextValue)}
                     />
                     <InputGroupAddon align="inline-end">
                       <InputGroupText>
@@ -345,15 +359,17 @@ export function UpdatePortfolioRecordForm({
                       </TooltipContent>
                     </Tooltip>
                   </div>
-                  <Input
+                  <LocalizedNumberInput
+                    mode="input"
                     id={field.name}
-                    placeholder="E.g., 12.41"
-                    type="number"
-                    inputMode="decimal"
+                    placeholder={numberPlaceholders.costBasis}
                     min={0}
-                    step="any"
                     aria-invalid={fieldState.invalid}
-                    {...field}
+                    name={field.name}
+                    ref={field.ref}
+                    onBlur={field.onBlur}
+                    value={(field.value as string | number | null) ?? ""}
+                    onValueChange={(nextValue) => field.onChange(nextValue)}
                   />
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />

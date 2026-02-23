@@ -89,7 +89,7 @@ export function DomainForm() {
   const isDomainValid = domain && z.regexes.domain.test(domain);
 
   const capitalGainsTaxRatePlaceholder = useMemo(
-    () => `E.g., ${formatNumber(12.5, { locale, decimals: 1 })}`,
+    () => `E.g., ${formatNumber(12.5, { locale })}`,
     [locale],
   );
 

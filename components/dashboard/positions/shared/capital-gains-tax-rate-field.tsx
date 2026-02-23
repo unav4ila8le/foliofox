@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { Info } from "lucide-react";
 import { Controller } from "react-hook-form";
 import type {
@@ -18,6 +19,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { LocalizedNumberInput } from "@/components/custom/localized-number-input";
+import { formatNumber } from "@/lib/number-format";
+import { useLocale } from "@/hooks/use-locale";
 
 const CAPITAL_GAINS_TAX_RATE_PRESETS = [12.5, 26] as const;
 
@@ -36,10 +39,15 @@ export function CapitalGainsTaxRateField<TFieldValues extends FieldValues>({
   name,
   className,
   disabled = false,
-  placeholder = "E.g., 26",
+  placeholder,
 }: CapitalGainsTaxRateFieldProps<TFieldValues>) {
+  const locale = useLocale();
   const fieldName = (name ??
     "capital_gains_tax_rate") as FieldPath<TFieldValues>;
+  const resolvedPlaceholder = useMemo(
+    () => placeholder ?? `E.g., ${formatNumber(26, { locale })}`,
+    [locale, placeholder],
+  );
 
   return (
     <Controller
@@ -69,7 +77,7 @@ export function CapitalGainsTaxRateField<TFieldValues extends FieldValues>({
               <LocalizedNumberInput
                 mode="input-group-input"
                 id={field.name}
-                placeholder={placeholder}
+                placeholder={resolvedPlaceholder}
                 min={0}
                 max={100}
                 disabled={disabled}
@@ -104,7 +112,7 @@ export function CapitalGainsTaxRateField<TFieldValues extends FieldValues>({
                           );
                         }}
                       >
-                        {presetRate}
+                        {formatNumber(presetRate, { locale })}
                       </Button>
                     ))}
                   </div>
