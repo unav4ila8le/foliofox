@@ -16,13 +16,13 @@ import {
 import {
   InputGroup,
   InputGroupAddon,
-  InputGroupInput,
   InputGroupText,
 } from "@/components/ui/input-group";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
+import { LocalizedNumberInput } from "@/components/custom/localized-number-input";
 import { PositionCategorySelector } from "@/components/dashboard/position-category-selector";
 import { CapitalGainsTaxRateField } from "@/components/dashboard/positions/shared/capital-gains-tax-rate-field";
 import { CurrencySelector } from "@/components/dashboard/currency-selector";
@@ -254,16 +254,17 @@ export function ManualEntryForm() {
                     Current unit value
                   </FieldLabel>
                   <InputGroup>
-                    <InputGroupInput
+                    <LocalizedNumberInput
+                      mode="input-group-input"
                       id={field.name}
                       placeholder="E.g., 420.69"
-                      type="number"
-                      inputMode="decimal"
                       min={0}
-                      step="any"
                       aria-invalid={fieldState.invalid}
-                      {...field}
-                      value={field.value as number}
+                      name={field.name}
+                      ref={field.ref}
+                      onBlur={field.onBlur}
+                      value={(field.value as string | number | null) ?? ""}
+                      onValueChange={(nextValue) => field.onChange(nextValue)}
                     />
                     <InputGroupAddon align="inline-end">
                       <InputGroupText>{form.watch("currency")}</InputGroupText>
