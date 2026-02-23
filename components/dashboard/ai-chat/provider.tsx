@@ -47,6 +47,32 @@ function isDefaultDraftState(draft: AIChatDraftState): boolean {
   );
 }
 
+function areFilesEqual(previousFiles: File[], nextFiles: File[]): boolean {
+  if (previousFiles.length !== nextFiles.length) {
+    return false;
+  }
+
+  for (let index = 0; index < previousFiles.length; index += 1) {
+    const previousFile = previousFiles[index];
+    const nextFile = nextFiles[index];
+
+    if (!previousFile || !nextFile) {
+      return false;
+    }
+
+    if (
+      previousFile.name !== nextFile.name ||
+      previousFile.size !== nextFile.size ||
+      previousFile.type !== nextFile.type ||
+      previousFile.lastModified !== nextFile.lastModified
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 const AIChatContext = createContext<AIChatProviderValue | null>(null);
 
 export function AIChatProvider({ children }: { children: React.ReactNode }) {
@@ -65,6 +91,11 @@ export function AIChatProvider({ children }: { children: React.ReactNode }) {
     setDraftsByConversationId((previousDrafts) => {
       const previousDraft =
         previousDrafts[conversationId] ?? createDefaultDraftState();
+
+      if (previousDraft.input === input) {
+        return previousDrafts;
+      }
+
       const nextDraft: AIChatDraftState = {
         ...previousDraft,
         input,
@@ -88,6 +119,11 @@ export function AIChatProvider({ children }: { children: React.ReactNode }) {
     setDraftsByConversationId((previousDrafts) => {
       const previousDraft =
         previousDrafts[conversationId] ?? createDefaultDraftState();
+
+      if (previousDraft.mode === mode) {
+        return previousDrafts;
+      }
+
       const nextDraft: AIChatDraftState = {
         ...previousDraft,
         mode,
@@ -111,6 +147,11 @@ export function AIChatProvider({ children }: { children: React.ReactNode }) {
     setDraftsByConversationId((previousDrafts) => {
       const previousDraft =
         previousDrafts[conversationId] ?? createDefaultDraftState();
+
+      if (areFilesEqual(previousDraft.files, files)) {
+        return previousDrafts;
+      }
+
       const nextDraft: AIChatDraftState = {
         ...previousDraft,
         files: [...files],

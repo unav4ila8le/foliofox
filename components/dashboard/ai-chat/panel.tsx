@@ -241,6 +241,33 @@ export function AIChatPanel({
   const initialDraftInput = currentDraft?.input ?? "";
   const initialDraftMode = currentDraft?.mode ?? "advisory";
   const initialDraftFiles = currentDraft?.files ?? [];
+  const handleDraftInputChange = useCallback(
+    (input: string) => {
+      if (!conversationId) {
+        return;
+      }
+      setDraftInput(conversationId, input);
+    },
+    [conversationId, setDraftInput],
+  );
+  const handleDraftModeChange = useCallback(
+    (mode: Parameters<typeof setDraftMode>[1]) => {
+      if (!conversationId) {
+        return;
+      }
+      setDraftMode(conversationId, mode);
+    },
+    [conversationId, setDraftMode],
+  );
+  const handleDraftFilesChange = useCallback(
+    (files: File[]) => {
+      if (!conversationId) {
+        return;
+      }
+      setDraftFiles(conversationId, files);
+    },
+    [conversationId, setDraftFiles],
+  );
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -272,15 +299,9 @@ export function AIChatPanel({
             initialDraftInput={initialDraftInput}
             initialDraftMode={initialDraftMode}
             initialDraftFiles={initialDraftFiles}
-            onDraftInputChange={(input) => {
-              setDraftInput(conversationId, input);
-            }}
-            onDraftModeChange={(mode) => {
-              setDraftMode(conversationId, mode);
-            }}
-            onDraftFilesChange={(files) => {
-              setDraftFiles(conversationId, files);
-            }}
+            onDraftInputChange={handleDraftInputChange}
+            onDraftModeChange={handleDraftModeChange}
+            onDraftFilesChange={handleDraftFilesChange}
           />
         ) : null}
       </PromptInputProvider>
