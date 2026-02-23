@@ -30,5 +30,9 @@ describe("ai-chat navigation helpers", () => {
     expect(sanitizeDashboardReturnPath("/login")).toBeNull();
     expect(sanitizeDashboardReturnPath("/dashboard/ai-chat")).toBeNull();
     expect(sanitizeDashboardReturnPath("/dashboard/ai-chat?foo=1")).toBeNull();
+    expect(sanitizeDashboardReturnPath("/dashboard/../maintenance")).toBeNull();
+    expect(
+      sanitizeDashboardReturnPath("/dashboard/%2e%2e/maintenance"),
+    ).toBeNull();
   });
 });

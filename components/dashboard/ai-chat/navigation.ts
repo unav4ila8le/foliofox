@@ -24,13 +24,27 @@ export function sanitizeDashboardReturnPath(
     return null;
   }
 
-  if (!from.startsWith("/dashboard")) {
+  let normalizedPathWithSearch: string;
+  let normalizedPathname: string;
+
+  try {
+    const normalizedUrl = new URL(from, "https://foliofox.local");
+    normalizedPathname = normalizedUrl.pathname;
+    normalizedPathWithSearch = `${normalizedUrl.pathname}${normalizedUrl.search}`;
+  } catch {
     return null;
   }
 
-  if (from.startsWith(AI_CHAT_ROUTE)) {
+  if (!normalizedPathname.startsWith("/dashboard")) {
     return null;
   }
 
-  return from;
+  if (
+    normalizedPathname === AI_CHAT_ROUTE ||
+    normalizedPathname.startsWith(`${AI_CHAT_ROUTE}/`)
+  ) {
+    return null;
+  }
+
+  return normalizedPathWithSearch;
 }
