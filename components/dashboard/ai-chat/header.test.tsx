@@ -1,15 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
-import { ChatHeader } from "@/components/dashboard/layout/right-sidebar/ai-advisor/header";
+import { ChatHeader } from "@/components/dashboard/ai-chat/header";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { MAX_CONVERSATIONS_PER_USER } from "@/lib/ai/chat-guardrails-config";
-
-vi.mock("@/components/ui/custom/sidebar", () => ({
-  useSidebar: () => ({
-    rightWidth: "320px",
-  }),
-}));
 
 vi.mock("@/server/ai/conversations/delete", () => ({
   deleteConversation: vi.fn(),
@@ -20,6 +14,7 @@ describe("ChatHeader", () => {
     render(
       <TooltipProvider>
         <ChatHeader
+          layoutMode="sidebar"
           conversations={[]}
           onSelectConversation={() => {}}
           onNewConversation={() => {}}
@@ -36,5 +31,25 @@ describe("ChatHeader", () => {
     }) as HTMLButtonElement;
 
     expect(newConversationButton.disabled).toBe(true);
+  });
+
+  it("renders the expand link when href is provided", () => {
+    render(
+      <TooltipProvider>
+        <ChatHeader
+          layoutMode="sidebar"
+          conversations={[]}
+          onSelectConversation={() => {}}
+          onNewConversation={() => {}}
+          isAIEnabled
+          modeActionHref="/dashboard/ai-chat?conversationId=conversation-1&from=%2Fdashboard%2Fassets"
+        />
+      </TooltipProvider>,
+    );
+
+    const expandLink = screen.getByRole("link", { name: "Expand" });
+    expect(expandLink.getAttribute("href")).toBe(
+      "/dashboard/ai-chat?conversationId=conversation-1&from=%2Fdashboard%2Fassets",
+    );
   });
 });

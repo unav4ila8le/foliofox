@@ -104,25 +104,119 @@ function mapPromptInputErrorToMessage(
   }
 }
 
+async function toDraftFile(
+  filePart: FileUIPart,
+  index: number,
+): Promise<File | null> {
+  try {
+    const response = await fetch(filePart.url);
+    const blob = await response.blob();
+    const filename = filePart.filename || `attachment-${index + 1}`;
+    const mediaType =
+      filePart.mediaType || blob.type || "application/octet-stream";
+    return new File([blob], filename, { type: mediaType });
+  } catch {
+    return null;
+  }
+}
+
 export function Chat({
   conversationId,
   initialMessages,
   isLoadingConversation,
+  initialDraftInput = "",
+  initialDraftMode = "advisory",
+  initialDraftFiles = [],
   isAIEnabled,
   isAtConversationCap,
   maxConversations = 0,
   hasCurrentConversationInHistory,
   onConversationPersisted,
+  onDraftInputChange,
+  onDraftModeChange,
+  onDraftFilesChange,
 }: ChatProps) {
-  const [mode, setMode] = useState<Mode>("advisory");
+  const [mode, setMode] = useState<Mode>(initialDraftMode);
   const [chatErrorMessage, setChatErrorMessage] = useState<string | null>(null);
   const [copiedMessages, setCopiedMessages] = useState<Set<string>>(new Set());
+  const hasHydratedDraftRef = useRef(false);
+  const hasSyncedDraftInputRef = useRef(false);
+  const hasSyncedDraftFilesRef = useRef(false);
 
   const { copyToClipboard } = useCopyToClipboard({ timeout: 4000 });
   const controller = usePromptInputController();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const attachmentFiles = controller.attachments.files;
   const removeAttachment = controller.attachments.remove;
+
+  useEffect(() => {
+    if (hasHydratedDraftRef.current) {
+      return;
+    }
+
+    hasHydratedDraftRef.current = true;
+    controller.textInput.setInput(initialDraftInput);
+    controller.attachments.clear();
+    if (initialDraftFiles.length > 0) {
+      controller.attachments.add(initialDraftFiles);
+    }
+  }, [controller, initialDraftInput, initialDraftFiles]);
+
+  useEffect(() => {
+    if (!hasHydratedDraftRef.current) {
+      return;
+    }
+
+    // Skip the first sync pass to avoid emitting stale pre-hydration input.
+    if (!hasSyncedDraftInputRef.current) {
+      hasSyncedDraftInputRef.current = true;
+      return;
+    }
+
+    onDraftInputChange?.(controller.textInput.value);
+  }, [controller.textInput.value, onDraftInputChange]);
+
+  useEffect(() => {
+    onDraftModeChange?.(mode);
+  }, [mode, onDraftModeChange]);
+
+  useEffect(() => {
+    if (!onDraftFilesChange) {
+      return;
+    }
+
+    if (!hasHydratedDraftRef.current) {
+      return;
+    }
+
+    // Skip the first sync pass to avoid emitting stale pre-hydration files.
+    if (!hasSyncedDraftFilesRef.current) {
+      hasSyncedDraftFilesRef.current = true;
+      return;
+    }
+
+    let didCancel = false;
+
+    const syncDraftFiles = async () => {
+      const resolvedFiles = await Promise.all(
+        attachmentFiles.map((filePart, index) => toDraftFile(filePart, index)),
+      );
+
+      if (didCancel) {
+        return;
+      }
+
+      onDraftFilesChange(
+        resolvedFiles.filter((file): file is File => file != null),
+      );
+    };
+
+    void syncDraftFiles();
+
+    return () => {
+      didCancel = true;
+    };
+  }, [attachmentFiles, onDraftFilesChange]);
 
   useEffect(() => {
     const queueChatError = (message: string) => {
@@ -191,25 +285,30 @@ export function Chat({
     });
   }, [mode, conversationId]);
 
-  const { messages, sendMessage, status, stop, regenerate } = useChat({
-    id: conversationId,
-    messages: initialMessages,
-    transport,
-    onError: (error) => {
-      // Normalize backend cap error into a stable, user-friendly message.
-      const message = isConversationCapErrorMessage(error.message)
-        ? AI_CHAT_CONVERSATION_CAP_FRIENDLY_MESSAGE
-        : error.message;
+  const { messages, setMessages, sendMessage, status, stop, regenerate } =
+    useChat({
+      id: conversationId,
+      messages: initialMessages,
+      transport,
+      onError: (error) => {
+        // Normalize backend cap error into a stable, user-friendly message.
+        const message = isConversationCapErrorMessage(error.message)
+          ? AI_CHAT_CONVERSATION_CAP_FRIENDLY_MESSAGE
+          : error.message;
 
-      setChatErrorMessage(message);
-    },
-    onFinish: async ({ isAbort, isError }) => {
-      if (isAbort || isError) return;
+        setChatErrorMessage(message);
+      },
+      onFinish: async ({ isAbort, isError }) => {
+        if (isAbort || isError) return;
 
-      setChatErrorMessage(null);
-      await onConversationPersisted?.();
-    },
-  });
+        setChatErrorMessage(null);
+        await onConversationPersisted?.();
+      },
+    });
+
+  useEffect(() => {
+    setMessages(initialMessages);
+  }, [initialMessages, setMessages]);
 
   const showProactiveCapAlert =
     Boolean(isAIEnabled) &&

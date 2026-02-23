@@ -11,11 +11,17 @@ export interface ChatProps {
   conversationId: string;
   initialMessages: UIMessage[];
   isLoadingConversation: boolean;
+  initialDraftInput?: string;
+  initialDraftMode?: Mode;
+  initialDraftFiles?: File[];
   isAIEnabled?: boolean;
   isAtConversationCap?: boolean;
   maxConversations?: number;
   hasCurrentConversationInHistory?: boolean;
   onConversationPersisted?: () => Promise<void> | void;
+  onDraftInputChange?: (input: string) => void;
+  onDraftModeChange?: (mode: Mode) => void;
+  onDraftFilesChange?: (files: File[]) => void;
 }
 
 export interface ChatThreadProps {

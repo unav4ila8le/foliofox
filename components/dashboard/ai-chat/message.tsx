@@ -111,7 +111,7 @@ export function ChatMessage({
             >
               <ReasoningTrigger />
               {mergedText && (
-                <ReasoningContent className="mt-2 text-xs *:space-y-2">
+                <ReasoningContent className="mt-2 text-xs leading-normal *:space-y-1">
                   {mergedText}
                 </ReasoningContent>
               )}

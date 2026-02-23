@@ -12,7 +12,7 @@ export default function HomePage() {
       <Link
         href="https://buymeacoffee.com/leonardofromfoliofox"
         target="_blank"
-        className="fixed right-8 bottom-8 transition-all duration-100 hover:scale-105"
+        className="fixed right-4 bottom-6 transition-all duration-100 hover:scale-105 md:right-8 md:bottom-8"
       >
         <Image
           src="/images/homepage/bmc-button.svg"

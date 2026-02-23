@@ -10,6 +10,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+import { AIChatToggle } from "./ai-chat-toggle";
 import { Breadcrumb } from "./breadcrumb";
 import { NewActionButton } from "./new-action-button";
 import { FeedbackButton } from "@/components/dashboard/layout/header/feedback";
@@ -44,12 +45,7 @@ export function Header() {
           <SharePortfolioButton />
         </Suspense>
         <FeedbackButton />
-        <Tooltip delayDuration={500}>
-          <TooltipTrigger asChild>
-            <SidebarTrigger side="right" className="-mr-2" />
-          </TooltipTrigger>
-          <TooltipContent>Toggle AI Chat</TooltipContent>
-        </Tooltip>
+        <AIChatToggle />
       </div>
     </header>
   );
