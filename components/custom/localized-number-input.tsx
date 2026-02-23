@@ -91,8 +91,6 @@ export const LocalizedNumberInput = React.forwardRef<
   const decimalSeparatorCandidates = React.useMemo(() => {
     const candidates = [
       delimiters.decimalSeparator,
-      ".",
-      ",",
       ...(allowedDecimalSeparators ?? []),
     ].filter(Boolean);
 

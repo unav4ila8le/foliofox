@@ -226,16 +226,17 @@ export function ManualEntryForm() {
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel htmlFor={field.name}>Current quantity</FieldLabel>
-                  <Input
+                  <LocalizedNumberInput
+                    mode="input"
                     id={field.name}
                     placeholder="E.g., 10"
-                    type="number"
-                    inputMode="decimal"
                     min={0}
-                    step="any"
                     aria-invalid={fieldState.invalid}
-                    {...field}
-                    value={field.value as number}
+                    name={field.name}
+                    ref={field.ref}
+                    onBlur={field.onBlur}
+                    value={(field.value as string | number | null) ?? ""}
+                    onValueChange={(nextValue) => field.onChange(nextValue)}
                   />
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />
@@ -301,16 +302,17 @@ export function ManualEntryForm() {
                     </TooltipContent>
                   </Tooltip>
                 </div>
-                <Input
+                <LocalizedNumberInput
+                  mode="input"
                   id={field.name}
                   placeholder="E.g., 12.41"
-                  type="number"
-                  inputMode="decimal"
                   min={0}
-                  step="any"
                   aria-invalid={fieldState.invalid}
-                  {...field}
-                  value={field.value}
+                  name={field.name}
+                  ref={field.ref}
+                  onBlur={field.onBlur}
+                  value={(field.value as string | number | null) ?? ""}
+                  onValueChange={(nextValue) => field.onChange(nextValue)}
                 />
                 {fieldState.invalid && (
                   <FieldError errors={[fieldState.error]} />
