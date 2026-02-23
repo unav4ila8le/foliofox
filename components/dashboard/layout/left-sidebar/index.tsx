@@ -4,12 +4,7 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
-  SidebarMenu as UISidebarMenu,
-  SidebarMenuItem,
 } from "@/components/ui/custom/sidebar";
 import { User } from "./user";
 import { Branding } from "./branding";
@@ -21,21 +16,17 @@ export function LeftSidebar() {
       collapsible="icon"
       style={{ "--sidebar-width-mobile": "max(18rem, 64vw)" } as CSSProperties}
     >
+      {/* Header */}
       <SidebarHeader>
-        <UISidebarMenu>
-          <SidebarMenuItem>
-            <User />
-          </SidebarMenuItem>
-        </UISidebarMenu>
+        <User />
       </SidebarHeader>
+
+      {/* Content */}
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Dashboard</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <Menu />
-          </SidebarGroupContent>
-        </SidebarGroup>
+        <Menu />
       </SidebarContent>
+
+      {/* Footer */}
       <SidebarFooter>
         <Branding />
       </SidebarFooter>
