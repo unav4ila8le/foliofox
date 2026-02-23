@@ -12,7 +12,7 @@ import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
 import { Spinner } from "@/components/ui/spinner";
 import { Field, FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { LocalizedNumberInput } from "@/components/custom/localized-number-input";
+import { LocalizedNumberInput } from "@/components/ui/custom/localized-number-input";
 import {
   Table,
   TableBody,

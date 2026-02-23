@@ -18,7 +18,7 @@ import {
   InputGroupAddon,
   InputGroupText,
 } from "@/components/ui/input-group";
-import { LocalizedNumberInput } from "@/components/custom/localized-number-input";
+import { LocalizedNumberInput } from "@/components/ui/custom/localized-number-input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { DialogClose } from "@/components/ui/custom/dialog";

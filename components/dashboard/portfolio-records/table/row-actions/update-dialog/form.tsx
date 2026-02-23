@@ -31,7 +31,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Calendar } from "@/components/ui/calendar";
 import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
-import { LocalizedNumberInput } from "@/components/custom/localized-number-input";
+import { LocalizedNumberInput } from "@/components/ui/custom/localized-number-input";
 import {
   InputGroup,
   InputGroupAddon,

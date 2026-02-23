@@ -32,7 +32,7 @@ import {
   InputGroupAddon,
   InputGroupText,
 } from "@/components/ui/input-group";
-import { LocalizedNumberInput } from "@/components/custom/localized-number-input";
+import { LocalizedNumberInput } from "@/components/ui/custom/localized-number-input";
 import { Calendar } from "@/components/ui/calendar";
 import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
 

@@ -9,7 +9,7 @@ import {
   InputGroupButton,
 } from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
-import { LocalizedNumberInput } from "@/components/custom/localized-number-input";
+import { LocalizedNumberInput } from "@/components/ui/custom/localized-number-input";
 
 import { BalanceChart } from "./charts/balance-chart";
 import { EventsTable } from "./table/events-table";
