@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import Link from "next/link";
 import {
@@ -147,12 +149,7 @@ export function ChatHeader({
             </TooltipTrigger>
             <TooltipContent>Conversation history</TooltipContent>
           </Tooltip>
-          <PopoverContent
-            align="end"
-            sideOffset={8}
-            collisionPadding={8}
-            className="w-[min(40rem,calc(100vw-1rem))] p-0"
-          >
+          <PopoverContent sideOffset={8} collisionPadding={8} className="p-0">
             <Command>
               <CommandInput placeholder="Search conversation..." />
               <CommandList>
