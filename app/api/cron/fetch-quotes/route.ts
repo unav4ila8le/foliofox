@@ -1,9 +1,45 @@
 import { NextRequest, NextResponse, connection } from "next/server";
 import { headers } from "next/headers";
 
-import { formatUTCDateKey, parseUTCDateKey } from "@/lib/date/date-utils";
+import {
+  addUTCDays,
+  formatUTCDateKey,
+  parseUTCDateKey,
+} from "@/lib/date/date-utils";
 import { fetchSymbols } from "@/server/symbols/fetch";
 import { fetchQuotes } from "@/server/quotes/fetch";
+import { isTransientError, retryWithBackoff } from "@/server/shared/retry";
+
+const QUOTE_FETCH_BATCH_SIZE = 150;
+const BACKFILL_WINDOW_DAYS = 3;
+const RETRY_MAX_ATTEMPTS = 3;
+
+interface CronDateStats {
+  date: string;
+  totalRequests: number;
+  successfulFetches: number;
+  failedFetches: number;
+  retryCount: number;
+  failedBatchCount: number;
+}
+
+// Chunks an array into smaller arrays of a given size
+function chunkArray<T>(values: T[], size: number): T[][] {
+  if (size <= 0) return values.length > 0 ? [values.slice()] : [];
+
+  const chunks: T[][] = [];
+  for (let index = 0; index < values.length; index += size) {
+    chunks.push(values.slice(index, index + size));
+  }
+  return chunks;
+}
+
+// Builds an array of dates from the anchor date minus the number of days in the backfill window
+function buildDateWindow(anchorDate: Date): Date[] {
+  return Array.from({ length: BACKFILL_WINDOW_DAYS }, (_, offset) =>
+    addUTCDays(anchorDate, -offset),
+  );
+}
 
 export async function GET(request: NextRequest) {
   // Wait for incoming request before continuing (prevents prerendering)
@@ -36,10 +72,22 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const dateWindow = buildDateWindow(parsedDate);
+
     // 4. Fetch all symbol IDs from database
     const symbolIds = await fetchSymbols();
     if (symbolIds.length === 0) {
       console.warn("No symbols found in database");
+
+      const perDateStats: CronDateStats[] = dateWindow.map((windowDate) => ({
+        date: formatUTCDateKey(windowDate),
+        totalRequests: 0,
+        successfulFetches: 0,
+        failedFetches: 0,
+        retryCount: 0,
+        failedBatchCount: 0,
+      }));
+
       return NextResponse.json({
         success: true,
         message: "No symbols to fetch",
@@ -47,40 +95,106 @@ export async function GET(request: NextRequest) {
           totalSymbols: 0,
           successfulFetches: 0,
           failedFetches: 0,
+          retryCount: 0,
+          failedBatchCount: 0,
           date,
+          perDate: perDateStats,
         },
       });
     }
 
-    // 5. Prepare quote requests for the target date
-    const quoteRequests = symbolIds.map((symbolId) => ({
-      symbolLookup: symbolId,
-      date: parsedDate,
-    }));
+    const perDateStats: CronDateStats[] = [];
 
-    // 6. Fetch quotes using your existing function
-    const quotesMap = await fetchQuotes(quoteRequests, {
-      upsert: true,
-      staleGuardDays: 0,
-    });
+    // 5. Fetch quote cache for D, D-1, and D-2 with per-batch retries.
+    for (const targetDate of dateWindow) {
+      const dateKey = formatUTCDateKey(targetDate);
+      const quoteRequests = symbolIds.map((symbolId) => ({
+        symbolLookup: symbolId,
+        date: targetDate,
+      }));
+      const requestBatches = chunkArray(quoteRequests, QUOTE_FETCH_BATCH_SIZE);
 
-    // 7. Count successful fetches
-    const successfulFetches = quotesMap.size;
-    const failedFetches = symbolIds.length - successfulFetches;
+      const dateStats: CronDateStats = {
+        date: dateKey,
+        totalRequests: quoteRequests.length,
+        successfulFetches: 0,
+        failedFetches: 0,
+        retryCount: 0,
+        failedBatchCount: 0,
+      };
 
-    // 8. Log and return stats
+      for (const [batchIndex, requestBatch] of requestBatches.entries()) {
+        let batchRetryCount = 0;
+        try {
+          const quotesMap = await retryWithBackoff(
+            () =>
+              fetchQuotes(requestBatch, {
+                upsert: true,
+                staleGuardDays: 0,
+              }),
+            {
+              maxAttempts: RETRY_MAX_ATTEMPTS,
+              shouldRetry: isTransientError,
+              onRetry: () => {
+                batchRetryCount += 1;
+              },
+            },
+          );
+
+          dateStats.successfulFetches += quotesMap.size;
+          dateStats.failedFetches += requestBatch.length - quotesMap.size;
+        } catch (error) {
+          dateStats.failedFetches += requestBatch.length;
+          dateStats.failedBatchCount += 1;
+          console.warn(
+            `Quote fetch failed for ${dateKey} batch ${batchIndex + 1}/${requestBatches.length}:`,
+            error,
+          );
+        } finally {
+          dateStats.retryCount += batchRetryCount;
+        }
+      }
+
+      perDateStats.push(dateStats);
+    }
+
+    const successfulFetches = perDateStats.reduce(
+      (sum, dateStats) => sum + dateStats.successfulFetches,
+      0,
+    );
+    const failedFetches = perDateStats.reduce(
+      (sum, dateStats) => sum + dateStats.failedFetches,
+      0,
+    );
+    const retryCount = perDateStats.reduce(
+      (sum, dateStats) => sum + dateStats.retryCount,
+      0,
+    );
+    const failedBatchCount = perDateStats.reduce(
+      (sum, dateStats) => sum + dateStats.failedBatchCount,
+      0,
+    );
+    const hasFailures = failedFetches > 0 || failedBatchCount > 0;
+
+    // 6. Log and return stats
     console.log(
-      `Quote fetch completed for ${date}: ${successfulFetches} successful, ${failedFetches} failed.`,
+      `Quote fetch completed for ${date}: ${successfulFetches} successful, ${failedFetches} failed, ${retryCount} retries.`,
     );
 
     return NextResponse.json({
       success: true,
-      message: "Daily quote fetch completed",
+      message: hasFailures
+        ? "Daily quote fetch completed with partial failures"
+        : "Daily quote fetch completed",
       stats: {
         totalSymbols: symbolIds.length,
         successfulFetches,
         failedFetches,
+        retryCount,
+        failedBatchCount,
+        windowDays: BACKFILL_WINDOW_DAYS,
         date,
+        perDate: perDateStats,
       },
     });
   } catch (error) {

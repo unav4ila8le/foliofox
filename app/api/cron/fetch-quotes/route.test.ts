@@ -52,7 +52,17 @@ describe("GET /api/cron/fetch-quotes", () => {
       new Headers({ authorization: "Bearer test-cron-secret" }),
     );
     fetchSymbolsMock.mockResolvedValue(["sym-1", "sym-2"]);
-    fetchQuotesMock.mockResolvedValue(new Map([["sym-1|2026-02-15", 123]]));
+    fetchQuotesMock.mockImplementation(
+      (requests: Array<{ symbolLookup: string; date: Date }>) =>
+        Promise.resolve(
+          new Map(
+            requests.map((request) => [
+              `${request.symbolLookup}|${request.date.toISOString().slice(0, 10)}`,
+              123,
+            ]),
+          ),
+        ),
+    );
 
     const { GET } = await import("@/app/api/cron/fetch-quotes/route");
     const response = await GET(
@@ -63,23 +73,49 @@ describe("GET /api/cron/fetch-quotes", () => {
     const body = await response.json();
     expect(body.success).toBe(true);
     expect(body.stats.date).toBe("2026-02-15");
+    expect(body.stats.windowDays).toBe(3);
+    expect(body.stats.successfulFetches).toBe(6);
+    expect(body.stats.failedFetches).toBe(0);
+    expect(body.stats.retryCount).toBe(0);
+    expect(body.stats.failedBatchCount).toBe(0);
+    expect(body.stats.perDate).toHaveLength(3);
+    expect(
+      body.stats.perDate.map((entry: { date: string }) => entry.date),
+    ).toEqual(["2026-02-15", "2026-02-14", "2026-02-13"]);
 
-    expect(fetchQuotesMock).toHaveBeenCalledTimes(1);
-    const [requests, options] = fetchQuotesMock.mock.calls[0] ?? [];
-
-    expect(options).toEqual({ upsert: true, staleGuardDays: 0 });
-    expect(requests).toHaveLength(2);
-    expect(requests[0]?.symbolLookup).toBe("sym-1");
-    expect(requests[1]?.symbolLookup).toBe("sym-2");
-    expect(requests[0]?.date?.toISOString()).toBe("2026-02-15T00:00:00.000Z");
+    expect(fetchQuotesMock).toHaveBeenCalledTimes(3);
+    const expectedDates = [
+      "2026-02-15T00:00:00.000Z",
+      "2026-02-14T00:00:00.000Z",
+      "2026-02-13T00:00:00.000Z",
+    ];
+    fetchQuotesMock.mock.calls.forEach((call, index) => {
+      const [requests, options] = call;
+      expect(options).toEqual({ upsert: true, staleGuardDays: 0 });
+      expect(requests).toHaveLength(2);
+      expect(requests[0]?.symbolLookup).toBe("sym-1");
+      expect(requests[1]?.symbolLookup).toBe("sym-2");
+      expect(requests[0]?.date?.toISOString()).toBe(expectedDates[index]);
+      expect(requests[1]?.date?.toISOString()).toBe(expectedDates[index]);
+    });
   });
 
-  it("accepts explicit ?date override", async () => {
+  it("accepts explicit ?date override and anchors rolling window", async () => {
     headersMock.mockResolvedValue(
       new Headers({ authorization: "Bearer test-cron-secret" }),
     );
     fetchSymbolsMock.mockResolvedValue(["sym-1"]);
-    fetchQuotesMock.mockResolvedValue(new Map([["sym-1|2026-01-10", 123]]));
+    fetchQuotesMock.mockImplementation(
+      (requests: Array<{ symbolLookup: string; date: Date }>) =>
+        Promise.resolve(
+          new Map(
+            requests.map((request) => [
+              `${request.symbolLookup}|${request.date.toISOString().slice(0, 10)}`,
+              123,
+            ]),
+          ),
+        ),
+    );
 
     const { GET } = await import("@/app/api/cron/fetch-quotes/route");
     const response = await GET(
@@ -91,9 +127,100 @@ describe("GET /api/cron/fetch-quotes", () => {
     expect(response.status).toBe(200);
     const body = await response.json();
     expect(body.stats.date).toBe("2026-01-10");
+    expect(
+      body.stats.perDate.map((entry: { date: string }) => entry.date),
+    ).toEqual(["2026-01-10", "2026-01-09", "2026-01-08"]);
 
-    const [requests] = fetchQuotesMock.mock.calls[0] ?? [];
-    expect(requests[0]?.date?.toISOString()).toBe("2026-01-10T00:00:00.000Z");
+    expect(fetchQuotesMock).toHaveBeenCalledTimes(3);
+    expect(fetchQuotesMock.mock.calls[0]?.[0]?.[0]?.date?.toISOString()).toBe(
+      "2026-01-10T00:00:00.000Z",
+    );
+    expect(fetchQuotesMock.mock.calls[1]?.[0]?.[0]?.date?.toISOString()).toBe(
+      "2026-01-09T00:00:00.000Z",
+    );
+    expect(fetchQuotesMock.mock.calls[2]?.[0]?.[0]?.date?.toISOString()).toBe(
+      "2026-01-08T00:00:00.000Z",
+    );
+  });
+
+  it("retries transient batch failures and succeeds", async () => {
+    headersMock.mockResolvedValue(
+      new Headers({ authorization: "Bearer test-cron-secret" }),
+    );
+    fetchSymbolsMock.mockResolvedValue(["sym-1", "sym-2"]);
+
+    let callCount = 0;
+    fetchQuotesMock.mockImplementation(
+      (requests: Array<{ symbolLookup: string; date: Date }>) => {
+        callCount += 1;
+        if (callCount === 1) {
+          return Promise.reject(new Error("502 Bad Gateway"));
+        }
+
+        return Promise.resolve(
+          new Map(
+            requests.map((request) => [
+              `${request.symbolLookup}|${request.date.toISOString().slice(0, 10)}`,
+              123,
+            ]),
+          ),
+        );
+      },
+    );
+
+    const { GET } = await import("@/app/api/cron/fetch-quotes/route");
+    const responsePromise = GET(
+      new Request("http://localhost/api/cron/fetch-quotes") as never,
+    );
+
+    await vi.runAllTimersAsync();
+    const response = await responsePromise;
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.success).toBe(true);
+    expect(body.stats.retryCount).toBe(1);
+    expect(body.stats.perDate[0]?.retryCount).toBe(1);
+    expect(fetchQuotesMock).toHaveBeenCalledTimes(4);
+  });
+
+  it("returns 200 with partial-failure stats when a date batch fails", async () => {
+    headersMock.mockResolvedValue(
+      new Headers({ authorization: "Bearer test-cron-secret" }),
+    );
+    fetchSymbolsMock.mockResolvedValue(["sym-1", "sym-2"]);
+
+    let callCount = 0;
+    fetchQuotesMock.mockImplementation(
+      (requests: Array<{ symbolLookup: string; date: Date }>) => {
+        callCount += 1;
+        if (callCount === 1) {
+          return Promise.reject(new Error("Permanent parse error"));
+        }
+
+        return Promise.resolve(
+          new Map(
+            requests.map((request) => [
+              `${request.symbolLookup}|${request.date.toISOString().slice(0, 10)}`,
+              123,
+            ]),
+          ),
+        );
+      },
+    );
+
+    const { GET } = await import("@/app/api/cron/fetch-quotes/route");
+    const response = await GET(
+      new Request("http://localhost/api/cron/fetch-quotes") as never,
+    );
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.success).toBe(true);
+    expect(body.message).toContain("partial failures");
+    expect(body.stats.failedFetches).toBe(2);
+    expect(body.stats.failedBatchCount).toBe(1);
+    expect(body.stats.retryCount).toBe(0);
   });
 
   it("returns 400 for invalid date format", async () => {
