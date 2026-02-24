@@ -10,6 +10,7 @@ import type { Symbol, SymbolAlias } from "@/types/global.types";
 
 const DEFAULT_ALIAS_TYPE = "ticker";
 const DEFAULT_ALIAS_SOURCE = "yahoo";
+const BATCH_QUERY_CHUNK_SIZE = 200;
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -353,94 +354,279 @@ export async function resolveSymbolsBatch(
     }
   >();
 
-  // Deduplicate inputs
+  // Deduplicate and normalize inputs once.
   const uniqueInputs = [
     ...new Set(
       symbolInputs.map((id) => id.trim()).filter((id) => id.length > 0),
     ),
   ];
 
-  // Resolve all inputs in parallel
-  await Promise.all(
+  if (!uniqueInputs.length) {
+    return { byInput, byCanonicalId };
+  }
+
+  const supabase = await createServiceClient();
+
+  const inputMeta = await Promise.all(
     uniqueInputs.map(async (inputKey) => {
-      // Skip if already resolved
-      if (byInput.has(inputKey)) return;
-
-      try {
-        // 1) Resolve input to canonical symbol
-        const resolved = await resolveSymbolInput(inputKey);
-        if (!resolved?.symbol?.id) {
-          const errorMsg = `Unable to resolve symbol identifier "${inputKey}" to a canonical symbol.`;
-          if (onError === "throw") {
-            throw new Error(errorMsg);
-          }
-          if (onError === "warn") {
-            console.warn(errorMsg);
-          }
-          return;
-        }
-
-        const canonicalId = resolved.symbol.id;
-
-        // 2) Get provider-specific alias (e.g., Yahoo ticker)
-        const providerAliasRecord = await getProviderSymbolAlias(
-          canonicalId,
-          provider,
-          {
-            type: providerType,
-          },
-        );
-
-        const providerAlias =
-          providerAliasRecord?.value ??
-          resolved.primaryAlias?.value ??
-          resolved.symbol.ticker;
-
-        if (!providerAlias) {
-          const errorMsg = `Symbol "${inputKey}" is missing a ${provider} ${providerType} alias.`;
-          if (onError === "throw") {
-            throw new Error(errorMsg);
-          }
-          if (onError === "warn") {
-            console.warn(errorMsg);
-          }
-          return;
-        }
-
-        // 3) Get display ticker (primary alias or symbol ticker)
-        const displayTicker =
-          resolved.primaryAlias?.value ?? resolved.symbol.ticker ?? null;
-
-        // 4) Store resolution
-        const resolution = {
-          canonicalId,
-          providerAlias,
-          displayTicker,
-        };
-
-        byInput.set(inputKey, resolution);
-        if (!byCanonicalId.has(canonicalId)) {
-          byCanonicalId.set(canonicalId, {
-            providerAlias,
-            displayTicker,
-          });
-        }
-      } catch (error) {
-        if (onError === "throw") {
-          throw error;
-        }
-        if (onError === "warn") {
-          console.warn(
-            `Error resolving symbol "${inputKey}":`,
-            error instanceof Error ? error.message : error,
-          );
-        }
-        // onError === "skip" silently continues
-      }
+      const isUuid = UUID_PATTERN.test(inputKey);
+      const normalized = isUuid
+        ? inputKey.toLowerCase()
+        : await normalizeSymbolAliasValue(inputKey, DEFAULT_ALIAS_TYPE);
+      return {
+        inputKey,
+        normalized,
+        isUuid,
+      };
     }),
   );
 
+  let canonicalByInput = new Map<string, string>();
+  let tickerBySymbolId = new Map<string, string>();
+  let primaryAliasBySymbolId = new Map<string, string>();
+  let providerAliasBySymbolId = new Map<string, string>();
+
+  try {
+    const aliasInputs = inputMeta.filter((entry) => !entry.isUuid);
+    const aliasLookups = [
+      ...new Set(aliasInputs.map((entry) => entry.normalized)),
+    ];
+    const canonicalByAliasLookup = await fetchCanonicalIdsByAliasLookups(
+      supabase,
+      aliasLookups,
+    );
+
+    canonicalByInput = new Map<string, string>();
+    inputMeta.forEach((entry) => {
+      if (entry.isUuid) {
+        canonicalByInput.set(entry.inputKey, entry.normalized);
+        return;
+      }
+
+      const canonicalId = canonicalByAliasLookup.get(entry.normalized);
+      if (canonicalId) {
+        canonicalByInput.set(entry.inputKey, canonicalId);
+      }
+    });
+
+    const canonicalIds = [...new Set(canonicalByInput.values())];
+    tickerBySymbolId = await fetchSymbolTickersById(supabase, canonicalIds);
+    primaryAliasBySymbolId = await fetchPrimaryAliasesBySymbolId(
+      supabase,
+      canonicalIds,
+    );
+    providerAliasBySymbolId = await fetchProviderAliasesBySymbolId(
+      supabase,
+      canonicalIds,
+      provider,
+      providerType,
+    );
+  } catch (error) {
+    if (onError === "throw") {
+      throw error;
+    }
+
+    if (onError === "warn") {
+      uniqueInputs.forEach((inputKey) => {
+        console.warn(
+          `Error resolving symbol "${inputKey}":`,
+          error instanceof Error ? error.message : error,
+        );
+      });
+    }
+
+    return { byInput, byCanonicalId };
+  }
+
+  for (const inputKey of uniqueInputs) {
+    try {
+      // 1) Resolve input to canonical symbol ID.
+      const canonicalId = canonicalByInput.get(inputKey);
+      if (!canonicalId || !tickerBySymbolId.has(canonicalId)) {
+        const errorMsg = `Unable to resolve symbol identifier "${inputKey}" to a canonical symbol.`;
+        if (onError === "throw") {
+          throw new Error(errorMsg);
+        }
+        if (onError === "warn") {
+          console.warn(errorMsg);
+        }
+        continue;
+      }
+
+      // 2) Resolve provider alias with fallback order.
+      const providerAlias =
+        providerAliasBySymbolId.get(canonicalId) ??
+        primaryAliasBySymbolId.get(canonicalId) ??
+        tickerBySymbolId.get(canonicalId);
+
+      if (!providerAlias) {
+        const errorMsg = `Symbol "${inputKey}" is missing a ${provider} ${providerType} alias.`;
+        if (onError === "throw") {
+          throw new Error(errorMsg);
+        }
+        if (onError === "warn") {
+          console.warn(errorMsg);
+        }
+        continue;
+      }
+
+      // 3) Resolve display ticker and store maps.
+      const displayTicker =
+        primaryAliasBySymbolId.get(canonicalId) ??
+        tickerBySymbolId.get(canonicalId) ??
+        null;
+
+      byInput.set(inputKey, {
+        canonicalId,
+        providerAlias,
+        displayTicker,
+      });
+
+      if (!byCanonicalId.has(canonicalId)) {
+        byCanonicalId.set(canonicalId, {
+          providerAlias,
+          displayTicker,
+        });
+      }
+    } catch (error) {
+      if (onError === "throw") {
+        throw error;
+      }
+      if (onError === "warn") {
+        console.warn(
+          `Error resolving symbol "${inputKey}":`,
+          error instanceof Error ? error.message : error,
+        );
+      }
+      // onError === "skip" silently continues
+    }
+  }
+
   return { byInput, byCanonicalId };
+}
+
+async function fetchCanonicalIdsByAliasLookups(
+  supabase: SupabaseClient<Database>,
+  aliasLookups: string[],
+) {
+  const canonicalByAliasLookup = new Map<string, string>();
+  if (!aliasLookups.length) return canonicalByAliasLookup;
+
+  for (const aliasChunk of chunkValues(aliasLookups, BATCH_QUERY_CHUNK_SIZE)) {
+    const { data, error } = await supabase
+      .from("symbol_aliases")
+      .select("value, symbol_id, is_primary, effective_to")
+      .eq("type", DEFAULT_ALIAS_TYPE)
+      .in("value", aliasChunk)
+      .order("value", { ascending: true })
+      .order("is_primary", { ascending: false })
+      .order("effective_to", { ascending: true, nullsFirst: true });
+
+    if (error) {
+      throw new Error(
+        `Failed to batch resolve symbol aliases: ${error.message}`,
+      );
+    }
+
+    data?.forEach((row) => {
+      if (!canonicalByAliasLookup.has(row.value)) {
+        canonicalByAliasLookup.set(row.value, row.symbol_id);
+      }
+    });
+  }
+
+  return canonicalByAliasLookup;
+}
+
+async function fetchSymbolTickersById(
+  supabase: SupabaseClient<Database>,
+  symbolIds: string[],
+) {
+  const tickerBySymbolId = new Map<string, string>();
+  if (!symbolIds.length) return tickerBySymbolId;
+
+  for (const symbolIdChunk of chunkValues(symbolIds, BATCH_QUERY_CHUNK_SIZE)) {
+    const { data, error } = await supabase
+      .from("symbols")
+      .select("id, ticker")
+      .in("id", symbolIdChunk);
+
+    if (error) {
+      throw new Error(`Failed to batch fetch symbols: ${error.message}`);
+    }
+
+    data?.forEach((symbolRow) => {
+      tickerBySymbolId.set(symbolRow.id, symbolRow.ticker);
+    });
+  }
+
+  return tickerBySymbolId;
+}
+
+async function fetchPrimaryAliasesBySymbolId(
+  supabase: SupabaseClient<Database>,
+  symbolIds: string[],
+) {
+  const primaryAliasBySymbolId = new Map<string, string>();
+  if (!symbolIds.length) return primaryAliasBySymbolId;
+
+  for (const symbolIdChunk of chunkValues(symbolIds, BATCH_QUERY_CHUNK_SIZE)) {
+    const { data, error } = await supabase
+      .from("symbol_aliases")
+      .select("symbol_id, value")
+      .eq("is_primary", true)
+      .in("symbol_id", symbolIdChunk);
+
+    if (error) {
+      throw new Error(
+        `Failed to batch fetch primary aliases: ${error.message}`,
+      );
+    }
+
+    data?.forEach((aliasRow) => {
+      if (!primaryAliasBySymbolId.has(aliasRow.symbol_id)) {
+        primaryAliasBySymbolId.set(aliasRow.symbol_id, aliasRow.value);
+      }
+    });
+  }
+
+  return primaryAliasBySymbolId;
+}
+
+async function fetchProviderAliasesBySymbolId(
+  supabase: SupabaseClient<Database>,
+  symbolIds: string[],
+  provider: string,
+  providerType: string,
+) {
+  const providerAliasBySymbolId = new Map<string, string>();
+  if (!symbolIds.length) return providerAliasBySymbolId;
+
+  for (const symbolIdChunk of chunkValues(symbolIds, BATCH_QUERY_CHUNK_SIZE)) {
+    const { data, error } = await supabase
+      .from("symbol_aliases")
+      .select("symbol_id, value, effective_from")
+      .eq("source", provider)
+      .eq("type", providerType)
+      .is("effective_to", null)
+      .in("symbol_id", symbolIdChunk)
+      .order("symbol_id", { ascending: true })
+      .order("effective_from", { ascending: false });
+
+    if (error) {
+      throw new Error(
+        `Failed to batch fetch provider aliases: ${error.message}`,
+      );
+    }
+
+    data?.forEach((aliasRow) => {
+      if (!providerAliasBySymbolId.has(aliasRow.symbol_id)) {
+        providerAliasBySymbolId.set(aliasRow.symbol_id, aliasRow.value);
+      }
+    });
+  }
+
+  return providerAliasBySymbolId;
 }
 
 async function normalizeSymbolAliasValue(value: string, type?: string) {
@@ -449,4 +635,16 @@ async function normalizeSymbolAliasValue(value: string, type?: string) {
   }
 
   return value.trim().toUpperCase();
+}
+
+function chunkValues<T>(values: T[], chunkSize: number): T[][] {
+  if (values.length === 0) return [];
+  if (chunkSize <= 0) return [values];
+
+  const chunks: T[][] = [];
+  for (let index = 0; index < values.length; index += chunkSize) {
+    chunks.push(values.slice(index, index + chunkSize));
+  }
+
+  return chunks;
 }
