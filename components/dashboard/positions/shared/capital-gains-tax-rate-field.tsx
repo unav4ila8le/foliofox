@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { Info } from "lucide-react";
 import { Controller } from "react-hook-form";
 import type {
@@ -11,16 +12,15 @@ import type {
 
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
-import {
-  InputGroup,
-  InputGroupInput,
-  InputGroupAddon,
-} from "@/components/ui/input-group";
+import { InputGroup, InputGroupAddon } from "@/components/ui/input-group";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { LocalizedNumberInput } from "@/components/ui/custom/localized-number-input";
+import { formatNumber } from "@/lib/number-format";
+import { useLocale } from "@/hooks/use-locale";
 
 const CAPITAL_GAINS_TAX_RATE_PRESETS = [12.5, 26] as const;
 
@@ -30,6 +30,7 @@ interface CapitalGainsTaxRateFieldProps<TFieldValues extends FieldValues> {
   name?: FieldPath<TFieldValues>;
   className?: string;
   disabled?: boolean;
+  placeholder?: string;
 }
 
 export function CapitalGainsTaxRateField<TFieldValues extends FieldValues>({
@@ -38,9 +39,15 @@ export function CapitalGainsTaxRateField<TFieldValues extends FieldValues>({
   name,
   className,
   disabled = false,
+  placeholder,
 }: CapitalGainsTaxRateFieldProps<TFieldValues>) {
+  const locale = useLocale();
   const fieldName = (name ??
     "capital_gains_tax_rate") as FieldPath<TFieldValues>;
+  const resolvedPlaceholder = useMemo(
+    () => placeholder ?? `E.g., ${formatNumber(26, { locale })}`,
+    [locale, placeholder],
+  );
 
   return (
     <Controller
@@ -67,18 +74,19 @@ export function CapitalGainsTaxRateField<TFieldValues extends FieldValues>({
               </Tooltip>
             </div>
             <InputGroup>
-              <InputGroupInput
+              <LocalizedNumberInput
+                mode="input-group-input"
                 id={field.name}
-                placeholder="E.g., 26"
-                type="number"
-                inputMode="decimal"
+                placeholder={resolvedPlaceholder}
                 min={0}
                 max={100}
-                step="any"
                 disabled={disabled}
                 aria-invalid={fieldState.invalid}
-                {...field}
-                value={field.value ?? ""}
+                name={field.name}
+                ref={field.ref}
+                onBlur={field.onBlur}
+                value={(field.value as string | number | null) ?? ""}
+                onValueChange={(nextValue) => field.onChange(nextValue)}
               />
               {!hasInputValue ? (
                 <InputGroupAddon align="inline-end">
@@ -104,7 +112,7 @@ export function CapitalGainsTaxRateField<TFieldValues extends FieldValues>({
                           );
                         }}
                       >
-                        {presetRate}
+                        {formatNumber(presetRate, { locale })}
                       </Button>
                     ))}
                   </div>

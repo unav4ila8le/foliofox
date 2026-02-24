@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
@@ -16,13 +16,13 @@ import {
 import {
   InputGroup,
   InputGroupAddon,
-  InputGroupInput,
   InputGroupText,
 } from "@/components/ui/input-group";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
+import { LocalizedNumberInput } from "@/components/ui/custom/localized-number-input";
 import { PositionCategorySelector } from "@/components/dashboard/position-category-selector";
 import { CapitalGainsTaxRateField } from "@/components/dashboard/positions/shared/capital-gains-tax-rate-field";
 import { CurrencySelector } from "@/components/dashboard/currency-selector";
@@ -33,7 +33,9 @@ import {
   capitalGainsTaxRatePercentSchema,
   parseCapitalGainsTaxRatePercent,
 } from "@/lib/capital-gains-tax-rate";
+import { formatNumber } from "@/lib/number-format";
 import { requiredNumberWithConstraints } from "@/lib/zod-helpers";
+import { useLocale } from "@/hooks/use-locale";
 
 import { createPosition } from "@/server/positions/create";
 
@@ -75,6 +77,7 @@ export function ManualEntryForm() {
   // Props destructuring and context hooks
   const { setOpenFormDialog, setOpenSelectionDialog, profile } =
     useNewAssetDialog();
+  const locale = useLocale();
 
   // State declarations
   const [isLoading, setIsLoading] = useState(false);
@@ -96,6 +99,17 @@ export function ManualEntryForm() {
 
   // Get isDirty state from formState
   const { isDirty } = form.formState;
+
+  // Number placeholders
+  const numberPlaceholders = useMemo(
+    () => ({
+      quantity: `E.g., ${formatNumber(10, { locale })}`,
+      unitValue: `E.g., ${formatNumber(420.69, { locale })}`,
+      costBasis: `E.g., ${formatNumber(12.41, { locale })}`,
+      capitalGainsTaxRate: `E.g., ${formatNumber(12.5, { locale })}`,
+    }),
+    [locale],
+  );
 
   // Submit handler
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -226,16 +240,17 @@ export function ManualEntryForm() {
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel htmlFor={field.name}>Current quantity</FieldLabel>
-                  <Input
+                  <LocalizedNumberInput
+                    mode="input"
                     id={field.name}
-                    placeholder="E.g., 10"
-                    type="number"
-                    inputMode="decimal"
+                    placeholder={numberPlaceholders.quantity}
                     min={0}
-                    step="any"
                     aria-invalid={fieldState.invalid}
-                    {...field}
-                    value={field.value as number}
+                    name={field.name}
+                    ref={field.ref}
+                    onBlur={field.onBlur}
+                    value={(field.value as string | number | null) ?? ""}
+                    onValueChange={(nextValue) => field.onChange(nextValue)}
                   />
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />
@@ -254,16 +269,17 @@ export function ManualEntryForm() {
                     Current unit value
                   </FieldLabel>
                   <InputGroup>
-                    <InputGroupInput
+                    <LocalizedNumberInput
+                      mode="input-group-input"
                       id={field.name}
-                      placeholder="E.g., 420.69"
-                      type="number"
-                      inputMode="decimal"
+                      placeholder={numberPlaceholders.unitValue}
                       min={0}
-                      step="any"
                       aria-invalid={fieldState.invalid}
-                      {...field}
-                      value={field.value as number}
+                      name={field.name}
+                      ref={field.ref}
+                      onBlur={field.onBlur}
+                      value={(field.value as string | number | null) ?? ""}
+                      onValueChange={(nextValue) => field.onChange(nextValue)}
                     />
                     <InputGroupAddon align="inline-end">
                       <InputGroupText>{form.watch("currency")}</InputGroupText>
@@ -300,16 +316,17 @@ export function ManualEntryForm() {
                     </TooltipContent>
                   </Tooltip>
                 </div>
-                <Input
+                <LocalizedNumberInput
+                  mode="input"
                   id={field.name}
-                  placeholder="E.g., 12.41"
-                  type="number"
-                  inputMode="decimal"
+                  placeholder={numberPlaceholders.costBasis}
                   min={0}
-                  step="any"
                   aria-invalid={fieldState.invalid}
-                  {...field}
-                  value={field.value}
+                  name={field.name}
+                  ref={field.ref}
+                  onBlur={field.onBlur}
+                  value={(field.value as string | number | null) ?? ""}
+                  onValueChange={(nextValue) => field.onChange(nextValue)}
                 />
                 {fieldState.invalid && (
                   <FieldError errors={[fieldState.error]} />
@@ -322,6 +339,7 @@ export function ManualEntryForm() {
           <CapitalGainsTaxRateField
             control={form.control}
             setValue={form.setValue}
+            placeholder={numberPlaceholders.capitalGainsTaxRate}
             disabled={isLoading}
           />
 

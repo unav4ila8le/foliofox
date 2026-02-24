@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { CalendarIcon, Plus, Trash2, X } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm, useFieldArray, useWatch } from "react-hook-form";
@@ -30,16 +30,18 @@ import { Input } from "@/components/ui/input";
 import {
   InputGroup,
   InputGroupAddon,
-  InputGroupInput,
   InputGroupText,
 } from "@/components/ui/input-group";
+import { LocalizedNumberInput } from "@/components/ui/custom/localized-number-input";
 import { Calendar } from "@/components/ui/calendar";
 import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
 
+import { formatNumber } from "@/lib/number-format";
 import { cn } from "@/lib/utils";
 import { makeOneOff, makeRecurring } from "@/lib/scenario-planning";
 import { ld, type LocalDate } from "@/lib/date/date-utils";
 import { requiredNumberWithConstraints } from "@/lib/zod-helpers";
+import { useLocale } from "@/hooks/use-locale";
 import type { ScenarioEvent } from "@/lib/scenario-planning";
 
 const conditionSchema = z.discriminatedUnion("type", [
@@ -132,6 +134,7 @@ export function UpsertEventForm({
   currency: string;
 }) {
   const isEditing = event !== null && eventIndex !== null;
+  const locale = useLocale();
 
   // Extract date range from event if editing
   const getDateRangeFromEvent = (event: ScenarioEvent | null) => {
@@ -223,6 +226,14 @@ export function UpsertEventForm({
     control: form.control,
     name: "endDate",
   });
+
+  const numberPlaceholders = useMemo(
+    () => ({
+      amount: `E.g., ${formatNumber(1000, { locale })}`,
+      minimumAmount: `E.g., ${formatNumber(5000, { locale })}`,
+    }),
+    [locale],
+  );
 
   // Clear end date if start date moves past it
   useEffect(() => {
@@ -373,16 +384,17 @@ export function UpsertEventForm({
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel htmlFor={field.name}>Amount</FieldLabel>
                   <InputGroup>
-                    <InputGroupInput
+                    <LocalizedNumberInput
+                      mode="input-group-input"
                       id={field.name}
-                      placeholder="E.g., 1000"
-                      type="number"
-                      inputMode="decimal"
-                      step="any"
+                      placeholder={numberPlaceholders.amount}
                       min={0}
                       aria-invalid={fieldState.invalid}
-                      {...field}
-                      value={field.value as number}
+                      name={field.name}
+                      ref={field.ref}
+                      onBlur={field.onBlur}
+                      value={(field.value as string | number | null) ?? ""}
+                      onValueChange={(nextValue) => field.onChange(nextValue)}
                     />
                     <InputGroupAddon align="inline-end">
                       <InputGroupText>{currency}</InputGroupText>
@@ -656,16 +668,22 @@ export function UpsertEventForm({
                                 Amount
                               </FieldLabel>
                               <InputGroup>
-                                <InputGroupInput
+                                <LocalizedNumberInput
+                                  mode="input-group-input"
                                   id={field.name}
-                                  placeholder="E.g., 1000"
-                                  type="number"
-                                  inputMode="decimal"
-                                  step="any"
+                                  placeholder={numberPlaceholders.amount}
                                   min={0}
                                   aria-invalid={fieldState.invalid}
-                                  {...field}
-                                  value={field.value as number}
+                                  name={field.name}
+                                  ref={field.ref}
+                                  onBlur={field.onBlur}
+                                  value={
+                                    (field.value as string | number | null) ??
+                                    ""
+                                  }
+                                  onValueChange={(nextValue) =>
+                                    field.onChange(nextValue)
+                                  }
                                 />
                                 <InputGroupAddon align="inline-end">
                                   <InputGroupText>{currency}</InputGroupText>
@@ -791,16 +809,24 @@ export function UpsertEventForm({
                                   Minimum Amount
                                 </FieldLabel>
                                 <InputGroup>
-                                  <InputGroupInput
+                                  <LocalizedNumberInput
+                                    mode="input-group-input"
                                     id={field.name}
-                                    placeholder="E.g., 5,000"
-                                    type="number"
-                                    inputMode="decimal"
-                                    step="any"
+                                    placeholder={
+                                      numberPlaceholders.minimumAmount
+                                    }
                                     min={0}
                                     aria-invalid={fieldState.invalid}
-                                    {...field}
-                                    value={field.value as number}
+                                    name={field.name}
+                                    ref={field.ref}
+                                    onBlur={field.onBlur}
+                                    value={
+                                      (field.value as string | number | null) ??
+                                      ""
+                                    }
+                                    onValueChange={(nextValue) =>
+                                      field.onChange(nextValue)
+                                    }
                                   />
                                   <InputGroupAddon align="inline-end">
                                     <InputGroupText>{currency}</InputGroupText>

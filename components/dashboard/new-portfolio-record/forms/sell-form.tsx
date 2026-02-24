@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
@@ -19,17 +19,21 @@ import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import { Spinner } from "@/components/ui/spinner";
 import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
+import { LocalizedNumberInput } from "@/components/ui/custom/localized-number-input";
 
 import { useNewPortfolioRecordDialog } from "../index";
 
+import { formatNumber } from "@/lib/number-format";
 import { cn } from "@/lib/utils";
 import { requiredNumberWithConstraints } from "@/lib/zod-helpers";
+import { useLocale } from "@/hooks/use-locale";
 
 import { createPortfolioRecord } from "@/server/portfolio-records/create";
 
 export function SellForm() {
   // Get dialog context (preselected position and close function)
   const { setOpen, preselectedPosition } = useNewPortfolioRecordDialog();
+  const locale = useLocale();
 
   // Local state
   const [isLoading, setIsLoading] = useState(false);
@@ -64,6 +68,14 @@ export function SellForm() {
 
   // Get form state for validation
   const { isDirty } = form.formState;
+
+  const numberPlaceholders = useMemo(
+    () => ({
+      quantity: `E.g., ${formatNumber(10, { locale })}`,
+      unitValue: `E.g., ${formatNumber(420.69, { locale })}`,
+    }),
+    [locale],
+  );
 
   // Handle form submission
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -174,16 +186,17 @@ export function SellForm() {
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel htmlFor={field.name}>Quantity sold</FieldLabel>
-                  <Input
+                  <LocalizedNumberInput
+                    mode="input"
                     id={field.name}
-                    placeholder="E.g., 10"
-                    type="number"
-                    inputMode="decimal"
+                    placeholder={numberPlaceholders.quantity}
                     min={0}
-                    step="any"
                     aria-invalid={fieldState.invalid}
-                    {...field}
-                    value={field.value as number}
+                    name={field.name}
+                    ref={field.ref}
+                    onBlur={field.onBlur}
+                    value={(field.value as string | number | null) ?? ""}
+                    onValueChange={(nextValue) => field.onChange(nextValue)}
                   />
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />
@@ -201,16 +214,17 @@ export function SellForm() {
                   <FieldLabel htmlFor={field.name}>
                     Sale price per unit
                   </FieldLabel>
-                  <Input
+                  <LocalizedNumberInput
+                    mode="input"
                     id={field.name}
-                    placeholder="E.g., 420.69"
-                    type="number"
-                    inputMode="decimal"
+                    placeholder={numberPlaceholders.unitValue}
                     min={0}
-                    step="any"
                     aria-invalid={fieldState.invalid}
-                    {...field}
-                    value={field.value as number}
+                    name={field.name}
+                    ref={field.ref}
+                    onBlur={field.onBlur}
+                    value={(field.value as string | number | null) ?? ""}
+                    onValueChange={(nextValue) => field.onChange(nextValue)}
                   />
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />

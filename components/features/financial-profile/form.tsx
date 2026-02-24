@@ -1,7 +1,7 @@
 "use client";
 
 import { toast } from "sonner";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
@@ -15,10 +15,10 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import {
   InputGroup,
-  InputGroupInput,
   InputGroupAddon,
   InputGroupText,
 } from "@/components/ui/input-group";
+import { LocalizedNumberInput } from "@/components/ui/custom/localized-number-input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { DialogClose } from "@/components/ui/custom/dialog";
@@ -29,8 +29,10 @@ import { CurrencySelector } from "@/components/dashboard/currency-selector";
 
 import { upsertFinancialProfile } from "@/server/financial-profiles/actions";
 
+import { formatNumber } from "@/lib/number-format";
 import { AGE_BANDS, RISK_PREFERENCES } from "@/types/enums";
 import { useDashboardData } from "@/components/dashboard/providers/dashboard-data-provider";
+import { useLocale } from "@/hooks/use-locale";
 
 const RISK_PREFERENCES_DESCRIPTIONS = {
   [RISK_PREFERENCES[0]]: "Focus on preserving capital with minimal volatility.",
@@ -68,6 +70,7 @@ const formSchema = z.object({
 
 export function FinancialProfileForm({ onSuccess }: FinancialProfileFormProps) {
   const { profile, financialProfile } = useDashboardData();
+  const locale = useLocale();
   const [isLoading, setIsLoading] = useState(false);
 
   // Initialize form with React Hook Form
@@ -85,6 +88,11 @@ export function FinancialProfileForm({ onSuccess }: FinancialProfileFormProps) {
 
   // Get isDirty state from formState
   const { isDirty } = form.formState;
+
+  const incomePlaceholder = useMemo(
+    () => `E.g., ${formatNumber(80000, { locale })}`,
+    [locale],
+  );
 
   // Submit handler
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -169,16 +177,19 @@ export function FinancialProfileForm({ onSuccess }: FinancialProfileFormProps) {
                 >
                   <FieldLabel htmlFor={field.name}>Yearly income</FieldLabel>
                   <InputGroup>
-                    <InputGroupInput
+                    <LocalizedNumberInput
+                      mode="input-group-input"
                       id={field.name}
-                      placeholder="E.g., 80,000"
-                      type="number"
-                      inputMode="decimal"
+                      placeholder={incomePlaceholder}
                       min={0}
-                      step="any"
                       aria-invalid={fieldState.invalid}
-                      {...field}
-                      value={(field.value as number) ?? ""}
+                      name={field.name}
+                      ref={field.ref}
+                      onBlur={field.onBlur}
+                      value={(field.value as string | number | null) ?? ""}
+                      onValueChange={(nextValue) =>
+                        field.onChange(nextValue === "" ? null : nextValue)
+                      }
                     />
                     <InputGroupAddon align="inline-end">
                       <InputGroupText>

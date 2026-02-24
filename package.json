@@ -43,6 +43,7 @@
     "react-dom": "^19.2.4",
     "react-dropzone": "^15.0.0",
     "react-hook-form": "^7.71.1",
+    "react-number-format": "^5.4.4",
     "recharts": "^3.6.0",
     "remark": "^15.0.1",
     "remark-html": "^16.0.1",

@@ -10,8 +10,8 @@
  *
  * @example
  * // Basic number formatting
- * formatNumber(1234.5678);                          // "1,235" (browser default locale)
- * formatNumber(1234.5678, { locale });              // "1,235" (explicit locale)
+ * formatNumber(1234.5678);                          // "1,234.57" (browser default locale)
+ * formatNumber(1234.5678, { locale });              // "1,234.57" (explicit locale)
  * formatNumber(1234.5678, { locale, decimals: 2 }); // "1,234.57"
  *
  * @example
@@ -108,7 +108,7 @@ type FormatCompactOptions = {
  */
 const defaultNumberOptions = {
   minimumFractionDigits: 0,
-  maximumFractionDigits: 0,
+  maximumFractionDigits: 2,
   useGrouping: true,
 };
 
