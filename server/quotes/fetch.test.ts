@@ -215,6 +215,7 @@ function mockSymbolResolution(options?: {
 
 describe("fetchQuotes", () => {
   beforeEach(() => {
+    vi.resetModules();
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-02-20T12:00:00.000Z"));
 
@@ -466,6 +467,86 @@ describe("fetchQuotes", () => {
       symbolIds: ["sym-1"],
       dateKeys: ["2026-02-15"],
     });
+  });
+
+  it("skips repeated live fetch attempts during miss cooldown window", async () => {
+    vi.setSystemTime(new Date("2026-02-15T23:00:00.000Z"));
+
+    const { client } = createSupabaseStub([]);
+    createServiceClientMock.mockResolvedValue(client);
+    mockSymbolResolution({
+      lookup: "sym-cooldown",
+      canonicalId: "sym-cooldown",
+      providerAlias: "MSFT",
+    });
+
+    yahooChartMock.mockResolvedValue({ quotes: [] });
+
+    const { fetchQuotes } = await import("./fetch");
+
+    const firstResult = await fetchQuotes(
+      [
+        {
+          symbolLookup: "sym-cooldown",
+          date: new Date("2026-02-15T00:00:00.000Z"),
+        },
+      ],
+      { staleGuardDays: 0, liveMissCooldownMinutes: 30 },
+    );
+
+    const secondResult = await fetchQuotes(
+      [
+        {
+          symbolLookup: "sym-cooldown",
+          date: new Date("2026-02-15T00:00:00.000Z"),
+        },
+      ],
+      { staleGuardDays: 0, liveMissCooldownMinutes: 30 },
+    );
+
+    expect(firstResult.get("sym-cooldown|2026-02-15")).toBeUndefined();
+    expect(secondResult.get("sym-cooldown|2026-02-15")).toBeUndefined();
+    expect(yahooChartMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("re-attempts live fetch after miss cooldown window expires", async () => {
+    vi.setSystemTime(new Date("2026-02-15T23:00:00.000Z"));
+
+    const { client } = createSupabaseStub([]);
+    createServiceClientMock.mockResolvedValue(client);
+    mockSymbolResolution({
+      lookup: "sym-cooldown-expire",
+      canonicalId: "sym-cooldown-expire",
+      providerAlias: "NVDA",
+    });
+
+    yahooChartMock.mockResolvedValue({ quotes: [] });
+
+    const { fetchQuotes } = await import("./fetch");
+
+    await fetchQuotes(
+      [
+        {
+          symbolLookup: "sym-cooldown-expire",
+          date: new Date("2026-02-15T00:00:00.000Z"),
+        },
+      ],
+      { staleGuardDays: 0, liveMissCooldownMinutes: 10 },
+    );
+
+    vi.advanceTimersByTime(10 * 60 * 1000 + 1);
+
+    await fetchQuotes(
+      [
+        {
+          symbolLookup: "sym-cooldown-expire",
+          date: new Date("2026-02-15T00:00:00.000Z"),
+        },
+      ],
+      { staleGuardDays: 0, liveMissCooldownMinutes: 10 },
+    );
+
+    expect(yahooChartMock).toHaveBeenCalledTimes(2);
   });
 
   it("batches symbol health updates by market-date groups", async () => {

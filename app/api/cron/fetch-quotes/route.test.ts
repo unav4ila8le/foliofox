@@ -91,7 +91,11 @@ describe("GET /api/cron/fetch-quotes", () => {
     ];
     fetchQuotesMock.mock.calls.forEach((call, index) => {
       const [requests, options] = call;
-      expect(options).toEqual({ upsert: true, staleGuardDays: 0 });
+      expect(options).toEqual({
+        upsert: true,
+        staleGuardDays: 0,
+        liveMissCooldownMinutes: 0,
+      });
       expect(requests).toHaveLength(2);
       expect(requests[0]?.symbolLookup).toBe("sym-1");
       expect(requests[1]?.symbolLookup).toBe("sym-2");

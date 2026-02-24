@@ -131,6 +131,7 @@ export async function GET(request: NextRequest) {
               fetchQuotes(requestBatch, {
                 upsert: true,
                 staleGuardDays: 0,
+                liveMissCooldownMinutes: 0,
               }),
             {
               maxAttempts: RETRY_MAX_ATTEMPTS,

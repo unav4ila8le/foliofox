@@ -13,14 +13,20 @@ import { chunkArray, normalizeChartQuoteEntries } from "./utils";
 
 const DEFAULT_STALE_GUARD_DAYS = 7;
 const DEFAULT_CRON_CUTOFF_HOUR_UTC = 22;
+const DEFAULT_LIVE_MISS_COOLDOWN_MINUTES = 15;
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
+const MINUTE_IN_MS = 60 * 1000;
 const SYMBOL_HEALTH_UPDATE_BATCH_SIZE = 200;
+const LIVE_MISS_COOLDOWN_RETENTION_MULTIPLIER = 4;
+const LIVE_MISS_COOLDOWN_MIN_RETENTION_MS = 60 * MINUTE_IN_MS;
+const liveMissCooldownByKey = new Map<string, number>();
 
 export interface FetchQuotesOptions {
   upsert?: boolean;
   staleGuardDays?: number;
   cronCutoffHourUtc?: number;
   liveFetchOnMiss?: boolean;
+  liveMissCooldownMinutes?: number;
 }
 
 interface ResolvedQuoteRequest {
@@ -57,12 +63,19 @@ function resolveFetchQuotesOptions(
       Math.trunc(options.cronCutoffHourUtc ?? DEFAULT_CRON_CUTOFF_HOUR_UTC),
     ),
   );
+  const liveMissCooldownMinutes = Math.max(
+    0,
+    Math.trunc(
+      options.liveMissCooldownMinutes ?? DEFAULT_LIVE_MISS_COOLDOWN_MINUTES,
+    ),
+  );
 
   return {
     upsert: options.upsert ?? true,
     staleGuardDays,
     cronCutoffHourUtc,
     liveFetchOnMiss: options.liveFetchOnMiss ?? true,
+    liveMissCooldownMinutes,
   };
 }
 
@@ -101,6 +114,28 @@ function findLatestEntryAtOrBefore(
     }
   }
   return null;
+}
+
+function buildLiveMissCooldownKey(request: {
+  canonicalId: string;
+  effectiveDateKey: string;
+}): string {
+  return `${request.canonicalId}|${request.effectiveDateKey}`;
+}
+
+function pruneLiveMissCooldown(nowMs: number, cooldownMs: number): void {
+  if (cooldownMs <= 0 || liveMissCooldownByKey.size === 0) return;
+
+  const retentionMs = Math.max(
+    cooldownMs * LIVE_MISS_COOLDOWN_RETENTION_MULTIPLIER,
+    LIVE_MISS_COOLDOWN_MIN_RETENTION_MS,
+  );
+
+  for (const [key, lastAttemptMs] of liveMissCooldownByKey.entries()) {
+    if (nowMs - lastAttemptMs > retentionMs) {
+      liveMissCooldownByKey.delete(key);
+    }
+  }
 }
 
 async function fetchCachedQuotesBySymbolsAndDates(
@@ -157,6 +192,7 @@ export async function fetchQuotes(
 
   const resolvedOptions = resolveFetchQuotesOptions(options);
   const now = new Date();
+  const nowMs = now.getTime();
   const results = new Map<string, number>();
 
   // 1. Resolve all requested symbols to canonical IDs.
@@ -232,10 +268,27 @@ export async function fetchQuotes(
   }
 
   // 4. Live fetch exact-date cache misses and persist provider market-date rows.
-  const requestsNeedingLiveFetch = unresolvedRequests.filter(
-    (request) =>
-      !results.has(`${request.canonicalId}|${request.requestedDateKey}`),
-  );
+  const liveMissCooldownMs =
+    resolvedOptions.liveMissCooldownMinutes * MINUTE_IN_MS;
+  pruneLiveMissCooldown(nowMs, liveMissCooldownMs);
+
+  const requestsNeedingLiveFetch = unresolvedRequests.filter((request) => {
+    const requestResultKey = `${request.canonicalId}|${request.requestedDateKey}`;
+    if (results.has(requestResultKey)) return false;
+
+    if (liveMissCooldownMs <= 0) return true;
+
+    const cooldownKey = buildLiveMissCooldownKey(request);
+    const lastAttemptMs = liveMissCooldownByKey.get(cooldownKey);
+    if (lastAttemptMs === undefined) return true;
+
+    if (nowMs - lastAttemptMs >= liveMissCooldownMs) {
+      liveMissCooldownByKey.delete(cooldownKey);
+      return true;
+    }
+
+    return false;
+  });
 
   if (resolvedOptions.liveFetchOnMiss && requestsNeedingLiveFetch.length > 0) {
     const requestsBySymbol = new Map<string, ResolvedQuoteRequest[]>();
@@ -342,6 +395,20 @@ export async function fetchQuotes(
           if (fallbackDateKey <= request.effectiveDateKey) {
             results.set(mapKey, fallbackPrice);
           }
+        });
+      }
+
+      if (liveMissCooldownMs > 0) {
+        symbolRequests.forEach((request) => {
+          const requestResultKey = `${request.canonicalId}|${request.requestedDateKey}`;
+          const cooldownKey = buildLiveMissCooldownKey(request);
+
+          if (results.has(requestResultKey)) {
+            liveMissCooldownByKey.delete(cooldownKey);
+            return;
+          }
+
+          liveMissCooldownByKey.set(cooldownKey, nowMs);
         });
       }
 
