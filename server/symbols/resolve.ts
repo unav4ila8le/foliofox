@@ -395,6 +395,23 @@ export async function resolveSymbolsBatch(
       supabase,
       aliasLookups,
     );
+    const unresolvedAliasLookups = aliasLookups.filter(
+      (aliasLookup) => !canonicalByAliasLookup.has(aliasLookup),
+    );
+    if (unresolvedAliasLookups.length > 0) {
+      // Compatibility fallback: preserve historical case-insensitive alias
+      // behavior for any legacy/manual mixed-case rows not matched by exact IN.
+      const caseInsensitiveMatches =
+        await fetchCanonicalIdsByAliasLookupsCaseInsensitive(
+          supabase,
+          unresolvedAliasLookups,
+        );
+      caseInsensitiveMatches.forEach((canonicalId, aliasLookup) => {
+        if (!canonicalByAliasLookup.has(aliasLookup)) {
+          canonicalByAliasLookup.set(aliasLookup, canonicalId);
+        }
+      });
+    }
 
     canonicalByInput = new Map<string, string>();
     inputMeta.forEach((entry) => {
@@ -512,7 +529,7 @@ async function fetchCanonicalIdsByAliasLookups(
   const canonicalByAliasLookup = new Map<string, string>();
   if (!aliasLookups.length) return canonicalByAliasLookup;
 
-  for (const aliasChunk of chunkValues(aliasLookups, BATCH_QUERY_CHUNK_SIZE)) {
+  for (const aliasChunk of chunkArray(aliasLookups, BATCH_QUERY_CHUNK_SIZE)) {
     const { data, error } = await supabase
       .from("symbol_aliases")
       .select("value, symbol_id, is_primary, effective_to")
@@ -538,6 +555,37 @@ async function fetchCanonicalIdsByAliasLookups(
   return canonicalByAliasLookup;
 }
 
+async function fetchCanonicalIdsByAliasLookupsCaseInsensitive(
+  supabase: SupabaseClient<Database>,
+  aliasLookups: string[],
+) {
+  const canonicalByAliasLookup = new Map<string, string>();
+  if (!aliasLookups.length) return canonicalByAliasLookup;
+
+  for (const aliasLookup of aliasLookups) {
+    const { data, error } = await supabase
+      .from("symbol_aliases")
+      .select("value, symbol_id, is_primary, effective_to")
+      .eq("type", DEFAULT_ALIAS_TYPE)
+      .order("is_primary", { ascending: false })
+      .order("effective_to", { ascending: true, nullsFirst: true })
+      .limit(1)
+      .ilike("value", aliasLookup);
+
+    if (error) {
+      throw new Error(
+        `Failed to case-insensitive resolve symbol alias "${aliasLookup}": ${error.message}`,
+      );
+    }
+
+    if (data?.[0]) {
+      canonicalByAliasLookup.set(aliasLookup, data[0].symbol_id);
+    }
+  }
+
+  return canonicalByAliasLookup;
+}
+
 async function fetchSymbolTickersById(
   supabase: SupabaseClient<Database>,
   symbolIds: string[],
@@ -545,7 +593,7 @@ async function fetchSymbolTickersById(
   const tickerBySymbolId = new Map<string, string>();
   if (!symbolIds.length) return tickerBySymbolId;
 
-  for (const symbolIdChunk of chunkValues(symbolIds, BATCH_QUERY_CHUNK_SIZE)) {
+  for (const symbolIdChunk of chunkArray(symbolIds, BATCH_QUERY_CHUNK_SIZE)) {
     const { data, error } = await supabase
       .from("symbols")
       .select("id, ticker")
@@ -570,7 +618,7 @@ async function fetchPrimaryAliasesBySymbolId(
   const primaryAliasBySymbolId = new Map<string, string>();
   if (!symbolIds.length) return primaryAliasBySymbolId;
 
-  for (const symbolIdChunk of chunkValues(symbolIds, BATCH_QUERY_CHUNK_SIZE)) {
+  for (const symbolIdChunk of chunkArray(symbolIds, BATCH_QUERY_CHUNK_SIZE)) {
     const { data, error } = await supabase
       .from("symbol_aliases")
       .select("symbol_id, value")
@@ -602,7 +650,7 @@ async function fetchProviderAliasesBySymbolId(
   const providerAliasBySymbolId = new Map<string, string>();
   if (!symbolIds.length) return providerAliasBySymbolId;
 
-  for (const symbolIdChunk of chunkValues(symbolIds, BATCH_QUERY_CHUNK_SIZE)) {
+  for (const symbolIdChunk of chunkArray(symbolIds, BATCH_QUERY_CHUNK_SIZE)) {
     const { data, error } = await supabase
       .from("symbol_aliases")
       .select("symbol_id, value, effective_from")
@@ -637,9 +685,9 @@ async function normalizeSymbolAliasValue(value: string, type?: string) {
   return value.trim().toUpperCase();
 }
 
-function chunkValues<T>(values: T[], chunkSize: number): T[][] {
+function chunkArray<T>(values: T[], chunkSize: number): T[][] {
   if (values.length === 0) return [];
-  if (chunkSize <= 0) return [values];
+  if (chunkSize <= 0) return [values.slice()];
 
   const chunks: T[][] = [];
   for (let index = 0; index < values.length; index += chunkSize) {

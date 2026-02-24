@@ -90,6 +90,8 @@ function sortRows<T extends Record<string, unknown>>(
 function createSupabaseStub(data: {
   symbols: SymbolRow[];
   symbolAliases: SymbolAliasRow[];
+  symbolError?: string | null;
+  symbolAliasesError?: string | null;
 }) {
   const state = {
     symbolQueryCount: 0,
@@ -107,13 +109,23 @@ function createSupabaseStub(data: {
         },
         then<TResult1 = unknown, TResult2 = never>(
           onfulfilled?:
-            | ((value: { data: SymbolRow[]; error: null }) => TResult1)
+            | ((value: {
+                data: SymbolRow[] | null;
+                error: { message: string } | null;
+              }) => TResult1)
             | null,
           onrejected?:
             | ((reason: unknown) => TResult2 | PromiseLike<TResult2>)
             | null,
         ) {
           state.symbolQueryCount += 1;
+
+          if (data.symbolError) {
+            return Promise.resolve({
+              data: null,
+              error: { message: data.symbolError },
+            }).then(onfulfilled ?? undefined, onrejected);
+          }
 
           let rows = [...data.symbols];
           inFilters.forEach((values, column) => {
@@ -137,6 +149,8 @@ function createSupabaseStub(data: {
       const eqFilters = new Map<string, unknown>();
       const inFilters = new Map<string, string[]>();
       const isFilters = new Map<string, unknown>();
+      const ilikeFilters = new Map<string, string>();
+      let limitValue: number | null = null;
       const orderClauses: Array<{
         column: keyof SymbolAliasRow;
         ascending: boolean;
@@ -156,6 +170,14 @@ function createSupabaseStub(data: {
           isFilters.set(column, value);
           return this;
         },
+        ilike(column: string, value: string) {
+          ilikeFilters.set(column, value);
+          return this;
+        },
+        limit(value: number) {
+          limitValue = value;
+          return this;
+        },
         order(
           column: string,
           options?: { ascending?: boolean; nullsFirst?: boolean },
@@ -169,13 +191,23 @@ function createSupabaseStub(data: {
         },
         then<TResult1 = unknown, TResult2 = never>(
           onfulfilled?:
-            | ((value: { data: SymbolAliasRow[]; error: null }) => TResult1)
+            | ((value: {
+                data: SymbolAliasRow[] | null;
+                error: { message: string } | null;
+              }) => TResult1)
             | null,
           onrejected?:
             | ((reason: unknown) => TResult2 | PromiseLike<TResult2>)
             | null,
         ) {
           state.symbolAliasesQueryCount += 1;
+
+          if (data.symbolAliasesError) {
+            return Promise.resolve({
+              data: null,
+              error: { message: data.symbolAliasesError },
+            }).then(onfulfilled ?? undefined, onrejected);
+          }
 
           let rows = [...data.symbolAliases];
 
@@ -198,7 +230,18 @@ function createSupabaseStub(data: {
             );
           });
 
+          ilikeFilters.forEach((value, column) => {
+            const normalizedValue = value.toLowerCase();
+            rows = rows.filter((row) => {
+              const cell = row[column as keyof SymbolAliasRow];
+              return String(cell).toLowerCase() === normalizedValue;
+            });
+          });
+
           rows = sortRows(rows, orderClauses);
+          if (limitValue !== null) {
+            rows = rows.slice(0, limitValue);
+          }
 
           return Promise.resolve({ data: rows, error: null }).then(
             onfulfilled ?? undefined,
@@ -335,6 +378,37 @@ describe("resolveSymbolsBatch", () => {
     });
   });
 
+  it("resolves aliases with case-insensitive fallback when stored alias casing differs", async () => {
+    const symbolId = "88888888-8888-8888-8888-888888888888";
+    const { client, state } = createSupabaseStub({
+      symbols: [{ id: symbolId, ticker: "MSFT" }],
+      symbolAliases: [
+        {
+          symbol_id: symbolId,
+          value: "MsFt",
+          type: "ticker",
+          source: "yahoo",
+          is_primary: true,
+          effective_from: "2026-01-01T00:00:00.000Z",
+          effective_to: null,
+        },
+      ],
+    });
+
+    createServiceClientMock.mockResolvedValue(client);
+    const { resolveSymbolsBatch } = await import("./resolve");
+
+    const result = await resolveSymbolsBatch(["msft"]);
+
+    expect(result.byInput.get("msft")).toEqual({
+      canonicalId: symbolId,
+      providerAlias: "MsFt",
+      displayTicker: "MsFt",
+    });
+    expect(state.symbolQueryCount).toBe(1);
+    expect(state.symbolAliasesQueryCount).toBe(4);
+  });
+
   it("keeps partial results and warns for unresolved inputs when onError=warn", async () => {
     const symbolId = "55555555-5555-5555-5555-555555555555";
     const { client } = createSupabaseStub({
@@ -387,5 +461,91 @@ describe("resolveSymbolsBatch", () => {
     await expect(resolveSymbolsBatch(["missing"])).rejects.toThrow(
       'Unable to resolve symbol identifier "missing" to a canonical symbol.',
     );
+  });
+
+  it("skips unresolved inputs without warnings when onError=skip", async () => {
+    const symbolId = "66666666-6666-6666-6666-666666666666";
+    const { client } = createSupabaseStub({
+      symbols: [{ id: symbolId, ticker: "VALID" }],
+      symbolAliases: [
+        {
+          symbol_id: symbolId,
+          value: "VALID",
+          type: "ticker",
+          source: "yahoo",
+          is_primary: true,
+          effective_from: "2026-01-01T00:00:00.000Z",
+          effective_to: null,
+        },
+      ],
+    });
+
+    createServiceClientMock.mockResolvedValue(client);
+    const consoleWarnSpy = vi
+      .spyOn(console, "warn")
+      .mockImplementation(() => {});
+    const { resolveSymbolsBatch } = await import("./resolve");
+
+    const result = await resolveSymbolsBatch(["valid", "missing"], {
+      onError: "skip",
+    });
+
+    expect(result.byInput.get("valid")).toEqual({
+      canonicalId: symbolId,
+      providerAlias: "VALID",
+      displayTicker: "VALID",
+    });
+    expect(result.byInput.has("missing")).toBe(false);
+    expect(consoleWarnSpy).not.toHaveBeenCalled();
+
+    consoleWarnSpy.mockRestore();
+  });
+
+  it("throws when provider alias fallback chain is empty and onError=throw", async () => {
+    const symbolId = "77777777-7777-7777-7777-777777777777";
+    const { client } = createSupabaseStub({
+      symbols: [{ id: symbolId, ticker: "" }],
+      symbolAliases: [],
+    });
+
+    createServiceClientMock.mockResolvedValue(client);
+    const { resolveSymbolsBatch } = await import("./resolve");
+
+    await expect(resolveSymbolsBatch([symbolId])).rejects.toThrow(
+      `Symbol "${symbolId}" is missing a yahoo ticker alias.`,
+    );
+  });
+
+  it("warns for each input and returns empty maps when batched alias lookup fails", async () => {
+    const { client } = createSupabaseStub({
+      symbols: [],
+      symbolAliases: [],
+      symbolAliasesError: "temporary db outage",
+    });
+
+    createServiceClientMock.mockResolvedValue(client);
+    const consoleWarnSpy = vi
+      .spyOn(console, "warn")
+      .mockImplementation(() => {});
+    const { resolveSymbolsBatch } = await import("./resolve");
+
+    const result = await resolveSymbolsBatch(["aapl", "msft"], {
+      onError: "warn",
+    });
+
+    expect(result.byInput.size).toBe(0);
+    expect(result.byCanonicalId.size).toBe(0);
+    expect(consoleWarnSpy).toHaveBeenNthCalledWith(
+      1,
+      'Error resolving symbol "aapl":',
+      "Failed to batch resolve symbol aliases: temporary db outage",
+    );
+    expect(consoleWarnSpy).toHaveBeenNthCalledWith(
+      2,
+      'Error resolving symbol "msft":',
+      "Failed to batch resolve symbol aliases: temporary db outage",
+    );
+
+    consoleWarnSpy.mockRestore();
   });
 });
