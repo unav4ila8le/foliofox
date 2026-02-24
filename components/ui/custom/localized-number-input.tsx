@@ -108,6 +108,7 @@ export const LocalizedNumberInput = React.forwardRef<
       defaultValue={defaultValue === null ? "" : defaultValue}
       onChange={onChange}
       onValueChange={(values, sourceInfo) => {
+        if (sourceInfo.source === "prop") return;
         onValueChange?.(values.value, values, sourceInfo);
       }}
       type="text"

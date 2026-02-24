@@ -43,4 +43,16 @@ describe("LocalizedNumberInput", () => {
     const input = screen.getByRole("textbox") as HTMLInputElement;
     expect(input.value).toBe("10");
   });
+
+  it("does not emit onValueChange for prop-driven value updates", () => {
+    const onValueChange = vi.fn();
+    const { rerender } = render(
+      <LocalizedNumberInput value={10} onValueChange={onValueChange} />,
+    );
+
+    expect(onValueChange).toHaveBeenCalledTimes(0);
+
+    rerender(<LocalizedNumberInput value={11} onValueChange={onValueChange} />);
+    expect(onValueChange).toHaveBeenCalledTimes(0);
+  });
 });
