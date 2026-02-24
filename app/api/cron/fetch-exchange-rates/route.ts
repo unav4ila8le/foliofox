@@ -23,7 +23,7 @@ interface CronDateStats {
   failedBatchCount: number;
 }
 
-// Builds an array of dates from the anchor date minus the number of days in the backfill window
+// Build rolling window: [D, D-1, D-2].
 function buildDateWindow(anchorDate: Date): Date[] {
   return Array.from({ length: BACKFILL_WINDOW_DAYS }, (_, offset) =>
     addUTCDays(anchorDate, -offset),
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
     );
     const perDateStats: CronDateStats[] = [];
 
-    // 5. Fetch exchange-rate cache for D, D-1, and D-2.
+    // 5. Fetch FX rates for D, D-1, and D-2.
     for (const targetDate of dateWindow) {
       const dateKey = formatUTCDateKey(targetDate);
       const rateRequests = currencyCodes.map((currency) => ({

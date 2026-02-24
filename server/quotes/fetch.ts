@@ -20,6 +20,7 @@ export interface FetchQuotesOptions {
   upsert?: boolean;
   staleGuardDays?: number;
   cronCutoffHourUtc?: number;
+  liveFetchOnMiss?: boolean;
 }
 
 interface ResolvedQuoteRequest {
@@ -61,6 +62,7 @@ function resolveFetchQuotesOptions(
     upsert: options.upsert ?? true,
     staleGuardDays,
     cronCutoffHourUtc,
+    liveFetchOnMiss: options.liveFetchOnMiss ?? true,
   };
 }
 
@@ -229,73 +231,13 @@ export async function fetchQuotes(
     unresolvedRequests.push(request);
   }
 
-  // 4. Prior-date cache lookup with stale guard.
-  if (unresolvedRequests.length > 0 && resolvedOptions.staleGuardDays > 0) {
-    const unresolvedSymbolIds = [
-      ...new Set(unresolvedRequests.map((request) => request.canonicalId)),
-    ];
-    const staleWindowDateKeys = new Set<string>();
-
-    unresolvedRequests.forEach((request) => {
-      const effectiveDate = parseUTCDateKey(request.effectiveDateKey);
-      for (
-        let offset = 1;
-        offset <= resolvedOptions.staleGuardDays;
-        offset += 1
-      ) {
-        staleWindowDateKeys.add(
-          formatUTCDateKey(subDays(effectiveDate, offset)),
-        );
-      }
-    });
-
-    const cachedWindowRows = await fetchCachedQuotesBySymbolsAndDates(
-      supabase,
-      unresolvedSymbolIds,
-      Array.from(staleWindowDateKeys),
-    );
-
-    const cachedRowsBySymbol = new Map<string, QuotesCacheRow[]>();
-    cachedWindowRows.forEach((row) => {
-      const existing = cachedRowsBySymbol.get(row.symbol_id) ?? [];
-      existing.push(row);
-      cachedRowsBySymbol.set(row.symbol_id, existing);
-    });
-
-    cachedRowsBySymbol.forEach((rows) => {
-      rows.sort((a, b) => b.date.localeCompare(a.date));
-    });
-
-    unresolvedRequests.forEach((request) => {
-      const rows = cachedRowsBySymbol.get(request.canonicalId);
-      if (!rows?.length) return;
-
-      const fallback = rows.find(
-        (row) =>
-          row.date <= request.effectiveDateKey &&
-          isWithinStaleGuard(
-            row.date,
-            request.effectiveDateKey,
-            resolvedOptions.staleGuardDays,
-          ),
-      );
-
-      if (fallback) {
-        results.set(
-          `${request.canonicalId}|${request.requestedDateKey}`,
-          fallback.close_price,
-        );
-      }
-    });
-  }
-
-  // 5. Live fetch remaining misses and persist only provider market-date rows.
+  // 4. Live fetch exact-date cache misses and persist provider market-date rows.
   const requestsNeedingLiveFetch = unresolvedRequests.filter(
     (request) =>
       !results.has(`${request.canonicalId}|${request.requestedDateKey}`),
   );
 
-  if (requestsNeedingLiveFetch.length > 0) {
+  if (resolvedOptions.liveFetchOnMiss && requestsNeedingLiveFetch.length > 0) {
     const requestsBySymbol = new Map<string, ResolvedQuoteRequest[]>();
     requestsNeedingLiveFetch.forEach((request) => {
       const list = requestsBySymbol.get(request.canonicalId) ?? [];
@@ -469,6 +411,74 @@ export async function fetchQuotes(
         }
       }
     }
+  }
+
+  // 5. Prior-date cache lookup with stale guard for unresolved post-live misses.
+  const requestsNeedingFallback = unresolvedRequests.filter(
+    (request) =>
+      !results.has(`${request.canonicalId}|${request.requestedDateKey}`),
+  );
+
+  if (
+    requestsNeedingFallback.length > 0 &&
+    resolvedOptions.staleGuardDays > 0
+  ) {
+    const unresolvedSymbolIds = [
+      ...new Set(requestsNeedingFallback.map((request) => request.canonicalId)),
+    ];
+    const staleWindowDateKeys = new Set<string>();
+
+    requestsNeedingFallback.forEach((request) => {
+      const effectiveDate = parseUTCDateKey(request.effectiveDateKey);
+      for (
+        let offset = 1;
+        offset <= resolvedOptions.staleGuardDays;
+        offset += 1
+      ) {
+        staleWindowDateKeys.add(
+          formatUTCDateKey(subDays(effectiveDate, offset)),
+        );
+      }
+    });
+
+    const cachedWindowRows = await fetchCachedQuotesBySymbolsAndDates(
+      supabase,
+      unresolvedSymbolIds,
+      Array.from(staleWindowDateKeys),
+    );
+
+    const cachedRowsBySymbol = new Map<string, QuotesCacheRow[]>();
+    cachedWindowRows.forEach((row) => {
+      const existing = cachedRowsBySymbol.get(row.symbol_id) ?? [];
+      existing.push(row);
+      cachedRowsBySymbol.set(row.symbol_id, existing);
+    });
+
+    cachedRowsBySymbol.forEach((rows) => {
+      rows.sort((a, b) => b.date.localeCompare(a.date));
+    });
+
+    requestsNeedingFallback.forEach((request) => {
+      const rows = cachedRowsBySymbol.get(request.canonicalId);
+      if (!rows?.length) return;
+
+      const fallback = rows.find(
+        (row) =>
+          row.date <= request.effectiveDateKey &&
+          isWithinStaleGuard(
+            row.date,
+            request.effectiveDateKey,
+            resolvedOptions.staleGuardDays,
+          ),
+      );
+
+      if (fallback) {
+        results.set(
+          `${request.canonicalId}|${request.requestedDateKey}`,
+          fallback.close_price,
+        );
+      }
+    });
   }
 
   // 6. Populate alias keys for original non-canonical lookup inputs.

@@ -23,7 +23,7 @@ interface CronDateStats {
   failedBatchCount: number;
 }
 
-// Chunks an array into smaller arrays of a given size
+// Split values into fixed-size chunks.
 function chunkArray<T>(values: T[], size: number): T[][] {
   if (size <= 0) return values.length > 0 ? [values.slice()] : [];
 
@@ -34,7 +34,7 @@ function chunkArray<T>(values: T[], size: number): T[][] {
   return chunks;
 }
 
-// Builds an array of dates from the anchor date minus the number of days in the backfill window
+// Build rolling window: [D, D-1, D-2].
 function buildDateWindow(anchorDate: Date): Date[] {
   return Array.from({ length: BACKFILL_WINDOW_DAYS }, (_, offset) =>
     addUTCDays(anchorDate, -offset),
@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
 
     const perDateStats: CronDateStats[] = [];
 
-    // 5. Fetch quote cache for D, D-1, and D-2 with per-batch retries.
+    // 5. Fetch quotes for D, D-1, and D-2 with per-batch retries.
     for (const targetDate of dateWindow) {
       const dateKey = formatUTCDateKey(targetDate);
       const quoteRequests = symbolIds.map((symbolId) => ({

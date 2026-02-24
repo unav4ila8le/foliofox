@@ -255,7 +255,7 @@ describe("fetchQuotes", () => {
     expect(yahooChartMock).not.toHaveBeenCalled();
   });
 
-  it("uses latest prior cache row within stale window", async () => {
+  it("uses latest prior cache row within stale window after live miss", async () => {
     const { client } = createSupabaseStub([
       {
         symbol_id: "sym-1",
@@ -280,7 +280,7 @@ describe("fetchQuotes", () => {
     );
 
     expect(result.get("sym-1|2026-02-15")).toBe(148);
-    expect(yahooChartMock).not.toHaveBeenCalled();
+    expect(yahooChartMock).toHaveBeenCalledTimes(1);
   });
 
   it("triggers live fetch when cache is older than stale guard", async () => {
@@ -416,6 +416,51 @@ describe("fetchQuotes", () => {
     expect(yahooChartMock).toHaveBeenCalledTimes(1);
     expect(result.get("sym-1|2026-02-15")).toBe(151);
     expect(state.upsertCalls).toHaveLength(1);
+    expect(state.cacheQueryCalls).toHaveLength(1);
+    expect(state.cacheQueryCalls[0]).toEqual({
+      symbolIds: ["sym-1"],
+      dateKeys: ["2026-02-15"],
+    });
+  });
+
+  it("with liveFetchOnMiss=false returns cache-only result on exact miss", async () => {
+    vi.setSystemTime(new Date("2026-02-15T23:00:00.000Z"));
+
+    const { client, state } = createSupabaseStub([
+      {
+        symbol_id: "sym-1",
+        date: "2026-02-14",
+        close_price: 149,
+        adjusted_close_price: 149,
+      },
+    ]);
+
+    createServiceClientMock.mockResolvedValue(client);
+    yahooChartMock.mockResolvedValue({
+      quotes: [
+        {
+          date: new Date("2026-02-14T00:00:00.000Z"),
+          close: 151,
+          adjclose: 150,
+        },
+      ],
+    });
+
+    const { fetchQuotes } = await import("./fetch");
+
+    const result = await fetchQuotes(
+      [
+        {
+          symbolLookup: "sym-1",
+          date: new Date("2026-02-15T00:00:00.000Z"),
+        },
+      ],
+      { staleGuardDays: 0, liveFetchOnMiss: false },
+    );
+
+    expect(result.get("sym-1|2026-02-15")).toBeUndefined();
+    expect(yahooChartMock).not.toHaveBeenCalled();
+    expect(state.upsertCalls).toHaveLength(0);
     expect(state.cacheQueryCalls).toHaveLength(1);
     expect(state.cacheQueryCalls[0]).toEqual({
       symbolIds: ["sym-1"],
