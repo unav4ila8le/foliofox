@@ -391,6 +391,10 @@ export async function resolveSymbolsBatch(
     const aliasLookups = [
       ...new Set(aliasInputs.map((entry) => entry.normalized)),
     ];
+    // Fast path: resolve normalized aliases with exact IN matching for batch efficiency.
+    // Compatibility path below only runs for misses to keep historical ILIKE behavior for
+    // legacy mixed-case rows. If both exact and mixed-case rows exist for the same logical
+    // alias, exact match wins by design; keep alias data normalized to avoid ambiguity.
     const canonicalByAliasLookup = await fetchCanonicalIdsByAliasLookups(
       supabase,
       aliasLookups,
