@@ -14,6 +14,7 @@ import { chunkArray, normalizeChartQuoteEntries } from "./utils";
 const DEFAULT_STALE_GUARD_DAYS = 7;
 const DEFAULT_CRON_CUTOFF_HOUR_UTC = 22;
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
+const SYMBOL_HEALTH_UPDATE_BATCH_SIZE = 200;
 
 export interface FetchQuotesOptions {
   upsert?: boolean;
@@ -436,18 +437,35 @@ export async function fetchQuotes(
     }
 
     if (resolvedOptions.upsert && healthUpdates.length > 0) {
-      for (const { id, last_quote_at } of healthUpdates) {
-        const { error: healthError } = await supabase
-          .from("symbols")
-          .update({ last_quote_at })
-          .eq("id", id)
-          .or(`last_quote_at.is.null,last_quote_at.lt.${last_quote_at}`);
+      const symbolIdsByLastQuoteAt = new Map<string, string[]>();
+      healthUpdates.forEach(({ id, last_quote_at }) => {
+        const ids = symbolIdsByLastQuoteAt.get(last_quote_at) ?? [];
+        ids.push(id);
+        symbolIdsByLastQuoteAt.set(last_quote_at, ids);
+      });
 
-        if (healthError) {
-          console.error(
-            `Failed to update symbol health for ${id}:`,
-            healthError,
-          );
+      // Grouping by identical market dates keeps monotonic guard semantics while
+      // reducing one update query per symbol down to one update query per batch.
+      for (const [
+        last_quote_at,
+        symbolIds,
+      ] of symbolIdsByLastQuoteAt.entries()) {
+        for (const symbolIdBatch of chunkArray(
+          [...new Set(symbolIds)],
+          SYMBOL_HEALTH_UPDATE_BATCH_SIZE,
+        )) {
+          const { error: healthError } = await supabase
+            .from("symbols")
+            .update({ last_quote_at })
+            .in("id", symbolIdBatch)
+            .or(`last_quote_at.is.null,last_quote_at.lt.${last_quote_at}`);
+
+          if (healthError) {
+            console.error(
+              `Failed to update symbol health batch for ${last_quote_at} (${symbolIdBatch.length} symbols):`,
+              healthError,
+            );
+          }
         }
       }
     }

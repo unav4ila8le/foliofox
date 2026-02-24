@@ -40,7 +40,10 @@ function createSupabaseStub(initialQuotes: StoredQuoteRow[]) {
       }>;
       onConflict?: string;
     }>,
-    symbolHealthUpdates: [] as Array<{ id: string; last_quote_at: string }>,
+    symbolHealthUpdates: [] as Array<{
+      ids: string[];
+      last_quote_at: string;
+    }>,
   };
 
   const quotesApi = {
@@ -129,6 +132,14 @@ function createSupabaseStub(initialQuotes: StoredQuoteRow[]) {
 
   const symbolsApi = {
     update(payload: { last_quote_at: string }) {
+      const validateOrExpression = (expression: string) => {
+        if (!expression.includes("last_quote_at")) {
+          throw new Error(
+            `Expected symbols.or expression to include last_quote_at, got ${expression}`,
+          );
+        }
+      };
+
       return {
         eq(column: string, id: string) {
           if (column !== "id") {
@@ -139,14 +150,27 @@ function createSupabaseStub(initialQuotes: StoredQuoteRow[]) {
 
           return {
             async or(expression: string) {
-              if (!expression.includes("last_quote_at")) {
-                throw new Error(
-                  `Expected symbols.or expression to include last_quote_at, got ${expression}`,
-                );
-              }
-
+              validateOrExpression(expression);
               state.symbolHealthUpdates.push({
-                id,
+                ids: [id],
+                last_quote_at: payload.last_quote_at,
+              });
+              return { error: null };
+            },
+          };
+        },
+        in(column: string, ids: string[]) {
+          if (column !== "id") {
+            throw new Error(
+              `Expected symbols.in to filter by id, got ${column}`,
+            );
+          }
+
+          return {
+            async or(expression: string) {
+              validateOrExpression(expression);
+              state.symbolHealthUpdates.push({
+                ids: [...ids],
                 last_quote_at: payload.last_quote_at,
               });
               return { error: null };
@@ -321,7 +345,7 @@ describe("fetchQuotes", () => {
     ).toBe(false);
     expect(state.symbolHealthUpdates).toEqual([
       {
-        id: "sym-1",
+        ids: ["sym-1"],
         last_quote_at: "2026-02-14T00:00:00.000Z",
       },
     ]);
@@ -396,6 +420,86 @@ describe("fetchQuotes", () => {
     expect(state.cacheQueryCalls[0]).toEqual({
       symbolIds: ["sym-1"],
       dateKeys: ["2026-02-15"],
+    });
+  });
+
+  it("batches symbol health updates by market-date groups", async () => {
+    vi.setSystemTime(new Date("2026-02-15T23:00:00.000Z"));
+
+    const { client, state } = createSupabaseStub([]);
+    createServiceClientMock.mockResolvedValue(client);
+
+    resolveSymbolsBatchMock.mockResolvedValue({
+      byInput: new Map([
+        ["sym-1", { canonicalId: "sym-1" }],
+        ["sym-2", { canonicalId: "sym-2" }],
+        ["sym-3", { canonicalId: "sym-3" }],
+      ]),
+      byCanonicalId: new Map([
+        ["sym-1", { providerAlias: "AAPL" }],
+        ["sym-2", { providerAlias: "MSFT" }],
+        ["sym-3", { providerAlias: "GOOG" }],
+      ]),
+    });
+
+    yahooChartMock
+      .mockResolvedValueOnce({
+        quotes: [
+          {
+            date: new Date("2026-02-14T00:00:00.000Z"),
+            close: 101,
+            adjclose: 101,
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        quotes: [
+          {
+            date: new Date("2026-02-14T00:00:00.000Z"),
+            close: 202,
+            adjclose: 202,
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        quotes: [
+          {
+            date: new Date("2026-02-13T00:00:00.000Z"),
+            close: 303,
+            adjclose: 303,
+          },
+        ],
+      });
+
+    const { fetchQuotes } = await import("./fetch");
+
+    const result = await fetchQuotes(
+      [
+        {
+          symbolLookup: "sym-1",
+          date: new Date("2026-02-15T00:00:00.000Z"),
+        },
+        {
+          symbolLookup: "sym-2",
+          date: new Date("2026-02-15T00:00:00.000Z"),
+        },
+        {
+          symbolLookup: "sym-3",
+          date: new Date("2026-02-15T00:00:00.000Z"),
+        },
+      ],
+      { staleGuardDays: 0 },
+    );
+
+    expect(result.size).toBe(3);
+    expect(state.symbolHealthUpdates).toHaveLength(2);
+    expect(state.symbolHealthUpdates).toContainEqual({
+      ids: ["sym-1", "sym-2"],
+      last_quote_at: "2026-02-14T00:00:00.000Z",
+    });
+    expect(state.symbolHealthUpdates).toContainEqual({
+      ids: ["sym-3"],
+      last_quote_at: "2026-02-13T00:00:00.000Z",
     });
   });
 
