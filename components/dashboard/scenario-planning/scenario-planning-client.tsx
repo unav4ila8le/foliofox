@@ -101,7 +101,13 @@ export function ScenarioPlanningClient({
 
   const handleInitialBalanceUpdate = async () => {
     const trimmedBalance = initialBalance.trim();
-    const balance = trimmedBalance === "" ? 0 : Number(trimmedBalance);
+
+    if (trimmedBalance === "") {
+      toast.error("Please enter a valid number");
+      return;
+    }
+
+    const balance = Number(trimmedBalance);
 
     if (!Number.isFinite(balance)) {
       toast.error("Please enter a valid number");
