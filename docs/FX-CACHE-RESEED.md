@@ -65,7 +65,7 @@ for i in $(seq 0 3 364); do
 done
 ```
 
-### 5) Optional controlled historical backfill (single date)
+### 5) Optional controlled historical backfill (single anchor date)
 
 If you need historical rows quickly (instead of waiting for lazy refill), call the same cron endpoint with `?date=YYYY-MM-DD`.
 

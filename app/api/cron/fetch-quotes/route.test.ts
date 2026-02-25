@@ -104,6 +104,30 @@ describe("GET /api/cron/fetch-quotes", () => {
     });
   });
 
+  it("returns consistent stats shape when no symbols exist", async () => {
+    headersMock.mockResolvedValue(
+      new Headers({ authorization: "Bearer test-cron-secret" }),
+    );
+    fetchSymbolsMock.mockResolvedValue([]);
+
+    const { GET } = await import("@/app/api/cron/fetch-quotes/route");
+    const response = await GET(
+      new Request("http://localhost/api/cron/fetch-quotes") as never,
+    );
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.success).toBe(true);
+    expect(body.message).toBe("No symbols to fetch");
+    expect(body.stats.totalSymbols).toBe(0);
+    expect(body.stats.windowDays).toBe(3);
+    expect(body.stats.perDate).toHaveLength(3);
+    expect(
+      body.stats.perDate.map((entry: { date: string }) => entry.date),
+    ).toEqual(["2026-02-15", "2026-02-14", "2026-02-13"]);
+    expect(fetchQuotesMock).not.toHaveBeenCalled();
+  });
+
   it("accepts explicit ?date override and anchors rolling window", async () => {
     headersMock.mockResolvedValue(
       new Headers({ authorization: "Bearer test-cron-secret" }),

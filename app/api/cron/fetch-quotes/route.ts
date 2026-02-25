@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse, connection } from "next/server";
 import { headers } from "next/headers";
 
-import {
-  addUTCDays,
-  formatUTCDateKey,
-  parseUTCDateKey,
-} from "@/lib/date/date-utils";
+import { formatUTCDateKey, parseUTCDateKey } from "@/lib/date/date-utils";
+import { buildDateWindow, type CronDateStats } from "@/server/cron/shared";
 import { fetchSymbols } from "@/server/symbols/fetch";
 import { fetchQuotes } from "@/server/quotes/fetch";
 import { isTransientError, retryWithBackoff } from "@/server/shared/retry";
@@ -13,15 +10,6 @@ import { isTransientError, retryWithBackoff } from "@/server/shared/retry";
 const QUOTE_FETCH_BATCH_SIZE = 150;
 const BACKFILL_WINDOW_DAYS = 3;
 const RETRY_MAX_ATTEMPTS = 3;
-
-interface CronDateStats {
-  date: string;
-  totalRequests: number;
-  successfulFetches: number;
-  failedFetches: number;
-  retryCount: number;
-  failedBatchCount: number;
-}
 
 // Split values into fixed-size chunks.
 function chunkArray<T>(values: T[], size: number): T[][] {
@@ -32,13 +20,6 @@ function chunkArray<T>(values: T[], size: number): T[][] {
     chunks.push(values.slice(index, index + size));
   }
   return chunks;
-}
-
-// Build rolling window: [D, D-1, D-2].
-function buildDateWindow(anchorDate: Date): Date[] {
-  return Array.from({ length: BACKFILL_WINDOW_DAYS }, (_, offset) =>
-    addUTCDays(anchorDate, -offset),
-  );
 }
 
 export async function GET(request: NextRequest) {
@@ -72,7 +53,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const dateWindow = buildDateWindow(parsedDate);
+    const dateWindow = buildDateWindow(parsedDate, BACKFILL_WINDOW_DAYS);
 
     // 4. Fetch all symbol IDs from database
     const symbolIds = await fetchSymbols();
@@ -97,6 +78,7 @@ export async function GET(request: NextRequest) {
           failedFetches: 0,
           retryCount: 0,
           failedBatchCount: 0,
+          windowDays: BACKFILL_WINDOW_DAYS,
           date,
           perDate: perDateStats,
         },
