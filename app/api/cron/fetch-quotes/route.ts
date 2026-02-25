@@ -8,6 +8,11 @@ import { fetchQuotes } from "@/server/quotes/fetch";
 import { chunkArray } from "@/server/shared/chunk-array";
 import { isTransientError, retryWithBackoff } from "@/server/shared/retry";
 
+interface QuoteCronDateStats extends CronDateStats {
+  exactDateMatches: number;
+  fallbackResolutions: number;
+}
+
 const QUOTE_FETCH_BATCH_SIZE = 150;
 const BACKFILL_WINDOW_DAYS = 3;
 const CRON_BACKFILL_CUTOFF_HOUR_UTC = 0;
@@ -51,21 +56,28 @@ export async function GET(request: NextRequest) {
     if (symbolIds.length === 0) {
       console.warn("No symbols found in database");
 
-      const perDateStats: CronDateStats[] = dateWindow.map((windowDate) => ({
-        date: formatUTCDateKey(windowDate),
-        totalRequests: 0,
-        successfulFetches: 0,
-        failedFetches: 0,
-        retryCount: 0,
-        failedBatchCount: 0,
-      }));
+      const perDateStats: QuoteCronDateStats[] = dateWindow.map(
+        (windowDate) => ({
+          date: formatUTCDateKey(windowDate),
+          totalRequests: 0,
+          successfulFetches: 0,
+          failedFetches: 0,
+          retryCount: 0,
+          failedBatchCount: 0,
+          exactDateMatches: 0,
+          fallbackResolutions: 0,
+        }),
+      );
 
       return NextResponse.json({
         success: true,
         message: "No symbols to fetch",
         stats: {
           totalSymbols: 0,
+          resolvedRequests: 0,
           successfulFetches: 0,
+          exactDateMatches: 0,
+          fallbackResolutions: 0,
           failedFetches: 0,
           retryCount: 0,
           failedBatchCount: 0,
@@ -76,7 +88,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const perDateStats: CronDateStats[] = [];
+    const perDateStats: QuoteCronDateStats[] = [];
 
     // 5. Fetch quotes for D, D-1, and D-2 with per-batch retries.
     for (const targetDate of dateWindow) {
@@ -87,17 +99,23 @@ export async function GET(request: NextRequest) {
       }));
       const requestBatches = chunkArray(quoteRequests, QUOTE_FETCH_BATCH_SIZE);
 
-      const dateStats: CronDateStats = {
+      const dateStats: QuoteCronDateStats = {
         date: dateKey,
         totalRequests: quoteRequests.length,
         successfulFetches: 0,
         failedFetches: 0,
         retryCount: 0,
         failedBatchCount: 0,
+        exactDateMatches: 0,
+        fallbackResolutions: 0,
       };
 
       for (const [batchIndex, requestBatch] of requestBatches.entries()) {
         let batchRetryCount = 0;
+        const batchResolutionStats = {
+          exactDateMatches: 0,
+          fallbackResolutions: 0,
+        };
         try {
           const quotesMap = await retryWithBackoff(
             () =>
@@ -107,6 +125,7 @@ export async function GET(request: NextRequest) {
                 // Preserve rolling-window distinctness in cron backfills.
                 cronCutoffHourUtc: CRON_BACKFILL_CUTOFF_HOUR_UTC,
                 liveMissCooldownMinutes: 0,
+                resolutionStats: batchResolutionStats,
               }),
             {
               maxAttempts: RETRY_MAX_ATTEMPTS,
@@ -118,6 +137,9 @@ export async function GET(request: NextRequest) {
           );
 
           dateStats.successfulFetches += quotesMap.size;
+          dateStats.exactDateMatches += batchResolutionStats.exactDateMatches;
+          dateStats.fallbackResolutions +=
+            batchResolutionStats.fallbackResolutions;
           dateStats.failedFetches += requestBatch.length - quotesMap.size;
         } catch (error) {
           dateStats.failedFetches += requestBatch.length;
@@ -136,6 +158,14 @@ export async function GET(request: NextRequest) {
 
     const successfulFetches = perDateStats.reduce(
       (sum, dateStats) => sum + dateStats.successfulFetches,
+      0,
+    );
+    const exactDateMatches = perDateStats.reduce(
+      (sum, dateStats) => sum + dateStats.exactDateMatches,
+      0,
+    );
+    const fallbackResolutions = perDateStats.reduce(
+      (sum, dateStats) => sum + dateStats.fallbackResolutions,
       0,
     );
     const failedFetches = perDateStats.reduce(
@@ -164,7 +194,10 @@ export async function GET(request: NextRequest) {
         : "Daily quote fetch completed",
       stats: {
         totalSymbols: symbolIds.length,
+        resolvedRequests: successfulFetches,
         successfulFetches,
+        exactDateMatches,
+        fallbackResolutions,
         failedFetches,
         retryCount,
         failedBatchCount,

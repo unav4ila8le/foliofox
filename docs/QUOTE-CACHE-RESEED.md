@@ -76,6 +76,12 @@ For a range, run anchor dates in descending order and throttle requests to respe
 
 The endpoint returns top-level totals plus per-date breakdown.
 
+Important interpretation:
+
+- `successfulFetches` / `resolvedRequests` count fulfilled requests.
+- Fulfillment can be exact-date or fallback-to-prior-date.
+- Use `exactDateMatches` and `fallbackResolutions` to distinguish them.
+
 Example:
 
 ```json
@@ -84,7 +90,10 @@ Example:
   "message": "Daily quote fetch completed with partial failures",
   "stats": {
     "totalSymbols": 531,
+    "resolvedRequests": 1450,
     "successfulFetches": 1450,
+    "exactDateMatches": 1180,
+    "fallbackResolutions": 270,
     "failedFetches": 143,
     "retryCount": 2,
     "failedBatchCount": 1,
@@ -95,6 +104,8 @@ Example:
         "date": "2026-02-23",
         "totalRequests": 531,
         "successfulFetches": 490,
+        "exactDateMatches": 420,
+        "fallbackResolutions": 70,
         "failedFetches": 41,
         "retryCount": 1,
         "failedBatchCount": 0
@@ -103,6 +114,8 @@ Example:
         "date": "2026-02-22",
         "totalRequests": 531,
         "successfulFetches": 480,
+        "exactDateMatches": 390,
+        "fallbackResolutions": 90,
         "failedFetches": 51,
         "retryCount": 1,
         "failedBatchCount": 1
@@ -111,6 +124,8 @@ Example:
         "date": "2026-02-21",
         "totalRequests": 531,
         "successfulFetches": 480,
+        "exactDateMatches": 370,
+        "fallbackResolutions": 110,
         "failedFetches": 51,
         "retryCount": 0,
         "failedBatchCount": 0

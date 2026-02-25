@@ -53,15 +53,29 @@ describe("GET /api/cron/fetch-quotes", () => {
     );
     fetchSymbolsMock.mockResolvedValue(["sym-1", "sym-2"]);
     fetchQuotesMock.mockImplementation(
-      (requests: Array<{ symbolLookup: string; date: Date }>) =>
-        Promise.resolve(
+      (
+        requests: Array<{ symbolLookup: string; date: Date }>,
+        options?: {
+          resolutionStats?: {
+            exactDateMatches: number;
+            fallbackResolutions: number;
+          };
+        },
+      ) => {
+        if (options?.resolutionStats) {
+          options.resolutionStats.exactDateMatches = requests.length;
+          options.resolutionStats.fallbackResolutions = 0;
+        }
+
+        return Promise.resolve(
           new Map(
             requests.map((request) => [
               `${request.symbolLookup}|${request.date.toISOString().slice(0, 10)}`,
               123,
             ]),
           ),
-        ),
+        );
+      },
     );
 
     const { GET } = await import("@/app/api/cron/fetch-quotes/route");
@@ -74,7 +88,10 @@ describe("GET /api/cron/fetch-quotes", () => {
     expect(body.success).toBe(true);
     expect(body.stats.date).toBe("2026-02-15");
     expect(body.stats.windowDays).toBe(3);
+    expect(body.stats.resolvedRequests).toBe(6);
     expect(body.stats.successfulFetches).toBe(6);
+    expect(body.stats.exactDateMatches).toBe(6);
+    expect(body.stats.fallbackResolutions).toBe(0);
     expect(body.stats.failedFetches).toBe(0);
     expect(body.stats.retryCount).toBe(0);
     expect(body.stats.failedBatchCount).toBe(0);
@@ -91,12 +108,13 @@ describe("GET /api/cron/fetch-quotes", () => {
     ];
     fetchQuotesMock.mock.calls.forEach((call, index) => {
       const [requests, options] = call;
-      expect(options).toEqual({
+      expect(options).toMatchObject({
         upsert: true,
         staleGuardDays: 0,
         cronCutoffHourUtc: 0,
         liveMissCooldownMinutes: 0,
       });
+      expect(options?.resolutionStats).toBeDefined();
       expect(requests).toHaveLength(2);
       expect(requests[0]?.symbolLookup).toBe("sym-1");
       expect(requests[1]?.symbolLookup).toBe("sym-2");
@@ -121,6 +139,9 @@ describe("GET /api/cron/fetch-quotes", () => {
     expect(body.success).toBe(true);
     expect(body.message).toBe("No symbols to fetch");
     expect(body.stats.totalSymbols).toBe(0);
+    expect(body.stats.resolvedRequests).toBe(0);
+    expect(body.stats.exactDateMatches).toBe(0);
+    expect(body.stats.fallbackResolutions).toBe(0);
     expect(body.stats.windowDays).toBe(3);
     expect(body.stats.perDate).toHaveLength(3);
     expect(

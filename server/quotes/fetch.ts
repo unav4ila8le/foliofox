@@ -28,6 +28,12 @@ export interface FetchQuotesOptions {
   cronCutoffHourUtc?: number;
   liveFetchOnMiss?: boolean;
   liveMissCooldownMinutes?: number;
+  resolutionStats?: QuoteResolutionStats;
+}
+
+export interface QuoteResolutionStats {
+  exactDateMatches: number;
+  fallbackResolutions: number;
 }
 
 interface ResolvedQuoteRequest {
@@ -52,7 +58,7 @@ interface QuotesUpsertRow {
 
 function resolveFetchQuotesOptions(
   options: FetchQuotesOptions = {},
-): Required<FetchQuotesOptions> {
+): Required<Omit<FetchQuotesOptions, "resolutionStats">> {
   const staleGuardDays = Math.max(
     0,
     Math.trunc(options.staleGuardDays ?? DEFAULT_STALE_GUARD_DAYS),
@@ -195,6 +201,7 @@ export async function fetchQuotes(
   const now = new Date();
   const nowMs = now.getTime();
   const results = new Map<string, number>();
+  const resolutionTypeByRequestKey = new Map<string, "exact" | "fallback">();
 
   // 1. Resolve all requested symbols to canonical IDs.
   const uniqueLookups = [...new Set(requests.map((r) => r.symbolLookup))];
@@ -258,10 +265,9 @@ export async function fetchQuotes(
     );
 
     if (exactPrice !== undefined) {
-      results.set(
-        `${request.canonicalId}|${request.requestedDateKey}`,
-        exactPrice,
-      );
+      const resultKey = `${request.canonicalId}|${request.requestedDateKey}`;
+      results.set(resultKey, exactPrice);
+      resolutionTypeByRequestKey.set(resultKey, "exact");
       continue;
     }
 
@@ -364,6 +370,12 @@ export async function fetchQuotes(
         );
         if (fallbackEntry) {
           results.set(mapKey, fallbackEntry.closePrice);
+          resolutionTypeByRequestKey.set(
+            mapKey,
+            fallbackEntry.dateKey === request.effectiveDateKey
+              ? "exact"
+              : "fallback",
+          );
         }
       });
 
@@ -397,6 +409,12 @@ export async function fetchQuotes(
 
           if (fallbackDateKey <= request.effectiveDateKey) {
             results.set(mapKey, fallbackPrice);
+            resolutionTypeByRequestKey.set(
+              mapKey,
+              fallbackDateKey === request.effectiveDateKey
+                ? "exact"
+                : "fallback",
+            );
           }
         });
       }
@@ -545,12 +563,25 @@ export async function fetchQuotes(
       );
 
       if (fallback) {
-        results.set(
-          `${request.canonicalId}|${request.requestedDateKey}`,
-          fallback.close_price,
-        );
+        const resultKey = `${request.canonicalId}|${request.requestedDateKey}`;
+        results.set(resultKey, fallback.close_price);
+        resolutionTypeByRequestKey.set(resultKey, "fallback");
       }
     });
+  }
+
+  if (options.resolutionStats) {
+    // Report how requests were fulfilled for observability (exact date vs fallback date).
+    options.resolutionStats.exactDateMatches = 0;
+    options.resolutionStats.fallbackResolutions = 0;
+
+    for (const resolutionType of resolutionTypeByRequestKey.values()) {
+      if (resolutionType === "exact") {
+        options.resolutionStats.exactDateMatches += 1;
+      } else {
+        options.resolutionStats.fallbackResolutions += 1;
+      }
+    }
   }
 
   // 6. Populate alias keys for original non-canonical lookup inputs.
