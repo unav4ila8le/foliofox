@@ -871,10 +871,7 @@ export type Database = {
         | "moderate"
         | "aggressive"
         | "very_aggressive"
-      scenario_initial_value_basis:
-        | "manual"
-        | "cash"
-        | "net_worth"
+      scenario_initial_value_basis: "net_worth" | "cash" | "manual"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1017,11 +1014,8 @@ export const Constants = {
         "aggressive",
         "very_aggressive",
       ],
-      scenario_initial_value_basis: [
-        "manual",
-        "cash",
-        "net_worth",
-      ],
+      scenario_initial_value_basis: ["net_worth", "cash", "manual"],
     },
   },
 } as const
+

@@ -184,7 +184,7 @@ export function NetWorthAreaChart({
             Add your assets to start tracking your net worth
           </p>
           <div className="flex items-center justify-center gap-2">
-            <NewAssetButton variant="outline" />
+            <NewAssetButton />
             <ImportPositionsButton variant="outline" />
           </div>
         </CardContent>
