@@ -43,7 +43,7 @@ describe("scenario planning", () => {
       scenario,
       startDate: ld(2023, 1, 1),
       endDate: ld(2023, 2, 28),
-      initialBalance: 0,
+      initialValue: 0,
     });
 
     expect(result.balance).toStrictEqual({
@@ -86,7 +86,7 @@ describe("scenario planning", () => {
       scenario,
       startDate: ld(2023, 1, 1),
       endDate: ld(2023, 4, 30),
-      initialBalance: 0,
+      initialValue: 0,
     });
 
     expect(result.cashflow).toStrictEqual({
@@ -143,7 +143,7 @@ describe("scenario planning", () => {
       scenario,
       startDate: ld(2025, 1, 1),
       endDate: ld(2027, 1, 1),
-      initialBalance: 10000,
+      initialValue: 10000,
     });
 
     expect(result.balance).toMatchInlineSnapshot(`
@@ -209,7 +209,7 @@ describe("scenario planning", () => {
         const result = runScenario({
           startDate: ld(2025, 1, 1),
           endDate: ld(2025, 5, 1),
-          initialBalance: 0,
+          initialValue: 0,
           scenario,
         });
 
@@ -265,7 +265,7 @@ describe("scenario planning", () => {
         const result = runScenario({
           startDate: ld(2025, 12, 1),
           endDate: ld(2026, 3, 1),
-          initialBalance: 0,
+          initialValue: 0,
           scenario,
         });
 
@@ -321,7 +321,7 @@ describe("scenario planning", () => {
         const result = runScenario({
           startDate: ld(2025, 1, 1),
           endDate: ld(2025, 8, 1),
-          initialBalance: 0,
+          initialValue: 0,
           scenario,
         });
 
@@ -486,7 +486,7 @@ describe("scenario planning", () => {
         scenario,
         startDate: ld(2025, 1, 1),
         endDate: ld(2027, 12, 31),
-        initialBalance: 10000 * 10,
+        initialValue: 10000 * 10,
       });
 
       expect(result.balance["2025-01"]).toBe(100000 + 2500 - 1400);

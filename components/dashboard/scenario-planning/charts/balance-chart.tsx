@@ -135,12 +135,12 @@ const CustomEventMarker = (props: {
 export function BalanceChart({
   scenario,
   currency,
-  initialBalance,
+  initialValue,
   onAddEvent,
 }: {
   scenario: Scenario;
   currency: string;
-  initialBalance: number;
+  initialValue: number;
   onAddEvent?: () => void;
 }) {
   const locale = useLocale();
@@ -159,7 +159,7 @@ export function BalanceChart({
   const { scenarioResult } = useMemo(() => {
     const scenarioResult = runScenario({
       scenario,
-      initialBalance,
+      initialValue,
       startDate: fromJSDate(new Date()),
       endDate: fromJSDate(endDate),
     });
@@ -167,7 +167,7 @@ export function BalanceChart({
     return {
       scenarioResult,
     };
-  }, [scenario, initialBalance, endDate]);
+  }, [scenario, initialValue, endDate]);
 
   const getPeriodKey = useCallback(
     (date: Date): string => {
@@ -500,7 +500,7 @@ export function BalanceChart({
             <div className="relative h-full">
               {/* Demo chart in background */}
               <div className="absolute inset-0 opacity-25">
-                <DemoBalanceChart initialBalance={initialBalance} />
+                <DemoBalanceChart initialValue={initialValue} />
               </div>
 
               {/* Empty state overlay */}
@@ -866,7 +866,7 @@ export function BalanceChart({
       </Card>
       {scenario.events.length > 0 && (
         <BalanceStats
-          initialBalance={initialBalance}
+          initialValue={initialValue}
           finalBalance={chartData.at(-1)?.balance || 0}
           currency={currency}
           scenarioResult={scenarioResult}

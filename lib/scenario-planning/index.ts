@@ -137,14 +137,14 @@ const evaluateScenario = (input: {
   scenario: Scenario;
   startDate: LocalDate;
   endDate: LocalDate;
-  initialBalance: number;
+  initialValue: number;
 }): EvaluationState => {
-  const { scenario, startDate, endDate, initialBalance } = input;
+  const { scenario, startDate, endDate, initialValue } = input;
 
   const state: EvaluationState = {
     cashflow: {},
     balance: {},
-    currentBalance: initialBalance,
+    currentBalance: initialValue,
     firedEvents: new Map(),
   };
 
@@ -244,7 +244,7 @@ const runScenario = (input: {
   scenario: Scenario;
   startDate: LocalDate;
   endDate: LocalDate;
-  initialBalance: number;
+  initialValue: number;
 }) => {
   const state = evaluateScenario(input);
 

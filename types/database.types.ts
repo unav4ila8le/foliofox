@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.1"
-  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -377,7 +372,8 @@ export type Database = {
           engine_version: number
           events: Json
           id: string
-          initial_balance: number
+          initial_value: number
+          initial_value_basis: Database["public"]["Enums"]["scenario_initial_value_basis"]
           name: string
           updated_at: string
           user_id: string
@@ -387,7 +383,8 @@ export type Database = {
           engine_version?: number
           events?: Json
           id?: string
-          initial_balance?: number
+          initial_value?: number
+          initial_value_basis?: Database["public"]["Enums"]["scenario_initial_value_basis"]
           name: string
           updated_at?: string
           user_id: string
@@ -397,7 +394,8 @@ export type Database = {
           engine_version?: number
           events?: Json
           id?: string
-          initial_balance?: number
+          initial_value?: number
+          initial_value_basis?: Database["public"]["Enums"]["scenario_initial_value_basis"]
           name?: string
           updated_at?: string
           user_id?: string
@@ -873,6 +871,10 @@ export type Database = {
         | "moderate"
         | "aggressive"
         | "very_aggressive"
+      scenario_initial_value_basis:
+        | "manual"
+        | "cash"
+        | "net_worth"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1014,6 +1016,11 @@ export const Constants = {
         "moderate",
         "aggressive",
         "very_aggressive",
+      ],
+      scenario_initial_value_basis: [
+        "manual",
+        "cash",
+        "net_worth",
       ],
     },
   },

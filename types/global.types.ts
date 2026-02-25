@@ -103,6 +103,7 @@ export type ProjectedIncomeData = {
 
 // Public portfolio sharing
 export type PublicPortfolio = Tables<"public_portfolios">;
+export type PublicPortfolioInsert = TablesInsert<"public_portfolios">;
 
 export type PublicPortfolioMetadata = {
   id: string;
@@ -126,3 +127,7 @@ export type PublicPortfolioExpirationOption = "24h" | "7d" | "30d" | "never";
 
 // Financial Profile
 export type FinancialProfile = Tables<"financial_profiles">;
+
+// Financial Scenarios
+export type FinancialScenario = Tables<"financial_scenarios">;
+export type FinancialScenarioInsert = TablesInsert<"financial_scenarios">;

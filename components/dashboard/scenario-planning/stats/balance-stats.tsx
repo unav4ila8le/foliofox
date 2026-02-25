@@ -30,7 +30,7 @@ interface CashflowEntry {
 }
 
 interface BalanceStatsProps {
-  initialBalance: number;
+  initialValue: number;
   finalBalance: number;
   currency: string;
   scenarioResult: {
@@ -43,20 +43,20 @@ interface BalanceStatsProps {
 
 const calculateStats = (
   scenarioResult: BalanceStatsProps["scenarioResult"],
-  initialBalance: number,
+  initialValue: number,
   finalBalance: number,
 ) => {
   // 1. Net Change calculations
-  const netChange = finalBalance - initialBalance;
+  const netChange = finalBalance - initialValue;
   const netChangePercentage =
-    initialBalance !== 0 ? (netChange / initialBalance) * 100 : 0;
+    initialValue !== 0 ? (netChange / initialValue) * 100 : 0;
 
   // 2. Lowest Balance calculations
   const balanceEntries = Object.entries(scenarioResult.balance);
   const lowestEntry = balanceEntries.reduce(
     (min, [monthKey, balance]) =>
       balance < min.balance ? { monthKey, balance } : min,
-    { monthKey: "", balance: initialBalance },
+    { monthKey: "", balance: initialValue },
   );
 
   // Parse monthKey "YYYY-MM" to date
@@ -76,14 +76,14 @@ const calculateStats = (
     netChangePercentage,
     lowestBalance: lowestEntry.balance,
     lowestBalanceDate: lowestDate,
-    isLowestBelowInitial: lowestEntry.balance < initialBalance,
+    isLowestBelowInitial: lowestEntry.balance < initialValue,
     avgMonthlyChange,
     monthCount,
   };
 };
 
 export const BalanceStats = ({
-  initialBalance,
+  initialValue,
   finalBalance,
   currency,
   scenarioResult,
@@ -91,8 +91,8 @@ export const BalanceStats = ({
 }: BalanceStatsProps) => {
   const locale = useLocale();
   const stats = useMemo(
-    () => calculateStats(scenarioResult, initialBalance, finalBalance),
-    [scenarioResult, initialBalance, finalBalance],
+    () => calculateStats(scenarioResult, initialValue, finalBalance),
+    [scenarioResult, initialValue, finalBalance],
   );
 
   return (
@@ -126,7 +126,7 @@ export const BalanceStats = ({
             )}
           >
             {stats.netChange >= 0 ? "+" : ""}
-            {initialBalance === 0
+            {initialValue === 0
               ? "N/A%"
               : formatPercentage(stats.netChangePercentage / 100, { locale })}
           </p>
@@ -156,7 +156,7 @@ export const BalanceStats = ({
                   <AlertTriangle className="size-4" />
                 </TooltipTrigger>
                 <TooltipContent>
-                  The lowest balance is below the initial balance
+                  The lowest balance is below the starting value
                 </TooltipContent>
               </Tooltip>
             )}
@@ -197,19 +197,19 @@ export const BalanceStats = ({
           <CardTitle
             className={cn(
               "flex items-center gap-2",
-              finalBalance >= initialBalance
+              finalBalance >= initialValue
                 ? "text-green-600"
                 : "text-yellow-600",
             )}
           >
             {formatCurrency(finalBalance, currency, { locale })}
-            {finalBalance < initialBalance && (
+            {finalBalance < initialValue && (
               <Tooltip>
                 <TooltipTrigger>
                   <AlertTriangle className="size-4" />
                 </TooltipTrigger>
                 <TooltipContent>
-                  The final balance is below the initial balance
+                  The final balance is below the starting value
                 </TooltipContent>
               </Tooltip>
             )}

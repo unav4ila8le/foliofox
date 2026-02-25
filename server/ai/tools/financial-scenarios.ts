@@ -70,7 +70,7 @@ export async function getFinancialScenarios(
   const result: {
     scenarioName: string;
     scenarioId: string;
-    initialBalance: number;
+    initialValue: number;
     eventsCount: number;
     events: typeof events;
     simulation?: {
@@ -83,7 +83,7 @@ export async function getFinancialScenarios(
   } = {
     scenarioName: scenario.name,
     scenarioId: scenario.id,
-    initialBalance: scenario.initialBalance,
+    initialValue: scenario.initialValue,
     eventsCount: events.length,
     events,
   };
@@ -102,7 +102,7 @@ export async function getFinancialScenarios(
       scenario,
       startDate,
       endDate,
-      initialBalance: scenario.initialBalance,
+      initialValue: scenario.initialValue,
     });
 
     // Extract year-end balances for summary
@@ -116,7 +116,7 @@ export async function getFinancialScenarios(
 
     const balanceKeys = Object.keys(balance).sort();
     const finalBalance =
-      balance[balanceKeys[balanceKeys.length - 1]] ?? scenario.initialBalance;
+      balance[balanceKeys[balanceKeys.length - 1]] ?? scenario.initialValue;
 
     result.simulation = {
       years: simulationYears,

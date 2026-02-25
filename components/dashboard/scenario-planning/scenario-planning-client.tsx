@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   InputGroup,
@@ -9,6 +9,13 @@ import {
   InputGroupButton,
 } from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { LocalizedNumberInput } from "@/components/ui/custom/localized-number-input";
 
 import { BalanceChart } from "./charts/balance-chart";
@@ -16,39 +23,135 @@ import { EventsTable } from "./table/events-table";
 import { UpsertEventDialog } from "./dialogs/upsert-event";
 
 import type { Scenario, ScenarioEvent } from "@/lib/scenario-planning";
+import {
+  ScenarioInitialValueBasis as ScenarioInitialValueBasisSchema,
+  type ScenarioInitialValueBasis,
+} from "@/lib/scenario-planning/helpers";
+import { SCENARIO_INITIAL_VALUE_BASES } from "@/types/enums";
 
 import { formatNumber } from "@/lib/number-format";
 import { useLocale } from "@/hooks/use-locale";
 import {
   upsertScenarioEvent,
-  updateScenarioInitialBalance,
+  updateScenarioInitialValue,
 } from "@/server/financial-scenarios/upsert";
 import { deleteScenarioEvent } from "@/server/financial-scenarios/delete";
+
+interface ScenarioStartingValueSuggestion {
+  value: number;
+  currency: string;
+}
+
+interface ScenarioPlanningClientProps {
+  scenario: Scenario & {
+    id: string;
+    initialValue: number;
+    initialValueBasis: ScenarioInitialValueBasis;
+  };
+  currency: string;
+  startingValueSuggestions: {
+    cash: ScenarioStartingValueSuggestion | null;
+    netWorth: ScenarioStartingValueSuggestion | null;
+  };
+}
+
+const STARTING_VALUE_BASIS_LABELS: Record<ScenarioInitialValueBasis, string> = {
+  net_worth: "Net Worth",
+  cash: "Cash",
+  manual: "Manual",
+};
+
+const STARTING_VALUE_BASIS_OPTIONS = SCENARIO_INITIAL_VALUE_BASES.map(
+  (value) => ({
+    value,
+    label: STARTING_VALUE_BASIS_LABELS[value],
+  }),
+);
+
+// Resolve the live portfolio-backed value for non-manual modes.
+const getSyncedValueForBasis = (input: {
+  basis: ScenarioInitialValueBasis;
+  suggestions: ScenarioPlanningClientProps["startingValueSuggestions"];
+}): number | null => {
+  const { basis, suggestions } = input;
+
+  if (basis === "net_worth") {
+    return suggestions.netWorth?.value ?? null;
+  }
+
+  if (basis === "cash") {
+    return suggestions.cash?.value ?? null;
+  }
+
+  return null;
+};
+
+// Keep persisted scenario values at 2 decimals to avoid long fractional tails.
+const normalizeScenarioValue = (value: number): number => {
+  if (!Number.isFinite(value)) {
+    return value;
+  }
+  return Number(value.toFixed(2));
+};
 
 export function ScenarioPlanningClient({
   scenario,
   currency,
-}: {
-  scenario: Scenario & { id: string; initialBalance: number };
-  currency: string;
-}) {
+  startingValueSuggestions,
+}: ScenarioPlanningClientProps) {
   const locale = useLocale();
+  const lastAutoSyncKey = useRef<string | null>(null);
+  const normalizedInitialValue = normalizeScenarioValue(scenario.initialValue);
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<{
     event: ScenarioEvent;
     index: number;
   } | null>(null);
-  const [initialBalance, setInitialBalance] = useState(
-    scenario.initialBalance.toString(),
+  const [initialValueInput, setInitialValueInput] = useState(
+    normalizedInitialValue.toString(),
   );
-  const [displayBalance, setDisplayBalance] = useState(scenario.initialBalance);
-  const [isUpdatingBalance, setIsUpdatingBalance] = useState(false);
+  const [savedValue, setSavedValue] = useState(normalizedInitialValue);
+  const [selectedValueBasis, setSelectedValueBasis] =
+    useState<ScenarioInitialValueBasis>(scenario.initialValueBasis);
+  const [savedValueBasis, setSavedValueBasis] =
+    useState<ScenarioInitialValueBasis>(scenario.initialValueBasis);
+  const [isSavingValue, setIsSavingValue] = useState(false);
 
-  const isBalanceDirty = initialBalance !== displayBalance.toString();
-  const initialBalancePlaceholder = useMemo(
+  // Manual mode is editable; synced modes are read-only and auto-persisted.
+  const isManualMode = selectedValueBasis === "manual";
+  const isManualValueDirty =
+    isManualMode &&
+    (initialValueInput !== savedValue.toString() ||
+      savedValueBasis !== "manual");
+  const initialValuePlaceholder = useMemo(
     () => `E.g., ${formatNumber(100000, { locale })}`,
     [locale],
   );
+  const syncHint = useMemo(() => {
+    if (selectedValueBasis === "cash") {
+      return "Synced with your current cash positions.";
+    }
+
+    if (selectedValueBasis === "net_worth") {
+      return "Synced with your current net worth.";
+    }
+
+    return "Set your own value and click Save.";
+  }, [selectedValueBasis]);
+
+  const syncedValue = useMemo(() => {
+    const nextValue = getSyncedValueForBasis({
+      basis: selectedValueBasis,
+      suggestions: startingValueSuggestions,
+    });
+
+    if (nextValue === null) {
+      return null;
+    }
+
+    return normalizeScenarioValue(nextValue);
+  }, [selectedValueBasis, startingValueSuggestions]);
 
   const handleEventClick = (event: ScenarioEvent, index: number) => {
     setEditingEvent({ event, index });
@@ -99,84 +202,198 @@ export function ScenarioPlanningClient({
     }
   };
 
-  const handleInitialBalanceUpdate = async () => {
-    const trimmedBalance = initialBalance.trim();
+  const persistInitialValue = useCallback(
+    async (input: {
+      value: number;
+      valueBasis: ScenarioInitialValueBasis;
+      showSuccessToast?: boolean;
+    }) => {
+      // This is the single write-path for basis + value persistence.
+      const roundedValue = normalizeScenarioValue(input.value);
+      setIsSavingValue(true);
+      try {
+        const result = await updateScenarioInitialValue(
+          scenario.id,
+          roundedValue,
+          {
+            initialValueBasis: input.valueBasis,
+          },
+        );
 
-    if (trimmedBalance === "") {
+        if (!result.success) {
+          throw new Error(result.message || "Failed to update starting value");
+        }
+
+        setSavedValue(roundedValue);
+        setSavedValueBasis(input.valueBasis);
+        setInitialValueInput(roundedValue.toString());
+        if (input.showSuccessToast) {
+          toast.success("Starting value saved");
+        }
+      } catch (error) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Failed to update starting value",
+        );
+      } finally {
+        setIsSavingValue(false);
+      }
+    },
+    [scenario.id],
+  );
+
+  const handleManualSave = async () => {
+    const trimmedValue = initialValueInput.trim();
+
+    if (trimmedValue === "") {
       toast.error("Please enter a valid number");
       return;
     }
 
-    const balance = Number(trimmedBalance);
+    const nextValue = Number(trimmedValue);
 
-    if (!Number.isFinite(balance)) {
+    if (!Number.isFinite(nextValue)) {
       toast.error("Please enter a valid number");
       return;
     }
 
-    setIsUpdatingBalance(true);
-    try {
-      const result = await updateScenarioInitialBalance(scenario.id, balance);
+    await persistInitialValue({
+      value: nextValue,
+      valueBasis: "manual",
+      showSuccessToast: true,
+    });
+  };
 
-      if (!result.success) {
-        throw new Error(result.message || "Failed to update initial balance");
+  useEffect(() => {
+    // Non-manual basis values stay synced with current portfolio-derived suggestions.
+    if (selectedValueBasis === "manual") {
+      return;
+    }
+
+    if (syncedValue === null) {
+      return;
+    }
+
+    const nextSyncKey = `${selectedValueBasis}:${syncedValue}`;
+
+    setInitialValueInput((prevValue) =>
+      prevValue === syncedValue.toString() ? prevValue : syncedValue.toString(),
+    );
+
+    if (savedValueBasis === selectedValueBasis && savedValue === syncedValue) {
+      lastAutoSyncKey.current = nextSyncKey;
+      return;
+    }
+
+    if (lastAutoSyncKey.current === nextSyncKey) {
+      return;
+    }
+
+    lastAutoSyncKey.current = nextSyncKey;
+    void persistInitialValue({
+      value: syncedValue,
+      valueBasis: selectedValueBasis,
+    });
+  }, [
+    selectedValueBasis,
+    syncedValue,
+    savedValueBasis,
+    savedValue,
+    persistInitialValue,
+  ]);
+
+  const handleBasisChange = (nextBasisRaw: string) => {
+    // Reset auto-sync dedupe key so switching basis can trigger a fresh write once.
+    lastAutoSyncKey.current = null;
+
+    const parsedBasis = ScenarioInitialValueBasisSchema.safeParse(nextBasisRaw);
+    if (!parsedBasis.success) {
+      return;
+    }
+
+    const nextBasis = parsedBasis.data;
+
+    if (nextBasis !== "manual") {
+      // Pre-fill immediately for responsive UX; effect below handles persistence.
+      const nextSyncedValue = getSyncedValueForBasis({
+        basis: nextBasis,
+        suggestions: startingValueSuggestions,
+      });
+
+      if (nextSyncedValue === null) {
+        toast.error("Unable to sync this value right now");
+        return;
       }
 
-      setDisplayBalance(balance);
-      setInitialBalance(balance.toString());
-      toast.success("Initial balance updated successfully");
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to update initial balance",
-      );
-    } finally {
-      setIsUpdatingBalance(false);
+      setInitialValueInput(normalizeScenarioValue(nextSyncedValue).toString());
     }
+
+    setSelectedValueBasis(nextBasis);
   };
 
   return (
     <div className="space-y-4">
-      {/* Initial Balance Input */}
-      <div className="space-y-2 md:max-w-80">
-        <Label htmlFor="initial-balance">Initial balance</Label>
-        <InputGroup>
-          <LocalizedNumberInput
-            mode="input-group-input"
-            id="initial-balance"
-            placeholder={initialBalancePlaceholder}
-            min={0}
-            name="initial-balance"
-            value={initialBalance}
-            onValueChange={(nextValue) => setInitialBalance(nextValue)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                handleInitialBalanceUpdate();
-              }
-            }}
-            disabled={isUpdatingBalance}
-          />
-          <InputGroupAddon align="inline-start">
-            <InputGroupText>{currency}</InputGroupText>
-          </InputGroupAddon>
-          <InputGroupAddon align="inline-end">
-            <InputGroupButton
-              variant="secondary"
-              disabled={!isBalanceDirty || isUpdatingBalance}
-              onClick={handleInitialBalanceUpdate}
-            >
-              Update
-            </InputGroupButton>
-          </InputGroupAddon>
-        </InputGroup>
+      {/* Starting value */}
+      <div className="space-y-2">
+        <Label htmlFor="initial-value-basis">Starting value basis</Label>
+        <div className="flex max-w-sm items-center gap-2">
+          <Select
+            value={selectedValueBasis}
+            onValueChange={handleBasisChange}
+            disabled={isSavingValue}
+          >
+            <SelectTrigger id="initial-value-basis" className="w-40">
+              <SelectValue placeholder="Select basis" />
+            </SelectTrigger>
+            <SelectContent position="popper">
+              {STARTING_VALUE_BASIS_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <InputGroup>
+            <LocalizedNumberInput
+              mode="input-group-input"
+              id="initial-value"
+              disabled={!isManualMode || isSavingValue}
+              decimalScale={2}
+              placeholder={initialValuePlaceholder}
+              name="initial-value"
+              value={initialValueInput}
+              onValueChange={(nextValue) => setInitialValueInput(nextValue)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && isManualMode) {
+                  handleManualSave();
+                }
+              }}
+            />
+            <InputGroupAddon align="inline-start">
+              <InputGroupText>{currency}</InputGroupText>
+            </InputGroupAddon>
+            {isManualMode && (
+              <InputGroupAddon align="inline-end">
+                <InputGroupButton
+                  variant="secondary"
+                  disabled={!isManualValueDirty || isSavingValue}
+                  onClick={handleManualSave}
+                >
+                  Save
+                </InputGroupButton>
+              </InputGroupAddon>
+            )}
+          </InputGroup>
+        </div>
+        <p className="text-muted-foreground text-xs">{syncHint}</p>
       </div>
 
       {/* Chart */}
       <BalanceChart
         scenario={scenario}
         currency={currency}
-        initialBalance={displayBalance}
+        initialValue={savedValue}
         onAddEvent={() => setDialogOpen(true)}
       />
 

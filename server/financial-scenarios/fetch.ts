@@ -3,8 +3,82 @@
 import { cache } from "react";
 
 import type { Scenario } from "@/lib/scenario-planning";
-import { fromDatabaseScenarioToScenario } from "@/lib/scenario-planning/helpers";
+import { convertCurrency } from "@/lib/currency-conversion";
+import { startOfUTCDay } from "@/lib/date/date-utils";
+import {
+  fromDatabaseScenarioToScenario,
+  type ScenarioInitialValueBasis as ScenarioInitialValueBasisType,
+} from "@/lib/scenario-planning/helpers";
+import { calculateNetWorth } from "@/server/analysis/net-worth/net-worth";
 import { getCurrentUser } from "@/server/auth/actions";
+import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
+import { fetchPositions } from "@/server/positions/fetch";
+
+import type { TransformedPosition } from "@/types/global.types";
+
+interface ScenarioStartingValueSuggestion {
+  value: number;
+  currency: string;
+}
+
+export interface ScenarioStartingValueSuggestions {
+  cash: ScenarioStartingValueSuggestion | null;
+  netWorth: ScenarioStartingValueSuggestion | null;
+}
+
+export interface ScenarioWithStartingValue extends Scenario {
+  id: string;
+  initialValue: number;
+  initialValueBasis: ScenarioInitialValueBasisType;
+}
+
+const toSuggestion = (
+  value: number,
+  currency: string,
+): ScenarioStartingValueSuggestion | null => {
+  if (!Number.isFinite(value)) {
+    return null;
+  }
+
+  return {
+    value,
+    currency,
+  };
+};
+
+const calculateTotalPositionValueInCurrency = async (input: {
+  positions: TransformedPosition[];
+  targetCurrency: string;
+  asOfDate: Date;
+}) => {
+  const { positions, targetCurrency, asOfDate } = input;
+
+  if (positions.length === 0) {
+    return 0;
+  }
+
+  const uniqueCurrencies = new Set<string>();
+  positions.forEach((position) => uniqueCurrencies.add(position.currency));
+  uniqueCurrencies.add(targetCurrency);
+
+  const exchangeRates = await fetchExchangeRates(
+    Array.from(uniqueCurrencies).map((currency) => ({
+      currency,
+      date: asOfDate,
+    })),
+  );
+
+  return positions.reduce((total, position) => {
+    const convertedValue = convertCurrency(
+      position.total_value,
+      position.currency,
+      targetCurrency,
+      exchangeRates,
+      asOfDate,
+    );
+    return total + convertedValue;
+  }, 0);
+};
 
 /**
  * Fetch all financial scenarios for the current user.
@@ -26,10 +100,10 @@ export const fetchScenarios = cache(async (): Promise<Scenario[]> => {
 
 /**
  * Fetch the user's default scenario, creating one if none exists.
- * Returns the scenario with its database ID and initial balance.
+ * Returns the scenario with its database ID and initial value.
  */
 export const fetchOrCreateDefaultScenario = cache(
-  async (): Promise<Scenario & { id: string; initialBalance: number }> => {
+  async (): Promise<ScenarioWithStartingValue> => {
     const { supabase, user } = await getCurrentUser();
 
     // Fetch existing scenarios
@@ -49,7 +123,8 @@ export const fetchOrCreateDefaultScenario = cache(
       return {
         ...scenario,
         id: existingScenarios[0].id,
-        initialBalance: existingScenarios[0].initial_balance,
+        initialValue: existingScenarios[0].initial_value,
+        initialValueBasis: existingScenarios[0].initial_value_basis,
       };
     }
 
@@ -61,7 +136,8 @@ export const fetchOrCreateDefaultScenario = cache(
         name: "My Scenario",
         events: [],
         engine_version: 1,
-        initial_balance: 0,
+        initial_value: 0,
+        initial_value_basis: "net_worth",
       })
       .select()
       .single();
@@ -76,7 +152,44 @@ export const fetchOrCreateDefaultScenario = cache(
     return {
       ...scenario,
       id: newScenario.id,
-      initialBalance: newScenario.initial_balance,
+      initialValue: newScenario.initial_value,
+      initialValueBasis: newScenario.initial_value_basis,
     };
+  },
+);
+
+export const fetchScenarioStartingValueSuggestions = cache(
+  async (targetCurrency: string): Promise<ScenarioStartingValueSuggestions> => {
+    const asOfDate = startOfUTCDay(new Date());
+
+    try {
+      const [netWorthValue, assetPositions] = await Promise.all([
+        calculateNetWorth(targetCurrency, asOfDate),
+        fetchPositions({
+          includeArchived: true,
+          positionType: "asset",
+          asOfDate,
+        }),
+      ]);
+
+      const cashPositions = assetPositions.filter(
+        (position) => position.category_id === "cash",
+      );
+      const cashValue = await calculateTotalPositionValueInCurrency({
+        positions: cashPositions,
+        targetCurrency,
+        asOfDate,
+      });
+
+      return {
+        cash: toSuggestion(cashValue, targetCurrency),
+        netWorth: toSuggestion(netWorthValue, targetCurrency),
+      };
+    } catch {
+      return {
+        cash: null,
+        netWorth: null,
+      };
+    }
   },
 );
