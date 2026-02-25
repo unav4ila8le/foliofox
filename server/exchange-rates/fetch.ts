@@ -6,6 +6,7 @@ import {
   formatUTCDateKey,
   parseUTCDateKey,
 } from "@/lib/date/date-utils";
+import { chunkArray } from "@/server/shared/chunk-array";
 
 // Exchange rate API
 const FRANKFURTER_API = "https://api.frankfurter.app";
@@ -91,14 +92,6 @@ type ProviderRateEntry = {
 };
 
 const MAX_ROWS_PER_QUERY = 900;
-
-function chunkArray<T>(arr: T[], size: number): T[][] {
-  const chunks: T[][] = [];
-  for (let index = 0; index < arr.length; index += size) {
-    chunks.push(arr.slice(index, index + size));
-  }
-  return chunks;
-}
 
 function isWithinStaleGuard(params: {
   candidateDateKey: string;

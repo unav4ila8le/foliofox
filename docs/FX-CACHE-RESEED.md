@@ -16,13 +16,18 @@ It is intentionally implementation-light so it remains useful as the codebase ev
 2. `CRON_SECRET` is configured in deployment.
 3. You can call:
    - `GET /api/cron/fetch-exchange-rates`
-4. Optional: enable maintenance mode if you want zero user traffic during reseed.
+4. The cron endpoint behavior is understood:
+   - Each invocation processes a rolling 3-day window: `D`, `D-1`, `D-2`.
+   - `?date=YYYY-MM-DD` anchors `D` to the provided date.
+   - Response status is `200` for full success and partial success.
+   - `401` and `400` are still used for auth/date validation failures.
+5. Optional: enable maintenance mode if you want zero user traffic during reseed.
 
 ## Recommended strategy
 
 Use a two-stage refill:
 
-1. **Seed latest data first** (single cron call).
+1. **Seed latest data first** (single cron call; fills `today`, `today-1`, `today-2`).
 2. **Backfill history only if needed** (date-override loop).
 
 This avoids unnecessary provider traffic and keeps operational risk low.
@@ -39,7 +44,7 @@ If your deployment supports maintenance mode, enable it before purge/reseed and 
 delete from public.exchange_rates;
 ```
 
-### 3) Seed latest FX rates
+### 3) Seed latest FX rates (rolling 3-day window)
 
 ```bash
 curl -sS -H "Authorization: Bearer $CRON_SECRET" \
@@ -51,27 +56,77 @@ curl -sS -H "Authorization: Bearer $CRON_SECRET" \
 macOS example:
 
 ```bash
-for i in $(seq 0 364); do
+for i in $(seq 0 3 364); do
   date_key=$(date -u -v-"$i"d +%Y-%m-%d)
-  echo "Seeding ${date_key}"
+  echo "Seeding window anchored at ${date_key} (covers ${date_key}, D-1, D-2)"
   curl -sS -H "Authorization: Bearer $CRON_SECRET" \
     "https://<your-domain>/api/cron/fetch-exchange-rates?date=${date_key}" > /dev/null
   sleep 0.1
 done
 ```
 
-### 5) Optional controlled historical backfill (single date)
+### 5) Optional controlled historical backfill (single anchor date)
 
 If you need historical rows quickly (instead of waiting for lazy refill), call the same cron endpoint with `?date=YYYY-MM-DD`.
 
-Example (single day):
+Important: each call backfills 3 dates (`D`, `D-1`, `D-2`), not just one.
+
+Example (anchor date):
 
 ```bash
 curl -sS -H "Authorization: Bearer $CRON_SECRET" \
   "https://<your-domain>/api/cron/fetch-exchange-rates?date=2026-02-16"
 ```
 
-For a range, run day-by-day in your preferred scripting environment and throttle requests to respect provider limits.
+For a range, run anchor dates in descending order and throttle requests to respect provider limits.
+
+## Cron response shape
+
+The endpoint returns top-level totals plus per-date breakdown.
+
+Example:
+
+```json
+{
+  "success": true,
+  "message": "Daily exchange rates fetch completed with partial failures",
+  "stats": {
+    "totalCurrencies": 14,
+    "successfulFetches": 39,
+    "failedFetches": 3,
+    "retryCount": 1,
+    "failedBatchCount": 1,
+    "windowDays": 3,
+    "date": "2026-02-23",
+    "perDate": [
+      {
+        "date": "2026-02-23",
+        "totalRequests": 14,
+        "successfulFetches": 13,
+        "failedFetches": 1,
+        "retryCount": 1,
+        "failedBatchCount": 0
+      },
+      {
+        "date": "2026-02-22",
+        "totalRequests": 14,
+        "successfulFetches": 13,
+        "failedFetches": 1,
+        "retryCount": 0,
+        "failedBatchCount": 0
+      },
+      {
+        "date": "2026-02-21",
+        "totalRequests": 14,
+        "successfulFetches": 13,
+        "failedFetches": 1,
+        "retryCount": 0,
+        "failedBatchCount": 1
+      }
+    ]
+  }
+}
+```
 
 ## Validation queries
 

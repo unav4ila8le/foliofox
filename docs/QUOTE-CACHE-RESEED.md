@@ -16,13 +16,18 @@ It is intentionally implementation-light so it remains useful as the codebase ev
 2. `CRON_SECRET` is configured in deployment.
 3. You can call:
    - `GET /api/cron/fetch-quotes`
-4. Optional: enable maintenance mode if you want zero user traffic during reseed.
+4. The cron endpoint behavior is understood:
+   - Each invocation processes a rolling 3-day window: `D`, `D-1`, `D-2`.
+   - `?date=YYYY-MM-DD` anchors `D` to the provided date.
+   - Response status is `200` for full success and partial success.
+   - `401` and `400` are still used for auth/date validation failures.
+5. Optional: enable maintenance mode if you want zero user traffic during reseed.
 
 ## Recommended strategy
 
 Use a two-stage refill:
 
-1. **Seed latest data first** (single cron call).
+1. **Seed latest data first** (single cron call; fills `today`, `today-1`, `today-2`).
 2. **Backfill history only if needed** (date-override loop).
 
 This avoids unnecessary provider traffic and keeps operational risk low.
@@ -45,7 +50,7 @@ Only do this if symbol cleanup is already an accepted operational policy in your
 delete from public.quotes;
 ```
 
-### 4) Seed latest quotes
+### 4) Seed latest quotes (rolling 3-day window)
 
 ```bash
 curl -sS -H "Authorization: Bearer $CRON_SECRET" \
@@ -56,14 +61,79 @@ curl -sS -H "Authorization: Bearer $CRON_SECRET" \
 
 If you need historical rows quickly (instead of waiting for lazy refill), call the same cron endpoint with `?date=YYYY-MM-DD`.
 
-Example (single day):
+Important: each call backfills 3 dates (`D`, `D-1`, `D-2`), not just one.
+
+Example (anchor date):
 
 ```bash
 curl -sS -H "Authorization: Bearer $CRON_SECRET" \
   "https://<your-domain>/api/cron/fetch-quotes?date=2026-02-16"
 ```
 
-For a range, run day-by-day in your preferred scripting environment and throttle requests to respect provider limits.
+For a range, run anchor dates in descending order and throttle requests to respect provider limits.
+
+## Cron response shape
+
+The endpoint returns top-level totals plus per-date breakdown.
+
+Important interpretation:
+
+- `successfulFetches` / `resolvedRequests` count fulfilled requests.
+- Fulfillment can be exact-date or fallback-to-prior-date.
+- Use `exactDateMatches` and `fallbackResolutions` to distinguish them.
+
+Example:
+
+```json
+{
+  "success": true,
+  "message": "Daily quote fetch completed with partial failures",
+  "stats": {
+    "totalSymbols": 531,
+    "resolvedRequests": 1450,
+    "successfulFetches": 1450,
+    "exactDateMatches": 1180,
+    "fallbackResolutions": 270,
+    "failedFetches": 143,
+    "retryCount": 2,
+    "failedBatchCount": 1,
+    "windowDays": 3,
+    "date": "2026-02-23",
+    "perDate": [
+      {
+        "date": "2026-02-23",
+        "totalRequests": 531,
+        "successfulFetches": 490,
+        "exactDateMatches": 420,
+        "fallbackResolutions": 70,
+        "failedFetches": 41,
+        "retryCount": 1,
+        "failedBatchCount": 0
+      },
+      {
+        "date": "2026-02-22",
+        "totalRequests": 531,
+        "successfulFetches": 480,
+        "exactDateMatches": 390,
+        "fallbackResolutions": 90,
+        "failedFetches": 51,
+        "retryCount": 1,
+        "failedBatchCount": 1
+      },
+      {
+        "date": "2026-02-21",
+        "totalRequests": 531,
+        "successfulFetches": 480,
+        "exactDateMatches": 370,
+        "fallbackResolutions": 110,
+        "failedFetches": 51,
+        "retryCount": 0,
+        "failedBatchCount": 0
+      }
+    ]
+  }
+}
+```
 
 ## Validation queries
 

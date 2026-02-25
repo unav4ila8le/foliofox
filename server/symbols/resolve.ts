@@ -2,6 +2,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { chunkArray } from "@/server/shared/chunk-array";
 import { normalizeSymbol } from "@/server/symbols/validate";
 import { createServiceClient } from "@/supabase/service";
 
@@ -687,16 +688,4 @@ async function normalizeSymbolAliasValue(value: string, type?: string) {
   }
 
   return value.trim().toUpperCase();
-}
-
-function chunkArray<T>(values: T[], chunkSize: number): T[][] {
-  if (values.length === 0) return [];
-  if (chunkSize <= 0) return [values.slice()];
-
-  const chunks: T[][] = [];
-  for (let index = 0; index < values.length; index += chunkSize) {
-    chunks.push(values.slice(index, index + chunkSize));
-  }
-
-  return chunks;
 }

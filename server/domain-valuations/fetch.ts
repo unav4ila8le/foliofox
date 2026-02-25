@@ -1,7 +1,8 @@
 "use server";
 
-import { createServiceClient } from "@/supabase/service";
 import { formatUTCDateKey } from "@/lib/date/date-utils";
+import { chunkArray } from "@/server/shared/chunk-array";
+import { createServiceClient } from "@/supabase/service";
 
 // Replicate API configuration
 const REPLICATE_API = "https://api.replicate.com/v1/predictions";
@@ -38,12 +39,7 @@ async function fetchDomainValuationsFromReplicate(
 
   if (!domains.length) return results;
 
-  const batches: string[][] = [];
-  for (let i = 0; i < domains.length; i += 2560) {
-    batches.push(domains.slice(i, i + 2560));
-  }
-
-  for (const batch of batches) {
+  for (const batch of chunkArray(domains, 2560)) {
     const domainsInput = batch.join(",");
 
     const response = await fetch(REPLICATE_API, {

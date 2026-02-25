@@ -215,6 +215,7 @@ function mockSymbolResolution(options?: {
 
 describe("fetchQuotes", () => {
   beforeEach(() => {
+    vi.resetModules();
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-02-20T12:00:00.000Z"));
 
@@ -255,7 +256,7 @@ describe("fetchQuotes", () => {
     expect(yahooChartMock).not.toHaveBeenCalled();
   });
 
-  it("uses latest prior cache row within stale window", async () => {
+  it("uses latest prior cache row within stale window after live miss", async () => {
     const { client } = createSupabaseStub([
       {
         symbol_id: "sym-1",
@@ -280,7 +281,7 @@ describe("fetchQuotes", () => {
     );
 
     expect(result.get("sym-1|2026-02-15")).toBe(148);
-    expect(yahooChartMock).not.toHaveBeenCalled();
+    expect(yahooChartMock).toHaveBeenCalledTimes(1);
   });
 
   it("triggers live fetch when cache is older than stale guard", async () => {
@@ -421,6 +422,181 @@ describe("fetchQuotes", () => {
       symbolIds: ["sym-1"],
       dateKeys: ["2026-02-15"],
     });
+  });
+
+  it("with liveFetchOnMiss=false returns cache-only result on exact miss", async () => {
+    vi.setSystemTime(new Date("2026-02-15T23:00:00.000Z"));
+
+    const { client, state } = createSupabaseStub([
+      {
+        symbol_id: "sym-1",
+        date: "2026-02-14",
+        close_price: 149,
+        adjusted_close_price: 149,
+      },
+    ]);
+
+    createServiceClientMock.mockResolvedValue(client);
+    yahooChartMock.mockResolvedValue({
+      quotes: [
+        {
+          date: new Date("2026-02-14T00:00:00.000Z"),
+          close: 151,
+          adjclose: 150,
+        },
+      ],
+    });
+
+    const { fetchQuotes } = await import("./fetch");
+
+    const result = await fetchQuotes(
+      [
+        {
+          symbolLookup: "sym-1",
+          date: new Date("2026-02-15T00:00:00.000Z"),
+        },
+      ],
+      { staleGuardDays: 0, liveFetchOnMiss: false },
+    );
+
+    expect(result.get("sym-1|2026-02-15")).toBeUndefined();
+    expect(yahooChartMock).not.toHaveBeenCalled();
+    expect(state.upsertCalls).toHaveLength(0);
+    expect(state.cacheQueryCalls).toHaveLength(1);
+    expect(state.cacheQueryCalls[0]).toEqual({
+      symbolIds: ["sym-1"],
+      dateKeys: ["2026-02-15"],
+    });
+  });
+
+  it("skips repeated live fetch attempts during miss cooldown window", async () => {
+    vi.setSystemTime(new Date("2026-02-15T23:00:00.000Z"));
+
+    const { client } = createSupabaseStub([]);
+    createServiceClientMock.mockResolvedValue(client);
+    mockSymbolResolution({
+      lookup: "sym-cooldown",
+      canonicalId: "sym-cooldown",
+      providerAlias: "MSFT",
+    });
+
+    yahooChartMock.mockResolvedValue({ quotes: [] });
+
+    const { fetchQuotes } = await import("./fetch");
+
+    const firstResult = await fetchQuotes(
+      [
+        {
+          symbolLookup: "sym-cooldown",
+          date: new Date("2026-02-15T00:00:00.000Z"),
+        },
+      ],
+      { staleGuardDays: 0, liveMissCooldownMinutes: 30 },
+    );
+
+    const secondResult = await fetchQuotes(
+      [
+        {
+          symbolLookup: "sym-cooldown",
+          date: new Date("2026-02-15T00:00:00.000Z"),
+        },
+      ],
+      { staleGuardDays: 0, liveMissCooldownMinutes: 30 },
+    );
+
+    expect(firstResult.get("sym-cooldown|2026-02-15")).toBeUndefined();
+    expect(secondResult.get("sym-cooldown|2026-02-15")).toBeUndefined();
+    expect(yahooChartMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("re-attempts live fetch after miss cooldown window expires", async () => {
+    vi.setSystemTime(new Date("2026-02-15T23:00:00.000Z"));
+
+    const { client } = createSupabaseStub([]);
+    createServiceClientMock.mockResolvedValue(client);
+    mockSymbolResolution({
+      lookup: "sym-cooldown-expire",
+      canonicalId: "sym-cooldown-expire",
+      providerAlias: "NVDA",
+    });
+
+    yahooChartMock.mockResolvedValue({ quotes: [] });
+
+    const { fetchQuotes } = await import("./fetch");
+
+    await fetchQuotes(
+      [
+        {
+          symbolLookup: "sym-cooldown-expire",
+          date: new Date("2026-02-15T00:00:00.000Z"),
+        },
+      ],
+      { staleGuardDays: 0, liveMissCooldownMinutes: 10 },
+    );
+
+    vi.advanceTimersByTime(10 * 60 * 1000 + 1);
+
+    await fetchQuotes(
+      [
+        {
+          symbolLookup: "sym-cooldown-expire",
+          date: new Date("2026-02-15T00:00:00.000Z"),
+        },
+      ],
+      { staleGuardDays: 0, liveMissCooldownMinutes: 10 },
+    );
+
+    expect(yahooChartMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not set cooldown when live fetch fails with an error", async () => {
+    vi.setSystemTime(new Date("2026-02-15T23:00:00.000Z"));
+
+    const { client } = createSupabaseStub([]);
+    createServiceClientMock.mockResolvedValue(client);
+    mockSymbolResolution({
+      lookup: "sym-error-no-cooldown",
+      canonicalId: "sym-error-no-cooldown",
+      providerAlias: "NFLX",
+    });
+
+    yahooChartMock
+      .mockRejectedValueOnce(new Error("temporary provider outage"))
+      .mockResolvedValueOnce({
+        quotes: [
+          {
+            date: new Date("2026-02-14T00:00:00.000Z"),
+            close: 188,
+            adjclose: 188,
+          },
+        ],
+      });
+
+    const { fetchQuotes } = await import("./fetch");
+
+    const firstResult = await fetchQuotes(
+      [
+        {
+          symbolLookup: "sym-error-no-cooldown",
+          date: new Date("2026-02-15T00:00:00.000Z"),
+        },
+      ],
+      { staleGuardDays: 0, liveMissCooldownMinutes: 30 },
+    );
+
+    const secondResult = await fetchQuotes(
+      [
+        {
+          symbolLookup: "sym-error-no-cooldown",
+          date: new Date("2026-02-15T00:00:00.000Z"),
+        },
+      ],
+      { staleGuardDays: 0, liveMissCooldownMinutes: 30 },
+    );
+
+    expect(firstResult.get("sym-error-no-cooldown|2026-02-15")).toBeUndefined();
+    expect(secondResult.get("sym-error-no-cooldown|2026-02-15")).toBe(188);
+    expect(yahooChartMock).toHaveBeenCalledTimes(2);
   });
 
   it("batches symbol health updates by market-date groups", async () => {

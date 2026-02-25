@@ -3,23 +3,37 @@
 import { addDays, subDays } from "date-fns";
 
 import { formatUTCDateKey, parseUTCDateKey } from "@/lib/date/date-utils";
+import { chunkArray } from "@/server/shared/chunk-array";
 import { yahooFinance } from "@/server/yahoo-finance/client";
 import { createServiceClient } from "@/supabase/service";
 import {
   resolveSymbolInput,
   resolveSymbolsBatch,
 } from "@/server/symbols/resolve";
-import { chunkArray, normalizeChartQuoteEntries } from "./utils";
+import { normalizeChartQuoteEntries } from "./utils";
 
 const DEFAULT_STALE_GUARD_DAYS = 7;
 const DEFAULT_CRON_CUTOFF_HOUR_UTC = 22;
+const DEFAULT_LIVE_MISS_COOLDOWN_MINUTES = 15;
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
+const MINUTE_IN_MS = 60 * 1000;
 const SYMBOL_HEALTH_UPDATE_BATCH_SIZE = 200;
+const LIVE_MISS_COOLDOWN_RETENTION_MULTIPLIER = 4;
+const LIVE_MISS_COOLDOWN_MIN_RETENTION_MS = 60 * MINUTE_IN_MS;
+const liveMissCooldownByKey = new Map<string, number>();
 
 export interface FetchQuotesOptions {
   upsert?: boolean;
   staleGuardDays?: number;
   cronCutoffHourUtc?: number;
+  liveFetchOnMiss?: boolean;
+  liveMissCooldownMinutes?: number;
+  resolutionStats?: QuoteResolutionStats;
+}
+
+export interface QuoteResolutionStats {
+  exactDateMatches: number;
+  fallbackResolutions: number;
 }
 
 interface ResolvedQuoteRequest {
@@ -44,7 +58,7 @@ interface QuotesUpsertRow {
 
 function resolveFetchQuotesOptions(
   options: FetchQuotesOptions = {},
-): Required<FetchQuotesOptions> {
+): Required<Omit<FetchQuotesOptions, "resolutionStats">> {
   const staleGuardDays = Math.max(
     0,
     Math.trunc(options.staleGuardDays ?? DEFAULT_STALE_GUARD_DAYS),
@@ -56,11 +70,19 @@ function resolveFetchQuotesOptions(
       Math.trunc(options.cronCutoffHourUtc ?? DEFAULT_CRON_CUTOFF_HOUR_UTC),
     ),
   );
+  const liveMissCooldownMinutes = Math.max(
+    0,
+    Math.trunc(
+      options.liveMissCooldownMinutes ?? DEFAULT_LIVE_MISS_COOLDOWN_MINUTES,
+    ),
+  );
 
   return {
     upsert: options.upsert ?? true,
     staleGuardDays,
     cronCutoffHourUtc,
+    liveFetchOnMiss: options.liveFetchOnMiss ?? true,
+    liveMissCooldownMinutes,
   };
 }
 
@@ -99,6 +121,28 @@ function findLatestEntryAtOrBefore(
     }
   }
   return null;
+}
+
+function buildLiveMissCooldownKey(request: {
+  canonicalId: string;
+  effectiveDateKey: string;
+}): string {
+  return `${request.canonicalId}|${request.effectiveDateKey}`;
+}
+
+function pruneLiveMissCooldown(nowMs: number, cooldownMs: number): void {
+  if (cooldownMs <= 0 || liveMissCooldownByKey.size === 0) return;
+
+  const retentionMs = Math.max(
+    cooldownMs * LIVE_MISS_COOLDOWN_RETENTION_MULTIPLIER,
+    LIVE_MISS_COOLDOWN_MIN_RETENTION_MS,
+  );
+
+  for (const [key, lastAttemptMs] of liveMissCooldownByKey.entries()) {
+    if (nowMs - lastAttemptMs > retentionMs) {
+      liveMissCooldownByKey.delete(key);
+    }
+  }
 }
 
 async function fetchCachedQuotesBySymbolsAndDates(
@@ -155,7 +199,9 @@ export async function fetchQuotes(
 
   const resolvedOptions = resolveFetchQuotesOptions(options);
   const now = new Date();
+  const nowMs = now.getTime();
   const results = new Map<string, number>();
+  const resolutionTypeByRequestKey = new Map<string, "exact" | "fallback">();
 
   // 1. Resolve all requested symbols to canonical IDs.
   const uniqueLookups = [...new Set(requests.map((r) => r.symbolLookup))];
@@ -219,83 +265,39 @@ export async function fetchQuotes(
     );
 
     if (exactPrice !== undefined) {
-      results.set(
-        `${request.canonicalId}|${request.requestedDateKey}`,
-        exactPrice,
-      );
+      const resultKey = `${request.canonicalId}|${request.requestedDateKey}`;
+      results.set(resultKey, exactPrice);
+      resolutionTypeByRequestKey.set(resultKey, "exact");
       continue;
     }
 
     unresolvedRequests.push(request);
   }
 
-  // 4. Prior-date cache lookup with stale guard.
-  if (unresolvedRequests.length > 0 && resolvedOptions.staleGuardDays > 0) {
-    const unresolvedSymbolIds = [
-      ...new Set(unresolvedRequests.map((request) => request.canonicalId)),
-    ];
-    const staleWindowDateKeys = new Set<string>();
+  // 4. Live fetch exact-date cache misses and persist provider market-date rows.
+  const liveMissCooldownMs =
+    resolvedOptions.liveMissCooldownMinutes * MINUTE_IN_MS;
+  pruneLiveMissCooldown(nowMs, liveMissCooldownMs);
 
-    unresolvedRequests.forEach((request) => {
-      const effectiveDate = parseUTCDateKey(request.effectiveDateKey);
-      for (
-        let offset = 1;
-        offset <= resolvedOptions.staleGuardDays;
-        offset += 1
-      ) {
-        staleWindowDateKeys.add(
-          formatUTCDateKey(subDays(effectiveDate, offset)),
-        );
-      }
-    });
+  const requestsNeedingLiveFetch = unresolvedRequests.filter((request) => {
+    const requestResultKey = `${request.canonicalId}|${request.requestedDateKey}`;
+    if (results.has(requestResultKey)) return false;
 
-    const cachedWindowRows = await fetchCachedQuotesBySymbolsAndDates(
-      supabase,
-      unresolvedSymbolIds,
-      Array.from(staleWindowDateKeys),
-    );
+    if (liveMissCooldownMs <= 0) return true;
 
-    const cachedRowsBySymbol = new Map<string, QuotesCacheRow[]>();
-    cachedWindowRows.forEach((row) => {
-      const existing = cachedRowsBySymbol.get(row.symbol_id) ?? [];
-      existing.push(row);
-      cachedRowsBySymbol.set(row.symbol_id, existing);
-    });
+    const cooldownKey = buildLiveMissCooldownKey(request);
+    const lastAttemptMs = liveMissCooldownByKey.get(cooldownKey);
+    if (lastAttemptMs === undefined) return true;
 
-    cachedRowsBySymbol.forEach((rows) => {
-      rows.sort((a, b) => b.date.localeCompare(a.date));
-    });
+    if (nowMs - lastAttemptMs >= liveMissCooldownMs) {
+      liveMissCooldownByKey.delete(cooldownKey);
+      return true;
+    }
 
-    unresolvedRequests.forEach((request) => {
-      const rows = cachedRowsBySymbol.get(request.canonicalId);
-      if (!rows?.length) return;
+    return false;
+  });
 
-      const fallback = rows.find(
-        (row) =>
-          row.date <= request.effectiveDateKey &&
-          isWithinStaleGuard(
-            row.date,
-            request.effectiveDateKey,
-            resolvedOptions.staleGuardDays,
-          ),
-      );
-
-      if (fallback) {
-        results.set(
-          `${request.canonicalId}|${request.requestedDateKey}`,
-          fallback.close_price,
-        );
-      }
-    });
-  }
-
-  // 5. Live fetch remaining misses and persist only provider market-date rows.
-  const requestsNeedingLiveFetch = unresolvedRequests.filter(
-    (request) =>
-      !results.has(`${request.canonicalId}|${request.requestedDateKey}`),
-  );
-
-  if (requestsNeedingLiveFetch.length > 0) {
+  if (resolvedOptions.liveFetchOnMiss && requestsNeedingLiveFetch.length > 0) {
     const requestsBySymbol = new Map<string, ResolvedQuoteRequest[]>();
     requestsNeedingLiveFetch.forEach((request) => {
       const list = requestsBySymbol.get(request.canonicalId) ?? [];
@@ -331,6 +333,7 @@ export async function fetchQuotes(
       }
 
       let chartData;
+      let liveFetchFailed = false;
       try {
         chartData = await yahooFinance.chart(ticker, {
           period1: bufferedStart,
@@ -342,6 +345,7 @@ export async function fetchQuotes(
           `Failed to fetch chart for ${symbolId} (${ticker}):`,
           error,
         );
+        liveFetchFailed = true;
         chartData = null;
       }
 
@@ -366,6 +370,12 @@ export async function fetchQuotes(
         );
         if (fallbackEntry) {
           results.set(mapKey, fallbackEntry.closePrice);
+          resolutionTypeByRequestKey.set(
+            mapKey,
+            fallbackEntry.dateKey === request.effectiveDateKey
+              ? "exact"
+              : "fallback",
+          );
         }
       });
 
@@ -399,7 +409,29 @@ export async function fetchQuotes(
 
           if (fallbackDateKey <= request.effectiveDateKey) {
             results.set(mapKey, fallbackPrice);
+            resolutionTypeByRequestKey.set(
+              mapKey,
+              fallbackDateKey === request.effectiveDateKey
+                ? "exact"
+                : "fallback",
+            );
           }
+        });
+      }
+
+      // Only cool down confirmed "no data" cases. If the provider call failed,
+      // skip cooldown so the next request can retry immediately.
+      if (!liveFetchFailed && liveMissCooldownMs > 0) {
+        symbolRequests.forEach((request) => {
+          const requestResultKey = `${request.canonicalId}|${request.requestedDateKey}`;
+          const cooldownKey = buildLiveMissCooldownKey(request);
+
+          if (results.has(requestResultKey)) {
+            liveMissCooldownByKey.delete(cooldownKey);
+            return;
+          }
+
+          liveMissCooldownByKey.set(cooldownKey, nowMs);
         });
       }
 
@@ -467,6 +499,87 @@ export async function fetchQuotes(
             );
           }
         }
+      }
+    }
+  }
+
+  // 5. Prior-date cache lookup with stale guard for unresolved post-live misses.
+  const requestsNeedingFallback = unresolvedRequests.filter(
+    (request) =>
+      !results.has(`${request.canonicalId}|${request.requestedDateKey}`),
+  );
+
+  if (
+    requestsNeedingFallback.length > 0 &&
+    resolvedOptions.staleGuardDays > 0
+  ) {
+    const unresolvedSymbolIds = [
+      ...new Set(requestsNeedingFallback.map((request) => request.canonicalId)),
+    ];
+    const staleWindowDateKeys = new Set<string>();
+
+    requestsNeedingFallback.forEach((request) => {
+      const effectiveDate = parseUTCDateKey(request.effectiveDateKey);
+      for (
+        let offset = 1;
+        offset <= resolvedOptions.staleGuardDays;
+        offset += 1
+      ) {
+        staleWindowDateKeys.add(
+          formatUTCDateKey(subDays(effectiveDate, offset)),
+        );
+      }
+    });
+
+    const cachedWindowRows = await fetchCachedQuotesBySymbolsAndDates(
+      supabase,
+      unresolvedSymbolIds,
+      Array.from(staleWindowDateKeys),
+    );
+
+    const cachedRowsBySymbol = new Map<string, QuotesCacheRow[]>();
+    cachedWindowRows.forEach((row) => {
+      const existing = cachedRowsBySymbol.get(row.symbol_id) ?? [];
+      existing.push(row);
+      cachedRowsBySymbol.set(row.symbol_id, existing);
+    });
+
+    cachedRowsBySymbol.forEach((rows) => {
+      rows.sort((a, b) => b.date.localeCompare(a.date));
+    });
+
+    requestsNeedingFallback.forEach((request) => {
+      const rows = cachedRowsBySymbol.get(request.canonicalId);
+      if (!rows?.length) return;
+
+      const fallback = rows.find(
+        (row) =>
+          row.date <= request.effectiveDateKey &&
+          isWithinStaleGuard(
+            row.date,
+            request.effectiveDateKey,
+            resolvedOptions.staleGuardDays,
+          ),
+      );
+
+      if (fallback) {
+        const resultKey = `${request.canonicalId}|${request.requestedDateKey}`;
+        results.set(resultKey, fallback.close_price);
+        resolutionTypeByRequestKey.set(resultKey, "fallback");
+      }
+    });
+  }
+
+  if (options.resolutionStats) {
+    // Report how requests were fulfilled for observability (exact date vs fallback date).
+    options.resolutionStats.exactDateMatches = 0;
+    options.resolutionStats.fallbackResolutions = 0;
+
+    for (const resolutionType of resolutionTypeByRequestKey.values()) {
+      if (resolutionType === "exact") {
+        options.resolutionStats.exactDateMatches += 1;
+      } else {
+        options.resolutionStats.fallbackResolutions += 1;
       }
     }
   }
