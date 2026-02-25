@@ -13,10 +13,11 @@ interface QuoteCronDateStats extends CronDateStats {
   fallbackResolutions: number;
 }
 
-const QUOTE_FETCH_BATCH_SIZE = 150;
-const BACKFILL_WINDOW_DAYS = 3;
+// Cron backfills should keep D, D-1, D-2 distinct and never remap today->yesterday.
 const CRON_BACKFILL_CUTOFF_HOUR_UTC = 0;
+const BACKFILL_WINDOW_DAYS = 3;
 const RETRY_MAX_ATTEMPTS = 3;
+const QUOTE_FETCH_BATCH_SIZE = 150;
 
 export async function GET(request: NextRequest) {
   // Wait for incoming request before continuing (prevents prerendering)
