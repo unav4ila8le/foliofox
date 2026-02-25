@@ -3,13 +3,14 @@
 import { addDays, subDays } from "date-fns";
 
 import { formatUTCDateKey, parseUTCDateKey } from "@/lib/date/date-utils";
+import { chunkArray } from "@/server/shared/chunk-array";
 import { yahooFinance } from "@/server/yahoo-finance/client";
 import { createServiceClient } from "@/supabase/service";
 import {
   resolveSymbolInput,
   resolveSymbolsBatch,
 } from "@/server/symbols/resolve";
-import { chunkArray, normalizeChartQuoteEntries } from "./utils";
+import { normalizeChartQuoteEntries } from "./utils";
 
 const DEFAULT_STALE_GUARD_DAYS = 7;
 const DEFAULT_CRON_CUTOFF_HOUR_UTC = 22;

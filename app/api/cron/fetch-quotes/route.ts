@@ -5,22 +5,12 @@ import { formatUTCDateKey, parseUTCDateKey } from "@/lib/date/date-utils";
 import { buildDateWindow, type CronDateStats } from "@/server/cron/shared";
 import { fetchSymbols } from "@/server/symbols/fetch";
 import { fetchQuotes } from "@/server/quotes/fetch";
+import { chunkArray } from "@/server/shared/chunk-array";
 import { isTransientError, retryWithBackoff } from "@/server/shared/retry";
 
 const QUOTE_FETCH_BATCH_SIZE = 150;
 const BACKFILL_WINDOW_DAYS = 3;
 const RETRY_MAX_ATTEMPTS = 3;
-
-// Split values into fixed-size chunks.
-function chunkArray<T>(values: T[], size: number): T[][] {
-  if (size <= 0) return values.length > 0 ? [values.slice()] : [];
-
-  const chunks: T[][] = [];
-  for (let index = 0; index < values.length; index += size) {
-    chunks.push(values.slice(index, index + size));
-  }
-  return chunks;
-}
 
 export async function GET(request: NextRequest) {
   // Wait for incoming request before continuing (prevents prerendering)
