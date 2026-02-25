@@ -10,6 +10,7 @@ import { isTransientError, retryWithBackoff } from "@/server/shared/retry";
 
 const QUOTE_FETCH_BATCH_SIZE = 150;
 const BACKFILL_WINDOW_DAYS = 3;
+const CRON_BACKFILL_CUTOFF_HOUR_UTC = 0;
 const RETRY_MAX_ATTEMPTS = 3;
 
 export async function GET(request: NextRequest) {
@@ -103,6 +104,8 @@ export async function GET(request: NextRequest) {
               fetchQuotes(requestBatch, {
                 upsert: true,
                 staleGuardDays: 0,
+                // Preserve rolling-window distinctness in cron backfills.
+                cronCutoffHourUtc: CRON_BACKFILL_CUTOFF_HOUR_UTC,
                 liveMissCooldownMinutes: 0,
               }),
             {

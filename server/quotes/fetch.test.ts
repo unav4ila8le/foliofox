@@ -549,6 +549,56 @@ describe("fetchQuotes", () => {
     expect(yahooChartMock).toHaveBeenCalledTimes(2);
   });
 
+  it("does not set cooldown when live fetch fails with an error", async () => {
+    vi.setSystemTime(new Date("2026-02-15T23:00:00.000Z"));
+
+    const { client } = createSupabaseStub([]);
+    createServiceClientMock.mockResolvedValue(client);
+    mockSymbolResolution({
+      lookup: "sym-error-no-cooldown",
+      canonicalId: "sym-error-no-cooldown",
+      providerAlias: "NFLX",
+    });
+
+    yahooChartMock
+      .mockRejectedValueOnce(new Error("temporary provider outage"))
+      .mockResolvedValueOnce({
+        quotes: [
+          {
+            date: new Date("2026-02-14T00:00:00.000Z"),
+            close: 188,
+            adjclose: 188,
+          },
+        ],
+      });
+
+    const { fetchQuotes } = await import("./fetch");
+
+    const firstResult = await fetchQuotes(
+      [
+        {
+          symbolLookup: "sym-error-no-cooldown",
+          date: new Date("2026-02-15T00:00:00.000Z"),
+        },
+      ],
+      { staleGuardDays: 0, liveMissCooldownMinutes: 30 },
+    );
+
+    const secondResult = await fetchQuotes(
+      [
+        {
+          symbolLookup: "sym-error-no-cooldown",
+          date: new Date("2026-02-15T00:00:00.000Z"),
+        },
+      ],
+      { staleGuardDays: 0, liveMissCooldownMinutes: 30 },
+    );
+
+    expect(firstResult.get("sym-error-no-cooldown|2026-02-15")).toBeUndefined();
+    expect(secondResult.get("sym-error-no-cooldown|2026-02-15")).toBe(188);
+    expect(yahooChartMock).toHaveBeenCalledTimes(2);
+  });
+
   it("batches symbol health updates by market-date groups", async () => {
     vi.setSystemTime(new Date("2026-02-15T23:00:00.000Z"));
 

@@ -327,6 +327,7 @@ export async function fetchQuotes(
       }
 
       let chartData;
+      let liveFetchFailed = false;
       try {
         chartData = await yahooFinance.chart(ticker, {
           period1: bufferedStart,
@@ -338,6 +339,7 @@ export async function fetchQuotes(
           `Failed to fetch chart for ${symbolId} (${ticker}):`,
           error,
         );
+        liveFetchFailed = true;
         chartData = null;
       }
 
@@ -399,7 +401,9 @@ export async function fetchQuotes(
         });
       }
 
-      if (liveMissCooldownMs > 0) {
+      // Only cool down confirmed "no data" cases. If the provider call failed,
+      // skip cooldown so the next request can retry immediately.
+      if (!liveFetchFailed && liveMissCooldownMs > 0) {
         symbolRequests.forEach((request) => {
           const requestResultKey = `${request.canonicalId}|${request.requestedDateKey}`;
           const cooldownKey = buildLiveMissCooldownKey(request);

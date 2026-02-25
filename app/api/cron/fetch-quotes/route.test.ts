@@ -94,6 +94,7 @@ describe("GET /api/cron/fetch-quotes", () => {
       expect(options).toEqual({
         upsert: true,
         staleGuardDays: 0,
+        cronCutoffHourUtc: 0,
         liveMissCooldownMinutes: 0,
       });
       expect(requests).toHaveLength(2);

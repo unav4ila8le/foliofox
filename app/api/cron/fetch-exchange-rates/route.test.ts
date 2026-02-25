@@ -89,7 +89,7 @@ describe("GET /api/cron/fetch-exchange-rates", () => {
       expect(options).toEqual({
         upsert: true,
         staleGuardDays: 0,
-        cronCutoffHourUtc: 22,
+        cronCutoffHourUtc: 0,
       });
       expect(requests).toEqual([
         { currency: "USD", date: new Date(expectedDates[index]) },

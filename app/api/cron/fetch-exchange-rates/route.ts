@@ -7,7 +7,8 @@ import { fetchCurrencies } from "@/server/currencies/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 import { isTransientError, retryWithBackoff } from "@/server/shared/retry";
 
-const CRON_CUTOFF_HOUR_UTC = 22;
+// Cron backfills should keep D, D-1, D-2 distinct and never remap today->yesterday.
+const CRON_BACKFILL_CUTOFF_HOUR_UTC = 0;
 const BACKFILL_WINDOW_DAYS = 3;
 const RETRY_MAX_ATTEMPTS = 3;
 
@@ -75,7 +76,7 @@ export async function GET(request: NextRequest) {
             fetchExchangeRates(rateRequests, {
               upsert: true,
               staleGuardDays: 0,
-              cronCutoffHourUtc: CRON_CUTOFF_HOUR_UTC,
+              cronCutoffHourUtc: CRON_BACKFILL_CUTOFF_HOUR_UTC,
             }),
           {
             maxAttempts: RETRY_MAX_ATTEMPTS,

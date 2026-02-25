@@ -3,6 +3,7 @@ const DEFAULT_BASE_DELAY_MS = 250;
 const DEFAULT_MAX_DELAY_MS = 2_000;
 const DEFAULT_JITTER_MS = 100;
 
+// Heuristics for errors that are usually temporary and safe to retry.
 const TRANSIENT_ERROR_PATTERNS = [
   /\b5\d{2}\b/i,
   /bad gateway/i,
@@ -41,6 +42,7 @@ function isObjectLike(value: unknown): value is Record<string, unknown> {
 function extractStatusCode(error: unknown): number | null {
   if (!isObjectLike(error)) return null;
 
+  // Support both `status` (Fetch-style) and `statusCode` (Node/client libs).
   const status = error.status;
   if (typeof status === "number") return status;
 
@@ -66,10 +68,12 @@ function resolveDelayMs(params: {
   jitterMs: number;
 }): number {
   const { attempt, baseDelayMs, maxDelayMs, jitterMs } = params;
+  // 250ms, 500ms, 1000ms, ... capped by maxDelayMs.
   const exponentialDelay = Math.min(
     maxDelayMs,
     baseDelayMs * 2 ** Math.max(0, attempt - 1),
   );
+  // Add jitter so concurrent retries don't all happen at the same moment.
   const jitter = jitterMs > 0 ? Math.floor(Math.random() * (jitterMs + 1)) : 0;
   return exponentialDelay + jitter;
 }
@@ -84,6 +88,7 @@ function sleep(delayMs: number): Promise<void> {
 
 export function isTransientError(error: unknown): boolean {
   const statusCode = extractStatusCode(error);
+  // Most upstream 5xx responses are transient and worth retrying.
   if (statusCode !== null && statusCode >= 500 && statusCode <= 599) {
     return true;
   }
@@ -96,6 +101,7 @@ export async function retryWithBackoff<T>(
   operation: () => Promise<T>,
   options: RetryOptions = {},
 ): Promise<T> {
+  // Normalize external input so retry behavior is predictable.
   const maxAttempts = Math.max(
     1,
     Math.trunc(options.maxAttempts ?? DEFAULT_MAX_ATTEMPTS),
@@ -122,6 +128,7 @@ export async function retryWithBackoff<T>(
     } catch (error) {
       lastError = error;
       const isFinalAttempt = attempt >= maxAttempts;
+      // Stop immediately on non-transient failures or final attempt.
       if (isFinalAttempt || !shouldRetry(error)) {
         throw error;
       }
@@ -138,5 +145,6 @@ export async function retryWithBackoff<T>(
     }
   }
 
+  // Defensive fallback: loop should have returned/thrown earlier.
   throw lastError;
 }
