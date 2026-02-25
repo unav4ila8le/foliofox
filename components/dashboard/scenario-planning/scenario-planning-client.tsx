@@ -207,7 +207,7 @@ export function ScenarioPlanningClient({
       value: number;
       valueBasis: ScenarioInitialValueBasis;
       showSuccessToast?: boolean;
-    }) => {
+    }): Promise<boolean> => {
       // This is the single write-path for basis + value persistence.
       const roundedValue = normalizeScenarioValue(input.value);
       setIsSavingValue(true);
@@ -230,12 +230,14 @@ export function ScenarioPlanningClient({
         if (input.showSuccessToast) {
           toast.success("Starting value saved");
         }
+        return true;
       } catch (error) {
         toast.error(
           error instanceof Error
             ? error.message
             : "Failed to update starting value",
         );
+        return false;
       } finally {
         setIsSavingValue(false);
       }
@@ -294,6 +296,11 @@ export function ScenarioPlanningClient({
     void persistInitialValue({
       value: syncedValue,
       valueBasis: selectedValueBasis,
+    }).then((didSave) => {
+      // Allow retry for this key after transient write failures.
+      if (!didSave && lastAutoSyncKey.current === nextSyncKey) {
+        lastAutoSyncKey.current = null;
+      }
     });
   }, [
     selectedValueBasis,

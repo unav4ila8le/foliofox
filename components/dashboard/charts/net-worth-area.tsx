@@ -281,7 +281,7 @@ export function NetWorthAreaChart({
           <CardContent
             className={cn(
               "flex-1 transition-opacity",
-              isChartLoading && "animate-pulse opacity-50",
+              isChartLoading && "opacity-50",
             )}
           >
             <ResponsiveContainer
