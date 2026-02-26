@@ -65,6 +65,9 @@ export const symbolHandler: MarketDataHandler = {
     try {
       return await fetchQuotes(requests, {
         upsert: options?.upsert,
+        // Range reads must stay fast; avoid blocking response on live provider
+        // repair attempts. Single-date paths still perform read-repair.
+        liveFetchOnMiss: false,
       });
     } catch {
       return new Map();
