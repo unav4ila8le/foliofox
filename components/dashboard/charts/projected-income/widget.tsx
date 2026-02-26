@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import type {
   ProjectedIncomeResult,
   ProjectedIncomeStackedResult,
-} from "@/server/analysis/projected-income/projected-income";
+} from "@/server/analysis/projected-income/portfolio";
 
 interface ProjectedIncomeWidgetProps {
   projectedIncome: ProjectedIncomeResult;

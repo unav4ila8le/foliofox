@@ -12,16 +12,12 @@ import { fetchSinglePosition } from "@/server/positions/fetch";
 import { fetchPortfolioRecords } from "@/server/portfolio-records/fetch";
 import { fetchSymbol } from "@/server/symbols/fetch";
 import { fetchSymbolNews } from "@/server/news/fetch";
-import { calculateSymbolProjectedIncome } from "@/server/analysis/projected-income/projected-income";
-import { calculateSymbolDividendYield } from "@/server/analysis/dividend-yield";
+import { calculateSymbolProjectedIncomePanelData } from "@/server/analysis/projected-income/symbol";
 
 import { calculateProfitLoss } from "@/lib/profit-loss";
 import { formatPercentage, formatCurrency } from "@/lib/number-format";
 import { getRequestLocale } from "@/lib/locale/resolve-locale";
-import {
-  parsePortfolioRecordTypes,
-  type PortfolioRecordType,
-} from "@/lib/portfolio-records/filters";
+import { parsePortfolioRecordTypes } from "@/lib/portfolio-records/filters";
 import { getSearchParam } from "@/lib/search-params";
 import { parseUTCDateKey } from "@/lib/date/date-utils";
 import { cn } from "@/lib/utils";
@@ -31,19 +27,12 @@ import type {
   TransformedPosition,
 } from "@/types/global.types";
 
-// Only needed for dynamic routes
-interface AssetPageProps {
-  params: Promise<{
-    id: string;
-  }>;
-}
-
-// Skeleton shell for the whole page
+// Skeleton for the full page, shown instantly during navigation
 function PageSkeleton() {
   return (
-    <div className="grid grid-cols-6 gap-4">
+    <div className="grid grid-cols-6 gap-x-8 gap-y-4">
       <div className="col-span-6">
-        <Skeleton className="h-24" />
+        <Skeleton className="h-32" />
       </div>
       <div className="col-span-6 space-y-4 lg:col-span-2">
         <Skeleton className="h-80" />
@@ -56,203 +45,96 @@ function PageSkeleton() {
   );
 }
 
-async function AssetContent({
-  positionId,
-  page,
-  q,
-  startDate,
-  endDate,
-  sortBy,
-  sortDirection,
-  recordTypes,
+// Projected Income
+async function ProjectedIncomeWrapper({
+  symbolId,
+  quantity,
+  unitValue,
+  currency,
 }: {
-  positionId: string;
-  page: number;
-  q?: string;
-  startDate?: Date;
-  endDate?: Date;
-  sortBy?: "date" | "created_at";
-  sortDirection?: "asc" | "desc";
-  recordTypes?: PortfolioRecordType[];
+  symbolId: string;
+  quantity: number;
+  unitValue: number;
+  currency: string;
 }) {
   "use cache: private";
 
-  // Get locale for formatting
   const locale = await getRequestLocale();
 
-  // Fetch position with snapshots to calculate P/L
-  let position: TransformedPosition;
-  let snapshots: PositionSnapshot[];
+  const { projectedIncome, dividendYield } =
+    await calculateSymbolProjectedIncomePanelData(
+      symbolId,
+      quantity,
+      12,
+      unitValue,
+      currency,
+    );
 
-  try {
-    const result = await fetchSinglePosition(positionId, {
-      includeArchived: true,
-      includeSnapshots: true,
-      asOfDate: new Date(),
-    });
-    position = result.position;
-    snapshots = result.snapshots;
-  } catch (error) {
-    if (
-      error instanceof Error &&
-      error.message.startsWith("Position not found")
-    ) {
-      redirect("/dashboard/assets");
-    }
-    throw error;
-  }
-
-  // Calculate profit/loss data
-  const snapshotsMap = new Map([[position.id, snapshots]]);
-  const [positionWithProfitLoss] = calculateProfitLoss(
-    [position],
-    snapshotsMap,
-  );
-
-  // Batch remaining requests
-  const [portfolioRecordsPage, symbol, newsResult] = await Promise.all([
-    fetchPortfolioRecords({
-      positionId,
-      page,
-      pageSize: 50,
-      q,
-      recordTypes,
-      startDate,
-      endDate,
-      sortBy,
-      sortDirection,
-    }),
-    position.symbol_id
-      ? fetchSymbol(position.symbol_id)
-      : Promise.resolve(null),
-    position.symbol_id
-      ? fetchSymbolNews(position.symbol_id)
-      : Promise.resolve({ success: false, data: [] }),
-  ]);
-
-  const hasSymbol = Boolean(symbol);
-
-  // Calculate both projected income and dividend yield for symbols
-  const [projectedIncome, dividendYield] = hasSymbol
-    ? await Promise.all([
-        calculateSymbolProjectedIncome(
-          symbol!.id,
-          position.current_quantity,
-          12,
-          position.current_unit_value,
-          position.currency,
-        ),
-        calculateSymbolDividendYield(symbol!.id),
-      ])
-    : [{ success: true, data: [], currency: position.currency }, null];
-
-  const dividendCurrency = projectedIncome?.currency || position.currency;
-
-  // Calculate total annual projected income
+  const dividendCurrency = projectedIncome?.currency || currency;
   const totalAnnualIncome =
     projectedIncome?.data?.reduce((sum, month) => sum + month.income, 0) || 0;
 
-  const {
-    records,
-    total,
-    page: currentPage,
-    pageSize,
-    pageCount,
-    hasNextPage,
-    hasPreviousPage,
-  } = portfolioRecordsPage;
-
   return (
-    <div className="grid grid-cols-6 gap-x-8 gap-y-4">
-      {/* Header */}
-      <div className="col-span-full">
-        <AssetHeader
-          position={position}
-          symbol={symbol}
-          positionWithProfitLoss={positionWithProfitLoss}
-        />
-      </div>
-
-      {hasSymbol && (
-        <div className="col-span-full space-y-4 @[64rem]/dashboard:col-span-2">
-          {/* Projected Income */}
-          <div className="space-y-3">
-            <div className="flex flex-row justify-between gap-4">
-              <div>
-                <h3 className="-mt-1 font-semibold">Projected Income</h3>
-                <p className="text-muted-foreground text-sm">
-                  Dividend Yield{" "}
-                  <span className="text-foreground font-medium">
-                    {dividendYield?.dividendYield
-                      ? formatPercentage(dividendYield.dividendYield, {
-                          locale,
-                        })
-                      : "N/A"}
-                  </span>
-                </p>
-              </div>
-              <div className="text-right text-sm">
-                <p className="text-muted-foreground">Est. Annual</p>
-                <p className="text-green-600">
-                  {totalAnnualIncome > 0
-                    ? formatCurrency(totalAnnualIncome, dividendCurrency, {
-                        locale,
-                      })
-                    : "N/A"}
-                </p>
-              </div>
-            </div>
-            <AssetProjectedIncome
-              projectedIncome={projectedIncome}
-              dividendCurrency={dividendCurrency}
-            />
-          </div>
-          <Separator />
-          {/* News */}
-          <div className="space-y-2">
-            <h3 className="font-semibold">News</h3>
-            <AssetNews newsData={newsResult} />
-          </div>
+    <div className="space-y-3">
+      <div className="flex flex-row justify-between gap-4">
+        <div>
+          <h3 className="-mt-1 font-semibold">Projected Income</h3>
+          <p className="text-muted-foreground text-sm">
+            Dividend Yield{" "}
+            <span className="text-foreground font-medium">
+              {dividendYield
+                ? formatPercentage(dividendYield, { locale })
+                : "N/A"}
+            </span>
+          </p>
         </div>
-      )}
-
-      <Separator className="col-span-6 lg:hidden" />
-
-      {/* Portfolio Records */}
-      <div
-        className={cn(
-          "col-span-full space-y-2",
-          hasSymbol && "@[64rem]/dashboard:col-span-4",
-        )}
-      >
-        <h3 className="font-semibold">Records history</h3>
-        <PortfolioRecordsTable
-          data={records}
-          position={position}
-          pagination={{
-            page: currentPage,
-            pageSize,
-            pageCount,
-            total,
-            hasNextPage,
-            hasPreviousPage,
-            baseHref: `/dashboard/assets/${positionId}`,
-          }}
-        />
+        <div className="text-right text-sm">
+          <p className="text-muted-foreground">Est. Annual</p>
+          <p className="text-green-600">
+            {totalAnnualIncome > 0
+              ? formatCurrency(totalAnnualIncome, dividendCurrency, { locale })
+              : "N/A"}
+          </p>
+        </div>
       </div>
+      <AssetProjectedIncome
+        projectedIncome={projectedIncome}
+        dividendCurrency={dividendCurrency}
+      />
     </div>
   );
 }
 
-// Main page component
-export default async function AssetPage(
-  props: AssetPageProps & {
-    searchParams?: Promise<Record<string, string | string[] | undefined>>;
-  },
-) {
-  const searchParams = await props.searchParams;
-  const { id: positionId } = await props.params;
+// News
+async function NewsWrapper({ symbolId }: { symbolId: string }) {
+  "use cache: private";
 
+  const newsResult = await fetchSymbolNews(symbolId);
+
+  return (
+    <div className="space-y-2">
+      <h3 className="font-semibold">News</h3>
+      <AssetNews newsData={newsResult} />
+    </div>
+  );
+}
+
+// Portfolio Records
+async function RecordsWrapper({
+  positionId,
+  position,
+  searchParamsPromise,
+}: {
+  positionId: string;
+  position: TransformedPosition;
+  searchParamsPromise?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  "use cache: private";
+
+  const searchParams = await searchParamsPromise;
+
+  // Keep records filter parsing scoped to the records block so
+  // header/sidebar rendering is independent from query param parsing.
   const pageParam = getSearchParam(searchParams, "page");
   const queryParam = getSearchParam(searchParams, "q");
   const typeParam = getSearchParam(searchParams, "type");
@@ -285,17 +167,157 @@ export default async function AssetPage(
       ? directionParam
       : undefined;
 
+  const portfolioRecordsPage = await fetchPortfolioRecords({
+    positionId,
+    page,
+    pageSize: 50,
+    q,
+    recordTypes,
+    startDate,
+    endDate,
+    sortBy,
+    sortDirection,
+  });
+
+  const {
+    records,
+    total,
+    page: currentPage,
+    pageSize,
+    pageCount,
+    hasNextPage,
+    hasPreviousPage,
+  } = portfolioRecordsPage;
+
+  return (
+    <>
+      <h3 className="font-semibold">Records history</h3>
+      <PortfolioRecordsTable
+        data={records}
+        position={position}
+        pagination={{
+          page: currentPage,
+          pageSize,
+          pageCount,
+          total,
+          hasNextPage,
+          hasPreviousPage,
+          baseHref: `/dashboard/assets/${positionId}`,
+        }}
+      />
+    </>
+  );
+}
+
+// Layout resolver - fetches position + symbol (fast gating data),
+// renders the header, then streams the remaining sections.
+async function AssetLayout({
+  paramsPromise,
+  searchParamsPromise,
+}: {
+  paramsPromise: Promise<{ id: string }>;
+  searchParamsPromise?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  "use cache: private";
+
+  const { id: positionId } = await paramsPromise;
+
+  // Fetch position - needed for header and to determine hasSymbol layout
+  let position: TransformedPosition;
+  let snapshots: PositionSnapshot[];
+
+  try {
+    const result = await fetchSinglePosition(positionId, {
+      includeArchived: true,
+      includeSnapshots: true,
+      asOfDate: new Date(),
+    });
+    position = result.position;
+    snapshots = result.snapshots;
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.startsWith("Position not found")
+    ) {
+      redirect("/dashboard/assets");
+    }
+    throw error;
+  }
+
+  const snapshotsMap = new Map([[position.id, snapshots]]);
+  const [positionWithProfitLoss] = calculateProfitLoss(
+    [position],
+    snapshotsMap,
+  );
+
+  // Fetch symbol - fast single row, needed for header + conditional layout
+  const symbol = position.symbol_id
+    ? await fetchSymbol(position.symbol_id)
+    : null;
+
+  const hasSymbol = Boolean(symbol);
+
+  return (
+    <div className="grid grid-cols-6 gap-x-8 gap-y-4">
+      {/* Header - renders immediately, data already available */}
+      <div className="col-span-full">
+        <AssetHeader
+          position={position}
+          symbol={symbol}
+          positionWithProfitLoss={positionWithProfitLoss}
+        />
+      </div>
+
+      {/* Symbol sidebar - projected income + news */}
+      {hasSymbol && (
+        <div className="col-span-full space-y-4 @[64rem]/dashboard:col-span-2">
+          <Suspense fallback={<Skeleton className="h-80" />}>
+            <ProjectedIncomeWrapper
+              symbolId={position.symbol_id!}
+              quantity={position.current_quantity}
+              unitValue={position.current_unit_value}
+              currency={position.currency}
+            />
+          </Suspense>
+          <Separator />
+          <Suspense fallback={<Skeleton className="h-64" />}>
+            <NewsWrapper symbolId={position.symbol_id!} />
+          </Suspense>
+        </div>
+      )}
+
+      <Separator className="col-span-6 lg:hidden" />
+
+      {/* Portfolio records */}
+      <div
+        className={cn(
+          "col-span-full space-y-2",
+          hasSymbol && "@[64rem]/dashboard:col-span-4",
+        )}
+      >
+        <Suspense fallback={<Skeleton className="h-96" />}>
+          <RecordsWrapper
+            positionId={positionId}
+            position={position}
+            searchParamsPromise={searchParamsPromise}
+          />
+        </Suspense>
+      </div>
+    </div>
+  );
+}
+
+// Main page component - synchronous so the shell (PageSkeleton) renders instantly.
+// Passes params/searchParams as promises to AssetLayout instead of awaiting them here.
+export default function AssetPage(props: {
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
   return (
     <Suspense fallback={<PageSkeleton />}>
-      <AssetContent
-        positionId={positionId}
-        page={page}
-        q={q}
-        startDate={startDate}
-        endDate={endDate}
-        sortBy={sortBy}
-        sortDirection={sortDirection}
-        recordTypes={recordTypes.length > 0 ? recordTypes : undefined}
+      <AssetLayout
+        paramsPromise={props.params}
+        searchParamsPromise={props.searchParams}
       />
     </Suspense>
   );

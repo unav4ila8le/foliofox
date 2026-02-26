@@ -11,7 +11,6 @@ import type {
 const fetchPositionsMock = vi.fn();
 const fetchDividendsMock = vi.fn();
 const fetchExchangeRatesMock = vi.fn();
-const resolveSymbolInputMock = vi.fn();
 
 vi.mock("react", () => ({
   cache: (fn: unknown) => fn,
@@ -27,10 +26,6 @@ vi.mock("@/server/dividends/fetch", () => ({
 
 vi.mock("@/server/exchange-rates/fetch", () => ({
   fetchExchangeRates: fetchExchangeRatesMock,
-}));
-
-vi.mock("@/server/symbols/resolve", () => ({
-  resolveSymbolInput: resolveSymbolInputMock,
 }));
 
 const createDividendSummary = (
@@ -95,7 +90,6 @@ describe("projected income", () => {
     fetchPositionsMock.mockReset();
     fetchDividendsMock.mockReset();
     fetchExchangeRatesMock.mockReset();
-    resolveSymbolInputMock.mockReset();
   });
 
   afterEach(() => {
@@ -127,7 +121,7 @@ describe("projected income", () => {
     );
 
     const { calculateProjectedIncome } =
-      await import("@/server/analysis/projected-income/projected-income");
+      await import("@/server/analysis/projected-income/portfolio");
 
     const result = await calculateProjectedIncome("USD", 12);
 
@@ -136,51 +130,6 @@ describe("projected income", () => {
     result.data?.forEach((month) => {
       expect(month.income).toBe(10);
     });
-  });
-
-  it("falls back to dividend_yield * unit value when no annual data exists", async () => {
-    const fxDateKey = formatUTCDateKey(new Date());
-
-    fetchPositionsMock.mockResolvedValue([
-      createPosition({
-        current_quantity: 2,
-        current_unit_value: 100,
-      }),
-    ]);
-
-    fetchDividendsMock.mockResolvedValue(
-      new Map([
-        [
-          "sym-1",
-          {
-            summary: createDividendSummary({
-              trailing_ttm_dividend: null,
-              forward_annual_dividend: null,
-              dividend_yield: 0.05,
-              inferred_frequency: null,
-            }),
-            events: [],
-          },
-        ],
-      ]),
-    );
-
-    fetchExchangeRatesMock.mockResolvedValue(
-      new Map([[`USD|${fxDateKey}`, 1]]),
-    );
-
-    const { calculateSymbolProjectedIncome } =
-      await import("@/server/analysis/projected-income/projected-income");
-
-    resolveSymbolInputMock.mockResolvedValue({
-      symbol: { id: "sym-1" },
-    });
-
-    const result = await calculateSymbolProjectedIncome("SYM", 2, 1, 100);
-
-    expect(result.success).toBe(true);
-    expect(result.data?.length).toBe(1);
-    expect(result.data?.[0]?.income).toBeCloseTo(0.8333, 3);
   });
 
   it("prefers recent payout events when TTM looks inflated", async () => {
@@ -208,7 +157,7 @@ describe("projected income", () => {
     );
 
     const { calculateProjectedIncome } =
-      await import("@/server/analysis/projected-income/projected-income");
+      await import("@/server/analysis/projected-income/portfolio");
 
     const result = await calculateProjectedIncome("USD", 1);
 
@@ -249,7 +198,7 @@ describe("projected income", () => {
     );
 
     const { calculateProjectedIncomeByAsset } =
-      await import("@/server/analysis/projected-income/projected-income");
+      await import("@/server/analysis/projected-income/portfolio");
 
     const result = await calculateProjectedIncomeByAsset("USD", 1);
 

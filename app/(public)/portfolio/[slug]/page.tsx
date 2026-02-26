@@ -17,7 +17,7 @@ import { calculateAssetAllocation } from "@/server/analysis/asset-allocation";
 import {
   calculateProjectedIncome,
   calculateProjectedIncomeByAsset,
-} from "@/server/analysis/projected-income/projected-income";
+} from "@/server/analysis/projected-income/portfolio";
 import { fetchPositions } from "@/server/positions/fetch";
 import { calculateProfitLoss } from "@/lib/profit-loss";
 import { getRequestLocale } from "@/lib/locale/resolve-locale";
