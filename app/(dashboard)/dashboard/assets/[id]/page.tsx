@@ -30,7 +30,7 @@ import type {
 // Skeleton for the full page, shown instantly during navigation
 function PageSkeleton() {
   return (
-    <div className="grid grid-cols-6 gap-4">
+    <div className="grid grid-cols-6 gap-x-8 gap-y-4">
       <div className="col-span-6">
         <Skeleton className="h-32" />
       </div>
