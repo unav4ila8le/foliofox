@@ -171,7 +171,7 @@ function computeAnnualDividendRate({
     }
   }
 
-  return annualDividend > 0 ? Number(annualDividend) : null;
+  return annualDividend > 0 ? annualDividend : null;
 }
 
 async function resolvePriceForYield(
