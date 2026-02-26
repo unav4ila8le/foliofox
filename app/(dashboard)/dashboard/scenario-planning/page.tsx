@@ -3,20 +3,25 @@ import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/custom/skeleton";
 import { ScenarioPlanningClient } from "@/components/dashboard/scenario-planning/scenario-planning-client";
 
-import { fetchOrCreateDefaultScenario } from "@/server/financial-scenarios/fetch";
+import {
+  fetchOrCreateDefaultScenario,
+  fetchScenarioStartingValueSuggestions,
+} from "@/server/financial-scenarios/fetch";
 import { fetchProfile } from "@/server/profile/actions";
 
 async function ScenarioPlanningContent() {
   "use cache: private";
-  const [scenario, { profile }] = await Promise.all([
+  const { profile } = await fetchProfile();
+  const [scenario, startingValueSuggestions] = await Promise.all([
     fetchOrCreateDefaultScenario(),
-    fetchProfile(),
+    fetchScenarioStartingValueSuggestions(profile.display_currency),
   ]);
 
   return (
     <ScenarioPlanningClient
       scenario={scenario}
       currency={profile.display_currency}
+      startingValueSuggestions={startingValueSuggestions}
     />
   );
 }

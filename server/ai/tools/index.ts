@@ -357,7 +357,7 @@ export const aiTools = {
 
   getFinancialScenarios: tool({
     description:
-      "Get the user's financial scenario (scenario planning) with income/expense events and optional simulation. Returns: scenario name, initial balance, events with conditions and recurrence, and optionally runs a forward simulation showing projected balances over time. Useful for analyzing financial plans, projections, and 'what-if' scenarios. Use this when the user asks about their scenario plan, future projections, or wants advice on their planned income/expense events.",
+      "Get the user's financial scenario (scenario planning) with income/expense events and optional simulation. Returns: scenario name, initial value, events with conditions and recurrence, and optionally runs a forward simulation showing projected balances over time. Useful for analyzing financial plans, projections, and 'what-if' scenarios. Use this when the user asks about their scenario plan, future projections, or wants advice on their planned income/expense events.",
     inputSchema: z.object({
       runSimulation: z
         .boolean()

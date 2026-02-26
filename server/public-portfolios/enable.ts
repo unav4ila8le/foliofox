@@ -14,7 +14,10 @@ import {
   UNIQUE_VIOLATION_CODE,
 } from "@/lib/public-portfolio";
 
-import type { PublicPortfolioExpirationOption } from "@/types/global.types";
+import type {
+  PublicPortfolioExpirationOption,
+  PublicPortfolioInsert,
+} from "@/types/global.types";
 import type { Database } from "@/types/database.types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -61,7 +64,7 @@ async function fetchProfileUsername(
 
 async function upsertPublicPortfolio(
   supabase: SupabaseClient<Database>,
-  payload: Database["public"]["Tables"]["public_portfolios"]["Insert"],
+  payload: PublicPortfolioInsert,
 ) {
   const { data, error } = await supabase
     .from("public_portfolios")
@@ -100,11 +103,11 @@ export async function enablePublicPortfolio(
   for (let attempt = 0; attempt < 6; attempt += 1) {
     const slugCandidate = buildSlugCandidate(baseSlug, attempt);
     try {
-      const payload = {
+      const payload: PublicPortfolioInsert = {
         user_id: user.id,
         slug: slugCandidate,
         expires_at: expiration,
-      } as Database["public"]["Tables"]["public_portfolios"]["Insert"];
+      };
       if (existing?.id) {
         payload.id = existing.id;
       }

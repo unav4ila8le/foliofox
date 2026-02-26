@@ -1,6 +1,7 @@
-import { Database } from "@/types/database.types";
 import { z } from "zod";
 import { LocalDate } from "@/lib/date/date-utils";
+import { SCENARIO_INITIAL_VALUE_BASES } from "@/types/enums";
+import type { FinancialScenario } from "@/types/global.types";
 
 //-- Schemas
 const CashflowConditions = z.discriminatedUnion("type", [
@@ -66,6 +67,8 @@ const ScenarioEvent = z.object({
   metadata: z.record(z.string(), z.string()).optional(),
 });
 
+const ScenarioInitialValueBasis = z.enum(SCENARIO_INITIAL_VALUE_BASES);
+
 const Scenario = z.object({
   name: z.string(),
   events: z.array(ScenarioEvent),
@@ -75,13 +78,10 @@ type Scenario = z.infer<typeof Scenario>;
 type ScenarioEvent = z.infer<typeof ScenarioEvent>;
 type CashflowConditions = z.infer<typeof CashflowConditions>;
 type BalanceConditions = z.infer<typeof BalanceConditions>;
-
-//-- Converters
-type DatabaseScenario =
-  Database["public"]["Tables"]["financial_scenarios"]["Row"];
+type ScenarioInitialValueBasis = z.infer<typeof ScenarioInitialValueBasis>;
 
 const fromDatabaseScenarioToScenario = (
-  database: DatabaseScenario,
+  database: FinancialScenario,
 ): z.infer<typeof Scenario> => {
   const { name, events } = database;
 
@@ -97,4 +97,5 @@ export {
   ScenarioEvent,
   CashflowConditions,
   BalanceConditions,
+  ScenarioInitialValueBasis,
 };

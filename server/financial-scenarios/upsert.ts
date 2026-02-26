@@ -2,7 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 
-import { ScenarioEvent } from "@/lib/scenario-planning/helpers";
+import {
+  ScenarioEvent,
+  ScenarioInitialValueBasis,
+  type ScenarioInitialValueBasis as ScenarioInitialValueBasisType,
+} from "@/lib/scenario-planning/helpers";
 import { getCurrentUser } from "@/server/auth/actions";
 import type { Json } from "@/types/database.types";
 
@@ -81,17 +85,45 @@ export async function upsertScenarioEvent(
 }
 
 /**
- * Update the initial balance for a scenario.
+ * Update the initial value for a scenario.
  */
-export async function updateScenarioInitialBalance(
+export async function updateScenarioInitialValue(
   scenarioId: string,
-  initialBalance: number,
+  initialValue: number,
+  options?: {
+    initialValueBasis?: ScenarioInitialValueBasisType;
+  },
 ): Promise<ActionResult> {
   const { supabase, user } = await getCurrentUser();
 
+  let initialValueBasis: ScenarioInitialValueBasisType | undefined;
+  if (options?.initialValueBasis) {
+    const parsedBasis = ScenarioInitialValueBasis.safeParse(
+      options.initialValueBasis,
+    );
+    if (!parsedBasis.success) {
+      return {
+        success: false,
+        code: "INVALID_INITIAL_VALUE_BASIS",
+        message: "Invalid initial value basis",
+      };
+    }
+    initialValueBasis = parsedBasis.data;
+  }
+
+  const updatePayload: {
+    initial_value: number;
+    initial_value_basis?: ScenarioInitialValueBasisType;
+  } = {
+    initial_value: initialValue,
+  };
+  if (initialValueBasis) {
+    updatePayload.initial_value_basis = initialValueBasis;
+  }
+
   const { error: updateError } = await supabase
     .from("financial_scenarios")
-    .update({ initial_balance: initialBalance })
+    .update(updatePayload)
     .eq("id", scenarioId)
     .eq("user_id", user.id);
 

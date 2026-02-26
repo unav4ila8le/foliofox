@@ -15,3 +15,7 @@ export const RISK_PREFERENCES = Constants.public.Enums.risk_preference;
 
 // Age band types
 export const AGE_BANDS = Constants.public.Enums.age_band;
+
+// Scenario planning starting value basis
+export const SCENARIO_INITIAL_VALUE_BASES =
+  Constants.public.Enums.scenario_initial_value_basis;

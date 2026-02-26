@@ -108,11 +108,7 @@ const DEMO_SCENARIO: Scenario = {
   ],
 };
 
-export function DemoBalanceChart({
-  initialBalance,
-}: {
-  initialBalance: number;
-}) {
+export function DemoBalanceChart({ initialValue }: { initialValue: number }) {
   const locale = useLocale();
   const endDate = React.useMemo(() => {
     return addYears(new Date(), 5);
@@ -121,7 +117,7 @@ export function DemoBalanceChart({
   const { scenarioResult } = React.useMemo(() => {
     const scenarioResult = runScenario({
       scenario: DEMO_SCENARIO,
-      initialBalance,
+      initialValue,
       startDate: fromJSDate(new Date()),
       endDate: fromJSDate(endDate),
     });
@@ -129,7 +125,7 @@ export function DemoBalanceChart({
     return {
       scenarioResult,
     };
-  }, [initialBalance, endDate]);
+  }, [initialValue, endDate]);
 
   const chartData = React.useMemo(() => {
     const sortedMonths = Object.keys(scenarioResult.balance).sort();
