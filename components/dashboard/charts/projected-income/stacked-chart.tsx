@@ -17,7 +17,7 @@ import { useLocale } from "@/hooks/use-locale";
 import type {
   ProjectedIncomeStackedMonth,
   ProjectedIncomeStackedSeries,
-} from "@/server/analysis/projected-income/projected-income";
+} from "@/server/analysis/projected-income/portfolio";
 
 const COLORS = [
   "var(--chart-0)",

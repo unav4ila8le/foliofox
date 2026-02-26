@@ -24,7 +24,7 @@ import { fetchPortfolioNews } from "@/server/news/fetch";
 import {
   calculateProjectedIncome,
   calculateProjectedIncomeByAsset,
-} from "@/server/analysis/projected-income/projected-income";
+} from "@/server/analysis/projected-income/portfolio";
 import { fetchPortfolioRecords } from "@/server/portfolio-records/fetch";
 import {
   NET_WORTH_MODE_COOKIE_NAME,

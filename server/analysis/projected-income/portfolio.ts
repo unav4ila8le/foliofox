@@ -6,7 +6,6 @@ import { addMonths, startOfMonth } from "date-fns";
 import { fetchPositions } from "@/server/positions/fetch";
 import { fetchDividends } from "@/server/dividends/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
-import { resolveSymbolInput } from "@/server/symbols/resolve";
 
 import { convertCurrency } from "@/lib/currency-conversion";
 import {
@@ -18,7 +17,6 @@ import {
 import type { PositionsQueryContext } from "@/server/positions/fetch";
 
 import {
-  buildDividendProjectionBasis,
   buildProjectionBasisBySymbolId,
   calculateMonthlyDividend,
 } from "@/server/analysis/projected-income/utils";
@@ -455,107 +453,3 @@ export const calculateProjectedIncomeByAsset = cache(
     }
   },
 );
-
-/**
- * Calculate projected income for a specific symbol
- */
-export async function calculateSymbolProjectedIncome(
-  symbolLookup: string,
-  quantity: number,
-  monthsAhead: number = 12,
-  unitValue?: number,
-  fallbackCurrency: string = "USD",
-) {
-  try {
-    const resolved = await resolveSymbolInput(symbolLookup);
-    if (!resolved?.symbol?.id) {
-      return {
-        success: false,
-        data: [],
-        message: `Unable to resolve symbol lookup "${symbolLookup}".`,
-      };
-    }
-
-    const canonicalId = resolved.symbol.id;
-
-    const dividendsMap = await fetchDividends([{ symbolId: canonicalId }]);
-    const dividendData = dividendsMap.get(canonicalId);
-
-    if (!dividendData?.summary) {
-      return {
-        success: true,
-        data: [],
-        message: "No dividend information available for this symbol",
-      };
-    }
-
-    if (
-      dividendData.summary.pays_dividends === false &&
-      dividendData.events.length === 0
-    ) {
-      return {
-        success: true,
-        data: [],
-        message: "This symbol does not pay dividends",
-      };
-    }
-
-    const projectionBasis = buildDividendProjectionBasis(
-      dividendData.summary,
-      dividendData.events,
-      {
-        currentUnitValue: unitValue,
-        fallbackCurrency,
-      },
-    );
-
-    if (!projectionBasis) {
-      return {
-        success: true,
-        data: [],
-        message: "No dividend data available for this symbol",
-      };
-    }
-
-    // Calculate monthly projected income in the dividend's own currency
-    const monthlyIncome = new Map<string, number>();
-    const today = new Date();
-
-    for (let i = 0; i < monthsAhead; i++) {
-      const monthStart = startOfMonth(addMonths(today, i));
-      const monthKey = formatLocalDateKey(monthStart).slice(0, 7);
-
-      const monthlyDividend = calculateMonthlyDividend(
-        monthStart,
-        projectionBasis,
-      );
-      const symbolDividendIncome = monthlyDividend * quantity;
-
-      // Keep the income in the dividend's own currency (no conversion)
-      monthlyIncome.set(monthKey, symbolDividendIncome);
-    }
-
-    return {
-      success: true,
-      data: Array.from(monthlyIncome.entries()).map(([month, income]) => ({
-        // Use local date keys to avoid timezone shifts in the chart UI.
-        date: parseLocalDateKey(`${month}-01`),
-        income,
-      })),
-      currency: projectionBasis.currency,
-    };
-  } catch (error) {
-    console.error(
-      "Error calculating projected income for %s:",
-      symbolLookup,
-      error,
-    );
-    return {
-      success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to calculate projected income",
-    };
-  }
-}
