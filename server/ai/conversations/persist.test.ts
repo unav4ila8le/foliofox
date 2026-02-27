@@ -689,4 +689,18 @@ describe("conversation persistence guardrails", () => {
       ),
     ).toBe(true);
   });
+
+  it("extractTextContent ignores malformed text parts", async () => {
+    const { extractTextContent } =
+      await import("@/server/ai/conversations/persist");
+
+    const content = extractTextContent([
+      { type: "text", text: "first" },
+      { type: "text", text: undefined },
+      { type: "reasoning", text: "ignored" },
+      { type: "text", text: "second" },
+    ] as unknown as UIMessage["parts"]);
+
+    expect(content).toBe("first\nsecond");
+  });
 });

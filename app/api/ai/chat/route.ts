@@ -8,6 +8,7 @@ import {
   safeValidateUIMessages,
   stepCountIs,
 } from "ai";
+import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
 import { fetchProfile } from "@/server/profile/actions";
@@ -242,7 +243,7 @@ export async function POST(req: Request) {
 
   return result.toUIMessageStreamResponse({
     originalMessages: messages,
-    generateMessageId: () => crypto.randomUUID(),
+    generateMessageId: () => uuidv4(),
     sendReasoning: true,
     sendSources: true,
     onFinish: async ({ responseMessage, isAborted, finishReason }) => {

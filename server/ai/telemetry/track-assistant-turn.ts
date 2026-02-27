@@ -1,4 +1,5 @@
 import type { FinishReason, UIMessage } from "ai";
+import { z } from "zod";
 
 import { createClient } from "@/supabase/server";
 
@@ -6,6 +7,7 @@ export const AI_ASSISTANT_PROMPT_SOURCES = ["typed", "suggestion"] as const;
 export type AIAssistantPromptSource =
   (typeof AI_ASSISTANT_PROMPT_SOURCES)[number];
 
+// Mirrors DB-allowed values in ai_assistant_turn_events.route.
 export const AI_ASSISTANT_ROUTES = [
   "general",
   "identifier",
@@ -14,6 +16,7 @@ export const AI_ASSISTANT_ROUTES = [
 ] as const;
 export type AIAssistantRoute = (typeof AI_ASSISTANT_ROUTES)[number];
 
+// Mirrors DB-allowed values in ai_assistant_turn_events.outcome.
 export const AI_ASSISTANT_OUTCOMES = [
   "ok",
   "clarify",
@@ -121,6 +124,12 @@ export async function trackAssistantTurn(
   if (!conversationId || !assistantMessageId) return;
   if (params.message.role !== "assistant") return;
 
+  const conversationIdParse = z.uuid().safeParse(conversationId);
+  const assistantMessageIdParse = z.uuid().safeParse(assistantMessageId);
+  if (!conversationIdParse.success || !assistantMessageIdParse.success) {
+    return;
+  }
+
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   const userId = auth?.user?.id;
@@ -135,8 +144,8 @@ export async function trackAssistantTurn(
   const assistantChars = getAssistantTextCharCount(params.message.parts);
 
   const { error } = await supabase.from("ai_assistant_turn_events").insert({
-    conversation_id: conversationId,
-    assistant_message_id: assistantMessageId,
+    conversation_id: conversationIdParse.data,
+    assistant_message_id: assistantMessageIdParse.data,
     user_id: userId,
     model: params.model,
     prompt_source: params.promptSource,

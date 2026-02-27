@@ -518,7 +518,10 @@ export function extractTextContent(parts: UIMessage["parts"]): string {
   if (!Array.isArray(parts)) return "";
 
   return parts
-    .filter((p) => p.type === "text")
+    .filter(
+      (part): part is { type: "text"; text: string } =>
+        part.type === "text" && typeof part.text === "string",
+    )
     .map((p) => p.text)
     .join("\n");
 }

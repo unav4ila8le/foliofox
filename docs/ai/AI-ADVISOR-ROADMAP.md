@@ -89,7 +89,7 @@ Objective: reduce verbosity and establish reliable product telemetry.
 ### Workstream B: Telemetry MVP (Keep It Light)
 
 - Emit one event per completed assistant turn (single event type).
-- Implementation guide: see `docs/ai/AI-ADVISOR-PHASE0-EVALS.md`.
+- Implementation and weekly eval guide: see `docs/ai/evals/README.md`.
 - Required fields only:
   - `conversation_id`
   - `assistant_message_id`

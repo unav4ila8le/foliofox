@@ -1,4 +1,4 @@
-# AI Advisor Weekly KPI Snapshot (YYYY-MM-DD UTC)
+# AI Advisor Weekly Eval Snapshot (YYYY-MM-DD UTC)
 
 ## Window
 
