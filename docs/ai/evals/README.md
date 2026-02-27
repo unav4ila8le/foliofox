@@ -15,6 +15,10 @@ Use UTC date prefixes:
 - `YYYY-MM-DD-AI-ADVISOR-PHASE0-BASELINE.md`
 - `YYYY-MM-DD-AI-ADVISOR-WEEKLY-KPI.md`
 
+## Starter Template
+
+- Copy `TEMPLATE-AI-ADVISOR-WEEKLY-KPI.md` for each weekly KPI snapshot.
+
 ## Minimum weekly entry
 
 1. KPI query output (or summarized values)

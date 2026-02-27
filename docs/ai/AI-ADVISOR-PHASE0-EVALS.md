@@ -1,132 +1,40 @@
-# AI Advisor Phase 0 Evals (Beginner Runbook)
+# AI Advisor Phase 0 Evals (Operational Runbook)
 
-This guide is for first-time telemetry/eval setup in Foliofox.
+Use this guide after telemetry is live to run weekly Phase 0 evaluation in a
+repeatable way.
 
-If you just finished Phase 0, this document tells you exactly:
+## Scope
 
-1. what telemetry is
-2. how to create the telemetry table
-3. how to verify events are being recorded
-4. how to run the 7-day KPI check
+Phase 0 telemetry tracks one event per completed assistant turn in
+`public.ai_assistant_turn_events`.
 
----
+Current fields:
 
-## What "Telemetry Table" Means
-
-A telemetry table is just a database table that stores lightweight analytics events.
-
-For Phase 0, we store one event per completed assistant response with the MVP fields from the roadmap:
-
-- `conversation_id`
-- `assistant_message_id`
+- `conversation_id` (FK to conversations)
+- `assistant_message_id` (UUID, unique, not FK)
+- `user_id` (FK to auth.users)
 - `created_at`
 - `model`
-- `prompt_source`
+- `prompt_source` (`typed` or `suggestion`)
 - `assistant_chars`
-- `route`
-- `outcome`
+- `route` (`general`, `identifier`, `chart`, `write`)
+- `outcome` (`ok`, `clarify`, `error`, `approved`, `committed`)
 
-This is what KPI queries read from.
+Reference schema source:
 
----
+- `supabase/migrations/20260227032421_create_ai_assistant_turn_events.sql`
 
-## Step 1: Create the Telemetry Table
+## Phase 0.4 Gate
 
-Run this once in Supabase SQL Editor.
+Before moving past Phase 0.4, you must confirm:
 
-```sql
-create table if not exists public.ai_assistant_turn_events (
-  id uuid primary key default gen_random_uuid(),
-  conversation_id uuid not null
-    references public.conversations(id) on delete cascade,
-  assistant_message_id uuid not null
-    references public.conversation_messages(id) on delete cascade,
-  user_id uuid not null
-    references auth.users(id) on delete cascade,
-  created_at timestamptz not null default now(),
-  model text not null,
-  prompt_source text not null
-    check (prompt_source in ('suggestion', 'typed')),
-  route text not null
-    check (route in ('general', 'identifier', 'chart', 'write')),
-  outcome text not null
-    check (outcome in ('ok', 'clarify', 'error', 'approved', 'committed')),
-  assistant_chars integer not null
-    check (assistant_chars >= 0),
-  unique (assistant_message_id)
-);
+1. Ingestion query returns non-zero events.
+2. `prompt_source` split includes both `typed` and `suggestion`.
+3. 7-day KPI query returns non-empty rows for both windows.
 
-create index if not exists idx_ai_turn_events_created_at
-  on public.ai_assistant_turn_events(created_at desc);
+## Step 1: Ingestion Verification
 
-create index if not exists idx_ai_turn_events_user_created_at
-  on public.ai_assistant_turn_events(user_id, created_at desc);
-
-create index if not exists idx_ai_turn_events_route_outcome_created_at
-  on public.ai_assistant_turn_events(route, outcome, created_at desc);
-
-alter table public.ai_assistant_turn_events enable row level security;
-
-do $$
-begin
-  create policy "Users can view own AI turn events"
-    on public.ai_assistant_turn_events
-    for select
-    to authenticated
-    using (user_id = auth.uid());
-exception
-  when duplicate_object then null;
-end $$;
-
-do $$
-begin
-  create policy "Users can insert own AI turn events"
-    on public.ai_assistant_turn_events
-    for insert
-    to authenticated
-    with check (user_id = auth.uid());
-exception
-  when duplicate_object then null;
-end $$;
-```
-
----
-
-## Step 2: Emit One Event Per Assistant Turn
-
-Implementation point: chat API finish hook.
-
-- File: `app/api/ai/chat/route.ts`
-- Place: inside `onFinish`, after assistant message persistence succeeds.
-
-### Field Mapping
-
-- `conversation_id`: request header `x-ff-conversation-id`
-- `assistant_message_id`: `responseMessage.id`
-- `user_id`: authenticated user id from server session
-- `created_at`: `now()`
-- `model`: `chatModelId`
-- `prompt_source`: start with `typed` unless explicitly sent as `suggestion`
-- `assistant_chars`: total text length of assistant text parts
-- `route`: classify to `general` / `identifier` / `chart` / `write`
-- `outcome`: `ok` / `clarify` / `error` / `approved` / `committed`
-
-### Practical Note
-
-For week 1, you can keep route classification simple:
-
-- default `route = 'general'`
-- set `route = 'identifier'` when symbol lookup tools are used
-- set `route = 'chart'` when chart/historical quote flow is used
-- keep `route = 'write'` for Phase 4 tools only
-
-Until this step is live in production, KPI queries will return empty or partial data.
-
----
-
-## Step 3: Verify Events Are Arriving
-
-Run after deploying instrumentation:
+Run this in Supabase SQL editor:
 
 ```sql
 select
@@ -138,25 +46,39 @@ group by 1
 order by 1 desc;
 ```
 
-You should see non-zero daily counts.
-
-Sanity check distribution:
+Prompt source sanity check:
 
 ```sql
-select prompt_source, route, outcome, count(*) as events
+select
+  prompt_source,
+  count(*) as events
 from public.ai_assistant_turn_events
 where created_at >= now() - interval '7 days'
-group by 1, 2, 3
+group by prompt_source
+order by prompt_source;
+```
+
+Route/outcome sanity check:
+
+```sql
+select
+  route,
+  outcome,
+  count(*) as events
+from public.ai_assistant_turn_events
+where created_at >= now() - interval '7 days'
+group by route, outcome
 order by events desc;
 ```
 
----
+## Step 2: Week-1 Pre/Post KPI Query
 
-## Step 4: Run 7-Day KPI Evaluation
+Run this once after your first full 7-day post window.
 
-Use a fixed comparison: 7 days before Phase 0 vs 7 days after Phase 0.
+If Phase 0 started on `2026-02-27 00:00:00+00`, then first run should compare:
 
-Replace the timestamps in `params`.
+- pre: `2026-02-20 00:00:00+00` to `2026-02-27 00:00:00+00`
+- post: `2026-02-27 00:00:00+00` to `2026-03-06 00:00:00+00`
 
 ```sql
 with params as (
@@ -240,48 +162,45 @@ join volume v using (period)
 order by k.period;
 ```
 
----
+## Step 3: Read KPI Results Correctly
 
-## Step 5: Read Results Correctly
-
-### Desired Direction
+Expected direction:
 
 - `assistant_chars_median_typed`: lower is better
 - `follow_up_rate_typed`: higher is better
 - `identifier_error_rate`: lower is better
 - `chart_completion_rate`: higher is better
-- `write_commit_success_rate`: used in Phase 4 (ignore until write tools exist)
+- `write_commit_success_rate`: ignore until write tools exist
 
-### Minimum Volume Rule
-
-Only trust a KPI if denominator is large enough:
+Minimum denominator rule:
 
 - typed KPIs: `typed_turns >= 30`
 - identifier KPI: `identifier_turns >= 20`
 - chart KPI: `chart_turns >= 20`
 - write KPI: `write_turns >= 20`
 
-If below threshold, collect another week before deciding.
+If denominator is below threshold, do not call it regression/improvement yet.
 
----
+## Step 4: Save Snapshot in `docs/ai/evals/`
 
-## Weekly Checklist (Copy/Paste)
+Create one weekly file:
 
-1. Confirm event ingestion query returns data.
-2. Run KPI query for pre/post windows.
-3. Save results in a weekly note.
-4. Flag regressions:
-   - typed median chars up
-   - typed follow-up down
-   - identifier errors up
-   - chart completion down
-5. If regression exists, review 20-50 typed conversations for root cause.
+- `YYYY-MM-DD-AI-ADVISOR-WEEKLY-KPI.md`
 
----
+Template:
+
+- `docs/ai/evals/TEMPLATE-AI-ADVISOR-WEEKLY-KPI.md`
+
+Minimum content per weekly file:
+
+1. raw query output or summarized KPI values
+2. all denominators
+3. decision: pass / watch / investigate
+4. next action items
 
 ## Common Pitfalls
 
-1. Missing `prompt_source` split causes misleading follow-up analysis.
-2. Mixing suggestion-heavy traffic with typed traffic hides real behavior.
-3. Reading KPIs with tiny denominators leads to noisy decisions.
-4. Comparing non-aligned date windows (not exact 7-day vs 7-day) creates false trends.
+1. Evaluating with tiny denominators.
+2. Comparing non-aligned windows.
+3. Mixing typed and suggestion traffic in one metric.
+4. Treating one-week noise as product signal.
