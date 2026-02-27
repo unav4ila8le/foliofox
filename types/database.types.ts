@@ -34,6 +34,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_assistant_turn_events: {
+        Row: {
+          assistant_chars: number
+          assistant_message_id: string
+          conversation_id: string
+          created_at: string
+          id: string
+          model: string
+          outcome: string
+          prompt_source: string
+          route: string
+          user_id: string
+        }
+        Insert: {
+          assistant_chars: number
+          assistant_message_id: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          model: string
+          outcome: string
+          prompt_source: string
+          route: string
+          user_id: string
+        }
+        Update: {
+          assistant_chars?: number
+          assistant_message_id?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          model?: string
+          outcome?: string
+          prompt_source?: string
+          route?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_assistant_turn_events_assistant_message_id_fkey"
+            columns: ["assistant_message_id"]
+            isOneToOne: true
+            referencedRelation: "conversation_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_assistant_turn_events_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversation_messages: {
         Row: {
           content: string

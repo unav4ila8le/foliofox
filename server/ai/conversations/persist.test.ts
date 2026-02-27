@@ -403,6 +403,38 @@ describe("conversation persistence guardrails", () => {
     expect(fakeSupabase.conversationMessages).toHaveLength(0);
   });
 
+  it("uses streamed assistant UUID as persisted message id when valid", async () => {
+    const { persistAssistantMessage } =
+      await import("@/server/ai/conversations/persist");
+
+    const assistantMessageId = "4c59a1ef-faa0-4f64-9050-c9ad0f0f3b52";
+    fakeSupabase.conversations = [
+      {
+        id: "assistant-id-conversation",
+        user_id: "user-1",
+        title: "Assistant ID Test",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    ];
+
+    await persistAssistantMessage({
+      conversationId: "assistant-id-conversation",
+      message: createAssistantMessage(
+        assistantMessageId,
+        "assistant with deterministic id",
+      ),
+      model: "assistant-model",
+      usageTokens: 123,
+    });
+
+    const persistedAssistant = fakeSupabase.conversationMessages.find(
+      (message) => message.role === "assistant",
+    );
+
+    expect(persistedAssistant?.id).toBe(assistantMessageId);
+  });
+
   it("persists assistant message and trims when over message cap", async () => {
     const { persistAssistantMessage } =
       await import("@/server/ai/conversations/persist");
@@ -656,5 +688,19 @@ describe("conversation persistence guardrails", () => {
         (message) => message.content === "Replacement response",
       ),
     ).toBe(true);
+  });
+
+  it("extractTextContent ignores malformed text parts", async () => {
+    const { extractTextContent } =
+      await import("@/server/ai/conversations/persist");
+
+    const content = extractTextContent([
+      { type: "text", text: "first" },
+      { type: "text", text: undefined },
+      { type: "reasoning", text: "ignored" },
+      { type: "text", text: "second" },
+    ] as unknown as UIMessage["parts"]);
+
+    expect(content).toBe("first\nsecond");
   });
 });

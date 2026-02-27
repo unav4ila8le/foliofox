@@ -8,6 +8,7 @@ const buildGuardrailedModelContextMock = vi.fn((messages) => messages);
 const fetchProfileMock = vi.fn();
 const persistConversationFromMessagesMock = vi.fn();
 const persistAssistantMessageMock = vi.fn();
+const trackAssistantTurnMock = vi.fn();
 const createSystemPromptMock = vi.fn(() => "system prompt");
 
 class MockAIChatPersistenceError extends Error {
@@ -23,6 +24,7 @@ let capturedOnFinish:
   | ((params: {
       responseMessage: unknown;
       isAborted: boolean;
+      finishReason?: string;
     }) => Promise<void>)
   | undefined;
 
@@ -60,6 +62,10 @@ vi.mock("@/server/ai/conversations/persist", () => ({
   persistAssistantMessage: persistAssistantMessageMock,
 }));
 
+vi.mock("@/server/ai/telemetry/track-assistant-turn", () => ({
+  trackAssistantTurn: trackAssistantTurnMock,
+}));
+
 describe("POST /api/ai/chat", () => {
   beforeEach(() => {
     capturedOnFinish = undefined;
@@ -71,6 +77,7 @@ describe("POST /api/ai/chat", () => {
     fetchProfileMock.mockReset();
     persistConversationFromMessagesMock.mockReset();
     persistAssistantMessageMock.mockReset();
+    trackAssistantTurnMock.mockReset();
     createSystemPromptMock.mockClear();
 
     streamTextMock.mockReturnValue({
@@ -81,6 +88,7 @@ describe("POST /api/ai/chat", () => {
         onFinish: (params: {
           responseMessage: unknown;
           isAborted: boolean;
+          finishReason?: string;
         }) => Promise<void>;
       }) => {
         capturedOnFinish = onFinish;
@@ -410,6 +418,7 @@ describe("POST /api/ai/chat", () => {
         parts: [{ type: "text", text: "assistant response" }],
       },
       isAborted: false,
+      finishReason: "stop",
     });
 
     expect(persistAssistantMessageMock).toHaveBeenCalledWith({
@@ -423,6 +432,18 @@ describe("POST /api/ai/chat", () => {
       usageTokens: 222,
       replaceLatestAssistantForRegenerate: false,
       targetAssistantMessageIdForRegenerate: undefined,
+    });
+    expect(trackAssistantTurnMock).toHaveBeenCalledWith({
+      conversationId: "76a2ace1-3165-4d5d-9552-c864ac08f130",
+      assistantMessageId: "assistant-1",
+      model: "gpt-5-mini",
+      promptSource: "typed",
+      message: {
+        id: "assistant-1",
+        role: "assistant",
+        parts: [{ type: "text", text: "assistant response" }],
+      },
+      finishReason: "stop",
     });
   });
 
@@ -460,6 +481,7 @@ describe("POST /api/ai/chat", () => {
         parts: [{ type: "text", text: "replacement response" }],
       },
       isAborted: false,
+      finishReason: "stop",
     });
 
     expect(persistAssistantMessageMock).toHaveBeenCalledWith({
@@ -474,5 +496,132 @@ describe("POST /api/ai/chat", () => {
       replaceLatestAssistantForRegenerate: true,
       targetAssistantMessageIdForRegenerate: "assistant-target-id",
     });
+  });
+
+  it("passes suggestion prompt source to telemetry when provided", async () => {
+    const { POST } = await import("@/app/api/ai/chat/route");
+    fetchProfileMock.mockResolvedValue({
+      profile: { data_sharing_consent: true },
+    });
+
+    const request = new Request("http://localhost/api/ai/chat", {
+      method: "POST",
+      body: JSON.stringify({
+        messages: [
+          {
+            id: "m-user",
+            role: "user",
+            parts: [{ type: "text", text: "show me ideas" }],
+          },
+        ],
+        promptSource: "suggestion",
+      }),
+      headers: {
+        "Content-Type": "application/json",
+        "x-ff-conversation-id": "76a2ace1-3165-4d5d-9552-c864ac08f130",
+      },
+    });
+
+    await POST(request);
+
+    await capturedOnFinish?.({
+      responseMessage: {
+        id: "assistant-suggestion",
+        role: "assistant",
+        parts: [{ type: "text", text: "suggestion response" }],
+      },
+      isAborted: false,
+      finishReason: "stop",
+    });
+
+    expect(trackAssistantTurnMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        promptSource: "suggestion",
+      }),
+    );
+  });
+
+  it("defaults invalid prompt source to typed", async () => {
+    const { POST } = await import("@/app/api/ai/chat/route");
+    fetchProfileMock.mockResolvedValue({
+      profile: { data_sharing_consent: true },
+    });
+
+    const request = new Request("http://localhost/api/ai/chat", {
+      method: "POST",
+      body: JSON.stringify({
+        messages: [
+          {
+            id: "m-user",
+            role: "user",
+            parts: [{ type: "text", text: "hello" }],
+          },
+        ],
+        promptSource: "invalid-source",
+      }),
+      headers: {
+        "Content-Type": "application/json",
+        "x-ff-conversation-id": "76a2ace1-3165-4d5d-9552-c864ac08f130",
+      },
+    });
+
+    await POST(request);
+
+    await capturedOnFinish?.({
+      responseMessage: {
+        id: "assistant-invalid-source",
+        role: "assistant",
+        parts: [{ type: "text", text: "typed default response" }],
+      },
+      isAborted: false,
+      finishReason: "stop",
+    });
+
+    expect(trackAssistantTurnMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        promptSource: "typed",
+      }),
+    );
+  });
+
+  it("does not track telemetry when assistant persistence fails", async () => {
+    const { POST } = await import("@/app/api/ai/chat/route");
+    fetchProfileMock.mockResolvedValue({
+      profile: { data_sharing_consent: true },
+    });
+    persistAssistantMessageMock.mockRejectedValueOnce(
+      new Error("assistant persist failed"),
+    );
+
+    const request = new Request("http://localhost/api/ai/chat", {
+      method: "POST",
+      body: JSON.stringify({
+        messages: [
+          {
+            id: "m-user",
+            role: "user",
+            parts: [{ type: "text", text: "hello" }],
+          },
+        ],
+      }),
+      headers: {
+        "Content-Type": "application/json",
+        "x-ff-conversation-id": "76a2ace1-3165-4d5d-9552-c864ac08f130",
+      },
+    });
+
+    await POST(request);
+
+    await capturedOnFinish?.({
+      responseMessage: {
+        id: "assistant-fail",
+        role: "assistant",
+        parts: [{ type: "text", text: "response" }],
+      },
+      isAborted: false,
+      finishReason: "stop",
+    });
+
+    expect(trackAssistantTurnMock).not.toHaveBeenCalled();
   });
 });

@@ -310,10 +310,33 @@ describe("Chat guardrail UI", () => {
     expect(submitButton).toBeDefined();
     fireEvent.click(submitButton as HTMLElement);
 
-    expect(hoistedMocks.sendMessageMock).toHaveBeenCalledWith({
-      text: "hello",
-    });
+    expect(hoistedMocks.sendMessageMock).toHaveBeenCalledWith(
+      {
+        text: "hello",
+      },
+      {
+        body: { promptSource: "typed" },
+      },
+    );
     expect(screen.queryByText("temporary backend error")).toBeNull();
+  });
+
+  it("stamps suggestion prompt source for quick suggestions", () => {
+    renderChat();
+
+    const suggestionButton = screen.getByRole("button", {
+      name: "What would happen to my portfolio if the market crashes 30% tomorrow?",
+    });
+    fireEvent.click(suggestionButton);
+
+    expect(hoistedMocks.sendMessageMock).toHaveBeenCalledWith(
+      {
+        text: "What would happen to my portfolio if the market crashes 30% tomorrow?",
+      },
+      {
+        body: { promptSource: "suggestion" },
+      },
+    );
   });
 
   it("clears backend error when switching conversations with keyed remount", () => {
@@ -398,16 +421,21 @@ describe("Chat guardrail UI", () => {
     expect(submitButton).toBeDefined();
     fireEvent.click(submitButton as HTMLElement);
 
-    expect(hoistedMocks.sendMessageMock).toHaveBeenCalledWith({
-      files: [
-        {
-          type: "file",
-          mediaType: "application/pdf",
-          filename: "statement.pdf",
-          url: "data:application/pdf;base64,Zm9v",
-        },
-      ],
-    });
+    expect(hoistedMocks.sendMessageMock).toHaveBeenCalledWith(
+      {
+        files: [
+          {
+            type: "file",
+            mediaType: "application/pdf",
+            filename: "statement.pdf",
+            url: "data:application/pdf;base64,Zm9v",
+          },
+        ],
+      },
+      {
+        body: { promptSource: "typed" },
+      },
+    );
   });
 
   it("preserves short captions when submitting files", () => {
@@ -429,17 +457,22 @@ describe("Chat guardrail UI", () => {
     expect(submitButton).toBeDefined();
     fireEvent.click(submitButton as HTMLElement);
 
-    expect(hoistedMocks.sendMessageMock).toHaveBeenCalledWith({
-      text: "a",
-      files: [
-        {
-          type: "file",
-          mediaType: "application/pdf",
-          filename: "statement.pdf",
-          url: "data:application/pdf;base64,Zm9v",
-        },
-      ],
-    });
+    expect(hoistedMocks.sendMessageMock).toHaveBeenCalledWith(
+      {
+        text: "a",
+        files: [
+          {
+            type: "file",
+            mediaType: "application/pdf",
+            filename: "statement.pdf",
+            url: "data:application/pdf;base64,Zm9v",
+          },
+        ],
+      },
+      {
+        body: { promptSource: "typed" },
+      },
+    );
   });
 
   it("blocks client-side submit when file type is unsupported", () => {

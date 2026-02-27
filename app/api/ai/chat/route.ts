@@ -8,6 +8,7 @@ import {
   safeValidateUIMessages,
   stepCountIs,
 } from "ai";
+import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
 import { fetchProfile } from "@/server/profile/actions";
@@ -24,6 +25,10 @@ import {
   AI_CHAT_ERROR_CODES,
 } from "@/lib/ai/chat-errors";
 import {
+  type AIAssistantPromptSource,
+  trackAssistantTurn,
+} from "@/server/ai/telemetry/track-assistant-turn";
+import {
   CHAT_FILE_ALLOWED_TYPES_TEXT,
   MAX_CHAT_FILE_SIZE_BYTES,
   MAX_CHAT_FILE_SIZE_MB,
@@ -32,23 +37,33 @@ import {
   isAllowedChatFileMediaType,
 } from "@/lib/ai/chat-file-upload-guardrails";
 
-// Allow streaming responses up to 120 seconds (reasoning models need more time)
+// Allow streaming responses up to 160 seconds (reasoning models need more time)
 export const maxDuration = 160;
 
 const chatRequestSchema = z.looseObject({
   messages: z.unknown(),
   trigger: z.string().optional(),
   messageId: z.string().optional(),
+  promptSource: z.string().optional(),
 });
 
 const validModes = new Set<Mode>(["educational", "advisory", "unhinged"]);
 type ChatUIMessage = UIMessage<unknown, never, InferUITools<typeof aiTools>>;
 
+// Resolve the prompt source from the request payload
+function resolvePromptSource(
+  promptSource: string | undefined,
+): AIAssistantPromptSource {
+  return promptSource === "suggestion" ? "suggestion" : "typed";
+}
+
+// Get the media type from the data URL
 function getDataUrlMediaType(dataUrl: string): string | null {
   const match = /^data:([^;,]+)[;,]/i.exec(dataUrl);
   return match?.[1]?.trim().toLowerCase() || null;
 }
 
+// Validate the latest user file parts
 function validateLatestUserFileParts(messages: ChatUIMessage[]): string | null {
   const latestUserMessage = [...messages]
     .reverse()
@@ -137,6 +152,7 @@ export async function POST(req: Request) {
     trigger === "regenerate-message"
       ? parsedRequest.data.messageId?.trim() || undefined
       : undefined;
+  const promptSource = resolvePromptSource(parsedRequest.data.promptSource);
 
   const modeHeader = req.headers.get("x-ff-mode")?.toLowerCase();
   const mode: Mode =
@@ -227,10 +243,10 @@ export async function POST(req: Request) {
 
   return result.toUIMessageStreamResponse({
     originalMessages: messages,
-    generateMessageId: () => crypto.randomUUID(),
+    generateMessageId: () => uuidv4(),
     sendReasoning: true,
     sendSources: true,
-    onFinish: async ({ responseMessage, isAborted }) => {
+    onFinish: async ({ responseMessage, isAborted, finishReason }) => {
       // 5. Persist only the assistant response that just streamed.
       if (!conversationId || isAborted) {
         return;
@@ -248,6 +264,20 @@ export async function POST(req: Request) {
         });
       } catch (error) {
         console.error("AI chat assistant persistence error:", error);
+        return;
+      }
+
+      try {
+        await trackAssistantTurn({
+          conversationId,
+          assistantMessageId: responseMessage.id,
+          model: chatModelId,
+          promptSource,
+          message: responseMessage,
+          finishReason,
+        });
+      } catch (error) {
+        console.error("AI chat telemetry error:", error);
       }
     },
   });
