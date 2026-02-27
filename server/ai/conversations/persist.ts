@@ -251,6 +251,7 @@ async function insertConversationMessage(params: {
   supabase: Awaited<ReturnType<typeof createClient>>;
   conversationId: string;
   userId: string;
+  messageId?: string;
   role: ConversationRole;
   content: string;
   parts: UIMessage["parts"];
@@ -261,6 +262,7 @@ async function insertConversationMessage(params: {
     supabase,
     conversationId,
     userId,
+    messageId,
     role,
     content,
     parts,
@@ -269,7 +271,17 @@ async function insertConversationMessage(params: {
   } = params;
   const messageOrder = await getNextMessageOrder(supabase, conversationId);
 
-  const { error } = await supabase.from("conversation_messages").insert({
+  const insertPayload: {
+    conversation_id: string;
+    user_id: string;
+    id?: string;
+    role: ConversationRole;
+    content: string;
+    parts: Json;
+    order: number;
+    model: string;
+    usage_tokens?: number;
+  } = {
     conversation_id: conversationId,
     user_id: userId,
     role,
@@ -278,7 +290,14 @@ async function insertConversationMessage(params: {
     order: messageOrder,
     model,
     usage_tokens: usageTokens,
-  });
+  };
+  if (messageId) {
+    insertPayload.id = messageId;
+  }
+
+  const { error } = await supabase
+    .from("conversation_messages")
+    .insert(insertPayload);
 
   if (error) {
     throw new Error(`Failed to persist conversation message: ${error.message}`);
@@ -438,6 +457,10 @@ export async function persistAssistantMessage(params: {
     message.parts,
     extractTextContent(message.parts),
   );
+  const assistantMessageIdParse = z.uuid().safeParse(message.id);
+  const assistantMessageId = assistantMessageIdParse.success
+    ? assistantMessageIdParse.data
+    : undefined;
 
   let assistantMessageIdToReplace: string | null = null;
   if (replaceLatestAssistantForRegenerate) {
@@ -469,6 +492,7 @@ export async function persistAssistantMessage(params: {
     supabase,
     conversationId,
     userId: user.id,
+    messageId: assistantMessageId,
     role: "assistant",
     content: extractTextContent(message.parts),
     parts: assistantPersistedParts,

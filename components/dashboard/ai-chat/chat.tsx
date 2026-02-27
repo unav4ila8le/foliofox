@@ -324,7 +324,7 @@ export function Chat({
     if (showProactiveCapAlert) return;
 
     setChatErrorMessage(null);
-    sendMessage({ text: suggestion });
+    sendMessage({ text: suggestion }, { body: { promptSource: "suggestion" } });
   };
 
   // Copy message text with a temporary visual state
@@ -363,16 +363,22 @@ export function Chat({
 
     setChatErrorMessage(null);
     if (hasFiles && hasAnyText) {
-      sendMessage({ text: normalizedText, files: message.files });
+      sendMessage(
+        { text: normalizedText, files: message.files },
+        { body: { promptSource: "typed" } },
+      );
       return;
     }
 
     if (hasFiles) {
-      sendMessage({ files: message.files });
+      sendMessage(
+        { files: message.files },
+        { body: { promptSource: "typed" } },
+      );
       return;
     }
 
-    sendMessage({ text: normalizedText });
+    sendMessage({ text: normalizedText }, { body: { promptSource: "typed" } });
   };
 
   const handlePromptInputError = ({

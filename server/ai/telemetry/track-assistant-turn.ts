@@ -1,5 +1,3 @@
-"use server";
-
 import type { FinishReason, UIMessage } from "ai";
 
 import { createClient } from "@/supabase/server";
