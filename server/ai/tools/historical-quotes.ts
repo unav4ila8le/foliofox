@@ -57,18 +57,18 @@ export async function getHistoricalQuotes({
     throw new Error("startDate must be before or equal to endDate");
   }
 
+  // Clamp oversized lookbacks instead of failing the entire request.
+  const maxLookbackStart = addUTCDays(resolvedEnd, -(MAX_WINDOW_DAYS - 1));
+  const effectiveStart =
+    resolvedStart < maxLookbackStart ? maxLookbackStart : resolvedStart;
+
   const totalDays =
-    Math.floor((resolvedEnd.getTime() - resolvedStart.getTime()) / 86400000) +
+    Math.floor((resolvedEnd.getTime() - effectiveStart.getTime()) / 86400000) +
     1;
-  if (totalDays > MAX_WINDOW_DAYS) {
-    throw new Error(
-      `Date range is too large. Maximum supported window is ${MAX_WINDOW_DAYS} days.`,
-    );
-  }
 
   const requests = [];
   for (
-    let cursor = resolvedStart;
+    let cursor = effectiveStart;
     cursor <= resolvedEnd;
     cursor = addUTCDays(cursor, 1)
   ) {
@@ -98,7 +98,7 @@ export async function getHistoricalQuotes({
   return {
     symbolId: canonicalId,
     symbolTicker: displayTicker,
-    startDate: formatUTCDateKey(resolvedStart),
+    startDate: formatUTCDateKey(effectiveStart),
     endDate: formatUTCDateKey(resolvedEnd),
     points: series,
     metadata: {
