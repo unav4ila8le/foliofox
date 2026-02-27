@@ -40,43 +40,6 @@ Schema source:
 
 - `supabase/migrations/20260227032421_create_ai_assistant_turn_events.sql`
 
-## One-Time Launch Check (After Deploy)
-
-Run once after deploying telemetry instrumentation:
-
-1. Send one typed chat message in production.
-2. Click one suggestion message in production.
-3. Run the two checks below in Supabase SQL editor.
-
-Ingestion check:
-
-```sql
-select
-  date_trunc('day', created_at) as day_utc,
-  count(*) as events
-from public.ai_assistant_turn_events
-where created_at >= now() - interval '7 days'
-group by 1
-order by 1 desc;
-```
-
-Prompt source split check:
-
-```sql
-select
-  prompt_source,
-  count(*) as events
-from public.ai_assistant_turn_events
-where created_at >= now() - interval '7 days'
-group by prompt_source
-order by prompt_source;
-```
-
-Pass condition:
-
-1. non-zero events in ingestion check
-2. both `typed` and `suggestion` rows present
-
 ## Weekly Eval Procedure (Every 7 Days, UTC)
 
 ### Step 1: Create This Week's File
