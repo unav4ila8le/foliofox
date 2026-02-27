@@ -406,6 +406,11 @@ describe("POST /api/ai/chat", () => {
 
     await POST(request);
 
+    expect(streamTextMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        maxOutputTokens: 6000,
+      }),
+    );
     expect(convertToModelMessagesMock).toHaveBeenCalledWith(
       guardrailedMessages,
     );
