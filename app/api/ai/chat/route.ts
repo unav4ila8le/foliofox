@@ -215,7 +215,7 @@ export async function POST(req: Request) {
     messages: await convertToModelMessages(guardrailedContextMessages),
     tools: aiTools,
     system,
-    maxOutputTokens: 16000,
+    maxOutputTokens: 6000,
     stopWhen: stepCountIs(24),
     providerOptions: {
       openai: {
