@@ -247,6 +247,8 @@ export async function POST(req: Request) {
         guardState.getTotalCalls() >= MAX_TOOL_CALLS_PER_TURN ||
         availableTools.length === 0
       ) {
+        // This blocks any additional tool calls within the current step.
+        // stopWhen enforces the same budget boundary before the next model step.
         return { activeTools: [] };
       }
 

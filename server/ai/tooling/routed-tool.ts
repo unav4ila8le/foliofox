@@ -19,5 +19,7 @@ export function routedTool<INPUT, OUTPUT>(
   return {
     ...tool(toolDefinition),
     telemetryRoutes,
+    // AI SDK tool() returns a wide union that drops our custom field type.
+    // This assertion preserves full tool inference while attaching telemetry metadata.
   } as RoutedTool<INPUT, OUTPUT>;
 }
