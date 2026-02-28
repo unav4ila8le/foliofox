@@ -2,29 +2,12 @@ import type { FinishReason, UIMessage } from "ai";
 import { z } from "zod";
 
 import { createClient } from "@/supabase/server";
-
-export const AI_ASSISTANT_PROMPT_SOURCES = ["typed", "suggestion"] as const;
-export type AIAssistantPromptSource =
-  (typeof AI_ASSISTANT_PROMPT_SOURCES)[number];
-
-// Mirrors DB-allowed values in ai_assistant_turn_events.route.
-export const AI_ASSISTANT_ROUTES = [
-  "general",
-  "identifier",
-  "chart",
-  "write",
-] as const;
-export type AIAssistantRoute = (typeof AI_ASSISTANT_ROUTES)[number];
-
-// Mirrors DB-allowed values in ai_assistant_turn_events.outcome.
-export const AI_ASSISTANT_OUTCOMES = [
-  "ok",
-  "clarify",
-  "error",
-  "approved",
-  "committed",
-] as const;
-export type AIAssistantOutcome = (typeof AI_ASSISTANT_OUTCOMES)[number];
+import { resolveRoutesFromMessageParts } from "@/server/ai/tooling/tool-route-registry";
+import type {
+  AIAssistantOutcome,
+  AIAssistantPromptSource,
+  AIAssistantRoute,
+} from "@/server/ai/telemetry/constants";
 
 interface TrackAssistantTurnParams {
   conversationId: string;
@@ -54,14 +37,6 @@ export function getAssistantTextCharCount(parts: UIMessage["parts"]): number {
   }, 0);
 }
 
-function getToolPartTypes(parts: UIMessage["parts"]): string[] {
-  if (!Array.isArray(parts)) return [];
-
-  return parts
-    .filter((part) => part.type.startsWith("tool-"))
-    .map((part) => part.type);
-}
-
 function hasToolErrorOrDeniedState(parts: UIMessage["parts"]): boolean {
   if (!Array.isArray(parts)) return false;
 
@@ -75,23 +50,12 @@ function hasToolErrorOrDeniedState(parts: UIMessage["parts"]): boolean {
 }
 
 /**
- * Classify the assistant turn route from tool usage in message parts.
+ * Classify assistant turn routes from tool usage in message parts.
  */
-export function resolveAssistantRoute(
+export function resolveAssistantRoutes(
   parts: UIMessage["parts"],
-): AIAssistantRoute {
-  const toolTypes = getToolPartTypes(parts);
-
-  if (toolTypes.includes("tool-getHistoricalQuotes")) {
-    return "chart";
-  }
-
-  if (toolTypes.includes("tool-searchSymbols")) {
-    return "identifier";
-  }
-
-  // Phase 0 keeps write classification reserved for future mutating tools.
-  return "general";
+): AIAssistantRoute[] {
+  return resolveRoutesFromMessageParts(parts);
 }
 
 /**
@@ -136,7 +100,7 @@ export async function trackAssistantTurn(
 
   if (!userId) return;
 
-  const route = resolveAssistantRoute(params.message.parts);
+  const routes = resolveAssistantRoutes(params.message.parts);
   const outcome = resolveAssistantOutcome({
     parts: params.message.parts,
     finishReason: params.finishReason,
@@ -149,7 +113,7 @@ export async function trackAssistantTurn(
     user_id: userId,
     model: params.model,
     prompt_source: params.promptSource,
-    route,
+    routes,
     outcome,
     assistant_chars: assistantChars,
   });

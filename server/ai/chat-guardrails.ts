@@ -31,6 +31,17 @@ function estimateMessageTokens(message: UIMessage): number {
 }
 
 function keepLightweightParts(message: UIMessage): UIMessage | null {
+  // Older assistant turns that include reasoning/tool parts can reference
+  // provider-specific response items. Rewriting them to text-only may break
+  // those dependencies, so only keep assistant messages that were already
+  // plain text.
+  const containsNonTextPart = message.parts.some(
+    (part) => part.type !== "text",
+  );
+  if (containsNonTextPart) {
+    return null;
+  }
+
   const lightweightParts = message.parts.filter((part) => part.type === "text");
   if (lightweightParts.length === 0) {
     return null;

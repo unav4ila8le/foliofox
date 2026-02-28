@@ -409,6 +409,12 @@ describe("POST /api/ai/chat", () => {
     expect(streamTextMock).toHaveBeenCalledWith(
       expect.objectContaining({
         maxOutputTokens: 6000,
+        providerOptions: {
+          openai: {
+            reasoningSummary: "auto",
+            reasoningEffort: "low",
+          },
+        },
       }),
     );
     expect(convertToModelMessagesMock).toHaveBeenCalledWith(

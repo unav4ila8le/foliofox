@@ -98,7 +98,7 @@ describe("buildGuardrailedModelContext", () => {
     expect(result[0]?.id).toBe("assistant-latest");
   });
 
-  it("prunes heavy parts from older assistant messages", () => {
+  it("drops older assistant messages when they contain non-text parts", () => {
     const messages: UIMessage[] = [
       createMessage({
         id: "assistant-heavy-old",
@@ -128,6 +128,11 @@ describe("buildGuardrailedModelContext", () => {
           } as unknown as UIMessage["parts"][number],
         ],
       }),
+      createMessage({
+        id: "assistant-text-only-old",
+        role: "assistant",
+        parts: [{ type: "text", text: "plain assistant text" }],
+      }),
       ...Array.from({ length: 10 }, (_, index) =>
         createMessage({
           id: `tail-${index}`,
@@ -144,11 +149,16 @@ describe("buildGuardrailedModelContext", () => {
     const toolOnlyOldMessage = result.find(
       (message) => message.id === "assistant-tool-only-old",
     );
+    const textOnlyOldMessage = result.find(
+      (message) => message.id === "assistant-text-only-old",
+    );
 
-    expect(heavyOldMessage).toBeDefined();
-    expect(heavyOldMessage?.parts).toHaveLength(1);
-    expect(heavyOldMessage?.parts[0]?.type).toBe("text");
+    expect(heavyOldMessage).toBeUndefined();
     expect(toolOnlyOldMessage).toBeUndefined();
+    expect(textOnlyOldMessage).toBeDefined();
+    expect(textOnlyOldMessage?.parts).toEqual([
+      { type: "text", text: "plain assistant text" },
+    ]);
   });
 
   it("drops file parts from historical turns but keeps latest user file parts", () => {

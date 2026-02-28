@@ -1,6 +1,6 @@
-import { tool } from "ai";
 import { z } from "zod";
 import { NET_WORTH_MODES } from "@/server/analysis/net-worth/types";
+import { routedTool } from "@/server/ai/tooling/routed-tool";
 
 // Portfolio tracking
 import { getPortfolioOverview } from "./portfolio-overview";
@@ -15,7 +15,10 @@ import { getTopMovers } from "./top-movers";
 import { getAllocationDrift } from "./allocation-drift";
 import { getCurrencyExposure } from "./currency-exposure";
 import { getDividendYield } from "./dividend-yield";
-import { getHistoricalQuotes } from "./historical-quotes";
+import {
+  getHistoricalQuotes,
+  getHistoricalQuotesBatch,
+} from "./historical-quotes";
 import { searchSymbols } from "./search-symbols";
 import { getNews } from "./news";
 
@@ -23,7 +26,8 @@ import { getNews } from "./news";
 import { getFinancialScenarios } from "./financial-scenarios";
 
 export const aiTools = {
-  getPortfolioOverview: tool({
+  getPortfolioOverview: routedTool({
+    telemetryRoutes: ["general"],
     description:
       "Get a comprehensive portfolio overview including the user's financial profile, gross net worth, asset allocation, and all positions at any given date. Optionally include net worth after estimated capital gains taxes. Returns: summary, financial profile, net worth values, positions count, asset categories with percentages, and detailed position information with values converted to base currency.",
     inputSchema: z.object({
@@ -51,7 +55,8 @@ export const aiTools = {
     },
   }),
 
-  getPositions: tool({
+  getPositions: routedTool({
+    telemetryRoutes: ["general"],
     description:
       "Get raw positions in original currencies (no FX conversion). Optionally filter by position IDs. Uses market prices as-of the given date (defaults to today) for market-backed positions (e.g., securities, domains, etc.).",
     inputSchema: z.object({
@@ -69,7 +74,8 @@ export const aiTools = {
     execute: async (args) => getPositions(args),
   }),
 
-  getPortfolioRecords: tool({
+  getPortfolioRecords: routedTool({
+    telemetryRoutes: ["general"],
     description:
       "Get portfolio records history with optional filtering. Returns: record list with type, date, quantity, unit value, position details, and metadata. Supports filtering by position, date range, and archived status.",
     inputSchema: z.object({
@@ -91,7 +97,8 @@ export const aiTools = {
     },
   }),
 
-  getPositionSnapshots: tool({
+  getPositionSnapshots: routedTool({
+    telemetryRoutes: ["chart"],
     description:
       "Get historical snapshots (quantity and unit value) for a specific position. Returns: snapshot list with date, quantity, unit value, total value, and currency. Useful for analyzing position performance over time.",
     inputSchema: z.object({
@@ -108,7 +115,8 @@ export const aiTools = {
     },
   }),
 
-  getNetWorthHistory: tool({
+  getNetWorthHistory: routedTool({
+    telemetryRoutes: ["chart"],
     description:
       "Get net worth history over time to analyze financial trends. Supports gross mode or after-capital-gains-tax mode. Returns chronological values with dates, total data points, and period information. Shows portfolio growth/decline patterns.",
     inputSchema: z.object({
@@ -136,7 +144,8 @@ export const aiTools = {
     },
   }),
 
-  getNetWorthChange: tool({
+  getNetWorthChange: routedTool({
+    telemetryRoutes: ["general"],
     description:
       "Get net worth change over a specified period to analyze portfolio performance. Supports gross mode or after-capital-gains-tax mode. Returns current vs previous values, absolute change amount, percentage change, and direction. Shows portfolio growth rate and momentum.",
     inputSchema: z.object({
@@ -164,7 +173,8 @@ export const aiTools = {
     },
   }),
 
-  getProjectedIncome: tool({
+  getProjectedIncome: routedTool({
+    telemetryRoutes: ["chart"],
     description:
       "Get projected dividend income over future months to analyze passive income potential. Returns: monthly income projections with dates, total projected income, dividend-paying positions count, and success status. Useful for income planning and dividend strategy analysis.",
     inputSchema: z.object({
@@ -186,7 +196,8 @@ export const aiTools = {
     },
   }),
 
-  getAssetsPerformance: tool({
+  getAssetsPerformance: routedTool({
+    telemetryRoutes: ["general"],
     description:
       "Analyze asset(s) performance over a period. Returns price return (market move), value change (includes flows), and current unrealized P/L vs cost basis. Can analyze single asset, multiple assets, or entire portfolio.",
     inputSchema: z.object({
@@ -214,7 +225,8 @@ export const aiTools = {
     execute: async (args) => getAssetsPerformance(args),
   }),
 
-  getTopMovers: tool({
+  getTopMovers: routedTool({
+    telemetryRoutes: ["general"],
     description:
       "Find top gainers and losers over a period. Returns ranked lists by percentage (market move) and absolute change (includes flows).",
     inputSchema: z.object({
@@ -231,7 +243,8 @@ export const aiTools = {
     execute: async (args) => getTopMovers(args),
   }),
 
-  getAllocationDrift: tool({
+  getAllocationDrift: routedTool({
+    telemetryRoutes: ["general"],
     description:
       "Compare current asset allocation vs a past date, showing percentage drift by category (rebalance insights).",
     inputSchema: z.object({
@@ -248,7 +261,8 @@ export const aiTools = {
     execute: async (args) => getAllocationDrift(args),
   }),
 
-  getCurrencyExposure: tool({
+  getCurrencyExposure: routedTool({
+    telemetryRoutes: ["general"],
     description:
       "Calculate portfolio currency exposure by original currency as-of a date. Returns per-currency local value, base-currency value, percentage weight, FX rate used, and positions count.",
     inputSchema: z.object({
@@ -266,7 +280,8 @@ export const aiTools = {
     execute: async (args) => getCurrencyExposure(args),
   }),
 
-  getDividendYield: tool({
+  getDividendYield: routedTool({
+    telemetryRoutes: ["general"],
     description:
       "Get the latest dividend yield, last dividend amount, and payout cadence for a symbol. Use searchSymbols first if you need to confirm the Yahoo Finance symbol ticker. Set includeHistory to true when you want the recent dividend events list for added context.",
     inputSchema: z.object({
@@ -285,9 +300,10 @@ export const aiTools = {
     execute: async (args) => getDividendYield(args),
   }),
 
-  getHistoricalQuotes: tool({
+  getHistoricalQuotes: routedTool({
+    telemetryRoutes: ["chart"],
     description:
-      "Retrieve daily historical prices for a symbol across a limited date range (≤365 days). Useful when the user asks for chart-ready data or wants to compare performance outside stored portfolio records. If you're unsure about the Yahoo Finance ticker symbol, call searchSymbols first to confirm the correct symbol before invoking this tool.",
+      "Retrieve daily historical prices for a symbol across a limited date range (≤365 days). Use this for chart-ready data on specific symbols. Do not fan out this tool across an entire portfolio in one turn; for broad screening, use aggregate analysis tools first or ask the user to narrow scope (e.g., top movers, one category, or up to 5 symbols). If you're unsure about the Yahoo Finance ticker symbol, call searchSymbols first to confirm the correct symbol before invoking this tool.",
     inputSchema: z.object({
       symbolLookup: z
         .string()
@@ -310,7 +326,36 @@ export const aiTools = {
     execute: async (args) => getHistoricalQuotes(args),
   }),
 
-  searchSymbols: tool({
+  getHistoricalQuotesBatch: routedTool({
+    telemetryRoutes: ["chart"],
+    description:
+      "Retrieve daily historical prices for multiple symbols in one call (max 10 symbols, ≤365 days). Prefer this over repeated getHistoricalQuotes calls when screening multiple holdings in the same period.",
+    inputSchema: z.object({
+      symbolLookups: z
+        .array(z.string())
+        .min(1)
+        .max(10)
+        .describe(
+          "Symbol lookup values (tickers, aliases, or canonical UUIDs). Maximum 10 symbols per batch.",
+        ),
+      startDate: z
+        .string()
+        .nullable()
+        .describe(
+          "Inclusive start date in YYYY-MM-DD format (optional, defaults to 30 days before end date).",
+        ),
+      endDate: z
+        .string()
+        .nullable()
+        .describe(
+          "Inclusive end date in YYYY-MM-DD format (optional, defaults to today).",
+        ),
+    }),
+    execute: async (args) => getHistoricalQuotesBatch(args),
+  }),
+
+  searchSymbols: routedTool({
+    telemetryRoutes: ["identifier"],
     description:
       "Find the correct Yahoo Finance symbol for a company name or validate a symbol. " +
       "Yahoo Finance uses exchange SUFFIXES, not prefixes: RACE (NYSE), RACE.MI (Milan), " +
@@ -335,7 +380,8 @@ export const aiTools = {
     execute: async (args) => searchSymbols(args),
   }),
 
-  getNews: tool({
+  getNews: routedTool({
+    telemetryRoutes: ["general"],
     description:
       "Get news articles for specific symbols or user's portfolio. Returns: news articles with title, publisher, link, published date, and related symbols. If no symbols provided, returns news for user's entire portfolio. Useful for market analysis and staying informed about user's positions.",
     inputSchema: z.object({
@@ -355,7 +401,8 @@ export const aiTools = {
     execute: async (args) => getNews(args),
   }),
 
-  getFinancialScenarios: tool({
+  getFinancialScenarios: routedTool({
+    telemetryRoutes: ["chart"],
     description:
       "Get the user's financial scenario (scenario planning) with income/expense events and optional simulation. Returns: scenario name, initial value, events with conditions and recurrence, and optionally runs a forward simulation showing projected balances over time. Useful for analyzing financial plans, projections, and 'what-if' scenarios. Use this when the user asks about their scenario plan, future projections, or wants advice on their planned income/expense events.",
     inputSchema: z.object({

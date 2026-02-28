@@ -3,10 +3,10 @@ import { describe, expect, it } from "vitest";
 import {
   getAssistantTextCharCount,
   resolveAssistantOutcome,
-  resolveAssistantRoute,
+  resolveAssistantRoutes,
 } from "@/server/ai/telemetry/track-assistant-turn";
 
-type AssistantParts = Parameters<typeof resolveAssistantRoute>[0];
+type AssistantParts = Parameters<typeof resolveAssistantRoutes>[0];
 
 describe("track-assistant-turn helpers", () => {
   it("counts only assistant text parts", () => {
@@ -20,27 +20,44 @@ describe("track-assistant-turn helpers", () => {
   });
 
   it("classifies chart route when getHistoricalQuotes tool is used", () => {
-    const route = resolveAssistantRoute([
+    const routes = resolveAssistantRoutes([
       { type: "tool-getHistoricalQuotes", state: "output-available" },
     ] as unknown as AssistantParts);
 
-    expect(route).toBe("chart");
+    expect(routes).toEqual(["chart"]);
+  });
+
+  it("classifies chart route when getHistoricalQuotesBatch tool is used", () => {
+    const routes = resolveAssistantRoutes([
+      { type: "tool-getHistoricalQuotesBatch", state: "output-available" },
+    ] as unknown as AssistantParts);
+
+    expect(routes).toEqual(["chart"]);
   });
 
   it("classifies identifier route when searchSymbols tool is used", () => {
-    const route = resolveAssistantRoute([
+    const routes = resolveAssistantRoutes([
       { type: "tool-searchSymbols", state: "output-available" },
     ] as unknown as AssistantParts);
 
-    expect(route).toBe("identifier");
+    expect(routes).toEqual(["identifier"]);
+  });
+
+  it("returns multiple routes when multiple route-driving tools are used", () => {
+    const routes = resolveAssistantRoutes([
+      { type: "tool-searchSymbols", state: "output-available" },
+      { type: "tool-getHistoricalQuotes", state: "output-available" },
+    ] as unknown as AssistantParts);
+
+    expect(routes).toEqual(["identifier", "chart"]);
   });
 
   it("defaults to general route when no known tool is used", () => {
-    const route = resolveAssistantRoute([
+    const routes = resolveAssistantRoutes([
       { type: "text", text: "general answer" },
     ] as AssistantParts);
 
-    expect(route).toBe("general");
+    expect(routes).toEqual(["general"]);
   });
 
   it("returns error outcome on finishReason error", () => {
