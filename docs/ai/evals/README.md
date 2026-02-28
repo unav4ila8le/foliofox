@@ -168,4 +168,6 @@ Route denominators are membership-based (`routes[]` containment), so one turn ca
 1. Current telemetry version emits `outcome` mostly as `ok` or `error`.
 2. Regenerate currently defaults to `prompt_source = 'typed'`.
 3. One turn can contain multiple routes (`routes[]`) when multiple route-driving tools are used.
-4. `follow_up_rate_typed` may undercount in long threads due to message trimming.
+4. `general` is a fallback route; when a turn also includes specific routes (`identifier`, `chart`, `write`), `general` is dropped.
+5. Tool-call budget counts actual tool executions; exact duplicate tool+input calls are deduplicated and reuse one execution.
+6. `follow_up_rate_typed` may undercount in long threads due to message trimming.

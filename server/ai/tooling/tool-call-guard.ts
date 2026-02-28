@@ -99,6 +99,8 @@ export function createToolCallGuard<TOOL_SET extends ToolSet>(
             const cachedPromise =
               internalState.inFlightOrCachedCalls.get(cacheKey);
             if (cachedPromise) {
+              // Budget counts actual tool executions.
+              // Exact same tool+input reuses one execution and does not consume extra budget.
               return cachedPromise;
             }
           }

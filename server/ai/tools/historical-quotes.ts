@@ -101,22 +101,6 @@ function buildHistoricalDateSeries({
   return dates;
 }
 
-function mapPointsForSymbol({
-  dates,
-}: {
-  dates: Date[];
-}): HistoricalQuotePoint[] {
-  return dates.map((date) => {
-    const dateString = formatUTCDateKey(date);
-    return {
-      date: dateString,
-      price: null,
-      source: "yahoo-finance",
-      status: "missing",
-    };
-  });
-}
-
 export async function getHistoricalQuotes({
   symbolLookup,
   startDate,
@@ -253,15 +237,18 @@ export async function getHistoricalQuotesBatch({
   });
 
   const symbols = resolvedSymbols.map((symbol) => {
-    const points = mapPointsForSymbol({
-      dates,
-    }).map((point) => {
+    // Build final points in one pass (no intermediate "missing points" scaffold).
+    const points = dates.map((date) => {
+      const dateString = formatUTCDateKey(date);
       const price =
-        quotesMap.get(`${symbol.canonicalId}|${point.date}`) ?? point.price;
+        quotesMap.get(`${symbol.canonicalId}|${dateString}`) ??
+        quotesMap.get(`${symbol.requestedLookup}|${dateString}`) ??
+        null;
 
       return {
-        ...point,
+        date: dateString,
         price,
+        source: "yahoo-finance",
         status: price !== null ? "ok" : "missing",
       } satisfies HistoricalQuotePoint;
     });

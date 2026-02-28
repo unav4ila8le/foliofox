@@ -69,6 +69,8 @@ export function resolveRoutesFromMessageParts(
   }
 
   if (routeSet.size > 1 && routeSet.has("general")) {
+    // "general" is the fallback route. When any specific route is present,
+    // keep only the specific routes for clearer KPI segmentation.
     routeSet.delete("general");
   }
 
