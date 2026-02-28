@@ -10,6 +10,8 @@ const persistConversationFromMessagesMock = vi.fn();
 const persistAssistantMessageMock = vi.fn();
 const trackAssistantTurnMock = vi.fn();
 const createSystemPromptMock = vi.fn(() => "system prompt");
+const getPortfolioOverviewToolExecuteMock = vi.fn(async () => ({ ok: true }));
+const searchSymbolsToolExecuteMock = vi.fn(async () => ({ ok: true }));
 
 class MockAIChatPersistenceError extends Error {
   constructor(
@@ -44,7 +46,10 @@ vi.mock("@/server/ai/system-prompt", () => ({
 }));
 
 vi.mock("@/server/ai/tools", () => ({
-  aiTools: {},
+  aiTools: {
+    getPortfolioOverview: { execute: getPortfolioOverviewToolExecuteMock },
+    searchSymbols: { execute: searchSymbolsToolExecuteMock },
+  },
 }));
 
 vi.mock("@/server/ai/provider", () => ({
@@ -79,6 +84,8 @@ describe("POST /api/ai/chat", () => {
     persistAssistantMessageMock.mockReset();
     trackAssistantTurnMock.mockReset();
     createSystemPromptMock.mockClear();
+    getPortfolioOverviewToolExecuteMock.mockReset();
+    searchSymbolsToolExecuteMock.mockReset();
 
     streamTextMock.mockReturnValue({
       totalUsage: Promise.resolve({ totalTokens: 222 }),
@@ -99,6 +106,8 @@ describe("POST /api/ai/chat", () => {
       success: true,
       data: messages,
     }));
+    getPortfolioOverviewToolExecuteMock.mockResolvedValue({ ok: true });
+    searchSymbolsToolExecuteMock.mockResolvedValue({ ok: true });
   });
 
   it("returns 403 when AI consent is disabled", async () => {
@@ -409,6 +418,12 @@ describe("POST /api/ai/chat", () => {
     expect(streamTextMock).toHaveBeenCalledWith(
       expect.objectContaining({
         maxOutputTokens: 6000,
+        providerOptions: {
+          openai: {
+            reasoningSummary: "auto",
+            reasoningEffort: "low",
+          },
+        },
       }),
     );
     expect(convertToModelMessagesMock).toHaveBeenCalledWith(
@@ -501,6 +516,61 @@ describe("POST /api/ai/chat", () => {
       replaceLatestAssistantForRegenerate: true,
       targetAssistantMessageIdForRegenerate: "assistant-target-id",
     });
+  });
+
+  it("forces portfolio overview on first step and disables tools when budget is exhausted", async () => {
+    const { POST } = await import("@/app/api/ai/chat/route");
+    fetchProfileMock.mockResolvedValue({
+      profile: { data_sharing_consent: true },
+    });
+
+    const request = new Request("http://localhost/api/ai/chat", {
+      method: "POST",
+      body: JSON.stringify({
+        messages: [
+          {
+            id: "m-user",
+            role: "user",
+            parts: [{ type: "text", text: "hello" }],
+          },
+        ],
+      }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    await POST(request);
+
+    const streamArgs = streamTextMock.mock.calls.at(-1)?.[0] as {
+      prepareStep: (args: { stepNumber: number }) => Promise<unknown>;
+      tools: Record<
+        string,
+        { execute?: (input: unknown, options?: unknown) => Promise<unknown> }
+      >;
+      stopWhen: Array<() => boolean>;
+    };
+    expect(streamArgs).toBeDefined();
+
+    const firstStepPlan = await streamArgs.prepareStep({ stepNumber: 0 });
+    expect(firstStepPlan).toEqual({
+      toolChoice: { type: "tool", toolName: "getPortfolioOverview" },
+      activeTools: ["getPortfolioOverview"],
+    });
+
+    const overviewTool = streamArgs.tools.getPortfolioOverview;
+    const searchSymbolsTool = streamArgs.tools.searchSymbols;
+    expect(overviewTool?.execute).toBeDefined();
+    expect(searchSymbolsTool?.execute).toBeDefined();
+
+    for (let call = 0; call < 4; call += 1) {
+      await overviewTool!.execute!({ call, tool: "overview" }, {} as never);
+      await searchSymbolsTool!.execute!({ call, tool: "search" }, {} as never);
+    }
+
+    const afterBudgetPlan = await streamArgs.prepareStep({ stepNumber: 1 });
+    expect(afterBudgetPlan).toEqual({ activeTools: [] });
+    expect(streamArgs.stopWhen[1]?.()).toBe(true);
   });
 
   it("passes suggestion prompt source to telemetry when provided", async () => {

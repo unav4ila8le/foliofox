@@ -14,6 +14,7 @@ import { z } from "zod";
 import { fetchProfile } from "@/server/profile/actions";
 import { createSystemPrompt, type Mode } from "@/server/ai/system-prompt";
 import { aiTools } from "@/server/ai/tools";
+import { createToolCallGuard } from "@/server/ai/tooling/tool-call-guard";
 import {
   AIChatPersistenceError,
   persistConversationFromMessages,
@@ -24,10 +25,8 @@ import {
   AI_CHAT_CONVERSATION_CAP_FRIENDLY_MESSAGE,
   AI_CHAT_ERROR_CODES,
 } from "@/lib/ai/chat-errors";
-import {
-  type AIAssistantPromptSource,
-  trackAssistantTurn,
-} from "@/server/ai/telemetry/track-assistant-turn";
+import { type AIAssistantPromptSource } from "@/server/ai/telemetry/constants";
+import { trackAssistantTurn } from "@/server/ai/telemetry/track-assistant-turn";
 import {
   CHAT_FILE_ALLOWED_TYPES_TEXT,
   MAX_CHAT_FILE_SIZE_BYTES,
@@ -39,6 +38,8 @@ import {
 
 // Allow streaming responses up to 160 seconds (reasoning models need more time)
 export const maxDuration = 160;
+const MAX_TOOL_CALLS_PER_TURN = 8;
+const MAX_CALLS_PER_TOOL_PER_TURN = 4;
 
 const chatRequestSchema = z.looseObject({
   messages: z.unknown(),
@@ -209,22 +210,48 @@ export async function POST(req: Request) {
   const guardrailedContextMessages = buildGuardrailedModelContext(messages);
   const system = createSystemPrompt({ mode, aiTools });
   const firstAssistantTurn = !messages.some((m) => m.role === "assistant");
+  const { guardedTools, guardState } = createToolCallGuard(aiTools, {
+    maxTotalCallsPerTurn: MAX_TOOL_CALLS_PER_TURN,
+    maxCallsPerToolPerTurn: MAX_CALLS_PER_TOOL_PER_TURN,
+    enableExactInputDeduplication: true,
+  });
 
   const result = streamText({
     model: aiModel(chatModelId),
     messages: await convertToModelMessages(guardrailedContextMessages),
-    tools: aiTools,
+    tools: guardedTools,
     system,
     maxOutputTokens: 6000,
-    stopWhen: stepCountIs(24),
+    stopWhen: [
+      stepCountIs(24),
+      () => guardState.getTotalCalls() >= MAX_TOOL_CALLS_PER_TURN,
+    ],
     providerOptions: {
       openai: {
         reasoningSummary: "auto",
+        reasoningEffort: "low",
       },
     },
 
     // Force portfolio overview on very first assistant step
     prepareStep: async ({ stepNumber }) => {
+      const availableTools = (
+        Object.keys(aiTools) as Array<keyof typeof aiTools>
+      ).filter(
+        (toolName) =>
+          guardState.getCallsForTool(String(toolName)) <
+          MAX_CALLS_PER_TOOL_PER_TURN,
+      );
+
+      if (
+        guardState.getTotalCalls() >= MAX_TOOL_CALLS_PER_TURN ||
+        availableTools.length === 0
+      ) {
+        // This blocks any additional tool calls within the current step.
+        // stopWhen enforces the same budget boundary before the next model step.
+        return { activeTools: [] };
+      }
+
       if (firstAssistantTurn && stepNumber === 0) {
         return {
           toolChoice: { type: "tool", toolName: "getPortfolioOverview" },
@@ -232,8 +259,8 @@ export async function POST(req: Request) {
           activeTools: ["getPortfolioOverview"],
         };
       }
-      // Otherwise, default behavior (no forced tools)
-      return {};
+      // Otherwise, expose tools that still have remaining per-turn budget.
+      return { activeTools: availableTools };
     },
 
     onError: (err) => {

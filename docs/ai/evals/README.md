@@ -33,12 +33,13 @@ Tracked fields:
 5. `model`
 6. `prompt_source` (`typed` or `suggestion`)
 7. `assistant_chars`
-8. `route` (`general`, `identifier`, `chart`, `write`)
+8. `routes` (array of: `general`, `identifier`, `chart`, `write`)
 9. `outcome` (`ok`, `clarify`, `error`, `approved`, `committed`)
 
 Schema source:
 
 - `supabase/migrations/20260227032421_create_ai_assistant_turn_events.sql`
+- `supabase/migrations/20260228022739_convert_ai_turn_events_route_to_routes_array.sql`
 
 ## Weekly Eval Procedure (Every 7 Days, UTC)
 
@@ -70,7 +71,7 @@ base as (
     e.created_at,
     e.prompt_source,
     e.assistant_chars,
-    e.route,
+    e.routes,
     e.outcome
   from windows w
   join public.ai_assistant_turn_events e
@@ -99,11 +100,11 @@ kpis as (
     avg(case when tf.has_followup then 1.0 else 0.0 end)
       filter (where b.prompt_source = 'typed') as follow_up_rate_typed,
     avg(case when b.outcome = 'error' then 1.0 else 0.0 end)
-      filter (where b.route = 'identifier') as identifier_error_rate,
+      filter (where b.routes @> array['identifier']::text[]) as identifier_error_rate,
     avg(case when b.outcome = 'ok' then 1.0 else 0.0 end)
-      filter (where b.route = 'chart') as chart_completion_rate,
+      filter (where b.routes @> array['chart']::text[]) as chart_completion_rate,
     avg(case when b.outcome = 'committed' then 1.0 else 0.0 end)
-      filter (where b.route = 'write') as write_commit_success_rate
+      filter (where b.routes @> array['write']::text[]) as write_commit_success_rate
   from base b
   left join typed_followups tf
     on tf.period = b.period
@@ -115,9 +116,9 @@ volume as (
     period,
     count(*) as assistant_turns,
     count(*) filter (where prompt_source = 'typed') as typed_turns,
-    count(*) filter (where route = 'identifier') as identifier_turns,
-    count(*) filter (where route = 'chart') as chart_turns,
-    count(*) filter (where route = 'write') as write_turns
+    count(*) filter (where routes @> array['identifier']::text[]) as identifier_turns,
+    count(*) filter (where routes @> array['chart']::text[]) as chart_turns,
+    count(*) filter (where routes @> array['write']::text[]) as write_turns
   from base
   group by period
 )
@@ -152,6 +153,8 @@ Do not call regressions/improvements if sample is too small:
 3. chart KPI: `chart_turns >= 20`
 4. write KPI: `write_turns >= 20`
 
+Route denominators are membership-based (`routes[]` containment), so one turn can contribute to multiple route buckets.
+
 ## KPI Direction Guide
 
 1. `assistant_chars_median_typed`: lower is better
@@ -164,5 +167,7 @@ Do not call regressions/improvements if sample is too small:
 
 1. Current telemetry version emits `outcome` mostly as `ok` or `error`.
 2. Regenerate currently defaults to `prompt_source = 'typed'`.
-3. If both chart and identifier tools appear in one turn, route precedence is `chart`.
-4. `follow_up_rate_typed` may undercount in long threads due to message trimming.
+3. One turn can contain multiple routes (`routes[]`) when multiple route-driving tools are used.
+4. `general` is a fallback route; when a turn also includes specific routes (`identifier`, `chart`, `write`), `general` is dropped.
+5. Tool-call budget counts actual tool executions; exact duplicate tool+input calls are deduplicated and reuse one execution.
+6. `follow_up_rate_typed` may undercount in long threads due to message trimming.

@@ -86,6 +86,7 @@ describe("trackAssistantTurn insert behavior", () => {
       expect.objectContaining({
         conversation_id: "d9ef7f5c-9077-4703-8164-802e44f278a1",
         assistant_message_id: "c18d1bdf-32ef-4f5a-9c37-d44229f1e7ea",
+        routes: ["general"],
       }),
     );
   });

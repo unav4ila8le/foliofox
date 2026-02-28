@@ -97,7 +97,7 @@ Objective: reduce verbosity and establish reliable product telemetry.
   - `model`
   - `prompt_source` (`suggestion` | `typed`)
   - `assistant_chars`
-  - `route` (`general` | `identifier` | `chart` | `write`)
+  - `routes` (array of: `general` | `identifier` | `chart` | `write`)
   - `outcome` (`ok` | `clarify` | `error` | `approved` | `committed`)
 - Derive follow-up behavior from message sequence instead of storing extra fields.
 - Rule: add new telemetry fields only when a KPI cannot be explained with this MVP schema.
