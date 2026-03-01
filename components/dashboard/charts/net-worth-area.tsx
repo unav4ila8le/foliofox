@@ -73,6 +73,8 @@ export function NetWorthAreaChart({
   netWorthMode: NetWorthMode;
   estimatedCapitalGainsTax: number | null;
 }) {
+  const defaultTimeRange = "3m";
+  const [selectedTimeRange, setSelectedTimeRange] = useState(defaultTimeRange);
   const [customTimeRange, setCustomTimeRange] = useState<{
     history: NetWorthHistoryData[];
     change: NetWorthChangeData;
@@ -92,10 +94,12 @@ export function NetWorthAreaChart({
 
   // Reset custom range payload on mode changes to avoid mixed gross/net data.
   useEffect(() => {
+    setSelectedTimeRange(defaultTimeRange);
     setCustomTimeRange(null);
   }, [netWorthMode]);
 
   const handleRangeChange = async (value: string) => {
+    setSelectedTimeRange(value);
     setIsLoading(true);
 
     try {
@@ -246,7 +250,7 @@ export function NetWorthAreaChart({
               ) : null}
             </div>
             <Select
-              defaultValue="3m"
+              value={selectedTimeRange}
               onValueChange={handleRangeChange}
               disabled={isChartLoading}
             >
