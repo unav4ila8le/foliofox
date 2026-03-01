@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useDebounce } from "use-debounce";
+import Link from "next/link";
 import { Search, XIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { searchYahooFinanceSymbols } from "@/server/symbols/search";
 
 import type { SymbolSearchResult } from "@/types/global.types";
+
+const YAHOO_FINANCE_LOOKUP_URL = "https://finance.yahoo.com/lookup/?s=";
 
 // Props interface for react-hook-form integration
 interface SymbolSearchProps {
@@ -144,6 +147,7 @@ export function SymbolSearch({
     isLoading,
     isLoadingQuote,
     setIsLoadingQuote,
+    searchQuery,
     setSearchQuery,
   };
 
@@ -261,6 +265,7 @@ interface SymbolListProps {
   isLoading: boolean;
   isLoadingQuote: boolean;
   setIsLoadingQuote: (loading: boolean) => void;
+  searchQuery: string;
   setSearchQuery: (query: string) => void;
 }
 
@@ -272,8 +277,15 @@ function SymbolList({
   isLoading,
   isLoadingQuote,
   setIsLoadingQuote,
+  searchQuery,
   setSearchQuery,
 }: SymbolListProps) {
+  const trimmedSearchQuery = searchQuery.trim();
+  const hasSearchQuery = trimmedSearchQuery.length > 0;
+  const yahooLookupHref = hasSearchQuery
+    ? `${YAHOO_FINANCE_LOOKUP_URL}${encodeURIComponent(trimmedSearchQuery)}`
+    : YAHOO_FINANCE_LOOKUP_URL;
+
   // Handle symbol selection with loading state
   const handleSymbolSelect = async (symbol: SymbolSearchResult) => {
     try {
@@ -297,14 +309,35 @@ function SymbolList({
   return (
     <Command>
       <CommandInput
-        placeholder="Search symbol..."
+        placeholder="Search symbol (e.g. AAPL, VWCE.DE, BTC-USD)..."
         className="h-9"
         onValueChange={setSearchQuery}
         disabled={isLoadingQuote}
       />
       <CommandList>
         <CommandEmpty>
-          {isLoading ? "Searching..." : "No symbols found."}
+          {isLoading ? (
+            "Searching..."
+          ) : (
+            <div className="space-y-2">
+              <p className="font-medium">
+                {hasSearchQuery
+                  ? `No symbols found for "${trimmedSearchQuery}".`
+                  : "No symbols found."}
+              </p>
+              <p className="text-muted-foreground text-xs">
+                Use Yahoo Finance symbol format like AAPL, VWCE.DE, or BTC-USD.
+              </p>
+              <Link
+                href={yahooLookupHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary text-xs font-medium underline underline-offset-4"
+              >
+                Open Yahoo Finance Lookup
+              </Link>
+            </div>
+          )}
         </CommandEmpty>
         <CommandGroup>
           {results.map((symbol) => (
