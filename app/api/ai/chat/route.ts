@@ -221,7 +221,7 @@ export async function POST(req: Request) {
     messages: await convertToModelMessages(guardrailedContextMessages),
     tools: guardedTools,
     system,
-    maxOutputTokens: 6000,
+    maxOutputTokens: 8000,
     stopWhen: [
       stepCountIs(24),
       () => guardState.getTotalCalls() >= MAX_TOOL_CALLS_PER_TURN,

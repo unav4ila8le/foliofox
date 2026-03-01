@@ -38,6 +38,7 @@ import {
   isMessageFilePart,
   isMessageSourcePart,
 } from "./utils";
+import { getToolOutputPreview } from "./tool-output-preview";
 
 export function ChatMessage({
   message,
@@ -176,7 +177,7 @@ export function ChatMessage({
                   <ToolContent>
                     <ToolInput input={part.input} />
                     <ToolOutput
-                      output={part.output}
+                      output={getToolOutputPreview(part)}
                       errorText={part.errorText}
                     />
                   </ToolContent>

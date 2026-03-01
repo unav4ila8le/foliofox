@@ -417,7 +417,7 @@ describe("POST /api/ai/chat", () => {
 
     expect(streamTextMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        maxOutputTokens: 6000,
+        maxOutputTokens: 8000,
         providerOptions: {
           openai: {
             reasoningSummary: "auto",
