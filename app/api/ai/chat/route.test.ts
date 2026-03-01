@@ -421,7 +421,7 @@ describe("POST /api/ai/chat", () => {
         providerOptions: {
           openai: {
             reasoningSummary: "auto",
-            reasoningEffort: "low",
+            reasoningEffort: "medium",
           },
         },
       }),

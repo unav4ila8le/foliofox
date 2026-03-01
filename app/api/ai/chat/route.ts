@@ -229,7 +229,7 @@ export async function POST(req: Request) {
     providerOptions: {
       openai: {
         reasoningSummary: "auto",
-        reasoningEffort: "low",
+        reasoningEffort: "medium",
       },
     },
 
