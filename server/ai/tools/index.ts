@@ -118,7 +118,7 @@ export const aiTools = {
   getNetWorthHistory: routedTool({
     telemetryRoutes: ["chart"],
     description:
-      "Get net worth history over time to analyze financial trends. Supports gross mode or after-capital-gains-tax mode. Returns chronological values with dates, total data points, and period information. Shows portfolio growth/decline patterns.",
+      "Get net worth history over time to analyze financial trends. Supports gross mode or after-capital-gains-tax mode. Returns chronological values with dates, period information, and historyQuality metadata (including whether history is suitable for return-drift estimation). Leading zero-only history is trimmed from returned items to keep the series representative.",
     inputSchema: z.object({
       baseCurrency: z
         .string()
