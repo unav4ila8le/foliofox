@@ -392,6 +392,21 @@ Stop for your final review and sign-off.
 
 ---
 
+## Code Readability Standards (Required Across All Phases)
+
+1. Add concise comments where business logic or multi-step transformations are not obvious from code alone.
+2. Prioritize junior-friendly readability: explicit naming, low indirection, and clear data-flow over clever abstractions.
+3. Keep comments minimal but descriptive:
+
+- Explain _why_ a step exists, not only _what_ the line does.
+- Avoid noisy comments that simply restate the code.
+
+4. For large or delicate functions, split logic into clearly labeled sections and use numbered flow comments when helpful (for example: `1. Resolve inputs`, `2. Validate`, `3. Query`, `4. Transform`, `5. Return`).
+5. If a function already uses numbered flow comments, preserve and extend that structure consistently when editing.
+6. During reviews for each phase, include readability checks as first-class acceptance criteria, not an optional polish pass.
+
+---
+
 ## Assumptions and Defaults Chosen
 
 1. Timezone model: per-user persisted DB timezone (`profiles.time_zone`).
