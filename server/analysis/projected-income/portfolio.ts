@@ -176,6 +176,7 @@ export const calculateProjectedIncome = cache(
         {
           positionType: "asset",
           includeArchived: false,
+          asOfDateKey: resolvedAsOfDateKey,
         },
         context,
       );
@@ -312,6 +313,7 @@ export const calculateProjectedIncomeByAsset = cache(
         {
           positionType: "asset",
           includeArchived: false,
+          asOfDateKey: resolvedAsOfDateKey,
         },
         context,
       );
