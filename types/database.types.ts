@@ -694,8 +694,8 @@ export type Database = {
           created_at: string
           data_sharing_consent: boolean
           display_currency: string
-          time_zone: string | null
-          time_zone_mode: string | null
+          time_zone: string
+          time_zone_mode: string
           updated_at: string
           user_id: string
           username: string
@@ -705,8 +705,8 @@ export type Database = {
           created_at?: string
           data_sharing_consent?: boolean
           display_currency?: string
-          time_zone?: string | null
-          time_zone_mode?: string | null
+          time_zone?: string
+          time_zone_mode?: string
           updated_at?: string
           user_id: string
           username: string
@@ -716,8 +716,8 @@ export type Database = {
           created_at?: string
           data_sharing_consent?: boolean
           display_currency?: string
-          time_zone?: string | null
-          time_zone_mode?: string | null
+          time_zone?: string
+          time_zone_mode?: string
           updated_at?: string
           user_id?: string
           username?: string

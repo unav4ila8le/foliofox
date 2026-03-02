@@ -24,6 +24,7 @@ Fix once and for all:
 2. Treat business dates as civil `DateKey` (`YYYY-MM-DD`) resolved in actor timezone.
 3. Keep UTC for timestamps, cron, provider fetch windows, and storage instants.
 4. Remove UTC-day fallback logic from user-civil pathways.
+5. Avoid nullable timezone bootstrap states by defaulting profiles to `UTC` + `auto`, then silently syncing to browser timezone.
 
 ---
 
@@ -31,14 +32,14 @@ Fix once and for all:
 
 1. Database profile shape:
 
-- Add `profiles.time_zone` (IANA timezone string).
-- Add `profiles.time_zone_mode` (`auto` | `manual`) to preserve user preference intent.
+- Add `profiles.time_zone` (IANA timezone string), `NOT NULL`, default `'UTC'`.
+- Add `profiles.time_zone_mode` (`auto` | `manual`), `NOT NULL`, default `'auto'`.
 - `types/database.types.ts` must be regenerated after migration(s).
 
 2. Profile APIs:
 
 - Extend `updateProfile(formData)` to accept/update `time_zone` and `time_zone_mode`.
-- Add new idempotent server action: `syncProfileTimeZone(timeZone: string)` for silent browser-based bootstrap and auto-follow updates.
+- Add new idempotent server action: `syncProfileTimeZone(timeZone: string)` for silent browser-based auto-follow updates.
 - Timezone setting semantics:
   - If user selects `Auto`, persist `time_zone_mode='auto'` and also persist a concrete IANA value in `time_zone`.
   - If user selects a specific timezone, persist `time_zone_mode='manual'` and that concrete IANA value in `time_zone`.
@@ -76,8 +77,8 @@ Fix once and for all:
 
 - `resolveTodayDateKey(timeZone)` is request-time data and must not be cached across civil-midnight boundaries.
 - Any route-level/server cache that depends on civil "today" must use short TTL and/or include resolved date key in cache key.
-- Bootstrap-gate branch must not be cached in a way that persists after timezone sync.
-  - Either bypass cache for the null-timezone branch, or key that branch by current `profile.time_zone` and refresh after sync.
+- Silent timezone auto-sync should trigger at most one client refresh per tab when persisted timezone actually changes.
+- Auto-sync flow must guard against refresh loops (single-flight client state + idempotent server action result).
 
 ---
 
@@ -89,9 +90,9 @@ Introduce timezone as first-class profile data and surface it in settings.
 
 ### Work
 
-1. Add `time_zone` to `public.profiles` via migration pattern aligned with recent migrations (`BEGIN/COMMIT`, safe alters).
-2. Add `time_zone_mode` to `public.profiles` with allowed values (`auto`, `manual`) and consistency checks with `time_zone`.
-3. Backfill any existing non-null `time_zone` rows to `time_zone_mode='manual'` for deterministic rollout.
+1. Add `time_zone` to `public.profiles` via migration pattern aligned with recent migrations (`BEGIN/COMMIT`, safe alters), with default `'UTC'`.
+2. Add `time_zone_mode` to `public.profiles` with allowed values (`auto`, `manual`), default `'auto'`, and consistency checks with `time_zone`.
+3. Backfill existing profiles so both columns are non-null, then enforce `NOT NULL` in the same migration (pre-production safe path).
 4. Regenerate Supabase TS types.
 5. Update profile fetch/update paths to include timezone + mode.
 6. Add timezone field to settings form UI (read/write).
@@ -105,6 +106,7 @@ Introduce timezone as first-class profile data and surface it in settings.
 1. You create migration file (I will provide exact SQL content when executing this phase).
 2. You run migration.
 3. You regenerate `types/database.types.ts`.
+4. Since this is pre-production, if needed you can revert and edit the latest migration in place before reapplying.
 
 ### Verification
 
@@ -119,55 +121,53 @@ Stop and wait for your review/approval before Phase 2.
 
 ---
 
-## Phase 2 — Silent Timezone Bootstrap + Strict Access Gate
+## Phase 2 — Invisible Timezone Auto-Sync (No Dashboard Gate)
 
 ### Goal
 
-Enforce that date-sensitive pages only run when timezone exists, without UTC fallback logic.
+Keep dashboard UX uninterrupted while keeping `auto` users aligned to their current browser timezone.
 
 ### Work
 
-1. Add client bootstrap flow:
+1. Add client auto-sync flow in existing authenticated UI (no new route/page):
 
 - Detect browser timezone via `Intl.DateTimeFormat().resolvedOptions().timeZone`.
 - Call `syncProfileTimeZone()` silently.
 - `syncProfileTimeZone()` must be idempotent and race-safe:
-  - Bootstrap path: set timezone when currently missing (`time_zone IS NULL`) and set `time_zone_mode='auto'`.
-  - Auto-follow path: update timezone only when `time_zone_mode='auto'` and detected timezone differs.
+  - Update timezone only when `time_zone_mode='auto'` and detected timezone differs.
   - Never overwrite timezone when `time_zone_mode='manual'`.
 - Refresh route only when the current tab actually changed persisted timezone state.
 - Reuse this same browser inference path when settings are saved with `Auto`.
+- Do not add timezone sync in login/signup server actions; keep sync logic centralized in authenticated dashboard layout flow.
 
-2. Gate dashboard date-sensitive rendering:
+2. Keep dashboard layout fully data-driven (no timezone gate branch):
 
-- In dashboard layout flow, resolve profile first.
-- If timezone missing, render bootstrap gate instead of running holdings/analytics queries.
-- Implementation detail (required): branch in `app/(dashboard)/dashboard/layout.tsx` immediately after `fetchProfile()`.
-  - Branch A (`time_zone` is null): render dashboard shell + bootstrap gate only, and skip `Promise.all` for `calculateNetWorth`, `fetchStalePositions`, and other heavy data calls.
-  - Branch B (`time_zone` present): execute the current data-driven path.
-- This gate logic must live in layout/page flow, not middleware redirects.
+- Do not block or branch heavy queries behind a visible sync gate.
+- Remove temporary bootstrap cards/skeleton loaders for timezone setup.
+- If timezone changes due to auto-sync, do one lightweight refresh to align server-rendered data.
 
 3. Public portfolio handling:
 
-- Start with owner-timezone requirements on public-share creation/update flows.
+- Keep owner-timezone requirements on public-share creation/update flows.
 - Do not switch existing public render paths yet in this phase; final public cutover happens in Phase 4 after readiness checks.
 
 4. Public share enable/update guard:
 
-- Prevent enabling/updating public sharing until owner timezone exists.
+- Keep validation guard on public sharing flows to ensure timezone integrity before enable/update operations.
 
 5. User experience constraints:
 
-- Bootstrap gate must preserve dashboard shell and show a deterministic loading state (avoid full-page blink).
-- Bootstrap is one-time for legacy null users; auto-follow updates remain ongoing for users in `auto` mode (travel/device timezone changes).
+- No visible timezone-sync screen, alert card, or dedicated client bootstrap page.
+- Auto-sync runs in background and should feel instantaneous in the common case.
+- During rollout, users whose stored timezone still differs from browser timezone may see one stale first render followed by one refresh; this is expected and acceptable.
 
 ### Verification
 
-1. Existing user with null timezone gets silently synced on first dashboard load.
-2. No holdings/analytics query executes with missing timezone.
-3. Public-share create/update flows are blocked until owner timezone is present.
-4. Null-timezone branch skips heavy `Promise.all` data calls and avoids full-page blink.
-5. Auto-mode user whose browser timezone changes gets silent timezone refresh without switching to manual mode.
+1. Dashboard loads normally without any timezone-gate UI.
+2. Auto-mode user whose browser timezone changes gets silent timezone refresh without switching to manual mode.
+3. Refresh happens only when persisted timezone changed (no refresh loops).
+4. Login/signup flow does not perform timezone synchronization.
+5. Public-share create/update validations remain intact.
 
 ### Approval gate
 
@@ -307,7 +307,7 @@ Stop and wait for your review/approval before Phase 6.
 
 ---
 
-## Phase 6 — Cleanup + Final Hardening
+## Phase 6 — Cleanup + Hardening
 
 ### Goal
 
@@ -317,21 +317,15 @@ Finish the full cut and remove deprecated date logic.
 
 1. Remove deprecated civil-date code paths that rely on implicit UTC day cutoffs.
 2. Remove temporary compatibility overloads and any mixed `Date`/date-key pathways introduced during migration.
-3. Audit and clean comments/docs to state final date model.
-4. Add guard tests to prevent reintroduction of old patterns in civil-date pathways.
-5. Final DB hardening migration to set both `profiles.time_zone` and `profiles.time_zone_mode` to `NOT NULL` after null count reaches zero.
-
-### User action required
-
-1. You create and run final hardening migration (`SET NOT NULL`) only when data is ready.
-2. I will provide exact SQL and readiness query during execution.
+3. Remove temporary bootstrap-gate/fallback code paths that were only needed during transition.
+4. Audit and clean comments/docs to state final date model.
+5. Add guard tests to prevent reintroduction of old patterns in civil-date pathways.
 
 ### Verification
 
-1. `SELECT count(*) FROM public.profiles WHERE time_zone IS NULL OR time_zone_mode IS NULL;` returns `0`.
-2. Active public portfolio owner readiness query confirms no null timezone before public cutover.
-3. No user-civil pathway uses UTC fallback semantics.
-4. Final regression suite passes.
+1. Schema confirms `profiles.time_zone` and `profiles.time_zone_mode` are `NOT NULL` with expected defaults/checks.
+2. No user-civil pathway uses UTC fallback semantics.
+3. Final regression suite passes.
 
 ### Approval gate
 
@@ -353,9 +347,11 @@ Stop for your final review and sign-off.
 
 - Viewer in different timezone sees values based on owner timezone consistently.
 
-4. Missing timezone bootstrap:
+4. Default bootstrap + auto-sync:
 
-- Null timezone profile gets silent sync and then correct data render.
+- Profiles start with `time_zone='UTC'` and `time_zone_mode='auto'` after migration.
+- Silent auto-sync updates to browser timezone when needed and refreshes once.
+- Auto-sync/checking runs in dashboard authenticated layout flow; no login/signup timezone sync path.
 
 5. Settings timezone behavior:
 
@@ -426,10 +422,11 @@ Stop for your final review and sign-off.
 ## Assumptions and Defaults Chosen
 
 1. Timezone model: per-user persisted DB timezone (`profiles.time_zone`) + mode (`profiles.time_zone_mode`).
-2. Initial capture: infer from browser and auto-save silently.
-3. `Auto` is persisted as mode intent (`time_zone_mode='auto'`) while `time_zone` remains a concrete IANA value.
+2. Profiles default to `time_zone='UTC'` and `time_zone_mode='auto'` (no nullable bootstrap state).
+3. Initial capture and ongoing updates: infer from browser and sync silently in auto mode; runtime sync happens in authenticated dashboard layout auto-sync flow (not in login/signup actions).
 4. Public valuation day: owner timezone.
 5. No UTC fallback in user-civil logic after cutover.
 6. UTC retained for timestamps, cron, and market/provider internal date logic.
-7. Phase 3 and Phase 4 are deployed atomically to avoid broken contracts.
-8. Migration workflow constraint: I will not create or run migrations; you will create/run them when each phase requires it.
+7. No visible timezone-gate UI in dashboard; sync is background and non-blocking.
+8. Phase 3 and Phase 4 are deployed atomically to avoid broken contracts.
+9. Migration workflow constraint: I will not create or run migrations; you will create/run them when each phase requires it.

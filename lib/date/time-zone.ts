@@ -11,6 +11,7 @@ export type TimeZoneMode =
   (typeof TIME_ZONE_MODES)[keyof typeof TIME_ZONE_MODES];
 
 export const AUTO_TIME_ZONE_VALUE = TIME_ZONE_MODES.AUTO;
+const WELL_KNOWN_IANA_TIME_ZONE_ALIASES = new Set<string>(["UTC", "Etc/UTC"]);
 
 let cachedSupportedTimeZones: string[] | null = null;
 
@@ -44,6 +45,16 @@ export function isValidIanaTimeZone(timeZone: string): boolean {
   const candidate = timeZone.trim();
   if (!candidate) {
     return false;
+  }
+
+  // Accept canonical UTC aliases even when supportedValuesOf omits aliases.
+  if (WELL_KNOWN_IANA_TIME_ZONE_ALIASES.has(candidate)) {
+    try {
+      new Intl.DateTimeFormat("en-US", { timeZone: candidate });
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   // 1. Prefer exact membership checks when supportedValuesOf is available.
