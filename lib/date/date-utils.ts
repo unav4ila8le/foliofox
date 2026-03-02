@@ -3,6 +3,13 @@ import { z } from "zod";
 type DateInput = Date | string | number;
 
 const DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const DATE_PARTS_FORMATTER_LOCALE = "en-US";
+
+declare const civilDateKeyBrand: unique symbol;
+declare const utcDateKeyBrand: unique symbol;
+
+export type CivilDateKey = string & { readonly [civilDateKeyBrand]: true };
+export type UTCDateKey = string & { readonly [utcDateKeyBrand]: true };
 
 function toDate(value: DateInput): Date | null {
   const date = value instanceof Date ? value : new Date(value);
@@ -10,6 +17,111 @@ function toDate(value: DateInput): Date | null {
     return null;
   }
   return date;
+}
+
+function isValidDateKeyString(value: string): boolean {
+  if (!DATE_KEY_PATTERN.test(value)) {
+    return false;
+  }
+
+  const [year, month, day] = value.split("-").map(Number);
+  const normalized = new Date(Date.UTC(year, month - 1, day));
+
+  return (
+    normalized.getUTCFullYear() === year &&
+    normalized.getUTCMonth() === month - 1 &&
+    normalized.getUTCDate() === day
+  );
+}
+
+/**
+ * Build a branded civil date key from a validated YYYY-MM-DD value.
+ * Returns null instead of throwing to keep parser callsites ergonomic.
+ */
+export function toCivilDateKey(value: string): CivilDateKey | null {
+  const trimmed = value.trim();
+  if (!isValidDateKeyString(trimmed)) {
+    return null;
+  }
+
+  return trimmed as CivilDateKey;
+}
+
+/**
+ * Build a branded civil date key and throw when input is invalid.
+ */
+export function toCivilDateKeyOrThrow(value: string): CivilDateKey {
+  const dateKey = toCivilDateKey(value);
+  if (!dateKey) {
+    throw new Error("Invalid civil date key");
+  }
+
+  return dateKey;
+}
+
+/**
+ * Build a branded UTC date key from a validated YYYY-MM-DD value.
+ * Returns null instead of throwing to keep parser callsites ergonomic.
+ */
+export function toUTCDateKey(value: string): UTCDateKey | null {
+  const trimmed = value.trim();
+  if (!isValidDateKeyString(trimmed)) {
+    return null;
+  }
+
+  return trimmed as UTCDateKey;
+}
+
+function formatDateKeyPartsInTimeZone(date: Date, timeZone: string): string {
+  const formatter = new Intl.DateTimeFormat(DATE_PARTS_FORMATTER_LOCALE, {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const parts = formatter.formatToParts(date);
+
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const day = parts.find((part) => part.type === "day")?.value;
+
+  if (!year || !month || !day) {
+    throw new Error("Failed to format date key parts for timezone");
+  }
+
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Format a date as a civil YYYY-MM-DD key in a specific timezone.
+ */
+export function formatDateKeyInTimeZone(
+  date: DateInput,
+  timeZone: string,
+): CivilDateKey {
+  const value = toDate(date);
+  if (!value) {
+    throw new Error("Invalid date provided to formatDateKeyInTimeZone");
+  }
+
+  const formatted = formatDateKeyPartsInTimeZone(value, timeZone);
+  const dateKey = toCivilDateKey(formatted);
+
+  if (!dateKey) {
+    throw new Error("Failed to produce a valid civil date key");
+  }
+
+  return dateKey;
+}
+
+/**
+ * Resolve today's civil date key for a timezone, optionally injecting "now".
+ */
+export function resolveTodayDateKey(
+  timeZone: string,
+  now: DateInput = new Date(),
+): CivilDateKey {
+  return formatDateKeyInTimeZone(now, timeZone);
 }
 
 /**
@@ -23,7 +135,12 @@ export function formatUTCDateKey(date: DateInput): string {
     throw new Error("Invalid date provided to formatUTCDateKey");
   }
 
-  return value.toISOString().slice(0, 10);
+  const dateKey = toUTCDateKey(value.toISOString().slice(0, 10));
+  if (!dateKey) {
+    throw new Error("Failed to produce a valid UTC date key");
+  }
+
+  return dateKey;
 }
 
 /**

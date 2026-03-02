@@ -19,7 +19,11 @@ import { formatPercentage, formatCurrency } from "@/lib/number-format";
 import { getRequestLocale } from "@/lib/locale/resolve-locale";
 import { parsePortfolioRecordTypes } from "@/lib/portfolio-records/filters";
 import { getSearchParam } from "@/lib/search-params";
-import { parseUTCDateKey } from "@/lib/date/date-utils";
+import {
+  formatUTCDateKey,
+  toCivilDateKey,
+  toCivilDateKeyOrThrow,
+} from "@/lib/date/date-utils";
 import { cn } from "@/lib/utils";
 
 import type {
@@ -148,18 +152,12 @@ async function RecordsWrapper({
     Number.isFinite(parsedPage) && parsedPage > 0 ? Math.floor(parsedPage) : 1;
   const q = typeof queryParam === "string" ? queryParam : undefined;
   const recordTypes = parsePortfolioRecordTypes(typeParam);
-  const parsedStartDate = dateFromParam
-    ? parseUTCDateKey(dateFromParam)
+  const startDateKey = dateFromParam
+    ? (toCivilDateKey(dateFromParam) ?? undefined)
     : undefined;
-  const parsedEndDate = dateToParam ? parseUTCDateKey(dateToParam) : undefined;
-  const startDate =
-    parsedStartDate && !Number.isNaN(parsedStartDate.getTime())
-      ? parsedStartDate
-      : undefined;
-  const endDate =
-    parsedEndDate && !Number.isNaN(parsedEndDate.getTime())
-      ? parsedEndDate
-      : undefined;
+  const endDateKey = dateToParam
+    ? (toCivilDateKey(dateToParam) ?? undefined)
+    : undefined;
   const sortBy =
     sortParam === "date" || sortParam === "created_at" ? sortParam : undefined;
   const sortDirection =
@@ -173,8 +171,8 @@ async function RecordsWrapper({
     pageSize: 50,
     q,
     recordTypes,
-    startDate,
-    endDate,
+    startDateKey,
+    endDateKey,
     sortBy,
     sortDirection,
   });
@@ -227,10 +225,11 @@ async function AssetLayout({
   let snapshots: PositionSnapshot[];
 
   try {
+    const asOfDateKey = toCivilDateKeyOrThrow(formatUTCDateKey(new Date()));
     const result = await fetchSinglePosition(positionId, {
       includeArchived: true,
       includeSnapshots: true,
-      asOfDate: new Date(),
+      asOfDateKey,
     });
     position = result.position;
     snapshots = result.snapshots;

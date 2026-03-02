@@ -4,7 +4,11 @@ import { cache } from "react";
 
 import type { Scenario } from "@/lib/scenario-planning";
 import { convertCurrency } from "@/lib/currency-conversion";
-import { startOfUTCDay } from "@/lib/date/date-utils";
+import {
+  formatUTCDateKey,
+  startOfUTCDay,
+  toCivilDateKeyOrThrow,
+} from "@/lib/date/date-utils";
 import {
   fromDatabaseScenarioToScenario,
   type ScenarioInitialValueBasis as ScenarioInitialValueBasisType,
@@ -161,6 +165,7 @@ export const fetchOrCreateDefaultScenario = cache(
 export const fetchScenarioStartingValueSuggestions = cache(
   async (targetCurrency: string): Promise<ScenarioStartingValueSuggestions> => {
     const asOfDate = startOfUTCDay(new Date());
+    const asOfDateKey = toCivilDateKeyOrThrow(formatUTCDateKey(asOfDate));
 
     try {
       const [netWorthValue, assetPositions] = await Promise.all([
@@ -168,7 +173,7 @@ export const fetchScenarioStartingValueSuggestions = cache(
         fetchPositions({
           includeArchived: true,
           positionType: "asset",
-          asOfDate,
+          asOfDateKey,
         }),
       ]);
 

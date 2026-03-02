@@ -139,38 +139,7 @@ export async function syncProfileTimeZone(timeZone: string) {
     };
   }
 
-  // 2. Bootstrap path for legacy users:
-  // only set timezone automatically when profile timezone is still missing.
-  const { data: bootstrapRows, error: bootstrapError } = await supabase
-    .from("profiles")
-    .update({
-      time_zone: normalizedTimeZone,
-      time_zone_mode: TIME_ZONE_MODES.AUTO,
-    })
-    .eq("user_id", user.id)
-    .is("time_zone", null)
-    .is("time_zone_mode", null)
-    .select("user_id");
-
-  if (bootstrapError) {
-    return {
-      success: false as const,
-      changed: false as const,
-      code: bootstrapError.code,
-      message: bootstrapError.message,
-    };
-  }
-
-  if ((bootstrapRows?.length ?? 0) > 0) {
-    revalidatePath("/dashboard", "layout");
-    return {
-      success: true as const,
-      changed: true as const,
-      reason: "bootstrap",
-    };
-  }
-
-  // 3. Auto-follow path:
+  // 2. Auto-follow path:
   // update timezone only for users who explicitly chose auto mode.
   const { data: autoFollowRows, error: autoFollowError } = await supabase
     .from("profiles")
@@ -200,7 +169,7 @@ export async function syncProfileTimeZone(timeZone: string) {
     };
   }
 
-  // 4. No-op path:
+  // 3. No-op path:
   // profile is already up-to-date or user is in manual mode.
   return {
     success: true as const,

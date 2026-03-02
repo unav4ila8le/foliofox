@@ -28,6 +28,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { formatUTCDateKey, toCivilDateKeyOrThrow } from "@/lib/date/date-utils";
 
 import { fetchPositions } from "@/server/positions/fetch";
 
@@ -58,8 +59,9 @@ export function PositionSelector({
   // Load positions when the selector opens
   const getPositions = async () => {
     try {
+      const asOfDateKey = toCivilDateKeyOrThrow(formatUTCDateKey(new Date()));
       const data = await fetchPositions({
-        asOfDate: new Date(),
+        asOfDateKey,
       });
       setPositions(data);
     } catch (error) {

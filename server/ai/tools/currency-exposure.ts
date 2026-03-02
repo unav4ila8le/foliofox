@@ -9,6 +9,8 @@ import {
   formatUTCDateKey,
   parseUTCDateKey,
   startOfUTCDay,
+  toCivilDateKey,
+  toCivilDateKeyOrThrow,
 } from "@/lib/date/date-utils";
 
 interface GetCurrencyExposureParams {
@@ -46,18 +48,19 @@ export async function getCurrencyExposure(
     const baseCurrency =
       params.baseCurrency ?? (await fetchProfile()).profile.display_currency;
 
-    const parsedDate = params.date ? parseUTCDateKey(params.date) : null;
-    const date =
-      parsedDate && !Number.isNaN(parsedDate.getTime())
-        ? parsedDate
-        : startOfUTCDay(new Date());
+    const requestedDateKey = params.date ? toCivilDateKey(params.date) : null;
+    const date = requestedDateKey
+      ? parseUTCDateKey(requestedDateKey)
+      : startOfUTCDay(new Date());
+    const asOfDateKey =
+      requestedDateKey ?? toCivilDateKeyOrThrow(formatUTCDateKey(date));
     const dateKey = formatUTCDateKey(date);
 
     // Fetch positions (assets) valued as-of the date
     const positions = await fetchPositions({
       positionType: "asset",
       includeArchived: true,
-      asOfDate: date,
+      asOfDateKey,
     });
 
     if (!positions?.length) {

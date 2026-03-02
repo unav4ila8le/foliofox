@@ -6,7 +6,11 @@ import { fetchPositions } from "@/server/positions/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 
 import { convertCurrency } from "@/lib/currency-conversion";
-import { startOfUTCDay } from "@/lib/date/date-utils";
+import {
+  formatUTCDateKey,
+  startOfUTCDay,
+  toCivilDateKeyOrThrow,
+} from "@/lib/date/date-utils";
 import type { PositionsQueryContext } from "@/server/positions/fetch";
 
 /**
@@ -20,12 +24,14 @@ export const calculateAssetAllocation = cache(
     context?: PositionsQueryContext,
   ) => {
     const asOfDate = date ?? startOfUTCDay(new Date());
+    const asOfDateKey = toCivilDateKeyOrThrow(formatUTCDateKey(asOfDate));
+
     // 1. Fetch positions valued as-of date (no snapshots histories needed)
     const positions = await fetchPositions(
       {
         positionType: "asset",
         includeArchived: true,
-        asOfDate,
+        asOfDateKey,
       },
       context,
     );

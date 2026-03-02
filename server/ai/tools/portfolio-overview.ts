@@ -8,7 +8,13 @@ import { resolveSymbolsBatch } from "@/server/symbols/resolve";
 import { calculateAssetAllocation } from "@/server/analysis/asset-allocation";
 import { calculateNetWorth } from "@/server/analysis/net-worth/net-worth";
 import { convertCurrency } from "@/lib/currency-conversion";
-import { parseUTCDateKey, startOfUTCDay } from "@/lib/date/date-utils";
+import {
+  formatUTCDateKey,
+  parseUTCDateKey,
+  startOfUTCDay,
+  toCivilDateKey,
+  toCivilDateKeyOrThrow,
+} from "@/lib/date/date-utils";
 
 /**
  * Get portfolio overview for AI analysis
@@ -26,12 +32,15 @@ export async function getPortfolioOverview(params: {
     const baseCurrency =
       params.baseCurrency ?? (await fetchProfile()).profile.display_currency;
 
-    // Use a single date across quotes and FX for consistency
-    const parsedDate = params.date ? parseUTCDateKey(params.date) : null;
-    const asOfDate =
-      parsedDate && !Number.isNaN(parsedDate.getTime())
-        ? parsedDate
-        : startOfUTCDay(new Date());
+    // Use a single date key/date pair across quotes and FX for consistency.
+    const requestedAsOfDateKey = params.date
+      ? toCivilDateKey(params.date)
+      : null;
+    const asOfDate = requestedAsOfDateKey
+      ? parseUTCDateKey(requestedAsOfDateKey)
+      : startOfUTCDay(new Date());
+    const asOfDateKey =
+      requestedAsOfDateKey ?? toCivilDateKeyOrThrow(formatUTCDateKey(asOfDate));
 
     // Fetch user's financial profile
     const financialProfile = await fetchFinancialProfile();
@@ -40,7 +49,7 @@ export async function getPortfolioOverview(params: {
     // Fetch positions valued as-of the target date
     const positions = await fetchPositions({
       includeArchived: true,
-      asOfDate: asOfDate,
+      asOfDateKey,
     });
 
     // If no positions, return empty state

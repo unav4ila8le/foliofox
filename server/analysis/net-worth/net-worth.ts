@@ -5,7 +5,11 @@ import { fetchPositions } from "@/server/positions/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 
 import { convertCurrency } from "@/lib/currency-conversion";
-import { startOfUTCDay } from "@/lib/date/date-utils";
+import {
+  formatUTCDateKey,
+  startOfUTCDay,
+  toCivilDateKeyOrThrow,
+} from "@/lib/date/date-utils";
 import { calculateProfitLoss } from "@/lib/profit-loss";
 import { calculateCapitalGainsTaxAmount } from "@/server/analysis/net-worth/capital-gains-tax";
 import type { PositionsQueryContext } from "@/server/positions/fetch";
@@ -27,6 +31,7 @@ export const calculateNetWorth = cache(
     mode: NetWorthMode = "gross",
   ) => {
     const asOfDate = date ?? startOfUTCDay(new Date());
+    const asOfDateKey = toCivilDateKeyOrThrow(formatUTCDateKey(asOfDate));
 
     // 1. Fetch positions valued as-of the date.
     // In after-tax mode we need snapshots to compute unrealized gain from basis.
@@ -39,7 +44,7 @@ export const calculateNetWorth = cache(
         {
           includeArchived: true,
           includeSnapshots: true,
-          asOfDate,
+          asOfDateKey,
         },
         context,
       );
@@ -49,7 +54,7 @@ export const calculateNetWorth = cache(
       positions = await fetchPositions(
         {
           includeArchived: true,
-          asOfDate,
+          asOfDateKey,
         },
         context,
       );

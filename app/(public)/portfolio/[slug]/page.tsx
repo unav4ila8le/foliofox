@@ -21,6 +21,7 @@ import {
 import { fetchPositions } from "@/server/positions/fetch";
 import { calculateProfitLoss } from "@/lib/profit-loss";
 import { getRequestLocale } from "@/lib/locale/resolve-locale";
+import { formatUTCDateKey, toCivilDateKeyOrThrow } from "@/lib/date/date-utils";
 
 import type { PositionsQueryContext } from "@/server/positions/fetch";
 
@@ -125,11 +126,12 @@ async function PositionsWrapper({
   const supabaseClient = createServiceClient();
   const context: PositionsQueryContext = { supabaseClient, userId };
   const asOfDate = new Date();
+  const asOfDateKey = toCivilDateKeyOrThrow(formatUTCDateKey(asOfDate));
 
   const positionsResult = await fetchPositions(
     {
       positionType: "asset",
-      asOfDate: asOfDate,
+      asOfDateKey,
       includeSnapshots: true,
     },
     context,

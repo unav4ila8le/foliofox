@@ -8,7 +8,7 @@ import { resolveSymbolsBatch } from "@/server/symbols/resolve";
 
 import { calculateProfitLoss } from "@/lib/profit-loss";
 import { convertCurrency } from "@/lib/currency-conversion";
-import { parseUTCDateKey } from "@/lib/date/date-utils";
+import { parseUTCDateKey, toCivilDateKeyOrThrow } from "@/lib/date/date-utils";
 import { clampDateRange } from "@/server/ai/tools/helpers/time-range";
 
 interface GetAssetsPerformanceParams {
@@ -75,6 +75,8 @@ export async function getAssetsPerformance(params: GetAssetsPerformanceParams) {
     });
     const startDate = parseUTCDateKey(startDateKey);
     const endDate = parseUTCDateKey(endDateKey);
+    const startAsOfDateKey = toCivilDateKeyOrThrow(startDateKey);
+    const endAsOfDateKey = toCivilDateKeyOrThrow(endDateKey);
 
     // Fetch end-date positions (with snapshots for P/L) and start-date positions (no snapshots needed)
     const [endSnapshot, startPositions] = await Promise.all([
@@ -82,12 +84,12 @@ export async function getAssetsPerformance(params: GetAssetsPerformanceParams) {
         positionType: "asset",
         includeArchived: true,
         includeSnapshots: true,
-        asOfDate: endDate,
+        asOfDateKey: endAsOfDateKey,
       }),
       fetchPositions({
         positionType: "asset",
         includeArchived: true,
-        asOfDate: startDate,
+        asOfDateKey: startAsOfDateKey,
       }),
     ]);
 

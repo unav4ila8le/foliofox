@@ -7,17 +7,12 @@ import { resolveBrowserTimeZone } from "@/lib/date/time-zone";
 import { syncProfileTimeZone } from "@/server/profile/actions";
 
 /**
- * 1) Resolve browser timezone.
- * 2) Sync with server using the idempotent server action.
- * 3) Return whether persisted profile state changed.
+ * Sync the provided browser timezone with server profile state.
+ * Returns true only when persisted timezone actually changed.
  */
-async function syncDetectedTimeZone(): Promise<boolean> {
-  const detectedTimeZone = resolveBrowserTimeZone();
-
-  if (!detectedTimeZone) {
-    return false;
-  }
-
+async function syncDetectedTimeZone(
+  detectedTimeZone: string,
+): Promise<boolean> {
   const syncResult = await syncProfileTimeZone(detectedTimeZone);
   return syncResult.success && syncResult.changed;
 }
@@ -46,7 +41,8 @@ export function TimeZoneAutoSync({ currentTimeZone }: TimeZoneAutoSyncProps) {
         return;
       }
 
-      const didChangeProfileTimeZone = await syncDetectedTimeZone();
+      const didChangeProfileTimeZone =
+        await syncDetectedTimeZone(detectedTimeZone);
 
       if (isUnmounted) {
         return;
