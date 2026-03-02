@@ -165,9 +165,9 @@ export function buildCivilDateKeyRange(
 /**
  * Format a date as a UTC date key in the format "yyyy-MM-dd".
  * @param date - The date to format
- * @returns The formatted date key
+ * @returns The formatted UTC date key
  */
-export function formatUTCDateKey(date: DateInput): string {
+export function formatUTCDateKey(date: DateInput): UTCDateKey {
   const value = toDate(date);
   if (!value) {
     throw new Error("Invalid date provided to formatUTCDateKey");
@@ -179,22 +179,6 @@ export function formatUTCDateKey(date: DateInput): string {
   }
 
   return dateKey;
-}
-
-/**
- * Get the start of the UTC day for a given date.
- * @param date - The date to normalize
- * @returns Date at UTC midnight
- */
-export function startOfUTCDay(date: DateInput): Date {
-  const value = toDate(date);
-  if (!value) {
-    throw new Error("Invalid date provided to startOfUTCDay");
-  }
-
-  return new Date(
-    Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()),
-  );
 }
 
 /**

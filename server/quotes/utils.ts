@@ -1,7 +1,7 @@
-import { formatUTCDateKey } from "@/lib/date/date-utils";
+import { formatUTCDateKey, type UTCDateKey } from "@/lib/date/date-utils";
 
 export interface ChartQuoteEntry {
-  dateKey: string;
+  dateKey: UTCDateKey;
   closePrice: number;
   adjustedClosePrice: number;
 }

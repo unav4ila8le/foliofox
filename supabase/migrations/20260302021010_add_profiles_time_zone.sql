@@ -84,14 +84,6 @@ ALTER TABLE public.profiles
   ADD CONSTRAINT profiles_time_zone_mode_valid_check
   CHECK (time_zone_mode IN ('auto', 'manual'));
 
-ALTER TABLE public.profiles
-  ADD CONSTRAINT profiles_time_zone_and_mode_consistency_check
-  CHECK (
-    time_zone IS NOT NULL
-    AND btrim(time_zone) <> ''
-    AND time_zone_mode IN ('auto', 'manual')
-  );
-
 COMMENT ON COLUMN public.profiles.time_zone IS
   'User IANA timezone (e.g., Asia/Seoul). Stored as concrete value for civil-day business logic. Defaults to UTC and is never null.';
 

@@ -9,6 +9,7 @@ import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 import { convertCurrency } from "@/lib/currency-conversion";
 import {
   type CivilDateKey,
+  type UTCDateKey,
   formatUTCDateKey,
   parseUTCDateKey,
   parseLocalDateKey,
@@ -69,8 +70,7 @@ interface MissingFxDetail extends MissingFxContext {
 }
 
 interface ProjectedIncomeFxContext {
-  fxDate: Date;
-  fxDateKey: string;
+  fxDateKey: UTCDateKey;
   convertAmount: (
     amount: number,
     sourceCurrency: string,
@@ -147,7 +147,6 @@ async function createProjectedIncomeFxContext(input: {
   };
 
   return {
-    fxDate,
     fxDateKey,
     convertAmount,
     getMissingCount: () => missingFxConversions,

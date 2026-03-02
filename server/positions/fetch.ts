@@ -198,10 +198,9 @@ async function fetchPositionsImpl(
       activePositionIds.has(position.id),
     );
 
-    const marketDataDate = parseUTCDateKey(asOfDateKey);
     const marketData = await fetchMarketData(
       positionsForMarketData,
-      marketDataDate,
+      resolutionDate,
     );
     priceMap = marketData.prices;
   }
