@@ -4,6 +4,11 @@ import { cache } from "react";
 import { revalidatePath } from "next/cache";
 
 import { getCurrentUser, getOptionalUser } from "@/server/auth/actions";
+import {
+  isValidTimeZoneMode,
+  normalizeIanaTimeZone,
+  TIME_ZONE_MODES,
+} from "@/lib/date/time-zone";
 
 import type { Profile } from "@/types/global.types";
 import { createClient } from "@/supabase/server";
@@ -63,12 +68,46 @@ export async function checkUsernameAvailability(username: string) {
 export async function updateProfile(formData: FormData) {
   const { supabase, user } = await getCurrentUser();
 
-  // Data is already validated in the form component
-  const data: Pick<Profile, "username" | "display_currency"> = {
+  // 1. Resolve and validate timezone mode. Keep manual as a safe default for
+  // backward compatibility if an older client omits this field.
+  const rawTimeZoneMode = String(
+    formData.get("time_zone_mode") ?? TIME_ZONE_MODES.MANUAL,
+  )
+    .trim()
+    .toLowerCase();
+
+  if (!isValidTimeZoneMode(rawTimeZoneMode)) {
+    return {
+      success: false,
+      code: "INVALID_TIME_ZONE_MODE",
+      message:
+        "Invalid timezone mode. Please select Auto or a manual timezone.",
+    };
+  }
+
+  // 2. Resolve and validate concrete timezone value.
+  const rawTimeZone = String(formData.get("time_zone") ?? "").trim();
+  const normalizedTimeZone = normalizeIanaTimeZone(rawTimeZone);
+
+  if (!normalizedTimeZone) {
+    return {
+      success: false,
+      code: "INVALID_TIME_ZONE",
+      message: "Invalid timezone. Please select a valid IANA timezone.",
+    };
+  }
+
+  // Keep server-side validation explicit so profile updates do not trust client-only checks.
+  const data: Pick<
+    Profile,
+    "username" | "display_currency" | "time_zone" | "time_zone_mode"
+  > = {
     username: String(formData.get("username")).trim(),
     display_currency: String(formData.get("display_currency"))
       .trim()
       .toUpperCase(),
+    time_zone: normalizedTimeZone,
+    time_zone_mode: rawTimeZoneMode,
   };
 
   // Update profile

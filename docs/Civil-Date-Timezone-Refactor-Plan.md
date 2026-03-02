@@ -20,7 +20,7 @@ Why this is problematic:
 
 Fix once and for all:
 
-1. Persist user timezone (`profiles.time_zone`, IANA).
+1. Persist user timezone (`profiles.time_zone`, IANA) and timezone preference mode (`profiles.time_zone_mode`).
 2. Treat business dates as civil `DateKey` (`YYYY-MM-DD`) resolved in actor timezone.
 3. Keep UTC for timestamps, cron, provider fetch windows, and storage instants.
 4. Remove UTC-day fallback logic from user-civil pathways.
@@ -32,13 +32,17 @@ Fix once and for all:
 1. Database profile shape:
 
 - Add `profiles.time_zone` (IANA timezone string).
+- Add `profiles.time_zone_mode` (`auto` | `manual`) to preserve user preference intent.
 - `types/database.types.ts` must be regenerated after migration(s).
 
 2. Profile APIs:
 
-- Extend `updateProfile(formData)` to accept/update `time_zone`.
-- Add new idempotent server action: `syncProfileTimeZone(timeZone: string)` for silent browser-based bootstrap.
-- Timezone setting semantics: UI can expose an `Auto` option, but backend always stores a concrete IANA timezone in `profiles.time_zone` (no separate auto/manual mode column).
+- Extend `updateProfile(formData)` to accept/update `time_zone` and `time_zone_mode`.
+- Add new idempotent server action: `syncProfileTimeZone(timeZone: string)` for silent browser-based bootstrap and auto-follow updates.
+- Timezone setting semantics:
+  - If user selects `Auto`, persist `time_zone_mode='auto'` and also persist a concrete IANA value in `time_zone`.
+  - If user selects a specific timezone, persist `time_zone_mode='manual'` and that concrete IANA value in `time_zone`.
+  - UI shows `Auto` whenever `time_zone_mode='auto'`, even though `time_zone` still stores a concrete value used by backend date logic.
 
 3. Date contracts:
 
@@ -64,6 +68,7 @@ Fix once and for all:
 
 - Infer timezone only from browser API: `Intl.DateTimeFormat().resolvedOptions().timeZone`.
 - Validate inferred/manual values against supported IANA zones before persist.
+- Only auto-follow (silent `time_zone` updates) when `time_zone_mode='auto'`.
 - Do not infer timezone from locale headers or IP geolocation.
 - Locale provider remains formatting-only; timezone for civil-day business logic comes from persisted profile data.
 
@@ -85,12 +90,15 @@ Introduce timezone as first-class profile data and surface it in settings.
 ### Work
 
 1. Add `time_zone` to `public.profiles` via migration pattern aligned with recent migrations (`BEGIN/COMMIT`, safe alters).
-2. Regenerate Supabase TS types.
-3. Update profile fetch/update paths to include timezone.
-4. Add timezone field to settings form UI (read/write).
-5. Timezone field behavior: default selection is `Auto` (like Locale).
-6. If user saves with `Auto`, client resolves browser timezone and submits/stores concrete IANA value.
-7. Add timezone validation utility (IANA validation in app runtime).
+2. Add `time_zone_mode` to `public.profiles` with allowed values (`auto`, `manual`) and consistency checks with `time_zone`.
+3. Backfill any existing non-null `time_zone` rows to `time_zone_mode='manual'` for deterministic rollout.
+4. Regenerate Supabase TS types.
+5. Update profile fetch/update paths to include timezone + mode.
+6. Add timezone field to settings form UI (read/write).
+7. Timezone field behavior: default selection is `Auto` (like Locale).
+8. If user saves with `Auto`, client resolves browser timezone and submits/stores concrete IANA value with `time_zone_mode='auto'`.
+9. If user saves a manual timezone, store that value with `time_zone_mode='manual'`.
+10. Add timezone validation utility (IANA validation in app runtime).
 
 ### User action required
 
@@ -100,9 +108,10 @@ Introduce timezone as first-class profile data and surface it in settings.
 
 ### Verification
 
-1. Settings can persist timezone.
-2. Profile fetch returns timezone.
-3. Typecheck passes.
+1. Settings can persist timezone and mode.
+2. Reopening settings preserves `Auto` selection when `time_zone_mode='auto'`.
+3. Profile fetch returns timezone + mode.
+4. Typecheck passes.
 
 ### Approval gate
 
@@ -122,8 +131,11 @@ Enforce that date-sensitive pages only run when timezone exists, without UTC fal
 
 - Detect browser timezone via `Intl.DateTimeFormat().resolvedOptions().timeZone`.
 - Call `syncProfileTimeZone()` silently.
-- `syncProfileTimeZone()` must be idempotent and race-safe (`UPDATE ... WHERE user_id = ? AND time_zone IS NULL`) so multi-tab bootstrap calls are safe and do not overwrite a manually-set timezone.
-- Refresh route only when the current tab actually changed `time_zone` from `NULL` to a concrete value.
+- `syncProfileTimeZone()` must be idempotent and race-safe:
+  - Bootstrap path: set timezone when currently missing (`time_zone IS NULL`) and set `time_zone_mode='auto'`.
+  - Auto-follow path: update timezone only when `time_zone_mode='auto'` and detected timezone differs.
+  - Never overwrite timezone when `time_zone_mode='manual'`.
+- Refresh route only when the current tab actually changed persisted timezone state.
 - Reuse this same browser inference path when settings are saved with `Auto`.
 
 2. Gate dashboard date-sensitive rendering:
@@ -147,7 +159,7 @@ Enforce that date-sensitive pages only run when timezone exists, without UTC fal
 5. User experience constraints:
 
 - Bootstrap gate must preserve dashboard shell and show a deterministic loading state (avoid full-page blink).
-- This is a one-time post-release sync path for legacy users with null timezone.
+- Bootstrap is one-time for legacy null users; auto-follow updates remain ongoing for users in `auto` mode (travel/device timezone changes).
 
 ### Verification
 
@@ -155,6 +167,7 @@ Enforce that date-sensitive pages only run when timezone exists, without UTC fal
 2. No holdings/analytics query executes with missing timezone.
 3. Public-share create/update flows are blocked until owner timezone is present.
 4. Null-timezone branch skips heavy `Promise.all` data calls and avoids full-page blink.
+5. Auto-mode user whose browser timezone changes gets silent timezone refresh without switching to manual mode.
 
 ### Approval gate
 
@@ -306,7 +319,7 @@ Finish the full cut and remove deprecated date logic.
 2. Remove temporary compatibility overloads and any mixed `Date`/date-key pathways introduced during migration.
 3. Audit and clean comments/docs to state final date model.
 4. Add guard tests to prevent reintroduction of old patterns in civil-date pathways.
-5. Final DB hardening migration to set `profiles.time_zone` `NOT NULL` after null count reaches zero.
+5. Final DB hardening migration to set both `profiles.time_zone` and `profiles.time_zone_mode` to `NOT NULL` after null count reaches zero.
 
 ### User action required
 
@@ -315,7 +328,7 @@ Finish the full cut and remove deprecated date logic.
 
 ### Verification
 
-1. `SELECT count(*) FROM public.profiles WHERE time_zone IS NULL;` returns `0`.
+1. `SELECT count(*) FROM public.profiles WHERE time_zone IS NULL OR time_zone_mode IS NULL;` returns `0`.
 2. Active public portfolio owner readiness query confirms no null timezone before public cutover.
 3. No user-civil pathway uses UTC fallback semantics.
 4. Final regression suite passes.
@@ -347,8 +360,11 @@ Stop for your final review and sign-off.
 5. Settings timezone behavior:
 
 - Timezone field defaults to `Auto`.
-- Saving with `Auto` persists the concrete browser-resolved IANA timezone.
-- Switching from manual timezone back to `Auto` updates stored timezone to current browser-resolved value.
+- Saving with `Auto` persists concrete browser-resolved IANA timezone and `time_zone_mode='auto'`.
+- Reopening settings after saving `Auto` still displays `Auto` (not the concrete IANA value in the selector field).
+- Saving a manual timezone persists that timezone and `time_zone_mode='manual'`.
+- Switching from manual timezone back to `Auto` updates stored timezone to current browser-resolved value and restores `time_zone_mode='auto'`.
+- In `auto` mode, changing device/browser timezone updates stored `time_zone` silently without changing mode.
 
 6. Analytics consistency:
 
@@ -387,7 +403,7 @@ Stop for your final review and sign-off.
 1. Timezone changes after historical data entry:
 
 - Existing records and snapshots keep their stored civil date keys (`YYYY-MM-DD`).
-- Changing `profiles.time_zone` affects forward-looking "today/as-of" resolution, not historical date keys already persisted.
+- Changing `profiles.time_zone` (whether via manual settings or auto-follow updates in `auto` mode) affects forward-looking "today/as-of" resolution, not historical date keys already persisted.
 - This is acceptable and expected; no historical re-interpretation migration is performed.
 
 ---
@@ -409,9 +425,9 @@ Stop for your final review and sign-off.
 
 ## Assumptions and Defaults Chosen
 
-1. Timezone model: per-user persisted DB timezone (`profiles.time_zone`).
+1. Timezone model: per-user persisted DB timezone (`profiles.time_zone`) + mode (`profiles.time_zone_mode`).
 2. Initial capture: infer from browser and auto-save silently.
-3. `Auto` is UI-only; persisted profile value is always a concrete IANA timezone.
+3. `Auto` is persisted as mode intent (`time_zone_mode='auto'`) while `time_zone` remains a concrete IANA value.
 4. Public valuation day: owner timezone.
 5. No UTC fallback in user-civil logic after cutover.
 6. UTC retained for timestamps, cron, and market/provider internal date logic.
