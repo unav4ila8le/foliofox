@@ -9,19 +9,26 @@ import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 
 import { convertCurrency } from "@/lib/currency-conversion";
 import {
+  type CivilDateKey,
   formatLocalDateKey,
   formatUTCDateKey,
+  parseUTCDateKey,
   parseLocalDateKey,
-  startOfUTCDay,
+  resolveTodayDateKey,
 } from "@/lib/date/date-utils";
 import type { PositionsQueryContext } from "@/server/positions/fetch";
+import { fetchProfile } from "@/server/profile/actions";
 
 import {
   buildProjectionBasisBySymbolId,
   calculateMonthlyDividend,
 } from "@/server/analysis/projected-income/utils";
 
-import type { DividendEvent, ProjectedIncomeData } from "@/types/global.types";
+import type {
+  DividendEvent,
+  ProjectedIncomeData,
+  TransformedPosition,
+} from "@/types/global.types";
 
 export interface ProjectedIncomeResult {
   success: boolean;
@@ -51,6 +58,103 @@ export interface ProjectedIncomeStackedResult {
   currency?: string;
 }
 
+interface MissingFxContext {
+  symbolId: string;
+  positionName: string;
+}
+
+interface MissingFxDetail extends MissingFxContext {
+  sourceCurrency: string;
+  targetCurrency: string;
+}
+
+interface ProjectedIncomeFxContext {
+  fxDate: Date;
+  fxDateKey: string;
+  convertAmount: (
+    amount: number,
+    sourceCurrency: string,
+    targetCurrency: string,
+    context: MissingFxContext,
+  ) => number | null;
+  getMissingCount: () => number;
+  getMissingDetails: () => MissingFxDetail[];
+}
+
+async function createProjectedIncomeFxContext(input: {
+  positions: TransformedPosition[];
+  dividendsMap: Map<string, { events: DividendEvent[] }>;
+  targetCurrency: string;
+  asOfDateKey: CivilDateKey;
+}): Promise<ProjectedIncomeFxContext> {
+  const { positions, dividendsMap, targetCurrency, asOfDateKey } = input;
+  const fxDate = parseUTCDateKey(asOfDateKey);
+  const fxDateKey = formatUTCDateKey(fxDate);
+
+  // Build a minimal, deduplicated FX request set once per run.
+  const uniqueCurrencies = new Set<string>([targetCurrency]);
+  positions.forEach((position) => {
+    uniqueCurrencies.add(position.currency);
+  });
+  dividendsMap.forEach(({ events }) => {
+    events.forEach((event) => {
+      uniqueCurrencies.add(event.currency);
+    });
+  });
+
+  const exchangeRequests = Array.from(uniqueCurrencies).map((currency) => ({
+    currency,
+    date: fxDate,
+  }));
+
+  const exchangeRatesMap = await fetchExchangeRates(exchangeRequests);
+
+  let missingFxConversions = 0;
+  const missingFxDetails = new Map<string, MissingFxDetail>();
+
+  const convertAmount = (
+    amount: number,
+    sourceCurrency: string,
+    destinationCurrency: string,
+    context: MissingFxContext,
+  ) => {
+    if (sourceCurrency === destinationCurrency) return amount;
+
+    const toUsdKey = `${sourceCurrency}|${fxDateKey}`;
+    const fromUsdKey = `${destinationCurrency}|${fxDateKey}`;
+
+    if (!exchangeRatesMap.has(toUsdKey) || !exchangeRatesMap.has(fromUsdKey)) {
+      missingFxConversions += 1;
+      const detailKey = `${context.symbolId}|${sourceCurrency}|${destinationCurrency}`;
+      if (!missingFxDetails.has(detailKey)) {
+        missingFxDetails.set(detailKey, {
+          symbolId: context.symbolId,
+          positionName: context.positionName,
+          sourceCurrency,
+          targetCurrency: destinationCurrency,
+        });
+      }
+      return null;
+    }
+
+    return convertCurrency(
+      amount,
+      sourceCurrency,
+      destinationCurrency,
+      exchangeRatesMap,
+      fxDateKey,
+    );
+  };
+
+  return {
+    fxDate,
+    fxDateKey,
+    convertAmount,
+    getMissingCount: () => missingFxConversions,
+    getMissingDetails: () => Array.from(missingFxDetails.values()),
+  };
+}
+
 /**
  * Calculate projected monthly income for user's portfolio
  */
@@ -59,8 +163,16 @@ export const calculateProjectedIncome = cache(
     targetCurrency: string,
     monthsAhead: number = 12,
     context?: PositionsQueryContext,
+    asOfDateKey?: CivilDateKey,
   ) => {
     try {
+      // 1. Resolve analysis day in civil-date semantics.
+      const resolvedAsOfDateKey =
+        asOfDateKey ??
+        resolveTodayDateKey((await fetchProfile()).profile.time_zone);
+      const today = parseUTCDateKey(resolvedAsOfDateKey);
+
+      // 2. Fetch portfolio and dividend basis inputs.
       const positions = await fetchPositions(
         {
           positionType: "asset",
@@ -98,80 +210,16 @@ export const calculateProjectedIncome = cache(
         };
       }
 
-      // Collect unique currencies we need exchange rates for
-      const uniqueCurrencies = new Set<string>();
-      positions.forEach((position) => {
-        uniqueCurrencies.add(position.currency);
+      // 3. Build reusable FX conversion context for the whole projection run.
+      const fxContext = await createProjectedIncomeFxContext({
+        positions,
+        dividendsMap,
+        targetCurrency,
+        asOfDateKey: resolvedAsOfDateKey,
       });
-      // Add dividend event currencies (from dividend_events table)
-      dividendsMap.forEach(({ events }) => {
-        events.forEach((event: DividendEvent) => {
-          uniqueCurrencies.add(event.currency);
-        });
-      });
-      uniqueCurrencies.add(targetCurrency);
 
-      // Create exchange rate requests for unique currencies only
-      const fxDate = startOfUTCDay(new Date());
-      const exchangeRequests = Array.from(uniqueCurrencies).map((currency) => ({
-        currency,
-        date: fxDate,
-      }));
-
-      // Fetch exchange rates
-      const exchangeRatesMap = await fetchExchangeRates(exchangeRequests);
-
-      // Calculate monthly projected income
+      // 4. Calculate monthly projected income series.
       const monthlyIncome = new Map<string, number>();
-      const today = new Date();
-      const fxDateKey = formatUTCDateKey(fxDate);
-      let missingFxConversions = 0;
-      const missingFxDetails = new Map<
-        string,
-        {
-          symbolId: string;
-          positionName: string;
-          sourceCurrency: string;
-          targetCurrency: string;
-        }
-      >();
-
-      const tryConvertCurrency = (
-        amount: number,
-        sourceCurrency: string,
-        targetCurrency: string,
-        context: { symbolId: string; positionName: string },
-      ) => {
-        if (sourceCurrency === targetCurrency) return amount;
-
-        const toUsdKey = `${sourceCurrency}|${fxDateKey}`;
-        const fromUsdKey = `${targetCurrency}|${fxDateKey}`;
-
-        if (
-          !exchangeRatesMap.has(toUsdKey) ||
-          !exchangeRatesMap.has(fromUsdKey)
-        ) {
-          missingFxConversions += 1;
-          const detailKey = `${context.symbolId}|${sourceCurrency}|${targetCurrency}`;
-          if (!missingFxDetails.has(detailKey)) {
-            missingFxDetails.set(detailKey, {
-              symbolId: context.symbolId,
-              positionName: context.positionName,
-              sourceCurrency,
-              targetCurrency,
-            });
-          }
-          return null;
-        }
-
-        return convertCurrency(
-          amount,
-          sourceCurrency,
-          targetCurrency,
-          exchangeRatesMap,
-          fxDateKey,
-        );
-      };
 
       for (let i = 0; i < monthsAhead; i++) {
         const monthStart = startOfMonth(addMonths(today, i));
@@ -189,7 +237,7 @@ export const calculateProjectedIncome = cache(
           const positionDividendIncome =
             monthlyDividend * position.current_quantity;
 
-          const convertedValue = tryConvertCurrency(
+          const convertedValue = fxContext.convertAmount(
             positionDividendIncome,
             basis.currency,
             targetCurrency,
@@ -207,12 +255,13 @@ export const calculateProjectedIncome = cache(
         monthlyIncome.set(monthKey, monthTotal);
       }
 
-      if (missingFxDetails.size > 0) {
+      const missingFxDetails = fxContext.getMissingDetails();
+      if (missingFxDetails.length > 0) {
         // Keep a single, structured log for easier debugging later.
         console.warn("[projected-income] Missing FX rates", {
-          fxDateKey,
+          fxDateKey: fxContext.fxDateKey,
           targetCurrency,
-          missing: Array.from(missingFxDetails.values()),
+          missing: missingFxDetails,
         });
       }
 
@@ -225,7 +274,7 @@ export const calculateProjectedIncome = cache(
         })),
         currency: targetCurrency,
         message:
-          missingFxConversions > 0
+          fxContext.getMissingCount() > 0
             ? "Some payouts were omitted due to missing FX rates."
             : undefined,
       };
@@ -250,8 +299,16 @@ export const calculateProjectedIncomeByAsset = cache(
     targetCurrency: string,
     monthsAhead: number = 12,
     context?: PositionsQueryContext,
+    asOfDateKey?: CivilDateKey,
   ): Promise<ProjectedIncomeStackedResult> => {
     try {
+      // 1. Resolve analysis day in civil-date semantics.
+      const resolvedAsOfDateKey =
+        asOfDateKey ??
+        resolveTodayDateKey((await fetchProfile()).profile.time_zone);
+      const today = parseUTCDateKey(resolvedAsOfDateKey);
+
+      // 2. Fetch portfolio and dividend basis inputs.
       const positions = await fetchPositions(
         {
           positionType: "asset",
@@ -291,74 +348,13 @@ export const calculateProjectedIncomeByAsset = cache(
         };
       }
 
-      const uniqueCurrencies = new Set<string>();
-      positions.forEach((position) => {
-        uniqueCurrencies.add(position.currency);
+      // 3. Build reusable FX conversion context for the whole projection run.
+      const fxContext = await createProjectedIncomeFxContext({
+        positions,
+        dividendsMap,
+        targetCurrency,
+        asOfDateKey: resolvedAsOfDateKey,
       });
-      dividendsMap.forEach(({ events }) => {
-        events.forEach((event: DividendEvent) => {
-          uniqueCurrencies.add(event.currency);
-        });
-      });
-      uniqueCurrencies.add(targetCurrency);
-
-      const fxDate = startOfUTCDay(new Date());
-      const exchangeRequests = Array.from(uniqueCurrencies).map((currency) => ({
-        currency,
-        date: fxDate,
-      }));
-
-      const exchangeRatesMap = await fetchExchangeRates(exchangeRequests);
-
-      const today = new Date();
-      const fxDateKey = formatUTCDateKey(fxDate);
-      let missingFxConversions = 0;
-      const missingFxDetails = new Map<
-        string,
-        {
-          symbolId: string;
-          positionName: string;
-          sourceCurrency: string;
-          targetCurrency: string;
-        }
-      >();
-
-      const tryConvertCurrency = (
-        amount: number,
-        sourceCurrency: string,
-        targetCurrency: string,
-        context: { symbolId: string; positionName: string },
-      ) => {
-        if (sourceCurrency === targetCurrency) return amount;
-
-        const toUsdKey = `${sourceCurrency}|${fxDateKey}`;
-        const fromUsdKey = `${targetCurrency}|${fxDateKey}`;
-
-        if (
-          !exchangeRatesMap.has(toUsdKey) ||
-          !exchangeRatesMap.has(fromUsdKey)
-        ) {
-          missingFxConversions += 1;
-          const detailKey = `${context.symbolId}|${sourceCurrency}|${targetCurrency}`;
-          if (!missingFxDetails.has(detailKey)) {
-            missingFxDetails.set(detailKey, {
-              symbolId: context.symbolId,
-              positionName: context.positionName,
-              sourceCurrency,
-              targetCurrency,
-            });
-          }
-          return null;
-        }
-
-        return convertCurrency(
-          amount,
-          sourceCurrency,
-          targetCurrency,
-          exchangeRatesMap,
-          fxDateKey,
-        );
-      };
 
       const positionSeries = positions
         .filter((position) => position.symbol_id)
@@ -386,7 +382,7 @@ export const calculateProjectedIncomeByAsset = cache(
           const monthlyDividend = calculateMonthlyDividend(monthStart, basis);
           const positionDividendIncome = monthlyDividend * series.quantity;
 
-          const convertedValue = tryConvertCurrency(
+          const convertedValue = fxContext.convertAmount(
             positionDividendIncome,
             basis.currency,
             targetCurrency,
@@ -414,11 +410,12 @@ export const calculateProjectedIncomeByAsset = cache(
         });
       }
 
-      if (missingFxDetails.size > 0) {
+      const missingFxDetails = fxContext.getMissingDetails();
+      if (missingFxDetails.length > 0) {
         console.warn("[projected-income] Missing FX rates", {
-          fxDateKey,
+          fxDateKey: fxContext.fxDateKey,
           targetCurrency,
-          missing: Array.from(missingFxDetails.values()),
+          missing: missingFxDetails,
         });
       }
 
@@ -437,7 +434,7 @@ export const calculateProjectedIncomeByAsset = cache(
         series,
         currency: targetCurrency,
         message:
-          missingFxConversions > 0
+          fxContext.getMissingCount() > 0
             ? "Some payouts were omitted due to missing FX rates."
             : undefined,
       };

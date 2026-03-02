@@ -8,11 +8,7 @@ import { resolveSymbolsBatch } from "@/server/symbols/resolve";
 
 import { calculateProfitLoss } from "@/lib/profit-loss";
 import { convertCurrency } from "@/lib/currency-conversion";
-import {
-  parseUTCDateKey,
-  resolveTodayDateKey,
-  toCivilDateKeyOrThrow,
-} from "@/lib/date/date-utils";
+import { parseUTCDateKey, resolveTodayDateKey } from "@/lib/date/date-utils";
 import { clampDateRange } from "@/server/ai/tools/helpers/time-range";
 
 interface GetAssetsPerformanceParams {
@@ -75,16 +71,13 @@ export async function getAssetsPerformance(params: GetAssetsPerformanceParams) {
     const todayDateKey = resolveTodayDateKey(profile.time_zone);
 
     // 2. Clamp date range in civil date-key space.
-    const { startDate: startDateKey, endDate: endDateKey } =
-      await clampDateRange({
-        startDate: params.startDate,
-        endDate: params.endDate,
-        todayDateKey,
-      });
+    const { startDate: startDateKey, endDate: endDateKey } = clampDateRange({
+      startDate: params.startDate,
+      endDate: params.endDate,
+      todayDateKey,
+    });
     const startDate = parseUTCDateKey(startDateKey);
     const endDate = parseUTCDateKey(endDateKey);
-    const startAsOfDateKey = toCivilDateKeyOrThrow(startDateKey);
-    const endAsOfDateKey = toCivilDateKeyOrThrow(endDateKey);
 
     // Fetch end-date positions (with snapshots for P/L) and start-date positions (no snapshots needed)
     const [endSnapshot, startPositions] = await Promise.all([
@@ -92,12 +85,12 @@ export async function getAssetsPerformance(params: GetAssetsPerformanceParams) {
         positionType: "asset",
         includeArchived: true,
         includeSnapshots: true,
-        asOfDateKey: endAsOfDateKey,
+        asOfDateKey: endDateKey,
       }),
       fetchPositions({
         positionType: "asset",
         includeArchived: true,
-        asOfDateKey: startAsOfDateKey,
+        asOfDateKey: startDateKey,
       }),
     ]);
 

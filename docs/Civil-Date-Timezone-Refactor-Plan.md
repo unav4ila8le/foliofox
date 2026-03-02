@@ -334,6 +334,17 @@ Finish the full cut and remove deprecated date logic.
 2. No user-civil pathway uses UTC fallback semantics.
 3. Final regression suite passes.
 
+### Implementation notes (2026-03-02)
+
+1. Removed remaining user-facing UTC fallback in projected income; both `calculateProjectedIncome` and `calculateProjectedIncomeByAsset` now accept/use `CivilDateKey` (`asOfDateKey`) and default to profile civil today.
+2. Extracted shared projected-income FX conversion workflow into `createProjectedIncomeFxContext(...)` to remove duplicated conversion/error-tracking code.
+3. Simplified `clampDateRange(...)` to a pure synchronous helper with explicit `todayDateKey` input (no hidden profile fetch side effects).
+4. Removed unused/deprecated valuation synthesis exports (`toDateKeyFromUTCDate`, `parseDateKeyToUTCDate`) and corresponding tests.
+5. Added guard tests:
+   - `server/analysis/projected-income/portfolio.test.ts` now verifies provided civil `asOfDateKey` controls FX request day.
+   - `server/ai/system-prompt.test.ts` verifies prompt date comes from injected civil key.
+   - `server/ai/tools/helpers/time-range.test.ts` verifies civil range clamping behavior.
+
 ### Approval gate
 
 Stop for your final review and sign-off.

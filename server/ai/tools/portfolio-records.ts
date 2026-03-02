@@ -5,10 +5,7 @@ import { fetchPortfolioRecords } from "@/server/portfolio-records/fetch";
 import { resolvePositionLookup } from "@/server/positions/resolve-position-lookup";
 
 import { clampDateRange } from "@/server/ai/tools/helpers/time-range";
-import {
-  resolveTodayDateKey,
-  toCivilDateKeyOrThrow,
-} from "@/lib/date/date-utils";
+import { resolveTodayDateKey } from "@/lib/date/date-utils";
 
 import type { PortfolioRecordWithPosition } from "@/types/global.types";
 
@@ -28,21 +25,13 @@ export async function getPortfolioRecords(params: GetPortfolioRecordsParams) {
     : undefined;
   const includeArchived = params.includeArchived ?? undefined;
 
-  const { startDate: startDateKey, endDate: endDateKey } = await clampDateRange(
-    {
+  const { startDate: startDateRangeKey, endDate: endDateRangeKey } =
+    clampDateRange({
       startDate: params.startDate,
       endDate: params.endDate,
       maxDays: positionId ? 730 : undefined,
       todayDateKey,
-    },
-  );
-
-  const startDateRangeKey = startDateKey
-    ? toCivilDateKeyOrThrow(startDateKey)
-    : undefined;
-  const endDateRangeKey = endDateKey
-    ? toCivilDateKeyOrThrow(endDateKey)
-    : undefined;
+    });
 
   const pageSize = 100;
   let page = 1;

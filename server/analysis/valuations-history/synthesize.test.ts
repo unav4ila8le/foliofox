@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  synthesizeDailyValuationsByPosition,
-  toDateKeyFromUTCDate,
-} from "@/server/analysis/valuations-history/synthesize";
+import { synthesizeDailyValuationsByPosition } from "@/server/analysis/valuations-history/synthesize";
 import { toCivilDateKeyOrThrow } from "@/lib/date/date-utils";
 
 describe("synthesizeDailyValuationsByPosition", () => {
@@ -172,12 +169,5 @@ describe("synthesizeDailyValuationsByPosition", () => {
       "2026-01-02",
       "2026-01-03",
     ]);
-  });
-});
-
-describe("toDateKeyFromUTCDate", () => {
-  it("normalizes to UTC date key", () => {
-    const key = toDateKeyFromUTCDate(new Date("2026-01-10T23:12:59.000Z"));
-    expect(key).toBe("2026-01-10");
   });
 });

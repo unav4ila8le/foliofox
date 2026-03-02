@@ -140,9 +140,20 @@ async function NewsWidgetWrapper() {
 async function ProjectedIncomeWidgetWrapper() {
   "use cache: private";
   const { profile } = await fetchProfile();
+  const todayDateKey = resolveTodayDateKey(profile.time_zone);
   const [projectedData, projectedIncomeByAsset] = await Promise.all([
-    calculateProjectedIncome(profile.display_currency),
-    calculateProjectedIncomeByAsset(profile.display_currency),
+    calculateProjectedIncome(
+      profile.display_currency,
+      12,
+      undefined,
+      todayDateKey,
+    ),
+    calculateProjectedIncomeByAsset(
+      profile.display_currency,
+      12,
+      undefined,
+      todayDateKey,
+    ),
   ]);
 
   return (

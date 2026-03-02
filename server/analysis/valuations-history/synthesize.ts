@@ -1,8 +1,6 @@
 import {
   buildCivilDateKeyRange,
-  formatUTCDateKey,
   parseUTCDateKey,
-  startOfUTCDay,
   type CivilDateKey,
 } from "@/lib/date/date-utils";
 
@@ -209,18 +207,4 @@ export function synthesizeDailyValuationsByPosition({
   }
 
   return rowsByPosition;
-}
-
-/**
- * Normalize a Date to a UTC day key (`YYYY-MM-DD`).
- */
-export function toDateKeyFromUTCDate(date: Date) {
-  return formatUTCDateKey(startOfUTCDay(date));
-}
-
-/**
- * Parse a UTC day key (`YYYY-MM-DD`) into a UTC Date.
- */
-export function parseDateKeyToUTCDate(dateKey: string) {
-  return parseUTCDateKey(dateKey);
 }

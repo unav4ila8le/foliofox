@@ -87,9 +87,11 @@ async function AssetAllocationWrapper({
 async function ProjectedIncomeWrapper({
   userId,
   currency,
+  asOfDateKey,
 }: {
   userId: string;
   currency: string;
+  asOfDateKey: CivilDateKey;
 }) {
   "use cache";
 
@@ -97,8 +99,8 @@ async function ProjectedIncomeWrapper({
   const context: PositionsQueryContext = { supabaseClient, userId };
 
   const [projectedIncomeResult, projectedIncomeByAsset] = await Promise.all([
-    calculateProjectedIncome(currency, 12, context),
-    calculateProjectedIncomeByAsset(currency, 12, context),
+    calculateProjectedIncome(currency, 12, context, asOfDateKey),
+    calculateProjectedIncomeByAsset(currency, 12, context, asOfDateKey),
   ]);
 
   return (
@@ -231,6 +233,7 @@ export default async function PublicPortfolioPage(props: {
           <ProjectedIncomeWrapper
             userId={profile.user_id}
             currency={targetCurrency}
+            asOfDateKey={asOfDateKey}
           />
         </Suspense>
       </div>
