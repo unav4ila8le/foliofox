@@ -21,9 +21,10 @@ import {
 import { fetchPositions } from "@/server/positions/fetch";
 import { calculateProfitLoss } from "@/lib/profit-loss";
 import { getRequestLocale } from "@/lib/locale/resolve-locale";
-import { formatUTCDateKey, toCivilDateKeyOrThrow } from "@/lib/date/date-utils";
+import { parseUTCDateKey, resolveTodayDateKey } from "@/lib/date/date-utils";
 
 import type { PositionsQueryContext } from "@/server/positions/fetch";
+import type { CivilDateKey } from "@/lib/date/date-utils";
 
 // --- Metadata Generation ---
 
@@ -57,15 +58,17 @@ export async function generateMetadata({
 async function AssetAllocationWrapper({
   userId,
   currency,
+  asOfDateKey,
 }: {
   userId: string;
   currency: string;
+  asOfDateKey: CivilDateKey;
 }) {
   "use cache";
 
   const supabaseClient = createServiceClient();
   const context: PositionsQueryContext = { supabaseClient, userId };
-  const asOfDate = new Date();
+  const asOfDate = parseUTCDateKey(asOfDateKey);
 
   const [netWorth, assetAllocation] = await Promise.all([
     calculateNetWorth(currency, asOfDate, context),
@@ -117,16 +120,16 @@ async function ProjectedIncomeWrapper({
 async function PositionsWrapper({
   userId,
   locale,
+  asOfDateKey,
 }: {
   userId: string;
   locale: string;
+  asOfDateKey: CivilDateKey;
 }) {
   "use cache";
 
   const supabaseClient = createServiceClient();
   const context: PositionsQueryContext = { supabaseClient, userId };
-  const asOfDate = new Date();
-  const asOfDateKey = toCivilDateKeyOrThrow(formatUTCDateKey(asOfDate));
 
   const positionsResult = await fetchPositions(
     {
@@ -202,6 +205,7 @@ export default async function PublicPortfolioPage(props: {
   const fallbackCurrency = profile.display_currency ?? "USD";
   const targetCurrency =
     normalizeCurrency(search?.currency) ?? fallbackCurrency;
+  const asOfDateKey = resolveTodayDateKey(profile.time_zone);
 
   // 4. Render page with Suspense boundaries
   return (
@@ -219,6 +223,7 @@ export default async function PublicPortfolioPage(props: {
           <AssetAllocationWrapper
             userId={profile.user_id}
             currency={targetCurrency}
+            asOfDateKey={asOfDateKey}
           />
         </Suspense>
       </div>
@@ -232,7 +237,11 @@ export default async function PublicPortfolioPage(props: {
       </div>
       <div className="col-span-6">
         <Suspense fallback={<Skeleton className="h-96" />}>
-          <PositionsWrapper userId={profile.user_id} locale={locale} />
+          <PositionsWrapper
+            userId={profile.user_id}
+            locale={locale}
+            asOfDateKey={asOfDateKey}
+          />
         </Suspense>
       </div>
     </div>

@@ -83,7 +83,7 @@ export const fetchPublicPortfolioBySlug = cache(
 
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("user_id, username, display_currency, avatar_url")
+      .select("user_id, username, display_currency, avatar_url, time_zone")
       .eq("user_id", publicPortfolio.user_id)
       .maybeSingle();
 

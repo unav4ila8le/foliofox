@@ -25,10 +25,11 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
+import { useDashboardData } from "@/components/dashboard/providers/dashboard-data-provider";
 
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { formatUTCDateKey, toCivilDateKeyOrThrow } from "@/lib/date/date-utils";
+import { resolveTodayDateKey } from "@/lib/date/date-utils";
 
 import { fetchPositions } from "@/server/positions/fetch";
 
@@ -51,6 +52,7 @@ export function PositionSelector({
   id,
   preselectedPosition,
 }: PositionSelectorProps) {
+  const { profile } = useDashboardData();
   const [open, setOpen] = useState(false);
   const [positions, setPositions] = useState<TransformedPosition[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -59,7 +61,8 @@ export function PositionSelector({
   // Load positions when the selector opens
   const getPositions = async () => {
     try {
-      const asOfDateKey = toCivilDateKeyOrThrow(formatUTCDateKey(new Date()));
+      // Resolve holdings day in the viewer's civil timezone (not UTC day).
+      const asOfDateKey = resolveTodayDateKey(profile.time_zone);
       const data = await fetchPositions({
         asOfDateKey,
       });

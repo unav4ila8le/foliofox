@@ -118,7 +118,7 @@ export type PublicPortfolioWithProfile = {
   publicPortfolio: PublicPortfolio;
   profile: Pick<
     Tables<"profiles">,
-    "user_id" | "username" | "display_currency" | "avatar_url"
+    "user_id" | "username" | "display_currency" | "avatar_url" | "time_zone"
   >;
   isActive: boolean;
 };

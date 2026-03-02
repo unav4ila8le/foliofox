@@ -10,6 +10,7 @@ import { AssetProjectedIncome } from "@/components/dashboard/positions/asset/pro
 
 import { fetchSinglePosition } from "@/server/positions/fetch";
 import { fetchPortfolioRecords } from "@/server/portfolio-records/fetch";
+import { fetchProfile } from "@/server/profile/actions";
 import { fetchSymbol } from "@/server/symbols/fetch";
 import { fetchSymbolNews } from "@/server/news/fetch";
 import { calculateSymbolProjectedIncomePanelData } from "@/server/analysis/projected-income/symbol";
@@ -19,11 +20,7 @@ import { formatPercentage, formatCurrency } from "@/lib/number-format";
 import { getRequestLocale } from "@/lib/locale/resolve-locale";
 import { parsePortfolioRecordTypes } from "@/lib/portfolio-records/filters";
 import { getSearchParam } from "@/lib/search-params";
-import {
-  formatUTCDateKey,
-  toCivilDateKey,
-  toCivilDateKeyOrThrow,
-} from "@/lib/date/date-utils";
+import { resolveTodayDateKey, toCivilDateKey } from "@/lib/date/date-utils";
 import { cn } from "@/lib/utils";
 
 import type {
@@ -225,7 +222,9 @@ async function AssetLayout({
   let snapshots: PositionSnapshot[];
 
   try {
-    const asOfDateKey = toCivilDateKeyOrThrow(formatUTCDateKey(new Date()));
+    const { profile } = await fetchProfile();
+    // Resolve holdings day in the viewer's civil timezone (not UTC day).
+    const asOfDateKey = resolveTodayDateKey(profile.time_zone);
     const result = await fetchSinglePosition(positionId, {
       includeArchived: true,
       includeSnapshots: true,

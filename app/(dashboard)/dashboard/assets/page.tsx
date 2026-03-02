@@ -4,12 +4,16 @@ import { Skeleton } from "@/components/ui/custom/skeleton";
 import { AssetsTable } from "@/components/dashboard/positions/asset/table/assets-table";
 
 import { fetchPositions } from "@/server/positions/fetch";
-import { formatUTCDateKey, toCivilDateKeyOrThrow } from "@/lib/date/date-utils";
+import { fetchProfile } from "@/server/profile/actions";
+import { resolveTodayDateKey } from "@/lib/date/date-utils";
 import { calculateProfitLoss } from "@/lib/profit-loss";
 
 async function AssetsTableWrapper() {
   "use cache: private";
-  const asOfDateKey = toCivilDateKeyOrThrow(formatUTCDateKey(new Date()));
+  const { profile } = await fetchProfile();
+
+  // Resolve holdings day in the viewer's civil timezone (not UTC day).
+  const asOfDateKey = resolveTodayDateKey(profile.time_zone);
   const { positions, snapshots } = await fetchPositions({
     positionType: "asset",
     includeSnapshots: true,
