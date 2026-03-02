@@ -1,10 +1,14 @@
 "use server";
 
+import { fetchProfile } from "@/server/profile/actions";
 import { fetchPortfolioRecords } from "@/server/portfolio-records/fetch";
 import { resolvePositionLookup } from "@/server/positions/resolve-position-lookup";
 
 import { clampDateRange } from "@/server/ai/tools/helpers/time-range";
-import { toCivilDateKeyOrThrow } from "@/lib/date/date-utils";
+import {
+  resolveTodayDateKey,
+  toCivilDateKeyOrThrow,
+} from "@/lib/date/date-utils";
 
 import type { PortfolioRecordWithPosition } from "@/types/global.types";
 
@@ -16,16 +20,22 @@ interface GetPortfolioRecordsParams {
 }
 
 export async function getPortfolioRecords(params: GetPortfolioRecordsParams) {
+  const { profile } = await fetchProfile();
+  const todayDateKey = resolveTodayDateKey(profile.time_zone);
+
   const positionId = params.positionId
     ? (await resolvePositionLookup({ lookup: params.positionId })).positionId
     : undefined;
   const includeArchived = params.includeArchived ?? undefined;
 
-  const { startDate: startDateKey, endDate: endDateKey } = clampDateRange({
-    startDate: params.startDate,
-    endDate: params.endDate,
-    maxDays: positionId ? 730 : undefined,
-  });
+  const { startDate: startDateKey, endDate: endDateKey } = await clampDateRange(
+    {
+      startDate: params.startDate,
+      endDate: params.endDate,
+      maxDays: positionId ? 730 : undefined,
+      todayDateKey,
+    },
+  );
 
   const startDateRangeKey = startDateKey
     ? toCivilDateKeyOrThrow(startDateKey)

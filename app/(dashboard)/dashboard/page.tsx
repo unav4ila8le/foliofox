@@ -31,6 +31,7 @@ import {
   parseNetWorthMode,
   type NetWorthMode,
 } from "@/server/analysis/net-worth/types";
+import { parseUTCDateKey, resolveTodayDateKey } from "@/lib/date/date-utils";
 
 async function getNetWorthModeFromCookie(): Promise<NetWorthMode> {
   const cookieStore = await cookies();
@@ -50,8 +51,9 @@ async function NetWorthChartWrapper() {
   "use cache: private";
   const { profile } = await fetchProfile();
   const netWorthMode = await getNetWorthModeFromCookie();
+  const todayDateKey = resolveTodayDateKey(profile.time_zone);
 
-  const today = new Date();
+  const today = parseUTCDateKey(todayDateKey);
   const defaultDaysBack =
     differenceInCalendarDays(today, subMonths(today, 3)) + 1;
   // Fetch both history and change for default period (3 calendar months)
@@ -59,7 +61,7 @@ async function NetWorthChartWrapper() {
     await Promise.all([
       calculateNetWorth(
         profile.display_currency,
-        undefined,
+        todayDateKey,
         undefined,
         netWorthMode,
       ),
@@ -76,7 +78,7 @@ async function NetWorthChartWrapper() {
       netWorthMode === "after_capital_gains"
         ? calculateNetWorth(
             profile.display_currency,
-            undefined,
+            todayDateKey,
             undefined,
             "gross",
           )
@@ -104,9 +106,15 @@ async function NetWorthChartWrapper() {
 async function AssetAllocationChartWrapper() {
   "use cache: private";
   const { profile } = await fetchProfile();
+  const todayDateKey = resolveTodayDateKey(profile.time_zone);
   const [netWorth, assetAllocation] = await Promise.all([
-    calculateNetWorth(profile.display_currency, undefined, undefined, "gross"),
-    calculateAssetAllocation(profile.display_currency),
+    calculateNetWorth(
+      profile.display_currency,
+      todayDateKey,
+      undefined,
+      "gross",
+    ),
+    calculateAssetAllocation(profile.display_currency, todayDateKey),
   ]);
 
   return (

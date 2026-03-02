@@ -1,8 +1,9 @@
 import {
-  addUTCDays,
+  buildCivilDateKeyRange,
   formatUTCDateKey,
   parseUTCDateKey,
   startOfUTCDay,
+  type CivilDateKey,
 } from "@/lib/date/date-utils";
 
 /**
@@ -30,7 +31,7 @@ export interface DailyValuationPositionInput {
  */
 export interface DailyValuationRow {
   date: Date;
-  dateKey: string;
+  dateKey: CivilDateKey;
   quantity: number;
   unitValue: number;
   snapshotUnitValue: number;
@@ -41,11 +42,11 @@ export interface DailyValuationRow {
 
 interface SynthesizeDailyValuationsOptions {
   positions: DailyValuationPositionInput[];
-  startDate: Date;
-  endDate: Date;
+  startDateKey: CivilDateKey;
+  endDateKey: CivilDateKey;
   marketPricesByPositionDate?: Map<string, number>;
   includeZeroQuantityRows?: boolean;
-  endDateKeyByPosition?: Map<string, string>;
+  endDateKeyByPosition?: Map<string, CivilDateKey>;
 }
 
 const NEW_SNAPSHOT_CREATED_AT_SORT_KEY = "9999-12-31T23:59:59.999Z";
@@ -71,34 +72,22 @@ function compareSnapshots(
 }
 
 /**
- * Build an inclusive UTC day span between start and end.
+ * Build an inclusive civil-day span between start and end keys.
  */
-function buildDateSpan(startDate: Date, endDate: Date) {
-  const startDay = startOfUTCDay(startDate);
-  const endDay = startOfUTCDay(endDate);
-
-  if (startDay.getTime() > endDay.getTime()) {
-    return [] as Array<{ date: Date; dateKey: string }>;
-  }
-
-  const days: Array<{ date: Date; dateKey: string }> = [];
-  let current = startDay;
-
-  while (current.getTime() <= endDay.getTime()) {
-    days.push({ date: current, dateKey: formatUTCDateKey(current) });
-    current = addUTCDays(current, 1);
-  }
-
-  return days;
+function buildDateSpan(startDateKey: CivilDateKey, endDateKey: CivilDateKey) {
+  return buildCivilDateKeyRange(startDateKey, endDateKey).map((dateKey) => ({
+    date: parseUTCDateKey(dateKey),
+    dateKey,
+  }));
 }
 
 /**
  * Apply an optional per-position end cap while never exceeding the global end.
  */
 function clampEndDateKey(
-  globalEndDateKey: string,
+  globalEndDateKey: CivilDateKey,
   positionId: string,
-  endDateKeyByPosition?: Map<string, string>,
+  endDateKeyByPosition?: Map<string, CivilDateKey>,
 ) {
   const perPositionEndDateKey = endDateKeyByPosition?.get(positionId);
   if (!perPositionEndDateKey) return globalEndDateKey;
@@ -118,13 +107,13 @@ function clampEndDateKey(
  */
 export function synthesizeDailyValuationsByPosition({
   positions,
-  startDate,
-  endDate,
+  startDateKey,
+  endDateKey,
   marketPricesByPositionDate = new Map<string, number>(),
   includeZeroQuantityRows = true,
   endDateKeyByPosition,
 }: SynthesizeDailyValuationsOptions): Map<string, DailyValuationRow[]> {
-  const dateSpan = buildDateSpan(startDate, endDate);
+  const dateSpan = buildDateSpan(startDateKey, endDateKey);
   const rowsByPosition = new Map<string, DailyValuationRow[]>();
 
   if (!dateSpan.length) {

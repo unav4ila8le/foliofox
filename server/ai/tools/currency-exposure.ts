@@ -6,11 +6,9 @@ import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 
 import { convertCurrency } from "@/lib/currency-conversion";
 import {
-  formatUTCDateKey,
   parseUTCDateKey,
-  startOfUTCDay,
+  resolveTodayDateKey,
   toCivilDateKey,
-  toCivilDateKeyOrThrow,
 } from "@/lib/date/date-utils";
 
 interface GetCurrencyExposureParams {
@@ -45,18 +43,20 @@ export async function getCurrencyExposure(
   params: GetCurrencyExposureParams,
 ): Promise<CurrencyExposureResult> {
   try {
-    const baseCurrency =
-      params.baseCurrency ?? (await fetchProfile()).profile.display_currency;
+    // 1. Resolve profile once for default currency + civil "today".
+    const { profile } = await fetchProfile();
+    const baseCurrency = params.baseCurrency ?? profile.display_currency;
 
+    // 2. Resolve one as-of key/date pair for positions + FX.
     const requestedDateKey = params.date ? toCivilDateKey(params.date) : null;
-    const date = requestedDateKey
-      ? parseUTCDateKey(requestedDateKey)
-      : startOfUTCDay(new Date());
     const asOfDateKey =
-      requestedDateKey ?? toCivilDateKeyOrThrow(formatUTCDateKey(date));
-    const dateKey = formatUTCDateKey(date);
+      requestedDateKey ?? resolveTodayDateKey(profile.time_zone);
+    const date = parseUTCDateKey(asOfDateKey);
+    if (Number.isNaN(date.getTime())) {
+      throw new Error("Invalid date for currency exposure");
+    }
 
-    // Fetch positions (assets) valued as-of the date
+    // 3. Fetch positions (assets) valued as-of the date.
     const positions = await fetchPositions({
       positionType: "asset",
       includeArchived: true,
@@ -66,13 +66,13 @@ export async function getCurrencyExposure(
     if (!positions?.length) {
       return {
         baseCurrency,
-        date: dateKey,
+        date: asOfDateKey,
         totals: { valueBase: 0 },
         currencies: [],
       };
     }
 
-    // Fetch FX rates for conversion
+    // 4. Fetch FX rates for conversion.
     const uniqueCurrencies = new Set<string>();
     positions.forEach((p) => uniqueCurrencies.add(p.currency));
     uniqueCurrencies.add(baseCurrency);
@@ -84,7 +84,7 @@ export async function getCurrencyExposure(
 
     const exchangeRates = await fetchExchangeRates(exchangeRequests);
 
-    // Aggregate by original position currency using as-of local totals
+    // 5. Aggregate by original position currency using as-of local totals.
     const byCurrency = new Map<
       string,
       { valueLocal: number; assetsCount: number }
@@ -102,7 +102,7 @@ export async function getCurrencyExposure(
       byCurrency.set(p.currency, acc);
     });
 
-    // Map to result items with conversion and pct computation
+    // 6. Map to result items with conversion and pct computation.
     const items: CurrencyExposureItem[] = Array.from(byCurrency.entries()).map(
       ([currency, data]) => {
         const valueBase = convertCurrency(
@@ -140,7 +140,7 @@ export async function getCurrencyExposure(
 
     return {
       baseCurrency,
-      date: dateKey,
+      date: asOfDateKey,
       totals: { valueBase: totalBase },
       currencies,
     };

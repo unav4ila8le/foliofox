@@ -14,15 +14,28 @@ import {
 import { calculateCapitalGainsTaxAmount } from "@/server/analysis/net-worth/capital-gains-tax";
 import { convertCurrency } from "@/lib/currency-conversion";
 import {
-  addUTCDays,
-  formatUTCDateKey,
-  startOfUTCDay,
+  addCivilDateKeyDays,
+  buildCivilDateKeyRange,
+  parseUTCDateKey,
+  resolveTodayDateKey,
+  type CivilDateKey,
 } from "@/lib/date/date-utils";
 import type { NetWorthMode } from "@/server/analysis/net-worth/types";
 
 export interface NetWorthHistoryData {
   date: Date;
+  dateKey: CivilDateKey;
   value: number;
+}
+
+function mapDateKeysToZeroHistory(
+  dateKeys: CivilDateKey[],
+): NetWorthHistoryData[] {
+  return dateKeys.map((dateKey) => ({
+    date: parseUTCDateKey(dateKey),
+    dateKey,
+    value: 0,
+  }));
 }
 
 export async function fetchNetWorthHistory({
@@ -34,27 +47,20 @@ export async function fetchNetWorthHistory({
   daysBack?: number;
   mode?: NetWorthMode;
 }): Promise<NetWorthHistoryData[]> {
-  if (!targetCurrency) {
-    const { profile } = await fetchProfile();
-    targetCurrency = profile.display_currency;
-  }
+  // 1) Resolve profile once to keep currency/timezone defaults consistent.
+  const { profile } = await fetchProfile();
+  const resolvedTargetCurrency = targetCurrency ?? profile.display_currency;
 
-  // Validate and enforce minimum daysBack
+  // 2) Build an inclusive civil-day axis in the user's timezone.
   const totalDaysBack = Math.max(1, Math.trunc(daysBack));
-
-  const end = startOfUTCDay(new Date());
-  const endDateKey = formatUTCDateKey(end);
-  const start = addUTCDays(end, -(totalDaysBack - 1));
-  const dates: Date[] = Array.from({ length: totalDaysBack }, (_, index) =>
-    addUTCDays(start, index),
-  );
-  const dateKeys = dates.map((date) => formatUTCDateKey(date));
-  const mapDatesToZeroHistory = (dateList: Date[]) =>
-    dateList.map((date) => ({ date, value: 0 }));
+  const endDateKey = resolveTodayDateKey(profile.time_zone);
+  const startDateKey = addCivilDateKeyDays(endDateKey, -(totalDaysBack - 1));
+  const dateKeys = buildCivilDateKeyRange(startDateKey, endDateKey);
+  const dates = dateKeys.map((dateKey) => parseUTCDateKey(dateKey));
 
   const { user, supabase } = await getCurrentUser();
 
-  // 1) Fetch positions once (include archived by not filtering archived_at)
+  // 3) Fetch positions once (include archived by not filtering archived_at).
   const { data: positions, error: positionsError } = await supabase
     .from("positions")
     .select(
@@ -65,12 +71,12 @@ export async function fetchNetWorthHistory({
   if (positionsError) throw new Error(positionsError.message);
 
   if (!positions?.length) {
-    return mapDatesToZeroHistory(dates);
+    return mapDateKeysToZeroHistory(dateKeys);
   }
 
-  const positionIds = positions.map((p) => p.id);
+  const positionIds = positions.map((position) => position.id);
 
-  // 2) Fetch all snapshots for the full range once
+  // 4) Fetch snapshots once for the full range.
   const { data: snapshots, error: snapshotsError } = await supabase
     .from("position_snapshots")
     .select(
@@ -89,7 +95,7 @@ export async function fetchNetWorthHistory({
   }
 
   if (!snapshots || !snapshots.length) {
-    return mapDatesToZeroHistory(dates);
+    return mapDateKeysToZeroHistory(dateKeys);
   }
 
   const snapshotsByPosition = new Map<
@@ -103,24 +109,28 @@ export async function fetchNetWorthHistory({
       cost_basis_per_unit: number | null;
     }[]
   >();
-  snapshots.forEach((s) => {
-    const arr = snapshotsByPosition.get(s.position_id) || [];
-    arr.push({
-      id: s.id,
-      date: s.date,
-      created_at: s.created_at,
-      quantity: s.quantity,
-      unit_value: s.unit_value,
-      cost_basis_per_unit: s.cost_basis_per_unit ?? null,
+
+  snapshots.forEach((snapshot) => {
+    const rows = snapshotsByPosition.get(snapshot.position_id) || [];
+    rows.push({
+      id: snapshot.id,
+      date: snapshot.date,
+      created_at: snapshot.created_at,
+      quantity: snapshot.quantity,
+      unit_value: snapshot.unit_value,
+      cost_basis_per_unit: snapshot.cost_basis_per_unit ?? null,
     });
-    snapshotsByPosition.set(s.position_id, arr);
+    snapshotsByPosition.set(snapshot.position_id, rows);
   });
 
-  const earliestSnapshotDate = snapshots.reduce<string | null>((min, snap) => {
-    if (!snap.date) return min;
-    if (!min || snap.date < min) return snap.date;
-    return min;
-  }, null);
+  const earliestSnapshotDate = snapshots.reduce<string | null>(
+    (min, snapshot) => {
+      if (!snapshot.date) return min;
+      if (!min || snapshot.date < min) return snapshot.date;
+      return min;
+    },
+    null,
+  );
 
   let processingDates = dates;
   let processingDateKeys = dateKeys;
@@ -132,7 +142,7 @@ export async function fetchNetWorthHistory({
     );
 
     if (firstActiveIndex === -1) {
-      return mapDatesToZeroHistory(dates);
+      return mapDateKeysToZeroHistory(dateKeys);
     }
 
     if (firstActiveIndex > 0) {
@@ -143,33 +153,33 @@ export async function fetchNetWorthHistory({
   }
 
   if (!processingDates.length) {
-    return mapDatesToZeroHistory(dates);
+    return mapDateKeysToZeroHistory(dateKeys);
   }
 
   const activePositions = positions.filter((position) => {
-    const snaps = snapshotsByPosition.get(position.id);
-    return Boolean(snaps && snaps.length > 0);
+    const rows = snapshotsByPosition.get(position.id);
+    return Boolean(rows && rows.length > 0);
   });
 
-  // 3) Determine which positions need market data on which dates
+  // 5) Determine which positions need market data on which dates.
   const pointerPrepass = new Map<string, number>();
   const eligibleDateIndices = new Set<number>();
-  const eligibleDateKeysByPosition = new Map<string, Set<string>>();
+  const eligibleDateKeysByPosition = new Map<string, Set<CivilDateKey>>();
 
-  for (let dateIdx = 0; dateIdx < processingDates.length; dateIdx += 1) {
-    const dateKey = processingDateKeys[dateIdx];
+  for (let dateIndex = 0; dateIndex < processingDates.length; dateIndex += 1) {
+    const dateKey = processingDateKeys[dateIndex];
 
     for (const position of activePositions) {
-      const snaps = snapshotsByPosition.get(position.id);
-      if (!snaps?.length) continue;
+      const rows = snapshotsByPosition.get(position.id);
+      if (!rows?.length) continue;
 
-      let idx = pointerPrepass.get(position.id) ?? 0;
-      while (idx + 1 < snaps.length && snaps[idx + 1].date <= dateKey) {
-        idx += 1;
+      let rowIndex = pointerPrepass.get(position.id) ?? 0;
+      while (rowIndex + 1 < rows.length && rows[rowIndex + 1].date <= dateKey) {
+        rowIndex += 1;
       }
-      pointerPrepass.set(position.id, idx);
+      pointerPrepass.set(position.id, rowIndex);
 
-      const snapshot = snaps[idx];
+      const snapshot = rows[rowIndex];
       if (!snapshot || snapshot.date > dateKey) continue;
 
       const quantity = snapshot.quantity ?? 0;
@@ -177,10 +187,10 @@ export async function fetchNetWorthHistory({
 
       if (!position.symbol_id && !position.domain_id) continue;
 
-      eligibleDateIndices.add(dateIdx);
+      eligibleDateIndices.add(dateIndex);
       let allowedDates = eligibleDateKeysByPosition.get(position.id);
       if (!allowedDates) {
-        allowedDates = new Set<string>();
+        allowedDates = new Set<CivilDateKey>();
         eligibleDateKeysByPosition.set(position.id, allowedDates);
       }
       allowedDates.add(dateKey);
@@ -188,9 +198,11 @@ export async function fetchNetWorthHistory({
   }
 
   const marketDateIndices = Array.from(eligibleDateIndices).sort(
-    (a, b) => a - b,
+    (left, right) => left - right,
   );
-  const marketDataDates = marketDateIndices.map((idx) => processingDates[idx]);
+  const marketDataDates = marketDateIndices.map(
+    (index) => processingDates[index],
+  );
 
   const marketEligiblePositions = activePositions.filter((position) => {
     if (!position.symbol_id && !position.domain_id) return false;
@@ -204,9 +216,9 @@ export async function fetchNetWorthHistory({
 
   const eligibleDatesForHandlers = new Map<string, Set<string>>();
   marketEligiblePositions.forEach((position) => {
-    const allowed = eligibleDateKeysByPosition.get(position.id);
-    if (allowed?.size) {
-      eligibleDatesForHandlers.set(position.id, allowed);
+    const allowedDates = eligibleDateKeysByPosition.get(position.id);
+    if (allowedDates?.size) {
+      eligibleDatesForHandlers.set(position.id, new Set(allowedDates));
     }
   });
 
@@ -219,25 +231,29 @@ export async function fetchNetWorthHistory({
     );
   }
 
-  // 4) FX for all currencies and dates (dedup requests)
-  const currencies = new Set<string>([targetCurrency!]);
-  activePositions.forEach((p) => currencies.add(p.currency));
+  // 6) Fetch FX rates for all required currencies and dates.
+  const currencies = new Set<string>([resolvedTargetCurrency]);
+  activePositions.forEach((position) => currencies.add(position.currency));
 
   const fxRequests: { currency: string; date: Date }[] = [];
   const fxDedup = new Set<string>();
   for (const currency of currencies) {
-    for (let dateIdx = 0; dateIdx < processingDates.length; dateIdx += 1) {
-      const dateKey = processingDateKeys[dateIdx];
+    for (
+      let dateIndex = 0;
+      dateIndex < processingDates.length;
+      dateIndex += 1
+    ) {
+      const dateKey = processingDateKeys[dateIndex];
       const dedupKey = `${currency}|${dateKey}`;
       if (fxDedup.has(dedupKey)) continue;
       fxDedup.add(dedupKey);
-      fxRequests.push({ currency, date: processingDates[dateIdx] });
+      fxRequests.push({ currency, date: processingDates[dateIndex] });
     }
   }
 
   const fxMap = await fetchExchangeRates(fxRequests);
 
-  // 5) Synthesize daily local valuations from sparse snapshots + market prices.
+  // 7) Synthesize daily local valuations from snapshots + market prices.
   const dailyRowsByPosition = synthesizeDailyValuationsByPosition({
     positions: activePositions.map((position) => ({
       id: position.id,
@@ -252,8 +268,8 @@ export async function fetchNetWorthHistory({
         }),
       ),
     })),
-    startDate: processingDates[0],
-    endDate: processingDates[processingDates.length - 1],
+    startDateKey: processingDateKeys[0],
+    endDateKey: processingDateKeys[processingDateKeys.length - 1],
     marketPricesByPositionDate,
     includeZeroQuantityRows: true,
   });
@@ -272,9 +288,9 @@ export async function fetchNetWorthHistory({
 
   const history: NetWorthHistoryData[] = [];
 
-  for (let dateIdx = 0; dateIdx < processingDates.length; dateIdx += 1) {
-    const date = processingDates[dateIdx];
-    const dateKey = processingDateKeys[dateIdx];
+  for (let dateIndex = 0; dateIndex < processingDates.length; dateIndex += 1) {
+    const date = processingDates[dateIndex];
+    const dateKey = processingDateKeys[dateIndex];
     let total = 0;
     let taxTotal = 0;
 
@@ -287,7 +303,7 @@ export async function fetchNetWorthHistory({
       total += convertCurrency(
         localValue,
         position.currency,
-        targetCurrency!,
+        resolvedTargetCurrency,
         fxMap,
         dateKey,
       );
@@ -307,7 +323,7 @@ export async function fetchNetWorthHistory({
         taxTotal += convertCurrency(
           localTax,
           position.currency,
-          targetCurrency!,
+          resolvedTargetCurrency,
           fxMap,
           dateKey,
         );
@@ -316,16 +332,16 @@ export async function fetchNetWorthHistory({
 
     history.push({
       date,
+      dateKey,
       value: mode === "after_capital_gains" ? total - taxTotal : total,
     });
   }
 
   if (paddingCount > 0) {
-    const paddedHistory = [
-      ...dates.slice(0, paddingCount).map((date) => ({ date, value: 0 })),
+    return [
+      ...mapDateKeysToZeroHistory(dateKeys.slice(0, paddingCount)),
       ...history,
     ];
-    return paddedHistory;
   }
 
   return history;

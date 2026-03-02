@@ -18,6 +18,7 @@ import { fetchFinancialProfile } from "@/server/financial-profiles/actions";
 import { calculateNetWorth } from "@/server/analysis/net-worth/net-worth";
 import { fetchStalePositions } from "@/server/positions/stale";
 import { TIME_ZONE_MODES } from "@/lib/date/time-zone";
+import { resolveTodayDateKey } from "@/lib/date/date-utils";
 import {
   NET_WORTH_MODE_COOKIE_NAME,
   parseNetWorthMode,
@@ -48,12 +49,13 @@ export default async function Layout({
 
   // 1) Resolve profile first because downstream analytics/valuation use profile context.
   const { profile, email } = await fetchProfile();
+  const todayDateKey = resolveTodayDateKey(profile.time_zone);
 
   // 2) Keep the dashboard path fully data-driven; timezone auto-sync happens in
   // the background for auto-mode users without introducing a visible gate.
   const [financialProfile, netWorth, stalePositions] = await Promise.all([
     fetchFinancialProfile(),
-    calculateNetWorth(profile.display_currency),
+    calculateNetWorth(profile.display_currency, todayDateKey),
     fetchStalePositions(),
   ]);
 

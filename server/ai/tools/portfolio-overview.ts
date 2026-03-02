@@ -9,11 +9,9 @@ import { calculateAssetAllocation } from "@/server/analysis/asset-allocation";
 import { calculateNetWorth } from "@/server/analysis/net-worth/net-worth";
 import { convertCurrency } from "@/lib/currency-conversion";
 import {
-  formatUTCDateKey,
   parseUTCDateKey,
-  startOfUTCDay,
+  resolveTodayDateKey,
   toCivilDateKey,
-  toCivilDateKeyOrThrow,
 } from "@/lib/date/date-utils";
 
 /**
@@ -28,25 +26,26 @@ export async function getPortfolioOverview(params: {
   includeAfterTax: boolean | null;
 }) {
   try {
-    // Get user's profile to use their preferred currency
-    const baseCurrency =
-      params.baseCurrency ?? (await fetchProfile()).profile.display_currency;
+    // 1. Resolve profile once for both currency and timezone-driven defaults.
+    const { profile } = await fetchProfile();
+    const baseCurrency = params.baseCurrency ?? profile.display_currency;
 
-    // Use a single date key/date pair across quotes and FX for consistency.
+    // 2. Use one civil date key/date pair across snapshots, quotes, and FX.
     const requestedAsOfDateKey = params.date
       ? toCivilDateKey(params.date)
       : null;
-    const asOfDate = requestedAsOfDateKey
-      ? parseUTCDateKey(requestedAsOfDateKey)
-      : startOfUTCDay(new Date());
     const asOfDateKey =
-      requestedAsOfDateKey ?? toCivilDateKeyOrThrow(formatUTCDateKey(asOfDate));
+      requestedAsOfDateKey ?? resolveTodayDateKey(profile.time_zone);
+    const asOfDate = parseUTCDateKey(asOfDateKey);
+    if (Number.isNaN(asOfDate.getTime())) {
+      throw new Error("Invalid date for portfolio overview");
+    }
 
-    // Fetch user's financial profile
+    // 3. Fetch financial profile.
     const financialProfile = await fetchFinancialProfile();
     const includeAfterTax = params.includeAfterTax === true;
 
-    // Fetch positions valued as-of the target date
+    // 4. Fetch positions valued as-of the target date.
     const positions = await fetchPositions({
       includeArchived: true,
       asOfDateKey,
@@ -68,7 +67,7 @@ export async function getPortfolioOverview(params: {
         lastUpdated: new Date().toISOString(),
       };
 
-    // Resolve tickers for any symbols once to reuse below
+    // 5. Resolve tickers for any symbols once to reuse below.
     const symbolIdSet = new Set(
       positions
         .map((position) => position.symbol_id)
@@ -92,7 +91,7 @@ export async function getPortfolioOverview(params: {
       });
     }
 
-    // Fetch FX rates for the as-of date
+    // 6. Fetch FX rates for the as-of date.
     const uniqueCurrencies = new Set<string>();
     positions.forEach((position) => uniqueCurrencies.add(position.currency));
     uniqueCurrencies.add(baseCurrency);
@@ -104,7 +103,7 @@ export async function getPortfolioOverview(params: {
 
     const exchangeRates = await fetchExchangeRates(exchangeRequests);
 
-    // Compute per-position as-of values
+    // 7. Compute per-position as-of values.
     const positionsBase = positions
       .map((position) => {
         const unitLocal = position.current_unit_value || 0;
@@ -163,7 +162,7 @@ export async function getPortfolioOverview(params: {
       original: { currency: string; unitValue: number; value: number };
     }>;
 
-    // Compute net worth from computed positions (avoid duplicate heavy calls)
+    // 8. Compute net worth from computed positions (avoid duplicate heavy calls).
     const netWorth = positionsBase.reduce((sum, h) => sum + h.value, 0);
     const netWorthGross = netWorth;
 
@@ -172,7 +171,7 @@ export async function getPortfolioOverview(params: {
     if (includeAfterTax) {
       netWorthAfterCapitalGains = await calculateNetWorth(
         baseCurrency,
-        asOfDate,
+        asOfDateKey,
         undefined,
         "after_capital_gains",
       );
@@ -182,8 +181,11 @@ export async function getPortfolioOverview(params: {
       );
     }
 
-    // Compute allocation via centralized analysis util to mirror previous logic
-    const allocation = await calculateAssetAllocation(baseCurrency, asOfDate);
+    // 9. Compute allocation via centralized analysis util.
+    const allocation = await calculateAssetAllocation(
+      baseCurrency,
+      asOfDateKey,
+    );
     const categories = allocation
       .map((a) => ({
         name: a.name,

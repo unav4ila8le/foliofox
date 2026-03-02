@@ -113,14 +113,13 @@ CURRENCY & DATES
 export function createSystemPrompt(args: {
   mode: Mode;
   aiTools: Record<string, { description?: string }>;
+  currentDateKey: string;
 }): string {
-  const today = new Date().toISOString().split("T")[0];
-
   return [
     BASE_SYSTEM.trim(),
     "AVAILABLE TOOLS (read before answering)",
     buildToolsManifest(args.aiTools),
-    `Current date: ${today} (use for relative date calculations and tool inputs).`,
+    `Current date: ${args.currentDateKey} (use for relative date calculations and tool inputs).`,
     `MODE: ${args.mode.toUpperCase()}`,
     modeInstructions(args.mode),
   ].join("\n\n");

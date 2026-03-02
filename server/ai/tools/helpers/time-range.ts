@@ -1,9 +1,11 @@
 import {
-  addUTCDays,
-  formatUTCDateKey,
-  parseUTCDateKey,
-  startOfUTCDay,
+  addCivilDateKeyDays,
+  resolveTodayDateKey,
+  toCivilDateKey,
+  toCivilDateKeyOrThrow,
+  type CivilDateKey,
 } from "@/lib/date/date-utils";
+import { fetchProfile } from "@/server/profile/actions";
 
 export const DEFAULT_MAX_HISTORY_DAYS = 365; // ~1 year
 
@@ -28,37 +30,45 @@ interface ClampDateRangeOptions {
   startDate: string | null | undefined;
   endDate: string | null | undefined;
   maxDays?: number;
+  todayDateKey?: CivilDateKey;
 }
 
-export function clampDateRange({
+export async function clampDateRange({
   startDate,
   endDate,
   maxDays = DEFAULT_MAX_HISTORY_DAYS,
-}: ClampDateRangeOptions): { startDate: string; endDate: string } {
-  const today = startOfUTCDay(new Date());
-  const parsedEnd = endDate ? parseUTCDateKey(endDate) : today;
-  const safeEnd =
-    !Number.isNaN(parsedEnd.getTime()) && parsedEnd <= today
-      ? parsedEnd
-      : today;
+  todayDateKey,
+}: ClampDateRangeOptions): Promise<{ startDate: string; endDate: string }> {
+  // 1. Resolve civil "today" in user timezone when caller does not provide one.
+  const resolvedTodayDateKey =
+    todayDateKey ??
+    resolveTodayDateKey((await fetchProfile()).profile.time_zone);
 
-  const maxLookbackStart = addUTCDays(safeEnd, -Math.max(0, maxDays - 1));
+  // 2. Clamp end date to an allowed civil day (never beyond today).
+  const parsedEndDateKey = endDate ? toCivilDateKey(endDate) : null;
+  const safeEndDateKey =
+    parsedEndDateKey && parsedEndDateKey <= resolvedTodayDateKey
+      ? parsedEndDateKey
+      : resolvedTodayDateKey;
 
-  const parsedStart = startDate ? parseUTCDateKey(startDate) : maxLookbackStart;
-  let safeStart = !Number.isNaN(parsedStart.getTime())
-    ? parsedStart
-    : maxLookbackStart;
+  // 3. Clamp start date inside [safeEnd-(maxDays-1), safeEnd].
+  const maxLookbackStartDateKey = addCivilDateKeyDays(
+    safeEndDateKey,
+    -Math.max(0, maxDays - 1),
+  );
+  let safeStartDateKey =
+    (startDate ? toCivilDateKey(startDate) : null) ?? maxLookbackStartDateKey;
 
-  if (safeStart > safeEnd) {
-    safeStart = maxLookbackStart;
+  if (safeStartDateKey > safeEndDateKey) {
+    safeStartDateKey = maxLookbackStartDateKey;
   }
 
-  if (safeStart < maxLookbackStart) {
-    safeStart = maxLookbackStart;
+  if (safeStartDateKey < maxLookbackStartDateKey) {
+    safeStartDateKey = maxLookbackStartDateKey;
   }
 
   return {
-    startDate: formatUTCDateKey(safeStart),
-    endDate: formatUTCDateKey(safeEnd),
+    startDate: toCivilDateKeyOrThrow(safeStartDateKey),
+    endDate: toCivilDateKeyOrThrow(safeEndDateKey),
   };
 }

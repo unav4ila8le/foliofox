@@ -301,6 +301,13 @@ Make all “today/as-of” analytics use user civil day consistently.
 3. AI/tooling “today” (including system prompt) matches profile timezone.
 4. UTC-only internals (cron/provider freshness windows) remain unchanged.
 
+### Implementation notes (2026-03-02)
+
+1. `calculateNetWorth` and `calculateAssetAllocation` now default "today" via `resolveTodayDateKey(profile.time_zone)` and accept explicit `CivilDateKey` callers.
+2. Net-worth history axis generation now uses civil date-key range helpers (no UTC-day axis builder in user-civil paths).
+3. `synthesizeDailyValuationsByPosition` now consumes `startDateKey/endDateKey` (civil keys) while keeping UTC carrier dates only for deterministic internal date objects.
+4. AI date defaults (tools + system prompt) now resolve "today" from profile timezone.
+
 ### Approval gate
 
 Stop and wait for your review/approval before Phase 6.

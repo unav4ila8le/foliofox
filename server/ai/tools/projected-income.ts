@@ -1,5 +1,6 @@
 "use server";
 
+import { formatLocalDateKey } from "@/lib/date/date-utils";
 import { calculateProjectedIncome } from "@/server/analysis/projected-income/portfolio";
 import { fetchProfile } from "@/server/profile/actions";
 
@@ -27,7 +28,7 @@ export async function getProjectedIncome(params: GetProjectedIncomeParams) {
 
   const items =
     result.data?.map((item) => ({
-      date: item.date.toISOString().split("T")[0], // YYYY-MM-DD format
+      date: formatLocalDateKey(item.date),
       income: item.income,
     })) || [];
 

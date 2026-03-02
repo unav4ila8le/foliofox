@@ -4,12 +4,13 @@ import { cache } from "react";
 
 import { fetchPositions } from "@/server/positions/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
+import { fetchProfile } from "@/server/profile/actions";
 
 import { convertCurrency } from "@/lib/currency-conversion";
 import {
-  formatUTCDateKey,
-  startOfUTCDay,
-  toCivilDateKeyOrThrow,
+  parseUTCDateKey,
+  resolveTodayDateKey,
+  type CivilDateKey,
 } from "@/lib/date/date-utils";
 import type { PositionsQueryContext } from "@/server/positions/fetch";
 
@@ -20,18 +21,24 @@ import type { PositionsQueryContext } from "@/server/positions/fetch";
 export const calculateAssetAllocation = cache(
   async (
     targetCurrency: string,
-    date?: Date,
+    asOfDateKey?: CivilDateKey,
     context?: PositionsQueryContext,
   ) => {
-    const asOfDate = date ?? startOfUTCDay(new Date());
-    const asOfDateKey = toCivilDateKeyOrThrow(formatUTCDateKey(asOfDate));
+    // 1. Resolve the valuation day from caller input or profile timezone.
+    const resolvedAsOfDateKey =
+      asOfDateKey ??
+      resolveTodayDateKey((await fetchProfile()).profile.time_zone);
+    const asOfDate = parseUTCDateKey(resolvedAsOfDateKey);
+    if (Number.isNaN(asOfDate.getTime())) {
+      throw new Error("Invalid as-of date key for asset allocation");
+    }
 
-    // 1. Fetch positions valued as-of date (no snapshots histories needed)
+    // 2. Fetch positions valued as-of date (no snapshots histories needed)
     const positions = await fetchPositions(
       {
         positionType: "asset",
         includeArchived: true,
-        asOfDateKey,
+        asOfDateKey: resolvedAsOfDateKey,
       },
       context,
     );
@@ -40,7 +47,7 @@ export const calculateAssetAllocation = cache(
       return [];
     }
 
-    // 2. Fetch FX rates for conversion
+    // 3. Fetch FX rates for conversion
     const uniqueCurrencies = new Set<string>();
     positions.forEach((p) => uniqueCurrencies.add(p.currency));
     uniqueCurrencies.add(targetCurrency);
@@ -52,7 +59,7 @@ export const calculateAssetAllocation = cache(
 
     const exchangeRates = await fetchExchangeRates(exchangeRequests);
 
-    // 3. Convert each position's local total value to target currency
+    // 4. Convert each position's local total value to target currency
     const positionsInTarget = positions.map((position) => ({
       ...position,
       total_value_target: convertCurrency(
@@ -64,7 +71,7 @@ export const calculateAssetAllocation = cache(
       ),
     }));
 
-    // 4. Group by category and sum target-currency values
+    // 5. Group by category and sum target-currency values
     const assetAllocationInTarget: {
       [key: string]: {
         category_id: string;

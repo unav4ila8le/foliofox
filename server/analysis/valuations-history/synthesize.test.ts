@@ -4,7 +4,7 @@ import {
   synthesizeDailyValuationsByPosition,
   toDateKeyFromUTCDate,
 } from "@/server/analysis/valuations-history/synthesize";
-import { parseUTCDateKey } from "@/lib/date/date-utils";
+import { toCivilDateKeyOrThrow } from "@/lib/date/date-utils";
 
 describe("synthesizeDailyValuationsByPosition", () => {
   it("skips rows before first snapshot and carries values forward for non-market positions", () => {
@@ -22,8 +22,8 @@ describe("synthesizeDailyValuationsByPosition", () => {
           ],
         },
       ],
-      startDate: parseUTCDateKey("2026-01-01"),
-      endDate: parseUTCDateKey("2026-01-05"),
+      startDateKey: toCivilDateKeyOrThrow("2026-01-01"),
+      endDateKey: toCivilDateKeyOrThrow("2026-01-05"),
     });
 
     const rows = result.get("pos-1") ?? [];
@@ -57,8 +57,8 @@ describe("synthesizeDailyValuationsByPosition", () => {
           ],
         },
       ],
-      startDate: parseUTCDateKey("2026-01-03"),
-      endDate: parseUTCDateKey("2026-01-05"),
+      startDateKey: toCivilDateKeyOrThrow("2026-01-03"),
+      endDateKey: toCivilDateKeyOrThrow("2026-01-05"),
       marketPricesByPositionDate: marketPrices,
     });
 
@@ -96,8 +96,8 @@ describe("synthesizeDailyValuationsByPosition", () => {
           ],
         },
       ],
-      startDate: parseUTCDateKey("2026-01-02"),
-      endDate: parseUTCDateKey("2026-01-06"),
+      startDateKey: toCivilDateKeyOrThrow("2026-01-02"),
+      endDateKey: toCivilDateKeyOrThrow("2026-01-06"),
     });
 
     const rows = result.get("pos-1") ?? [];
@@ -135,8 +135,8 @@ describe("synthesizeDailyValuationsByPosition", () => {
           ],
         },
       ],
-      startDate: parseUTCDateKey("2026-01-03"),
-      endDate: parseUTCDateKey("2026-01-03"),
+      startDateKey: toCivilDateKeyOrThrow("2026-01-03"),
+      endDateKey: toCivilDateKeyOrThrow("2026-01-03"),
     });
 
     const rows = result.get("pos-1") ?? [];
@@ -159,9 +159,11 @@ describe("synthesizeDailyValuationsByPosition", () => {
           ],
         },
       ],
-      startDate: parseUTCDateKey("2026-01-01"),
-      endDate: parseUTCDateKey("2026-01-05"),
-      endDateKeyByPosition: new Map([["pos-1", "2026-01-03"]]),
+      startDateKey: toCivilDateKeyOrThrow("2026-01-01"),
+      endDateKey: toCivilDateKeyOrThrow("2026-01-05"),
+      endDateKeyByPosition: new Map([
+        ["pos-1", toCivilDateKeyOrThrow("2026-01-03")],
+      ]),
     });
 
     const rows = result.get("pos-1") ?? [];

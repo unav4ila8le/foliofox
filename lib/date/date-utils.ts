@@ -125,6 +125,44 @@ export function resolveTodayDateKey(
 }
 
 /**
+ * Shift a civil date key by N calendar days.
+ * Uses UTC date arithmetic as a deterministic carrier to avoid DST drift.
+ */
+export function addCivilDateKeyDays(
+  dateKey: CivilDateKey,
+  days: number,
+): CivilDateKey {
+  const parsed = parseUTCDateKey(dateKey);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error("Invalid civil date key provided to addCivilDateKeyDays");
+  }
+
+  return toCivilDateKeyOrThrow(formatUTCDateKey(addUTCDays(parsed, days)));
+}
+
+/**
+ * Build an inclusive civil date-key range from start to end.
+ */
+export function buildCivilDateKeyRange(
+  startDateKey: CivilDateKey,
+  endDateKey: CivilDateKey,
+): CivilDateKey[] {
+  if (startDateKey > endDateKey) {
+    return [];
+  }
+
+  const keys: CivilDateKey[] = [];
+  let cursor = startDateKey;
+
+  while (cursor <= endDateKey) {
+    keys.push(cursor);
+    cursor = addCivilDateKeyDays(cursor, 1);
+  }
+
+  return keys;
+}
+
+/**
  * Format a date as a UTC date key in the format "yyyy-MM-dd".
  * @param date - The date to format
  * @returns The formatted date key

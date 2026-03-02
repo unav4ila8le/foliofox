@@ -21,7 +21,7 @@ import {
 import { fetchPositions } from "@/server/positions/fetch";
 import { calculateProfitLoss } from "@/lib/profit-loss";
 import { getRequestLocale } from "@/lib/locale/resolve-locale";
-import { parseUTCDateKey, resolveTodayDateKey } from "@/lib/date/date-utils";
+import { resolveTodayDateKey } from "@/lib/date/date-utils";
 
 import type { PositionsQueryContext } from "@/server/positions/fetch";
 import type { CivilDateKey } from "@/lib/date/date-utils";
@@ -68,11 +68,10 @@ async function AssetAllocationWrapper({
 
   const supabaseClient = createServiceClient();
   const context: PositionsQueryContext = { supabaseClient, userId };
-  const asOfDate = parseUTCDateKey(asOfDateKey);
 
   const [netWorth, assetAllocation] = await Promise.all([
-    calculateNetWorth(currency, asOfDate, context),
-    calculateAssetAllocation(currency, asOfDate, context),
+    calculateNetWorth(currency, asOfDateKey, context),
+    calculateAssetAllocation(currency, asOfDateKey, context),
   ]);
 
   return (
