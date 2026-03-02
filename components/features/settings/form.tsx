@@ -230,7 +230,10 @@ export function SettingsForm({ onSuccess }: SettingsFormProps) {
             control={form.control}
             name="display_currency"
             render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid} className="sm:w-1/2">
+              <Field
+                data-invalid={fieldState.invalid}
+                className="sm:w-1/2 sm:pr-1"
+              >
                 <FieldLabel htmlFor={field.name}>Base currency</FieldLabel>
                 <CurrencySelector
                   field={field}
