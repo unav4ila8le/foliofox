@@ -1,7 +1,6 @@
 "use server";
 
 import { cache } from "react";
-import { addMonths, startOfMonth } from "date-fns";
 
 import { fetchPositions } from "@/server/positions/fetch";
 import { fetchDividends } from "@/server/dividends/fetch";
@@ -10,7 +9,6 @@ import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 import { convertCurrency } from "@/lib/currency-conversion";
 import {
   type CivilDateKey,
-  formatLocalDateKey,
   formatUTCDateKey,
   parseUTCDateKey,
   parseLocalDateKey,
@@ -20,8 +18,10 @@ import type { PositionsQueryContext } from "@/server/positions/fetch";
 import { fetchProfile } from "@/server/profile/actions";
 
 import {
+  buildUTCMonthStart,
   buildProjectionBasisBySymbolId,
   calculateMonthlyDividend,
+  formatUTCMonthKey,
 } from "@/server/analysis/projected-income/utils";
 
 import type {
@@ -222,8 +222,8 @@ export const calculateProjectedIncome = cache(
       const monthlyIncome = new Map<string, number>();
 
       for (let i = 0; i < monthsAhead; i++) {
-        const monthStart = startOfMonth(addMonths(today, i));
-        const monthKey = formatLocalDateKey(monthStart).slice(0, 7);
+        const monthStart = buildUTCMonthStart(today, i);
+        const monthKey = formatUTCMonthKey(monthStart);
         let monthTotal = 0;
 
         positions.forEach((position) => {
@@ -370,8 +370,8 @@ export const calculateProjectedIncomeByAsset = cache(
       const monthlyRows: ProjectedIncomeStackedMonth[] = [];
 
       for (let i = 0; i < monthsAhead; i++) {
-        const monthStart = startOfMonth(addMonths(today, i));
-        const monthKey = formatLocalDateKey(monthStart).slice(0, 7);
+        const monthStart = buildUTCMonthStart(today, i);
+        const monthKey = formatUTCMonthKey(monthStart);
         const values: Record<string, number> = {};
         let monthTotal = 0;
 

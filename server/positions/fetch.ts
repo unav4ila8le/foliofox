@@ -178,6 +178,9 @@ async function fetchPositionsImpl(
   const { MARKET_DATA_HANDLERS } =
     await import("@/server/market-data/sources/registry");
 
+  // `asOfDateKey: null` is an explicit "latest state" mode.
+  // In that mode we still resolve handler capabilities against `now` because
+  // this date is only used for metadata routing, not snapshot filtering.
   const resolutionDate = asOfDateKey
     ? parseUTCDateKey(asOfDateKey)
     : new Date();

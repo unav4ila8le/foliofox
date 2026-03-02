@@ -1,6 +1,9 @@
 "use server";
 
-import { formatLocalDateKey, resolveTodayDateKey } from "@/lib/date/date-utils";
+import {
+  formatDateKeyInTimeZone,
+  resolveTodayDateKey,
+} from "@/lib/date/date-utils";
 import { calculateProjectedIncome } from "@/server/analysis/projected-income/portfolio";
 import { fetchProfile } from "@/server/profile/actions";
 
@@ -34,7 +37,7 @@ export async function getProjectedIncome(params: GetProjectedIncomeParams) {
 
   const items =
     result.data?.map((item) => ({
-      date: formatLocalDateKey(item.date),
+      date: formatDateKeyInTimeZone(item.date, profile.time_zone),
       income: item.income,
     })) || [];
 

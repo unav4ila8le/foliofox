@@ -106,11 +106,11 @@ export function ComponentName({ prop1, prop2 }: Props) {
 ## Currency & Data Handling
 
 - We mostly use ISO currency codes (USD, EUR) - unless explicitly requested
-- Store all dates in UTC
+- Store timestamps (`created_at`, `updated_at`) in UTC; store business-day fields as civil date keys (`YYYY-MM-DD`)
 - Handle all monetary values as numbers, format only for display
 - Use Zod for data validation; for AI tool schemas use `.nullable()` for optional fields (https://ai-sdk.dev/docs/ai-sdk-core/prompt-engineering#optional-parameters)
 - Market data: use the aggregator `server/market-data/fetch.fetchMarketData()` (handlers registry). Default to `upsert: true` so DB cache is populated.
-- Valuation: `fetchPositions({ asOfDate })` uses snapshot quantity and market price at as-of date for unit value (fallback to snapshot value for custom positions).
+- Valuation: `fetchPositions({ asOfDateKey })` uses snapshot quantity and market price at as-of date for unit value (fallback to snapshot value for custom positions).
 - Profit/Loss: compute basis from latest relevant snapshot; do not derive from current market price.
 
 ## Performance
@@ -133,7 +133,7 @@ export function ComponentName({ prop1, prop2 }: Props) {
 
 - Prefer `fetchPositions(options)` for lists. If `includeSnapshots: true`, it returns `{ positions, snapshots }`; otherwise it returns `TransformedPosition[]`.
 - Prefer `fetchSinglePosition(positionId, options?)` for detail pages. With `includeSnapshots: true` it returns `{ position, snapshots }`; otherwise it returns a single `TransformedPosition`.
-- For dashboard and assets table: pass `asOfDate: new Date()` to value positions using market prices.
+- For dashboard and assets table: pass `asOfDateKey: resolveTodayDateKey(profile.time_zone)` to value positions using market prices.
 
 ## Routing Conventions
 
