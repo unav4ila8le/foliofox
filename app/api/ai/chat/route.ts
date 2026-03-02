@@ -228,10 +228,7 @@ export async function POST(req: Request) {
     tools: guardedTools,
     system,
     maxOutputTokens: 8000,
-    stopWhen: [
-      stepCountIs(24),
-      () => guardState.getTotalCalls() >= MAX_TOOL_CALLS_PER_TURN,
-    ],
+    stopWhen: [stepCountIs(24)],
     providerOptions: {
       openai: {
         reasoningSummary: "auto",
@@ -253,8 +250,7 @@ export async function POST(req: Request) {
         guardState.getTotalCalls() >= MAX_TOOL_CALLS_PER_TURN ||
         availableTools.length === 0
       ) {
-        // This blocks any additional tool calls within the current step.
-        // stopWhen enforces the same budget boundary before the next model step.
+        // Block additional tool calls, but still allow a text-only synthesis step.
         return { activeTools: [] };
       }
 

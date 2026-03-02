@@ -570,7 +570,7 @@ describe("POST /api/ai/chat", () => {
 
     const afterBudgetPlan = await streamArgs.prepareStep({ stepNumber: 1 });
     expect(afterBudgetPlan).toEqual({ activeTools: [] });
-    expect(streamArgs.stopWhen[1]?.()).toBe(true);
+    expect(streamArgs.stopWhen).toHaveLength(1);
   });
 
   it("passes suggestion prompt source to telemetry when provided", async () => {
