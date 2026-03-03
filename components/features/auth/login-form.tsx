@@ -110,6 +110,8 @@ export function LoginForm() {
                 <FieldLabel htmlFor={field.name}>Email</FieldLabel>
                 <Input
                   id={field.name}
+                  type="email"
+                  autoComplete="email"
                   placeholder="mail@example.com"
                   aria-invalid={fieldState.invalid}
                   {...field}
@@ -140,6 +142,7 @@ export function LoginForm() {
                     aria-invalid={fieldState.invalid}
                     {...field}
                     type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
                   />
                   <InputGroupAddon align="inline-end">
                     <InputGroupButton

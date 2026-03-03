@@ -128,6 +128,8 @@ export function SignupForm() {
                 <FieldLabel htmlFor={field.name}>Email</FieldLabel>
                 <Input
                   id={field.name}
+                  type="email"
+                  autoComplete="email"
                   placeholder="mail@example.com"
                   aria-invalid={fieldState.invalid}
                   {...field}
@@ -146,6 +148,7 @@ export function SignupForm() {
                 <FieldLabel htmlFor={field.name}>Username</FieldLabel>
                 <Input
                   id={field.name}
+                  autoComplete="username"
                   placeholder="username"
                   aria-invalid={fieldState.invalid}
                   {...field}
@@ -165,6 +168,7 @@ export function SignupForm() {
                 <Input
                   id={field.name}
                   type="password"
+                  autoComplete="new-password"
                   aria-invalid={fieldState.invalid}
                   {...field}
                 />
@@ -183,6 +187,7 @@ export function SignupForm() {
                 <Input
                   id={field.name}
                   type="password"
+                  autoComplete="new-password"
                   aria-invalid={fieldState.invalid}
                   {...field}
                 />

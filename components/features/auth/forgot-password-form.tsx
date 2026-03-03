@@ -79,6 +79,8 @@ export function ResetPasswordForm() {
                 <FieldLabel htmlFor={field.name}>Email</FieldLabel>
                 <Input
                   id={field.name}
+                  type="email"
+                  autoComplete="email"
                   placeholder="mail@example.com"
                   aria-invalid={fieldState.invalid}
                   {...field}
