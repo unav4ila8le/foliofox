@@ -169,6 +169,7 @@ export function AIImportForm() {
           readMode="none"
           selectedFile={selectedFile}
           isProcessing={isProcessing}
+          processingHint="This will take a minute or two, please do not close this dialog."
           onReset={handleReset}
           disabled={isImporting}
           title="Drop your document here"

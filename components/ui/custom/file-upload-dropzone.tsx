@@ -32,6 +32,7 @@ interface FileUploadDropzoneProps {
   // Current state (controlled)
   selectedFile?: File | null;
   isProcessing?: boolean;
+  processingHint?: string;
   onReset?: () => void;
 }
 
@@ -47,6 +48,7 @@ export function FileUploadDropzone({
   description,
   selectedFile,
   isProcessing = false,
+  processingHint,
   onReset,
 }: FileUploadDropzoneProps) {
   // Handle file drop/selection
@@ -124,15 +126,23 @@ export function FileUploadDropzone({
           "hover:bg-muted hover:border-primary/50",
           isDragActive && "bg-muted border-primary/50",
           isDragReject && "bg-destructive/10 border-destructive",
-          (isProcessing || disabled) && "pointer-events-none opacity-50",
+          isProcessing && "pointer-events-none",
+          disabled && "pointer-events-none opacity-50",
         )}
       >
         <input {...getInputProps()} />
 
         {isProcessing ? (
-          <div className="flex items-center justify-center gap-2 py-4">
-            <Spinner />
-            <span>Processing file...</span>
+          <div className="space-y-2 py-4">
+            <div className="flex items-center justify-center gap-2">
+              <Spinner />
+              <span>Processing file...</span>
+            </div>
+            {processingHint && (
+              <p className="text-muted-foreground text-center text-sm">
+                {processingHint}
+              </p>
+            )}
           </div>
         ) : selectedFile ? (
           <div className="space-y-2">

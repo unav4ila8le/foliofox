@@ -25,7 +25,8 @@ import {
 } from "@/lib/import/positions/ai-extraction";
 import type { PositionImportResult } from "@/lib/import/positions/types";
 
-export const maxDuration = 30;
+// Allow longer-running extraction calls for reasoning models and larger files.
+export const maxDuration = 160;
 
 const AI_TABLE_MAX_ROWS = 250;
 const AI_TABLE_MAX_COLUMNS = 40;
@@ -241,7 +242,6 @@ export async function POST(req: Request) {
       try {
         const aiResult = await generateText({
           model: aiModel(extractionModelId),
-          temperature: 0,
           messages: [
             {
               role: "user",
@@ -357,7 +357,6 @@ export async function POST(req: Request) {
   try {
     const result = await generateText({
       model: aiModel(extractionModelId),
-      temperature: 0,
       messages: [
         {
           role: "user",
