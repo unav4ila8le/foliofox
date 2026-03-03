@@ -214,6 +214,7 @@ export function SettingsForm({ onSuccess }: SettingsFormProps) {
                 <FieldLabel htmlFor={field.name}>Username</FieldLabel>
                 <Input
                   id={field.name}
+                  autoComplete="username"
                   placeholder="username"
                   aria-invalid={fieldState.invalid}
                   {...field}
@@ -237,6 +238,7 @@ export function SettingsForm({ onSuccess }: SettingsFormProps) {
                 <FieldLabel htmlFor={field.name}>Base currency</FieldLabel>
                 <CurrencySelector
                   field={field}
+                  id={field.name}
                   isInvalid={fieldState.invalid}
                 />
                 {fieldState.invalid && (
@@ -276,7 +278,7 @@ export function SettingsForm({ onSuccess }: SettingsFormProps) {
             {/* Static locale field (not connected to form) */}
             <Field>
               <FieldLabel htmlFor="locale">Locale</FieldLabel>
-              <Select disabled value="auto">
+              <Select disabled value="auto" name="locale" autoComplete="off">
                 <SelectTrigger id="locale" className="w-full">
                   <SelectValue />
                 </SelectTrigger>
@@ -291,7 +293,13 @@ export function SettingsForm({ onSuccess }: SettingsFormProps) {
           {/* Read-only email field */}
           <Field>
             <FieldLabel htmlFor="email">Email</FieldLabel>
-            <Input id="email" value={email} disabled />
+            <Input
+              id="email"
+              name="email"
+              value={email}
+              autoComplete="email"
+              disabled
+            />
             <FieldDescription>
               If you need to change your email, please contact support.
             </FieldDescription>

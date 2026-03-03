@@ -239,6 +239,7 @@ export function SymbolSearchForm() {
                 <SymbolSearch
                   field={field}
                   isInvalid={fieldState.invalid}
+                  id={field.name}
                   fieldName={field.name}
                   clearErrors={form.clearErrors as (name: string) => void}
                   onSymbolSelect={handleSymbolSelect}
@@ -259,6 +260,7 @@ export function SymbolSearchForm() {
                 <FieldLabel htmlFor={field.name}>Name</FieldLabel>
                 <Input
                   id={field.name}
+                  autoComplete="off"
                   placeholder="E.g., AAPL - Apple Inc."
                   disabled={!isFormReady}
                   aria-invalid={fieldState.invalid}
@@ -280,6 +282,7 @@ export function SymbolSearchForm() {
                 <FieldLabel htmlFor={field.name}>Category</FieldLabel>
                 <PositionCategorySelector
                   field={field}
+                  id={field.name}
                   positionType="asset"
                   disabled={!isFormReady}
                   isInvalid={fieldState.invalid}

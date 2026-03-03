@@ -181,6 +181,7 @@ export function ManualEntryForm() {
                 <FieldLabel htmlFor={field.name}>Name</FieldLabel>
                 <Input
                   id={field.name}
+                  autoComplete="off"
                   placeholder="E.g., Chase Savings, Kyoto Apartment, Vintage Wine Collection"
                   aria-invalid={fieldState.invalid}
                   {...field}
@@ -201,6 +202,7 @@ export function ManualEntryForm() {
                 <FieldLabel htmlFor={field.name}>Category</FieldLabel>
                 <PositionCategorySelector
                   field={field}
+                  id={field.name}
                   positionType="asset"
                   isInvalid={fieldState.invalid}
                 />
@@ -223,6 +225,7 @@ export function ManualEntryForm() {
                 <FieldLabel htmlFor={field.name}>Currency</FieldLabel>
                 <CurrencySelector
                   field={field}
+                  id={field.name}
                   isInvalid={fieldState.invalid}
                 />
                 {fieldState.invalid && (

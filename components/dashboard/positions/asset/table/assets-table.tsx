@@ -46,6 +46,9 @@ export function AssetsTable({ data }: AssetsTableProps) {
       <div className="flex items-center justify-between gap-2">
         <InputGroup className="max-w-sm">
           <InputGroupInput
+            id="assets-search"
+            name="assets-search"
+            autoComplete="off"
             placeholder="Search assets..."
             value={filterValue}
             onChange={(e) => setFilterValue(e.target.value)}

@@ -250,6 +250,7 @@ export function NetWorthAreaChart({
               ) : null}
             </div>
             <Select
+              name="net-worth-time-range"
               value={selectedTimeRange}
               onValueChange={handleRangeChange}
               disabled={isChartLoading}

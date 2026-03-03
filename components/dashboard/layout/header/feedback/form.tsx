@@ -5,7 +5,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 
-import { Field, FieldError, FieldLabel } from "@/components/ui/field";
+import {
+  Field,
+  FieldError,
+  FieldLabel,
+  FieldTitle,
+} from "@/components/ui/field";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -68,12 +73,13 @@ export function FeedbackForm({ onSuccess }: { onSuccess: () => void }) {
         name="type"
         render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid}>
-            <FieldLabel htmlFor={field.name}>
+            <FieldTitle id={`${field.name}-label`}>
               What would you like to share?
-            </FieldLabel>
+            </FieldTitle>
             <RadioGroup
               onValueChange={field.onChange}
               defaultValue={field.value}
+              aria-labelledby={`${field.name}-label`}
               className="flex flex-col gap-3"
             >
               <Label

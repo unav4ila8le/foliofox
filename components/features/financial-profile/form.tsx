@@ -11,6 +11,7 @@ import {
   FieldDescription,
   FieldError,
   FieldLabel,
+  FieldTitle,
 } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -141,10 +142,11 @@ export function FinancialProfileForm({ onSuccess }: FinancialProfileFormProps) {
             name="age_band"
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor={field.name}>Age</FieldLabel>
+                <FieldTitle id={`${field.name}-label`}>Age</FieldTitle>
                 <RadioGroup
                   onValueChange={field.onChange}
                   value={field.value}
+                  aria-labelledby={`${field.name}-label`}
                   className="grid grid-cols-2 gap-2 md:grid-cols-3"
                 >
                   {AGE_BANDS.map((band) => (
@@ -219,6 +221,7 @@ export function FinancialProfileForm({ onSuccess }: FinancialProfileFormProps) {
                       value: field.value ?? "USD",
                       onChange: field.onChange,
                     }}
+                    id={field.name}
                     isInvalid={fieldState.invalid}
                   />
                   {fieldState.invalid && (
@@ -235,10 +238,13 @@ export function FinancialProfileForm({ onSuccess }: FinancialProfileFormProps) {
             name="risk_preference"
             render={({ field }) => (
               <Field>
-                <FieldLabel htmlFor={field.name}>Risk preference</FieldLabel>
+                <FieldTitle id={`${field.name}-label`}>
+                  Risk preference
+                </FieldTitle>
                 <RadioGroup
                   onValueChange={field.onChange}
                   value={field.value}
+                  aria-labelledby={`${field.name}-label`}
                   className="grid gap-2 sm:grid-cols-2"
                 >
                   {RISK_PREFERENCES.map((preference) => (

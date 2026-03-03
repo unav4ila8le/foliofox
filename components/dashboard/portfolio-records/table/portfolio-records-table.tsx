@@ -97,6 +97,9 @@ function ServerSearchInput({
   return (
     <InputGroup className={cn("sm:max-w-64", className)}>
       <InputGroupInput
+        id="portfolio-records-search"
+        name="portfolio-records-search"
+        autoComplete="off"
         placeholder="Search records..."
         value={inputValue}
         onChange={(event) => setInputValue(event.target.value)}
