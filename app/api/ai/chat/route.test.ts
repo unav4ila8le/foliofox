@@ -569,7 +569,10 @@ describe("POST /api/ai/chat", () => {
     }
 
     const afterBudgetPlan = await streamArgs.prepareStep({ stepNumber: 1 });
-    expect(afterBudgetPlan).toEqual({ activeTools: [] });
+    expect(afterBudgetPlan).toMatchObject({
+      activeTools: [],
+      system: expect.stringContaining("Tool-call budget is exhausted"),
+    });
     expect(streamArgs.stopWhen).toHaveLength(1);
   });
 
