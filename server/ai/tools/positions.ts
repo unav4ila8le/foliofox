@@ -1,10 +1,11 @@
 "use server";
 
+import { fetchProfile } from "@/server/profile/actions";
 import { fetchPositions } from "@/server/positions/fetch";
 import { resolvePositionLookup } from "@/server/positions/resolve-position-lookup";
 
 import { resolveSymbolsBatch } from "@/server/symbols/resolve";
-import { parseUTCDateKey, startOfUTCDay } from "@/lib/date/date-utils";
+import { resolveTodayDateKey, toCivilDateKey } from "@/lib/date/date-utils";
 
 interface GetPositionsParams {
   positionIds: string[] | null;
@@ -17,11 +18,10 @@ interface GetPositionsParams {
  * - Values are as-of the provided date (or today) via latest snapshots/market-backed pricing
  */
 export async function getPositions(params: GetPositionsParams) {
-  const parsedDate = params.date ? parseUTCDateKey(params.date) : null;
-  const asOfDate =
-    parsedDate && !Number.isNaN(parsedDate.getTime())
-      ? parsedDate
-      : startOfUTCDay(new Date());
+  const { profile } = await fetchProfile();
+  const requestedDateKey = params.date ? toCivilDateKey(params.date) : null;
+  const asOfDateKey =
+    requestedDateKey ?? resolveTodayDateKey(profile.time_zone);
 
   // Resolve lookups (ticker/ISIN/UUID) to actual position UUIDs
   let resolvedIds: Set<string> | undefined;
@@ -34,7 +34,7 @@ export async function getPositions(params: GetPositionsParams) {
 
   const all = await fetchPositions({
     includeArchived: true,
-    asOfDate,
+    asOfDateKey,
   });
 
   const filtered = resolvedIds ? all.filter((p) => resolvedIds.has(p.id)) : all;
@@ -81,7 +81,7 @@ export async function getPositions(params: GetPositionsParams) {
     total: filtered.length,
     returned: items.length,
     positionIds: params.positionIds,
-    date: asOfDate.toISOString().split("T")[0],
+    date: asOfDateKey,
     items,
   };
 }

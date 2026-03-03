@@ -27,6 +27,7 @@ import {
 } from "@/lib/ai/chat-errors";
 import { type AIAssistantPromptSource } from "@/server/ai/telemetry/constants";
 import { trackAssistantTurn } from "@/server/ai/telemetry/track-assistant-turn";
+import { resolveTodayDateKey } from "@/lib/date/date-utils";
 import {
   CHAT_FILE_ALLOWED_TYPES_TEXT,
   MAX_CHAT_FILE_SIZE_BYTES,
@@ -175,6 +176,7 @@ export async function POST(req: Request) {
   if (!profile.data_sharing_consent) {
     return new Response("AI data sharing consent required", { status: 403 });
   }
+  const currentDateKey = resolveTodayDateKey(profile.time_zone);
 
   // 3. Persist only submit user turns before model execution.
   //    Regenerate replacement happens after successful assistant persistence.
@@ -208,7 +210,11 @@ export async function POST(req: Request) {
 
   // 4. Bound model context size to keep latency/cost predictable.
   const guardrailedContextMessages = buildGuardrailedModelContext(messages);
-  const system = createSystemPrompt({ mode, aiTools });
+  const system = createSystemPrompt({
+    mode,
+    aiTools,
+    currentDateKey,
+  });
   const firstAssistantTurn = !messages.some((m) => m.role === "assistant");
   const { guardedTools, guardState } = createToolCallGuard(aiTools, {
     maxTotalCallsPerTurn: MAX_TOOL_CALLS_PER_TURN,
@@ -222,10 +228,7 @@ export async function POST(req: Request) {
     tools: guardedTools,
     system,
     maxOutputTokens: 8000,
-    stopWhen: [
-      stepCountIs(24),
-      () => guardState.getTotalCalls() >= MAX_TOOL_CALLS_PER_TURN,
-    ],
+    stopWhen: [stepCountIs(24)],
     providerOptions: {
       openai: {
         reasoningSummary: "auto",
@@ -247,8 +250,7 @@ export async function POST(req: Request) {
         guardState.getTotalCalls() >= MAX_TOOL_CALLS_PER_TURN ||
         availableTools.length === 0
       ) {
-        // This blocks any additional tool calls within the current step.
-        // stopWhen enforces the same budget boundary before the next model step.
+        // Block additional tool calls, but still allow a text-only synthesis step.
         return { activeTools: [] };
       }
 

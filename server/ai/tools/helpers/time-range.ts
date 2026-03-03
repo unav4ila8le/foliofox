@@ -1,8 +1,7 @@
 import {
-  addUTCDays,
-  formatUTCDateKey,
-  parseUTCDateKey,
-  startOfUTCDay,
+  addCivilDateKeyDays,
+  toCivilDateKey,
+  type CivilDateKey,
 } from "@/lib/date/date-utils";
 
 export const DEFAULT_MAX_HISTORY_DAYS = 365; // ~1 year
@@ -28,37 +27,40 @@ interface ClampDateRangeOptions {
   startDate: string | null | undefined;
   endDate: string | null | undefined;
   maxDays?: number;
+  todayDateKey: CivilDateKey;
 }
 
 export function clampDateRange({
   startDate,
   endDate,
   maxDays = DEFAULT_MAX_HISTORY_DAYS,
-}: ClampDateRangeOptions): { startDate: string; endDate: string } {
-  const today = startOfUTCDay(new Date());
-  const parsedEnd = endDate ? parseUTCDateKey(endDate) : today;
-  const safeEnd =
-    !Number.isNaN(parsedEnd.getTime()) && parsedEnd <= today
-      ? parsedEnd
-      : today;
+  todayDateKey,
+}: ClampDateRangeOptions): { startDate: CivilDateKey; endDate: CivilDateKey } {
+  // 1. Clamp end date to an allowed civil day (never beyond today).
+  const parsedEndDateKey = endDate ? toCivilDateKey(endDate) : null;
+  const safeEndDateKey =
+    parsedEndDateKey && parsedEndDateKey <= todayDateKey
+      ? parsedEndDateKey
+      : todayDateKey;
 
-  const maxLookbackStart = addUTCDays(safeEnd, -Math.max(0, maxDays - 1));
+  // 2. Clamp start date inside [safeEnd-(maxDays-1), safeEnd].
+  const maxLookbackStartDateKey = addCivilDateKeyDays(
+    safeEndDateKey,
+    -Math.max(0, maxDays - 1),
+  );
+  let safeStartDateKey =
+    (startDate ? toCivilDateKey(startDate) : null) ?? maxLookbackStartDateKey;
 
-  const parsedStart = startDate ? parseUTCDateKey(startDate) : maxLookbackStart;
-  let safeStart = !Number.isNaN(parsedStart.getTime())
-    ? parsedStart
-    : maxLookbackStart;
-
-  if (safeStart > safeEnd) {
-    safeStart = maxLookbackStart;
+  if (safeStartDateKey > safeEndDateKey) {
+    safeStartDateKey = maxLookbackStartDateKey;
   }
 
-  if (safeStart < maxLookbackStart) {
-    safeStart = maxLookbackStart;
+  if (safeStartDateKey < maxLookbackStartDateKey) {
+    safeStartDateKey = maxLookbackStartDateKey;
   }
 
   return {
-    startDate: formatUTCDateKey(safeStart),
-    endDate: formatUTCDateKey(safeEnd),
+    startDate: safeStartDateKey,
+    endDate: safeEndDateKey,
   };
 }

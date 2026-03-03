@@ -5,11 +5,12 @@ import { cache } from "react";
 import { getCurrentUser } from "@/server/auth/actions";
 
 import type { TransformedPositionSnapshot } from "@/types/global.types";
+import type { CivilDateKey } from "@/lib/date/date-utils";
 
 interface FetchPositionSnapshotsParams {
   positionId: string;
-  startDate?: Date;
-  endDate?: Date;
+  startDateKey?: CivilDateKey;
+  endDateKey?: CivilDateKey;
 }
 
 /**
@@ -20,7 +21,7 @@ interface FetchPositionSnapshotsParams {
  */
 export const fetchPositionSnapshots = cache(
   async function fetchPositionSnapshots(options: FetchPositionSnapshotsParams) {
-    const { positionId, startDate, endDate } = options;
+    const { positionId, startDateKey, endDateKey } = options;
     const { supabase, user } = await getCurrentUser();
 
     const query = supabase
@@ -37,8 +38,8 @@ export const fetchPositionSnapshots = cache(
       .eq("user_id", user.id);
 
     // Add inclusivedate range filters if provided
-    if (startDate) query.gte("date", startDate.toISOString().slice(0, 10));
-    if (endDate) query.lte("date", endDate.toISOString().slice(0, 10));
+    if (startDateKey) query.gte("date", startDateKey);
+    if (endDateKey) query.lte("date", endDateKey);
 
     const { data: snapshots, error } = await query
       .order("date", { ascending: false })

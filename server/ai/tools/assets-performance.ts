@@ -8,7 +8,7 @@ import { resolveSymbolsBatch } from "@/server/symbols/resolve";
 
 import { calculateProfitLoss } from "@/lib/profit-loss";
 import { convertCurrency } from "@/lib/currency-conversion";
-import { parseUTCDateKey } from "@/lib/date/date-utils";
+import { parseUTCDateKey, resolveTodayDateKey } from "@/lib/date/date-utils";
 import { clampDateRange } from "@/server/ai/tools/helpers/time-range";
 
 interface GetAssetsPerformanceParams {
@@ -65,13 +65,16 @@ interface AssetPerformanceData {
  */
 export async function getAssetsPerformance(params: GetAssetsPerformanceParams) {
   try {
-    // Get user's profile for default currency
-    const baseCurrency =
-      params.baseCurrency ?? (await fetchProfile()).profile.display_currency;
+    // 1. Resolve profile once for default currency and civil "today".
+    const { profile } = await fetchProfile();
+    const baseCurrency = params.baseCurrency ?? profile.display_currency;
+    const todayDateKey = resolveTodayDateKey(profile.time_zone);
 
+    // 2. Clamp date range in civil date-key space.
     const { startDate: startDateKey, endDate: endDateKey } = clampDateRange({
       startDate: params.startDate,
       endDate: params.endDate,
+      todayDateKey,
     });
     const startDate = parseUTCDateKey(startDateKey);
     const endDate = parseUTCDateKey(endDateKey);
@@ -82,12 +85,12 @@ export async function getAssetsPerformance(params: GetAssetsPerformanceParams) {
         positionType: "asset",
         includeArchived: true,
         includeSnapshots: true,
-        asOfDate: endDate,
+        asOfDateKey: endDateKey,
       }),
       fetchPositions({
         positionType: "asset",
         includeArchived: true,
-        asOfDate: startDate,
+        asOfDateKey: startDateKey,
       }),
     ]);
 

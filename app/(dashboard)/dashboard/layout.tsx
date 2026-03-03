@@ -6,6 +6,7 @@ import { AIChatProvider } from "@/components/dashboard/ai-chat/provider";
 import { LeftSidebar } from "@/components/dashboard/layout/left-sidebar";
 import { RightSidebar } from "@/components/dashboard/layout/right-sidebar";
 import { Header } from "@/components/dashboard/layout/header";
+import { TimeZoneAutoSync } from "@/components/dashboard/layout/time-zone-sync";
 
 import { DashboardDataProvider } from "@/components/dashboard/providers/dashboard-data-provider";
 import { DashboardDialogsProvider } from "@/components/dashboard/providers/dashboard-dialogs-provider";
@@ -16,6 +17,8 @@ import { fetchProfile } from "@/server/profile/actions";
 import { fetchFinancialProfile } from "@/server/financial-profiles/actions";
 import { calculateNetWorth } from "@/server/analysis/net-worth/net-worth";
 import { fetchStalePositions } from "@/server/positions/stale";
+import { TIME_ZONE_MODES } from "@/lib/date/time-zone";
+import { resolveTodayDateKey } from "@/lib/date/date-utils";
 import {
   NET_WORTH_MODE_COOKIE_NAME,
   parseNetWorthMode,
@@ -44,10 +47,15 @@ export default async function Layout({
     cookieStore.get(NET_WORTH_MODE_COOKIE_NAME)?.value,
   );
 
+  // 1) Resolve profile first because downstream analytics/valuation use profile context.
   const { profile, email } = await fetchProfile();
+  const todayDateKey = resolveTodayDateKey(profile.time_zone);
+
+  // 2) Keep the dashboard path fully data-driven; timezone auto-sync happens in
+  // the background for auto-mode users without introducing a visible gate.
   const [financialProfile, netWorth, stalePositions] = await Promise.all([
     fetchFinancialProfile(),
-    calculateNetWorth(profile.display_currency),
+    calculateNetWorth(profile.display_currency, todayDateKey),
     fetchStalePositions(),
   ]);
 
@@ -81,6 +89,9 @@ export default async function Layout({
                 <SidebarInset className="min-w-0">
                   <Header />
                   <div className="@container/dashboard mx-auto w-full max-w-7xl p-4 pt-2">
+                    {profile.time_zone_mode === TIME_ZONE_MODES.AUTO && (
+                      <TimeZoneAutoSync currentTimeZone={profile.time_zone} />
+                    )}
                     {children}
                   </div>
                 </SidebarInset>

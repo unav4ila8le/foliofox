@@ -4,9 +4,10 @@ import {
   addUTCDays,
   formatUTCDateKey,
   parseUTCDateKey,
-  startOfUTCDay,
+  resolveTodayDateKey,
 } from "@/lib/date/date-utils";
 import { fetchQuotes } from "@/server/quotes/fetch";
+import { fetchProfile } from "@/server/profile/actions";
 import { ensureSymbol } from "@/server/symbols/ensure";
 
 const DEFAULT_WINDOW_DAYS = 30;
@@ -44,13 +45,14 @@ interface HistoricalQuotePoint {
   status: "ok" | "missing";
 }
 
-function resolveHistoricalDateWindow(
+async function resolveHistoricalDateWindow(
   startDate: string | null,
   endDate: string | null,
-): HistoricalDateWindow {
-  const resolvedEnd = endDate
-    ? parseUTCDateKey(endDate)
-    : startOfUTCDay(new Date());
+): Promise<HistoricalDateWindow> {
+  // Resolve "today" from profile timezone when caller does not provide endDate.
+  const resolvedEndDateKey =
+    endDate ?? resolveTodayDateKey((await fetchProfile()).profile.time_zone);
+  const resolvedEnd = parseUTCDateKey(resolvedEndDateKey);
   if (Number.isNaN(resolvedEnd.getTime())) {
     throw new Error("endDate is invalid");
   }
@@ -122,7 +124,7 @@ export async function getHistoricalQuotes({
     ensuredSymbol.symbol?.ticker ??
     normalizedLookup;
 
-  const window = resolveHistoricalDateWindow(startDate, endDate);
+  const window = await resolveHistoricalDateWindow(startDate, endDate);
 
   const requests = [];
   for (
@@ -186,7 +188,7 @@ export async function getHistoricalQuotesBatch({
     );
   }
 
-  const window = resolveHistoricalDateWindow(startDate, endDate);
+  const window = await resolveHistoricalDateWindow(startDate, endDate);
   const dates = buildHistoricalDateSeries(window);
 
   const resolutionResults = await Promise.all(

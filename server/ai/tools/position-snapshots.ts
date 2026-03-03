@@ -1,10 +1,11 @@
 "use server";
 
+import { fetchProfile } from "@/server/profile/actions";
 import { fetchPositionSnapshots } from "@/server/position-snapshots/fetch";
 import { resolvePositionLookup } from "@/server/positions/resolve-position-lookup";
 
 import { clampDateRange } from "@/server/ai/tools/helpers/time-range";
-import { formatUTCDateKey, parseUTCDateKey } from "@/lib/date/date-utils";
+import { resolveTodayDateKey } from "@/lib/date/date-utils";
 
 interface GetPositionSnapshotsParams {
   positionId: string; // Required - position snapshots are always for a specific position
@@ -13,23 +14,25 @@ interface GetPositionSnapshotsParams {
 }
 
 export async function getPositionSnapshots(params: GetPositionSnapshotsParams) {
+  const { profile } = await fetchProfile();
+  const todayDateKey = resolveTodayDateKey(profile.time_zone);
+
   const { positionId: lookup } = params;
 
   // Resolve ticker/ISIN/UUID to actual position UUID
   const { positionId } = await resolvePositionLookup({ lookup });
 
-  const { startDate: startKey, endDate: endKey } = clampDateRange({
+  const { startDate: startDateKey, endDate: endDateKey } = clampDateRange({
     startDate: params.startDate,
     endDate: params.endDate,
     maxDays: 1095, // allow up to ~3 years for single-position detail
+    todayDateKey,
   });
-  const startDate = startKey ? parseUTCDateKey(startKey) : undefined;
-  const endDate = endKey ? parseUTCDateKey(endKey) : undefined;
 
   const snapshots = await fetchPositionSnapshots({
     positionId,
-    startDate,
-    endDate,
+    startDateKey,
+    endDateKey,
   });
 
   const items = snapshots.map((s) => ({
@@ -48,8 +51,8 @@ export async function getPositionSnapshots(params: GetPositionSnapshotsParams) {
     returned: items.length,
     positionId,
     range: {
-      start: startDate ? formatUTCDateKey(startDate) : null,
-      end: endDate ? formatUTCDateKey(endDate) : null,
+      start: startDateKey ?? null,
+      end: endDateKey ?? null,
     },
     items,
   };

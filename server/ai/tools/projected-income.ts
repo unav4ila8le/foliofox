@@ -1,5 +1,9 @@
 "use server";
 
+import {
+  formatDateKeyInTimeZone,
+  resolveTodayDateKey,
+} from "@/lib/date/date-utils";
 import { calculateProjectedIncome } from "@/server/analysis/projected-income/portfolio";
 import { fetchProfile } from "@/server/profile/actions";
 
@@ -9,11 +13,17 @@ interface GetProjectedIncomeParams {
 }
 
 export async function getProjectedIncome(params: GetProjectedIncomeParams) {
-  const baseCurrency =
-    params.baseCurrency ?? (await fetchProfile()).profile.display_currency;
+  const { profile } = await fetchProfile();
+  const baseCurrency = params.baseCurrency ?? profile.display_currency;
+  const todayDateKey = resolveTodayDateKey(profile.time_zone);
   const monthsAhead = Math.min(Math.max(params.monthsAhead ?? 12, 1), 24);
 
-  const result = await calculateProjectedIncome(baseCurrency, monthsAhead);
+  const result = await calculateProjectedIncome(
+    baseCurrency,
+    monthsAhead,
+    undefined,
+    todayDateKey,
+  );
 
   if (!result.success) {
     return {
@@ -27,7 +37,7 @@ export async function getProjectedIncome(params: GetProjectedIncomeParams) {
 
   const items =
     result.data?.map((item) => ({
-      date: item.date.toISOString().split("T")[0], // YYYY-MM-DD format
+      date: formatDateKeyInTimeZone(item.date, profile.time_zone),
       income: item.income,
     })) || [];
 

@@ -1,4 +1,4 @@
-import { parseUTCDateKey } from "@/lib/date/date-utils";
+import { formatUTCDateKey, parseUTCDateKey } from "@/lib/date/date-utils";
 
 import type {
   Dividend,
@@ -59,7 +59,8 @@ export function calculateMonthlyDividend(
 
   const frequency = basis.frequency;
   const lastPaymentMonth = basis.lastPaymentMonth;
-  const currentMonth = month.getMonth();
+  // Use UTC month to keep projection cadence deterministic across server timezones.
+  const currentMonth = month.getUTCMonth();
 
   switch (frequency) {
     case "monthly":
@@ -91,6 +92,29 @@ export function calculateMonthlyDividend(
     default:
       return basis.annualAmount / 12;
   }
+}
+
+/**
+ * Build the first day of a UTC month, offset from an anchor UTC date.
+ */
+export function buildUTCMonthStart(
+  anchorDate: Date,
+  monthOffset: number,
+): Date {
+  return new Date(
+    Date.UTC(
+      anchorDate.getUTCFullYear(),
+      anchorDate.getUTCMonth() + monthOffset,
+      1,
+    ),
+  );
+}
+
+/**
+ * Convert a UTC date to a stable `YYYY-MM` key.
+ */
+export function formatUTCMonthKey(date: Date): string {
+  return formatUTCDateKey(date).slice(0, 7);
 }
 
 export function buildDividendProjectionBasis(

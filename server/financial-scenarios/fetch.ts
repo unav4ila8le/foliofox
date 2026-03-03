@@ -4,7 +4,7 @@ import { cache } from "react";
 
 import type { Scenario } from "@/lib/scenario-planning";
 import { convertCurrency } from "@/lib/currency-conversion";
-import { startOfUTCDay } from "@/lib/date/date-utils";
+import { parseUTCDateKey, resolveTodayDateKey } from "@/lib/date/date-utils";
 import {
   fromDatabaseScenarioToScenario,
   type ScenarioInitialValueBasis as ScenarioInitialValueBasisType,
@@ -13,6 +13,7 @@ import { calculateNetWorth } from "@/server/analysis/net-worth/net-worth";
 import { getCurrentUser } from "@/server/auth/actions";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 import { fetchPositions } from "@/server/positions/fetch";
+import { fetchProfile } from "@/server/profile/actions";
 
 import type { TransformedPosition } from "@/types/global.types";
 
@@ -160,15 +161,18 @@ export const fetchOrCreateDefaultScenario = cache(
 
 export const fetchScenarioStartingValueSuggestions = cache(
   async (targetCurrency: string): Promise<ScenarioStartingValueSuggestions> => {
-    const asOfDate = startOfUTCDay(new Date());
+    // 1. Align scenario defaults with the same civil "today" used in dashboard analytics.
+    const { profile } = await fetchProfile();
+    const asOfDateKey = resolveTodayDateKey(profile.time_zone);
+    const asOfDate = parseUTCDateKey(asOfDateKey);
 
     try {
       const [netWorthValue, assetPositions] = await Promise.all([
-        calculateNetWorth(targetCurrency, asOfDate),
+        calculateNetWorth(targetCurrency, asOfDateKey),
         fetchPositions({
           includeArchived: true,
           positionType: "asset",
-          asOfDate,
+          asOfDateKey,
         }),
       ]);
 

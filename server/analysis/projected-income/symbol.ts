@@ -1,16 +1,22 @@
 "use server";
 
-import { addMonths, startOfMonth } from "date-fns";
+import { addMonths } from "date-fns";
 
 import { fetchDividends } from "@/server/dividends/fetch";
 import { fetchSingleQuote } from "@/server/quotes/fetch";
 import { resolveSymbolInput } from "@/server/symbols/resolve";
 
 import {
+  buildUTCMonthStart,
   buildDividendProjectionBasis,
   calculateMonthlyDividend,
+  formatUTCMonthKey,
 } from "@/server/analysis/projected-income/utils";
-import { formatLocalDateKey, parseLocalDateKey } from "@/lib/date/date-utils";
+import {
+  parseLocalDateKey,
+  parseUTCDateKey,
+  type CivilDateKey,
+} from "@/lib/date/date-utils";
 
 import type {
   Dividend,
@@ -67,6 +73,7 @@ function buildProjectedIncomeResultFromDividendContext({
   monthsAhead,
   unitValue,
   fallbackCurrency,
+  projectionAnchorDate,
 }: {
   summary: Dividend | null;
   events: DividendEvent[];
@@ -74,6 +81,7 @@ function buildProjectedIncomeResultFromDividendContext({
   monthsAhead: number;
   unitValue?: number;
   fallbackCurrency: string;
+  projectionAnchorDate: Date;
 }): SymbolProjectedIncomeResult {
   if (!summary) {
     return {
@@ -106,11 +114,10 @@ function buildProjectedIncomeResultFromDividendContext({
 
   // 1) Build monthly projected income in dividend currency.
   const monthlyIncome = new Map<string, number>();
-  const today = new Date();
 
   for (let i = 0; i < monthsAhead; i++) {
-    const monthStart = startOfMonth(addMonths(today, i));
-    const monthKey = formatLocalDateKey(monthStart).slice(0, 7);
+    const monthStart = buildUTCMonthStart(projectionAnchorDate, i);
+    const monthKey = formatUTCMonthKey(monthStart);
     const monthlyDividend = calculateMonthlyDividend(
       monthStart,
       projectionBasis,
@@ -246,6 +253,7 @@ export async function calculateSymbolProjectedIncome(
   monthsAhead: number = 12,
   unitValue?: number,
   fallbackCurrency: string = "USD",
+  asOfDateKey?: CivilDateKey,
 ) {
   try {
     const dividendContext = await fetchSymbolDividendContext(symbolLookup);
@@ -257,6 +265,10 @@ export async function calculateSymbolProjectedIncome(
       };
     }
 
+    const projectionAnchorDate = asOfDateKey
+      ? parseUTCDateKey(asOfDateKey)
+      : new Date();
+
     return buildProjectedIncomeResultFromDividendContext({
       summary: dividendContext.summary,
       events: dividendContext.events,
@@ -264,6 +276,7 @@ export async function calculateSymbolProjectedIncome(
       monthsAhead,
       unitValue,
       fallbackCurrency,
+      projectionAnchorDate,
     });
   } catch (error) {
     console.error(
@@ -290,6 +303,7 @@ export async function calculateSymbolProjectedIncomePanelData(
   monthsAhead: number = 12,
   unitValue?: number,
   fallbackCurrency: string = "USD",
+  asOfDateKey?: CivilDateKey,
 ): Promise<SymbolProjectedIncomePanelResult> {
   try {
     const dividendContext = await fetchSymbolDividendContext(symbolLookup);
@@ -304,6 +318,10 @@ export async function calculateSymbolProjectedIncomePanelData(
       };
     }
 
+    const projectionAnchorDate = asOfDateKey
+      ? parseUTCDateKey(asOfDateKey)
+      : new Date();
+
     const projectedIncome = buildProjectedIncomeResultFromDividendContext({
       summary: dividendContext.summary,
       events: dividendContext.events,
@@ -311,6 +329,7 @@ export async function calculateSymbolProjectedIncomePanelData(
       monthsAhead,
       unitValue,
       fallbackCurrency,
+      projectionAnchorDate,
     });
 
     const dividendYield = await computeDividendYieldFromDividendContext({

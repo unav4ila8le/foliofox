@@ -14,6 +14,10 @@ function utcDate(dayOffset: number): Date {
   return new Date(Date.UTC(2026, 0, 1 + dayOffset));
 }
 
+function utcDateKey(dayOffset: number): string {
+  return `2026-01-${String(1 + dayOffset).padStart(2, "0")}`;
+}
+
 describe("getNetWorthHistory", () => {
   beforeEach(() => {
     fetchNetWorthHistoryMock.mockReset();
@@ -21,11 +25,11 @@ describe("getNetWorthHistory", () => {
 
   it("trims leading zero-only history and marks short history as unsuitable for return drift", async () => {
     fetchNetWorthHistoryMock.mockResolvedValue([
-      { date: utcDate(0), value: 0 },
-      { date: utcDate(1), value: 0 },
-      { date: utcDate(2), value: 100 },
-      { date: utcDate(3), value: 105 },
-      { date: utcDate(4), value: 110 },
+      { date: utcDate(0), dateKey: utcDateKey(0), value: 0 },
+      { date: utcDate(1), dateKey: utcDateKey(1), value: 0 },
+      { date: utcDate(2), dateKey: utcDateKey(2), value: 100 },
+      { date: utcDate(3), dateKey: utcDateKey(3), value: 105 },
+      { date: utcDate(4), dateKey: utcDateKey(4), value: 110 },
     ]);
 
     const result = await getNetWorthHistory({
@@ -61,6 +65,9 @@ describe("getNetWorthHistory", () => {
   it("marks representative history as suitable when coverage is long enough", async () => {
     const longHistory = Array.from({ length: 370 }, (_, index) => ({
       date: utcDate(index),
+      dateKey: new Date(Date.UTC(2026, 0, 1 + index))
+        .toISOString()
+        .slice(0, 10),
       value: index < 5 ? 0 : 100 + index,
     }));
     fetchNetWorthHistoryMock.mockResolvedValue(longHistory);
@@ -88,10 +95,16 @@ describe("getNetWorthHistory", () => {
     const sparseHistory = [
       ...Array.from({ length: 5 }, (_, index) => ({
         date: utcDate(index),
+        dateKey: new Date(Date.UTC(2026, 0, 1 + index))
+          .toISOString()
+          .slice(0, 10),
         value: 0,
       })),
       ...Array.from({ length: 500 }, (_, index) => ({
         date: utcDate(index + 5),
+        dateKey: new Date(Date.UTC(2026, 0, 6 + index))
+          .toISOString()
+          .slice(0, 10),
         value: index % 5 === 0 ? 0 : 1_000 + index,
       })),
     ];
@@ -118,6 +131,9 @@ describe("getNetWorthHistory", () => {
     fetchNetWorthHistoryMock.mockResolvedValue(
       Array.from({ length: 10 }, (_, index) => ({
         date: utcDate(index),
+        dateKey: new Date(Date.UTC(2026, 0, 1 + index))
+          .toISOString()
+          .slice(0, 10),
         value: 0,
       })),
     );

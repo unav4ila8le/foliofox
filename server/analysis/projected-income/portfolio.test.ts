@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-import { formatUTCDateKey } from "@/lib/date/date-utils";
+import { formatUTCDateKey, toCivilDateKeyOrThrow } from "@/lib/date/date-utils";
 
 import type {
   Dividend,
@@ -98,6 +98,7 @@ describe("projected income", () => {
 
   it("projects monthly income using annual dividend data", async () => {
     const fxDateKey = formatUTCDateKey(new Date());
+    const asOfDateKey = toCivilDateKeyOrThrow("2025-01-15");
 
     fetchPositionsMock.mockResolvedValue([createPosition()]);
 
@@ -123,7 +124,12 @@ describe("projected income", () => {
     const { calculateProjectedIncome } =
       await import("@/server/analysis/projected-income/portfolio");
 
-    const result = await calculateProjectedIncome("USD", 12);
+    const result = await calculateProjectedIncome(
+      "USD",
+      12,
+      undefined,
+      asOfDateKey,
+    );
 
     expect(result.success).toBe(true);
     expect(result.data?.length).toBe(12);
@@ -134,6 +140,7 @@ describe("projected income", () => {
 
   it("prefers recent payout events when TTM looks inflated", async () => {
     const fxDateKey = formatUTCDateKey(new Date());
+    const asOfDateKey = toCivilDateKeyOrThrow("2025-01-15");
 
     fetchPositionsMock.mockResolvedValue([createPosition()]);
 
@@ -159,7 +166,12 @@ describe("projected income", () => {
     const { calculateProjectedIncome } =
       await import("@/server/analysis/projected-income/portfolio");
 
-    const result = await calculateProjectedIncome("USD", 1);
+    const result = await calculateProjectedIncome(
+      "USD",
+      1,
+      undefined,
+      asOfDateKey,
+    );
 
     expect(result.success).toBe(true);
     expect(result.data?.length).toBe(1);
@@ -168,6 +180,7 @@ describe("projected income", () => {
 
   it("returns stacked series data per asset", async () => {
     const fxDateKey = formatUTCDateKey(new Date());
+    const asOfDateKey = toCivilDateKeyOrThrow("2025-01-15");
 
     fetchPositionsMock.mockResolvedValue([
       createPosition({
@@ -200,7 +213,12 @@ describe("projected income", () => {
     const { calculateProjectedIncomeByAsset } =
       await import("@/server/analysis/projected-income/portfolio");
 
-    const result = await calculateProjectedIncomeByAsset("USD", 1);
+    const result = await calculateProjectedIncomeByAsset(
+      "USD",
+      1,
+      undefined,
+      asOfDateKey,
+    );
 
     expect(result.success).toBe(true);
     expect(result.series?.length).toBe(1);
@@ -213,5 +231,41 @@ describe("projected income", () => {
     expect(result.data?.length).toBe(1);
     expect(result.data?.[0]?.values["pos-1"]).toBeCloseTo(2, 6);
     expect(result.data?.[0]?.total).toBeCloseTo(2, 6);
+  });
+
+  it("uses the provided civil as-of date key for FX requests", async () => {
+    const asOfDateKey = toCivilDateKeyOrThrow("2025-01-10");
+
+    fetchPositionsMock.mockResolvedValue([createPosition()]);
+    fetchDividendsMock.mockResolvedValue(
+      new Map([
+        [
+          "sym-1",
+          {
+            summary: createDividendSummary({
+              trailing_ttm_dividend: 12,
+              inferred_frequency: "monthly",
+            }),
+            events: [],
+          },
+        ],
+      ]),
+    );
+
+    fetchExchangeRatesMock.mockResolvedValue(new Map([["USD|2025-01-10", 1]]));
+
+    const { calculateProjectedIncome } =
+      await import("@/server/analysis/projected-income/portfolio");
+
+    await calculateProjectedIncome("USD", 1, undefined, asOfDateKey);
+
+    const [exchangeRequests] = fetchExchangeRatesMock.mock.calls[0] ?? [];
+    expect(Array.isArray(exchangeRequests)).toBe(true);
+    expect(
+      exchangeRequests.every(
+        (request: { date: Date }) =>
+          formatUTCDateKey(request.date) === "2025-01-10",
+      ),
+    ).toBe(true);
   });
 });

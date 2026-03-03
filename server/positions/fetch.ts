@@ -9,7 +9,9 @@ import {
   toMarketDataPositions,
 } from "@/server/market-data/fetch";
 import { resolveMarketDataForPositions } from "@/server/market-data/sources/resolver";
-import { formatUTCDateKey } from "@/lib/date/date-utils";
+import { parseUTCDateKey } from "@/lib/date/date-utils";
+
+import type { CivilDateKey } from "@/lib/date/date-utils";
 
 import type {
   Position,
@@ -28,7 +30,7 @@ interface FetchPositionsOptions {
    * As-of valuation date. When provided, builds current quantity/unit value
    * from position_snapshots at/before the date; otherwise uses latest.
    */
-  asOfDate?: Date | null;
+  asOfDateKey?: CivilDateKey | null;
   /** Return grouped value history per position (position_snapshots). */
   includeSnapshots?: boolean;
 }
@@ -83,7 +85,7 @@ async function fetchPositionsImpl(
     includeArchived = false,
     onlyArchived = false,
     positionType,
-    asOfDate = null,
+    asOfDateKey = null,
     includeSnapshots = false,
   } = options;
 
@@ -156,8 +158,8 @@ async function fetchPositionsImpl(
     .order("date", { ascending: false })
     .order("created_at", { ascending: false });
 
-  if (asOfDate) {
-    snapshotsQuery = snapshotsQuery.lte("date", formatUTCDateKey(asOfDate));
+  if (asOfDateKey) {
+    snapshotsQuery = snapshotsQuery.lte("date", asOfDateKey);
   }
 
   const { data: snapshots, error: snapshotsError } = await snapshotsQuery;
@@ -165,7 +167,7 @@ async function fetchPositionsImpl(
     throw new Error(`Failed to fetch snapshots: ${snapshotsError.message}`);
   }
 
-  // Keep the latest snapshot per position (or latest <= asOfDate)
+  // Keep the latest snapshot per position (or latest <= asOfDateKey)
   const latestSnapshotByPositionId = new Map<string, PositionSnapshot>();
   snapshots?.forEach((snapshotRow) => {
     if (!latestSnapshotByPositionId.has(snapshotRow.position_id)) {
@@ -176,16 +178,21 @@ async function fetchPositionsImpl(
   const { MARKET_DATA_HANDLERS } =
     await import("@/server/market-data/sources/registry");
 
-  const resolutionDate = asOfDate ?? new Date();
+  // `asOfDateKey: null` is an explicit "latest state" mode.
+  // In that mode we still resolve handler capabilities against `now` because
+  // this date is only used for metadata routing, not snapshot filtering.
+  const resolutionDate = asOfDateKey
+    ? parseUTCDateKey(asOfDateKey)
+    : new Date();
   const allResolutions = resolveMarketDataForPositions(
     MARKET_DATA_HANDLERS,
     marketDataPositionsAll,
     resolutionDate,
   );
 
-  // Fetch market data prices when asOfDate is provided
+  // Fetch market data prices when as-of date key is provided.
   let priceMap = new Map<string, number>();
-  if (asOfDate !== null) {
+  if (asOfDateKey !== null) {
     const activePositionIds = new Set(latestSnapshotByPositionId.keys());
     const positionsForMarketData = marketDataPositionsAll.filter((position) =>
       activePositionIds.has(position.id),
@@ -193,7 +200,7 @@ async function fetchPositionsImpl(
 
     const marketData = await fetchMarketData(
       positionsForMarketData,
-      asOfDate as Date,
+      resolutionDate,
     );
     priceMap = marketData.prices;
   }
@@ -205,7 +212,7 @@ async function fetchPositionsImpl(
 
     // Use market price if available, otherwise fallback to snapshot unit value
     let current_unit_value = latestSnapshot?.unit_value ?? 0;
-    if (asOfDate !== null) {
+    if (asOfDateKey !== null) {
       const price = priceMap.get(position.id);
       if (price !== undefined) {
         current_unit_value = price;

@@ -21,8 +21,10 @@ import {
 import { fetchPositions } from "@/server/positions/fetch";
 import { calculateProfitLoss } from "@/lib/profit-loss";
 import { getRequestLocale } from "@/lib/locale/resolve-locale";
+import { resolveTodayDateKey } from "@/lib/date/date-utils";
 
 import type { PositionsQueryContext } from "@/server/positions/fetch";
+import type { CivilDateKey } from "@/lib/date/date-utils";
 
 // --- Metadata Generation ---
 
@@ -56,19 +58,20 @@ export async function generateMetadata({
 async function AssetAllocationWrapper({
   userId,
   currency,
+  asOfDateKey,
 }: {
   userId: string;
   currency: string;
+  asOfDateKey: CivilDateKey;
 }) {
   "use cache";
 
   const supabaseClient = createServiceClient();
   const context: PositionsQueryContext = { supabaseClient, userId };
-  const asOfDate = new Date();
 
   const [netWorth, assetAllocation] = await Promise.all([
-    calculateNetWorth(currency, asOfDate, context),
-    calculateAssetAllocation(currency, asOfDate, context),
+    calculateNetWorth(currency, asOfDateKey, context),
+    calculateAssetAllocation(currency, asOfDateKey, context),
   ]);
 
   return (
@@ -84,9 +87,11 @@ async function AssetAllocationWrapper({
 async function ProjectedIncomeWrapper({
   userId,
   currency,
+  asOfDateKey,
 }: {
   userId: string;
   currency: string;
+  asOfDateKey: CivilDateKey;
 }) {
   "use cache";
 
@@ -94,8 +99,8 @@ async function ProjectedIncomeWrapper({
   const context: PositionsQueryContext = { supabaseClient, userId };
 
   const [projectedIncomeResult, projectedIncomeByAsset] = await Promise.all([
-    calculateProjectedIncome(currency, 12, context),
-    calculateProjectedIncomeByAsset(currency, 12, context),
+    calculateProjectedIncome(currency, 12, context, asOfDateKey),
+    calculateProjectedIncomeByAsset(currency, 12, context, asOfDateKey),
   ]);
 
   return (
@@ -116,20 +121,21 @@ async function ProjectedIncomeWrapper({
 async function PositionsWrapper({
   userId,
   locale,
+  asOfDateKey,
 }: {
   userId: string;
   locale: string;
+  asOfDateKey: CivilDateKey;
 }) {
   "use cache";
 
   const supabaseClient = createServiceClient();
   const context: PositionsQueryContext = { supabaseClient, userId };
-  const asOfDate = new Date();
 
   const positionsResult = await fetchPositions(
     {
       positionType: "asset",
-      asOfDate: asOfDate,
+      asOfDateKey,
       includeSnapshots: true,
     },
     context,
@@ -200,6 +206,7 @@ export default async function PublicPortfolioPage(props: {
   const fallbackCurrency = profile.display_currency ?? "USD";
   const targetCurrency =
     normalizeCurrency(search?.currency) ?? fallbackCurrency;
+  const asOfDateKey = resolveTodayDateKey(profile.time_zone);
 
   // 4. Render page with Suspense boundaries
   return (
@@ -217,6 +224,7 @@ export default async function PublicPortfolioPage(props: {
           <AssetAllocationWrapper
             userId={profile.user_id}
             currency={targetCurrency}
+            asOfDateKey={asOfDateKey}
           />
         </Suspense>
       </div>
@@ -225,12 +233,17 @@ export default async function PublicPortfolioPage(props: {
           <ProjectedIncomeWrapper
             userId={profile.user_id}
             currency={targetCurrency}
+            asOfDateKey={asOfDateKey}
           />
         </Suspense>
       </div>
       <div className="col-span-6">
         <Suspense fallback={<Skeleton className="h-96" />}>
-          <PositionsWrapper userId={profile.user_id} locale={locale} />
+          <PositionsWrapper
+            userId={profile.user_id}
+            locale={locale}
+            asOfDateKey={asOfDateKey}
+          />
         </Suspense>
       </div>
     </div>

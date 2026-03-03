@@ -15,6 +15,7 @@ import {
 import type { PublicPortfolioExpirationOption } from "@/types/global.types";
 
 import { fetchPublicPortfolio, resolveSiteUrl } from "./fetch";
+import { ensurePublicSharingTimeZoneReady } from "./guards";
 
 export async function updatePublicPortfolioSettings(
   newSlug: string,
@@ -40,6 +41,17 @@ export async function updatePublicPortfolioSettings(
     return {
       success: false as const,
       error: "Slug must be at least 3 characters.",
+    };
+  }
+
+  const timeZoneGuard = await ensurePublicSharingTimeZoneReady(
+    supabase,
+    user.id,
+  );
+  if (!timeZoneGuard.success) {
+    return {
+      success: false as const,
+      error: timeZoneGuard.error,
     };
   }
 

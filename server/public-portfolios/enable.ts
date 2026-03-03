@@ -22,6 +22,7 @@ import type { Database } from "@/types/database.types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { fetchPublicPortfolio, resolveSiteUrl } from "./fetch";
+import { ensurePublicSharingTimeZoneReady } from "./guards";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -88,6 +89,17 @@ export async function enablePublicPortfolio(
     return {
       success: false as const,
       error: "Invalid expiration option.",
+    };
+  }
+
+  const timeZoneGuard = await ensurePublicSharingTimeZoneReady(
+    supabase,
+    user.id,
+  );
+  if (!timeZoneGuard.success) {
+    return {
+      success: false as const,
+      error: timeZoneGuard.error,
     };
   }
 

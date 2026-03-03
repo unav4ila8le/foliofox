@@ -1,10 +1,11 @@
 "use server";
 
+import { fetchProfile } from "@/server/profile/actions";
 import { fetchPortfolioRecords } from "@/server/portfolio-records/fetch";
 import { resolvePositionLookup } from "@/server/positions/resolve-position-lookup";
 
 import { clampDateRange } from "@/server/ai/tools/helpers/time-range";
-import { formatUTCDateKey, parseUTCDateKey } from "@/lib/date/date-utils";
+import { resolveTodayDateKey } from "@/lib/date/date-utils";
 
 import type { PortfolioRecordWithPosition } from "@/types/global.types";
 
@@ -16,19 +17,21 @@ interface GetPortfolioRecordsParams {
 }
 
 export async function getPortfolioRecords(params: GetPortfolioRecordsParams) {
+  const { profile } = await fetchProfile();
+  const todayDateKey = resolveTodayDateKey(profile.time_zone);
+
   const positionId = params.positionId
     ? (await resolvePositionLookup({ lookup: params.positionId })).positionId
     : undefined;
   const includeArchived = params.includeArchived ?? undefined;
 
-  const { startDate: startDateKey, endDate: endDateKey } = clampDateRange({
-    startDate: params.startDate,
-    endDate: params.endDate,
-    maxDays: positionId ? 730 : undefined,
-  });
-
-  const startDate = startDateKey ? parseUTCDateKey(startDateKey) : undefined;
-  const endDate = endDateKey ? parseUTCDateKey(endDateKey) : undefined;
+  const { startDate: startDateRangeKey, endDate: endDateRangeKey } =
+    clampDateRange({
+      startDate: params.startDate,
+      endDate: params.endDate,
+      maxDays: positionId ? 730 : undefined,
+      todayDateKey,
+    });
 
   const pageSize = 100;
   let page = 1;
@@ -39,8 +42,8 @@ export async function getPortfolioRecords(params: GetPortfolioRecordsParams) {
     const result = await fetchPortfolioRecords({
       positionId,
       includeArchived,
-      startDate,
-      endDate,
+      startDateKey: startDateRangeKey,
+      endDateKey: endDateRangeKey,
       page,
       pageSize,
     });
@@ -68,8 +71,8 @@ export async function getPortfolioRecords(params: GetPortfolioRecordsParams) {
     total: allRecords.length,
     returned: items.length,
     range: {
-      start: startDate ? formatUTCDateKey(startDate) : null,
-      end: endDate ? formatUTCDateKey(endDate) : null,
+      start: startDateRangeKey ?? null,
+      end: endDateRangeKey ?? null,
     },
     positionId: params.positionId,
     includeArchived: params.includeArchived ?? true,

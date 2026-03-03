@@ -10,6 +10,7 @@ import { AssetProjectedIncome } from "@/components/dashboard/positions/asset/pro
 
 import { fetchSinglePosition } from "@/server/positions/fetch";
 import { fetchPortfolioRecords } from "@/server/portfolio-records/fetch";
+import { fetchProfile } from "@/server/profile/actions";
 import { fetchSymbol } from "@/server/symbols/fetch";
 import { fetchSymbolNews } from "@/server/news/fetch";
 import { calculateSymbolProjectedIncomePanelData } from "@/server/analysis/projected-income/symbol";
@@ -19,8 +20,9 @@ import { formatPercentage, formatCurrency } from "@/lib/number-format";
 import { getRequestLocale } from "@/lib/locale/resolve-locale";
 import { parsePortfolioRecordTypes } from "@/lib/portfolio-records/filters";
 import { getSearchParam } from "@/lib/search-params";
-import { parseUTCDateKey } from "@/lib/date/date-utils";
+import { resolveTodayDateKey, toCivilDateKey } from "@/lib/date/date-utils";
 import { cn } from "@/lib/utils";
+import type { CivilDateKey } from "@/lib/date/date-utils";
 
 import type {
   PositionSnapshot,
@@ -51,11 +53,13 @@ async function ProjectedIncomeWrapper({
   quantity,
   unitValue,
   currency,
+  asOfDateKey,
 }: {
   symbolId: string;
   quantity: number;
   unitValue: number;
   currency: string;
+  asOfDateKey: CivilDateKey;
 }) {
   "use cache: private";
 
@@ -68,6 +72,7 @@ async function ProjectedIncomeWrapper({
       12,
       unitValue,
       currency,
+      asOfDateKey,
     );
 
   const dividendCurrency = projectedIncome?.currency || currency;
@@ -148,18 +153,12 @@ async function RecordsWrapper({
     Number.isFinite(parsedPage) && parsedPage > 0 ? Math.floor(parsedPage) : 1;
   const q = typeof queryParam === "string" ? queryParam : undefined;
   const recordTypes = parsePortfolioRecordTypes(typeParam);
-  const parsedStartDate = dateFromParam
-    ? parseUTCDateKey(dateFromParam)
+  const startDateKey = dateFromParam
+    ? (toCivilDateKey(dateFromParam) ?? undefined)
     : undefined;
-  const parsedEndDate = dateToParam ? parseUTCDateKey(dateToParam) : undefined;
-  const startDate =
-    parsedStartDate && !Number.isNaN(parsedStartDate.getTime())
-      ? parsedStartDate
-      : undefined;
-  const endDate =
-    parsedEndDate && !Number.isNaN(parsedEndDate.getTime())
-      ? parsedEndDate
-      : undefined;
+  const endDateKey = dateToParam
+    ? (toCivilDateKey(dateToParam) ?? undefined)
+    : undefined;
   const sortBy =
     sortParam === "date" || sortParam === "created_at" ? sortParam : undefined;
   const sortDirection =
@@ -173,8 +172,8 @@ async function RecordsWrapper({
     pageSize: 50,
     q,
     recordTypes,
-    startDate,
-    endDate,
+    startDateKey,
+    endDateKey,
     sortBy,
     sortDirection,
   });
@@ -223,14 +222,18 @@ async function AssetLayout({
   const { id: positionId } = await paramsPromise;
 
   // Fetch position - needed for header and to determine hasSymbol layout
+  let asOfDateKey: CivilDateKey;
   let position: TransformedPosition;
   let snapshots: PositionSnapshot[];
 
   try {
+    const { profile } = await fetchProfile();
+    // Resolve holdings day in the viewer's civil timezone (not UTC day).
+    asOfDateKey = resolveTodayDateKey(profile.time_zone);
     const result = await fetchSinglePosition(positionId, {
       includeArchived: true,
       includeSnapshots: true,
-      asOfDate: new Date(),
+      asOfDateKey,
     });
     position = result.position;
     snapshots = result.snapshots;
@@ -277,6 +280,7 @@ async function AssetLayout({
               quantity={position.current_quantity}
               unitValue={position.current_unit_value}
               currency={position.currency}
+              asOfDateKey={asOfDateKey}
             />
           </Suspense>
           <Separator />

@@ -2,11 +2,7 @@
 
 import { fetchProfile } from "@/server/profile/actions";
 import { calculateAssetAllocation } from "@/server/analysis/asset-allocation";
-import {
-  formatUTCDateKey,
-  parseUTCDateKey,
-  startOfUTCDay,
-} from "@/lib/date/date-utils";
+import { resolveTodayDateKey, toCivilDateKey } from "@/lib/date/date-utils";
 
 interface GetAllocationDriftParams {
   baseCurrency: string | null;
@@ -28,24 +24,20 @@ interface CategoryDrift {
  */
 export async function getAllocationDrift(params: GetAllocationDriftParams) {
   try {
-    const baseCurrency =
-      params.baseCurrency ?? (await fetchProfile()).profile.display_currency;
+    // 1. Resolve profile once for default currency and civil "today".
+    const { profile } = await fetchProfile();
+    const baseCurrency = params.baseCurrency ?? profile.display_currency;
+    const todayDateKey = resolveTodayDateKey(profile.time_zone);
+    const compareKey = toCivilDateKey(params.compareToDate) ?? todayDateKey;
+    const currentKey = todayDateKey;
 
-    const parsedCompare = parseUTCDateKey(params.compareToDate);
-    const compareDate = !Number.isNaN(parsedCompare.getTime())
-      ? parsedCompare
-      : startOfUTCDay(new Date());
-    const currentDate = startOfUTCDay(new Date());
-    const compareKey = formatUTCDateKey(compareDate);
-    const currentKey = formatUTCDateKey(currentDate);
-
-    // Get asset allocations for both dates using centralized function
+    // 2. Get asset allocations for both dates using centralized function.
     const [previousAllocation, currentAllocation] = await Promise.all([
-      calculateAssetAllocation(baseCurrency, compareDate),
-      calculateAssetAllocation(baseCurrency, currentDate),
+      calculateAssetAllocation(baseCurrency, compareKey),
+      calculateAssetAllocation(baseCurrency, currentKey),
     ]);
 
-    // If no allocations, return empty state
+    // 3. If no allocations, return empty state.
     if (!previousAllocation.length && !currentAllocation.length) {
       return {
         baseCurrency,
@@ -60,7 +52,7 @@ export async function getAllocationDrift(params: GetAllocationDriftParams) {
       };
     }
 
-    // Calculate totals
+    // 4. Calculate totals.
     const previousTotal = previousAllocation.reduce(
       (sum, cat) => sum + cat.total_value,
       0,
@@ -70,7 +62,7 @@ export async function getAllocationDrift(params: GetAllocationDriftParams) {
       0,
     );
 
-    // Create maps for easy lookup
+    // 5. Create maps for easy lookup.
     const prevById = new Map(
       previousAllocation.map((cat) => [cat.category_id, cat]),
     );
@@ -78,13 +70,13 @@ export async function getAllocationDrift(params: GetAllocationDriftParams) {
       currentAllocation.map((cat) => [cat.category_id, cat]),
     );
 
-    // Get all unique category codes
+    // 6. Get all unique category codes.
     const allIds = new Set([
       ...previousAllocation.map((cat) => cat.category_id),
       ...currentAllocation.map((cat) => cat.category_id),
     ]);
 
-    // Build category drift list
+    // 7. Build category drift list.
     const categories: CategoryDrift[] = Array.from(allIds).map((id) => {
       const prev = prevById.get(id);
       const curr = currById.get(id);
@@ -108,7 +100,7 @@ export async function getAllocationDrift(params: GetAllocationDriftParams) {
       };
     });
 
-    // Sort categories by absolute drift (largest change first)
+    // 8. Sort categories by absolute drift (largest change first).
     categories.sort((a, b) => Math.abs(b.deltaPct) - Math.abs(a.deltaPct));
 
     const positive = categories.filter((c) => c.deltaPct > 0).slice(0, 5);

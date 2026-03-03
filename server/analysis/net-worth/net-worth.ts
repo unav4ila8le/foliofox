@@ -3,9 +3,14 @@
 import { cache } from "react";
 import { fetchPositions } from "@/server/positions/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
+import { fetchProfile } from "@/server/profile/actions";
 
 import { convertCurrency } from "@/lib/currency-conversion";
-import { startOfUTCDay } from "@/lib/date/date-utils";
+import {
+  parseUTCDateKey,
+  resolveTodayDateKey,
+  type CivilDateKey,
+} from "@/lib/date/date-utils";
 import { calculateProfitLoss } from "@/lib/profit-loss";
 import { calculateCapitalGainsTaxAmount } from "@/server/analysis/net-worth/capital-gains-tax";
 import type { PositionsQueryContext } from "@/server/positions/fetch";
@@ -22,13 +27,21 @@ import type {
 export const calculateNetWorth = cache(
   async (
     targetCurrency: string,
-    date?: Date,
+    asOfDateKey?: CivilDateKey,
     context?: PositionsQueryContext,
     mode: NetWorthMode = "gross",
   ) => {
-    const asOfDate = date ?? startOfUTCDay(new Date());
+    // 1. Resolve the valuation day once using civil-day semantics.
+    // If no explicit key is provided, follow the profile timezone.
+    const resolvedAsOfDateKey =
+      asOfDateKey ??
+      resolveTodayDateKey((await fetchProfile()).profile.time_zone);
+    const asOfDate = parseUTCDateKey(resolvedAsOfDateKey);
+    if (Number.isNaN(asOfDate.getTime())) {
+      throw new Error("Invalid as-of date key for net worth calculation");
+    }
 
-    // 1. Fetch positions valued as-of the date.
+    // 2. Fetch positions valued as-of the date.
     // In after-tax mode we need snapshots to compute unrealized gain from basis.
     // Gross mode only needs the transformed positions list.
     let positions: TransformedPosition[];
@@ -39,7 +52,7 @@ export const calculateNetWorth = cache(
         {
           includeArchived: true,
           includeSnapshots: true,
-          asOfDate,
+          asOfDateKey: resolvedAsOfDateKey,
         },
         context,
       );
@@ -49,7 +62,7 @@ export const calculateNetWorth = cache(
       positions = await fetchPositions(
         {
           includeArchived: true,
-          asOfDate,
+          asOfDateKey: resolvedAsOfDateKey,
         },
         context,
       );
@@ -57,7 +70,7 @@ export const calculateNetWorth = cache(
 
     if (!positions?.length) return 0;
 
-    // 2. Fetch FX rates for conversion
+    // 3. Fetch FX rates for conversion
     const uniqueCurrencies = new Set<string>();
     positions.forEach((p) => uniqueCurrencies.add(p.currency));
     uniqueCurrencies.add(targetCurrency);
@@ -69,7 +82,7 @@ export const calculateNetWorth = cache(
 
     const exchangeRates = await fetchExchangeRates(exchangeRequests);
 
-    // 3. Sum converted values (gross or net-of-capital-gains).
+    // 4. Sum converted values (gross or net-of-capital-gains).
     if (mode === "gross") {
       let netWorth = 0;
       positions.forEach((position) => {

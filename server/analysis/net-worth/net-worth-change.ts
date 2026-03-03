@@ -2,10 +2,16 @@
 
 import { fetchProfile } from "@/server/profile/actions";
 import { calculateNetWorth } from "@/server/analysis/net-worth/net-worth";
-import { addUTCDays, startOfUTCDay } from "@/lib/date/date-utils";
+import {
+  addCivilDateKeyDays,
+  resolveTodayDateKey,
+  type CivilDateKey,
+} from "@/lib/date/date-utils";
 import type { NetWorthMode } from "@/server/analysis/net-worth/types";
 
 export interface NetWorthChangeData {
+  currentDateKey: CivilDateKey;
+  previousDateKey: CivilDateKey;
   currentValue: number;
   previousValue: number;
   absoluteChange: number;
@@ -24,29 +30,29 @@ export async function fetchNetWorthChange({
   daysBack = 180,
   mode = "gross",
 }: FetchNetWorthChangeParams) {
-  // Get user's preferred currency if not specified
-  if (!targetCurrency) {
-    const { profile } = await fetchProfile();
-    targetCurrency = profile.display_currency;
-  }
+  // 1. Resolve user profile once for both default currency and civil "today".
+  const { profile } = await fetchProfile();
+  const resolvedTargetCurrency = targetCurrency ?? profile.display_currency;
+  const currentDateKey = resolveTodayDateKey(profile.time_zone);
 
-  // Calculate comparison date
+  // 2. Calculate comparison date key in the same civil-day domain.
   const totalDaysBack = Math.max(1, Math.trunc(daysBack));
-  const today = startOfUTCDay(new Date());
-  const comparisonDate = addUTCDays(today, -totalDaysBack);
+  const previousDateKey = addCivilDateKeyDays(currentDateKey, -totalDaysBack);
 
-  // Calculate net worth at both dates in parallel
+  // 3. Calculate net worth at both dates in parallel.
   const [currentValue, previousValue] = await Promise.all([
-    calculateNetWorth(targetCurrency, undefined, undefined, mode), // Current (defaults to today)
-    calculateNetWorth(targetCurrency, comparisonDate, undefined, mode), // Historical
+    calculateNetWorth(resolvedTargetCurrency, currentDateKey, undefined, mode),
+    calculateNetWorth(resolvedTargetCurrency, previousDateKey, undefined, mode),
   ]);
 
-  // Calculate changes
+  // 4. Compute deltas for chart/AI consumers.
   const absoluteChange = currentValue - previousValue;
   const percentageChange =
     previousValue !== 0 ? (absoluteChange / previousValue) * 100 : 0;
 
   return {
+    currentDateKey,
+    previousDateKey,
     currentValue,
     previousValue,
     absoluteChange,

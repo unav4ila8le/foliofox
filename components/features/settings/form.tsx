@@ -1,7 +1,7 @@
 "use client";
 
 import { toast } from "sonner";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
@@ -25,6 +25,15 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
 import { CurrencySelector } from "@/components/dashboard/currency-selector";
+import { TimeZoneCombobox } from "@/components/features/settings/time-zone-combobox";
+import {
+  AUTO_TIME_ZONE_VALUE,
+  getSupportedIanaTimeZones,
+  isValidIanaTimeZone,
+  normalizeIanaTimeZone,
+  resolveBrowserTimeZone,
+  TIME_ZONE_MODES,
+} from "@/lib/date/time-zone";
 
 import {
   updateProfile,
@@ -48,18 +57,67 @@ const formSchema = z.object({
   display_currency: z.string({
     error: "Please select a currency.",
   }),
+  time_zone: z
+    .string({
+      error: "Please select a timezone.",
+    })
+    .refine(
+      (value) => value === AUTO_TIME_ZONE_VALUE || isValidIanaTimeZone(value),
+      {
+        error: "Please select a valid timezone.",
+      },
+    ),
 });
+
+function resolveInitialTimeZoneSelection(
+  profileTimeZone: string | null,
+  profileTimeZoneMode: string | null,
+) {
+  // Keep Auto sticky in the UI when user preference is auto mode.
+  if (profileTimeZoneMode === TIME_ZONE_MODES.AUTO) {
+    return AUTO_TIME_ZONE_VALUE;
+  }
+
+  // Fall back to concrete profile timezone for manual/legacy rows.
+  const normalizedProfileTimeZone = profileTimeZone
+    ? normalizeIanaTimeZone(profileTimeZone)
+    : null;
+
+  return normalizedProfileTimeZone ?? AUTO_TIME_ZONE_VALUE;
+}
 
 export function SettingsForm({ onSuccess }: SettingsFormProps) {
   const { profile, email } = useDashboardData();
 
   const [isLoading, setIsLoading] = useState(false);
+  const detectedBrowserTimeZone = useMemo(() => resolveBrowserTimeZone(), []);
+  const timeZoneOptions = useMemo(() => {
+    const supportedTimeZones = getSupportedIanaTimeZones();
+
+    // Keep currently saved value visible even if runtime support differs.
+    const savedTimeZone = profile.time_zone
+      ? normalizeIanaTimeZone(profile.time_zone)
+      : null;
+
+    if (
+      savedTimeZone &&
+      !supportedTimeZones.some((timeZone) => timeZone === savedTimeZone)
+    ) {
+      return [savedTimeZone, ...supportedTimeZones];
+    }
+
+    return supportedTimeZones;
+  }, [profile.time_zone]);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       username: profile.username,
       display_currency: profile.display_currency,
+      time_zone: resolveInitialTimeZoneSelection(
+        profile.time_zone,
+        profile.time_zone_mode,
+      ),
     },
   });
 
@@ -95,11 +153,30 @@ export function SettingsForm({ onSuccess }: SettingsFormProps) {
       }
 
       const formData = new FormData();
+      const isAutoTimeZone = values.time_zone === AUTO_TIME_ZONE_VALUE;
+      const timeZoneMode = isAutoTimeZone
+        ? TIME_ZONE_MODES.AUTO
+        : TIME_ZONE_MODES.MANUAL;
+      const resolvedTimeZone = isAutoTimeZone
+        ? resolveBrowserTimeZone()
+        : normalizeIanaTimeZone(values.time_zone);
+
+      if (!resolvedTimeZone) {
+        form.setError("time_zone", {
+          type: "manual",
+          message:
+            "Could not detect a valid timezone from this browser. Please select one manually.",
+        });
+        return;
+      }
+
       formData.append("username", values.username.trim());
       formData.append(
         "display_currency",
         values.display_currency.trim().toUpperCase(),
       );
+      formData.append("time_zone", resolvedTimeZone);
+      formData.append("time_zone_mode", timeZoneMode);
 
       const result = await updateProfile(formData);
 
@@ -128,6 +205,7 @@ export function SettingsForm({ onSuccess }: SettingsFormProps) {
     >
       <DialogBody>
         <div className="grid gap-4">
+          {/* Username */}
           <Controller
             control={form.control}
             name="username"
@@ -147,11 +225,15 @@ export function SettingsForm({ onSuccess }: SettingsFormProps) {
             )}
           />
 
+          {/* Display currency */}
           <Controller
             control={form.control}
             name="display_currency"
             render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid} className="sm:w-1/2">
+              <Field
+                data-invalid={fieldState.invalid}
+                className="sm:w-1/2 sm:pr-1"
+              >
                 <FieldLabel htmlFor={field.name}>Base currency</FieldLabel>
                 <CurrencySelector
                   field={field}
@@ -164,19 +246,47 @@ export function SettingsForm({ onSuccess }: SettingsFormProps) {
             )}
           />
 
-          {/* Static locale field (not connected to form) */}
-          <Field className="sm:w-1/2">
-            <FieldLabel htmlFor="locale">Locale</FieldLabel>
-            <Select disabled value="auto">
-              <SelectTrigger id="locale" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="auto">Auto</SelectItem>
-              </SelectContent>
-            </Select>
-            <FieldDescription>Date and number format.</FieldDescription>
-          </Field>
+          <div className="grid items-start gap-x-2 gap-y-4 sm:grid-cols-2">
+            {/* Time zone */}
+            <Controller
+              control={form.control}
+              name="time_zone"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor={field.name}>Time zone</FieldLabel>
+                  <TimeZoneCombobox
+                    field={field}
+                    options={timeZoneOptions}
+                    id={field.name}
+                    isInvalid={fieldState.invalid}
+                  />
+                  {field.value === AUTO_TIME_ZONE_VALUE &&
+                    detectedBrowserTimeZone && (
+                      <FieldDescription>
+                        {detectedBrowserTimeZone}
+                      </FieldDescription>
+                    )}
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
+
+            {/* Static locale field (not connected to form) */}
+            <Field>
+              <FieldLabel htmlFor="locale">Locale</FieldLabel>
+              <Select disabled value="auto">
+                <SelectTrigger id="locale" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="auto">Auto</SelectItem>
+                </SelectContent>
+              </Select>
+              <FieldDescription>Date and number format.</FieldDescription>
+            </Field>
+          </div>
 
           {/* Read-only email field */}
           <Field>

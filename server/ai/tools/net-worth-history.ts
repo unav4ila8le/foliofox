@@ -94,7 +94,7 @@ export async function getNetWorthHistory(params: GetNetWorthHistoryParams) {
   });
 
   const items = history.map((item) => ({
-    date: item.date.toISOString().split("T")[0], // YYYY-MM-DD format
+    date: item.dateKey,
     value: item.value,
   }));
   const { representativeItems, historyQuality } = analyzeHistoryQuality(items);

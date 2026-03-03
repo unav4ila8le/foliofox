@@ -86,9 +86,9 @@ function createSupabaseStub(options: {
   };
 }
 
-function toDateKeyList(values: Array<{ date: Date; value: number }>) {
+function toDateKeyList(values: Array<{ dateKey: string; value: number }>) {
   return values.map((item) => ({
-    date: item.date.toISOString().slice(0, 10),
+    date: item.dateKey,
     value: item.value,
   }));
 }
@@ -105,7 +105,7 @@ describe("fetchNetWorthHistory", () => {
     toMarketDataPositionsMock.mockReset();
 
     fetchProfileMock.mockResolvedValue({
-      profile: { display_currency: "USD" },
+      profile: { display_currency: "USD", time_zone: "UTC" },
     });
     fetchExchangeRatesMock.mockResolvedValue(new Map());
     toMarketDataPositionsMock.mockImplementation(async (positions: unknown[]) =>
