@@ -36,11 +36,11 @@ function PageSkeleton() {
       <div className="col-span-6">
         <Skeleton className="h-32" />
       </div>
-      <div className="col-span-6 space-y-4 lg:col-span-2">
+      <div className="col-span-full space-y-4 @[64rem]/dashboard:col-span-2">
         <Skeleton className="h-80" />
         <Skeleton className="h-64" />
       </div>
-      <div className="col-span-6 lg:col-span-4">
+      <div className="col-span-6 @[64rem]/dashboard:col-span-4">
         <Skeleton className="h-96" />
       </div>
     </div>
