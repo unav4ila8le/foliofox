@@ -1,6 +1,6 @@
 # Scenario Planning Roadmap
 
-Last reviewed: 2026-03-03
+Last reviewed: 2026-03-04
 
 ## North Star
 
@@ -20,16 +20,83 @@ Legacy wording (`initial balance`) is ambiguous. In this roadmap, we use:
 
 This keeps the model flexible without forcing users into "cash-only" semantics.
 
-## Progress Snapshot (as of 2026-03-03)
+## Planning Suite IA (agreed on 2026-03-04)
 
-| Phase   | Ticket | Status                            | Notes                                                                                     |
-| ------- | ------ | --------------------------------- | ----------------------------------------------------------------------------------------- |
-| Phase 0 | #163   | Completed                         | Starting value semantics + basis enum + synced/manual UX shipped.                         |
-| Phase 1 | #153   | Completed (closed 2026-02-26 UTC) | Portfolio-linked baseline UX shipped. Metadata hardening is moved into Phase 2 data work. |
-| Phase 2 | #154   | Next up (not started)             | Assumptions model, presets, and persisted resolved values.                                |
-| Phase 3 | #155   | Not started                       | FIRE mode panel, time-to-target, SWR sensitivity.                                         |
-| Phase 4 | #156   | Not started                       | Monte Carlo API/cache and probability bands in chart.                                     |
-| Phase 5 | TBD    | Deferred (last phase)             | Multi-scenario management and UX.                                                         |
+Sidebar navigation under `Tools`:
+
+- `AI Advisor`
+- `Planning`
+
+Planning is a suite with three views that share one scenario context:
+
+- `Scenario`: events + assumptions editing (source of truth for planning inputs)
+- `FIRE`: goal-focused projection view derived from the current plan
+- `Simulations`: deterministic/Monte Carlo results derived from the current plan
+- Assumptions are scenario-global shared inputs across all three views
+
+Naming rule:
+
+- Use `Scenario` (not `Scenario Planning`) as the first planning view label to avoid redundancy (`Planning > Scenario Planning`).
+
+Route model:
+
+- Phase 2-4 (single-scenario UX): `/dashboard/planning/scenario`, `/dashboard/planning/fire`, `/dashboard/planning/simulations`
+- Phase 5 (multi-scenario UX): `/dashboard/planning/[scenarioId]/scenario`, `/dashboard/planning/[scenarioId]/fire`, `/dashboard/planning/[scenarioId]/simulations`
+- Canonical routes from Phase 2 onward are `/dashboard/planning/*`
+- Clean cut migration: remove `/dashboard/scenario-planning` and ship only `/dashboard/planning/*`
+- Until Phase 5, all Planning routes resolve against `fetchOrCreateDefaultScenario()` (single-scenario behavior)
+
+## Assumptions + FIRE Semantics (locked defaults)
+
+UX guardrail (must not be skipped):
+
+- Users must always understand assumptions are scenario-global and affect `Scenario`, `FIRE`, and `Simulations`
+- `Scenario` is the primary place to edit assumptions
+- `FIRE` and `Simulations` should show a compact assumptions summary with clear "Edit assumptions" action back to `Scenario`
+- On assumptions save, show clear confirmation that all planning views for this scenario are updated
+
+Assumptions input model:
+
+- Inputs are annual nominal percentages (`%`), not decimal fractions
+- Fields:
+  - expected return (annual nominal %)
+  - inflation (annual nominal %)
+  - volatility (annual nominal %, standard deviation)
+- Users can always override with manual values
+
+Assumptions preset model:
+
+- Provide 3 preset chips (same UX style as `capital-gains-tax-rate-field` quick presets):
+  - `Negative`
+  - `Average`
+  - `Positive`
+- Presets are based on historical market return regimes (documented constants in code)
+- Preset click prefills all fields; manual edits remain allowed per field
+
+Initial preset constants (v1 placeholders, annual nominal %):
+
+| Preset   | Expected Return | Inflation | Volatility |
+| -------- | --------------- | --------- | ---------- |
+| Negative | 1.5             | 4.0       | 22.0       |
+| Average  | 7.0             | 2.5       | 15.0       |
+| Positive | 10.0            | 2.0       | 12.0       |
+
+FIRE conventions:
+
+- FIRE spending input is in today's purchasing power (real terms)
+- FIRE target uses SWR/multiple on real spending (for example, default 25x)
+- Portfolio projections may run in nominal terms, but FIRE time-to-target compares against inflation-adjusted (real) portfolio value
+
+## Progress Snapshot (as of 2026-03-04)
+
+| Phase   | Ticket | Status                            | Notes                                                                                          |
+| ------- | ------ | --------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Phase 0 | #163   | Completed                         | Starting value semantics + basis enum + synced/manual UX shipped.                              |
+| Phase 1 | #153   | Completed (closed 2026-02-26 UTC) | Portfolio-linked baseline UX shipped. Metadata hardening is moved into Phase 2 data work.      |
+| Phase 2 | #154   | Next up (not started)             | Assumptions model, presets/manual inputs, persisted resolved values, and Planning suite shell. |
+| Phase 3 | #155   | Not started                       | FIRE view panel, time-to-target, SWR sensitivity.                                              |
+| Phase 4 | #156   | Not started                       | Simulations view with deterministic/Monte Carlo modes and probability bands.                   |
+| Phase 5 | TBD    | Deferred (last phase)             | Multi-scenario switcher and scenario-aware routing/management UX.                              |
 
 ## Multi-Scenario Direction (deferred to final phase)
 
@@ -48,8 +115,9 @@ What is already ready in architecture:
 What is still needed before exposing multi-scenario UX (planned for final phase):
 
 - Add a richer scenario list/read model that includes `id`, `name`, `initial_value`, and `initial_value_basis`
-- Add backend actions for lifecycle management (create, rename, delete, duplicate) even if hidden behind UI for now
+- Add backend actions for lifecycle management (create, rename, delete, duplicate)
 - Replace "first created scenario" fallback with an explicit default pointer (`profiles.default_financial_scenario_id` or equivalent)
+- Add a persistent scenario switcher in Planning header (no separate intermediary page required)
 - Add scenario-aware AI tool selection (`scenarioId` input with safe default behavior)
 - Add list/query indexes optimized for per-user scenario lists and sorting
 
@@ -104,23 +172,27 @@ Outcome: baseline scenario setup is portfolio-linked and usable; metadata harden
 
 Status: Next up (active phase to execute)
 
-- Add assumptions model (expected return/inflation/volatility)
-- Add preset packs (`conservative`, `base`, `optimistic`) for:
-  - Equities-focused profile
-  - Global diversified profile
+- Add assumptions model (expected return/inflation/volatility as annual nominal % inputs)
+- Add preset packs (`Negative`, `Average`, `Positive`) based on historical market-return regimes
 - Add manual assumptions input mode so users can type their own values
 - Preset selection should prefill assumption fields, and users can still override any field manually
+- Introduce Planning suite shell UI for single-scenario mode:
+  - `Scenario` view (active in this phase)
+  - `FIRE` and `Simulations` tabs as placeholders or disabled entries until their phases ship
 - Persist both:
   - selected preset id (if any)
   - resolved numeric assumption values actually used for projection
 - Save resolved assumption values in scenario payload (not only preset id)
 - Include Phase 1 follow-up baseline metadata in scenario settings
+- Keep rollout safe: in this phase, integrate expected return into deterministic scenario projection first; keep volatility for Monte Carlo phase
 
 Definition of done:
 
 - Scenario data can persist assumptions + baseline metadata in a typed structure
 - UI includes preset selector plus manual editable inputs for resolved values
 - Deterministic projections are reproducible from persisted scenario payload alone
+- Planning navigation is established under one `Planning` entry in sidebar
+- UI clearly communicates assumptions are scenario-global shared inputs across all planning views
 
 Outcome: deterministic projections become faster to configure and reproducible.
 
@@ -132,8 +204,9 @@ Status: Not started
   - annual spending input
   - target multiple (default 25x)
   - SWR sensitivity table (3% / 4% / 5%)
-- Compute deterministic time-to-target from scenario projections
+- Compute deterministic time-to-target from scenario projections using real (inflation-adjusted) value tracking
 - Persist FIRE settings in scenario
+- Mount FIRE panel in the `Planning > FIRE` view
 
 Outcome: Scenario Planning becomes useful as a practical FIRE calculator.
 
@@ -145,6 +218,8 @@ Status: Not started
 - Add cached simulation outputs (keyed by scenario version + assumptions)
 - Show percentile bands (p10 / p50 / p90) in chart
 - Allow deterministic and Monte Carlo mode switching
+- Mount simulation controls/results in the `Planning > Simulations` view
+- Use deterministic simulation seed derived from input hash so identical inputs return identical percentile bands (stable UX + cacheability)
 
 Outcome: move from single-path projection to probability-aware planning.
 
@@ -157,6 +232,7 @@ Status: Deferred (last phase)
 - Add explicit default scenario resolution (`profiles.default_financial_scenario_id` or equivalent)
 - Add scenario-specific routing and scenario-aware AI selection
 - Add list/query indexes optimized for per-user scenario lists and sorting
+- Keep view navigation model unchanged (`Scenario`, `FIRE`, `Simulations`) and scope it by selected scenario
 
 Outcome: users can run and compare multiple independent plans.
 
@@ -172,6 +248,18 @@ Near-term (Phase 2+):
 
 - `financial_scenarios.settings` (JSON for baseline metadata, assumptions, FIRE, Monte Carlo params)
 - optional `financial_scenario_simulations` table for cached run outputs
+
+Data model decision (FIRE + Simulations):
+
+- Do not create a dedicated FIRE product table; persist FIRE inputs/preferences in `financial_scenarios.settings.fire`.
+- Keep `financial_scenarios` as the canonical input model (events, starting value/basis, assumptions, FIRE inputs).
+- Store simulation outputs in `financial_scenario_simulations` (cache/results table) keyed by scenario + input hash, not inside `financial_scenarios`.
+
+Simulation cache key contract:
+
+- `input_hash` must include: scenario id, scenario version marker (`updated_at` and/or `engine_version`), initial value + basis, events payload hash, resolved assumptions, simulation mode, horizon, interval, iteration count, and seed policy
+- Same logical inputs must map to the same hash key
+- Any input change must create a new hash key (no stale band reuse)
 
 Final phase (Phase 5):
 
