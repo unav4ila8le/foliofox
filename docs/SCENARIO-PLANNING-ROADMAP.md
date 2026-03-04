@@ -186,6 +186,28 @@ Status: Next up (active phase to execute)
 - Include Phase 1 follow-up baseline metadata in scenario settings
 - Keep rollout safe: in this phase, integrate expected return into deterministic scenario projection first; keep volatility for Monte Carlo phase
 
+Phase 2 delivery sequence (backend-first, with review checkpoints):
+
+1. Phase 2A - DB and domain contract
+   - Add `financial_scenarios.settings` column (JSONB)
+   - Add server-side typed settings schema + defaults (assumptions + baseline metadata)
+   - Pause for review
+2. Phase 2B - Backend persistence
+   - Add server read/write paths for assumptions in scenario settings
+   - Keep UI unchanged; endpoints/actions become ready for future UI wiring
+   - Pause for review
+3. Phase 2C - Deterministic engine integration
+   - Feed resolved assumptions into deterministic projection engine
+   - Scope safety: apply expected return first; keep volatility for Monte Carlo phase
+   - Pause for review
+4. Phase 2D - Tests and hardening
+   - Add/update tests for settings parsing, persistence, and deterministic projection behavior
+   - Pause for review
+5. Phase 2E - UI wiring (deferred until explicit approval)
+   - Add assumptions controls in `Planning > Scenario`
+   - Add read-only shared assumptions summaries in `FIRE` and `Simulations`
+   - Requires explicit go-ahead
+
 Definition of done:
 
 - Scenario data can persist assumptions + baseline metadata in a typed structure

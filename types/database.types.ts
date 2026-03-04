@@ -422,6 +422,7 @@ export type Database = {
           initial_value: number
           initial_value_basis: Database["public"]["Enums"]["scenario_initial_value_basis"]
           name: string
+          settings: Json
           updated_at: string
           user_id: string
         }
@@ -433,6 +434,7 @@ export type Database = {
           initial_value?: number
           initial_value_basis?: Database["public"]["Enums"]["scenario_initial_value_basis"]
           name: string
+          settings?: Json
           updated_at?: string
           user_id: string
         }
@@ -444,6 +446,7 @@ export type Database = {
           initial_value?: number
           initial_value_basis?: Database["public"]["Enums"]["scenario_initial_value_basis"]
           name?: string
+          settings?: Json
           updated_at?: string
           user_id?: string
         }
