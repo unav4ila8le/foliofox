@@ -146,6 +146,29 @@ const withScenarioAssumptions = (input: {
   };
 };
 
+// Write path helper: update or clear baseline metadata while preserving unknown future settings keys.
+const withScenarioBaselineMetadata = (input: {
+  settings: unknown;
+  baseline?: ScenarioBaselineMetadata;
+}): ScenarioJsonObject => {
+  const settingsObject = toScenarioSettingsObject(input.settings);
+
+  if (!input.baseline) {
+    if (!Object.prototype.hasOwnProperty.call(settingsObject, "baseline")) {
+      return settingsObject;
+    }
+
+    const nextSettings = { ...settingsObject };
+    delete nextSettings.baseline;
+    return nextSettings;
+  }
+
+  return {
+    ...settingsObject,
+    baseline: input.baseline,
+  };
+};
+
 export {
   SCENARIO_ASSUMPTION_PRESET_IDS,
   SCENARIO_ASSUMPTION_PRESET_VALUES,
@@ -162,4 +185,5 @@ export {
   getDefaultScenarioSettings,
   fromDatabaseScenarioSettings,
   withScenarioAssumptions,
+  withScenarioBaselineMetadata,
 };

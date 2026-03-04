@@ -89,14 +89,14 @@ FIRE conventions:
 
 ## Progress Snapshot (as of 2026-03-04)
 
-| Phase   | Ticket | Status                            | Notes                                                                                          |
-| ------- | ------ | --------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Phase 0 | #163   | Completed                         | Starting value semantics + basis enum + synced/manual UX shipped.                              |
-| Phase 1 | #153   | Completed (closed 2026-02-26 UTC) | Portfolio-linked baseline UX shipped. Metadata hardening is moved into Phase 2 data work.      |
-| Phase 2 | #154   | Next up (not started)             | Assumptions model, presets/manual inputs, persisted resolved values, and Planning suite shell. |
-| Phase 3 | #155   | Not started                       | FIRE view panel, time-to-target, SWR sensitivity.                                              |
-| Phase 4 | #156   | Not started                       | Simulations view with deterministic/Monte Carlo modes and probability bands.                   |
-| Phase 5 | TBD    | Deferred (last phase)             | Multi-scenario switcher and scenario-aware routing/management UX.                              |
+| Phase   | Ticket | Status                            | Notes                                                                                                                                   |
+| ------- | ------ | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Phase 0 | #163   | Completed                         | Starting value semantics + basis enum + synced/manual UX shipped.                                                                       |
+| Phase 1 | #153   | Completed (closed 2026-02-26 UTC) | Portfolio-linked baseline UX shipped. Baseline metadata hardening is now completed in Phase 2D.                                         |
+| Phase 2 | #154   | In progress (2A-2D completed)     | Backend/domain/engine/tests complete, including baseline metadata write-path hardening. 2E UI wiring remains pending explicit approval. |
+| Phase 3 | #155   | Not started                       | FIRE view panel, time-to-target, SWR sensitivity.                                                                                       |
+| Phase 4 | #156   | Not started                       | Simulations view with deterministic/Monte Carlo modes and probability bands.                                                            |
+| Phase 5 | TBD    | Deferred (last phase)             | Multi-scenario switcher and scenario-aware routing/management UX.                                                                       |
 
 ## Multi-Scenario Direction (deferred to final phase)
 
@@ -170,7 +170,7 @@ Outcome: baseline scenario setup is portfolio-linked and usable; metadata harden
 
 ## Phase 2: Return assumptions + presets (ticket #154)
 
-Status: Next up (active phase to execute)
+Status: In progress (2A-2D completed, 2E pending explicit UI approval)
 
 - Add assumptions model (expected return/inflation/volatility as annual nominal % inputs)
 - Add preset packs (`Negative`, `Average`, `Positive`) based on historical market-return regimes
@@ -202,6 +202,7 @@ Phase 2 delivery sequence (backend-first, with review checkpoints):
    - Pause for review
 4. Phase 2D - Tests and hardening
    - Add/update tests for settings parsing, persistence, and deterministic projection behavior
+   - Harden baseline metadata write path for starting value basis sync/manual flows
    - Pause for review
 5. Phase 2E - UI wiring (deferred until explicit approval)
    - Add assumptions controls in `Planning > Scenario`

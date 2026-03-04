@@ -7,8 +7,11 @@ import {
   ScenarioInitialValueBasis,
   type ScenarioInitialValueBasis as ScenarioInitialValueBasisType,
 } from "@/lib/scenario-planning/helpers";
+import { resolveTodayDateKey } from "@/lib/date/date-utils";
 import {
   ScenarioAssumptionsSchema,
+  type ScenarioBaselineMetadata,
+  withScenarioBaselineMetadata,
   withScenarioAssumptions,
 } from "@/lib/scenario-planning/settings";
 import { getCurrentUser } from "@/server/auth/actions";
@@ -115,14 +118,68 @@ export async function updateScenarioInitialValue(
     initialValueBasis = parsedBasis.data;
   }
 
+  let updatedSettings: Json | undefined;
+
+  if (initialValueBasis) {
+    const { data: scenario, error: scenarioError } = await supabase
+      .from("financial_scenarios")
+      .select("settings")
+      .eq("id", scenarioId)
+      .eq("user_id", user.id)
+      .single();
+
+    if (!scenario || scenarioError) {
+      return {
+        success: false,
+        code: scenarioError?.code || "NOT_FOUND",
+        message: scenarioError?.message || "Scenario not found",
+      };
+    }
+
+    let baselineMetadata: ScenarioBaselineMetadata | undefined;
+
+    if (initialValueBasis !== "manual") {
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("display_currency,time_zone")
+        .eq("user_id", user.id)
+        .single();
+
+      if (!profile || profileError) {
+        return {
+          success: false,
+          code: profileError?.code || "PROFILE_NOT_FOUND",
+          message:
+            profileError?.message ||
+            "Unable to resolve profile for sync metadata",
+        };
+      }
+
+      baselineMetadata = {
+        sourceCurrency: profile.display_currency,
+        sourceMode: initialValueBasis,
+        sourceAsOfDateKey: resolveTodayDateKey(profile.time_zone),
+      };
+    }
+
+    updatedSettings = withScenarioBaselineMetadata({
+      settings: scenario.settings,
+      baseline: baselineMetadata,
+    }) as Json;
+  }
+
   const updatePayload: {
     initial_value: number;
     initial_value_basis?: ScenarioInitialValueBasisType;
+    settings?: Json;
   } = {
     initial_value: initialValue,
   };
   if (initialValueBasis) {
     updatePayload.initial_value_basis = initialValueBasis;
+  }
+  if (updatedSettings !== undefined) {
+    updatePayload.settings = updatedSettings;
   }
 
   const { error: updateError } = await supabase
