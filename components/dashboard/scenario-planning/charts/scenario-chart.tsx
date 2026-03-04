@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback, useDeferredValue } from "react";
 import { addYears } from "date-fns";
-import { Plus, GitBranch } from "lucide-react";
+import { GitBranch, Plus } from "lucide-react";
 import {
   Area,
   AreaChart,
@@ -30,8 +30,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { DemoBalanceChart } from "./demo-balance-chart";
-import { BalanceStats } from "../stats/balance-stats";
+import { UpsertEventDialog } from "../upsert-event/dialog";
+import { DemoBalanceChart } from "./demo-scenario-chart";
+import { BalanceStats } from "../balance-stats";
 
 import { runScenario, Scenario, ScenarioEvent } from "@/lib/scenario-planning";
 import { fromJSDate } from "@/lib/date/date-utils";
@@ -132,18 +133,18 @@ const CustomEventMarker = (props: {
   );
 };
 
-export function BalanceChart({
+export function ScenarioChart({
   scenario,
   currency,
   initialValue,
   expectedAnnualReturnPercent,
-  onAddEvent,
 }: {
-  scenario: Scenario;
+  scenario: Scenario & {
+    id: string;
+  };
   currency: string;
   initialValue: number;
   expectedAnnualReturnPercent?: number;
-  onAddEvent?: () => void;
 }) {
   const locale = useLocale();
   const [timeHorizon, setTimeHorizon] = useState<"2" | "5" | "10" | "30">("5");
@@ -515,14 +516,20 @@ export function BalanceChart({
                 </div>
                 <p className="mt-3 font-medium">Balance Over Time</p>
                 <p className="text-muted-foreground mt-1 mb-3 text-sm">
-                  Add events to see how your balance changes over time
+                  Add events in the table below to see how your balance changes
+                  over time
                 </p>
-                {onAddEvent && (
-                  <Button onClick={onAddEvent}>
-                    <Plus className="size-4" />
-                    New Event
-                  </Button>
-                )}
+                <UpsertEventDialog
+                  scenarioId={scenario.id}
+                  existingEvents={scenario.events}
+                  currency={currency}
+                  trigger={
+                    <Button>
+                      <Plus className="size-4" />
+                      New Event
+                    </Button>
+                  }
+                />
               </div>
             </div>
           ) : (
@@ -875,7 +882,6 @@ export function BalanceChart({
           finalBalance={chartData.at(-1)?.balance || 0}
           currency={currency}
           scenarioResult={scenarioResult}
-          startDate={new Date()}
           endDate={endDate}
         />
       )}

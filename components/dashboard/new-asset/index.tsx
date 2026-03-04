@@ -3,7 +3,7 @@
 import { createContext, useContext, useState } from "react";
 import { Plus } from "lucide-react";
 
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button, type buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
   DialogBody,

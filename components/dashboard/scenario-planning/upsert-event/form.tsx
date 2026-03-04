@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { CalendarIcon, Plus, Trash2, X } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm, useFieldArray, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -43,6 +45,7 @@ import { ld, type LocalDate } from "@/lib/date/date-utils";
 import { requiredNumberWithConstraints } from "@/lib/zod-helpers";
 import { useLocale } from "@/hooks/use-locale";
 import type { ScenarioEvent } from "@/lib/scenario-planning";
+import { upsertScenarioEvent } from "@/server/financial-scenarios/upsert";
 
 const conditionSchema = z.discriminatedUnion("type", [
   z.object({
@@ -119,6 +122,7 @@ const formSchema = z
   );
 
 export function UpsertEventForm({
+  scenarioId,
   onCancel,
   onSuccess,
   existingEvents = [],
@@ -126,13 +130,15 @@ export function UpsertEventForm({
   eventIndex = null,
   currency,
 }: {
+  scenarioId: string;
   onCancel: () => void;
-  onSuccess: (event: ScenarioEvent, index?: number) => void;
+  onSuccess?: () => void;
   existingEvents?: ScenarioEvent[];
   event?: ScenarioEvent | null;
   eventIndex?: number | null;
   currency: string;
 }) {
+  const router = useRouter();
   const isEditing = event !== null && eventIndex !== null;
   const locale = useLocale();
 
@@ -201,10 +207,21 @@ export function UpsertEventForm({
         endDate: dateRange.endDate,
         conditions: extractConditionsFromEvent(event),
       });
+      return;
     }
+
+    form.reset({
+      name: "",
+      type: "income",
+      amount: "",
+      recurrence: "once",
+      startDate: new Date(),
+      endDate: undefined,
+      conditions: [],
+    });
   }, [event, form]);
 
-  const { isDirty } = form.formState;
+  const { isDirty, isSubmitting } = form.formState;
   const recurrence = useWatch({
     control: form.control,
     name: "recurrence",
@@ -306,8 +323,29 @@ export function UpsertEventForm({
       });
     }
 
-    onSuccess(event, isEditing ? eventIndex : undefined);
-    onCancel();
+    try {
+      const result = await upsertScenarioEvent(
+        scenarioId,
+        event,
+        isEditing ? (eventIndex ?? undefined) : undefined,
+      );
+
+      if (!result.success) {
+        throw new Error(result.message || "Failed to save event");
+      }
+
+      toast.success(
+        isEditing ? "Event updated successfully" : "Event created successfully",
+      );
+
+      router.refresh();
+      onSuccess?.();
+      onCancel();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save event",
+      );
+    }
   }
 
   return (
@@ -869,11 +907,22 @@ export function UpsertEventForm({
 
       {/* Action buttons */}
       <DialogFooter>
-        <Button onClick={onCancel} type="button" variant="outline">
+        <Button
+          onClick={onCancel}
+          type="button"
+          variant="outline"
+          disabled={isSubmitting}
+        >
           Cancel
         </Button>
-        <Button type="submit" disabled={!isDirty}>
-          {isEditing ? "Update event" : "Create event"}
+        <Button type="submit" disabled={!isDirty || isSubmitting}>
+          {isSubmitting
+            ? isEditing
+              ? "Updating..."
+              : "Creating..."
+            : isEditing
+              ? "Update event"
+              : "Create event"}
         </Button>
       </DialogFooter>
     </form>
