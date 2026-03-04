@@ -57,6 +57,7 @@ interface PortfolioRecordsTableProps {
   position?: TransformedPosition;
   showPositionColumn?: boolean;
   readOnly?: boolean;
+  disableDateSorting?: boolean;
   enableSearch?: boolean;
   emptyStateDescription?: string;
   viewAllFooter?: boolean;
@@ -152,6 +153,7 @@ export function PortfolioRecordsTable({
   position,
   showPositionColumn = false,
   readOnly = false,
+  disableDateSorting = false,
   enableSearch = true,
   emptyStateDescription,
   viewAllFooter,
@@ -397,7 +399,11 @@ export function PortfolioRecordsTable({
   const columns = getPortfolioRecordColumns({
     showPositionColumn,
     readOnly,
-    onDateSort: isServerSortingEnabled ? handleDateSortToggle : undefined,
+    onDateSort:
+      isServerSortingEnabled && !disableDateSorting
+        ? handleDateSortToggle
+        : undefined,
+    isDateSortable: !disableDateSorting,
   });
 
   // Optional table-native "View all" footer (used in dashboard widget).

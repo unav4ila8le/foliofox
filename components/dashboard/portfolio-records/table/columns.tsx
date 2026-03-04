@@ -23,10 +23,12 @@ export function getPortfolioRecordColumns({
   showPositionColumn = false,
   readOnly = false,
   onDateSort,
+  isDateSortable = true,
 }: {
   showPositionColumn?: boolean;
   readOnly?: boolean;
   onDateSort?: () => void;
+  isDateSortable?: boolean;
 }): ColumnDef<PortfolioRecordWithPosition>[] {
   const selectionColumn: ColumnDef<PortfolioRecordWithPosition> = {
     id: "select",
@@ -56,27 +58,33 @@ export function getPortfolioRecordColumns({
 
   const dateColumn: ColumnDef<PortfolioRecordWithPosition> = {
     accessorKey: "date",
-    header: ({ column }) => (
-      <div
-        className="hover:text-primary flex cursor-pointer items-center gap-2 transition-colors"
-        onClick={() => {
-          if (onDateSort) {
-            onDateSort();
-            return;
-          }
-          column.toggleSorting(column.getIsSorted() === "asc");
-        }}
-      >
-        Date
-        <ArrowUpDown className="size-4" />
-      </div>
-    ),
+    header: ({ column }) => {
+      if (!isDateSortable) {
+        return "Date";
+      }
+
+      return (
+        <div
+          className="hover:text-primary flex cursor-pointer items-center gap-2 transition-colors"
+          onClick={() => {
+            if (onDateSort) {
+              onDateSort();
+              return;
+            }
+            column.toggleSorting(column.getIsSorted() === "asc");
+          }}
+        >
+          Date
+          <ArrowUpDown className="size-4" />
+        </div>
+      );
+    },
     cell: ({ row, table }) => {
       const locale = table.options.meta?.locale;
       const date = new Date(row.getValue<string>("date"));
       return formatDate(date, { locale });
     },
-    enableSorting: !onDateSort,
+    enableSorting: isDateSortable && !onDateSort,
   };
 
   const base: ColumnDef<PortfolioRecordWithPosition>[] = readOnly

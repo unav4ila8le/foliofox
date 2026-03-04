@@ -55,6 +55,7 @@ export function PortfolioRecordsWidget({
       data={portfolioRecordsData}
       showPositionColumn
       readOnly
+      disableDateSorting
       enableSearch={false}
       pagination={pagination}
       viewAllFooter
