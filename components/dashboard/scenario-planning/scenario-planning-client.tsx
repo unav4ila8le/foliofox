@@ -27,6 +27,7 @@ import {
   ScenarioInitialValueBasis as ScenarioInitialValueBasisSchema,
   type ScenarioInitialValueBasis,
 } from "@/lib/scenario-planning/helpers";
+import type { ScenarioAssumptions } from "@/lib/scenario-planning/settings";
 import { SCENARIO_INITIAL_VALUE_BASES } from "@/types/enums";
 
 import { formatNumber } from "@/lib/number-format";
@@ -47,6 +48,7 @@ interface ScenarioPlanningClientProps {
     id: string;
     initialValue: number;
     initialValueBasis: ScenarioInitialValueBasis;
+    assumptions: ScenarioAssumptions;
   };
   currency: string;
   startingValueSuggestions: {
@@ -401,6 +403,9 @@ export function ScenarioPlanningClient({
         scenario={scenario}
         currency={currency}
         initialValue={savedValue}
+        expectedAnnualReturnPercent={
+          scenario.assumptions.values.expectedAnnualReturnPercent
+        }
         onAddEvent={() => setDialogOpen(true)}
       />
 

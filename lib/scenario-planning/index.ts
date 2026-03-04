@@ -18,6 +18,10 @@ type Scenario = {
   events: Array<ScenarioEvent>;
 };
 
+type DeterministicScenarioAssumptions = {
+  expectedAnnualReturnPercent?: number | null;
+};
+
 const makeScenario = (input: {
   name: string;
   events: Array<ScenarioEvent>;
@@ -133,13 +137,35 @@ const shouldEventFire = (
   return true;
 };
 
+const toMonthlyGrowthRate = (
+  expectedAnnualReturnPercent?: number | null,
+): number => {
+  if (
+    expectedAnnualReturnPercent == null ||
+    !Number.isFinite(expectedAnnualReturnPercent)
+  ) {
+    return 0;
+  }
+
+  const annualDecimal = expectedAnnualReturnPercent / 100;
+  if (annualDecimal <= -1) {
+    return -1;
+  }
+
+  return Math.pow(1 + annualDecimal, 1 / 12) - 1;
+};
+
 const evaluateScenario = (input: {
   scenario: Scenario;
   startDate: LocalDate;
   endDate: LocalDate;
   initialValue: number;
+  assumptions?: DeterministicScenarioAssumptions;
 }): EvaluationState => {
-  const { scenario, startDate, endDate, initialValue } = input;
+  const { scenario, startDate, endDate, initialValue, assumptions } = input;
+  const monthlyGrowthRate = toMonthlyGrowthRate(
+    assumptions?.expectedAnnualReturnPercent,
+  );
 
   const state: EvaluationState = {
     cashflow: {},
@@ -155,6 +181,12 @@ const evaluateScenario = (input: {
     const monthKey = toKeyMonth(currentMonth);
 
     state.cashflow[monthKey] = { amount: 0, events: [] };
+
+    // Apply deterministic return to opening balance for the month.
+    // This is not modeled as cashflow, so event-only cashflow remains clean.
+    if (monthlyGrowthRate !== 0 && state.currentBalance !== 0) {
+      state.currentBalance += state.currentBalance * monthlyGrowthRate;
+    }
 
     const context: MonthEvaluationContext = {
       month: currentMonth,
@@ -245,6 +277,7 @@ const runScenario = (input: {
   startDate: LocalDate;
   endDate: LocalDate;
   initialValue: number;
+  assumptions?: DeterministicScenarioAssumptions;
 }) => {
   const state = evaluateScenario(input);
 
@@ -314,6 +347,7 @@ const makeRecurring = (input: {
 export {
   type Scenario,
   type ScenarioEvent,
+  type DeterministicScenarioAssumptions,
   type Cashflow,
   type CashflowEntry,
   makeScenario,

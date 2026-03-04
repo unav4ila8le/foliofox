@@ -103,6 +103,10 @@ export async function getFinancialScenarios(
       startDate,
       endDate,
       initialValue: scenario.initialValue,
+      assumptions: {
+        expectedAnnualReturnPercent:
+          scenario.assumptions.values.expectedAnnualReturnPercent,
+      },
     });
 
     // Extract year-end balances for summary

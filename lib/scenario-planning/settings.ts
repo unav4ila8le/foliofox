@@ -12,9 +12,9 @@ const ScenarioAssumptionPresetIdSchema = z.enum(SCENARIO_ASSUMPTION_PRESET_IDS);
 
 // Assumption inputs are annual nominal percentages.
 const ScenarioAssumptionValuesSchema = z.object({
-  expectedReturnPct: z.number().min(-100).max(100),
-  inflationPct: z.number().min(-100).max(100),
-  volatilityPct: z.number().min(0).max(200),
+  expectedAnnualReturnPercent: z.number().min(-100).max(100),
+  inflationAnnualPercent: z.number().min(-100).max(100),
+  volatilityAnnualPercent: z.number().min(0).max(200),
 });
 
 const ScenarioAssumptionsSchema = z.object({
@@ -56,19 +56,19 @@ const SCENARIO_ASSUMPTION_PRESET_VALUES: Record<
   ScenarioAssumptionValues
 > = {
   negative: {
-    expectedReturnPct: 1.5,
-    inflationPct: 4,
-    volatilityPct: 22,
+    expectedAnnualReturnPercent: 1.5,
+    inflationAnnualPercent: 4,
+    volatilityAnnualPercent: 22,
   },
   average: {
-    expectedReturnPct: 7,
-    inflationPct: 2.5,
-    volatilityPct: 15,
+    expectedAnnualReturnPercent: 7,
+    inflationAnnualPercent: 2.5,
+    volatilityAnnualPercent: 15,
   },
   positive: {
-    expectedReturnPct: 10,
-    inflationPct: 2,
-    volatilityPct: 12,
+    expectedAnnualReturnPercent: 10,
+    inflationAnnualPercent: 2,
+    volatilityAnnualPercent: 12,
   },
 };
 

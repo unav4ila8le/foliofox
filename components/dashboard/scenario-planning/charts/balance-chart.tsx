@@ -136,11 +136,13 @@ export function BalanceChart({
   scenario,
   currency,
   initialValue,
+  expectedAnnualReturnPercent,
   onAddEvent,
 }: {
   scenario: Scenario;
   currency: string;
   initialValue: number;
+  expectedAnnualReturnPercent?: number;
   onAddEvent?: () => void;
 }) {
   const locale = useLocale();
@@ -162,12 +164,15 @@ export function BalanceChart({
       initialValue,
       startDate: fromJSDate(new Date()),
       endDate: fromJSDate(endDate),
+      assumptions: {
+        expectedAnnualReturnPercent,
+      },
     });
 
     return {
       scenarioResult,
     };
-  }, [scenario, initialValue, endDate]);
+  }, [scenario, initialValue, endDate, expectedAnnualReturnPercent]);
 
   const getPeriodKey = useCallback(
     (date: Date): string => {
