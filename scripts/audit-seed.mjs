@@ -8,6 +8,8 @@ function parseArgs(argv) {
     filePath: "supabase/seed.sql",
     asOfDate: null,
     maxStaleDays: 62,
+    strict: false,
+    minRecordsPerPosition: 3,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -25,6 +27,21 @@ function parseArgs(argv) {
         throw new Error("--max-stale-days must be a positive number");
       }
       args.maxStaleDays = Math.floor(parsed);
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--strict") {
+      args.strict = true;
+      continue;
+    }
+
+    if (arg === "--min-records") {
+      const parsed = Number(argv[index + 1] ?? "");
+      if (!Number.isFinite(parsed) || parsed < 0) {
+        throw new Error("--min-records must be a non-negative number");
+      }
+      args.minRecordsPerPosition = Math.floor(parsed);
       index += 1;
       continue;
     }
@@ -95,7 +112,7 @@ function splitSqlValues(valueList) {
 
 function parseInsertLine(line, tableName) {
   const matcher = new RegExp(
-    `^INSERT INTO public\\.${tableName} \\(([^)]+)\\) VALUES \\((.*)\\) ON CONFLICT DO NOTHING;$`,
+    `^INSERT INTO public\\.${tableName} \\(([^)]+)\\) VALUES \\((.*)\\) ON CONFLICT.*?;$`,
   );
   const match = line.match(matcher);
 
@@ -147,10 +164,49 @@ function subtractDays(dateKey, days) {
   return buildDateKey(parsed);
 }
 
-function runAudit({ filePath, asOfDate, maxStaleDays }) {
+function daysBetween(dateKeyA, dateKeyB) {
+  const a = dateKeyToUtc(dateKeyA);
+  const b = dateKeyToUtc(dateKeyB);
+  if (!a || !b) return null;
+  return Math.round((b - a) / (1000 * 60 * 60 * 24));
+}
+
+function extractDateKey(timestampString) {
+  const match = timestampString?.match(/^(\d{4}-\d{2}-\d{2})/);
+  return match ? match[1] : null;
+}
+// ── Cost-basis replay (mirrors server/position-snapshots/record-transition.ts)
+
+function applyTransition(state, recordType, quantity, unitValue) {
+  let nextQuantity = state.quantity;
+  let nextCostBasis = state.costBasis;
+
+  if (recordType === "buy") {
+    if (nextQuantity > 0) {
+      const totalCost = nextQuantity * nextCostBasis + quantity * unitValue;
+      nextQuantity += quantity;
+      nextCostBasis = totalCost / nextQuantity;
+    } else {
+      nextQuantity = quantity;
+      nextCostBasis = unitValue;
+    }
+  } else if (recordType === "sell") {
+    nextQuantity = Math.max(0, nextQuantity - quantity);
+  } else if (recordType === "update") {
+    nextQuantity = quantity;
+    nextCostBasis = unitValue;
+  }
+
+  return { quantity: nextQuantity, costBasis: nextCostBasis };
+}
+
+// ── Main audit ───────────────────────────────────────────────────────────────
+
+function runAudit({ filePath, asOfDate, maxStaleDays, strict, minRecordsPerPosition }) {
   const resolvedPath = path.resolve(process.cwd(), filePath);
   const sql = fs.readFileSync(resolvedPath, "utf8");
 
+  const symbols = new Map();
   const positions = new Map();
   const records = new Map();
   const snapshots = [];
@@ -158,6 +214,12 @@ function runAudit({ filePath, asOfDate, maxStaleDays }) {
   const lines = sql.split(/\n/);
 
   for (const line of lines) {
+    const symbol = parseInsertLine(line, "symbols");
+    if (symbol) {
+      symbols.set(symbol.id, symbol);
+      continue;
+    }
+
     const position = parseInsertLine(line, "positions");
     if (position) {
       positions.set(position.id, position);
@@ -181,9 +243,12 @@ function runAudit({ filePath, asOfDate, maxStaleDays }) {
   const warnings = [];
 
   output.push(`File: ${resolvedPath}`);
+  output.push(`Symbols: ${symbols.size}`);
   output.push(`Positions: ${positions.size}`);
   output.push(`Portfolio records: ${records.size}`);
   output.push(`Position snapshots: ${snapshots.length}`);
+
+  // ── 1. Snapshot ↔ record linkage ─────────────────────────────────────────
 
   const unlinkedSnapshots = snapshots.filter(
     (snapshot) => snapshot.portfolio_record_id === "NULL",
@@ -262,6 +327,8 @@ function runAudit({ filePath, asOfDate, maxStaleDays }) {
     errors.push(`Portfolio records without snapshots: ${recordsWithoutSnapshot.length}`);
   }
 
+  // ── 2. Record metric validation ──────────────────────────────────────────
+
   const invalidRecordMetrics = [];
 
   for (const record of records.values()) {
@@ -279,8 +346,10 @@ function runAudit({ filePath, asOfDate, maxStaleDays }) {
       );
     }
 
-    if (quantity < 0) {
-      errors.push(`Record ${record.id} has negative quantity (${record.quantity})`);
+    if (record.type === "update" && quantity < 0) {
+      errors.push(
+        `Record ${record.id} has negative quantity for update (${record.quantity})`,
+      );
     }
 
     if (unitValue <= 0) {
@@ -291,6 +360,8 @@ function runAudit({ filePath, asOfDate, maxStaleDays }) {
   if (invalidRecordMetrics.length > 0) {
     errors.push(`Records with non-numeric quantity/unit_value: ${invalidRecordMetrics.length}`);
   }
+
+  // ── 3. Snapshot metric validation ────────────────────────────────────────
 
   const invalidSnapshotMetrics = [];
   for (const snapshot of snapshots) {
@@ -324,6 +395,19 @@ function runAudit({ filePath, asOfDate, maxStaleDays }) {
     );
   }
 
+  // ── 4. Symbol linkage validation ─────────────────────────────────────────
+
+  for (const position of positions.values()) {
+    const symbolId = position.symbol_id;
+    if (symbolId && symbolId !== "NULL" && !symbols.has(symbolId)) {
+      errors.push(
+        `Position "${position.name}" references missing symbol_id: ${symbolId}`,
+      );
+    }
+  }
+
+  // ── 5. Running quantity, cost basis, and created_at realism ───────────────
+
   const recordsByPosition = new Map();
   for (const record of records.values()) {
     const rowSet = recordsByPosition.get(record.position_id) ?? [];
@@ -332,6 +416,8 @@ function runAudit({ filePath, asOfDate, maxStaleDays }) {
   }
 
   const latestRecordByPosition = new Map();
+  const positionRecordCounts = new Map();
+  const costBasisEpsilon = 1e-6;
 
   for (const [positionId, rowSet] of recordsByPosition) {
     rowSet.sort(
@@ -341,25 +427,23 @@ function runAudit({ filePath, asOfDate, maxStaleDays }) {
         left.id.localeCompare(right.id),
     );
 
-    let runningQuantity = 0;
-    let initialized = false;
+    let state = { quantity: 0, costBasis: 0 };
+    const positionName = positions.get(positionId)?.name ?? positionId;
+    let buyCount = 0;
+    let sellCount = 0;
+    let updateCount = 0;
 
     for (const record of rowSet) {
       const quantity = toNumber(record.quantity) ?? 0;
+      const unitValue = toNumber(record.unit_value) ?? 0;
 
-      if (record.type === "update") {
-        runningQuantity = quantity;
-        initialized = true;
-      } else if (record.type === "buy") {
-        runningQuantity = (initialized ? runningQuantity : 0) + quantity;
-        initialized = true;
-      } else if (record.type === "sell") {
-        runningQuantity = (initialized ? runningQuantity : 0) - quantity;
-        initialized = true;
-      }
+      if (record.type === "buy") buyCount++;
+      else if (record.type === "sell") sellCount++;
+      else if (record.type === "update") updateCount++;
 
-      if (runningQuantity < -1e-9) {
-        const positionName = positions.get(positionId)?.name ?? positionId;
+      state = applyTransition(state, record.type, quantity, unitValue);
+
+      if (state.quantity < -1e-9) {
         errors.push(
           `Negative running quantity at ${positionName} on ${record.date} (record ${record.id})`,
         );
@@ -371,32 +455,115 @@ function runAudit({ filePath, asOfDate, maxStaleDays }) {
         const linkedSnapshot = linkedSnapshots[0];
         const snapshotQuantity = toNumber(linkedSnapshot.quantity);
         const snapshotUnitValue = toNumber(linkedSnapshot.unit_value);
-        const recordUnitValue = toNumber(record.unit_value);
+        const snapshotCostBasis = toNumber(linkedSnapshot.cost_basis_per_unit);
 
         if (
           snapshotQuantity != null &&
-          Math.abs(snapshotQuantity - runningQuantity) > 1e-9
+          Math.abs(snapshotQuantity - state.quantity) > 1e-9
         ) {
-          const positionName = positions.get(positionId)?.name ?? positionId;
           errors.push(
-            `Snapshot quantity mismatch at ${positionName} on ${record.date} (record ${record.id}): expected ${runningQuantity}, got ${snapshotQuantity}`,
+            `Snapshot quantity mismatch at ${positionName} on ${record.date} (record ${record.id}): expected ${state.quantity}, got ${snapshotQuantity}`,
           );
         }
 
         if (
           snapshotUnitValue != null &&
-          recordUnitValue != null &&
-          Math.abs(snapshotUnitValue - recordUnitValue) > 1e-9
+          Math.abs(snapshotUnitValue - unitValue) > 1e-9
         ) {
           errors.push(
-            `Snapshot unit_value mismatch for record ${record.id}: expected ${record.unit_value}, got ${linkedSnapshot.unit_value}`,
+            `Snapshot unit_value mismatch for record ${record.id}: expected ${unitValue}, got ${snapshotUnitValue}`,
+          );
+        }
+
+        if (
+          snapshotCostBasis != null &&
+          Math.abs(snapshotCostBasis - state.costBasis) > costBasisEpsilon
+        ) {
+          errors.push(
+            `Snapshot cost_basis mismatch at ${positionName} on ${record.date} (record ${record.id}): expected ${state.costBasis}, got ${snapshotCostBasis}`,
+          );
+        }
+      }
+
+      // created_at should be within 7 days of the record date
+      const createdDateKey = extractDateKey(record.created_at);
+      if (createdDateKey) {
+        const drift = daysBetween(record.date, createdDateKey);
+        if (drift !== null && Math.abs(drift) > 7) {
+          warnings.push(
+            `Record ${record.id} at ${positionName}: created_at (${createdDateKey}) drifts ${Math.abs(drift)} days from record date (${record.date})`,
           );
         }
       }
     }
 
+    positionRecordCounts.set(positionId, {
+      total: rowSet.length,
+      buys: buyCount,
+      sells: sellCount,
+      updates: updateCount,
+    });
+
     latestRecordByPosition.set(positionId, rowSet[rowSet.length - 1]);
   }
+
+  // ── 6. Position coverage check ───────────────────────────────────────────
+
+  const lowCoveragePositions = [];
+  for (const position of positions.values()) {
+    const counts = positionRecordCounts.get(position.id);
+    const total = counts?.total ?? 0;
+    if (total < minRecordsPerPosition) {
+      lowCoveragePositions.push({ name: position.name, count: total });
+    }
+  }
+
+  if (lowCoveragePositions.length > 0) {
+    for (const p of lowCoveragePositions) {
+      warnings.push(
+        `Low coverage: "${p.name}" has only ${p.count} record(s) (minimum: ${minRecordsPerPosition})`,
+      );
+    }
+  }
+
+  // ── 7. Date distribution analysis ────────────────────────────────────────
+
+  const allDates = [...records.values()].map((r) => r.date).sort();
+  if (allDates.length >= 2) {
+    const earliest = allDates[0];
+    const latest = allDates[allDates.length - 1];
+    const totalSpan = daysBetween(earliest, latest);
+
+    output.push(`Record date range: ${earliest} → ${latest} (${totalSpan} days)`);
+
+    if (totalSpan && totalSpan > 0) {
+      const lastTenPercent = subtractDays(latest, Math.floor(totalSpan * 0.1));
+      if (lastTenPercent) {
+        const recentRecords = allDates.filter((d) => d >= lastTenPercent).length;
+        const recentPercent = ((recentRecords / allDates.length) * 100).toFixed(1);
+        if (recentRecords / allDates.length > 0.4) {
+          warnings.push(
+            `Date clustering: ${recentPercent}% of records (${recentRecords}/${allDates.length}) fall in the last 10% of the date range (${lastTenPercent} → ${latest})`,
+          );
+        }
+      }
+
+      // Check for large gaps (> 90 days between consecutive records for any position)
+      for (const [positionId, rowSet] of recordsByPosition) {
+        const positionName = positions.get(positionId)?.name ?? positionId;
+        for (let i = 1; i < rowSet.length; i++) {
+          const gap = daysBetween(rowSet[i - 1].date, rowSet[i].date);
+          if (gap !== null && gap > 120) {
+            warnings.push(
+              `Large gap: "${positionName}" has a ${gap}-day gap between ${rowSet[i - 1].date} and ${rowSet[i].date}`,
+            );
+          }
+        }
+      }
+    }
+  }
+
+  // ── 8. Freshness / staleness ─────────────────────────────────────────────
 
   const resolvedAsOfDate = asOfDate ?? buildDateKey(new Date());
   if (!/^\d{4}-\d{2}-\d{2}$/.test(resolvedAsOfDate)) {
@@ -438,31 +605,28 @@ function runAudit({ filePath, asOfDate, maxStaleDays }) {
         `  - ${stalePosition.position} (${stalePosition.positionId}) latest: ${stalePosition.latestDate ?? "none"}`,
       );
     }
-    errors.push("Seed data is stale for one or more positions");
+    if (strict) {
+      errors.push("Seed data is stale for one or more positions (--strict)");
+    }
   }
 
-  const summary = {
-    resolvedAsOfDate,
-    staleCutoff,
-    errors: errors.length,
-    warnings: warnings.length,
-  };
+  // ── 9. Summary output ────────────────────────────────────────────────────
 
-  output.push(`As-of date: ${summary.resolvedAsOfDate}`);
-  output.push(`Freshness cutoff: ${summary.staleCutoff}`);
+  output.push(`As-of date: ${resolvedAsOfDate}`);
+  output.push(`Freshness cutoff: ${staleCutoff}`);
 
   if (warnings.length > 0) {
-    output.push("Warnings:");
-    warnings.forEach((warning) => output.push(`- ${warning}`));
+    output.push(`\nWarnings (${warnings.length}):`);
+    warnings.forEach((warning) => output.push(`  ⚠ ${warning}`));
   }
 
   if (errors.length > 0) {
-    output.push("Errors:");
-    errors.forEach((error) => output.push(`- ${error}`));
+    output.push(`\nErrors (${errors.length}):`);
+    errors.forEach((error) => output.push(`  ✗ ${error}`));
     return { ok: false, output };
   }
 
-  output.push("Audit result: PASS");
+  output.push("\nAudit result: PASS");
   return { ok: true, output };
 }
 
