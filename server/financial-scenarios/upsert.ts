@@ -7,6 +7,10 @@ import {
   ScenarioInitialValueBasis,
   type ScenarioInitialValueBasis as ScenarioInitialValueBasisType,
 } from "@/lib/scenario-planning/helpers";
+import {
+  ScenarioAssumptionsSchema,
+  withScenarioAssumptions,
+} from "@/lib/scenario-planning/settings";
 import { getCurrentUser } from "@/server/auth/actions";
 import type { Json } from "@/types/database.types";
 
@@ -124,6 +128,66 @@ export async function updateScenarioInitialValue(
   const { error: updateError } = await supabase
     .from("financial_scenarios")
     .update(updatePayload)
+    .eq("id", scenarioId)
+    .eq("user_id", user.id);
+
+  if (updateError) {
+    return {
+      success: false,
+      code: updateError.code,
+      message: updateError.message,
+    };
+  }
+
+  revalidatePath("/dashboard/scenario-planning");
+  return { success: true };
+}
+
+/**
+ * Update scenario-global assumptions used by all planning views.
+ */
+export async function updateScenarioAssumptions(
+  scenarioId: string,
+  assumptionsData: unknown,
+): Promise<ActionResult> {
+  const { supabase, user } = await getCurrentUser();
+
+  let assumptions;
+  try {
+    assumptions = ScenarioAssumptionsSchema.parse(assumptionsData);
+  } catch {
+    return {
+      success: false,
+      code: "INVALID_SCENARIO_ASSUMPTIONS",
+      message: "Invalid scenario assumptions",
+    };
+  }
+
+  const { data: scenario, error: fetchError } = await supabase
+    .from("financial_scenarios")
+    .select("settings")
+    .eq("id", scenarioId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!scenario || fetchError) {
+    return {
+      success: false,
+      code: fetchError?.code || "NOT_FOUND",
+      message: fetchError?.message || "Scenario not found",
+    };
+  }
+
+  const updatedSettings = withScenarioAssumptions({
+    settings: scenario.settings,
+    assumptions,
+  });
+
+  const { error: updateError } = await supabase
+    .from("financial_scenarios")
+    .update({
+      settings: updatedSettings as Json,
+    })
     .eq("id", scenarioId)
     .eq("user_id", user.id);
 
