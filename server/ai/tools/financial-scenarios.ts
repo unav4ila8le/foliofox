@@ -1,6 +1,6 @@
 "use server";
 
-import { runScenario } from "@/lib/scenario-planning";
+import { runScenario } from "@/lib/planning/scenario/engine";
 import { ld } from "@/lib/date/date-utils";
 import { fetchOrCreateDefaultScenario } from "@/server/financial-scenarios/fetch";
 
@@ -103,6 +103,10 @@ export async function getFinancialScenarios(
       startDate,
       endDate,
       initialValue: scenario.initialValue,
+      assumptions: {
+        expectedAnnualReturnPercent:
+          scenario.assumptions.values.expectedAnnualReturnPercent,
+      },
     });
 
     // Extract year-end balances for summary

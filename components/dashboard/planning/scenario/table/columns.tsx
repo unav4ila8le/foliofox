@@ -17,7 +17,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { ScenarioEvent } from "@/lib/scenario-planning";
+import type { ScenarioEvent } from "@/lib/planning/scenario/engine";
+import { getScenarioEventDateRange } from "@/lib/planning/scenario/event-dates";
 import { formatDate } from "@/lib/date/date-format";
 import { formatNumber } from "@/lib/number-format";
 
@@ -33,9 +34,12 @@ function ActionsCell({
   table: Table<ScenarioEventWithId>;
 }) {
   const [open, setOpen] = useState(false);
-  const index = table
-    .getSortedRowModel()
-    .rows.findIndex((r) => r.id === row.id);
+  const originalIndex = Number.parseInt(
+    String(row.original.id).split("-")[0],
+    10,
+  );
+  const hasValidOriginalIndex =
+    Number.isInteger(originalIndex) && originalIndex >= 0;
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -48,7 +52,9 @@ function ActionsCell({
         <DropdownMenuItem
           onClick={(event) => {
             event.stopPropagation();
-            table.options.meta?.onEdit?.(row.original, index);
+            if (hasValidOriginalIndex) {
+              table.options.meta?.onEdit?.(row.original, originalIndex);
+            }
             setOpen(false);
           }}
         >
@@ -59,7 +65,9 @@ function ActionsCell({
           variant="destructive"
           onClick={(event) => {
             event.stopPropagation();
-            table.options.meta?.onDelete?.(index);
+            if (hasValidOriginalIndex) {
+              table.options.meta?.onDelete?.(originalIndex);
+            }
             setOpen(false);
           }}
         >
@@ -69,45 +77,6 @@ function ActionsCell({
       </DropdownMenuContent>
     </DropdownMenu>
   );
-}
-
-function getEventStartDate(event: ScenarioEvent): Date | null {
-  const dateRangeCondition = event.unlockedBy.find(
-    (c) => c.tag === "cashflow" && c.type === "date-in-range",
-  );
-
-  if (dateRangeCondition && dateRangeCondition.type === "date-in-range") {
-    const ld = dateRangeCondition.value.start;
-    return new Date(ld.y, ld.m - 1, ld.d);
-  }
-
-  const dateIsCondition = event.unlockedBy.find(
-    (c) => c.tag === "cashflow" && c.type === "date-is",
-  );
-
-  if (dateIsCondition && dateIsCondition.type === "date-is") {
-    const ld = dateIsCondition.value;
-    return new Date(ld.y, ld.m - 1, ld.d);
-  }
-
-  return null;
-}
-
-function getEventEndDate(event: ScenarioEvent): Date | null {
-  const dateRangeCondition = event.unlockedBy.find(
-    (c) => c.tag === "cashflow" && c.type === "date-in-range",
-  );
-
-  if (
-    dateRangeCondition &&
-    dateRangeCondition.type === "date-in-range" &&
-    dateRangeCondition.value.end
-  ) {
-    const ld = dateRangeCondition.value.end;
-    return new Date(ld.y, ld.m - 1, ld.d);
-  }
-
-  return null;
 }
 
 function getAdditionalConditionsCount(event: ScenarioEvent): number {
@@ -182,7 +151,7 @@ export const columns: ColumnDef<ScenarioEventWithId>[] = [
     header: "Start Date",
     cell: ({ row, table }) => {
       const locale = table.options.meta?.locale;
-      const startDate = getEventStartDate(row.original);
+      const { startDate } = getScenarioEventDateRange(row.original);
       if (!startDate) return <span className="text-muted-foreground">-</span>;
       return formatDate(startDate, { locale });
     },
@@ -213,7 +182,7 @@ export const columns: ColumnDef<ScenarioEventWithId>[] = [
         return <div className="text-muted-foreground">-</div>;
       }
 
-      const endDate = getEventEndDate(event);
+      const { endDate } = getScenarioEventDateRange(event);
       if (!endDate) {
         return <div className="text-muted-foreground">Never</div>;
       }

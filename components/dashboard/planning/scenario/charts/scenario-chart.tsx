@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback, useDeferredValue } from "react";
 import { addYears } from "date-fns";
-import { Plus, GitBranch } from "lucide-react";
+import { GitBranch, Plus } from "lucide-react";
 import {
   Area,
   AreaChart,
@@ -30,15 +30,34 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { DemoBalanceChart } from "./demo-balance-chart";
-import { BalanceStats } from "../stats/balance-stats";
+import { UpsertEventDialog } from "../upsert-event/dialog";
+import { DemoBalanceChart } from "./demo-scenario-chart";
+import { BalanceStats } from "../balance-stats";
 
-import { runScenario, Scenario, ScenarioEvent } from "@/lib/scenario-planning";
+import {
+  runScenario,
+  type Scenario,
+  type ScenarioEvent,
+} from "@/lib/planning/scenario/engine";
 import { fromJSDate } from "@/lib/date/date-utils";
 import { formatMonthYear } from "@/lib/date/date-format";
 import { formatCompactNumber, formatCurrency } from "@/lib/number-format";
 import { useLocale } from "@/hooks/use-locale";
 import { cn } from "@/lib/utils";
+
+const SCENARIO_CHART_SCALES = ["monthly", "quarterly", "yearly"] as const;
+type ScenarioChartScale = (typeof SCENARIO_CHART_SCALES)[number];
+
+const SCENARIO_CHART_TIME_HORIZONS = ["2", "5", "10", "30"] as const;
+type ScenarioChartTimeHorizon = (typeof SCENARIO_CHART_TIME_HORIZONS)[number];
+
+const isScenarioChartScale = (value: string): value is ScenarioChartScale =>
+  SCENARIO_CHART_SCALES.some((scale) => scale === value);
+
+const isScenarioChartTimeHorizon = (
+  value: string,
+): value is ScenarioChartTimeHorizon =>
+  SCENARIO_CHART_TIME_HORIZONS.some((horizon) => horizon === value);
 
 const CustomEventMarker = (props: {
   cx?: number;
@@ -50,7 +69,7 @@ const CustomEventMarker = (props: {
 }) => {
   const { cx, cy, icon, netCashflow, count, isHovered } = props;
 
-  if (!cx || !cy) return null;
+  if (cx == null || cy == null) return null;
 
   // Negative cashflow (balance drop) = bigger, more prominent
   // Positive cashflow = smaller, less prominent
@@ -132,22 +151,22 @@ const CustomEventMarker = (props: {
   );
 };
 
-export function BalanceChart({
+export function ScenarioChart({
   scenario,
   currency,
   initialValue,
-  onAddEvent,
+  expectedAnnualReturnPercent,
 }: {
-  scenario: Scenario;
+  scenario: Scenario & {
+    id: string;
+  };
   currency: string;
   initialValue: number;
-  onAddEvent?: () => void;
+  expectedAnnualReturnPercent: number;
 }) {
   const locale = useLocale();
-  const [timeHorizon, setTimeHorizon] = useState<"2" | "5" | "10" | "30">("5");
-  const [scale, setScale] = useState<"monthly" | "quarterly" | "yearly">(
-    "monthly",
-  );
+  const [timeHorizon, setTimeHorizon] = useState<ScenarioChartTimeHorizon>("5");
+  const [scale, setScale] = useState<ScenarioChartScale>("monthly");
   const [hoveredTimestamp, setHoveredTimestamp] = useState<number | null>(null);
 
   const deferredHoveredTimestamp = useDeferredValue(hoveredTimestamp);
@@ -156,18 +175,17 @@ export function BalanceChart({
     return addYears(new Date(), parseInt(timeHorizon, 10));
   }, [timeHorizon]);
 
-  const { scenarioResult } = useMemo(() => {
-    const scenarioResult = runScenario({
+  const scenarioResult = useMemo(() => {
+    return runScenario({
       scenario,
       initialValue,
       startDate: fromJSDate(new Date()),
       endDate: fromJSDate(endDate),
+      assumptions: {
+        expectedAnnualReturnPercent,
+      },
     });
-
-    return {
-      scenarioResult,
-    };
-  }, [scenario, initialValue, endDate]);
+  }, [scenario, initialValue, endDate, expectedAnnualReturnPercent]);
 
   const getPeriodKey = useCallback(
     (date: Date): string => {
@@ -229,7 +247,6 @@ export function BalanceChart({
           balance: number;
           cashflow: number;
           events: ScenarioEvent[];
-          monthCount: number;
         }
       >();
 
@@ -246,11 +263,15 @@ export function BalanceChart({
             balance: scenarioResult.balance[monthKey],
             cashflow: 0,
             events: [],
-            monthCount: 0,
           });
         }
 
         const period = periodMap.get(periodKey)!;
+        // Keep point timestamp in sync with the latest month represented by the period.
+        // This avoids plotting a period-end balance on the period-start x-position.
+        period.monthKey = monthKey;
+        period.timestamp = date.getTime();
+        period.date = date;
         // Use the latest balance for the period
         period.balance = scenarioResult.balance[monthKey];
         // Sum cashflow
@@ -258,7 +279,6 @@ export function BalanceChart({
         // Collect all events
         const monthEvents = scenarioResult.cashflow[monthKey]?.events || [];
         period.events.push(...monthEvents);
-        period.monthCount++;
       });
 
       return Array.from(periodMap.values()).sort(
@@ -294,20 +314,6 @@ export function BalanceChart({
           const amount = event.type === "income" ? event.amount : -event.amount;
           return sum + amount;
         }, 0);
-
-        const group = new Map<
-          string,
-          { count: number; event: ScenarioEvent }
-        >();
-
-        point.events.forEach((event) => {
-          const name = event.name;
-
-          if (!group.has(name)) {
-            group.set(name, { count: 0, event });
-          }
-          group.get(name)!.count++;
-        });
 
         const biggestEvent = point.events.reduce((acc, curr) => {
           if (acc.amount < curr.amount) {
@@ -463,9 +469,12 @@ export function BalanceChart({
             <Select
               disabled={scenario.events.length === 0}
               value={scale}
-              onValueChange={(value) =>
-                setScale(value as "monthly" | "quarterly" | "yearly")
-              }
+              onValueChange={(value) => {
+                if (!isScenarioChartScale(value)) {
+                  return;
+                }
+                setScale(value);
+              }}
             >
               <SelectTrigger className="w-1/2 md:w-32">
                 <SelectValue placeholder="Scale" />
@@ -479,9 +488,12 @@ export function BalanceChart({
             <Select
               disabled={scenario.events.length === 0}
               value={timeHorizon}
-              onValueChange={(value) =>
-                setTimeHorizon(value as "2" | "5" | "10" | "30")
-              }
+              onValueChange={(value) => {
+                if (!isScenarioChartTimeHorizon(value)) {
+                  return;
+                }
+                setTimeHorizon(value);
+              }}
             >
               <SelectTrigger className="w-1/2 md:w-32">
                 <SelectValue placeholder="Time horizon" />
@@ -512,12 +524,17 @@ export function BalanceChart({
                 <p className="text-muted-foreground mt-1 mb-3 text-sm">
                   Add events to see how your balance changes over time
                 </p>
-                {onAddEvent && (
-                  <Button onClick={onAddEvent}>
-                    <Plus className="size-4" />
-                    New Event
-                  </Button>
-                )}
+                <UpsertEventDialog
+                  scenarioId={scenario.id}
+                  existingEvents={scenario.events}
+                  currency={currency}
+                  trigger={
+                    <Button>
+                      <Plus className="size-4" />
+                      New Event
+                    </Button>
+                  }
+                />
               </div>
             </div>
           ) : (
@@ -629,11 +646,15 @@ export function BalanceChart({
 
                 <Tooltip
                   content={({ active, payload }) => {
-                    if (!active) {
+                    if (!active || !payload?.length || !payload[0]?.payload) {
                       return null;
                     }
 
-                    const data = payload[0].payload;
+                    const data = payload[0].payload as { timestamp?: number };
+                    if (data.timestamp == null) {
+                      return null;
+                    }
+
                     const monthData = chartData.find(
                       (d) => d.timestamp === data.timestamp,
                     );
@@ -769,71 +790,18 @@ export function BalanceChart({
                                   },
                                 );
 
-                                // Build event list with trigger information
-                                const eventsToRender: Array<{
-                                  event?: {
-                                    name: string;
-                                    amount: number;
-                                    type: "income" | "expense";
-                                  };
-                                  isTriggered: boolean;
-                                  triggerEvent?: string;
-                                  isReference?: boolean;
-                                }> = [];
-
-                                // Create a map of triggered events
-                                const triggeredEventsMap = new Map<
-                                  string,
-                                  string
-                                >();
-
-                                // Add all sorted events with their trigger info
-                                sortedEvents.forEach((event) => {
-                                  const triggerEvent = triggeredEventsMap.get(
-                                    event.name,
-                                  );
-                                  eventsToRender.push({
-                                    event,
-                                    isTriggered: !!triggerEvent,
-                                    triggerEvent,
-                                  });
-                                });
-
-                                return eventsToRender.map((item, idx) => {
-                                  if (item.isReference) {
-                                    // This is a parent reference (not firing this month)
-                                    return (
-                                      <div
-                                        key={idx}
-                                        className="flex items-center justify-between gap-2 text-xs"
-                                      >
-                                        <span className="text-muted-foreground/60 truncate italic">
-                                          {item.triggerEvent}
-                                        </span>
-                                        <span className="text-muted-foreground/60 text-xs whitespace-nowrap italic">
-                                          (trigger)
-                                        </span>
-                                      </div>
-                                    );
-                                  }
-
+                                return sortedEvents.map((event, idx) => {
                                   const value =
-                                    item.event!.type === "income"
-                                      ? item.event!.amount
-                                      : -item.event!.amount;
+                                    event.type === "income"
+                                      ? event.amount
+                                      : -event.amount;
                                   return (
                                     <div
                                       key={idx}
                                       className="flex items-center justify-between gap-2 text-xs"
                                     >
-                                      <span
-                                        className={cn(
-                                          "text-muted-foreground flex items-center gap-1 truncate",
-                                          item.isTriggered ? "pl-3" : "",
-                                        )}
-                                      >
-                                        {item.isTriggered && "├─ "}
-                                        {item.event!.name}
+                                      <span className="text-muted-foreground flex items-center gap-1 truncate">
+                                        {event.name}
                                       </span>
                                       <span
                                         className={`font-medium whitespace-nowrap ${
@@ -870,7 +838,6 @@ export function BalanceChart({
           finalBalance={chartData.at(-1)?.balance || 0}
           currency={currency}
           scenarioResult={scenarioResult}
-          startDate={new Date()}
           endDate={endDate}
         />
       )}

@@ -67,9 +67,10 @@ Assumptions input model:
 Assumptions preset model:
 
 - Provide 3 preset chips (same UX style as `capital-gains-tax-rate-field` quick presets):
-  - `Negative`
-  - `Average`
   - `Positive`
+  - `Average`
+  - `Negative`
+- Selector display order is `Positive`, `Average`, `Negative`, then `Manual`
 - Presets are based on historical market return regimes (documented constants in code)
 - Preset click prefills all fields; manual edits remain allowed per field
 
@@ -77,9 +78,9 @@ Initial preset constants (v1 placeholders, annual nominal %):
 
 | Preset   | Expected Return | Inflation | Volatility |
 | -------- | --------------- | --------- | ---------- |
-| Negative | 1.5             | 4.0       | 22.0       |
-| Average  | 7.0             | 2.5       | 15.0       |
 | Positive | 10.0            | 2.0       | 12.0       |
+| Average  | 7.0             | 2.5       | 15.0       |
+| Negative | 1.5             | 4.0       | 22.0       |
 
 FIRE conventions:
 
@@ -89,14 +90,14 @@ FIRE conventions:
 
 ## Progress Snapshot (as of 2026-03-04)
 
-| Phase   | Ticket | Status                            | Notes                                                                                          |
-| ------- | ------ | --------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Phase 0 | #163   | Completed                         | Starting value semantics + basis enum + synced/manual UX shipped.                              |
-| Phase 1 | #153   | Completed (closed 2026-02-26 UTC) | Portfolio-linked baseline UX shipped. Metadata hardening is moved into Phase 2 data work.      |
-| Phase 2 | #154   | Next up (not started)             | Assumptions model, presets/manual inputs, persisted resolved values, and Planning suite shell. |
-| Phase 3 | #155   | Not started                       | FIRE view panel, time-to-target, SWR sensitivity.                                              |
-| Phase 4 | #156   | Not started                       | Simulations view with deterministic/Monte Carlo modes and probability bands.                   |
-| Phase 5 | TBD    | Deferred (last phase)             | Multi-scenario switcher and scenario-aware routing/management UX.                              |
+| Phase   | Ticket | Status                            | Notes                                                                                                                                   |
+| ------- | ------ | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Phase 0 | #163   | Completed                         | Starting value semantics + basis enum + synced/manual UX shipped.                                                                       |
+| Phase 1 | #153   | Completed (closed 2026-02-26 UTC) | Portfolio-linked baseline UX shipped. Baseline metadata hardening is now completed in Phase 2D.                                         |
+| Phase 2 | #154   | In progress (2A-2D completed)     | Backend/domain/engine/tests complete, including baseline metadata write-path hardening. 2E UI wiring remains pending explicit approval. |
+| Phase 3 | #155   | Not started                       | FIRE view panel, time-to-target, SWR sensitivity.                                                                                       |
+| Phase 4 | #156   | Not started                       | Simulations view with deterministic/Monte Carlo modes and probability bands.                                                            |
+| Phase 5 | TBD    | Deferred (last phase)             | Multi-scenario switcher and scenario-aware routing/management UX.                                                                       |
 
 ## Multi-Scenario Direction (deferred to final phase)
 
@@ -170,10 +171,10 @@ Outcome: baseline scenario setup is portfolio-linked and usable; metadata harden
 
 ## Phase 2: Return assumptions + presets (ticket #154)
 
-Status: Next up (active phase to execute)
+Status: In progress (2A-2D completed, 2E pending explicit UI approval)
 
 - Add assumptions model (expected return/inflation/volatility as annual nominal % inputs)
-- Add preset packs (`Negative`, `Average`, `Positive`) based on historical market-return regimes
+- Add preset packs (`Positive`, `Average`, `Negative`) based on historical market-return regimes
 - Add manual assumptions input mode so users can type their own values
 - Preset selection should prefill assumption fields, and users can still override any field manually
 - Introduce Planning suite shell UI for single-scenario mode:
@@ -185,6 +186,29 @@ Status: Next up (active phase to execute)
 - Save resolved assumption values in scenario payload (not only preset id)
 - Include Phase 1 follow-up baseline metadata in scenario settings
 - Keep rollout safe: in this phase, integrate expected return into deterministic scenario projection first; keep volatility for Monte Carlo phase
+
+Phase 2 delivery sequence (backend-first, with review checkpoints):
+
+1. Phase 2A - DB and domain contract
+   - Add `financial_scenarios.settings` column (JSONB)
+   - Add server-side typed settings schema + defaults (assumptions + baseline metadata)
+   - Pause for review
+2. Phase 2B - Backend persistence
+   - Add server read/write paths for assumptions in scenario settings
+   - Keep UI unchanged; endpoints/actions become ready for future UI wiring
+   - Pause for review
+3. Phase 2C - Deterministic engine integration
+   - Feed resolved assumptions into deterministic projection engine
+   - Scope safety: apply expected return first; keep volatility for Monte Carlo phase
+   - Pause for review
+4. Phase 2D - Tests and hardening
+   - Add/update tests for settings parsing, persistence, and deterministic projection behavior
+   - Harden baseline metadata write path for starting value basis sync/manual flows
+   - Pause for review
+5. Phase 2E - UI wiring (deferred until explicit approval)
+   - Add assumptions controls in `Planning > Scenario`
+   - Add read-only shared assumptions summaries in `FIRE` and `Simulations`
+   - Requires explicit go-ahead
 
 Definition of done:
 

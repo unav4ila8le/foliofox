@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { CalendarIcon, Plus, Trash2, X } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm, useFieldArray, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -38,11 +40,13 @@ import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
 
 import { formatNumber } from "@/lib/number-format";
 import { cn } from "@/lib/utils";
-import { makeOneOff, makeRecurring } from "@/lib/scenario-planning";
-import { ld, type LocalDate } from "@/lib/date/date-utils";
+import { getScenarioEventDateRange } from "@/lib/planning/scenario/event-dates";
+import { makeOneOff, makeRecurring } from "@/lib/planning/scenario/engine";
+import { ld } from "@/lib/date/date-utils";
 import { requiredNumberWithConstraints } from "@/lib/zod-helpers";
 import { useLocale } from "@/hooks/use-locale";
-import type { ScenarioEvent } from "@/lib/scenario-planning";
+import type { ScenarioEvent } from "@/lib/planning/scenario/engine";
+import { upsertScenarioEvent } from "@/server/financial-scenarios/upsert";
 
 const conditionSchema = z.discriminatedUnion("type", [
   z.object({
@@ -63,11 +67,6 @@ const conditionSchema = z.discriminatedUnion("type", [
     }),
   }),
 ]);
-
-// Helper to convert LocalDate to JavaScript Date
-function localDateToDate(ld: LocalDate): Date {
-  return new Date(ld.y, ld.m - 1, ld.d);
-}
 
 // Helper to extract conditions from ScenarioEvent
 function extractConditionsFromEvent(event: ScenarioEvent) {
@@ -119,6 +118,7 @@ const formSchema = z
   );
 
 export function UpsertEventForm({
+  scenarioId,
   onCancel,
   onSuccess,
   existingEvents = [],
@@ -126,61 +126,35 @@ export function UpsertEventForm({
   eventIndex = null,
   currency,
 }: {
+  scenarioId: string;
   onCancel: () => void;
-  onSuccess: (event: ScenarioEvent, index?: number) => void;
+  onSuccess?: () => void;
   existingEvents?: ScenarioEvent[];
   event?: ScenarioEvent | null;
   eventIndex?: number | null;
   currency: string;
 }) {
+  const router = useRouter();
   const isEditing = event !== null && eventIndex !== null;
   const locale = useLocale();
 
-  // Extract date range from event if editing
-  const getDateRangeFromEvent = (event: ScenarioEvent | null) => {
-    if (!event) return { startDate: undefined, endDate: undefined };
-
-    const dateRangeCondition = event.unlockedBy.find(
-      (c) => c.tag === "cashflow" && c.type === "date-in-range",
-    );
-
-    if (dateRangeCondition && dateRangeCondition.type === "date-in-range") {
-      return {
-        startDate: localDateToDate(dateRangeCondition.value.start),
-        endDate: dateRangeCondition.value.end
-          ? localDateToDate(dateRangeCondition.value.end)
-          : undefined,
-      };
-    }
-
-    const dateIsCondition = event.unlockedBy.find(
-      (c) => c.tag === "cashflow" && c.type === "date-is",
-    );
-
-    if (dateIsCondition && dateIsCondition.type === "date-is") {
-      return {
-        startDate: localDateToDate(dateIsCondition.value),
-        endDate: undefined,
-      };
-    }
-
-    return { startDate: undefined, endDate: undefined };
-  };
-
   const form = useForm({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: event?.name || "",
-      type: (event?.type || "income") as "income" | "expense",
-      amount: event?.amount || "",
-      recurrence: (event?.recurrence.type || "once") as
-        | "once"
-        | "monthly"
-        | "yearly",
-      startDate: getDateRangeFromEvent(event).startDate ?? new Date(),
-      endDate: getDateRangeFromEvent(event).endDate,
-      conditions: event ? extractConditionsFromEvent(event) : [],
-    },
+    defaultValues: (() => {
+      const eventDateRange = getScenarioEventDateRange(event);
+      return {
+        name: event?.name || "",
+        type: (event?.type || "income") as "income" | "expense",
+        amount: event?.amount || "",
+        recurrence: (event?.recurrence.type || "once") as
+          | "once"
+          | "monthly"
+          | "yearly",
+        startDate: eventDateRange.startDate ?? new Date(),
+        endDate: eventDateRange.endDate,
+        conditions: event ? extractConditionsFromEvent(event) : [],
+      };
+    })(),
   });
 
   const { fields, append, remove, update } = useFieldArray({
@@ -191,7 +165,7 @@ export function UpsertEventForm({
   // Reset form when event changes (for edit mode)
   useEffect(() => {
     if (event) {
-      const dateRange = getDateRangeFromEvent(event);
+      const dateRange = getScenarioEventDateRange(event);
       form.reset({
         name: event.name,
         type: event.type,
@@ -201,10 +175,21 @@ export function UpsertEventForm({
         endDate: dateRange.endDate,
         conditions: extractConditionsFromEvent(event),
       });
+      return;
     }
+
+    form.reset({
+      name: "",
+      type: "income",
+      amount: "",
+      recurrence: "once",
+      startDate: new Date(),
+      endDate: undefined,
+      conditions: [],
+    });
   }, [event, form]);
 
-  const { isDirty } = form.formState;
+  const { isDirty, isSubmitting } = form.formState;
   const recurrence = useWatch({
     control: form.control,
     name: "recurrence",
@@ -306,8 +291,29 @@ export function UpsertEventForm({
       });
     }
 
-    onSuccess(event, isEditing ? eventIndex : undefined);
-    onCancel();
+    try {
+      const result = await upsertScenarioEvent(
+        scenarioId,
+        event,
+        isEditing ? (eventIndex ?? undefined) : undefined,
+      );
+
+      if (!result.success) {
+        throw new Error(result.message || "Failed to save event");
+      }
+
+      toast.success(
+        isEditing ? "Event updated successfully" : "Event created successfully",
+      );
+
+      router.refresh();
+      onSuccess?.();
+      onCancel();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save event",
+      );
+    }
   }
 
   return (
@@ -869,11 +875,22 @@ export function UpsertEventForm({
 
       {/* Action buttons */}
       <DialogFooter>
-        <Button onClick={onCancel} type="button" variant="outline">
+        <Button
+          onClick={onCancel}
+          type="button"
+          variant="outline"
+          disabled={isSubmitting}
+        >
           Cancel
         </Button>
-        <Button type="submit" disabled={!isDirty}>
-          {isEditing ? "Update event" : "Create event"}
+        <Button type="submit" disabled={!isDirty || isSubmitting}>
+          {isSubmitting
+            ? isEditing
+              ? "Updating..."
+              : "Creating..."
+            : isEditing
+              ? "Update event"
+              : "Create event"}
         </Button>
       </DialogFooter>
     </form>

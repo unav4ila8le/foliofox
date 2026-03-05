@@ -6,7 +6,7 @@ import {
   makeRecurring,
   makeOneOff,
   type Scenario,
-} from "@/lib/scenario-planning";
+} from "@/lib/planning/scenario/engine";
 import { addYears } from "date-fns";
 import { fromJSDate, ld } from "@/lib/date/date-utils";
 import {
@@ -114,17 +114,13 @@ export function DemoBalanceChart({ initialValue }: { initialValue: number }) {
     return addYears(new Date(), 5);
   }, []);
 
-  const { scenarioResult } = React.useMemo(() => {
-    const scenarioResult = runScenario({
+  const scenarioResult = React.useMemo(() => {
+    return runScenario({
       scenario: DEMO_SCENARIO,
       initialValue,
       startDate: fromJSDate(new Date()),
       endDate: fromJSDate(endDate),
     });
-
-    return {
-      scenarioResult,
-    };
   }, [initialValue, endDate]);
 
   const chartData = React.useMemo(() => {

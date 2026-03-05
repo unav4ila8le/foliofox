@@ -2,19 +2,26 @@
 
 import { revalidatePath } from "next/cache";
 
+import { ScenarioEvent } from "@/lib/planning/scenario/helpers";
 import {
-  ScenarioEvent,
   ScenarioInitialValueBasis,
   type ScenarioInitialValueBasis as ScenarioInitialValueBasisType,
-} from "@/lib/scenario-planning/helpers";
+} from "@/lib/planning/initial-value-basis";
+import { resolveTodayDateKey } from "@/lib/date/date-utils";
+import {
+  ScenarioAssumptionsSchema,
+  type ScenarioBaselineMetadata,
+  withScenarioBaselineMetadata,
+  withScenarioAssumptions,
+} from "@/lib/planning/settings";
 import { getCurrentUser } from "@/server/auth/actions";
+import type { ActionResult } from "./types";
 import type { Json } from "@/types/database.types";
 
-interface ActionResult {
-  success: boolean;
-  code?: string;
-  message?: string;
-}
+const revalidatePlanningScenarioRoutes = () => {
+  revalidatePath("/dashboard/planning", "layout");
+  revalidatePath("/dashboard/planning/scenario");
+};
 
 /**
  * Create or update an event in a scenario.
@@ -80,7 +87,7 @@ export async function upsertScenarioEvent(
     };
   }
 
-  revalidatePath("/dashboard/scenario-planning");
+  revalidatePlanningScenarioRoutes();
   return { success: true };
 }
 
@@ -111,14 +118,68 @@ export async function updateScenarioInitialValue(
     initialValueBasis = parsedBasis.data;
   }
 
+  let updatedSettings: Json | undefined;
+
+  if (initialValueBasis) {
+    const { data: scenario, error: scenarioError } = await supabase
+      .from("financial_scenarios")
+      .select("settings")
+      .eq("id", scenarioId)
+      .eq("user_id", user.id)
+      .single();
+
+    if (!scenario || scenarioError) {
+      return {
+        success: false,
+        code: scenarioError?.code || "NOT_FOUND",
+        message: scenarioError?.message || "Scenario not found",
+      };
+    }
+
+    let baselineMetadata: ScenarioBaselineMetadata | undefined;
+
+    if (initialValueBasis !== "manual") {
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("display_currency,time_zone")
+        .eq("user_id", user.id)
+        .single();
+
+      if (!profile || profileError) {
+        return {
+          success: false,
+          code: profileError?.code || "PROFILE_NOT_FOUND",
+          message:
+            profileError?.message ||
+            "Unable to resolve profile for sync metadata",
+        };
+      }
+
+      baselineMetadata = {
+        sourceCurrency: profile.display_currency,
+        sourceMode: initialValueBasis,
+        sourceAsOfDateKey: resolveTodayDateKey(profile.time_zone),
+      };
+    }
+
+    updatedSettings = withScenarioBaselineMetadata({
+      settings: scenario.settings,
+      baseline: baselineMetadata,
+    }) as Json;
+  }
+
   const updatePayload: {
     initial_value: number;
     initial_value_basis?: ScenarioInitialValueBasisType;
+    settings?: Json;
   } = {
     initial_value: initialValue,
   };
   if (initialValueBasis) {
     updatePayload.initial_value_basis = initialValueBasis;
+  }
+  if (updatedSettings !== undefined) {
+    updatePayload.settings = updatedSettings;
   }
 
   const { error: updateError } = await supabase
@@ -135,6 +196,66 @@ export async function updateScenarioInitialValue(
     };
   }
 
-  revalidatePath("/dashboard/scenario-planning");
+  revalidatePlanningScenarioRoutes();
+  return { success: true };
+}
+
+/**
+ * Update scenario-global assumptions used by all planning views.
+ */
+export async function updateScenarioAssumptions(
+  scenarioId: string,
+  assumptionsData: unknown,
+): Promise<ActionResult> {
+  const { supabase, user } = await getCurrentUser();
+
+  let assumptions;
+  try {
+    assumptions = ScenarioAssumptionsSchema.parse(assumptionsData);
+  } catch {
+    return {
+      success: false,
+      code: "INVALID_SCENARIO_ASSUMPTIONS",
+      message: "Invalid scenario assumptions",
+    };
+  }
+
+  const { data: scenario, error: fetchError } = await supabase
+    .from("financial_scenarios")
+    .select("settings")
+    .eq("id", scenarioId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!scenario || fetchError) {
+    return {
+      success: false,
+      code: fetchError?.code || "NOT_FOUND",
+      message: fetchError?.message || "Scenario not found",
+    };
+  }
+
+  const updatedSettings = withScenarioAssumptions({
+    settings: scenario.settings,
+    assumptions,
+  });
+
+  const { error: updateError } = await supabase
+    .from("financial_scenarios")
+    .update({
+      settings: updatedSettings as Json,
+    })
+    .eq("id", scenarioId)
+    .eq("user_id", user.id);
+
+  if (updateError) {
+    return {
+      success: false,
+      code: updateError.code,
+      message: updateError.message,
+    };
+  }
+
+  revalidatePlanningScenarioRoutes();
   return { success: true };
 }

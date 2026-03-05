@@ -53,7 +53,7 @@ const menuGroups: MenuGroup[] = [
       { title: "AI Advisor", url: "/dashboard/ai-chat", icon: Sparkles },
       {
         title: "Scenario Planning",
-        url: "/dashboard/scenario-planning",
+        url: "/dashboard/planning/scenario",
         icon: GitBranch,
         badge: "Beta",
       },

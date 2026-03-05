@@ -3,12 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { getCurrentUser } from "@/server/auth/actions";
-
-interface ActionResult {
-  success: boolean;
-  code?: string;
-  message?: string;
-}
+import type { ActionResult } from "./types";
 
 /**
  * Delete an event from a scenario by its index.
@@ -56,6 +51,6 @@ export async function deleteScenarioEvent(
     };
   }
 
-  revalidatePath("/dashboard/scenario-planning");
+  revalidatePath("/dashboard/planning/scenario");
   return { success: true };
 }
