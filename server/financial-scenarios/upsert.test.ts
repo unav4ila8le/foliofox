@@ -260,7 +260,15 @@ describe("financial scenario upsert actions", () => {
         },
       },
     });
-    expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard/planning/");
+    expect(revalidatePathMock).toHaveBeenNthCalledWith(
+      1,
+      "/dashboard/planning",
+      "layout",
+    );
+    expect(revalidatePathMock).toHaveBeenNthCalledWith(
+      2,
+      "/dashboard/planning/scenario",
+    );
   });
 
   it("returns validation error for malformed assumptions payload", async () => {
@@ -318,7 +326,15 @@ describe("financial scenario upsert actions", () => {
       },
     });
     expect(state.profileSelectCalls).toBe(1);
-    expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard/planning/");
+    expect(revalidatePathMock).toHaveBeenNthCalledWith(
+      1,
+      "/dashboard/planning",
+      "layout",
+    );
+    expect(revalidatePathMock).toHaveBeenNthCalledWith(
+      2,
+      "/dashboard/planning/scenario",
+    );
   });
 
   it("clears baseline metadata when basis is manual", async () => {
@@ -352,6 +368,14 @@ describe("financial scenario upsert actions", () => {
       },
     });
     expect(state.profileSelectCalls).toBe(0);
-    expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard/planning/");
+    expect(revalidatePathMock).toHaveBeenNthCalledWith(
+      1,
+      "/dashboard/planning",
+      "layout",
+    );
+    expect(revalidatePathMock).toHaveBeenNthCalledWith(
+      2,
+      "/dashboard/planning/scenario",
+    );
   });
 });

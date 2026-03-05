@@ -18,6 +18,11 @@ import { getCurrentUser } from "@/server/auth/actions";
 import type { ActionResult } from "./types";
 import type { Json } from "@/types/database.types";
 
+const revalidatePlanningScenarioRoutes = () => {
+  revalidatePath("/dashboard/planning", "layout");
+  revalidatePath("/dashboard/planning/scenario");
+};
+
 /**
  * Create or update an event in a scenario.
  * If eventIndex is provided, updates the event at that index.
@@ -82,7 +87,7 @@ export async function upsertScenarioEvent(
     };
   }
 
-  revalidatePath("/dashboard/planning/");
+  revalidatePlanningScenarioRoutes();
   return { success: true };
 }
 
@@ -191,7 +196,7 @@ export async function updateScenarioInitialValue(
     };
   }
 
-  revalidatePath("/dashboard/planning/");
+  revalidatePlanningScenarioRoutes();
   return { success: true };
 }
 
@@ -251,6 +256,6 @@ export async function updateScenarioAssumptions(
     };
   }
 
-  revalidatePath("/dashboard/planning/");
+  revalidatePlanningScenarioRoutes();
   return { success: true };
 }
