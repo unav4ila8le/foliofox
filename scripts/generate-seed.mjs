@@ -79,35 +79,263 @@ function applyTransition(state, type, quantity, unitValue) {
 // ── Symbol definitions ───────────────────────────────────────────────────────
 
 const symbols = [
-  { id: "3be27f4e-abb4-48e0-a6ad-f07ce912e225", ticker: "AAPL", shortName: "Apple Inc.", longName: "Apple Inc.", exchange: "NasdaqGS", sector: "Technology", industry: "Consumer Electronics", quoteType: "EQUITY", currency: "USD", createdAt: "2024-03-17 14:00:00+00", lastQuoteAt: "2026-03-03 00:00:00+00" },
-  { id: "f8286436-09d7-4e8a-bdd1-d064c2e22cc3", ticker: "MSFT", shortName: "Microsoft Corporation", longName: "Microsoft Corporation", exchange: "NasdaqGS", sector: "Technology", industry: "Software - Infrastructure", quoteType: "EQUITY", currency: "USD", createdAt: "2024-04-02 14:00:00+00", lastQuoteAt: "2026-03-03 00:00:00+00" },
-  { id: "ca09e75c-bc04-43ac-99be-38428d41e2e3", ticker: "9984.T", shortName: "SOFTBANK GROUP CORP", longName: "SoftBank Group Corp.", exchange: "Tokyo", sector: "Communication Services", industry: "Telecom Services", quoteType: "EQUITY", currency: "JPY", createdAt: "2024-04-11 14:00:00+00", lastQuoteAt: "2026-03-03 00:00:00+00" },
-  { id: "3668309d-81a3-4da5-92d8-574f0c732059", ticker: "SPY", shortName: "State Street SPDR S&P 500 ETF T", longName: "State Street SPDR S&P 500 ETF Trust", exchange: "NYSEArca", sector: null, industry: null, quoteType: "ETF", currency: "USD", createdAt: "2024-03-21 14:00:00+00", lastQuoteAt: "2026-03-03 00:00:00+00" },
-  { id: "dac3d827-8da1-4547-88a8-a5327e12db97", ticker: "0700.HK", shortName: "TENCENT", longName: "Tencent Holdings Limited", exchange: "HKSE", sector: "Communication Services", industry: "Internet Content & Information", quoteType: "EQUITY", currency: "HKD", createdAt: "2024-03-24 14:00:00+00", lastQuoteAt: "2026-03-03 00:00:00+00" },
-  { id: "8f78e671-8724-4f0a-a2df-9595ea334e2d", ticker: "VWCE.DE", shortName: "Vanguard FTSE All-World U.ETF R", longName: "Vanguard FTSE All-World UCITS ETF USD Accumulation", exchange: "XETRA", sector: null, industry: null, quoteType: "ETF", currency: "EUR", createdAt: "2024-04-07 14:00:00+00", lastQuoteAt: "2026-03-03 00:00:00+00" },
-  { id: "277aa1b9-8ab2-4012-a51c-43d3cd1e2e95", ticker: "BTC-USD", shortName: "Bitcoin USD", longName: "Bitcoin USD", exchange: "CCC", sector: null, industry: null, quoteType: "CRYPTOCURRENCY", currency: "USD", createdAt: "2024-03-14 14:00:00+00", lastQuoteAt: "2026-03-03 00:00:00+00" },
-  { id: "502c0cb4-7383-4823-a2d0-c81004358efd", ticker: "ETH-USD", shortName: "Ethereum USD", longName: "Ethereum USD", exchange: "CCC", sector: null, industry: null, quoteType: "CRYPTOCURRENCY", currency: "USD", createdAt: "2024-04-09 14:00:00+00", lastQuoteAt: "2026-03-03 00:00:00+00" },
-  { id: "0a687a82-1a20-4fb3-93b9-ac334f1e2249", ticker: "GLD", shortName: "SPDR Gold Shares", longName: "SPDR Gold Shares", exchange: "NYSEArca", sector: null, industry: null, quoteType: "ETF", currency: "USD", createdAt: "2024-05-01 14:00:00+00", lastQuoteAt: "2026-03-03 00:00:00+00" },
+  {
+    id: "3be27f4e-abb4-48e0-a6ad-f07ce912e225",
+    ticker: "AAPL",
+    shortName: "Apple Inc.",
+    longName: "Apple Inc.",
+    exchange: "NasdaqGS",
+    sector: "Technology",
+    industry: "Consumer Electronics",
+    quoteType: "EQUITY",
+    currency: "USD",
+    createdAt: "2024-03-17 14:00:00+00",
+    lastQuoteAt: "2026-03-03 00:00:00+00",
+  },
+  {
+    id: "f8286436-09d7-4e8a-bdd1-d064c2e22cc3",
+    ticker: "MSFT",
+    shortName: "Microsoft Corporation",
+    longName: "Microsoft Corporation",
+    exchange: "NasdaqGS",
+    sector: "Technology",
+    industry: "Software - Infrastructure",
+    quoteType: "EQUITY",
+    currency: "USD",
+    createdAt: "2024-04-02 14:00:00+00",
+    lastQuoteAt: "2026-03-03 00:00:00+00",
+  },
+  {
+    id: "ca09e75c-bc04-43ac-99be-38428d41e2e3",
+    ticker: "9984.T",
+    shortName: "SOFTBANK GROUP CORP",
+    longName: "SoftBank Group Corp.",
+    exchange: "Tokyo",
+    sector: "Communication Services",
+    industry: "Telecom Services",
+    quoteType: "EQUITY",
+    currency: "JPY",
+    createdAt: "2024-04-11 14:00:00+00",
+    lastQuoteAt: "2026-03-03 00:00:00+00",
+  },
+  {
+    id: "3668309d-81a3-4da5-92d8-574f0c732059",
+    ticker: "SPY",
+    shortName: "State Street SPDR S&P 500 ETF T",
+    longName: "State Street SPDR S&P 500 ETF Trust",
+    exchange: "NYSEArca",
+    sector: null,
+    industry: null,
+    quoteType: "ETF",
+    currency: "USD",
+    createdAt: "2024-03-21 14:00:00+00",
+    lastQuoteAt: "2026-03-03 00:00:00+00",
+  },
+  {
+    id: "dac3d827-8da1-4547-88a8-a5327e12db97",
+    ticker: "0700.HK",
+    shortName: "TENCENT",
+    longName: "Tencent Holdings Limited",
+    exchange: "HKSE",
+    sector: "Communication Services",
+    industry: "Internet Content & Information",
+    quoteType: "EQUITY",
+    currency: "HKD",
+    createdAt: "2024-03-24 14:00:00+00",
+    lastQuoteAt: "2026-03-03 00:00:00+00",
+  },
+  {
+    id: "8f78e671-8724-4f0a-a2df-9595ea334e2d",
+    ticker: "VWCE.DE",
+    shortName: "Vanguard FTSE All-World U.ETF R",
+    longName: "Vanguard FTSE All-World UCITS ETF USD Accumulation",
+    exchange: "XETRA",
+    sector: null,
+    industry: null,
+    quoteType: "ETF",
+    currency: "EUR",
+    createdAt: "2024-04-07 14:00:00+00",
+    lastQuoteAt: "2026-03-03 00:00:00+00",
+  },
+  {
+    id: "277aa1b9-8ab2-4012-a51c-43d3cd1e2e95",
+    ticker: "BTC-USD",
+    shortName: "Bitcoin USD",
+    longName: "Bitcoin USD",
+    exchange: "CCC",
+    sector: null,
+    industry: null,
+    quoteType: "CRYPTOCURRENCY",
+    currency: "USD",
+    createdAt: "2024-03-14 14:00:00+00",
+    lastQuoteAt: "2026-03-03 00:00:00+00",
+  },
+  {
+    id: "502c0cb4-7383-4823-a2d0-c81004358efd",
+    ticker: "ETH-USD",
+    shortName: "Ethereum USD",
+    longName: "Ethereum USD",
+    exchange: "CCC",
+    sector: null,
+    industry: null,
+    quoteType: "CRYPTOCURRENCY",
+    currency: "USD",
+    createdAt: "2024-04-09 14:00:00+00",
+    lastQuoteAt: "2026-03-03 00:00:00+00",
+  },
+  {
+    id: "0a687a82-1a20-4fb3-93b9-ac334f1e2249",
+    ticker: "GLD",
+    shortName: "SPDR Gold Shares",
+    longName: "SPDR Gold Shares",
+    exchange: "NYSEArca",
+    sector: null,
+    industry: null,
+    quoteType: "ETF",
+    currency: "USD",
+    createdAt: "2024-05-01 14:00:00+00",
+    lastQuoteAt: "2026-03-03 00:00:00+00",
+  },
 ];
 
 // ── Position definitions ─────────────────────────────────────────────────────
 
 const positions = [
-  { id: "783a1cd3-d79b-4932-882f-580ae323adb4", name: "Hong Kong Cash", currency: "HKD", categoryId: "cash", symbolId: null, domainId: null, capitalGainsTaxRate: null },
-  { id: "8bc59f8d-62a7-40e1-9cc8-e7647e6a1c4c", name: "Operating Cash", currency: "USD", categoryId: "cash", symbolId: null, domainId: null, capitalGainsTaxRate: null },
-  { id: "3f273f7e-b950-457c-96f3-8964e4e60c1d", name: "Apple Inc", currency: "USD", categoryId: "equity", symbolId: "3be27f4e-abb4-48e0-a6ad-f07ce912e225", domainId: null, capitalGainsTaxRate: 0.26 },
-  { id: "4b0f79d8-88d3-45e9-8b78-b1c0efe9ced6", name: "Microsoft Corp", currency: "USD", categoryId: "equity", symbolId: "f8286436-09d7-4e8a-bdd1-d064c2e22cc3", domainId: null, capitalGainsTaxRate: null },
-  { id: "fddf0cc4-7c0e-45d7-baf2-60f39b70f0f7", name: "SoftBank Group", currency: "JPY", categoryId: "equity", symbolId: "ca09e75c-bc04-43ac-99be-38428d41e2e3", domainId: null, capitalGainsTaxRate: null },
-  { id: "4a962e75-0785-4e85-b365-6ca88db8a07e", name: "SPDR S&P 500 ETF", currency: "USD", categoryId: "equity", symbolId: "3668309d-81a3-4da5-92d8-574f0c732059", domainId: null, capitalGainsTaxRate: null },
-  { id: "48621b08-2009-4c7e-aee4-bec4e0a9eecd", name: "Tencent Holdings", currency: "HKD", categoryId: "equity", symbolId: "dac3d827-8da1-4547-88a8-a5327e12db97", domainId: null, capitalGainsTaxRate: null },
-  { id: "a93bb7de-264e-46b7-8af0-70eaa34b96dc", name: "Vanguard FTSE All-World (Acc)", currency: "EUR", categoryId: "equity", symbolId: "8f78e671-8724-4f0a-a2df-9595ea334e2d", domainId: null, capitalGainsTaxRate: null },
-  { id: "4852f410-ea7b-40fd-88a2-8f04ec6a0a5a", name: "US Treasury 10Y Notes", currency: "USD", categoryId: "fixed_income", symbolId: null, domainId: null, capitalGainsTaxRate: null },
-  { id: "e4c8fce4-641a-4267-a605-53d525ff7cf3", name: "US Treasury 2Y Notes", currency: "USD", categoryId: "fixed_income", symbolId: null, domainId: null, capitalGainsTaxRate: null },
-  { id: "6ee6ecd1-001a-4541-9de1-86182cb0b3fa", name: "Milan Apartment", currency: "EUR", categoryId: "real_estate", symbolId: null, domainId: null, capitalGainsTaxRate: 0.20 },
-  { id: "d7d82192-5595-44b2-9042-1f4e889b198d", name: "Bitcoin", currency: "USD", categoryId: "cryptocurrency", symbolId: "277aa1b9-8ab2-4012-a51c-43d3cd1e2e95", domainId: null, capitalGainsTaxRate: null },
-  { id: "8a351b96-72e1-400f-bfa3-144ecb909231", name: "Ethereum", currency: "USD", categoryId: "cryptocurrency", symbolId: "502c0cb4-7383-4823-a2d0-c81004358efd", domainId: null, capitalGainsTaxRate: null },
-  { id: "898b2fea-896b-4041-805c-feeec5f02dcd", name: "SPDR Gold Trust", currency: "USD", categoryId: "commodities", symbolId: "0a687a82-1a20-4fb3-93b9-ac334f1e2249", domainId: null, capitalGainsTaxRate: null },
-  { id: "44350b6e-5277-4f49-a287-4bf702d7fd3f", name: "Private Equity Fund", currency: "USD", categoryId: "other", symbolId: null, domainId: null, capitalGainsTaxRate: null },
+  {
+    id: "783a1cd3-d79b-4932-882f-580ae323adb4",
+    name: "Hong Kong Cash",
+    currency: "HKD",
+    categoryId: "cash",
+    symbolId: null,
+    domainId: null,
+    capitalGainsTaxRate: null,
+  },
+  {
+    id: "8bc59f8d-62a7-40e1-9cc8-e7647e6a1c4c",
+    name: "Operating Cash",
+    currency: "USD",
+    categoryId: "cash",
+    symbolId: null,
+    domainId: null,
+    capitalGainsTaxRate: null,
+  },
+  {
+    id: "3f273f7e-b950-457c-96f3-8964e4e60c1d",
+    name: "Apple Inc",
+    currency: "USD",
+    categoryId: "equity",
+    symbolId: "3be27f4e-abb4-48e0-a6ad-f07ce912e225",
+    domainId: null,
+    capitalGainsTaxRate: 0.26,
+  },
+  {
+    id: "4b0f79d8-88d3-45e9-8b78-b1c0efe9ced6",
+    name: "Microsoft Corp",
+    currency: "USD",
+    categoryId: "equity",
+    symbolId: "f8286436-09d7-4e8a-bdd1-d064c2e22cc3",
+    domainId: null,
+    capitalGainsTaxRate: null,
+  },
+  {
+    id: "fddf0cc4-7c0e-45d7-baf2-60f39b70f0f7",
+    name: "SoftBank Group",
+    currency: "JPY",
+    categoryId: "equity",
+    symbolId: "ca09e75c-bc04-43ac-99be-38428d41e2e3",
+    domainId: null,
+    capitalGainsTaxRate: null,
+  },
+  {
+    id: "4a962e75-0785-4e85-b365-6ca88db8a07e",
+    name: "SPDR S&P 500 ETF",
+    currency: "USD",
+    categoryId: "equity",
+    symbolId: "3668309d-81a3-4da5-92d8-574f0c732059",
+    domainId: null,
+    capitalGainsTaxRate: null,
+  },
+  {
+    id: "48621b08-2009-4c7e-aee4-bec4e0a9eecd",
+    name: "Tencent Holdings",
+    currency: "HKD",
+    categoryId: "equity",
+    symbolId: "dac3d827-8da1-4547-88a8-a5327e12db97",
+    domainId: null,
+    capitalGainsTaxRate: null,
+  },
+  {
+    id: "a93bb7de-264e-46b7-8af0-70eaa34b96dc",
+    name: "Vanguard FTSE All-World (Acc)",
+    currency: "EUR",
+    categoryId: "equity",
+    symbolId: "8f78e671-8724-4f0a-a2df-9595ea334e2d",
+    domainId: null,
+    capitalGainsTaxRate: null,
+  },
+  {
+    id: "4852f410-ea7b-40fd-88a2-8f04ec6a0a5a",
+    name: "US Treasury 10Y Notes",
+    currency: "USD",
+    categoryId: "fixed_income",
+    symbolId: null,
+    domainId: null,
+    capitalGainsTaxRate: null,
+  },
+  {
+    id: "e4c8fce4-641a-4267-a605-53d525ff7cf3",
+    name: "US Treasury 2Y Notes",
+    currency: "USD",
+    categoryId: "fixed_income",
+    symbolId: null,
+    domainId: null,
+    capitalGainsTaxRate: null,
+  },
+  {
+    id: "6ee6ecd1-001a-4541-9de1-86182cb0b3fa",
+    name: "Milan Apartment",
+    currency: "EUR",
+    categoryId: "real_estate",
+    symbolId: null,
+    domainId: null,
+    capitalGainsTaxRate: 0.2,
+  },
+  {
+    id: "d7d82192-5595-44b2-9042-1f4e889b198d",
+    name: "Bitcoin",
+    currency: "USD",
+    categoryId: "cryptocurrency",
+    symbolId: "277aa1b9-8ab2-4012-a51c-43d3cd1e2e95",
+    domainId: null,
+    capitalGainsTaxRate: null,
+  },
+  {
+    id: "8a351b96-72e1-400f-bfa3-144ecb909231",
+    name: "Ethereum",
+    currency: "USD",
+    categoryId: "cryptocurrency",
+    symbolId: "502c0cb4-7383-4823-a2d0-c81004358efd",
+    domainId: null,
+    capitalGainsTaxRate: null,
+  },
+  {
+    id: "898b2fea-896b-4041-805c-feeec5f02dcd",
+    name: "SPDR Gold Trust",
+    currency: "USD",
+    categoryId: "commodities",
+    symbolId: "0a687a82-1a20-4fb3-93b9-ac334f1e2249",
+    domainId: null,
+    capitalGainsTaxRate: null,
+  },
+  {
+    id: "44350b6e-5277-4f49-a287-4bf702d7fd3f",
+    name: "Private Equity Fund",
+    currency: "USD",
+    categoryId: "other",
+    symbolId: null,
+    domainId: null,
+    capitalGainsTaxRate: null,
+  },
 ];
 
 // ── Portfolio events ─────────────────────────────────────────────────────────
@@ -121,221 +349,260 @@ const portfolioEvents = new Map([
   // Apple Inc (AAPL) — approximate prices: Mar24 $171, Jun24 $196, Jul24 $218,
   // Sep24 $222, Dec24 $241, Jan25 $239, Mar25 $223, Jun25 $198, Jul25 $226,
   // Sep25 $228, Jan26 $241, Feb26 $245
-  ["3f273f7e-b950-457c-96f3-8964e4e60c1d", [
-    ["2024-03-18", "buy", 15, 171.48, "Initial purchase"],
-    ["2024-06-10", "buy", 8, 196.12, "Added to position"],
-    ["2024-07-29", "buy", 3, 218.24, "Monthly DCA"],
-    ["2024-09-05", "sell", 5, 222.35, "Profit taking"],
-    ["2024-12-02", "buy", 10, 240.76, "Year-end accumulation"],
-    ["2025-01-13", "sell", 2, 238.50, "Tax-loss harvesting"],
-    ["2025-03-14", "buy", 6, 223.45, "Buying the dip"],
-    ["2025-06-20", "sell", 4, 197.80, "Rebalancing"],
-    ["2025-07-07", "buy", 4, 225.60, "Buy on strength"],
-    ["2025-09-12", "buy", 5, 227.90, "DCA buy"],
-    ["2026-01-08", "buy", 2, 241.30, "New year accumulation"],
-    ["2026-02-10", "update", 42, 244.50, "Broker reconciliation"],
-  ]],
+  [
+    "3f273f7e-b950-457c-96f3-8964e4e60c1d",
+    [
+      ["2024-03-18", "buy", 15, 171.48, "Initial purchase"],
+      ["2024-06-10", "buy", 8, 196.12, "Added to position"],
+      ["2024-07-29", "buy", 3, 218.24, "Monthly DCA"],
+      ["2024-09-05", "sell", 5, 222.35, "Profit taking"],
+      ["2024-12-02", "buy", 10, 240.76, "Year-end accumulation"],
+      ["2025-01-13", "sell", 2, 238.5, "Tax-loss harvesting"],
+      ["2025-03-14", "buy", 6, 223.45, "Buying the dip"],
+      ["2025-06-20", "sell", 4, 197.8, "Rebalancing"],
+      ["2025-07-07", "buy", 4, 225.6, "Buy on strength"],
+      ["2025-09-12", "buy", 5, 227.9, "DCA buy"],
+      ["2026-01-08", "buy", 2, 241.3, "New year accumulation"],
+      ["2026-02-10", "update", 42, 244.5, "Broker reconciliation"],
+    ],
+  ],
 
   // Microsoft Corp (MSFT) — approximate prices: Apr24 $428, Jun24 $445,
   // Jul24 $454, Oct24 $425, Dec24 $438, Jan25 $419, Apr25 $388, Aug25 $440,
   // Nov25 $438, Feb26 $409
-  ["4b0f79d8-88d3-45e9-8b78-b1c0efe9ced6", [
-    ["2024-04-03", "buy", 8, 428.50, "Initial purchase"],
-    ["2024-06-24", "buy", 3, 445.20, "Adding on strength"],
-    ["2024-07-15", "buy", 5, 453.72, "Monthly DCA"],
-    ["2024-10-22", "buy", 4, 425.30, "Buying dip"],
-    ["2024-12-09", "sell", 2, 437.80, "Year-end rebalancing"],
-    ["2025-01-20", "sell", 3, 418.60, "Trimmed position"],
-    ["2025-04-14", "buy", 6, 388.20, "Buy the dip"],
-    ["2025-08-05", "sell", 2, 440.15, "Took profits"],
-    ["2025-11-10", "buy", 4, 437.80, "Accumulation"],
-    ["2026-02-26", "update", 23, 408.50, "Broker reconciliation"],
-  ]],
+  [
+    "4b0f79d8-88d3-45e9-8b78-b1c0efe9ced6",
+    [
+      ["2024-04-03", "buy", 8, 428.5, "Initial purchase"],
+      ["2024-06-24", "buy", 3, 445.2, "Adding on strength"],
+      ["2024-07-15", "buy", 5, 453.72, "Monthly DCA"],
+      ["2024-10-22", "buy", 4, 425.3, "Buying dip"],
+      ["2024-12-09", "sell", 2, 437.8, "Year-end rebalancing"],
+      ["2025-01-20", "sell", 3, 418.6, "Trimmed position"],
+      ["2025-04-14", "buy", 6, 388.2, "Buy the dip"],
+      ["2025-08-05", "sell", 2, 440.15, "Took profits"],
+      ["2025-11-10", "buy", 4, 437.8, "Accumulation"],
+      ["2026-02-26", "update", 23, 408.5, "Broker reconciliation"],
+    ],
+  ],
 
   // SoftBank Group (9984.T, JPY) — approximate prices: Apr24 ¥8750, Jun24 ¥10450,
   // Aug24 ¥8800, Sep24 ¥8350, Dec24 ¥9280, Feb25 ¥8650, Mar25 ¥8920,
   // Jun25 ¥9150, Sep25 ¥9480, Nov25 ¥9200, Dec25 ¥9120, Feb26 ¥9400
-  ["fddf0cc4-7c0e-45d7-baf2-60f39b70f0f7", [
-    ["2024-04-12", "buy", 12, 8750, "Initial purchase"],
-    ["2024-06-28", "buy", 8, 10450, "Adding to position"],
-    ["2024-08-19", "sell", 3, 8800, "Trimmed on weakness"],
-    ["2024-09-16", "buy", 5, 8350, "Buying the dip"],
-    ["2024-12-10", "buy", 8, 9280, "Year-end buy"],
-    ["2025-02-17", "sell", 5, 8650, "Reducing exposure"],
-    ["2025-03-25", "buy", 6, 8920, "DCA"],
-    ["2025-06-18", "buy", 4, 9150, "Adding to position"],
-    ["2025-09-08", "buy", 3, 9480, "Accumulation"],
-    ["2025-11-04", "sell", 2, 9200, "Rebalancing"],
-    ["2025-12-15", "buy", 4, 9120, "Year-end top-up"],
-    ["2026-02-24", "update", 40, 9400, "Broker reconciliation"],
-  ]],
+  [
+    "fddf0cc4-7c0e-45d7-baf2-60f39b70f0f7",
+    [
+      ["2024-04-12", "buy", 12, 8750, "Initial purchase"],
+      ["2024-06-28", "buy", 8, 10450, "Adding to position"],
+      ["2024-08-19", "sell", 3, 8800, "Trimmed on weakness"],
+      ["2024-09-16", "buy", 5, 8350, "Buying the dip"],
+      ["2024-12-10", "buy", 8, 9280, "Year-end buy"],
+      ["2025-02-17", "sell", 5, 8650, "Reducing exposure"],
+      ["2025-03-25", "buy", 6, 8920, "DCA"],
+      ["2025-06-18", "buy", 4, 9150, "Adding to position"],
+      ["2025-09-08", "buy", 3, 9480, "Accumulation"],
+      ["2025-11-04", "sell", 2, 9200, "Rebalancing"],
+      ["2025-12-15", "buy", 4, 9120, "Year-end top-up"],
+      ["2026-02-24", "update", 40, 9400, "Broker reconciliation"],
+    ],
+  ],
 
   // SPDR S&P 500 ETF (SPY) — approximate prices: Mar24 $521, May24 $530,
   // Jun24 $544, Sep24 $567, Nov24 $575, Dec24 $591, Feb25 $571, Apr25 $561,
   // Jul25 $597, Sep25 $559, Nov25 $591, Feb26 $590
-  ["4a962e75-0785-4e85-b365-6ca88db8a07e", [
-    ["2024-03-22", "buy", 5, 521.30, "Initial purchase"],
-    ["2024-05-10", "buy", 2, 530.45, "DCA"],
-    ["2024-06-14", "buy", 3, 543.78, "Monthly DCA"],
-    ["2024-09-20", "buy", 4, 566.50, "Accumulation"],
-    ["2024-11-04", "buy", 2, 574.80, "Adding to position"],
-    ["2024-12-30", "sell", 2, 591.20, "Year-end rebalancing"],
-    ["2025-02-24", "buy", 2, 570.50, "DCA"],
-    ["2025-04-07", "buy", 3, 561.40, "Buy the dip"],
-    ["2025-07-22", "buy", 2, 597.30, "DCA"],
-    ["2025-09-15", "sell", 3, 558.60, "Took profits"],
-    ["2025-11-03", "buy", 2, 590.80, "Accumulation"],
-    ["2026-02-20", "update", 20, 590.00, "Broker reconciliation"],
-  ]],
+  [
+    "4a962e75-0785-4e85-b365-6ca88db8a07e",
+    [
+      ["2024-03-22", "buy", 5, 521.3, "Initial purchase"],
+      ["2024-05-10", "buy", 2, 530.45, "DCA"],
+      ["2024-06-14", "buy", 3, 543.78, "Monthly DCA"],
+      ["2024-09-20", "buy", 4, 566.5, "Accumulation"],
+      ["2024-11-04", "buy", 2, 574.8, "Adding to position"],
+      ["2024-12-30", "sell", 2, 591.2, "Year-end rebalancing"],
+      ["2025-02-24", "buy", 2, 570.5, "DCA"],
+      ["2025-04-07", "buy", 3, 561.4, "Buy the dip"],
+      ["2025-07-22", "buy", 2, 597.3, "DCA"],
+      ["2025-09-15", "sell", 3, 558.6, "Took profits"],
+      ["2025-11-03", "buy", 2, 590.8, "Accumulation"],
+      ["2026-02-20", "update", 20, 590.0, "Broker reconciliation"],
+    ],
+  ],
 
   // Tencent Holdings (0700.HK, HKD) — approximate prices: Mar24 HK$306,
   // May24 HK$341, Jul24 HK$366, Aug24 HK$378, Nov24 HK$392, Jan25 HK$419,
   // Apr25 HK$431, May25 HK$458, Aug25 HK$449, Nov25 HK$456, Jan26 HK$473,
   // Feb26 HK$480
-  ["48621b08-2009-4c7e-aee4-bec4e0a9eecd", [
-    ["2024-03-25", "buy", 50, 306.20, "Initial purchase"],
-    ["2024-05-20", "buy", 30, 340.50, "Adding to position"],
-    ["2024-07-15", "buy", 20, 365.80, "Monthly DCA"],
-    ["2024-08-12", "buy", 20, 378.00, "Accumulation"],
-    ["2024-11-06", "sell", 20, 392.40, "Partial profit taking"],
-    ["2025-01-27", "buy", 25, 418.60, "Top-up"],
-    ["2025-04-03", "sell", 10, 430.50, "Trimmed position"],
-    ["2025-05-15", "buy", 15, 458.30, "Added on strength"],
-    ["2025-08-20", "buy", 20, 448.70, "Buy on pullback"],
-    ["2025-11-28", "sell", 10, 455.80, "Rebalancing"],
-    ["2026-01-22", "buy", 10, 472.50, "New year top-up"],
-    ["2026-02-18", "update", 150, 480.00, "Broker reconciliation"],
-  ]],
+  [
+    "48621b08-2009-4c7e-aee4-bec4e0a9eecd",
+    [
+      ["2024-03-25", "buy", 50, 306.2, "Initial purchase"],
+      ["2024-05-20", "buy", 30, 340.5, "Adding to position"],
+      ["2024-07-15", "buy", 20, 365.8, "Monthly DCA"],
+      ["2024-08-12", "buy", 20, 378.0, "Accumulation"],
+      ["2024-11-06", "sell", 20, 392.4, "Partial profit taking"],
+      ["2025-01-27", "buy", 25, 418.6, "Top-up"],
+      ["2025-04-03", "sell", 10, 430.5, "Trimmed position"],
+      ["2025-05-15", "buy", 15, 458.3, "Added on strength"],
+      ["2025-08-20", "buy", 20, 448.7, "Buy on pullback"],
+      ["2025-11-28", "sell", 10, 455.8, "Rebalancing"],
+      ["2026-01-22", "buy", 10, 472.5, "New year top-up"],
+      ["2026-02-18", "update", 150, 480.0, "Broker reconciliation"],
+    ],
+  ],
 
   // Vanguard FTSE All-World (VWCE.DE, EUR) — approximate prices: Apr24 €112,
   // Jun24 €115, Jul24 €117, Oct24 €120, Dec24 €124, Jan25 €123, Apr25 €120,
   // Jun25 €126, Aug25 €122, Nov25 €127, Feb26 €130
-  ["a93bb7de-264e-46b7-8af0-70eaa34b96dc", [
-    ["2024-04-08", "buy", 10, 112.30, "Initial purchase"],
-    ["2024-06-10", "buy", 5, 115.20, "DCA"],
-    ["2024-07-01", "buy", 8, 116.85, "Monthly DCA"],
-    ["2024-10-15", "buy", 6, 120.40, "Accumulation"],
-    ["2024-12-02", "buy", 4, 123.50, "Year-end DCA"],
-    ["2025-01-06", "buy", 5, 122.80, "New year DCA"],
-    ["2025-04-21", "buy", 5, 119.50, "Buy the dip"],
-    ["2025-06-16", "sell", 4, 125.80, "Rebalancing"],
-    ["2025-08-11", "buy", 3, 121.60, "Accumulation"],
-    ["2025-11-17", "buy", 4, 127.30, "DCA"],
-    ["2026-02-19", "update", 46, 130.00, "Broker reconciliation"],
-  ]],
+  [
+    "a93bb7de-264e-46b7-8af0-70eaa34b96dc",
+    [
+      ["2024-04-08", "buy", 10, 112.3, "Initial purchase"],
+      ["2024-06-10", "buy", 5, 115.2, "DCA"],
+      ["2024-07-01", "buy", 8, 116.85, "Monthly DCA"],
+      ["2024-10-15", "buy", 6, 120.4, "Accumulation"],
+      ["2024-12-02", "buy", 4, 123.5, "Year-end DCA"],
+      ["2025-01-06", "buy", 5, 122.8, "New year DCA"],
+      ["2025-04-21", "buy", 5, 119.5, "Buy the dip"],
+      ["2025-06-16", "sell", 4, 125.8, "Rebalancing"],
+      ["2025-08-11", "buy", 3, 121.6, "Accumulation"],
+      ["2025-11-17", "buy", 4, 127.3, "DCA"],
+      ["2026-02-19", "update", 46, 130.0, "Broker reconciliation"],
+    ],
+  ],
 
   // ── Custom fixed-income positions ──
   // US Treasury 10Y Notes (unit value ≈ price per unit of par)
-  ["4852f410-ea7b-40fd-88a2-8f04ec6a0a5a", [
-    ["2024-03-28", "buy", 2000, 0.9540, "Initial purchase"],
-    ["2024-06-20", "buy", 1000, 0.9620, "Added to bond ladder"],
-    ["2024-07-22", "buy", 500, 0.9680, "Top-up"],
-    ["2024-10-15", "buy", 500, 0.9510, "Buying on yield spike"],
-    ["2024-11-18", "buy", 500, 0.9420, "Accumulation"],
-    ["2025-02-10", "update", 4500, 0.9580, "Quarter-end valuation"],
-    ["2025-06-09", "buy", 800, 0.9720, "Top-up"],
-    ["2025-09-30", "update", 5300, 0.9650, "Quarter-end valuation"],
-    ["2025-12-15", "sell", 500, 0.9810, "Partial liquidation"],
-    ["2026-02-27", "update", 4800, 0.9700, "Month-end valuation"],
-  ]],
+  [
+    "4852f410-ea7b-40fd-88a2-8f04ec6a0a5a",
+    [
+      ["2024-03-28", "buy", 2000, 0.954, "Initial purchase"],
+      ["2024-06-20", "buy", 1000, 0.962, "Added to bond ladder"],
+      ["2024-07-22", "buy", 500, 0.968, "Top-up"],
+      ["2024-10-15", "buy", 500, 0.951, "Buying on yield spike"],
+      ["2024-11-18", "buy", 500, 0.942, "Accumulation"],
+      ["2025-02-10", "update", 4500, 0.958, "Quarter-end valuation"],
+      ["2025-06-09", "buy", 800, 0.972, "Top-up"],
+      ["2025-09-30", "update", 5300, 0.965, "Quarter-end valuation"],
+      ["2025-12-15", "sell", 500, 0.981, "Partial liquidation"],
+      ["2026-02-27", "update", 4800, 0.97, "Month-end valuation"],
+    ],
+  ],
 
   // US Treasury 2Y Notes
-  ["e4c8fce4-641a-4267-a605-53d525ff7cf3", [
-    ["2024-04-15", "buy", 3000, 0.9780, "Initial purchase"],
-    ["2024-06-28", "buy", 500, 0.9820, "Added to position"],
-    ["2024-08-05", "buy", 1000, 0.9850, "Accumulation"],
-    ["2024-10-28", "sell", 200, 0.9890, "Partial liquidation"],
-    ["2024-12-20", "sell", 300, 0.9920, "Maturity reinvestment"],
-    ["2025-03-17", "update", 4000, 0.9880, "Quarter-end valuation"],
-    ["2025-05-19", "buy", 500, 0.9900, "Top-up"],
-    ["2025-07-14", "buy", 1000, 0.9910, "Accumulation"],
-    ["2025-10-28", "sell", 800, 0.9960, "Took profits on rally"],
-    ["2026-01-20", "buy", 300, 0.9940, "Rebuilding position"],
-    ["2026-02-27", "update", 5000, 1.0010, "Month-end valuation"],
-  ]],
+  [
+    "e4c8fce4-641a-4267-a605-53d525ff7cf3",
+    [
+      ["2024-04-15", "buy", 3000, 0.978, "Initial purchase"],
+      ["2024-06-28", "buy", 500, 0.982, "Added to position"],
+      ["2024-08-05", "buy", 1000, 0.985, "Accumulation"],
+      ["2024-10-28", "sell", 200, 0.989, "Partial liquidation"],
+      ["2024-12-20", "sell", 300, 0.992, "Maturity reinvestment"],
+      ["2025-03-17", "update", 4000, 0.988, "Quarter-end valuation"],
+      ["2025-05-19", "buy", 500, 0.99, "Top-up"],
+      ["2025-07-14", "buy", 1000, 0.991, "Accumulation"],
+      ["2025-10-28", "sell", 800, 0.996, "Took profits on rally"],
+      ["2026-01-20", "buy", 300, 0.994, "Rebuilding position"],
+      ["2026-02-27", "update", 5000, 1.001, "Month-end valuation"],
+    ],
+  ],
 
   // ── Custom real estate ──
   // Milan Apartment (EUR, quantity=1, unit_value = appraised value)
-  ["6ee6ecd1-001a-4541-9de1-86182cb0b3fa", [
-    ["2024-04-01", "update", 1, 305000, "Initial appraisal"],
-    ["2024-07-15", "update", 1, 307200, "Mid-year valuation"],
-    ["2024-08-15", "update", 1, 308500, "Summer valuation"],
-    ["2024-10-30", "update", 1, 310000, "Autumn valuation"],
-    ["2024-12-28", "update", 1, 312000, "Year-end appraisal"],
-    ["2025-04-10", "update", 1, 315800, "Spring valuation"],
-    ["2025-06-28", "update", 1, 316500, "Mid-year valuation"],
-    ["2025-08-25", "update", 1, 318000, "Summer valuation"],
-    ["2025-12-20", "update", 1, 320500, "Year-end appraisal"],
-    ["2026-02-27", "update", 1, 322000, "Monthly appraisal"],
-  ]],
+  [
+    "6ee6ecd1-001a-4541-9de1-86182cb0b3fa",
+    [
+      ["2024-04-01", "update", 1, 305000, "Initial appraisal"],
+      ["2024-07-15", "update", 1, 307200, "Mid-year valuation"],
+      ["2024-08-15", "update", 1, 308500, "Summer valuation"],
+      ["2024-10-30", "update", 1, 310000, "Autumn valuation"],
+      ["2024-12-28", "update", 1, 312000, "Year-end appraisal"],
+      ["2025-04-10", "update", 1, 315800, "Spring valuation"],
+      ["2025-06-28", "update", 1, 316500, "Mid-year valuation"],
+      ["2025-08-25", "update", 1, 318000, "Summer valuation"],
+      ["2025-12-20", "update", 1, 320500, "Year-end appraisal"],
+      ["2026-02-27", "update", 1, 322000, "Monthly appraisal"],
+    ],
+  ],
 
   // ── Market-backed crypto ──
   // Bitcoin (BTC-USD) — approximate prices: Mar24 $67k, May24 $69k, Aug24 $60k,
   // Oct24 $72k, Nov24 $96k, Jan25 $99k, Feb25 $98k, May25 $104k, Jul25 $97k,
   // Aug25 $95k, Nov25 $92k, Feb26 $86k
-  ["d7d82192-5595-44b2-9042-1f4e889b198d", [
-    ["2024-03-15", "buy", 0.15, 67200, "Initial purchase"],
-    ["2024-05-28", "buy", 0.08, 68500, "DCA"],
-    ["2024-08-19", "buy", 0.10, 59800, "Buying the dip"],
-    ["2024-10-28", "buy", 0.05, 72100, "Accumulation"],
-    ["2024-11-20", "sell", 0.05, 96400, "Taking profits on rally"],
-    ["2025-01-06", "buy", 0.04, 99200, "New year DCA"],
-    ["2025-02-03", "buy", 0.04, 97500, "Accumulation"],
-    ["2025-05-12", "sell", 0.04, 104200, "Partial profit taking"],
-    ["2025-07-14", "buy", 0.03, 96800, "DCA"],
-    ["2025-08-25", "buy", 0.02, 94800, "Buy on dip"],
-    ["2025-11-14", "update", 0.42, 91500, "Wallet reconciliation"],
-    ["2026-02-23", "update", 0.42, 86000, "Wallet reconciliation"],
-  ]],
+  [
+    "d7d82192-5595-44b2-9042-1f4e889b198d",
+    [
+      ["2024-03-15", "buy", 0.15, 67200, "Initial purchase"],
+      ["2024-05-28", "buy", 0.08, 68500, "DCA"],
+      ["2024-08-19", "buy", 0.1, 59800, "Buying the dip"],
+      ["2024-10-28", "buy", 0.05, 72100, "Accumulation"],
+      ["2024-11-20", "sell", 0.05, 96400, "Taking profits on rally"],
+      ["2025-01-06", "buy", 0.04, 99200, "New year DCA"],
+      ["2025-02-03", "buy", 0.04, 97500, "Accumulation"],
+      ["2025-05-12", "sell", 0.04, 104200, "Partial profit taking"],
+      ["2025-07-14", "buy", 0.03, 96800, "DCA"],
+      ["2025-08-25", "buy", 0.02, 94800, "Buy on dip"],
+      ["2025-11-14", "update", 0.42, 91500, "Wallet reconciliation"],
+      ["2026-02-23", "update", 0.42, 86000, "Wallet reconciliation"],
+    ],
+  ],
 
   // Ethereum (ETH-USD) — approximate prices: Apr24 $3480, Jun24 $3520,
   // Jul24 $3050, Oct24 $2620, Dec24 $3400, Jan25 $3380, Apr25 $1850,
   // Jul25 $2680, Oct25 $2450, Dec25 $3650, Feb26 $2500
-  ["8a351b96-72e1-400f-bfa3-144ecb909231", [
-    ["2024-04-10", "buy", 1.5, 3480, "Initial purchase"],
-    ["2024-06-15", "buy", 0.8, 3520, "DCA"],
-    ["2024-07-08", "buy", 1.0, 3050, "Buying the dip"],
-    ["2024-10-01", "buy", 0.8, 2620, "Accumulation"],
-    ["2024-12-18", "sell", 0.3, 3400, "Took profits"],
-    ["2025-01-13", "sell", 0.5, 3380, "Rebalancing"],
-    ["2025-04-28", "buy", 1.2, 1850, "Major dip buy"],
-    ["2025-07-21", "sell", 0.3, 2680, "Trimmed position"],
-    ["2025-10-15", "buy", 0.8, 2450, "DCA"],
-    ["2025-12-22", "sell", 0.5, 3650, "Year-end profit taking"],
-    ["2026-02-27", "update", 4.5, 2500, "Wallet reconciliation"],
-  ]],
+  [
+    "8a351b96-72e1-400f-bfa3-144ecb909231",
+    [
+      ["2024-04-10", "buy", 1.5, 3480, "Initial purchase"],
+      ["2024-06-15", "buy", 0.8, 3520, "DCA"],
+      ["2024-07-08", "buy", 1.0, 3050, "Buying the dip"],
+      ["2024-10-01", "buy", 0.8, 2620, "Accumulation"],
+      ["2024-12-18", "sell", 0.3, 3400, "Took profits"],
+      ["2025-01-13", "sell", 0.5, 3380, "Rebalancing"],
+      ["2025-04-28", "buy", 1.2, 1850, "Major dip buy"],
+      ["2025-07-21", "sell", 0.3, 2680, "Trimmed position"],
+      ["2025-10-15", "buy", 0.8, 2450, "DCA"],
+      ["2025-12-22", "sell", 0.5, 3650, "Year-end profit taking"],
+      ["2026-02-27", "update", 4.5, 2500, "Wallet reconciliation"],
+    ],
+  ],
 
   // ── Market-backed commodities ──
   // SPDR Gold Trust (GLD) — approximate prices: May24 $209, Aug24 $235,
   // Nov24 $243, Dec24 $244, Mar25 $270, Jun25 $286, Sep25 $249, Nov25 $250,
   // Dec25 $244, Feb26 $264
-  ["898b2fea-896b-4041-805c-feeec5f02dcd", [
-    ["2024-05-02", "buy", 8, 208.50, "Initial purchase"],
-    ["2024-08-27", "buy", 5, 235.40, "Adding to hedge"],
-    ["2024-11-11", "buy", 3, 242.80, "Accumulation"],
-    ["2024-12-05", "sell", 2, 244.20, "Rebalancing"],
-    ["2025-03-20", "buy", 4, 269.80, "Buy on momentum"],
-    ["2025-06-30", "sell", 3, 285.50, "Took profits"],
-    ["2025-09-22", "buy", 6, 248.90, "Buy on pullback"],
-    ["2025-11-03", "sell", 2, 250.40, "Rebalancing"],
-    ["2025-12-08", "buy", 3, 243.60, "Year-end buy"],
-    ["2026-02-25", "update", 22, 264.00, "Broker reconciliation"],
-  ]],
+  [
+    "898b2fea-896b-4041-805c-feeec5f02dcd",
+    [
+      ["2024-05-02", "buy", 8, 208.5, "Initial purchase"],
+      ["2024-08-27", "buy", 5, 235.4, "Adding to hedge"],
+      ["2024-11-11", "buy", 3, 242.8, "Accumulation"],
+      ["2024-12-05", "sell", 2, 244.2, "Rebalancing"],
+      ["2025-03-20", "buy", 4, 269.8, "Buy on momentum"],
+      ["2025-06-30", "sell", 3, 285.5, "Took profits"],
+      ["2025-09-22", "buy", 6, 248.9, "Buy on pullback"],
+      ["2025-11-03", "sell", 2, 250.4, "Rebalancing"],
+      ["2025-12-08", "buy", 3, 243.6, "Year-end buy"],
+      ["2026-02-25", "update", 22, 264.0, "Broker reconciliation"],
+    ],
+  ],
 
   // ── Custom alternative investment ──
   // Private Equity Fund (quarterly NAV updates)
-  ["44350b6e-5277-4f49-a287-4bf702d7fd3f", [
-    ["2024-04-30", "update", 1, 19500, "Initial NAV report"],
-    ["2024-07-15", "update", 1, 19650, "Q1 NAV update"],
-    ["2024-08-15", "update", 1, 19800, "Q2 NAV report"],
-    ["2024-11-30", "update", 1, 20100, "Q3 NAV report"],
-    ["2025-02-28", "update", 1, 20350, "Q4 NAV report"],
-    ["2025-05-31", "update", 1, 20600, "Q1 NAV report"],
-    ["2025-08-31", "update", 1, 20150, "Q2 NAV report (writedown)"],
-    ["2025-10-15", "update", 1, 20450, "Q3 interim update"],
-    ["2025-11-30", "update", 1, 20800, "Q3 NAV report"],
-    ["2026-02-26", "update", 1, 21200, "Q4 NAV report"],
-  ]],
+  [
+    "44350b6e-5277-4f49-a287-4bf702d7fd3f",
+    [
+      ["2024-04-30", "update", 1, 19500, "Initial NAV report"],
+      ["2024-07-15", "update", 1, 19650, "Q1 NAV update"],
+      ["2024-08-15", "update", 1, 19800, "Q2 NAV report"],
+      ["2024-11-30", "update", 1, 20100, "Q3 NAV report"],
+      ["2025-02-28", "update", 1, 20350, "Q4 NAV report"],
+      ["2025-05-31", "update", 1, 20600, "Q1 NAV report"],
+      ["2025-08-31", "update", 1, 20150, "Q2 NAV report (writedown)"],
+      ["2025-10-15", "update", 1, 20450, "Q3 interim update"],
+      ["2025-11-30", "update", 1, 20800, "Q3 NAV report"],
+      ["2026-02-26", "update", 1, 21200, "Q4 NAV report"],
+    ],
+  ],
 ]);
 
 // ── Cash timeline builder ────────────────────────────────────────────────────
@@ -497,11 +764,17 @@ function processAllEvents() {
 // ── SQL output sections ──────────────────────────────────────────────────────
 
 function outputHeader() {
-  emit(`-- ============================================================================`);
+  emit(
+    `-- ============================================================================`,
+  );
   emit(`-- Foliofox Local Development Seed Data`);
-  emit(`-- ============================================================================`);
+  emit(
+    `-- ============================================================================`,
+  );
   emit(`-- This script seeds a test user for local development only.`);
-  emit(`-- It will NOT run against linked or production projects because seed.sql`);
+  emit(
+    `-- It will NOT run against linked or production projects because seed.sql`,
+  );
   emit(`-- is only executed by 'supabase db reset' in local environments.`);
   emit(`--`);
   emit(`-- Test User Credentials:`);
@@ -511,13 +784,17 @@ function outputHeader() {
   emit(`--`);
   emit(`-- Portfolio spans March 2024 – March 2026 (~2 years).`);
   emit(`-- Generated by: node scripts/generate-seed.mjs > supabase/seed.sql`);
-  emit(`-- ============================================================================`);
+  emit(
+    `-- ============================================================================`,
+  );
   emit(``);
 }
 
 function outputAuthUser() {
   emit(`-- Insert test user into auth.users`);
-  emit(`-- Password hash generated with: crypt('Password123!', gen_salt('bf'))`);
+  emit(
+    `-- Password hash generated with: crypt('Password123!', gen_salt('bf'))`,
+  );
   emit(`INSERT INTO auth.users (`);
   emit(`    instance_id,`);
   emit(`    id,`);
@@ -571,7 +848,9 @@ function outputAuthUser() {
   emit(`    NULL,`);
   emit(`    NOW(),`);
   emit(`    '{"provider": "email", "providers": ["email"]}',`);
-  emit(`    '{"sub": "${USER_ID}", "email": "test@example.com", "username": "Testuser", "email_verified": true, "phone_verified": false}',`);
+  emit(
+    `    '{"sub": "${USER_ID}", "email": "test@example.com", "username": "Testuser", "email_verified": true, "phone_verified": false}',`,
+  );
   emit(`    NULL,`);
   emit(`    NOW(),`);
   emit(`    NOW(),`);
@@ -606,7 +885,9 @@ function outputAuthIdentity() {
   emit(`) VALUES (`);
   emit(`    '${USER_ID}',`);
   emit(`    '${USER_ID}',`);
-  emit(`    '{"sub": "${USER_ID}", "email": "test@example.com", "username": "Testuser", "email_verified": true, "phone_verified": false}',`);
+  emit(
+    `    '{"sub": "${USER_ID}", "email": "test@example.com", "username": "Testuser", "email_verified": true, "phone_verified": false}',`,
+  );
   emit(`    'email',`);
   emit(`    NOW(),`);
   emit(`    NOW(),`);

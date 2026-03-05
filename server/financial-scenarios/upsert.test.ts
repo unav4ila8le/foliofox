@@ -261,7 +261,7 @@ describe("financial scenario upsert actions", () => {
       },
     });
     expect(revalidatePathMock).toHaveBeenCalledWith(
-      "/dashboard/scenario-planning",
+      "/dashboard/planning/scenario",
     );
   });
 
@@ -321,7 +321,7 @@ describe("financial scenario upsert actions", () => {
     });
     expect(state.profileSelectCalls).toBe(1);
     expect(revalidatePathMock).toHaveBeenCalledWith(
-      "/dashboard/scenario-planning",
+      "/dashboard/planning/scenario",
     );
   });
 
@@ -357,7 +357,7 @@ describe("financial scenario upsert actions", () => {
     });
     expect(state.profileSelectCalls).toBe(0);
     expect(revalidatePathMock).toHaveBeenCalledWith(
-      "/dashboard/scenario-planning",
+      "/dashboard/planning/scenario",
     );
   });
 });

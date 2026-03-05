@@ -1,9 +1,9 @@
 import { Suspense } from "react";
 
 import { Skeleton } from "@/components/ui/custom/skeleton";
-import { ScenarioChart } from "@/components/dashboard/scenario-planning/charts/scenario-chart";
-import { ScenarioStartingValue } from "@/components/dashboard/scenario-planning/scenario-starting-value";
-import { ScenarioEventsTable } from "@/components/dashboard/scenario-planning/table/scenario-events-table";
+import { ScenarioChart } from "@/components/dashboard/planning/scenario/charts/scenario-chart";
+import { ScenarioStartingValue } from "@/components/dashboard/planning/scenario/scenario-starting-value";
+import { ScenarioEventsTable } from "@/components/dashboard/planning/scenario/table/scenario-events-table";
 
 import {
   fetchOrCreateDefaultScenario,

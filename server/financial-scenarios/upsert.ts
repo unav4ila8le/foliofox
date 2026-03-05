@@ -87,7 +87,7 @@ export async function upsertScenarioEvent(
     };
   }
 
-  revalidatePath("/dashboard/scenario-planning");
+  revalidatePath("/dashboard/planning/scenario");
   return { success: true };
 }
 
@@ -196,7 +196,7 @@ export async function updateScenarioInitialValue(
     };
   }
 
-  revalidatePath("/dashboard/scenario-planning");
+  revalidatePath("/dashboard/planning/scenario");
   return { success: true };
 }
 
@@ -256,6 +256,6 @@ export async function updateScenarioAssumptions(
     };
   }
 
-  revalidatePath("/dashboard/scenario-planning");
+  revalidatePath("/dashboard/planning/scenario");
   return { success: true };
 }

@@ -202,7 +202,13 @@ function applyTransition(state, recordType, quantity, unitValue) {
 
 // ── Main audit ───────────────────────────────────────────────────────────────
 
-function runAudit({ filePath, asOfDate, maxStaleDays, strict, minRecordsPerPosition }) {
+function runAudit({
+  filePath,
+  asOfDate,
+  maxStaleDays,
+  strict,
+  minRecordsPerPosition,
+}) {
   const resolvedPath = path.resolve(process.cwd(), filePath);
   const sql = fs.readFileSync(resolvedPath, "utf8");
 
@@ -324,7 +330,9 @@ function runAudit({ filePath, asOfDate, maxStaleDays, strict, minRecordsPerPosit
   );
 
   if (recordsWithoutSnapshot.length > 0) {
-    errors.push(`Portfolio records without snapshots: ${recordsWithoutSnapshot.length}`);
+    errors.push(
+      `Portfolio records without snapshots: ${recordsWithoutSnapshot.length}`,
+    );
   }
 
   // ── 2. Record metric validation ──────────────────────────────────────────
@@ -353,12 +361,16 @@ function runAudit({ filePath, asOfDate, maxStaleDays, strict, minRecordsPerPosit
     }
 
     if (unitValue <= 0) {
-      errors.push(`Record ${record.id} has non-positive unit_value (${record.unit_value})`);
+      errors.push(
+        `Record ${record.id} has non-positive unit_value (${record.unit_value})`,
+      );
     }
   }
 
   if (invalidRecordMetrics.length > 0) {
-    errors.push(`Records with non-numeric quantity/unit_value: ${invalidRecordMetrics.length}`);
+    errors.push(
+      `Records with non-numeric quantity/unit_value: ${invalidRecordMetrics.length}`,
+    );
   }
 
   // ── 3. Snapshot metric validation ────────────────────────────────────────
@@ -375,11 +387,15 @@ function runAudit({ filePath, asOfDate, maxStaleDays, strict, minRecordsPerPosit
     }
 
     if (quantity < 0) {
-      errors.push(`Snapshot ${snapshot.id} has negative quantity (${snapshot.quantity})`);
+      errors.push(
+        `Snapshot ${snapshot.id} has negative quantity (${snapshot.quantity})`,
+      );
     }
 
     if (unitValue <= 0) {
-      errors.push(`Snapshot ${snapshot.id} has non-positive unit_value (${snapshot.unit_value})`);
+      errors.push(
+        `Snapshot ${snapshot.id} has non-positive unit_value (${snapshot.unit_value})`,
+      );
     }
 
     if (costBasis < 0) {
@@ -534,13 +550,19 @@ function runAudit({ filePath, asOfDate, maxStaleDays, strict, minRecordsPerPosit
     const latest = allDates[allDates.length - 1];
     const totalSpan = daysBetween(earliest, latest);
 
-    output.push(`Record date range: ${earliest} → ${latest} (${totalSpan} days)`);
+    output.push(
+      `Record date range: ${earliest} → ${latest} (${totalSpan} days)`,
+    );
 
     if (totalSpan && totalSpan > 0) {
       const lastTenPercent = subtractDays(latest, Math.floor(totalSpan * 0.1));
       if (lastTenPercent) {
-        const recentRecords = allDates.filter((d) => d >= lastTenPercent).length;
-        const recentPercent = ((recentRecords / allDates.length) * 100).toFixed(1);
+        const recentRecords = allDates.filter(
+          (d) => d >= lastTenPercent,
+        ).length;
+        const recentPercent = ((recentRecords / allDates.length) * 100).toFixed(
+          1,
+        );
         if (recentRecords / allDates.length > 0.4) {
           warnings.push(
             `Date clustering: ${recentPercent}% of records (${recentRecords}/${allDates.length}) fall in the last 10% of the date range (${lastTenPercent} → ${latest})`,

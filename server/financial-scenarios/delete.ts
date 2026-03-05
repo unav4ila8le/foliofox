@@ -56,6 +56,6 @@ export async function deleteScenarioEvent(
     };
   }
 
-  revalidatePath("/dashboard/scenario-planning");
+  revalidatePath("/dashboard/planning/scenario");
   return { success: true };
 }
