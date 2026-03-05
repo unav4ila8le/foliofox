@@ -32,7 +32,7 @@
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
     "gray-matter": "^4.0.3",
-    "lucide-react": "^0.576.0",
+    "lucide-react": "^0.577.0",
     "motion": "^12.34.4",
     "nanoid": "^5.1.6",
     "next": "^16.1.5",
