@@ -55,10 +55,10 @@ export default function PlanningLayout({
         </p>
       </div>
       <div className="flex flex-wrap items-start justify-between gap-6">
-        <Suspense fallback={<Skeleton className="h-20" />}>
+        <Suspense fallback={<Skeleton className="h-24 flex-1" />}>
           <PlanningInitialValueWrapper />
         </Suspense>
-        <Suspense fallback={<Skeleton className="h-24" />}>
+        <Suspense fallback={<Skeleton className="h-24 flex-1" />}>
           <PlanningAssumptionsWrapper />
         </Suspense>
       </div>
