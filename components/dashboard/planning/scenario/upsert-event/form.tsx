@@ -40,8 +40,9 @@ import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
 
 import { formatNumber } from "@/lib/number-format";
 import { cn } from "@/lib/utils";
+import { getScenarioEventDateRange } from "@/lib/scenario-planning/event-dates";
 import { makeOneOff, makeRecurring } from "@/lib/scenario-planning";
-import { ld, type LocalDate } from "@/lib/date/date-utils";
+import { ld } from "@/lib/date/date-utils";
 import { requiredNumberWithConstraints } from "@/lib/zod-helpers";
 import { useLocale } from "@/hooks/use-locale";
 import type { ScenarioEvent } from "@/lib/scenario-planning";
@@ -66,11 +67,6 @@ const conditionSchema = z.discriminatedUnion("type", [
     }),
   }),
 ]);
-
-// Helper to convert LocalDate to JavaScript Date
-function localDateToDate(ld: LocalDate): Date {
-  return new Date(ld.y, ld.m - 1, ld.d);
-}
 
 // Helper to extract conditions from ScenarioEvent
 function extractConditionsFromEvent(event: ScenarioEvent) {
@@ -142,51 +138,23 @@ export function UpsertEventForm({
   const isEditing = event !== null && eventIndex !== null;
   const locale = useLocale();
 
-  // Extract date range from event if editing
-  const getDateRangeFromEvent = (event: ScenarioEvent | null) => {
-    if (!event) return { startDate: undefined, endDate: undefined };
-
-    const dateRangeCondition = event.unlockedBy.find(
-      (c) => c.tag === "cashflow" && c.type === "date-in-range",
-    );
-
-    if (dateRangeCondition && dateRangeCondition.type === "date-in-range") {
-      return {
-        startDate: localDateToDate(dateRangeCondition.value.start),
-        endDate: dateRangeCondition.value.end
-          ? localDateToDate(dateRangeCondition.value.end)
-          : undefined,
-      };
-    }
-
-    const dateIsCondition = event.unlockedBy.find(
-      (c) => c.tag === "cashflow" && c.type === "date-is",
-    );
-
-    if (dateIsCondition && dateIsCondition.type === "date-is") {
-      return {
-        startDate: localDateToDate(dateIsCondition.value),
-        endDate: undefined,
-      };
-    }
-
-    return { startDate: undefined, endDate: undefined };
-  };
-
   const form = useForm({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: event?.name || "",
-      type: (event?.type || "income") as "income" | "expense",
-      amount: event?.amount || "",
-      recurrence: (event?.recurrence.type || "once") as
-        | "once"
-        | "monthly"
-        | "yearly",
-      startDate: getDateRangeFromEvent(event).startDate ?? new Date(),
-      endDate: getDateRangeFromEvent(event).endDate,
-      conditions: event ? extractConditionsFromEvent(event) : [],
-    },
+    defaultValues: (() => {
+      const eventDateRange = getScenarioEventDateRange(event);
+      return {
+        name: event?.name || "",
+        type: (event?.type || "income") as "income" | "expense",
+        amount: event?.amount || "",
+        recurrence: (event?.recurrence.type || "once") as
+          | "once"
+          | "monthly"
+          | "yearly",
+        startDate: eventDateRange.startDate ?? new Date(),
+        endDate: eventDateRange.endDate,
+        conditions: event ? extractConditionsFromEvent(event) : [],
+      };
+    })(),
   });
 
   const { fields, append, remove, update } = useFieldArray({
@@ -197,7 +165,7 @@ export function UpsertEventForm({
   // Reset form when event changes (for edit mode)
   useEffect(() => {
     if (event) {
-      const dateRange = getDateRangeFromEvent(event);
+      const dateRange = getScenarioEventDateRange(event);
       form.reset({
         name: event.name,
         type: event.type,

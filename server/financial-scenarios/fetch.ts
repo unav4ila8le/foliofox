@@ -2,16 +2,18 @@
 
 import { cache } from "react";
 
-import type { Scenario } from "@/lib/scenario-planning";
 import { convertCurrency } from "@/lib/currency-conversion";
 import { parseUTCDateKey, resolveTodayDateKey } from "@/lib/date/date-utils";
+import type { Scenario } from "@/lib/scenario-planning";
 import {
   fromDatabaseScenarioToScenario,
   type ScenarioInitialValueBasis as ScenarioInitialValueBasisType,
 } from "@/lib/scenario-planning/helpers";
+import type { ScenarioStartingValueSuggestions } from "@/lib/scenario-planning/starting-value";
 import {
   fromDatabaseScenarioSettings,
   getDefaultScenarioSettings,
+  toDatabaseScenarioSettings,
   type ScenarioAssumptions,
   type ScenarioSettings,
 } from "@/lib/scenario-planning/settings";
@@ -26,16 +28,6 @@ import type {
   TransformedPosition,
 } from "@/types/global.types";
 
-interface ScenarioStartingValueSuggestion {
-  value: number;
-  currency: string;
-}
-
-export interface ScenarioStartingValueSuggestions {
-  cash: ScenarioStartingValueSuggestion | null;
-  netWorth: ScenarioStartingValueSuggestion | null;
-}
-
 export interface ScenarioWithStartingValue extends Scenario {
   id: string;
   initialValue: number;
@@ -47,7 +39,7 @@ export interface ScenarioWithStartingValue extends Scenario {
 const toSuggestion = (
   value: number,
   currency: string,
-): ScenarioStartingValueSuggestion | null => {
+): ScenarioStartingValueSuggestions["cash"] => {
   if (!Number.isFinite(value)) {
     return null;
   }
@@ -109,24 +101,6 @@ const toScenarioWithStartingValue = (
 };
 
 /**
- * Fetch all financial scenarios for the current user.
- */
-export const fetchScenarios = cache(async (): Promise<Scenario[]> => {
-  const { supabase, user } = await getCurrentUser();
-
-  const { error, data } = await supabase
-    .from("financial_scenarios")
-    .select("*")
-    .eq("user_id", user.id);
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return data.map(fromDatabaseScenarioToScenario);
-});
-
-/**
  * Fetch the user's default scenario, creating one if none exists.
  * Returns the scenario with its database ID and initial value.
  */
@@ -161,7 +135,7 @@ export const fetchOrCreateDefaultScenario = cache(
         engine_version: 1,
         initial_value: 0,
         initial_value_basis: "net_worth",
-        settings: defaultSettings,
+        settings: toDatabaseScenarioSettings(defaultSettings),
       })
       .select()
       .single();

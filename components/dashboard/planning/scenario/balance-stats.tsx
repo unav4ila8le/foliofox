@@ -15,19 +15,11 @@ import {
   TooltipContent,
 } from "@/components/ui/tooltip";
 
+import type { CashflowEntry } from "@/lib/scenario-planning";
 import { formatMonthYear } from "@/lib/date/date-format";
 import { formatPercentage, formatCurrency } from "@/lib/number-format";
 import { useLocale } from "@/hooks/use-locale";
 import { cn } from "@/lib/utils";
-
-interface CashflowEntry {
-  amount: number;
-  events: Array<{
-    name: string;
-    type: "income" | "expense";
-    amount: number;
-  }>;
-}
 
 interface BalanceStatsProps {
   initialValue: number;

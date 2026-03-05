@@ -32,27 +32,18 @@ import {
   ScenarioInitialValueBasis as ScenarioInitialValueBasisSchema,
   type ScenarioInitialValueBasis,
 } from "@/lib/scenario-planning/helpers";
+import type { ScenarioStartingValueSuggestions } from "@/lib/scenario-planning/starting-value";
 import { formatNumber } from "@/lib/number-format";
 import { useLocale } from "@/hooks/use-locale";
 import { SCENARIO_INITIAL_VALUE_BASES } from "@/types/enums";
 import { updateScenarioInitialValue } from "@/server/financial-scenarios/upsert";
-
-interface PlanningStartingValueSuggestion {
-  value: number;
-  currency: string;
-}
-
-interface PlanningStartingValueSuggestions {
-  cash: PlanningStartingValueSuggestion | null;
-  netWorth: PlanningStartingValueSuggestion | null;
-}
 
 interface PlanningStartingValueProps {
   scenarioId: string;
   initialValue: number;
   initialValueBasis: ScenarioInitialValueBasis;
   currency: string;
-  startingValueSuggestions: PlanningStartingValueSuggestions;
+  startingValueSuggestions: ScenarioStartingValueSuggestions;
 }
 
 const STARTING_VALUE_BASIS_LABELS: Record<ScenarioInitialValueBasis, string> = {
@@ -70,7 +61,7 @@ const STARTING_VALUE_BASIS_OPTIONS = SCENARIO_INITIAL_VALUE_BASES.map(
 
 const getSyncedValueForBasis = (input: {
   basis: ScenarioInitialValueBasis;
-  suggestions: PlanningStartingValueSuggestions;
+  suggestions: ScenarioStartingValueSuggestions;
 }): number | null => {
   const { basis, suggestions } = input;
 

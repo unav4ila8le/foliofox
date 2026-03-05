@@ -23,6 +23,14 @@ describe("scenario planning settings", () => {
     expect(settings.assumptions).toEqual(getDefaultScenarioAssumptions());
   });
 
+  test("falls back to defaults for nullish settings payloads", () => {
+    const fromUndefined = fromDatabaseScenarioSettings(undefined);
+    const fromNull = fromDatabaseScenarioSettings(null);
+
+    expect(fromUndefined.assumptions).toEqual(getDefaultScenarioAssumptions());
+    expect(fromNull.assumptions).toEqual(getDefaultScenarioAssumptions());
+  });
+
   test("keeps valid baseline metadata and drops malformed baseline payload", () => {
     const validSettings = fromDatabaseScenarioSettings({
       assumptions: getDefaultScenarioAssumptions(),

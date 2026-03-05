@@ -42,7 +42,8 @@ type ScenarioAssumptions = z.infer<typeof ScenarioAssumptionsSchema>;
 type ScenarioBaselineMetadata = z.infer<typeof ScenarioBaselineMetadataSchema>;
 type ScenarioJsonObject = { [key: string]: Json | undefined };
 
-interface ScenarioSettings extends ScenarioJsonObject {
+interface ScenarioSettings {
+  // Keep the read model explicit; write helpers preserve unknown settings keys.
   // Global per-scenario assumptions shared across Scenario/FIRE/Simulations.
   assumptions: ScenarioAssumptions;
   baseline?: ScenarioBaselineMetadata;
@@ -169,13 +170,14 @@ const withScenarioBaselineMetadata = (input: {
   };
 };
 
+const toDatabaseScenarioSettings = (settings: ScenarioSettings): Json => {
+  const normalizedSettings: ScenarioJsonObject = { ...settings };
+  return normalizedSettings;
+};
+
 export {
-  SCENARIO_ASSUMPTION_PRESET_IDS,
   SCENARIO_ASSUMPTION_PRESET_VALUES,
-  ScenarioAssumptionPresetIdSchema,
-  ScenarioAssumptionValuesSchema,
   ScenarioAssumptionsSchema,
-  ScenarioBaselineMetadataSchema,
   type ScenarioAssumptionPresetId,
   type ScenarioAssumptionValues,
   type ScenarioAssumptions,
@@ -184,6 +186,7 @@ export {
   getDefaultScenarioAssumptions,
   getDefaultScenarioSettings,
   fromDatabaseScenarioSettings,
+  toDatabaseScenarioSettings,
   withScenarioAssumptions,
   withScenarioBaselineMetadata,
 };

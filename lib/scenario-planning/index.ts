@@ -149,6 +149,7 @@ const toMonthlyGrowthRate = (
 
   const annualDecimal = expectedAnnualReturnPercent / 100;
   if (annualDecimal <= -1) {
+    // Guard invalid values below -100% and the -100% boundary as total capital loss.
     return -1;
   }
 

@@ -15,13 +15,8 @@ import {
   withScenarioAssumptions,
 } from "@/lib/scenario-planning/settings";
 import { getCurrentUser } from "@/server/auth/actions";
+import type { ActionResult } from "./types";
 import type { Json } from "@/types/database.types";
-
-interface ActionResult {
-  success: boolean;
-  code?: string;
-  message?: string;
-}
 
 /**
  * Create or update an event in a scenario.

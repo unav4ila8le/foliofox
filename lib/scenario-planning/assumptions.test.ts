@@ -68,4 +68,36 @@ describe("scenario planning deterministic assumptions", () => {
     expect(result.balance["2026-02"]).toBe(0);
     expect(result.balance["2026-03"]).toBe(0);
   });
+
+  test("ignores non-finite expected annual return values", () => {
+    const scenario = makeScenario({
+      name: "Invalid assumptions",
+      events: [],
+    });
+
+    const nanResult = runScenario({
+      scenario,
+      startDate: ld(2026, 1, 1),
+      endDate: ld(2026, 2, 1),
+      initialValue: 5000,
+      assumptions: {
+        expectedAnnualReturnPercent: Number.NaN,
+      },
+    });
+
+    const infinityResult = runScenario({
+      scenario,
+      startDate: ld(2026, 1, 1),
+      endDate: ld(2026, 2, 1),
+      initialValue: 5000,
+      assumptions: {
+        expectedAnnualReturnPercent: Number.POSITIVE_INFINITY,
+      },
+    });
+
+    expect(nanResult.balance["2026-01"]).toBe(5000);
+    expect(nanResult.balance["2026-02"]).toBe(5000);
+    expect(infinityResult.balance["2026-01"]).toBe(5000);
+    expect(infinityResult.balance["2026-02"]).toBe(5000);
+  });
 });

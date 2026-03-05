@@ -41,6 +41,20 @@ import { formatCompactNumber, formatCurrency } from "@/lib/number-format";
 import { useLocale } from "@/hooks/use-locale";
 import { cn } from "@/lib/utils";
 
+const SCENARIO_CHART_SCALES = ["monthly", "quarterly", "yearly"] as const;
+type ScenarioChartScale = (typeof SCENARIO_CHART_SCALES)[number];
+
+const SCENARIO_CHART_TIME_HORIZONS = ["2", "5", "10", "30"] as const;
+type ScenarioChartTimeHorizon = (typeof SCENARIO_CHART_TIME_HORIZONS)[number];
+
+const isScenarioChartScale = (value: string): value is ScenarioChartScale =>
+  SCENARIO_CHART_SCALES.some((scale) => scale === value);
+
+const isScenarioChartTimeHorizon = (
+  value: string,
+): value is ScenarioChartTimeHorizon =>
+  SCENARIO_CHART_TIME_HORIZONS.some((horizon) => horizon === value);
+
 const CustomEventMarker = (props: {
   cx?: number;
   cy?: number;
@@ -144,13 +158,11 @@ export function ScenarioChart({
   };
   currency: string;
   initialValue: number;
-  expectedAnnualReturnPercent?: number;
+  expectedAnnualReturnPercent: number;
 }) {
   const locale = useLocale();
-  const [timeHorizon, setTimeHorizon] = useState<"2" | "5" | "10" | "30">("5");
-  const [scale, setScale] = useState<"monthly" | "quarterly" | "yearly">(
-    "monthly",
-  );
+  const [timeHorizon, setTimeHorizon] = useState<ScenarioChartTimeHorizon>("5");
+  const [scale, setScale] = useState<ScenarioChartScale>("monthly");
   const [hoveredTimestamp, setHoveredTimestamp] = useState<number | null>(null);
 
   const deferredHoveredTimestamp = useDeferredValue(hoveredTimestamp);
@@ -159,8 +171,8 @@ export function ScenarioChart({
     return addYears(new Date(), parseInt(timeHorizon, 10));
   }, [timeHorizon]);
 
-  const { scenarioResult } = useMemo(() => {
-    const scenarioResult = runScenario({
+  const scenarioResult = useMemo(() => {
+    return runScenario({
       scenario,
       initialValue,
       startDate: fromJSDate(new Date()),
@@ -169,10 +181,6 @@ export function ScenarioChart({
         expectedAnnualReturnPercent,
       },
     });
-
-    return {
-      scenarioResult,
-    };
   }, [scenario, initialValue, endDate, expectedAnnualReturnPercent]);
 
   const getPeriodKey = useCallback(
@@ -457,9 +465,12 @@ export function ScenarioChart({
             <Select
               disabled={scenario.events.length === 0}
               value={scale}
-              onValueChange={(value) =>
-                setScale(value as "monthly" | "quarterly" | "yearly")
-              }
+              onValueChange={(value) => {
+                if (!isScenarioChartScale(value)) {
+                  return;
+                }
+                setScale(value);
+              }}
             >
               <SelectTrigger className="w-1/2 md:w-32">
                 <SelectValue placeholder="Scale" />
@@ -473,9 +484,12 @@ export function ScenarioChart({
             <Select
               disabled={scenario.events.length === 0}
               value={timeHorizon}
-              onValueChange={(value) =>
-                setTimeHorizon(value as "2" | "5" | "10" | "30")
-              }
+              onValueChange={(value) => {
+                if (!isScenarioChartTimeHorizon(value)) {
+                  return;
+                }
+                setTimeHorizon(value);
+              }}
             >
               <SelectTrigger className="w-1/2 md:w-32">
                 <SelectValue placeholder="Time horizon" />

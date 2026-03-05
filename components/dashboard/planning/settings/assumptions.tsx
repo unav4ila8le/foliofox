@@ -4,6 +4,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   useTransition,
 } from "react";
@@ -92,18 +93,7 @@ export function PlanningAssumptions({
     useState<ScenarioAssumptions>(assumptions);
   const [isSaving, setIsSaving] = useState(false);
   const [isRefreshPending, startRefreshTransition] = useTransition();
-
-  useEffect(() => {
-    setSelectedPreset(assumptions.preset);
-    setExpectedReturnInput(
-      toInputString(assumptions.values.expectedAnnualReturnPercent),
-    );
-    setInflationInput(toInputString(assumptions.values.inflationAnnualPercent));
-    setVolatilityInput(
-      toInputString(assumptions.values.volatilityAnnualPercent),
-    );
-    setSavedAssumptions(assumptions);
-  }, [assumptions]);
+  const hasQueuedManualSaveRef = useRef(false);
 
   const expectedReturnPlaceholder = useMemo(
     () => `E.g., ${formatNumber(7, { locale })}`,
@@ -191,14 +181,13 @@ export function PlanningAssumptions({
       return;
     }
 
-    const isKnownPreset = ASSUMPTION_PRESET_DISPLAY_ORDER.some(
+    const nextPreset = ASSUMPTION_PRESET_DISPLAY_ORDER.find(
       (presetId) => presetId === nextPresetRaw,
     );
-    if (!isKnownPreset) {
+    if (!nextPreset) {
       return;
     }
 
-    const nextPreset = nextPresetRaw as ScenarioAssumptionPresetId;
     const presetValues = SCENARIO_ASSUMPTION_PRESET_VALUES[nextPreset];
 
     setSelectedPreset(nextPreset);
@@ -220,14 +209,63 @@ export function PlanningAssumptions({
   const isProjectionUpdating = isSaving || isRefreshPending;
 
   useEffect(() => {
-    if (!isManualMode || isSaving) {
+    const shouldPreserveManualDraft =
+      selectedPreset === null && (isManualDirty || isProjectionUpdating);
+
+    if (shouldPreserveManualDraft) {
+      return;
+    }
+
+    setSelectedPreset(assumptions.preset);
+    setExpectedReturnInput(
+      toInputString(assumptions.values.expectedAnnualReturnPercent),
+    );
+    setInflationInput(toInputString(assumptions.values.inflationAnnualPercent));
+    setVolatilityInput(
+      toInputString(assumptions.values.volatilityAnnualPercent),
+    );
+    setSavedAssumptions(assumptions);
+  }, [assumptions, isManualDirty, isProjectionUpdating, selectedPreset]);
+
+  useEffect(() => {
+    if (!isManualMode) {
       return;
     }
 
     if (!debouncedManualValues || !isManualDirty) {
+      hasQueuedManualSaveRef.current = false;
       return;
     }
 
+    if (isSaving) {
+      hasQueuedManualSaveRef.current = true;
+      return;
+    }
+
+    hasQueuedManualSaveRef.current = false;
+    void persistAssumptions({
+      preset: null,
+      values: debouncedManualValues,
+    });
+  }, [
+    debouncedManualValues,
+    isManualDirty,
+    isManualMode,
+    isSaving,
+    persistAssumptions,
+  ]);
+
+  useEffect(() => {
+    if (isSaving || !hasQueuedManualSaveRef.current) {
+      return;
+    }
+
+    if (!isManualMode || !debouncedManualValues || !isManualDirty) {
+      hasQueuedManualSaveRef.current = false;
+      return;
+    }
+
+    hasQueuedManualSaveRef.current = false;
     void persistAssumptions({
       preset: null,
       values: debouncedManualValues,
@@ -271,6 +309,7 @@ export function PlanningAssumptions({
           <LocalizedNumberInput
             mode="input-group-input"
             id="expected-annual-return"
+            aria-label="Expected annual return percentage"
             disabled={!isManualMode}
             placeholder={expectedReturnPlaceholder}
             name="expected-annual-return"
@@ -286,6 +325,7 @@ export function PlanningAssumptions({
           <LocalizedNumberInput
             mode="input-group-input"
             id="inflation-annual"
+            aria-label="Inflation annual percentage"
             disabled={!isManualMode}
             placeholder={inflationPlaceholder}
             name="inflation-annual"
@@ -296,23 +336,8 @@ export function PlanningAssumptions({
             <InputGroupText>%</InputGroupText>
           </InputGroupAddon>
         </InputGroup>
-
-        {/* Volatility input is intentionally hidden until FIRE/Simulations UI phase. */}
-        {/* <InputGroup className="flex-1 sm:max-w-24">
-          <LocalizedNumberInput
-            mode="input-group-input"
-            id="volatility-annual"
-            disabled={!isManualMode || isSaving}
-            placeholder={volatilityPlaceholder}
-            name="volatility-annual"
-            value={volatilityInput}
-            onValueChange={setVolatilityInput}
-          />
-          <InputGroupAddon align="inline-end">
-            <InputGroupText>%</InputGroupText>
-          </InputGroupAddon>
-        </InputGroup> */}
       </div>
+      {/* TODO(phase-4): surface volatility input when Simulations UI ships. */}
       <p className="text-muted-foreground text-xs">
         Global settings shared across Scenario, FIRE, and Simulations.
       </p>
