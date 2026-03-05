@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -19,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Spinner } from "@/components/ui/spinner";
 
 import {
   ScenarioInitialValueBasis as ScenarioInitialValueBasisSchema,
@@ -29,22 +37,22 @@ import { useLocale } from "@/hooks/use-locale";
 import { SCENARIO_INITIAL_VALUE_BASES } from "@/types/enums";
 import { updateScenarioInitialValue } from "@/server/financial-scenarios/upsert";
 
-interface ScenarioStartingValueSuggestion {
+interface PlanningStartingValueSuggestion {
   value: number;
   currency: string;
 }
 
-interface ScenarioStartingValueSuggestions {
-  cash: ScenarioStartingValueSuggestion | null;
-  netWorth: ScenarioStartingValueSuggestion | null;
+interface PlanningStartingValueSuggestions {
+  cash: PlanningStartingValueSuggestion | null;
+  netWorth: PlanningStartingValueSuggestion | null;
 }
 
-interface ScenarioStartingValueProps {
+interface PlanningStartingValueProps {
   scenarioId: string;
   initialValue: number;
   initialValueBasis: ScenarioInitialValueBasis;
   currency: string;
-  startingValueSuggestions: ScenarioStartingValueSuggestions;
+  startingValueSuggestions: PlanningStartingValueSuggestions;
 }
 
 const STARTING_VALUE_BASIS_LABELS: Record<ScenarioInitialValueBasis, string> = {
@@ -62,7 +70,7 @@ const STARTING_VALUE_BASIS_OPTIONS = SCENARIO_INITIAL_VALUE_BASES.map(
 
 const getSyncedValueForBasis = (input: {
   basis: ScenarioInitialValueBasis;
-  suggestions: ScenarioStartingValueSuggestions;
+  suggestions: PlanningStartingValueSuggestions;
 }): number | null => {
   const { basis, suggestions } = input;
 
@@ -85,13 +93,13 @@ const normalizeScenarioValue = (value: number): number => {
   return Number(value.toFixed(2));
 };
 
-export function ScenarioStartingValue({
+export function PlanningStartingValue({
   scenarioId,
   initialValue,
   initialValueBasis,
   currency,
   startingValueSuggestions,
-}: ScenarioStartingValueProps) {
+}: PlanningStartingValueProps) {
   const locale = useLocale();
   const router = useRouter();
   const lastAutoSyncKey = useRef<string | null>(null);
@@ -107,6 +115,7 @@ export function ScenarioStartingValue({
   const [savedValueBasis, setSavedValueBasis] =
     useState<ScenarioInitialValueBasis>(initialValueBasis);
   const [isSavingValue, setIsSavingValue] = useState(false);
+  const [isRefreshPending, startRefreshTransition] = useTransition();
 
   useEffect(() => {
     const normalizedNextValue = normalizeScenarioValue(initialValue);
@@ -186,7 +195,9 @@ export function ScenarioStartingValue({
         }
 
         if (input.refreshAfterSave) {
-          router.refresh();
+          startRefreshTransition(() => {
+            router.refresh();
+          });
         }
 
         return true;
@@ -298,14 +309,21 @@ export function ScenarioStartingValue({
     setSelectedValueBasis(nextBasis);
   };
 
+  const isProjectionUpdating = isSavingValue || isRefreshPending;
+
   return (
-    <div className="space-y-2">
-      <Label htmlFor="initial-value-basis">Starting value basis</Label>
-      <div className="flex max-w-sm items-center gap-2">
+    <div className="w-full space-y-2 sm:w-auto">
+      <Label htmlFor="initial-value-basis">
+        Starting value
+        {isProjectionUpdating ? (
+          <Spinner className="inline-block size-3.5" />
+        ) : null}
+      </Label>
+      <div className="flex flex-wrap items-center gap-2">
         <Select
           value={selectedValueBasis}
           onValueChange={handleBasisChange}
-          disabled={isSavingValue}
+          disabled={isProjectionUpdating}
         >
           <SelectTrigger id="initial-value-basis" className="w-40">
             <SelectValue placeholder="Select basis" />
@@ -318,11 +336,11 @@ export function ScenarioStartingValue({
             ))}
           </SelectContent>
         </Select>
-        <InputGroup>
+        <InputGroup className="flex-1 sm:max-w-56">
           <LocalizedNumberInput
             mode="input-group-input"
             id="initial-value"
-            disabled={!isManualMode || isSavingValue}
+            disabled={!isManualMode || isProjectionUpdating}
             decimalScale={2}
             placeholder={initialValuePlaceholder}
             name="initial-value"
@@ -341,7 +359,7 @@ export function ScenarioStartingValue({
             <InputGroupAddon align="inline-end">
               <InputGroupButton
                 variant="secondary"
-                disabled={!isManualValueDirty || isSavingValue}
+                disabled={!isManualValueDirty || isProjectionUpdating}
                 onClick={handleManualSave}
               >
                 Save

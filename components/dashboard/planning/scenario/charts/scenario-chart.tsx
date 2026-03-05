@@ -51,7 +51,7 @@ const CustomEventMarker = (props: {
 }) => {
   const { cx, cy, icon, netCashflow, count, isHovered } = props;
 
-  if (!cx || !cy) return null;
+  if (cx == null || cy == null) return null;
 
   // Negative cashflow (balance drop) = bigger, more prominent
   // Positive cashflow = smaller, less prominent
@@ -235,7 +235,6 @@ export function ScenarioChart({
           balance: number;
           cashflow: number;
           events: ScenarioEvent[];
-          monthCount: number;
         }
       >();
 
@@ -252,11 +251,15 @@ export function ScenarioChart({
             balance: scenarioResult.balance[monthKey],
             cashflow: 0,
             events: [],
-            monthCount: 0,
           });
         }
 
         const period = periodMap.get(periodKey)!;
+        // Keep point timestamp in sync with the latest month represented by the period.
+        // This avoids plotting a period-end balance on the period-start x-position.
+        period.monthKey = monthKey;
+        period.timestamp = date.getTime();
+        period.date = date;
         // Use the latest balance for the period
         period.balance = scenarioResult.balance[monthKey];
         // Sum cashflow
@@ -264,7 +267,6 @@ export function ScenarioChart({
         // Collect all events
         const monthEvents = scenarioResult.cashflow[monthKey]?.events || [];
         period.events.push(...monthEvents);
-        period.monthCount++;
       });
 
       return Array.from(periodMap.values()).sort(
@@ -300,20 +302,6 @@ export function ScenarioChart({
           const amount = event.type === "income" ? event.amount : -event.amount;
           return sum + amount;
         }, 0);
-
-        const group = new Map<
-          string,
-          { count: number; event: ScenarioEvent }
-        >();
-
-        point.events.forEach((event) => {
-          const name = event.name;
-
-          if (!group.has(name)) {
-            group.set(name, { count: 0, event });
-          }
-          group.get(name)!.count++;
-        });
 
         const biggestEvent = point.events.reduce((acc, curr) => {
           if (acc.amount < curr.amount) {
@@ -641,11 +629,15 @@ export function ScenarioChart({
 
                 <Tooltip
                   content={({ active, payload }) => {
-                    if (!active) {
+                    if (!active || !payload?.length || !payload[0]?.payload) {
                       return null;
                     }
 
-                    const data = payload[0].payload;
+                    const data = payload[0].payload as { timestamp?: number };
+                    if (data.timestamp == null) {
+                      return null;
+                    }
+
                     const monthData = chartData.find(
                       (d) => d.timestamp === data.timestamp,
                     );
@@ -781,71 +773,18 @@ export function ScenarioChart({
                                   },
                                 );
 
-                                // Build event list with trigger information
-                                const eventsToRender: Array<{
-                                  event?: {
-                                    name: string;
-                                    amount: number;
-                                    type: "income" | "expense";
-                                  };
-                                  isTriggered: boolean;
-                                  triggerEvent?: string;
-                                  isReference?: boolean;
-                                }> = [];
-
-                                // Create a map of triggered events
-                                const triggeredEventsMap = new Map<
-                                  string,
-                                  string
-                                >();
-
-                                // Add all sorted events with their trigger info
-                                sortedEvents.forEach((event) => {
-                                  const triggerEvent = triggeredEventsMap.get(
-                                    event.name,
-                                  );
-                                  eventsToRender.push({
-                                    event,
-                                    isTriggered: !!triggerEvent,
-                                    triggerEvent,
-                                  });
-                                });
-
-                                return eventsToRender.map((item, idx) => {
-                                  if (item.isReference) {
-                                    // This is a parent reference (not firing this month)
-                                    return (
-                                      <div
-                                        key={idx}
-                                        className="flex items-center justify-between gap-2 text-xs"
-                                      >
-                                        <span className="text-muted-foreground/60 truncate italic">
-                                          {item.triggerEvent}
-                                        </span>
-                                        <span className="text-muted-foreground/60 text-xs whitespace-nowrap italic">
-                                          (trigger)
-                                        </span>
-                                      </div>
-                                    );
-                                  }
-
+                                return sortedEvents.map((event, idx) => {
                                   const value =
-                                    item.event!.type === "income"
-                                      ? item.event!.amount
-                                      : -item.event!.amount;
+                                    event.type === "income"
+                                      ? event.amount
+                                      : -event.amount;
                                   return (
                                     <div
                                       key={idx}
                                       className="flex items-center justify-between gap-2 text-xs"
                                     >
-                                      <span
-                                        className={cn(
-                                          "text-muted-foreground flex items-center gap-1 truncate",
-                                          item.isTriggered ? "pl-3" : "",
-                                        )}
-                                      >
-                                        {item.isTriggered && "├─ "}
-                                        {item.event!.name}
+                                      <span className="text-muted-foreground flex items-center gap-1 truncate">
+                                        {event.name}
                                       </span>
                                       <span
                                         className={`font-medium whitespace-nowrap ${
