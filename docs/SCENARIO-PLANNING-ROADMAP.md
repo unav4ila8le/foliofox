@@ -67,9 +67,10 @@ Assumptions input model:
 Assumptions preset model:
 
 - Provide 3 preset chips (same UX style as `capital-gains-tax-rate-field` quick presets):
-  - `Negative`
-  - `Average`
   - `Positive`
+  - `Average`
+  - `Negative`
+- Selector display order is `Positive`, `Average`, `Negative`, then `Manual`
 - Presets are based on historical market return regimes (documented constants in code)
 - Preset click prefills all fields; manual edits remain allowed per field
 
@@ -77,9 +78,9 @@ Initial preset constants (v1 placeholders, annual nominal %):
 
 | Preset   | Expected Return | Inflation | Volatility |
 | -------- | --------------- | --------- | ---------- |
-| Negative | 1.5             | 4.0       | 22.0       |
-| Average  | 7.0             | 2.5       | 15.0       |
 | Positive | 10.0            | 2.0       | 12.0       |
+| Average  | 7.0             | 2.5       | 15.0       |
+| Negative | 1.5             | 4.0       | 22.0       |
 
 FIRE conventions:
 
@@ -173,7 +174,7 @@ Outcome: baseline scenario setup is portfolio-linked and usable; metadata harden
 Status: In progress (2A-2D completed, 2E pending explicit UI approval)
 
 - Add assumptions model (expected return/inflation/volatility as annual nominal % inputs)
-- Add preset packs (`Negative`, `Average`, `Positive`) based on historical market-return regimes
+- Add preset packs (`Positive`, `Average`, `Negative`) based on historical market-return regimes
 - Add manual assumptions input mode so users can type their own values
 - Preset selection should prefill assumption fields, and users can still override any field manually
 - Introduce Planning suite shell UI for single-scenario mode:

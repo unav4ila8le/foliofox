@@ -504,8 +504,7 @@ export function ScenarioChart({
                 </div>
                 <p className="mt-3 font-medium">Balance Over Time</p>
                 <p className="text-muted-foreground mt-1 mb-3 text-sm">
-                  Add events in the table below to see how your balance changes
-                  over time
+                  Add events to see how your balance changes over time
                 </p>
                 <UpsertEventDialog
                   scenarioId={scenario.id}

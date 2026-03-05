@@ -33,9 +33,12 @@ function ActionsCell({
   table: Table<ScenarioEventWithId>;
 }) {
   const [open, setOpen] = useState(false);
-  const index = table
-    .getSortedRowModel()
-    .rows.findIndex((r) => r.id === row.id);
+  const originalIndex = Number.parseInt(
+    String(row.original.id).split("-")[0],
+    10,
+  );
+  const hasValidOriginalIndex =
+    Number.isInteger(originalIndex) && originalIndex >= 0;
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -48,7 +51,9 @@ function ActionsCell({
         <DropdownMenuItem
           onClick={(event) => {
             event.stopPropagation();
-            table.options.meta?.onEdit?.(row.original, index);
+            if (hasValidOriginalIndex) {
+              table.options.meta?.onEdit?.(row.original, originalIndex);
+            }
             setOpen(false);
           }}
         >
@@ -59,7 +64,9 @@ function ActionsCell({
           variant="destructive"
           onClick={(event) => {
             event.stopPropagation();
-            table.options.meta?.onDelete?.(index);
+            if (hasValidOriginalIndex) {
+              table.options.meta?.onDelete?.(originalIndex);
+            }
             setOpen(false);
           }}
         >
