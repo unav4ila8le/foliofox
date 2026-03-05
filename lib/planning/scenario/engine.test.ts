@@ -5,7 +5,7 @@ import {
   makeOneOff,
   makeRecurring,
   makeEvent,
-} from "./index";
+} from "./engine";
 import { ld } from "@/lib/date/date-utils";
 
 describe("scenario planning", () => {

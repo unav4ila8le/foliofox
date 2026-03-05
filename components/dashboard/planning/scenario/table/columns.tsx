@@ -17,8 +17,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { ScenarioEvent } from "@/lib/scenario-planning";
-import { getScenarioEventDateRange } from "@/lib/scenario-planning/event-dates";
+import type { ScenarioEvent } from "@/lib/planning/scenario/engine";
+import { getScenarioEventDateRange } from "@/lib/planning/scenario/event-dates";
 import { formatDate } from "@/lib/date/date-format";
 import { formatNumber } from "@/lib/number-format";
 

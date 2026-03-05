@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest";
 
 import { ld } from "@/lib/date/date-utils";
 
-import { makeScenario, runScenario } from "./index";
+import { makeScenario, runScenario } from "./engine";
 
 describe("scenario planning deterministic assumptions", () => {
   test("applies expected annual return as monthly compounded growth", () => {

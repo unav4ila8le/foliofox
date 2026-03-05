@@ -4,19 +4,17 @@ import { cache } from "react";
 
 import { convertCurrency } from "@/lib/currency-conversion";
 import { parseUTCDateKey, resolveTodayDateKey } from "@/lib/date/date-utils";
-import type { Scenario } from "@/lib/scenario-planning";
-import {
-  fromDatabaseScenarioToScenario,
-  type ScenarioInitialValueBasis as ScenarioInitialValueBasisType,
-} from "@/lib/scenario-planning/helpers";
-import type { ScenarioStartingValueSuggestions } from "@/lib/scenario-planning/starting-value";
+import type { Scenario } from "@/lib/planning/scenario/engine";
+import { fromDatabaseScenarioToScenario } from "@/lib/planning/scenario/helpers";
+import type { ScenarioInitialValueBasis } from "@/lib/planning/initial-value-basis";
+import type { ScenarioInitialValueSuggestions } from "@/lib/planning/initial-value";
 import {
   fromDatabaseScenarioSettings,
   getDefaultScenarioSettings,
   toDatabaseScenarioSettings,
   type ScenarioAssumptions,
   type ScenarioSettings,
-} from "@/lib/scenario-planning/settings";
+} from "@/lib/planning/settings";
 import { calculateNetWorth } from "@/server/analysis/net-worth/net-worth";
 import { getCurrentUser } from "@/server/auth/actions";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
@@ -28,10 +26,10 @@ import type {
   TransformedPosition,
 } from "@/types/global.types";
 
-export interface ScenarioWithStartingValue extends Scenario {
+export interface ScenarioWithInitialValue extends Scenario {
   id: string;
   initialValue: number;
-  initialValueBasis: ScenarioInitialValueBasisType;
+  initialValueBasis: ScenarioInitialValueBasis;
   settings: ScenarioSettings;
   assumptions: ScenarioAssumptions;
 }
@@ -39,7 +37,7 @@ export interface ScenarioWithStartingValue extends Scenario {
 const toSuggestion = (
   value: number,
   currency: string,
-): ScenarioStartingValueSuggestions["cash"] => {
+): ScenarioInitialValueSuggestions["cash"] => {
   if (!Number.isFinite(value)) {
     return null;
   }
@@ -84,9 +82,9 @@ const calculateTotalPositionValueInCurrency = async (input: {
   }, 0);
 };
 
-const toScenarioWithStartingValue = (
+const toScenarioWithInitialValue = (
   databaseScenario: FinancialScenario,
-): ScenarioWithStartingValue => {
+): ScenarioWithInitialValue => {
   const scenario = fromDatabaseScenarioToScenario(databaseScenario);
   const settings = fromDatabaseScenarioSettings(databaseScenario.settings);
 
@@ -105,7 +103,7 @@ const toScenarioWithStartingValue = (
  * Returns the scenario with its database ID and initial value.
  */
 export const fetchOrCreateDefaultScenario = cache(
-  async (): Promise<ScenarioWithStartingValue> => {
+  async (): Promise<ScenarioWithInitialValue> => {
     const { supabase, user } = await getCurrentUser();
 
     // Fetch existing scenarios
@@ -121,7 +119,7 @@ export const fetchOrCreateDefaultScenario = cache(
 
     // If scenarios exist, return the first one
     if (existingScenarios && existingScenarios.length > 0) {
-      return toScenarioWithStartingValue(existingScenarios[0]);
+      return toScenarioWithInitialValue(existingScenarios[0]);
     }
 
     // Create default scenario
@@ -146,12 +144,12 @@ export const fetchOrCreateDefaultScenario = cache(
       );
     }
 
-    return toScenarioWithStartingValue(newScenario);
+    return toScenarioWithInitialValue(newScenario);
   },
 );
 
-export const fetchScenarioStartingValueSuggestions = cache(
-  async (targetCurrency: string): Promise<ScenarioStartingValueSuggestions> => {
+export const fetchScenarioInitialValueSuggestions = cache(
+  async (targetCurrency: string): Promise<ScenarioInitialValueSuggestions> => {
     // 1. Align scenario defaults with the same civil "today" used in dashboard analytics.
     const { profile } = await fetchProfile();
     const asOfDateKey = resolveTodayDateKey(profile.time_zone);

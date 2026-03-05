@@ -40,12 +40,12 @@ import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
 
 import { formatNumber } from "@/lib/number-format";
 import { cn } from "@/lib/utils";
-import { getScenarioEventDateRange } from "@/lib/scenario-planning/event-dates";
-import { makeOneOff, makeRecurring } from "@/lib/scenario-planning";
+import { getScenarioEventDateRange } from "@/lib/planning/scenario/event-dates";
+import { makeOneOff, makeRecurring } from "@/lib/planning/scenario/engine";
 import { ld } from "@/lib/date/date-utils";
 import { requiredNumberWithConstraints } from "@/lib/zod-helpers";
 import { useLocale } from "@/hooks/use-locale";
-import type { ScenarioEvent } from "@/lib/scenario-planning";
+import type { ScenarioEvent } from "@/lib/planning/scenario/engine";
 import { upsertScenarioEvent } from "@/server/financial-scenarios/upsert";
 
 const conditionSchema = z.discriminatedUnion("type", [

@@ -2,18 +2,18 @@
 
 import { revalidatePath } from "next/cache";
 
+import { ScenarioEvent } from "@/lib/planning/scenario/helpers";
 import {
-  ScenarioEvent,
   ScenarioInitialValueBasis,
   type ScenarioInitialValueBasis as ScenarioInitialValueBasisType,
-} from "@/lib/scenario-planning/helpers";
+} from "@/lib/planning/initial-value-basis";
 import { resolveTodayDateKey } from "@/lib/date/date-utils";
 import {
   ScenarioAssumptionsSchema,
   type ScenarioBaselineMetadata,
   withScenarioBaselineMetadata,
   withScenarioAssumptions,
-} from "@/lib/scenario-planning/settings";
+} from "@/lib/planning/settings";
 import { getCurrentUser } from "@/server/auth/actions";
 import type { ActionResult } from "./types";
 import type { Json } from "@/types/database.types";
@@ -82,7 +82,7 @@ export async function upsertScenarioEvent(
     };
   }
 
-  revalidatePath("/dashboard/planning/scenario");
+  revalidatePath("/dashboard/planning/");
   return { success: true };
 }
 
@@ -191,7 +191,7 @@ export async function updateScenarioInitialValue(
     };
   }
 
-  revalidatePath("/dashboard/planning/scenario");
+  revalidatePath("/dashboard/planning/");
   return { success: true };
 }
 
@@ -251,6 +251,6 @@ export async function updateScenarioAssumptions(
     };
   }
 
-  revalidatePath("/dashboard/planning/scenario");
+  revalidatePath("/dashboard/planning/");
   return { success: true };
 }

@@ -1,30 +1,30 @@
 import { Suspense } from "react";
 
 import { Skeleton } from "@/components/ui/custom/skeleton";
-import { PlanningStartingValue } from "@/components/dashboard/planning/settings/starting-value";
+import { PlanningInitialValue } from "@/components/dashboard/planning/settings/initial-value";
 import { PlanningAssumptions } from "@/components/dashboard/planning/settings/assumptions";
 
 import { fetchProfile } from "@/server/profile/actions";
 import {
   fetchOrCreateDefaultScenario,
-  fetchScenarioStartingValueSuggestions,
+  fetchScenarioInitialValueSuggestions,
 } from "@/server/financial-scenarios/fetch";
 
-async function PlanningStartingValueWrapper() {
+async function PlanningInitialValueWrapper() {
   "use cache: private";
   const { profile } = await fetchProfile();
-  const [scenario, startingValueSuggestions] = await Promise.all([
+  const [scenario, initialValueSuggestions] = await Promise.all([
     fetchOrCreateDefaultScenario(),
-    fetchScenarioStartingValueSuggestions(profile.display_currency),
+    fetchScenarioInitialValueSuggestions(profile.display_currency),
   ]);
 
   return (
-    <PlanningStartingValue
+    <PlanningInitialValue
       scenarioId={scenario.id}
       initialValue={scenario.initialValue}
       initialValueBasis={scenario.initialValueBasis}
       currency={profile.display_currency}
-      startingValueSuggestions={startingValueSuggestions}
+      initialValueSuggestions={initialValueSuggestions}
     />
   );
 }
@@ -56,7 +56,7 @@ export default function PlanningLayout({
       </div>
       <div className="flex flex-wrap items-start justify-between gap-6">
         <Suspense fallback={<Skeleton className="h-20" />}>
-          <PlanningStartingValueWrapper />
+          <PlanningInitialValueWrapper />
         </Suspense>
         <Suspense fallback={<Skeleton className="h-24" />}>
           <PlanningAssumptionsWrapper />

@@ -15,7 +15,7 @@ import { DataTable } from "@/components/dashboard/tables/base/data-table";
 import { UpsertEventDialog } from "../upsert-event/dialog";
 import { columns, type ScenarioEventWithId } from "./columns";
 
-import type { ScenarioEvent } from "@/lib/scenario-planning";
+import type { ScenarioEvent } from "@/lib/planning/scenario/engine";
 import { deleteScenarioEvent } from "@/server/financial-scenarios/delete";
 
 interface ScenarioEventsTableProps {

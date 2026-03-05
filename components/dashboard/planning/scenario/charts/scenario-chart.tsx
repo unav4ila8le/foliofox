@@ -34,7 +34,11 @@ import { UpsertEventDialog } from "../upsert-event/dialog";
 import { DemoBalanceChart } from "./demo-scenario-chart";
 import { BalanceStats } from "../balance-stats";
 
-import { runScenario, Scenario, ScenarioEvent } from "@/lib/scenario-planning";
+import {
+  runScenario,
+  type Scenario,
+  type ScenarioEvent,
+} from "@/lib/planning/scenario/engine";
 import { fromJSDate } from "@/lib/date/date-utils";
 import { formatMonthYear } from "@/lib/date/date-format";
 import { formatCompactNumber, formatCurrency } from "@/lib/number-format";

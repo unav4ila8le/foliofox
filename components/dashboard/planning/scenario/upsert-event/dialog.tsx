@@ -13,7 +13,7 @@ import {
 
 import { UpsertEventForm } from "./form";
 
-import type { ScenarioEvent } from "@/lib/scenario-planning";
+import type { ScenarioEvent } from "@/lib/planning/scenario/engine";
 
 export function UpsertEventDialog({
   open,

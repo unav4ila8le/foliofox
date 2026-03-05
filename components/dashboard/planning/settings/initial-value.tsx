@@ -31,37 +31,37 @@ import { Spinner } from "@/components/ui/spinner";
 import {
   ScenarioInitialValueBasis as ScenarioInitialValueBasisSchema,
   type ScenarioInitialValueBasis,
-} from "@/lib/scenario-planning/helpers";
-import type { ScenarioStartingValueSuggestions } from "@/lib/scenario-planning/starting-value";
+} from "@/lib/planning/initial-value-basis";
+import type { ScenarioInitialValueSuggestions } from "@/lib/planning/initial-value";
 import { formatNumber } from "@/lib/number-format";
 import { useLocale } from "@/hooks/use-locale";
 import { SCENARIO_INITIAL_VALUE_BASES } from "@/types/enums";
 import { updateScenarioInitialValue } from "@/server/financial-scenarios/upsert";
 
-interface PlanningStartingValueProps {
+interface PlanningInitialValueProps {
   scenarioId: string;
   initialValue: number;
   initialValueBasis: ScenarioInitialValueBasis;
   currency: string;
-  startingValueSuggestions: ScenarioStartingValueSuggestions;
+  initialValueSuggestions: ScenarioInitialValueSuggestions;
 }
 
-const STARTING_VALUE_BASIS_LABELS: Record<ScenarioInitialValueBasis, string> = {
+const INITIAL_VALUE_BASIS_LABELS: Record<ScenarioInitialValueBasis, string> = {
   net_worth: "Net Worth",
   cash: "Cash",
   manual: "Manual",
 };
 
-const STARTING_VALUE_BASIS_OPTIONS = SCENARIO_INITIAL_VALUE_BASES.map(
+const INITIAL_VALUE_BASIS_OPTIONS = SCENARIO_INITIAL_VALUE_BASES.map(
   (value) => ({
     value,
-    label: STARTING_VALUE_BASIS_LABELS[value],
+    label: INITIAL_VALUE_BASIS_LABELS[value],
   }),
 );
 
 const getSyncedValueForBasis = (input: {
   basis: ScenarioInitialValueBasis;
-  suggestions: ScenarioStartingValueSuggestions;
+  suggestions: ScenarioInitialValueSuggestions;
 }): number | null => {
   const { basis, suggestions } = input;
 
@@ -84,13 +84,13 @@ const normalizeScenarioValue = (value: number): number => {
   return Number(value.toFixed(2));
 };
 
-export function PlanningStartingValue({
+export function PlanningInitialValue({
   scenarioId,
   initialValue,
   initialValueBasis,
   currency,
-  startingValueSuggestions,
-}: PlanningStartingValueProps) {
+  initialValueSuggestions,
+}: PlanningInitialValueProps) {
   const locale = useLocale();
   const router = useRouter();
   const lastAutoSyncKey = useRef<string | null>(null);
@@ -144,7 +144,7 @@ export function PlanningStartingValue({
   const syncedValue = useMemo(() => {
     const nextValue = getSyncedValueForBasis({
       basis: selectedValueBasis,
-      suggestions: startingValueSuggestions,
+      suggestions: initialValueSuggestions,
     });
 
     if (nextValue === null) {
@@ -152,7 +152,7 @@ export function PlanningStartingValue({
     }
 
     return normalizeScenarioValue(nextValue);
-  }, [selectedValueBasis, startingValueSuggestions]);
+  }, [selectedValueBasis, initialValueSuggestions]);
 
   const persistInitialValue = useCallback(
     async (input: {
@@ -174,7 +174,7 @@ export function PlanningStartingValue({
         );
 
         if (!result.success) {
-          throw new Error(result.message || "Failed to update starting value");
+          throw new Error(result.message || "Failed to update initial value");
         }
 
         setSavedValue(roundedValue);
@@ -182,7 +182,7 @@ export function PlanningStartingValue({
         setInitialValueInput(roundedValue.toString());
 
         if (input.showSuccessToast) {
-          toast.success("Starting value saved");
+          toast.success("Initial value saved");
         }
 
         if (input.refreshAfterSave) {
@@ -196,7 +196,7 @@ export function PlanningStartingValue({
         toast.error(
           error instanceof Error
             ? error.message
-            : "Failed to update starting value",
+            : "Failed to update initial value",
         );
         return false;
       } finally {
@@ -286,7 +286,7 @@ export function PlanningStartingValue({
     if (nextBasis !== "manual") {
       const nextSyncedValue = getSyncedValueForBasis({
         basis: nextBasis,
-        suggestions: startingValueSuggestions,
+        suggestions: initialValueSuggestions,
       });
 
       if (nextSyncedValue === null) {
@@ -305,7 +305,7 @@ export function PlanningStartingValue({
   return (
     <div className="w-full space-y-2 sm:w-auto">
       <Label htmlFor="initial-value-basis">
-        Starting value
+        Initial value
         {isProjectionUpdating ? (
           <Spinner className="inline-block size-3.5" />
         ) : null}
@@ -320,7 +320,7 @@ export function PlanningStartingValue({
             <SelectValue placeholder="Select basis" />
           </SelectTrigger>
           <SelectContent position="popper">
-            {STARTING_VALUE_BASIS_OPTIONS.map((option) => (
+            {INITIAL_VALUE_BASIS_OPTIONS.map((option) => (
               <SelectItem key={option.value} value={option.value}>
                 {option.label}
               </SelectItem>

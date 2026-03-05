@@ -1,6 +1,6 @@
 "use server";
 
-import { runScenario } from "@/lib/scenario-planning";
+import { runScenario } from "@/lib/planning/scenario/engine";
 import { ld } from "@/lib/date/date-utils";
 import { fetchOrCreateDefaultScenario } from "@/server/financial-scenarios/fetch";
 

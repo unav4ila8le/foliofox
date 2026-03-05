@@ -34,7 +34,7 @@ import {
   SCENARIO_ASSUMPTION_PRESET_VALUES,
   type ScenarioAssumptionPresetId,
   type ScenarioAssumptions,
-} from "@/lib/scenario-planning/settings";
+} from "@/lib/planning/settings";
 import { updateScenarioAssumptions } from "@/server/financial-scenarios/upsert";
 
 const MANUAL_PRESET_VALUE = "manual";
@@ -209,10 +209,12 @@ export function PlanningAssumptions({
   const isProjectionUpdating = isSaving || isRefreshPending;
 
   useEffect(() => {
-    const shouldPreserveManualDraft =
-      selectedPreset === null && (isManualDirty || isProjectionUpdating);
+    // Preserve local selection/inputs while a save + refresh is in-flight.
+    // This avoids snapping back to stale server props (often seen as "Manual").
+    const shouldPreserveDraft =
+      isProjectionUpdating || (selectedPreset === null && isManualDirty);
 
-    if (shouldPreserveManualDraft) {
+    if (shouldPreserveDraft) {
       return;
     }
 
@@ -280,62 +282,70 @@ export function PlanningAssumptions({
 
   return (
     <div className="w-full space-y-2 sm:w-auto">
-      <Label htmlFor="assumptions-preset">
-        Assumptions
-        {isProjectionUpdating ? (
-          <Spinner className="inline-block size-3.5" />
-        ) : null}
-      </Label>
       <div className="flex flex-wrap items-end gap-2">
-        <Select
-          value={selectedPreset ?? MANUAL_PRESET_VALUE}
-          onValueChange={handlePresetChange}
-          disabled={isProjectionUpdating}
-        >
-          <SelectTrigger id="assumptions-preset" className="w-40">
-            <SelectValue placeholder="Select preset" />
-          </SelectTrigger>
-          <SelectContent position="popper">
-            {ASSUMPTION_PRESET_DISPLAY_ORDER.map((presetId) => (
-              <SelectItem key={presetId} value={presetId}>
-                {PRESET_LABELS[presetId]}
-              </SelectItem>
-            ))}
-            <SelectItem value={MANUAL_PRESET_VALUE}>Manual</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="space-y-2">
+          <Label htmlFor="assumptions-preset">
+            Assumptions
+            {isProjectionUpdating ? (
+              <Spinner className="inline-block size-3.5" />
+            ) : null}
+          </Label>
+          <Select
+            value={selectedPreset ?? MANUAL_PRESET_VALUE}
+            onValueChange={handlePresetChange}
+            disabled={isProjectionUpdating}
+          >
+            <SelectTrigger id="assumptions-preset" className="w-40">
+              <SelectValue placeholder="Select preset" />
+            </SelectTrigger>
+            <SelectContent position="popper">
+              {ASSUMPTION_PRESET_DISPLAY_ORDER.map((presetId) => (
+                <SelectItem key={presetId} value={presetId}>
+                  {PRESET_LABELS[presetId]}
+                </SelectItem>
+              ))}
+              <SelectItem value={MANUAL_PRESET_VALUE}>Manual</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-        <InputGroup className="flex-1 sm:max-w-24">
-          <LocalizedNumberInput
-            mode="input-group-input"
-            id="expected-annual-return"
-            aria-label="Expected annual return percentage"
-            disabled={!isManualMode}
-            placeholder={expectedReturnPlaceholder}
-            name="expected-annual-return"
-            value={expectedReturnInput}
-            onValueChange={setExpectedReturnInput}
-          />
-          <InputGroupAddon align="inline-end">
-            <InputGroupText>%</InputGroupText>
-          </InputGroupAddon>
-        </InputGroup>
+        <div className="space-y-2">
+          <Label htmlFor="expected-annual-return">Growth rate</Label>
+          <InputGroup className="flex-1 sm:max-w-28">
+            <LocalizedNumberInput
+              mode="input-group-input"
+              id="expected-annual-return"
+              aria-label="Expected annual return percentage"
+              disabled={!isManualMode}
+              placeholder={expectedReturnPlaceholder}
+              name="expected-annual-return"
+              value={expectedReturnInput}
+              onValueChange={setExpectedReturnInput}
+            />
+            <InputGroupAddon align="inline-end">
+              <InputGroupText>%</InputGroupText>
+            </InputGroupAddon>
+          </InputGroup>
+        </div>
 
-        <InputGroup className="flex-1 sm:max-w-24">
-          <LocalizedNumberInput
-            mode="input-group-input"
-            id="inflation-annual"
-            aria-label="Inflation annual percentage"
-            disabled={!isManualMode}
-            placeholder={inflationPlaceholder}
-            name="inflation-annual"
-            value={inflationInput}
-            onValueChange={setInflationInput}
-          />
-          <InputGroupAddon align="inline-end">
-            <InputGroupText>%</InputGroupText>
-          </InputGroupAddon>
-        </InputGroup>
+        <div className="space-y-2">
+          <Label htmlFor="inflation-annual">Inflation rate</Label>
+          <InputGroup className="flex-1 sm:max-w-28">
+            <LocalizedNumberInput
+              mode="input-group-input"
+              id="inflation-annual"
+              aria-label="Inflation annual percentage"
+              disabled={!isManualMode}
+              placeholder={inflationPlaceholder}
+              name="inflation-annual"
+              value={inflationInput}
+              onValueChange={setInflationInput}
+            />
+            <InputGroupAddon align="inline-end">
+              <InputGroupText>%</InputGroupText>
+            </InputGroupAddon>
+          </InputGroup>
+        </div>
       </div>
       {/* TODO(phase-4): surface volatility input when Simulations UI ships. */}
       <p className="text-muted-foreground text-xs">

@@ -15,7 +15,7 @@ import {
   TooltipContent,
 } from "@/components/ui/tooltip";
 
-import type { CashflowEntry } from "@/lib/scenario-planning";
+import type { CashflowEntry } from "@/lib/planning/scenario/engine";
 import { formatMonthYear } from "@/lib/date/date-format";
 import { formatPercentage, formatCurrency } from "@/lib/number-format";
 import { useLocale } from "@/hooks/use-locale";
@@ -147,7 +147,7 @@ export const BalanceStats = ({
                   <AlertTriangle className="size-4" />
                 </TooltipTrigger>
                 <TooltipContent>
-                  The lowest balance is below the starting value
+                  The lowest balance is below the initial value
                 </TooltipContent>
               </Tooltip>
             )}
@@ -200,7 +200,7 @@ export const BalanceStats = ({
                   <AlertTriangle className="size-4" />
                 </TooltipTrigger>
                 <TooltipContent>
-                  The final balance is below the starting value
+                  The final balance is below the initial value
                 </TooltipContent>
               </Tooltip>
             )}
