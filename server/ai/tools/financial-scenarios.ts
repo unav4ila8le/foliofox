@@ -1,8 +1,9 @@
 "use server";
 
 import { runScenario } from "@/lib/planning/scenario/engine";
-import { ld } from "@/lib/date/date-utils";
+import { ld, resolveTodayDateKey } from "@/lib/date/date-utils";
 import { fetchOrCreateDefaultScenario } from "@/server/financial-scenarios/fetch";
+import { fetchProfile } from "@/server/profile/actions";
 
 interface GetFinancialScenariosParams {
   runSimulation: boolean | null;
@@ -90,13 +91,13 @@ export async function getFinancialScenarios(
 
   // Optionally run the simulation
   if (runSimulation && events.length > 0) {
-    const today = new Date();
-    const startDate = ld(today.getFullYear(), today.getMonth() + 1, 1);
-    const endDate = ld(
-      today.getFullYear() + simulationYears,
-      today.getMonth() + 1,
-      1,
-    );
+    const { profile } = await fetchProfile();
+    const todayDateKey = resolveTodayDateKey(profile.time_zone);
+    const [yearStr, monthStr] = todayDateKey.split("-");
+    const year = Number(yearStr);
+    const month = Number(monthStr);
+    const startDate = ld(year, month, 1);
+    const endDate = ld(year + simulationYears, month, 1);
 
     const { balance } = runScenario({
       scenario,

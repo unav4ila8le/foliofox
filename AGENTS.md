@@ -106,12 +106,18 @@ export function ComponentName({ prop1, prop2 }: Props) {
 ## Currency & Data Handling
 
 - We mostly use ISO currency codes (USD, EUR) - unless explicitly requested
-- Store timestamps (`created_at`, `updated_at`) in UTC; store business-day fields as civil date keys (`YYYY-MM-DD`)
 - Handle all monetary values as numbers, format only for display
 - Use Zod for data validation; for AI tool schemas use `.nullable()` for optional fields (https://ai-sdk.dev/docs/ai-sdk-core/prompt-engineering#optional-parameters)
 - Market data: use the aggregator `server/market-data/fetch.fetchMarketData()` (handlers registry). Default to `upsert: true` so DB cache is populated.
 - Valuation: `fetchPositions({ asOfDateKey })` uses snapshot quantity and market price at as-of date for unit value (fallback to snapshot value for custom positions).
 - Profit/Loss: compute basis from latest relevant snapshot; do not derive from current market price.
+
+## Date & Timezone Handling
+
+- User "today" is always `resolveTodayDateKey(profile.time_zone)` — a branded `CivilDateKey`. Never derive civil dates from `new Date()` or `toISOString().slice(0,10)`.
+- UTC is reserved for timestamps, cron, market-data provider windows, and internal carrier dates.
+- Use `CivilDateKey` / `UTCDateKey` branded types and their constructors to prevent mixing semantics.
+- See `docs/DATE-HANDLING.md` for the full date model, helpers reference, and conventions.
 
 ## Performance
 
@@ -144,4 +150,4 @@ export function ComponentName({ prop1, prop2 }: Props) {
 
 - Product/UX constraints: `VISION.md`
 - Setup & contribution: `README.md`, `CONTRIBUTING.md`
-- Deep technical notes: `docs/` (e.g., `docs/SYMBOL-RENAME-HANDLING.md`, `docs/AI-ADVISOR.md`)
+- Deep technical notes: `docs/` (e.g., `docs/DATE-HANDLING.md`, `docs/SYMBOL-RENAME-HANDLING.md`, `docs/AI-ADVISOR.md`)
