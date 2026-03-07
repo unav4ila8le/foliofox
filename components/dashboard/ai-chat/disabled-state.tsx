@@ -27,7 +27,7 @@ export function DisabledState() {
         size="sm"
         onClick={() => setOpenAISettings(true)}
       >
-        <Sparkles /> Enable data sharing
+        <Sparkles /> Enable AI Advisor
       </Button>
       <AISettingsDialog
         open={openAISettings}

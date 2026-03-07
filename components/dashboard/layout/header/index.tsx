@@ -45,7 +45,9 @@ export function Header() {
           <SharePortfolioButton />
         </Suspense>
         <FeedbackButton />
-        <AIChatToggle />
+        <div className="hidden md:block">
+          <AIChatToggle />
+        </div>
       </div>
     </header>
   );

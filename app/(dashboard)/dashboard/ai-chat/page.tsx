@@ -16,7 +16,7 @@ export default function AIChatPage() {
     sanitizeDashboardReturnPath(requestedReturnPath) ?? "/dashboard";
 
   return (
-    <div className="mx-auto flex h-[calc(100svh-64px-8px-16px)] min-h-0 w-full max-w-3xl flex-col justify-center">
+    <div className="mx-auto flex h-[calc(100svh-64px-8px-8px)] min-h-0 w-full max-w-3xl flex-col justify-center">
       <div className="bg-primary-foreground flex min-h-0 flex-col overflow-hidden rounded-lg border">
         <AIChatPanel
           layoutMode="page"

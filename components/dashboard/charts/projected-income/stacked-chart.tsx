@@ -86,10 +86,9 @@ export function ProjectedIncomeStackedBarChart({
             if (!active || !payload?.length) return null;
 
             const first = payload[0];
+
             const payloadRows = payload
-              .filter(
-                (item) => typeof item.value === "number" && item.value !== 0,
-              )
+              .filter((item) => Number(item.value) !== 0)
               .sort((a, b) => Number(b.value ?? 0) - Number(a.value ?? 0));
 
             return (
@@ -108,12 +107,11 @@ export function ProjectedIncomeStackedBarChart({
                 </span>
                 {payloadRows.map((item) => (
                   <div
-                    key={item.dataKey}
+                    key={String(item.dataKey)}
                     className="flex items-center justify-between gap-3 text-xs"
                   >
                     <span className="text-muted-foreground max-w-40 truncate">
-                      {series.find((entry) => entry.key === item.dataKey)
-                        ?.name ?? item.dataKey}
+                      {item.name ?? "Series"}
                     </span>
                     <span className="text-foreground text-end font-medium">
                       {formatCurrency(Number(item.value), currency, {
@@ -131,6 +129,7 @@ export function ProjectedIncomeStackedBarChart({
           <Bar
             key={entry.key}
             dataKey={entry.key}
+            name={entry.name}
             stackId="income"
             fill={COLORS[index % COLORS.length]}
             maxBarSize={24}
