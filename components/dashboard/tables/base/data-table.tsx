@@ -223,7 +223,13 @@ export function DataTable<TData extends DataWithId, TValue>({
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
                   onClick={
-                    onRowClick ? () => handleRowClick(row.original) : undefined
+                    onRowClick
+                      ? (e) => {
+                          if (!e.currentTarget.contains(e.target as Node))
+                            return;
+                          handleRowClick(row.original);
+                        }
+                      : undefined
                   }
                   className={cn(onRowClick && "cursor-pointer")}
                 >

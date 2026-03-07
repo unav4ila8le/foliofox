@@ -309,7 +309,7 @@ function SymbolList({
   return (
     <Command>
       <CommandInput
-        placeholder="Search symbol (e.g. AAPL, VWCE.DE, BTC-USD)..."
+        placeholder="Search symbol (e.g. AAPL, VWCE.DE, BTC-USD)"
         className="h-9"
         onValueChange={setSearchQuery}
         disabled={isLoadingQuote}

@@ -62,12 +62,7 @@ export function StaleBadge({ positionId, label }: StaleBadgeProps) {
         open={stalePositionDialogOpen}
         onOpenChange={setStalePositionDialogOpen}
       >
-        <DialogContent
-          // TO FIX: clicking outside of the dialog fires row actions
-          onClick={(e) => {
-            e.stopPropagation();
-          }}
-        >
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>
               {stalePosition.ticker} market data may be stale
