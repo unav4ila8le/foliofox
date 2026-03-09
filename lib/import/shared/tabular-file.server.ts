@@ -15,6 +15,7 @@ import {
   parseCSVRowValues,
   splitCSVRecords,
 } from "@/lib/import/shared/csv-parser-utils";
+import { escapeCsvCell } from "@/lib/shared/csv";
 
 export type TabularFileKind = "csv" | "tsv" | "xlsx" | "xls";
 
@@ -449,18 +450,6 @@ export function selectBestSheet<Metadata>(
     metadata: selected.metadata,
     warnings,
   };
-}
-
-function escapeCsvCell(value: string): string {
-  if (
-    value.includes(",") ||
-    value.includes('"') ||
-    value.includes("\n") ||
-    value.includes("\r")
-  ) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
 }
 
 export function rowsToCsv(rows: string[][]): string {

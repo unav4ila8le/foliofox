@@ -9,7 +9,7 @@ import {
   useEffect,
 } from "react";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
-import { ArrowLeftRight, Trash2, Search } from "lucide-react";
+import { ArrowLeftRight, Download, Trash2, Search } from "lucide-react";
 import { useDebounce } from "use-debounce";
 
 import {
@@ -45,6 +45,9 @@ import {
   type PortfolioRecordType,
 } from "@/lib/portfolio-records/filters";
 import { buildSearchParams } from "@/lib/search-params";
+import { portfolioRecordsToCSV } from "@/lib/export/portfolio-records/csv";
+import { mapPortfolioRecordToCsvRow } from "@/lib/export/portfolio-records/map-record-to-csv";
+import { downloadCsvFile } from "@/lib/export/shared/download-csv";
 
 import type {
   PortfolioRecordWithPosition,
@@ -180,8 +183,10 @@ export function PortfolioRecordsTable({
     key: tableKey,
     rows: [],
   }));
-  const selectedRows =
-    selectionState.key === tableKey ? selectionState.rows : [];
+  const selectedRows = useMemo(
+    () => (selectionState.key === tableKey ? selectionState.rows : []),
+    [selectionState, tableKey],
+  );
 
   const handleSelectedRowsChange = useCallback(
     (rows: PortfolioRecordWithPosition[]) => {
@@ -373,6 +378,14 @@ export function PortfolioRecordsTable({
     [pagination, router, createPageHref],
   );
 
+  const handleExportSelected = useCallback(() => {
+    const csvRows = selectedRows.map(mapPortfolioRecordToCsvRow);
+    downloadCsvFile({
+      data: portfolioRecordsToCSV(csvRows),
+      filename: `foliofox-records-selected-${formatLocalDateKey(new Date())}.csv`,
+    });
+  }, [selectedRows]);
+
   const paginationSummary = useMemo(() => {
     if (!pagination) {
       return `${data.length} record(s)`;
@@ -464,7 +477,9 @@ export function PortfolioRecordsTable({
                   variant="outline"
                   preselectedPosition={position}
                 />
-                <TableActionsDropdown />
+                <TableActionsDropdown
+                  recordsCount={pagination?.total ?? data.length}
+                />
               </>
             )}
           </div>
@@ -582,6 +597,11 @@ export function PortfolioRecordsTable({
         <BulkActionBar
           selectedCount={selectedRows.length}
           actions={[
+            {
+              label: "Export selected",
+              onClick: handleExportSelected,
+              icon: <Download className="size-4" />,
+            },
             {
               label: "Delete selected",
               onClick: () => setOpenDeleteDialog(true),
