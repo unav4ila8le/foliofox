@@ -118,15 +118,18 @@ export const fetchPortfolioRecords = cache(
     if (sortBy === "date") {
       query
         .order("date", { ascending: direction === "asc" })
-        .order("created_at", { ascending: direction === "asc" });
+        .order("created_at", { ascending: direction === "asc" })
+        .order("id", { ascending: direction === "asc" });
     } else if (sortBy === "created_at") {
       query
         .order("created_at", { ascending: direction === "asc" })
-        .order("date", { ascending: direction === "asc" });
+        .order("date", { ascending: direction === "asc" })
+        .order("id", { ascending: direction === "asc" });
     } else {
       query
         .order("date", { ascending: false })
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false });
     }
 
     const { data, error, count } = await query.range(from, to);
