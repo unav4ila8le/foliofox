@@ -1,3 +1,5 @@
+import { escapeCsvCell } from "@/lib/shared/csv";
+
 export interface PortfolioRecordCsvRow {
   position_name: string;
   type: string;
@@ -16,30 +18,15 @@ const PORTFOLIO_RECORD_CSV_HEADERS = [
   "description",
 ] as const;
 
-function escapeCsvValue(value: string | number | null | undefined): string {
-  if (value === null || value === undefined) return "";
-  const stringValue = String(value);
-
-  if (
-    stringValue.includes(",") ||
-    stringValue.includes('"') ||
-    stringValue.includes("\n")
-  ) {
-    return `"${stringValue.replace(/"/g, '""')}"`;
-  }
-
-  return stringValue;
-}
-
 export function portfolioRecordsToCSV(rows: PortfolioRecordCsvRow[]): string {
   const serializedRows = rows.map((row) =>
     [
-      escapeCsvValue(row.position_name),
-      escapeCsvValue(row.type),
-      escapeCsvValue(row.date),
-      escapeCsvValue(row.quantity),
-      escapeCsvValue(row.unit_value),
-      escapeCsvValue(row.description),
+      escapeCsvCell(row.position_name),
+      escapeCsvCell(row.type),
+      escapeCsvCell(row.date),
+      escapeCsvCell(row.quantity),
+      escapeCsvCell(row.unit_value),
+      escapeCsvCell(row.description),
     ].join(","),
   );
 

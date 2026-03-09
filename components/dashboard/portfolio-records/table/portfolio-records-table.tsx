@@ -46,6 +46,7 @@ import {
 } from "@/lib/portfolio-records/filters";
 import { buildSearchParams } from "@/lib/search-params";
 import { portfolioRecordsToCSV } from "@/lib/export/portfolio-records/csv";
+import { mapPortfolioRecordToCsvRow } from "@/lib/export/portfolio-records/map-record-to-csv";
 import { downloadCsvFile } from "@/lib/export/shared/download-csv";
 
 import type {
@@ -378,14 +379,7 @@ export function PortfolioRecordsTable({
   );
 
   const handleExportSelected = useCallback(() => {
-    const csvRows = selectedRows.map((record) => ({
-      position_name: record.positions?.name ?? "",
-      type: record.type,
-      date: record.date,
-      quantity: record.quantity,
-      unit_value: record.unit_value,
-      description: record.description,
-    }));
+    const csvRows = selectedRows.map(mapPortfolioRecordToCsvRow);
     downloadCsvFile({
       data: portfolioRecordsToCSV(csvRows),
       filename: `foliofox-records-selected-${formatLocalDateKey(new Date())}.csv`,

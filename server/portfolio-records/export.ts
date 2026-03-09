@@ -1,10 +1,8 @@
 "use server";
 
 import { fetchPortfolioRecords } from "@/server/portfolio-records/fetch";
-import {
-  portfolioRecordsToCSV,
-  type PortfolioRecordCsvRow,
-} from "@/lib/export/portfolio-records/csv";
+import { portfolioRecordsToCSV } from "@/lib/export/portfolio-records/csv";
+import { mapPortfolioRecordToCsvRow } from "@/lib/export/portfolio-records/map-record-to-csv";
 
 type PortfolioRecordExportResult =
   | { success: true; data: string }
@@ -36,14 +34,7 @@ export async function exportPortfolioRecords(): Promise<PortfolioRecordExportRes
       });
       recordRows.push(...nextPage.records);
     }
-    const csvRows: PortfolioRecordCsvRow[] = recordRows.map((record) => ({
-      position_name: record.positions?.name ?? "",
-      type: record.type,
-      date: record.date,
-      quantity: record.quantity,
-      unit_value: record.unit_value,
-      description: record.description,
-    }));
+    const csvRows = recordRows.map(mapPortfolioRecordToCsvRow);
 
     return {
       success: true,

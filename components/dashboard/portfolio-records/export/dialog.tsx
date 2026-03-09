@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { format } from "date-fns";
 import { Download, FileText, Info } from "lucide-react";
 import { toast } from "sonner";
 
@@ -19,6 +18,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 import { exportPortfolioRecords } from "@/server/portfolio-records/export";
+import { formatLocalDateKey } from "@/lib/date/date-utils";
 import { downloadCsvFile } from "@/lib/export/shared/download-csv";
 
 interface ExportPortfolioRecordsDialogProps {
@@ -33,6 +33,7 @@ export function ExportPortfolioRecordsDialog({
   recordsCount,
 }: ExportPortfolioRecordsDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const todayDateKey = formatLocalDateKey(new Date());
 
   const handleExport = async () => {
     try {
@@ -46,7 +47,7 @@ export function ExportPortfolioRecordsDialog({
 
       downloadCsvFile({
         data: result.data,
-        filename: `foliofox-records-${format(new Date(), "yyyy-MM-dd")}.csv`,
+        filename: `foliofox-records-${todayDateKey}.csv`,
       });
 
       toast.success("Records exported successfully!");
@@ -94,7 +95,7 @@ export function ExportPortfolioRecordsDialog({
               Separated Values)
               <br />
               <span className="font-medium">Filename:</span> foliofox-records-
-              {format(new Date(), "yyyy-MM-dd")}.csv
+              {todayDateKey}.csv
             </div>
           </div>
         </DialogBody>

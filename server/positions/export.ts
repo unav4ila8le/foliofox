@@ -2,6 +2,7 @@
 
 import { fetchPositions } from "@/server/positions/fetch";
 import { calculateProfitLoss } from "@/lib/profit-loss";
+import { escapeCsvCell } from "@/lib/shared/csv";
 import { createServiceClient } from "@/supabase/service";
 
 type ExportType = "asset" | "liability";
@@ -62,34 +63,23 @@ export async function exportPositions(
       return { success: true, data: headers } as const;
     }
 
-    // Escape helper
-    const escapeCsvValue = (
-      value: string | number | null | undefined,
-    ): string => {
-      if (value === null || value === undefined) return "";
-      const s = String(value);
-      return s.includes(",") || s.includes('"') || s.includes("\n")
-        ? `"${s.replace(/"/g, '""')}"`
-        : s;
-    };
-
     // Rows - export ticker instead of UUID for symbol_id
     const rows = positionsWithPL.map((p) => {
       const ticker = p.symbol_id ? symbolUuidToTicker.get(p.symbol_id) : null;
       return [
-        escapeCsvValue(p.name),
-        escapeCsvValue(p.category_id),
-        escapeCsvValue(p.currency),
-        escapeCsvValue(p.current_quantity),
-        escapeCsvValue(p.current_unit_value),
-        escapeCsvValue(p.total_value),
-        escapeCsvValue(p.cost_basis_per_unit ?? null),
-        escapeCsvValue(p.total_cost_basis ?? null),
-        escapeCsvValue(p.profit_loss ?? null),
-        escapeCsvValue(p.profit_loss_percentage ?? null),
-        escapeCsvValue(ticker),
-        escapeCsvValue(p.domain_id),
-        escapeCsvValue(p.description),
+        escapeCsvCell(p.name),
+        escapeCsvCell(p.category_id),
+        escapeCsvCell(p.currency),
+        escapeCsvCell(p.current_quantity),
+        escapeCsvCell(p.current_unit_value),
+        escapeCsvCell(p.total_value),
+        escapeCsvCell(p.cost_basis_per_unit ?? null),
+        escapeCsvCell(p.total_cost_basis ?? null),
+        escapeCsvCell(p.profit_loss ?? null),
+        escapeCsvCell(p.profit_loss_percentage ?? null),
+        escapeCsvCell(ticker),
+        escapeCsvCell(p.domain_id),
+        escapeCsvCell(p.description),
       ].join(",");
     });
 
