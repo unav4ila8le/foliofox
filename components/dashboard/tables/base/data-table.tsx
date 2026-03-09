@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
   type ColumnDef,
   type SortingState,
@@ -74,6 +74,12 @@ export function DataTable<TData extends DataWithId, TValue>({
   const [sorting, setSorting] = useState<SortingState>(defaultSorting);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [expanded, setExpanded] = useState<ExpandedState>(true);
+  // Keep keyboard/selection anchors in refs so we can manage shift-range
+  // selection without forcing extra renders.
+  const isShiftPressedRef = useRef(false);
+  const lastToggledRowIdRef = useRef<string | null>(null);
+  const previousSelectionRef = useRef<RowSelectionState>({});
+  const isApplyingShiftRangeRef = useRef(false);
 
   // Memoize column filters to prevent unnecessary re-renders
   const columnFilters = useMemo<ColumnFiltersState>(() => {
@@ -92,6 +98,34 @@ export function DataTable<TData extends DataWithId, TValue>({
     },
     [],
   );
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Shift") {
+        isShiftPressedRef.current = true;
+      }
+    };
+
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (event.key === "Shift") {
+        isShiftPressedRef.current = false;
+      }
+    };
+
+    const handleWindowBlur = () => {
+      isShiftPressedRef.current = false;
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    window.addEventListener("blur", handleWindowBlur);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+      window.removeEventListener("blur", handleWindowBlur);
+    };
+  }, []);
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
@@ -126,6 +160,82 @@ export function DataTable<TData extends DataWithId, TValue>({
       }),
     },
   });
+
+  useEffect(() => {
+    // Prevent re-processing when this same effect applied the range itself.
+    if (isApplyingShiftRangeRef.current) {
+      isApplyingShiftRangeRef.current = false;
+      previousSelectionRef.current = rowSelection;
+      return;
+    }
+
+    const previousSelection = previousSelectionRef.current;
+    const changedRowIds = Array.from(
+      new Set([
+        ...Object.keys(previousSelection),
+        ...Object.keys(rowSelection),
+      ]),
+    ).filter(
+      (rowId) =>
+        Boolean(previousSelection[rowId]) !== Boolean(rowSelection[rowId]),
+    );
+
+    // Only single-row toggles should define range anchor behavior.
+    if (changedRowIds.length !== 1) {
+      previousSelectionRef.current = rowSelection;
+      if (changedRowIds.length > 1) {
+        lastToggledRowIdRef.current = null;
+      }
+      return;
+    }
+
+    const currentRowId = changedRowIds[0];
+    const anchorRowId = lastToggledRowIdRef.current;
+    const shouldApplyRange =
+      isShiftPressedRef.current &&
+      anchorRowId !== null &&
+      anchorRowId !== currentRowId;
+
+    if (shouldApplyRange) {
+      // Range is based on current visible row order (sorted/filtered/page-scoped).
+      // Group rows are excluded because they are not true data records.
+      const visibleSelectableRowIds = table
+        .getRowModel()
+        .rows.filter((row) => !row.getIsGrouped() && row.getCanSelect())
+        .map((row) => row.id);
+
+      const anchorIndex = visibleSelectableRowIds.indexOf(anchorRowId);
+      const currentIndex = visibleSelectableRowIds.indexOf(currentRowId);
+
+      if (anchorIndex !== -1 && currentIndex !== -1) {
+        const [startIndex, endIndex] =
+          anchorIndex < currentIndex
+            ? [anchorIndex, currentIndex]
+            : [currentIndex, anchorIndex];
+
+        const nextSelection: RowSelectionState = { ...rowSelection };
+        const shouldSelectRange = Boolean(rowSelection[currentRowId]);
+
+        for (let index = startIndex; index <= endIndex; index += 1) {
+          const rowIdInRange = visibleSelectableRowIds[index];
+          if (shouldSelectRange) {
+            nextSelection[rowIdInRange] = true;
+          } else {
+            delete nextSelection[rowIdInRange];
+          }
+        }
+
+        isApplyingShiftRangeRef.current = true;
+        setRowSelection(nextSelection);
+        previousSelectionRef.current = nextSelection;
+        lastToggledRowIdRef.current = currentRowId;
+        return;
+      }
+    }
+
+    previousSelectionRef.current = rowSelection;
+    lastToggledRowIdRef.current = currentRowId;
+  }, [rowSelection, table]);
 
   // Emit selected rows to parent - only when selection actually changes
   useEffect(() => {
