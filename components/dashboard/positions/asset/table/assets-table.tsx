@@ -2,13 +2,9 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Archive, Package, Trash2, Search } from "lucide-react";
+import { Archive, Package, Trash2 } from "lucide-react";
 
-import {
-  InputGroup,
-  InputGroupInput,
-  InputGroupAddon,
-} from "@/components/ui/input-group";
+import { SearchInput } from "@/components/ui/custom/search-input";
 import { NewAssetButton } from "@/components/dashboard/new-asset";
 import { TableActionsDropdown } from "./table-actions";
 import { DeletePositionDialog } from "@/components/dashboard/positions/shared/delete-dialog";
@@ -44,19 +40,15 @@ export function AssetsTable({ data }: AssetsTableProps) {
     <div className="flex flex-col gap-4">
       {/* Toolbar */}
       <div className="flex items-center justify-between gap-2">
-        <InputGroup className="max-w-sm">
-          <InputGroupInput
-            id="assets-search"
-            name="assets-search"
-            autoComplete="off"
-            placeholder="Search assets..."
-            value={filterValue}
-            onChange={(e) => setFilterValue(e.target.value)}
-          />
-          <InputGroupAddon>
-            <Search />
-          </InputGroupAddon>
-        </InputGroup>
+        <SearchInput
+          className="max-w-sm"
+          id="assets-search"
+          name="assets-search"
+          autoComplete="off"
+          placeholder="Search assets..."
+          value={filterValue}
+          onChange={(e) => setFilterValue(e.target.value)}
+        />
         <div className="flex items-center gap-2">
           <NewAssetButton variant="outline" />
           <TableActionsDropdown positionsCount={data.length} />

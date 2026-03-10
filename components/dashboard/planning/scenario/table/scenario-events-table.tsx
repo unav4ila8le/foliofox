@@ -2,15 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group";
 import { Button } from "@/components/ui/button";
+import { SearchInput } from "@/components/ui/custom/search-input";
 import { DataTable } from "@/components/dashboard/tables/base/data-table";
 import { UpsertEventDialog } from "../upsert-event/dialog";
 import { columns, type ScenarioEventWithId } from "./columns";
@@ -82,16 +78,12 @@ export function ScenarioEventsTable({
     <div className="space-y-4">
       <h2 className="mb-2 text-lg font-semibold">Events</h2>
       <div className="flex items-center justify-between gap-2">
-        <InputGroup className="max-w-sm">
-          <InputGroupInput
-            placeholder="Search events..."
-            value={filterValue}
-            onChange={(event) => setFilterValue(event.target.value)}
-          />
-          <InputGroupAddon>
-            <Search />
-          </InputGroupAddon>
-        </InputGroup>
+        <SearchInput
+          className="max-w-sm"
+          placeholder="Search events..."
+          value={filterValue}
+          onChange={(event) => setFilterValue(event.target.value)}
+        />
         <UpsertEventDialog
           open={isDialogOpen}
           onOpenChange={handleDialogOpenChange}

@@ -2,13 +2,9 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Trash2, ArchiveRestore, Search } from "lucide-react";
+import { Trash2, ArchiveRestore } from "lucide-react";
 
-import {
-  InputGroup,
-  InputGroupInput,
-  InputGroupAddon,
-} from "@/components/ui/input-group";
+import { SearchInput } from "@/components/ui/custom/search-input";
 import { BulkActionBar } from "@/components/dashboard/tables/base/bulk-action-bar";
 import { DeletePositionDialog } from "@/components/dashboard/positions/shared/delete-dialog";
 import { DataTable } from "@/components/dashboard/tables/base/data-table";
@@ -47,16 +43,12 @@ export function ArchivedAssetsTable({ data }: ArchivedTableProps) {
   return (
     <div className="flex flex-col gap-4">
       {/* Search */}
-      <InputGroup className="max-w-sm">
-        <InputGroupInput
-          placeholder="Search archived assets..."
-          value={filterValue}
-          onChange={(e) => setFilterValue(e.target.value)}
-        />
-        <InputGroupAddon>
-          <Search />
-        </InputGroupAddon>
-      </InputGroup>
+      <SearchInput
+        className="max-w-sm"
+        placeholder="Search archived assets..."
+        value={filterValue}
+        onChange={(e) => setFilterValue(e.target.value)}
+      />
 
       {/* Table */}
       <DataTable

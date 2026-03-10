@@ -9,7 +9,7 @@ import {
   useEffect,
 } from "react";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
-import { ArrowLeftRight, Download, Trash2, Search } from "lucide-react";
+import { ArrowLeftRight, Download, Trash2 } from "lucide-react";
 import { useDebounce } from "use-debounce";
 
 import {
@@ -21,12 +21,9 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import {
-  InputGroup,
-  InputGroupInput,
-  InputGroupAddon,
-} from "@/components/ui/input-group";
 import { TableCell, TableRow } from "@/components/ui/table";
+
+import { SearchInput } from "@/components/ui/custom/search-input";
 import { DataTable } from "@/components/dashboard/tables/base/data-table";
 import { getPortfolioRecordColumns } from "@/components/dashboard/portfolio-records/table/columns";
 import { PortfolioRecordTypeFilter } from "@/components/dashboard/portfolio-records/table/filters/type-filter";
@@ -99,24 +96,20 @@ function ServerSearchInput({
   }, [debouncedValue, initialValue, onSearch]);
 
   return (
-    <InputGroup className={cn("sm:max-w-64", className)}>
-      <InputGroupInput
-        id="portfolio-records-search"
-        name="portfolio-records-search"
-        autoComplete="off"
-        placeholder="Search records..."
-        value={inputValue}
-        onChange={(event) => setInputValue(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key !== "Enter") return;
-          event.preventDefault();
-          onSearch(event.currentTarget.value);
-        }}
-      />
-      <InputGroupAddon>
-        <Search />
-      </InputGroupAddon>
-    </InputGroup>
+    <SearchInput
+      className={cn("sm:max-w-64", className)}
+      id="portfolio-records-search"
+      name="portfolio-records-search"
+      autoComplete="off"
+      placeholder="Search records..."
+      value={inputValue}
+      onChange={(event) => setInputValue(event.target.value)}
+      onKeyDown={(event) => {
+        if (event.key !== "Enter") return;
+        event.preventDefault();
+        onSearch(event.currentTarget.value);
+      }}
+    />
   );
 }
 
