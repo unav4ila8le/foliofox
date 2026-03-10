@@ -53,11 +53,11 @@ export default async function Layout({
 
   // 2) Keep the dashboard path fully data-driven; timezone auto-sync happens in
   // the background for auto-mode users without introducing a visible gate.
-  const [financialProfile, netWorth, stalePositions] = await Promise.all([
+  const [financialProfile, netWorth] = await Promise.all([
     fetchFinancialProfile(),
     calculateNetWorth(profile.display_currency, todayDateKey),
-    fetchStalePositions(),
   ]);
+  const stalePositions = await fetchStalePositions();
 
   return (
     <DashboardDataProvider
