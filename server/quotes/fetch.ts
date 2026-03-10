@@ -257,6 +257,23 @@ export async function fetchQuotes(
   cachedExactRows.forEach((row) => {
     exactPriceByKey.set(`${row.symbol_id}|${row.date}`, row.close_price);
   });
+  const symbolHealthById = new Map<string, string>();
+
+  const recordSymbolHealth = (symbolId: string, dateKey: string) => {
+    const nextLastQuoteAt = new Date(`${dateKey}T00:00:00Z`).toISOString();
+    const existingLastQuoteAt = symbolHealthById.get(symbolId);
+
+    if (!existingLastQuoteAt || existingLastQuoteAt < nextLastQuoteAt) {
+      symbolHealthById.set(symbolId, nextLastQuoteAt);
+    }
+  };
+
+  if (resolvedOptions.upsert) {
+    // Keep symbol health aligned even when every request is resolved from cache.
+    cachedExactRows.forEach((row) => {
+      recordSymbolHealth(row.symbol_id, row.date);
+    });
+  }
 
   const unresolvedRequests: ResolvedQuoteRequest[] = [];
   for (const request of normalizedRequests) {
@@ -306,7 +323,6 @@ export async function fetchQuotes(
     });
 
     const upsertRowsByKey = new Map<string, QuotesUpsertRow>();
-    const healthUpdates: Array<{ id: string; last_quote_at: string }> = [];
 
     for (const [symbolId, symbolRequests] of requestsBySymbol.entries()) {
       const effectiveDateKeysSorted = [
@@ -443,10 +459,7 @@ export async function fetchQuotes(
             : null);
 
         if (latestDateKey) {
-          healthUpdates.push({
-            id: symbolId,
-            last_quote_at: new Date(`${latestDateKey}T00:00:00Z`).toISOString(),
-          });
+          recordSymbolHealth(symbolId, latestDateKey);
         }
       }
     }
@@ -467,37 +480,34 @@ export async function fetchQuotes(
         console.error("Failed to bulk insert quotes:", insertError);
       }
     }
+  }
 
-    if (resolvedOptions.upsert && healthUpdates.length > 0) {
-      const symbolIdsByLastQuoteAt = new Map<string, string[]>();
-      healthUpdates.forEach(({ id, last_quote_at }) => {
-        const ids = symbolIdsByLastQuoteAt.get(last_quote_at) ?? [];
-        ids.push(id);
-        symbolIdsByLastQuoteAt.set(last_quote_at, ids);
-      });
+  if (resolvedOptions.upsert && symbolHealthById.size > 0) {
+    const symbolIdsByLastQuoteAt = new Map<string, string[]>();
+    symbolHealthById.forEach((last_quote_at, id) => {
+      const ids = symbolIdsByLastQuoteAt.get(last_quote_at) ?? [];
+      ids.push(id);
+      symbolIdsByLastQuoteAt.set(last_quote_at, ids);
+    });
 
-      // Grouping by identical market dates keeps monotonic guard semantics while
-      // reducing one update query per symbol down to one update query per batch.
-      for (const [
-        last_quote_at,
-        symbolIds,
-      ] of symbolIdsByLastQuoteAt.entries()) {
-        for (const symbolIdBatch of chunkArray(
-          [...new Set(symbolIds)],
-          SYMBOL_HEALTH_UPDATE_BATCH_SIZE,
-        )) {
-          const { error: healthError } = await supabase
-            .from("symbols")
-            .update({ last_quote_at })
-            .in("id", symbolIdBatch)
-            .or(`last_quote_at.is.null,last_quote_at.lt.${last_quote_at}`);
+    // Grouping by identical market dates keeps monotonic guard semantics while
+    // reducing one update query per symbol down to one update query per batch.
+    for (const [last_quote_at, symbolIds] of symbolIdsByLastQuoteAt.entries()) {
+      for (const symbolIdBatch of chunkArray(
+        [...new Set(symbolIds)],
+        SYMBOL_HEALTH_UPDATE_BATCH_SIZE,
+      )) {
+        const { error: healthError } = await supabase
+          .from("symbols")
+          .update({ last_quote_at })
+          .in("id", symbolIdBatch)
+          .or(`last_quote_at.is.null,last_quote_at.lt.${last_quote_at}`);
 
-          if (healthError) {
-            console.error(
-              `Failed to update symbol health batch for ${last_quote_at} (${symbolIdBatch.length} symbols):`,
-              healthError,
-            );
-          }
+        if (healthError) {
+          console.error(
+            `Failed to update symbol health batch for ${last_quote_at} (${symbolIdBatch.length} symbols):`,
+            healthError,
+          );
         }
       }
     }

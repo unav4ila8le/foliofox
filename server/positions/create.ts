@@ -128,8 +128,11 @@ export async function createPosition(formData: FormData) {
 
     if (symbolUuid && (unit_value == null || Number.isNaN(unit_value))) {
       try {
+        // Avoid seeding cooldown during create so the immediate dashboard render
+        // can retry live quote repair if this bootstrap read returns no data.
         unit_value = await fetchSingleQuote(symbolUuid, {
           upsert: true,
+          liveMissCooldownMinutes: 0,
         });
       } catch (error) {
         console.warn(
