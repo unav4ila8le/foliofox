@@ -181,6 +181,8 @@ export function ReviewForm({
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues,
+    mode: "onChange",
+    reValidateMode: "onChange",
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -583,6 +585,10 @@ export function ReviewForm({
                             value: field.value || "",
                           }}
                           isInvalid={fieldState.invalid}
+                          fieldName={field.name}
+                          clearErrors={
+                            form.clearErrors as (name: string) => void
+                          }
                           onSymbolSelect={(symbolId) =>
                             handleSymbolSelect(symbolId, index)
                           }
