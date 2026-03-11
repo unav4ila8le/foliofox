@@ -19,6 +19,7 @@ import { hasActivePositions } from "@/server/positions/has-active";
 import { calculateNetWorth } from "@/server/analysis/net-worth/net-worth";
 import { fetchNetWorthHistory } from "@/server/analysis/net-worth/net-worth-history";
 import { fetchNetWorthChange } from "@/server/analysis/net-worth/net-worth-change";
+import { fetchPerformanceEligibility } from "@/server/analysis/performance/eligibility";
 import { calculateAssetAllocation } from "@/server/analysis/asset-allocation";
 import { fetchPortfolioNews } from "@/server/news/fetch";
 import {
@@ -57,33 +58,39 @@ async function NetWorthChartWrapper() {
   const defaultDaysBack =
     differenceInCalendarDays(today, subMonths(today, 3)) + 1;
   // Fetch both history and change for default period (3 calendar months)
-  const [netWorth, netWorthHistory, netWorthChange, grossNetWorth] =
-    await Promise.all([
-      calculateNetWorth(
-        profile.display_currency,
-        todayDateKey,
-        undefined,
-        netWorthMode,
-      ),
-      fetchNetWorthHistory({
-        targetCurrency: profile.display_currency,
-        daysBack: defaultDaysBack,
-        mode: netWorthMode,
-      }),
-      fetchNetWorthChange({
-        targetCurrency: profile.display_currency,
-        daysBack: defaultDaysBack,
-        mode: netWorthMode,
-      }),
-      netWorthMode === "after_capital_gains"
-        ? calculateNetWorth(
-            profile.display_currency,
-            todayDateKey,
-            undefined,
-            "gross",
-          )
-        : Promise.resolve(null),
-    ]);
+  const [
+    netWorth,
+    netWorthHistory,
+    netWorthChange,
+    grossNetWorth,
+    performanceEligibility,
+  ] = await Promise.all([
+    calculateNetWorth(
+      profile.display_currency,
+      todayDateKey,
+      undefined,
+      netWorthMode,
+    ),
+    fetchNetWorthHistory({
+      targetCurrency: profile.display_currency,
+      daysBack: defaultDaysBack,
+      mode: netWorthMode,
+    }),
+    fetchNetWorthChange({
+      targetCurrency: profile.display_currency,
+      daysBack: defaultDaysBack,
+      mode: netWorthMode,
+    }),
+    netWorthMode === "after_capital_gains"
+      ? calculateNetWorth(
+          profile.display_currency,
+          todayDateKey,
+          undefined,
+          "gross",
+        )
+      : Promise.resolve(null),
+    fetchPerformanceEligibility(),
+  ]);
 
   const estimatedCapitalGainsTax =
     netWorthMode === "after_capital_gains" && grossNetWorth != null
@@ -96,8 +103,10 @@ async function NetWorthChartWrapper() {
       netWorth={netWorth}
       history={netWorthHistory}
       change={netWorthChange}
+      todayDateKey={todayDateKey}
       netWorthMode={netWorthMode}
       estimatedCapitalGainsTax={estimatedCapitalGainsTax}
+      performanceEligibility={performanceEligibility}
     />
   );
 }

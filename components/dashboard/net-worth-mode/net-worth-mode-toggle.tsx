@@ -41,7 +41,7 @@ export function NetWorthModeToggle() {
       <TooltipContent side="bottom">
         Include estimated Capital Gains Taxes.
         <br />
-        Affects net worth chart values only.
+        Affects Net Worth only, not Investments Performance.
       </TooltipContent>
     </Tooltip>
   );
