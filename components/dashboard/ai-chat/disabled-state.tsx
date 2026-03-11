@@ -16,7 +16,7 @@ export function DisabledState() {
       <ConversationEmptyState
         icon={<Logomark width={64} className="text-muted-foreground/25" />}
         title="Foliofox AI Advisor"
-        description="Share your portfolio and financial profile to get tailored portfolio insights and advice."
+        description="Share your portfolio and financial profile to get tailored insights and advice."
         className="p-0 pb-3"
       />
       <p className="text-muted-foreground mb-2 text-sm">

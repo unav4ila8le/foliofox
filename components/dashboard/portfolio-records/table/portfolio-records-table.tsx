@@ -33,6 +33,7 @@ import { ImportPortfolioRecordsButton } from "@/components/dashboard/portfolio-r
 import { TableActionsDropdown } from "@/components/dashboard/portfolio-records/table/table-actions";
 import { BulkActionBar } from "@/components/dashboard/tables/base/bulk-action-bar";
 import { DeletePortfolioRecordDialog } from "@/components/dashboard/portfolio-records/table/row-actions/delete-dialog";
+import { useDashboardData } from "@/components/dashboard/providers/dashboard-data-provider";
 
 import { cn } from "@/lib/utils";
 import { formatLocalDateKey, parseLocalDateKey } from "@/lib/date/date-utils";
@@ -161,6 +162,7 @@ export function PortfolioRecordsTable({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { hasActivePositions } = useDashboardData();
 
   const tableKey = useMemo(() => {
     const idsKey = data.map(({ id }) => id).join("-");
@@ -491,13 +493,15 @@ export function PortfolioRecordsTable({
               {emptyStateDescription ||
                 "Records for this position will appear here"}
             </p>
-            <div className="flex items-center justify-center gap-2">
-              <NewPortfolioRecordButton
-                variant="outline"
-                preselectedPosition={position}
-              />
-              <ImportPortfolioRecordsButton variant="outline" />
-            </div>
+            {hasActivePositions && (
+              <div className="flex items-center justify-center gap-2">
+                <NewPortfolioRecordButton
+                  variant="outline"
+                  preselectedPosition={position}
+                />
+                <ImportPortfolioRecordsButton variant="outline" />
+              </div>
+            )}
           </div>
         ) : (
           <DataTable

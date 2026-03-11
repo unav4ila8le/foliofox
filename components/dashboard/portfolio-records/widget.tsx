@@ -9,7 +9,7 @@ import type { PortfolioRecordWithPosition } from "@/types/global.types";
 
 interface PortfolioRecordsWidgetProps {
   portfolioRecordsData: PortfolioRecordWithPosition[];
-  hasPositions: boolean;
+  hasActivePositions: boolean;
   pagination?: {
     page: number;
     pageSize: number;
@@ -23,7 +23,7 @@ interface PortfolioRecordsWidgetProps {
 
 export function PortfolioRecordsWidget({
   portfolioRecordsData,
-  hasPositions,
+  hasActivePositions,
   pagination,
 }: PortfolioRecordsWidgetProps) {
   // Handle empty state
@@ -38,7 +38,7 @@ export function PortfolioRecordsWidget({
           <p className="text-muted-foreground mt-1 text-sm">
             Add a new record to start tracking your portfolio
           </p>
-          {hasPositions && (
+          {hasActivePositions && (
             <div className="mt-3 flex items-center justify-center gap-2">
               <NewPortfolioRecordButton variant="outline" />
               <ImportPortfolioRecordsButton variant="outline" />

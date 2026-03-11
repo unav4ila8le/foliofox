@@ -15,7 +15,7 @@ import { NetWorthModeToggle } from "@/components/dashboard/net-worth-mode/net-wo
 
 import { getCurrentUser } from "@/server/auth/actions";
 import { fetchProfile } from "@/server/profile/actions";
-import { fetchPositions } from "@/server/positions/fetch";
+import { hasActivePositions } from "@/server/positions/has-active";
 import { calculateNetWorth } from "@/server/analysis/net-worth/net-worth";
 import { fetchNetWorthHistory } from "@/server/analysis/net-worth/net-worth-history";
 import { fetchNetWorthChange } from "@/server/analysis/net-worth/net-worth-change";
@@ -168,15 +168,15 @@ async function ProjectedIncomeWidgetWrapper() {
 // Portfolio Records
 async function PortfolioRecordsWidgetWrapper() {
   "use cache: private";
-  const [portfolioRecordsPage, positions] = await Promise.all([
+  const [portfolioRecordsPage, hasActivePositionsResult] = await Promise.all([
     fetchPortfolioRecords({ pageSize: 15 }),
-    fetchPositions({ positionType: "asset" }),
+    hasActivePositions(),
   ]);
 
   return (
     <PortfolioRecordsWidget
       portfolioRecordsData={portfolioRecordsPage.records}
-      hasPositions={positions.length > 0}
+      hasActivePositions={hasActivePositionsResult}
       // Pass pagination so the widget summary reflects total records.
       pagination={{
         page: portfolioRecordsPage.page,

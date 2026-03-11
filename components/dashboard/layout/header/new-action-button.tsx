@@ -9,11 +9,13 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { useDashboardData } from "@/components/dashboard/providers/dashboard-data-provider";
 
 import { useNewPortfolioRecordDialog } from "@/components/dashboard/new-portfolio-record";
 import { useNewAssetDialog } from "@/components/dashboard/new-asset";
 
 export function NewActionButton() {
+  const { hasActivePositions } = useDashboardData();
   const { setOpen: setOpenNewPortfolioRecord } = useNewPortfolioRecordDialog();
   const { setOpenSelectionDialog: setOpenNewAsset } = useNewAssetDialog();
 
@@ -26,7 +28,10 @@ export function NewActionButton() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-32">
-        <DropdownMenuItem onSelect={() => setOpenNewPortfolioRecord(true)}>
+        <DropdownMenuItem
+          disabled={!hasActivePositions}
+          onSelect={() => setOpenNewPortfolioRecord(true)}
+        >
           New Record
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={() => setOpenNewAsset(true)}>

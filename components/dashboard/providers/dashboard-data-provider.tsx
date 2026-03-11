@@ -10,6 +10,8 @@ type DashboardData = {
   email: string;
   financialProfile: FinancialProfile | null;
   netWorth: number;
+  /** Whether the user has at least one non-archived position. */
+  hasActivePositions: boolean;
   /** Positions with stale symbols (last_quote_at NULL or > 7 days old) */
   stalePositions: StalePosition[];
 };

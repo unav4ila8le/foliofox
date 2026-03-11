@@ -19,6 +19,7 @@ export async function archivePosition(positionId: string) {
       message: error.message,
     } as const;
 
+  revalidatePath("/dashboard", "layout");
   revalidatePath("/dashboard/assets", "layout");
   return { success: true } as const;
 }
@@ -46,6 +47,7 @@ export async function archivePositions(positionIds: string[]) {
       message: error.message,
     } as const;
 
+  revalidatePath("/dashboard", "layout");
   revalidatePath("/dashboard/assets", "layout");
   return { success: true, count: positionIds.length } as const;
 }

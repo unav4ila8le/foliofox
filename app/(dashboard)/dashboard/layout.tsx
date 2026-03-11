@@ -17,6 +17,7 @@ import { fetchProfile } from "@/server/profile/actions";
 import { fetchFinancialProfile } from "@/server/financial-profiles/actions";
 import { calculateNetWorth } from "@/server/analysis/net-worth/net-worth";
 import { fetchStalePositions } from "@/server/positions/stale";
+import { hasActivePositions } from "@/server/positions/has-active";
 import { TIME_ZONE_MODES } from "@/lib/date/time-zone";
 import { resolveTodayDateKey } from "@/lib/date/date-utils";
 import {
@@ -53,11 +54,13 @@ export default async function Layout({
 
   // 2) Keep the dashboard path fully data-driven; timezone auto-sync happens in
   // the background for auto-mode users without introducing a visible gate.
-  const [financialProfile, netWorth] = await Promise.all([
-    fetchFinancialProfile(),
-    calculateNetWorth(profile.display_currency, todayDateKey),
-  ]);
-  const stalePositions = await fetchStalePositions();
+  const [financialProfile, netWorth, stalePositions, hasPositions] =
+    await Promise.all([
+      fetchFinancialProfile(),
+      calculateNetWorth(profile.display_currency, todayDateKey),
+      fetchStalePositions(),
+      hasActivePositions(),
+    ]);
 
   return (
     <DashboardDataProvider
@@ -66,6 +69,7 @@ export default async function Layout({
         email,
         financialProfile,
         netWorth,
+        hasActivePositions: hasPositions,
         stalePositions,
       }}
     >
