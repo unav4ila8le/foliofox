@@ -227,7 +227,13 @@ export async function fetchNetWorthHistory({
     marketPricesByPositionDate = await fetchMarketDataRange(
       marketPositionsMinimal,
       marketDataDates,
-      { upsert: true, eligibleDates: eligibleDatesForHandlers },
+      {
+        upsert: true,
+        eligibleDates: eligibleDatesForHandlers,
+        // Range history opts into read repair only after cached fallback
+        // coverage is exhausted inside fetchQuotes().
+        liveFetchOnMiss: true,
+      },
     );
   }
 

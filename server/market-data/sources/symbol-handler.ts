@@ -5,6 +5,8 @@ import type {
   MarketDataHandler,
   SymbolRequest,
   MarketDataPosition,
+  MarketDataFetchOptions,
+  MarketDataRangeFetchOptions,
 } from "./types";
 
 export const symbolHandler: MarketDataHandler = {
@@ -13,7 +15,7 @@ export const symbolHandler: MarketDataHandler = {
   async fetchForPositions(
     positions: MarketDataPosition[],
     date: Date,
-    options?: { upsert?: boolean },
+    options?: MarketDataFetchOptions,
   ) {
     // Collect requests for symbol positions
     const requests: SymbolRequest[] = [];
@@ -38,7 +40,7 @@ export const symbolHandler: MarketDataHandler = {
   async fetchForPositionsRange(
     positions: MarketDataPosition[],
     dates: Date[],
-    options?: { upsert?: boolean; eligibleDates?: Map<string, Set<string>> },
+    options?: MarketDataRangeFetchOptions,
   ) {
     const requests: SymbolRequest[] = [];
     const dedup = new Set<string>();
@@ -65,9 +67,9 @@ export const symbolHandler: MarketDataHandler = {
     try {
       return await fetchQuotes(requests, {
         upsert: options?.upsert,
-        // Range reads must stay fast; avoid blocking response on live provider
-        // repair attempts. Single-date paths still perform read-repair.
-        liveFetchOnMiss: false,
+        // Range reads stay cache-first by default. Callers must opt in to
+        // provider repair after cached fallback coverage has been exhausted.
+        liveFetchOnMiss: options?.liveFetchOnMiss ?? false,
       });
     } catch {
       return new Map();

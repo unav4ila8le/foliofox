@@ -100,7 +100,9 @@ function clampEndDateKey(
  * Behavior:
  * - rows are produced only from the first snapshot date onward
  * - latest snapshot at/before each day drives quantity and basis state
- * - market prices override snapshot unit values when available
+ * - market prices (exact or carried-forward) override snapshot unit values
+ *   when available
+ * - carried market quotes are not used across snapshot boundaries
  * - optional per-position end caps trim output (e.g. archived positions)
  */
 export function synthesizeDailyValuationsByPosition({
@@ -147,6 +149,10 @@ export function synthesizeDailyValuationsByPosition({
     let snapshotIndex = 0;
     let lastExplicitCostBasis: number | null =
       snapshots[0].costBasisPerUnit ?? null;
+    let lastMarketQuote: {
+      dateKey: CivilDateKey;
+      unitValue: number;
+    } | null = null;
 
     for (const day of dateSpan) {
       const { date, dateKey } = day;
@@ -186,10 +192,22 @@ export function synthesizeDailyValuationsByPosition({
       }
 
       const marketKey = `${position.id}|${dateKey}`;
-      const marketUnitValue = marketPricesByPositionDate.get(marketKey);
+      const exactMarketUnitValue = marketPricesByPositionDate.get(marketKey);
+      if (exactMarketUnitValue !== undefined) {
+        lastMarketQuote = {
+          dateKey,
+          unitValue: exactMarketUnitValue,
+        };
+      }
+
+      // A carried market quote is only valid inside the active snapshot window.
+      const carriedMarketUnitValue =
+        lastMarketQuote && lastMarketQuote.dateKey >= snapshot.date
+          ? lastMarketQuote.unitValue
+          : undefined;
       const snapshotUnitValue = Number(snapshot.unitValue ?? 0);
       const unitValue =
-        marketUnitValue !== undefined ? marketUnitValue : snapshotUnitValue;
+        exactMarketUnitValue ?? carriedMarketUnitValue ?? snapshotUnitValue;
 
       rows.push({
         date,
@@ -199,7 +217,11 @@ export function synthesizeDailyValuationsByPosition({
         snapshotUnitValue,
         totalValue: quantity * unitValue,
         costBasisPerUnit: lastExplicitCostBasis,
-        priceSource: marketUnitValue !== undefined ? "market" : "snapshot",
+        priceSource:
+          exactMarketUnitValue !== undefined ||
+          carriedMarketUnitValue !== undefined
+            ? "market"
+            : "snapshot",
       });
     }
 

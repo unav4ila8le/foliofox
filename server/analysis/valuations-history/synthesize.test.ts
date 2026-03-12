@@ -34,7 +34,7 @@ describe("synthesizeDailyValuationsByPosition", () => {
     expect(rows.every((row) => row.priceSource === "snapshot")).toBe(true);
   });
 
-  it("overrides snapshot value with market value when available and falls back otherwise", () => {
+  it("carries forward the latest market quote before falling back to snapshot value", () => {
     const marketPrices = new Map<string, number>([
       ["pos-1|2026-01-03", 120],
       ["pos-1|2026-01-05", 130],
@@ -60,11 +60,53 @@ describe("synthesizeDailyValuationsByPosition", () => {
     });
 
     const rows = result.get("pos-1") ?? [];
-    expect(rows.map((row) => row.unitValue)).toEqual([120, 100, 130]);
+    expect(rows.map((row) => row.unitValue)).toEqual([120, 120, 130]);
     expect(rows.map((row) => row.priceSource)).toEqual([
       "market",
-      "snapshot",
       "market",
+      "market",
+    ]);
+  });
+
+  it("does not carry a market quote across a newer snapshot boundary", () => {
+    const marketPrices = new Map<string, number>([
+      ["pos-1|2026-01-04", 120],
+      ["pos-1|2026-01-07", 130],
+    ]);
+
+    const result = synthesizeDailyValuationsByPosition({
+      positions: [
+        {
+          id: "pos-1",
+          snapshots: [
+            {
+              date: "2026-01-03",
+              quantity: 1,
+              unitValue: 100,
+            },
+            {
+              date: "2026-01-05",
+              quantity: 1,
+              unitValue: 110,
+            },
+          ],
+        },
+      ],
+      startDateKey: toCivilDateKeyOrThrow("2026-01-03"),
+      endDateKey: toCivilDateKeyOrThrow("2026-01-08"),
+      marketPricesByPositionDate: marketPrices,
+    });
+
+    const rows = result.get("pos-1") ?? [];
+    expect(
+      rows.map((row) => [row.dateKey, row.unitValue, row.priceSource]),
+    ).toEqual([
+      ["2026-01-03", 100, "snapshot"],
+      ["2026-01-04", 120, "market"],
+      ["2026-01-05", 110, "snapshot"],
+      ["2026-01-06", 110, "snapshot"],
+      ["2026-01-07", 130, "market"],
+      ["2026-01-08", 130, "market"],
     ]);
   });
 
