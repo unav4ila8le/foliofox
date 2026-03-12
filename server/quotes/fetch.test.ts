@@ -256,7 +256,7 @@ describe("fetchQuotes", () => {
     expect(yahooChartMock).not.toHaveBeenCalled();
   });
 
-  it("uses latest prior cache row within stale window after live miss", async () => {
+  it("uses latest prior cache row within stale window before live fetch", async () => {
     const { client } = createSupabaseStub([
       {
         symbol_id: "sym-1",
@@ -281,7 +281,7 @@ describe("fetchQuotes", () => {
     );
 
     expect(result.get("sym-1|2026-02-15")).toBe(148);
-    expect(yahooChartMock).toHaveBeenCalledTimes(1);
+    expect(yahooChartMock).not.toHaveBeenCalled();
   });
 
   it("triggers live fetch when cache is older than stale guard", async () => {

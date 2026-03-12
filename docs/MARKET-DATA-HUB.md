@@ -122,3 +122,4 @@ export async function fetchMarketDataRange(
 
 - Batch requests in handlers to avoid N+1.
 - Symbol handlers receive UUIDs (`symbol_id`) and must resolve them to provider aliases (e.g., Yahoo tickers) via the resolver layer before calling external APIs. The resolver handles UUID detection and alias lookup automatically.
+- For quote cache resolution order, range read-repair behavior, and chart fallback semantics, see [QUOTE-FETCH-BEHAVIOR.md](./QUOTE-FETCH-BEHAVIOR.md).

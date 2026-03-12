@@ -5,6 +5,8 @@ import type {
   MarketDataHandler,
   DomainRequest,
   MarketDataPosition,
+  MarketDataFetchOptions,
+  MarketDataRangeFetchOptions,
 } from "./types";
 
 export const domainHandler: MarketDataHandler = {
@@ -13,7 +15,7 @@ export const domainHandler: MarketDataHandler = {
   async fetchForPositions(
     positions: MarketDataPosition[],
     date: Date,
-    options?: { upsert?: boolean },
+    options?: MarketDataFetchOptions,
   ) {
     // Collect requests for domain positions
     const requests: DomainRequest[] = [];
@@ -36,7 +38,7 @@ export const domainHandler: MarketDataHandler = {
   async fetchForPositionsRange(
     positions: MarketDataPosition[],
     dates: Date[],
-    options?: { upsert?: boolean; eligibleDates?: Map<string, Set<string>> },
+    options?: MarketDataRangeFetchOptions,
   ) {
     const requests: DomainRequest[] = [];
     const dedup = new Set<string>();

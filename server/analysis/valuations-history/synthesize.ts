@@ -147,6 +147,10 @@ export function synthesizeDailyValuationsByPosition({
     let snapshotIndex = 0;
     let lastExplicitCostBasis: number | null =
       snapshots[0].costBasisPerUnit ?? null;
+    let lastMarketQuote: {
+      dateKey: CivilDateKey;
+      unitValue: number;
+    } | null = null;
 
     for (const day of dateSpan) {
       const { date, dateKey } = day;
@@ -186,10 +190,22 @@ export function synthesizeDailyValuationsByPosition({
       }
 
       const marketKey = `${position.id}|${dateKey}`;
-      const marketUnitValue = marketPricesByPositionDate.get(marketKey);
+      const exactMarketUnitValue = marketPricesByPositionDate.get(marketKey);
+      if (exactMarketUnitValue !== undefined) {
+        lastMarketQuote = {
+          dateKey,
+          unitValue: exactMarketUnitValue,
+        };
+      }
+
+      // A carried market quote is only valid after the active snapshot date.
+      const carriedMarketUnitValue =
+        lastMarketQuote && lastMarketQuote.dateKey >= snapshot.date
+          ? lastMarketQuote.unitValue
+          : undefined;
       const snapshotUnitValue = Number(snapshot.unitValue ?? 0);
       const unitValue =
-        marketUnitValue !== undefined ? marketUnitValue : snapshotUnitValue;
+        exactMarketUnitValue ?? carriedMarketUnitValue ?? snapshotUnitValue;
 
       rows.push({
         date,
@@ -199,7 +215,11 @@ export function synthesizeDailyValuationsByPosition({
         snapshotUnitValue,
         totalValue: quantity * unitValue,
         costBasisPerUnit: lastExplicitCostBasis,
-        priceSource: marketUnitValue !== undefined ? "market" : "snapshot",
+        priceSource:
+          exactMarketUnitValue !== undefined ||
+          carriedMarketUnitValue !== undefined
+            ? "market"
+            : "snapshot",
       });
     }
 

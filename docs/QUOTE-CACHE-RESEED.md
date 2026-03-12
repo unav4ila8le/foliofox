@@ -4,6 +4,8 @@ This runbook covers how to safely reset and repopulate `public.quotes` when cach
 
 It is intentionally implementation-light so it remains useful as the codebase evolves.
 
+For the day-to-day runtime behavior of quote reads and chart fallbacks, see [QUOTE-FETCH-BEHAVIOR.md](./QUOTE-FETCH-BEHAVIOR.md).
+
 ## When to use this
 
 - Quote cache has known drift versus provider data.
