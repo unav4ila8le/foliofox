@@ -10,6 +10,21 @@ import type { TransformedPosition } from "@/types/global.types";
 export type MarketDataPosition = Pick<TransformedPosition, "id" | "currency"> &
   Partial<Pick<TransformedPosition, "symbol_id" | "domain_id">>;
 
+export interface MarketDataFetchOptions {
+  upsert?: boolean;
+}
+
+export interface MarketDataRangeFetchOptions extends MarketDataFetchOptions {
+  eligibleDates?: Map<string, Set<string>>;
+  /**
+   * Opt-in read repair for range requests.
+   *
+   * Range callers stay cache-first by default so broad history reads do not
+   * hit the provider on every weekend/holiday miss.
+   */
+  liveFetchOnMiss?: boolean;
+}
+
 export interface MarketDataHandler {
   /**
    * Position source that this handler supports (e.g., 'symbol', 'domain').
@@ -23,7 +38,7 @@ export interface MarketDataHandler {
   fetchForPositions(
     positions: MarketDataPosition[],
     date: Date,
-    options?: { upsert?: boolean },
+    options?: MarketDataFetchOptions,
   ): Promise<Map<string, number>>;
 
   /**
@@ -33,7 +48,7 @@ export interface MarketDataHandler {
   fetchForPositionsRange?(
     positions: MarketDataPosition[],
     dates: Date[],
-    options?: { upsert?: boolean; eligibleDates?: Map<string, Set<string>> },
+    options?: MarketDataRangeFetchOptions,
   ): Promise<Map<string, number>>;
 
   /**

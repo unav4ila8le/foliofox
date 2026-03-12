@@ -184,6 +184,70 @@ async function fetchCachedQuotesBySymbolsAndDates(
   return rows;
 }
 
+async function resolvePriorCachedFallbacks(params: {
+  supabase: Awaited<ReturnType<typeof createServiceClient>>;
+  requests: ResolvedQuoteRequest[];
+  staleGuardDays: number;
+  results: Map<string, number>;
+  resolutionTypeByRequestKey: Map<string, "exact" | "fallback">;
+}) {
+  const {
+    supabase,
+    requests,
+    staleGuardDays,
+    results,
+    resolutionTypeByRequestKey,
+  } = params;
+
+  if (!requests.length || staleGuardDays <= 0) return;
+
+  const unresolvedSymbolIds = [
+    ...new Set(requests.map((request) => request.canonicalId)),
+  ];
+  const staleWindowDateKeys = new Set<string>();
+
+  requests.forEach((request) => {
+    const effectiveDate = parseUTCDateKey(request.effectiveDateKey);
+    for (let offset = 1; offset <= staleGuardDays; offset += 1) {
+      staleWindowDateKeys.add(formatUTCDateKey(subDays(effectiveDate, offset)));
+    }
+  });
+
+  const cachedWindowRows = await fetchCachedQuotesBySymbolsAndDates(
+    supabase,
+    unresolvedSymbolIds,
+    Array.from(staleWindowDateKeys),
+  );
+
+  const cachedRowsBySymbol = new Map<string, QuotesCacheRow[]>();
+  cachedWindowRows.forEach((row) => {
+    const existing = cachedRowsBySymbol.get(row.symbol_id) ?? [];
+    existing.push(row);
+    cachedRowsBySymbol.set(row.symbol_id, existing);
+  });
+
+  cachedRowsBySymbol.forEach((rows) => {
+    rows.sort((a, b) => b.date.localeCompare(a.date));
+  });
+
+  requests.forEach((request) => {
+    const rows = cachedRowsBySymbol.get(request.canonicalId);
+    if (!rows?.length) return;
+
+    const fallback = rows.find(
+      (row) =>
+        row.date <= request.effectiveDateKey &&
+        isWithinStaleGuard(row.date, request.effectiveDateKey, staleGuardDays),
+    );
+
+    if (!fallback) return;
+
+    const resultKey = `${request.canonicalId}|${request.requestedDateKey}`;
+    results.set(resultKey, fallback.close_price);
+    resolutionTypeByRequestKey.set(resultKey, "fallback");
+  });
+}
+
 /**
  * Fetch multiple quotes for different symbols and dates in bulk.
  *
@@ -291,7 +355,17 @@ export async function fetchQuotes(
     unresolvedRequests.push(request);
   }
 
-  // 4. Live fetch exact-date cache misses and persist provider market-date rows.
+  // 4. Resolve weekend/holiday gaps from prior cached market days before
+  // attempting any live provider repair.
+  await resolvePriorCachedFallbacks({
+    supabase,
+    requests: unresolvedRequests,
+    staleGuardDays: resolvedOptions.staleGuardDays,
+    results,
+    resolutionTypeByRequestKey,
+  });
+
+  // 5. Live fetch exact-date cache misses and persist provider market-date rows.
   const liveMissCooldownMs =
     resolvedOptions.liveMissCooldownMinutes * MINUTE_IN_MS;
   pruneLiveMissCooldown(nowMs, liveMissCooldownMs);
@@ -511,73 +585,6 @@ export async function fetchQuotes(
         }
       }
     }
-  }
-
-  // 5. Prior-date cache lookup with stale guard for unresolved post-live misses.
-  const requestsNeedingFallback = unresolvedRequests.filter(
-    (request) =>
-      !results.has(`${request.canonicalId}|${request.requestedDateKey}`),
-  );
-
-  if (
-    requestsNeedingFallback.length > 0 &&
-    resolvedOptions.staleGuardDays > 0
-  ) {
-    const unresolvedSymbolIds = [
-      ...new Set(requestsNeedingFallback.map((request) => request.canonicalId)),
-    ];
-    const staleWindowDateKeys = new Set<string>();
-
-    requestsNeedingFallback.forEach((request) => {
-      const effectiveDate = parseUTCDateKey(request.effectiveDateKey);
-      for (
-        let offset = 1;
-        offset <= resolvedOptions.staleGuardDays;
-        offset += 1
-      ) {
-        staleWindowDateKeys.add(
-          formatUTCDateKey(subDays(effectiveDate, offset)),
-        );
-      }
-    });
-
-    const cachedWindowRows = await fetchCachedQuotesBySymbolsAndDates(
-      supabase,
-      unresolvedSymbolIds,
-      Array.from(staleWindowDateKeys),
-    );
-
-    const cachedRowsBySymbol = new Map<string, QuotesCacheRow[]>();
-    cachedWindowRows.forEach((row) => {
-      const existing = cachedRowsBySymbol.get(row.symbol_id) ?? [];
-      existing.push(row);
-      cachedRowsBySymbol.set(row.symbol_id, existing);
-    });
-
-    cachedRowsBySymbol.forEach((rows) => {
-      rows.sort((a, b) => b.date.localeCompare(a.date));
-    });
-
-    requestsNeedingFallback.forEach((request) => {
-      const rows = cachedRowsBySymbol.get(request.canonicalId);
-      if (!rows?.length) return;
-
-      const fallback = rows.find(
-        (row) =>
-          row.date <= request.effectiveDateKey &&
-          isWithinStaleGuard(
-            row.date,
-            request.effectiveDateKey,
-            resolvedOptions.staleGuardDays,
-          ),
-      );
-
-      if (fallback) {
-        const resultKey = `${request.canonicalId}|${request.requestedDateKey}`;
-        results.set(resultKey, fallback.close_price);
-        resolutionTypeByRequestKey.set(resultKey, "fallback");
-      }
-    });
   }
 
   if (options.resolutionStats) {

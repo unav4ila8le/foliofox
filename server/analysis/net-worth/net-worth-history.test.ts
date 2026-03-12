@@ -185,6 +185,25 @@ describe("fetchNetWorthHistory", () => {
       { date: "2026-01-04", value: 220 },
       { date: "2026-01-05", value: 220 },
     ]);
+    expect(fetchMarketDataRangeMock).toHaveBeenCalledWith(
+      [
+        {
+          id: "pos-1",
+          currency: "USD",
+          symbol_id: "sym-1",
+          domain_id: null,
+        },
+      ],
+      [
+        new Date("2026-01-03T00:00:00.000Z"),
+        new Date("2026-01-04T00:00:00.000Z"),
+        new Date("2026-01-05T00:00:00.000Z"),
+      ],
+      expect.objectContaining({
+        upsert: true,
+        liveFetchOnMiss: true,
+      }),
+    );
   });
 
   it("preserves after-tax basis fallback semantics with market overrides", async () => {
@@ -239,7 +258,7 @@ describe("fetchNetWorthHistory", () => {
     expect(toDateKeyList(result)).toEqual([
       { date: "2026-01-03", value: 100 },
       { date: "2026-01-04", value: 140 },
-      { date: "2026-01-05", value: 100 },
+      { date: "2026-01-05", value: 140 },
     ]);
   });
 });

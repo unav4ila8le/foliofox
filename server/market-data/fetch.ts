@@ -6,7 +6,10 @@ import {
 } from "./sources/resolver";
 import { formatUTCDateKey } from "@/lib/date/date-utils";
 
-import type { MarketDataPosition } from "./sources/types";
+import type {
+  MarketDataPosition,
+  MarketDataRangeFetchOptions,
+} from "./sources/types";
 import type { TransformedPosition } from "@/types/global.types";
 
 export interface MarketDataFetchResult {
@@ -82,7 +85,7 @@ export async function fetchMarketData(
 export async function fetchMarketDataRange(
   positions: MarketDataPosition[],
   dates: Date[],
-  options: { upsert?: boolean; eligibleDates?: Map<string, Set<string>> } = {},
+  options: MarketDataRangeFetchOptions = {},
 ): Promise<Map<string, number>> {
   if (!positions.length || !dates.length) return new Map();
 
@@ -138,6 +141,7 @@ export async function fetchMarketDataRange(
         {
           upsert,
           eligibleDates,
+          liveFetchOnMiss: options.liveFetchOnMiss,
         },
       );
       handlerResults.set(handler.source, result);
