@@ -100,7 +100,9 @@ function clampEndDateKey(
  * Behavior:
  * - rows are produced only from the first snapshot date onward
  * - latest snapshot at/before each day drives quantity and basis state
- * - market prices override snapshot unit values when available
+ * - market prices (exact or carried-forward) override snapshot unit values
+ *   when available
+ * - carried market quotes are not used across snapshot boundaries
  * - optional per-position end caps trim output (e.g. archived positions)
  */
 export function synthesizeDailyValuationsByPosition({
@@ -198,7 +200,7 @@ export function synthesizeDailyValuationsByPosition({
         };
       }
 
-      // A carried market quote is only valid after the active snapshot date.
+      // A carried market quote is only valid inside the active snapshot window.
       const carriedMarketUnitValue =
         lastMarketQuote && lastMarketQuote.dateKey >= snapshot.date
           ? lastMarketQuote.unitValue

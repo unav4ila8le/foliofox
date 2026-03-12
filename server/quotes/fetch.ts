@@ -359,10 +359,7 @@ export async function fetchQuotes(
   // attempting any live provider repair.
   await resolvePriorCachedFallbacks({
     supabase,
-    requests: unresolvedRequests.filter(
-      (request) =>
-        !results.has(`${request.canonicalId}|${request.requestedDateKey}`),
-    ),
+    requests: unresolvedRequests,
     staleGuardDays: resolvedOptions.staleGuardDays,
     results,
     resolutionTypeByRequestKey,

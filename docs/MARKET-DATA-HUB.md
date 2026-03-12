@@ -25,19 +25,28 @@ export type MarketDataPosition = {
   // future: wallet_address?: string | null; property_id?: string | null; ...
 };
 
+export interface MarketDataFetchOptions {
+  upsert?: boolean;
+}
+
+export interface MarketDataRangeFetchOptions extends MarketDataFetchOptions {
+  eligibleDates?: Map<string, Set<string>>;
+  liveFetchOnMiss?: boolean;
+}
+
 export interface MarketDataHandler {
   source: string; // 'symbol' | 'domain' | 'wallet' | 'property' | ...
   fetchForPositions(
     positions: MarketDataPosition[],
     date: Date,
-    options?: { upsert?: boolean },
+    options?: MarketDataFetchOptions,
   ): Promise<Map<string, number>>;
 
   /** Optional range-aware fetch for bulk history requests */
   fetchForPositionsRange?(
     positions: MarketDataPosition[],
     dates: Date[],
-    options?: { upsert?: boolean; eligibleDates?: Map<string, Set<string>> },
+    options?: MarketDataRangeFetchOptions,
   ): Promise<Map<string, number>>;
 
   getKey(position: MarketDataPosition, date: Date): string | null;
@@ -68,7 +77,7 @@ export async function fetchMarketData(
 export async function fetchMarketDataRange(
   positions: MarketDataPosition[],
   dates: Date[],
-  options: { upsert?: boolean; eligibleDates?: Map<string, Set<string>> } = {},
+  options: MarketDataRangeFetchOptions = {},
 ): Promise<Map<string, number>> {
   /* spans many dates; handlers can implement fetchForPositionsRange */
 }
@@ -81,6 +90,7 @@ export async function fetchMarketDataRange(
 - positions/create: write IDs directly to `positions` (symbol_id should be a UUID).
 - `resolveMarketDataKey` / `resolveMarketDataForPositions`: resolver helpers that map positions to handlers/keys so callers avoid inline branching.
 - Bulk history (charts, AI tools, etc.) should call `fetchMarketDataRange` with an optional `eligibleDates` map so handlers can skip days where a position wasn't active.
+- Range callers remain cache-first by default; opt into `liveFetchOnMiss` only for flows that need live read-repair on cold history gaps.
 
 ## Implementation Steps
 
