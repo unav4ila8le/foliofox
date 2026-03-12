@@ -130,6 +130,7 @@ function createSupabaseStub(
 
 describe("fetchPortfolioPerformanceRange", () => {
   beforeEach(() => {
+    vi.resetModules();
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-01-03T12:00:00.000Z"));
 
@@ -192,6 +193,16 @@ describe("fetchPortfolioPerformanceRange", () => {
           },
         ],
         position_snapshots: [
+          {
+            id: "snap-1base",
+            position_id: "pos-1",
+            user_id: "user-1",
+            date: "2025-12-31",
+            quantity: 1,
+            unit_value: 100,
+            created_at: "2025-12-31T09:00:00.000Z",
+            cost_basis_per_unit: 100,
+          },
           {
             id: "snap-1a",
             position_id: "pos-1",
@@ -296,13 +307,88 @@ describe("fetchPortfolioPerformanceRange", () => {
       throw new Error("expected available performance range");
     }
 
+    expect(result.includesEstimatedFlows).toBe(false);
     expect(result.history).toHaveLength(3);
     expect(result.history[0].cumulativeReturnPct).toBe(0);
     expect(result.history[1].cumulativeReturnPct).toBeCloseTo(10, 10);
     expect(result.history[2].cumulativeReturnPct).toBeCloseTo(20, 10);
   });
 
-  it("returns an unavailable state when the selected range contains update records", async () => {
+  it("infers synthetic flows for opening-balance update records", async () => {
+    getCurrentUserMock.mockResolvedValue({
+      user: { id: "user-1" },
+      supabase: createSupabaseStub({
+        positions: [
+          {
+            id: "pos-1",
+            user_id: "user-1",
+            type: "asset",
+            currency: "USD",
+            symbol_id: "sym-1",
+          },
+        ],
+        position_snapshots: [
+          {
+            id: "snap-1a",
+            position_id: "pos-1",
+            user_id: "user-1",
+            date: "2026-01-02",
+            quantity: 2,
+            unit_value: 100,
+            created_at: "2026-01-02T09:00:00.000Z",
+            cost_basis_per_unit: 100,
+          },
+          {
+            id: "snap-1b",
+            position_id: "pos-1",
+            user_id: "user-1",
+            date: "2026-01-03",
+            quantity: 2,
+            unit_value: 100,
+            created_at: "2026-01-03T09:00:00.000Z",
+            cost_basis_per_unit: 100,
+          },
+        ],
+        portfolio_records: [
+          {
+            position_id: "pos-1",
+            user_id: "user-1",
+            date: "2026-01-02",
+            quantity: 2,
+            unit_value: 100,
+            type: "update",
+          },
+        ],
+      }),
+    });
+
+    fetchMarketDataRangeMock.mockResolvedValue(
+      new Map([
+        ["pos-1|2026-01-02", 100],
+        ["pos-1|2026-01-03", 110],
+      ]),
+    );
+
+    const { fetchPortfolioPerformanceRange } = await import("./fetch-range");
+    const result = await fetchPortfolioPerformanceRange({
+      targetCurrency: "USD",
+      daysBack: 3,
+      methodology: "time_weighted_return",
+      scope: "symbol_assets",
+    });
+
+    expect(result.isAvailable).toBe(true);
+    if (!result.isAvailable) {
+      throw new Error("expected available performance range");
+    }
+
+    expect(result.includesEstimatedFlows).toBe(true);
+    expect(result.history).toHaveLength(2);
+    expect(result.history[0].cumulativeReturnPct).toBe(0);
+    expect(result.history[1].cumulativeReturnPct).toBeCloseTo(10, 10);
+  });
+
+  it("keeps quantity-stable update records out of the estimated-flow flag", async () => {
     getCurrentUserMock.mockResolvedValue({
       user: { id: "user-1" },
       supabase: createSupabaseStub({
@@ -334,7 +420,17 @@ describe("fetchPortfolioPerformanceRange", () => {
             quantity: 1,
             unit_value: 100,
             created_at: "2026-01-02T09:00:00.000Z",
-            cost_basis_per_unit: 100,
+            cost_basis_per_unit: 80,
+          },
+          {
+            id: "snap-1c",
+            position_id: "pos-1",
+            user_id: "user-1",
+            date: "2026-01-03",
+            quantity: 1,
+            unit_value: 100,
+            created_at: "2026-01-03T09:00:00.000Z",
+            cost_basis_per_unit: 80,
           },
         ],
         portfolio_records: [
@@ -350,6 +446,14 @@ describe("fetchPortfolioPerformanceRange", () => {
       }),
     });
 
+    fetchMarketDataRangeMock.mockResolvedValue(
+      new Map([
+        ["pos-1|2026-01-01", 100],
+        ["pos-1|2026-01-02", 110],
+        ["pos-1|2026-01-03", 120],
+      ]),
+    );
+
     const { fetchPortfolioPerformanceRange } = await import("./fetch-range");
     const result = await fetchPortfolioPerformanceRange({
       targetCurrency: "USD",
@@ -358,9 +462,15 @@ describe("fetchPortfolioPerformanceRange", () => {
       scope: "symbol_assets",
     });
 
-    expect(result).toMatchObject({
-      isAvailable: false,
-      unavailableReason: "unsupported_update_records",
-    });
+    expect(result.isAvailable).toBe(true);
+    if (!result.isAvailable) {
+      throw new Error("expected available performance range");
+    }
+
+    expect(result.includesEstimatedFlows).toBe(false);
+    expect(result.history).toHaveLength(3);
+    expect(result.history[0].cumulativeReturnPct).toBe(0);
+    expect(result.history[1].cumulativeReturnPct).toBeCloseTo(10, 10);
+    expect(result.history[2].cumulativeReturnPct).toBeCloseTo(20, 10);
   });
 });

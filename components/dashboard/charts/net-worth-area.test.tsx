@@ -100,6 +100,7 @@ describe("NetWorthAreaChart", () => {
         endDateKey: toCivilDateKeyOrThrow("2026-01-02"),
         cumulativeReturnPct: 12,
       },
+      includesEstimatedFlows: false,
       unavailableReason: null,
       message: null,
     });

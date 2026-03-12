@@ -28,7 +28,6 @@ export function parsePerformanceScope(
 export const PERFORMANCE_UNAVAILABLE_REASONS = [
   "no_eligible_positions",
   "insufficient_history",
-  "unsupported_update_records",
 ] as const;
 
 export type PerformanceUnavailableReason =
@@ -58,6 +57,7 @@ export interface AvailablePerformanceRangeData {
   scope: PerformanceScope;
   history: PerformanceHistoryPoint[];
   summary: PerformanceSummaryData;
+  includesEstimatedFlows: boolean;
   unavailableReason: null;
   message: null;
 }
