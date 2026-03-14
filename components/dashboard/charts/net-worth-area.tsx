@@ -520,7 +520,6 @@ export function NetWorthAreaChart({
               <Tabs
                 value={selectedChartMode}
                 onValueChange={handleChartModeChange}
-                defaultValue="net_worth"
                 className="hidden sm:block"
               >
                 <TabsList>

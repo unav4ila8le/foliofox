@@ -22,7 +22,8 @@ export type PerformanceScope = (typeof PERFORMANCE_SCOPES)[number];
 export function parsePerformanceScope(
   value: string | null | undefined,
 ): PerformanceScope {
-  return value === "symbol_assets" ? "symbol_assets" : "symbol_assets";
+  void value;
+  return "symbol_assets";
 }
 
 export const PERFORMANCE_UNAVAILABLE_REASONS = [
