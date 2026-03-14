@@ -473,4 +473,364 @@ describe("fetchPortfolioPerformanceRange", () => {
     expect(result.history[1].cumulativeReturnPct).toBeCloseTo(10, 10);
     expect(result.history[2].cumulativeReturnPct).toBeCloseTo(20, 10);
   });
+
+  it("infers positive synthetic flows for quantity-increase update records", async () => {
+    getCurrentUserMock.mockResolvedValue({
+      user: { id: "user-1" },
+      supabase: createSupabaseStub({
+        positions: [
+          {
+            id: "pos-1",
+            user_id: "user-1",
+            type: "asset",
+            currency: "USD",
+            symbol_id: "sym-1",
+          },
+        ],
+        position_snapshots: [
+          {
+            id: "snap-1a",
+            position_id: "pos-1",
+            user_id: "user-1",
+            date: "2026-01-01",
+            quantity: 1,
+            unit_value: 100,
+            created_at: "2026-01-01T09:00:00.000Z",
+            cost_basis_per_unit: 100,
+          },
+          {
+            id: "snap-1b",
+            position_id: "pos-1",
+            user_id: "user-1",
+            date: "2026-01-02",
+            quantity: 2,
+            unit_value: 100,
+            created_at: "2026-01-02T09:00:00.000Z",
+            cost_basis_per_unit: 100,
+          },
+          {
+            id: "snap-1c",
+            position_id: "pos-1",
+            user_id: "user-1",
+            date: "2026-01-03",
+            quantity: 2,
+            unit_value: 100,
+            created_at: "2026-01-03T09:00:00.000Z",
+            cost_basis_per_unit: 100,
+          },
+        ],
+        portfolio_records: [
+          {
+            position_id: "pos-1",
+            user_id: "user-1",
+            date: "2026-01-02",
+            quantity: 2,
+            unit_value: 100,
+            type: "update",
+          },
+        ],
+      }),
+    });
+
+    fetchMarketDataRangeMock.mockResolvedValue(
+      new Map([
+        ["pos-1|2026-01-01", 100],
+        ["pos-1|2026-01-02", 100],
+        ["pos-1|2026-01-03", 110],
+      ]),
+    );
+
+    const { fetchPortfolioPerformanceRange } = await import("./fetch-range");
+    const result = await fetchPortfolioPerformanceRange({
+      targetCurrency: "USD",
+      daysBack: 3,
+      methodology: "time_weighted_return",
+      scope: "symbol_assets",
+    });
+
+    expect(result.isAvailable).toBe(true);
+    if (!result.isAvailable) {
+      throw new Error("expected available performance range");
+    }
+
+    expect(result.includesEstimatedFlows).toBe(true);
+    expect(result.history).toHaveLength(3);
+    expect(result.history[0].cumulativeReturnPct).toBe(0);
+    expect(result.history[1].cumulativeReturnPct).toBe(0);
+    expect(result.history[2].cumulativeReturnPct).toBeCloseTo(10, 10);
+  });
+
+  it("infers negative synthetic flows for quantity-decrease update records", async () => {
+    getCurrentUserMock.mockResolvedValue({
+      user: { id: "user-1" },
+      supabase: createSupabaseStub({
+        positions: [
+          {
+            id: "pos-1",
+            user_id: "user-1",
+            type: "asset",
+            currency: "USD",
+            symbol_id: "sym-1",
+          },
+        ],
+        position_snapshots: [
+          {
+            id: "snap-1a",
+            position_id: "pos-1",
+            user_id: "user-1",
+            date: "2026-01-01",
+            quantity: 2,
+            unit_value: 100,
+            created_at: "2026-01-01T09:00:00.000Z",
+            cost_basis_per_unit: 100,
+          },
+          {
+            id: "snap-1b",
+            position_id: "pos-1",
+            user_id: "user-1",
+            date: "2026-01-02",
+            quantity: 1,
+            unit_value: 100,
+            created_at: "2026-01-02T09:00:00.000Z",
+            cost_basis_per_unit: 100,
+          },
+          {
+            id: "snap-1c",
+            position_id: "pos-1",
+            user_id: "user-1",
+            date: "2026-01-03",
+            quantity: 1,
+            unit_value: 100,
+            created_at: "2026-01-03T09:00:00.000Z",
+            cost_basis_per_unit: 100,
+          },
+        ],
+        portfolio_records: [
+          {
+            position_id: "pos-1",
+            user_id: "user-1",
+            date: "2026-01-02",
+            quantity: 1,
+            unit_value: 100,
+            type: "update",
+          },
+        ],
+      }),
+    });
+
+    fetchMarketDataRangeMock.mockResolvedValue(
+      new Map([
+        ["pos-1|2026-01-01", 100],
+        ["pos-1|2026-01-02", 100],
+        ["pos-1|2026-01-03", 110],
+      ]),
+    );
+
+    const { fetchPortfolioPerformanceRange } = await import("./fetch-range");
+    const result = await fetchPortfolioPerformanceRange({
+      targetCurrency: "USD",
+      daysBack: 3,
+      methodology: "time_weighted_return",
+      scope: "symbol_assets",
+    });
+
+    expect(result.isAvailable).toBe(true);
+    if (!result.isAvailable) {
+      throw new Error("expected available performance range");
+    }
+
+    expect(result.includesEstimatedFlows).toBe(true);
+    expect(result.history).toHaveLength(3);
+    expect(result.history[0].cumulativeReturnPct).toBe(0);
+    expect(result.history[1].cumulativeReturnPct).toBe(0);
+    expect(result.history[2].cumulativeReturnPct).toBeCloseTo(10, 10);
+  });
+
+  it("replays same-day buy and update records in record order", async () => {
+    getCurrentUserMock.mockResolvedValue({
+      user: { id: "user-1" },
+      supabase: createSupabaseStub({
+        positions: [
+          {
+            id: "pos-1",
+            user_id: "user-1",
+            type: "asset",
+            currency: "USD",
+            symbol_id: "sym-1",
+          },
+        ],
+        position_snapshots: [
+          {
+            id: "snap-1a",
+            position_id: "pos-1",
+            user_id: "user-1",
+            date: "2026-01-01",
+            quantity: 1,
+            unit_value: 100,
+            created_at: "2026-01-01T09:00:00.000Z",
+            cost_basis_per_unit: 100,
+          },
+          {
+            id: "snap-1b",
+            position_id: "pos-1",
+            user_id: "user-1",
+            date: "2026-01-02",
+            quantity: 3,
+            unit_value: 100,
+            created_at: "2026-01-02T10:00:00.000Z",
+            cost_basis_per_unit: 100,
+          },
+          {
+            id: "snap-1c",
+            position_id: "pos-1",
+            user_id: "user-1",
+            date: "2026-01-03",
+            quantity: 3,
+            unit_value: 100,
+            created_at: "2026-01-03T09:00:00.000Z",
+            cost_basis_per_unit: 100,
+          },
+        ],
+        portfolio_records: [
+          {
+            position_id: "pos-1",
+            user_id: "user-1",
+            date: "2026-01-02",
+            quantity: 1,
+            unit_value: 100,
+            type: "buy",
+          },
+          {
+            position_id: "pos-1",
+            user_id: "user-1",
+            date: "2026-01-02",
+            quantity: 3,
+            unit_value: 100,
+            type: "update",
+          },
+        ],
+      }),
+    });
+
+    fetchMarketDataRangeMock.mockResolvedValue(
+      new Map([
+        ["pos-1|2026-01-01", 100],
+        ["pos-1|2026-01-02", 100],
+        ["pos-1|2026-01-03", 110],
+      ]),
+    );
+
+    const { fetchPortfolioPerformanceRange } = await import("./fetch-range");
+    const result = await fetchPortfolioPerformanceRange({
+      targetCurrency: "USD",
+      daysBack: 3,
+      methodology: "time_weighted_return",
+      scope: "symbol_assets",
+    });
+
+    expect(result.isAvailable).toBe(true);
+    if (!result.isAvailable) {
+      throw new Error("expected available performance range");
+    }
+
+    expect(result.includesEstimatedFlows).toBe(true);
+    expect(result.history).toHaveLength(3);
+    expect(result.history[0].cumulativeReturnPct).toBe(0);
+    expect(result.history[1].cumulativeReturnPct).toBe(0);
+    expect(result.history[2].cumulativeReturnPct).toBeCloseTo(10, 10);
+  });
+
+  it("replays multiple same-day update records cumulatively for one position", async () => {
+    getCurrentUserMock.mockResolvedValue({
+      user: { id: "user-1" },
+      supabase: createSupabaseStub({
+        positions: [
+          {
+            id: "pos-1",
+            user_id: "user-1",
+            type: "asset",
+            currency: "USD",
+            symbol_id: "sym-1",
+          },
+        ],
+        position_snapshots: [
+          {
+            id: "snap-1a",
+            position_id: "pos-1",
+            user_id: "user-1",
+            date: "2026-01-01",
+            quantity: 1,
+            unit_value: 100,
+            created_at: "2026-01-01T09:00:00.000Z",
+            cost_basis_per_unit: 100,
+          },
+          {
+            id: "snap-1b",
+            position_id: "pos-1",
+            user_id: "user-1",
+            date: "2026-01-02",
+            quantity: 3,
+            unit_value: 100,
+            created_at: "2026-01-02T10:00:00.000Z",
+            cost_basis_per_unit: 100,
+          },
+          {
+            id: "snap-1c",
+            position_id: "pos-1",
+            user_id: "user-1",
+            date: "2026-01-03",
+            quantity: 3,
+            unit_value: 100,
+            created_at: "2026-01-03T09:00:00.000Z",
+            cost_basis_per_unit: 100,
+          },
+        ],
+        portfolio_records: [
+          {
+            position_id: "pos-1",
+            user_id: "user-1",
+            date: "2026-01-02",
+            quantity: 2,
+            unit_value: 100,
+            type: "update",
+          },
+          {
+            position_id: "pos-1",
+            user_id: "user-1",
+            date: "2026-01-02",
+            quantity: 3,
+            unit_value: 100,
+            type: "update",
+          },
+        ],
+      }),
+    });
+
+    fetchMarketDataRangeMock.mockResolvedValue(
+      new Map([
+        ["pos-1|2026-01-01", 100],
+        ["pos-1|2026-01-02", 100],
+        ["pos-1|2026-01-03", 110],
+      ]),
+    );
+
+    const { fetchPortfolioPerformanceRange } = await import("./fetch-range");
+    const result = await fetchPortfolioPerformanceRange({
+      targetCurrency: "USD",
+      daysBack: 3,
+      methodology: "time_weighted_return",
+      scope: "symbol_assets",
+    });
+
+    expect(result.isAvailable).toBe(true);
+    if (!result.isAvailable) {
+      throw new Error("expected available performance range");
+    }
+
+    expect(result.includesEstimatedFlows).toBe(true);
+    expect(result.history).toHaveLength(3);
+    expect(result.history[0].cumulativeReturnPct).toBe(0);
+    expect(result.history[1].cumulativeReturnPct).toBe(0);
+    expect(result.history[2].cumulativeReturnPct).toBeCloseTo(10, 10);
+  });
 });

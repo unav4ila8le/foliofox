@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   differenceInCalendarDays,
   startOfYear,
@@ -51,6 +51,7 @@ import {
   PrivacyModeButton,
   usePrivacyMode,
 } from "@/components/dashboard/providers/privacy-mode-provider";
+import { useDashboardData } from "@/components/dashboard/providers/dashboard-data-provider";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Tooltip,
@@ -169,8 +170,11 @@ export function NetWorthAreaChart({
     Partial<Record<ChartTimeRange, PerformanceRangeData>>
   >({});
   const [isLoading, setIsLoading] = useState(false);
+  const netWorthRangesRef = useRef(netWorthRanges);
+  const performanceRangesRef = useRef(performanceRanges);
 
   const { isPrivacyMode } = usePrivacyMode();
+  const { dashboardDataVersion } = useDashboardData();
   const { isRefreshing: isModeRefreshing } = useNetWorthMode();
   const locale = useLocale();
 
@@ -182,6 +186,14 @@ export function NetWorthAreaChart({
       },
     });
   }, [initialHistory, initialChange]);
+
+  useEffect(() => {
+    netWorthRangesRef.current = netWorthRanges;
+  }, [netWorthRanges]);
+
+  useEffect(() => {
+    performanceRangesRef.current = performanceRanges;
+  }, [performanceRanges]);
 
   useEffect(() => {
     if (selectedChartMode === "net_worth") {
@@ -218,6 +230,10 @@ export function NetWorthAreaChart({
     performanceRange?.isAvailable === true ? performanceRange.history : [];
   const performanceSummary =
     performanceRange?.isAvailable === true ? performanceRange.summary : null;
+  const shouldShowEstimatedPerformanceBadge =
+    selectedChartMode === "performance" &&
+    performanceRange?.isAvailable === true &&
+    performanceRange.includesEstimatedFlows;
 
   const chartColor =
     selectedChartMode === "performance"
@@ -234,63 +250,102 @@ export function NetWorthAreaChart({
       ? performanceRange.message
       : null;
 
-  const loadNetWorthRange = async (timeRange: ChartTimeRange) => {
-    if (netWorthRanges[timeRange]) {
+  const loadNetWorthRange = useCallback(
+    async (timeRange: ChartTimeRange, options?: { force?: boolean }) => {
+      if (!options?.force && netWorthRangesRef.current[timeRange]) {
+        return;
+      }
+
+      const daysBack = resolveDaysBackForRange(timeRange, todayDateKey);
+      const [history, change] = await Promise.all([
+        fetchNetWorthHistory({
+          targetCurrency: currency,
+          daysBack,
+          mode: netWorthMode,
+        }),
+        fetchNetWorthChange({
+          targetCurrency: currency,
+          daysBack,
+          mode: netWorthMode,
+        }),
+      ]);
+
+      setNetWorthRanges((currentRanges) => ({
+        ...currentRanges,
+        [timeRange]: {
+          history,
+          change,
+        },
+      }));
+    },
+    [currency, netWorthMode, todayDateKey],
+  );
+
+  const loadPerformanceRange = useCallback(
+    async (timeRange: ChartTimeRange, options?: { force?: boolean }) => {
+      if (
+        !performanceEligibility.isEligible ||
+        (!options?.force && performanceRangesRef.current[timeRange])
+      ) {
+        return;
+      }
+
+      const result = await fetchPortfolioPerformanceRange({
+        targetCurrency: currency,
+        daysBack: resolveDaysBackForRange(timeRange, todayDateKey),
+        methodology: "time_weighted_return",
+        scope: "symbol_assets",
+      });
+
+      setPerformanceRanges((currentRanges) => ({
+        ...currentRanges,
+        [timeRange]: result,
+      }));
+    },
+    [currency, performanceEligibility.isEligible, todayDateKey],
+  );
+
+  const ensureRangeLoaded = useCallback(
+    async (
+      chartMode: ChartMode,
+      timeRange: ChartTimeRange,
+      options?: { force?: boolean },
+    ) => {
+      if (chartMode === "performance") {
+        await loadPerformanceRange(timeRange, options);
+        return;
+      }
+
+      await loadNetWorthRange(timeRange, options);
+    },
+    [loadNetWorthRange, loadPerformanceRange],
+  );
+
+  useEffect(() => {
+    if (dashboardDataVersion === 0) {
       return;
     }
 
-    const daysBack = resolveDaysBackForRange(timeRange, todayDateKey);
-    const [history, change] = await Promise.all([
-      fetchNetWorthHistory({
-        targetCurrency: currency,
-        daysBack,
-        mode: netWorthMode,
-      }),
-      fetchNetWorthChange({
-        targetCurrency: currency,
-        daysBack,
-        mode: netWorthMode,
-      }),
-    ]);
+    let isCancelled = false;
+    setIsLoading(true);
 
-    setNetWorthRanges((currentRanges) => ({
-      ...currentRanges,
-      [timeRange]: {
-        history,
-        change,
-      },
-    }));
-  };
-
-  const loadPerformanceRange = async (timeRange: ChartTimeRange) => {
-    if (!performanceEligibility.isEligible || performanceRanges[timeRange]) {
-      return;
-    }
-
-    const result = await fetchPortfolioPerformanceRange({
-      targetCurrency: currency,
-      daysBack: resolveDaysBackForRange(timeRange, todayDateKey),
-      methodology: "time_weighted_return",
-      scope: "symbol_assets",
+    void ensureRangeLoaded(selectedChartMode, selectedTimeRange, {
+      force: true,
+    }).finally(() => {
+      if (!isCancelled) {
+        setIsLoading(false);
+      }
     });
 
-    setPerformanceRanges((currentRanges) => ({
-      ...currentRanges,
-      [timeRange]: result,
-    }));
-  };
-
-  const ensureRangeLoaded = async (
-    chartMode: ChartMode,
-    timeRange: ChartTimeRange,
-  ) => {
-    if (chartMode === "performance") {
-      await loadPerformanceRange(timeRange);
-      return;
-    }
-
-    await loadNetWorthRange(timeRange);
-  };
+    return () => {
+      isCancelled = true;
+    };
+  }, [
+    dashboardDataVersion,
+    ensureRangeLoaded,
+    selectedChartMode,
+    selectedTimeRange,
+  ]);
 
   const handleRangeChange = async (value: string) => {
     const nextRange = value as ChartTimeRange;
@@ -405,9 +460,31 @@ export function NetWorthAreaChart({
 
                 {/* Chart metric */}
                 <div className="min-w-0">
-                  <p className="text-muted-foreground hidden text-sm md:block">
-                    {chartMetricLabel}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-muted-foreground hidden text-sm md:block">
+                      {chartMetricLabel}
+                    </p>
+                    {shouldShowEstimatedPerformanceBadge ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span
+                            className="text-muted-foreground inline-flex items-center gap-1 text-sm"
+                            aria-label="Estimated performance details"
+                          >
+                            <span>Estimated</span>
+                            <Info className="size-4" />
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="max-w-xs">
+                          Market-backed Update records can make performance
+                          approximate.
+                          <br />
+                          Prefer Buy and Sell records for the most accurate
+                          results.
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : null}
+                  </div>
                   <div
                     className={cn(
                       "flex items-center gap-1",

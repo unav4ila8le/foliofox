@@ -59,7 +59,8 @@ export const fetchPortfolioRecords = cache(
         name,
         currency,
         type,
-        archived_at
+        archived_at,
+        symbol_id
       ),
       position_snapshots (
         id,

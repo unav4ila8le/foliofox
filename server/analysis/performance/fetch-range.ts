@@ -219,6 +219,8 @@ function buildPriorQuantityLookupByPositionDate(options: {
     const priorQuantityByDate = new Map<CivilDateKey, number>();
 
     rows.forEach((row) => {
+      // Store the carried quantity at the start of each civil date so same-day
+      // record replay can distinguish opening state from later in-day changes.
       priorQuantityByDate.set(row.dateKey, previousQuantity);
       previousQuantity = row.quantity;
     });
@@ -327,6 +329,8 @@ function buildNetFlowsByDateKey(options: {
 
       // Quantity-stable updates are cost-basis or metadata corrections only.
       if (Math.abs(deltaQuantity) > QUANTITY_EPSILON) {
+        // Use the synthesized day value first so inferred flows stay aligned
+        // with the same valuation source used for the daily TWR series.
         const effectiveUnitValue =
           dailyUnitValueLookupByPosition
             .get(record.position_id)
