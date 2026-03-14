@@ -24,15 +24,6 @@ import type {
 } from "@/server/analysis/performance/types";
 
 import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip as RechartsTooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import {
   Card,
   CardContent,
   CardDescription,
@@ -60,16 +51,17 @@ import {
 } from "@/components/ui/tooltip";
 
 import {
-  formatCompactNumber,
   formatCurrency,
   formatNumber,
   formatPercentage,
 } from "@/lib/number-format";
-import { formatDate, formatMonthDay } from "@/lib/date/date-format";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/hooks/use-locale";
 
 import type { NetWorthMode } from "@/server/analysis/net-worth/types";
+
+import { NetWorthValueAreaChart } from "./net-worth-value-area-chart";
+import { PortfolioPerformanceAreaChart } from "./portfolio-performance-area-chart";
 
 type ChartMode = "net_worth" | "performance";
 type ChartTimeRange = "1m" | "3m" | "6m" | "ytd" | "1y" | "2y";
@@ -78,12 +70,6 @@ interface NetWorthRangePayload {
   history: NetWorthHistoryData[];
   change: NetWorthChangeData;
 }
-
-type ChartDatum = {
-  date: Date;
-  value?: number;
-  cumulativeReturnPct?: number;
-};
 
 const DEFAULT_TIME_RANGE: ChartTimeRange = "3m";
 
@@ -375,17 +361,6 @@ export function NetWorthAreaChart({
     }
   };
 
-  const formatXAxisDate = (date: Date) =>
-    formatMonthDay(date, { locale, month: "short", day: "numeric" });
-
-  const formatCurrencyYAxisValue = (value: number) =>
-    formatCompactNumber(value, { locale });
-
-  const formatPerformanceYAxisValue = (value: number) =>
-    formatPercentage(value / 100, { locale, decimals: 0 });
-
-  const chartData: ChartDatum[] =
-    selectedChartMode === "performance" ? performanceHistory : netWorthHistory;
   const chartMetricLabel =
     selectedChartMode === "performance"
       ? `Rate of Return (${TIME_RANGE_LABELS[selectedTimeRange].short})`
@@ -594,107 +569,25 @@ export function NetWorthAreaChart({
                 isChartLoading && "opacity-50",
               )}
             >
-              <ResponsiveContainer
-                width="100%"
-                height="100%"
-                initialDimension={{ width: 256, height: 128 }}
-              >
-                <AreaChart data={chartData}>
-                  <defs>
-                    <linearGradient
-                      id="areaGradient"
-                      x1="0"
-                      y1="0"
-                      x2="0"
-                      y2="1"
-                    >
-                      <stop
-                        offset="0%"
-                        stopColor={chartColor}
-                        stopOpacity={0.2}
-                      />
-                      <stop
-                        offset="100%"
-                        stopColor={chartColor}
-                        stopOpacity={0}
-                      />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid stroke="var(--border)" vertical={false} />
-                  <YAxis
-                    dataKey={
-                      selectedChartMode === "performance"
-                        ? "cumulativeReturnPct"
-                        : "value"
-                    }
-                    tickFormatter={
-                      selectedChartMode === "performance"
-                        ? formatPerformanceYAxisValue
-                        : formatCurrencyYAxisValue
-                    }
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{
-                      fontSize: 12,
-                      fill: "var(--muted-foreground)",
-                      opacity: isPrivacyMode ? 0 : 1,
-                    }}
-                    domain={["auto", "auto"]}
-                    width={40}
-                  />
-                  <XAxis
-                    dataKey="date"
-                    tickFormatter={formatXAxisDate}
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
-                    dy={5}
-                    minTickGap={20}
-                  />
-                  <RechartsTooltip
-                    content={({ active, payload }) => {
-                      if (!active || !payload?.length) return null;
-
-                      const data = payload[0];
-                      return (
-                        <div className="bg-background border-border flex flex-col gap-1 rounded-md border px-2.5 py-1.5">
-                          <span className="text-muted-foreground text-xs">
-                            {formatDate(data.payload.date, { locale })}
-                          </span>
-                          <span className="text-sm">
-                            {selectedChartMode === "performance"
-                              ? formatSignedPercentage(
-                                  Number(data.value),
-                                  locale,
-                                )
-                              : formatCurrency(Number(data.value), currency, {
-                                  locale,
-                                })}
-                          </span>
-                        </div>
-                      );
-                    }}
-                    cursor={{ stroke: "var(--border)", strokeWidth: 1 }}
-                  />
-                  <Area
-                    dataKey={
-                      selectedChartMode === "performance"
-                        ? "cumulativeReturnPct"
-                        : "value"
-                    }
-                    stroke={chartColor}
-                    strokeWidth={1.5}
-                    fill="url(#areaGradient)"
-                    fillOpacity={1}
-                    dot={false}
-                    activeDot={{
-                      r: 4.5,
-                      strokeWidth: 2.5,
-                      filter: "drop-shadow(0px 1px 3px rgba(0, 0, 0, 0.3))",
-                    }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+              {/* Charts */}
+              {selectedChartMode === "performance" ? (
+                // Performance chart
+                <PortfolioPerformanceAreaChart
+                  history={performanceHistory}
+                  locale={locale}
+                  isPrivacyMode={isPrivacyMode}
+                  strokeColor={chartColor}
+                />
+              ) : (
+                // Net worth value chart
+                <NetWorthValueAreaChart
+                  history={netWorthHistory}
+                  currency={currency}
+                  locale={locale}
+                  isPrivacyMode={isPrivacyMode}
+                  strokeColor={chartColor}
+                />
+              )}
             </CardContent>
           )}
         </>

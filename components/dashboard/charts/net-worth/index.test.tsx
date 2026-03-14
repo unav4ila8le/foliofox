@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { toCivilDateKeyOrThrow } from "@/lib/date/date-utils";
 
-import { NetWorthAreaChart } from "./net-worth-area";
+import { NetWorthAreaChart } from ".";
 
 const { fetchPortfolioPerformanceRangeMock } = vi.hoisted(() => ({
   fetchPortfolioPerformanceRangeMock: vi.fn(),
