@@ -31,7 +31,7 @@ export type PortfolioRecord = Tables<"portfolio_records">;
 export type PortfolioRecordWithPosition = PortfolioRecord & {
   positions: Pick<
     Tables<"positions">,
-    "id" | "name" | "currency" | "type" | "archived_at"
+    "id" | "name" | "currency" | "type" | "archived_at" | "symbol_id"
   >;
   position_snapshots?:
     | Pick<

@@ -31,7 +31,9 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Calendar } from "@/components/ui/calendar";
 import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
+import { MarketBackedUpdateWarning } from "@/components/dashboard/portfolio-records/market-backed-update-warning";
 import { LocalizedNumberInput } from "@/components/ui/custom/localized-number-input";
+import { useDashboardData } from "@/components/dashboard/providers/dashboard-data-provider";
 import {
   InputGroup,
   InputGroupAddon,
@@ -94,6 +96,7 @@ export function UpdatePortfolioRecordForm({
   onSuccess,
 }: UpdatePortfolioRecordFormProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const { refreshDashboardData } = useDashboardData();
   const locale = useLocale();
 
   const initialCostBasis = useMemo(() => {
@@ -171,6 +174,7 @@ export function UpdatePortfolioRecordForm({
       }
 
       toast.success("Record updated successfully");
+      refreshDashboardData();
 
       // Close the dialog
       onSuccess?.();
@@ -190,6 +194,10 @@ export function UpdatePortfolioRecordForm({
     >
       <DialogBody>
         <div className="grid gap-4">
+          {recordType === "update" && portfolioRecord.positions.symbol_id ? (
+            <MarketBackedUpdateWarning />
+          ) : null}
+
           <Controller
             control={form.control}
             name="date"

@@ -1,11 +1,20 @@
 "use client";
 
-import { createContext, useContext, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+  useTransition,
+  type ReactNode,
+} from "react";
 
 import type { FinancialProfile, Profile } from "@/types/global.types";
 import type { StalePosition } from "@/server/positions/stale";
 
-type DashboardData = {
+type DashboardDataValue = {
   profile: Profile;
   email: string;
   financialProfile: FinancialProfile | null;
@@ -16,6 +25,12 @@ type DashboardData = {
   stalePositions: StalePosition[];
 };
 
+type DashboardData = DashboardDataValue & {
+  /** Increments when a dashboard mutation should refresh local client caches. */
+  dashboardDataVersion: number;
+  refreshDashboardData: () => void;
+};
+
 const DashboardDataContext = createContext<DashboardData | undefined>(
   undefined,
 );
@@ -24,11 +39,32 @@ export function DashboardDataProvider({
   value,
   children,
 }: {
-  value: DashboardData;
+  value: DashboardDataValue;
   children: ReactNode;
 }) {
+  const router = useRouter();
+  const [dashboardDataVersion, setDashboardDataVersion] = useState(0);
+  const [, startRefreshTransition] = useTransition();
+
+  const refreshDashboardData = useCallback(() => {
+    setDashboardDataVersion((currentVersion) => currentVersion + 1);
+
+    startRefreshTransition(() => {
+      router.refresh();
+    });
+  }, [router]);
+
+  const contextValue = useMemo(
+    () => ({
+      ...value,
+      dashboardDataVersion,
+      refreshDashboardData,
+    }),
+    [value, dashboardDataVersion, refreshDashboardData],
+  );
+
   return (
-    <DashboardDataContext.Provider value={value}>
+    <DashboardDataContext.Provider value={contextValue}>
       {children}
     </DashboardDataContext.Provider>
   );

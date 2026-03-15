@@ -24,7 +24,9 @@ import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import { Spinner } from "@/components/ui/spinner";
 import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
+import { MarketBackedUpdateWarning } from "@/components/dashboard/portfolio-records/market-backed-update-warning";
 import { LocalizedNumberInput } from "@/components/ui/custom/localized-number-input";
+import { useDashboardData } from "@/components/dashboard/providers/dashboard-data-provider";
 import {
   InputGroup,
   InputGroupAddon,
@@ -78,6 +80,7 @@ const formSchema = z.object({
 export function UpdateForm() {
   // Get dialog context (preselected position and close function)
   const { setOpen, preselectedPosition } = useNewPortfolioRecordDialog();
+  const { refreshDashboardData } = useDashboardData();
   const locale = useLocale();
 
   // Local state for loading and quote fetching
@@ -203,6 +206,7 @@ export function UpdateForm() {
       }
 
       toast.success("Record created successfully");
+      refreshDashboardData();
       form.reset();
       setOpen(false);
     } catch (error) {
@@ -223,6 +227,8 @@ export function UpdateForm() {
     >
       <DialogBody>
         <div className="grid gap-x-2 gap-y-4">
+          {hasSymbol ? <MarketBackedUpdateWarning /> : null}
+
           {/* Date picker field */}
           <Controller
             control={form.control}

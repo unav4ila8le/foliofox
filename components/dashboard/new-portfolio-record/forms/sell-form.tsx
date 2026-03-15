@@ -20,6 +20,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Spinner } from "@/components/ui/spinner";
 import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
 import { LocalizedNumberInput } from "@/components/ui/custom/localized-number-input";
+import { useDashboardData } from "@/components/dashboard/providers/dashboard-data-provider";
 
 import { useNewPortfolioRecordDialog } from "../index";
 
@@ -33,6 +34,7 @@ import { createPortfolioRecord } from "@/server/portfolio-records/create";
 export function SellForm() {
   // Get dialog context (preselected position and close function)
   const { setOpen, preselectedPosition } = useNewPortfolioRecordDialog();
+  const { refreshDashboardData } = useDashboardData();
   const locale = useLocale();
 
   // Local state
@@ -108,6 +110,7 @@ export function SellForm() {
       }
 
       toast.success("Record created successfully");
+      refreshDashboardData();
       form.reset();
       setOpen(false);
     } catch (error) {
