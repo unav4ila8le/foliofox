@@ -1,12 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  differenceInCalendarDays,
-  startOfYear,
-  subMonths,
-  subYears,
-} from "date-fns";
 import { Info, TrendingDown, TrendingUp } from "lucide-react";
 
 import {
@@ -55,6 +49,7 @@ import {
   formatNumber,
   formatPercentage,
 } from "@/lib/number-format";
+import type { CivilDateKey } from "@/lib/date/date-utils";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/hooks/use-locale";
 
@@ -62,46 +57,18 @@ import type { NetWorthMode } from "@/server/analysis/net-worth/types";
 
 import { NetWorthValueAreaChart } from "./net-worth-value-area-chart";
 import { PortfolioPerformanceAreaChart } from "./portfolio-performance-area-chart";
+import {
+  DEFAULT_TIME_RANGE,
+  resolveDaysBackForRange,
+  TIME_RANGE_LABELS,
+  type ChartTimeRange,
+} from "./time-range";
 
 type ChartMode = "net_worth" | "performance";
-type ChartTimeRange = "1m" | "3m" | "6m" | "ytd" | "1y" | "2y";
 
 interface NetWorthRangePayload {
   history: NetWorthHistoryData[];
   change: NetWorthChangeData;
-}
-
-const DEFAULT_TIME_RANGE: ChartTimeRange = "3m";
-
-const TIME_RANGE_LABELS: Record<
-  ChartTimeRange,
-  { short: string; long: string }
-> = {
-  "1m": { short: "1M", long: "1 Month" },
-  "3m": { short: "3M", long: "3 Months" },
-  "6m": { short: "6M", long: "6 Months" },
-  ytd: { short: "YTD", long: "YTD" },
-  "1y": { short: "1Y", long: "1 Year" },
-  "2y": { short: "2Y", long: "2 Years" },
-};
-
-function resolveDaysBackForRange(value: ChartTimeRange, todayDateKey: string) {
-  const today = new Date(`${todayDateKey}T00:00:00Z`);
-
-  switch (value) {
-    case "1m":
-      return differenceInCalendarDays(today, subMonths(today, 1)) + 1;
-    case "3m":
-      return differenceInCalendarDays(today, subMonths(today, 3)) + 1;
-    case "6m":
-      return differenceInCalendarDays(today, subMonths(today, 6)) + 1;
-    case "ytd":
-      return differenceInCalendarDays(today, startOfYear(today)) + 1;
-    case "1y":
-      return differenceInCalendarDays(today, subYears(today, 1)) + 1;
-    case "2y":
-      return differenceInCalendarDays(today, subYears(today, 2)) + 1;
-  }
 }
 
 function formatSignedPercentage(value: number, locale: string) {
@@ -135,7 +102,7 @@ export function NetWorthAreaChart({
   netWorth: number;
   history: NetWorthHistoryData[];
   change: NetWorthChangeData;
-  todayDateKey: string;
+  todayDateKey: CivilDateKey;
   netWorthMode: NetWorthMode;
   estimatedCapitalGainsTax: number | null;
   performanceEligibility: PerformanceEligibilityData;

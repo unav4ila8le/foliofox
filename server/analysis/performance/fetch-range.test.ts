@@ -165,6 +165,20 @@ describe("fetchPortfolioPerformanceRange", () => {
     vi.useRealTimers();
   });
 
+  it("rejects unsupported methodologies instead of returning mislabeled TWR data", async () => {
+    const { fetchPortfolioPerformanceRange } = await import("./fetch-range");
+
+    await expect(
+      fetchPortfolioPerformanceRange({
+        methodology: "money_weighted_return",
+      }),
+    ).rejects.toThrow(
+      "Unsupported performance methodology: money_weighted_return",
+    );
+
+    expect(fetchProfileMock).not.toHaveBeenCalled();
+  });
+
   it("excludes non-symbol positions and nets same-day buy/sell flows at the portfolio level", async () => {
     getCurrentUserMock.mockResolvedValue({
       user: { id: "user-1" },

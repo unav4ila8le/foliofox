@@ -400,9 +400,15 @@ async function fetchPortfolioPerformanceRangeImpl({
   methodology: PerformanceMethodology;
   scope: PerformanceScope;
 }): Promise<PerformanceRangeData> {
+  const resolvedMethodology = parsePerformanceMethodology(methodology);
+  if (resolvedMethodology !== "time_weighted_return") {
+    throw new Error(
+      `Unsupported performance methodology: ${resolvedMethodology}`,
+    );
+  }
+
   const { profile } = await fetchProfile();
   const resolvedTargetCurrency = targetCurrency ?? profile.display_currency;
-  const resolvedMethodology = parsePerformanceMethodology(methodology);
   const resolvedScope = parsePerformanceScope(scope);
   const totalDaysBack = Math.max(1, Math.trunc(daysBack));
   const endDateKey = resolveTodayDateKey(profile.time_zone);

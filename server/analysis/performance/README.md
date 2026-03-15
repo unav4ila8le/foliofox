@@ -6,6 +6,7 @@ Current MVP constraints:
 
 - Scope is `symbol_assets` only: asset positions with a `symbol_id`
 - Methodology is `time_weighted_return`
+- Other methodology ids are reserved for future expansion and are rejected until implemented
 - Output is pre-tax performance in the user's display currency
 - Market-backed `update` records with quantity changes are replayed as inferred flows
 - `includesEstimatedFlows` is `true` only when at least one inferred non-zero update flow was needed
