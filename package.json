@@ -68,13 +68,13 @@
     "@types/node": "^22.19.3",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@vitejs/plugin-react": "^5.1.3",
+    "@vitejs/plugin-react": "^6.0.1",
     "babel-plugin-react-compiler": "^1.0.0",
     "eslint": "^9.39.2",
     "eslint-config-next": "^16.1.6",
     "eslint-config-prettier": "^10.1.8",
     "husky": "^9.1.7",
-    "jsdom": "^28.0.0",
+    "jsdom": "^29.0.0",
     "lint-staged": "^16.3.1",
     "picomatch": "^4.0.3",
     "postcss": "^8",
@@ -84,7 +84,6 @@
     "tailwindcss": "^4.0.8",
     "tw-animate-css": "^1.2.5",
     "typescript": "^5",
-    "vite-tsconfig-paths": "^6.0.5",
     "vitest": "^4.0.15"
   },
   "lint-staged": {
