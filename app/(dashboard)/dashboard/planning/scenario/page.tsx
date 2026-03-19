@@ -17,6 +17,7 @@ async function ScenarioChartWrapper() {
       scenario={scenario}
       currency={profile.display_currency}
       initialValue={scenario.initialValue}
+      initialValueBasis={scenario.initialValueBasis}
       expectedAnnualReturnPercent={
         scenario.assumptions.values.expectedAnnualReturnPercent
       }
@@ -38,6 +39,7 @@ async function ScenarioEventsTableWrapper() {
       scenarioId={scenario.id}
       events={scenario.events}
       currency={profile.display_currency}
+      initialValueBasis={scenario.initialValueBasis}
     />
   );
 }

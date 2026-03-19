@@ -130,7 +130,7 @@ export const fetchOrCreateDefaultScenario = cache(
         user_id: user.id,
         name: "My Scenario",
         events: [],
-        engine_version: 1,
+        engine_version: 2,
         initial_value: 0,
         initial_value_basis: "net_worth",
         settings: toDatabaseScenarioSettings(defaultSettings),

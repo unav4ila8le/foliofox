@@ -38,9 +38,16 @@ import { LocalizedNumberInput } from "@/components/ui/custom/localized-number-in
 import { Calendar } from "@/components/ui/calendar";
 import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
 
+import type { ScenarioInitialValueBasis } from "@/lib/planning/initial-value-basis";
 import { formatNumber } from "@/lib/number-format";
 import { cn } from "@/lib/utils";
 import { getScenarioEventDateRange } from "@/lib/planning/scenario/event-dates";
+import {
+  getBasisCompatibilityDescription,
+  getProjectedSeriesThresholdConditionLabel,
+  getProjectedSeriesThresholdConditionTypeForBasis,
+  isProjectedSeriesThresholdConditionType,
+} from "@/lib/planning/scenario/projected-series";
 import { makeOneOff, makeRecurring } from "@/lib/planning/scenario/engine";
 import { ld } from "@/lib/date/date-utils";
 import { requiredNumberWithConstraints } from "@/lib/zod-helpers";
@@ -51,6 +58,12 @@ import { upsertScenarioEvent } from "@/server/financial-scenarios/upsert";
 const conditionSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("networth-is-above"),
+    amount: requiredNumberWithConstraints("Amount is required", {
+      gte: { value: 0, error: "Amount must be greater or equal to 0" },
+    }),
+  }),
+  z.object({
+    type: z.literal("cash-is-above"),
     amount: requiredNumberWithConstraints("Amount is required", {
       gte: { value: 0, error: "Amount must be greater or equal to 0" },
     }),
@@ -71,25 +84,32 @@ const conditionSchema = z.discriminatedUnion("type", [
 // Helper to extract conditions from ScenarioEvent
 function extractConditionsFromEvent(event: ScenarioEvent) {
   return event.unlockedBy
-    .filter((c) => c.tag === "balance")
-    .map((c) => {
-      switch (c.type) {
+    .filter((condition) => condition.tag !== "cashflow")
+    .map((condition) => {
+      switch (condition.type) {
         case "networth-is-above":
           return {
             type: "networth-is-above" as const,
-            amount: c.value.amount,
+            amount: condition.value.amount,
+          };
+        case "cash-is-above":
+          return {
+            type: "cash-is-above" as const,
+            amount: condition.value.amount,
           };
         case "event-happened":
           return {
             type: "event-happened" as const,
-            eventName: c.value.eventName,
+            eventName: condition.value.eventName,
           };
         case "income-is-above":
           return {
             type: "income-is-above" as const,
-            eventName: c.value.eventName,
-            amount: c.value.amount,
+            eventName: condition.value.eventName,
+            amount: condition.value.amount,
           };
+        default:
+          return assertNever(condition);
       }
     });
 }
@@ -117,6 +137,118 @@ const formSchema = z
     },
   );
 
+type ScenarioEventFormValues = z.infer<typeof formSchema>;
+type ScenarioEventCondition = ScenarioEventFormValues["conditions"][number];
+const SCENARIO_EVENT_CONDITION_TYPES = [
+  "networth-is-above",
+  "cash-is-above",
+  "event-happened",
+  "income-is-above",
+] as const;
+
+const assertNever = (value: never): never => {
+  throw new Error(
+    `Unhandled scenario event condition: ${JSON.stringify(value)}`,
+  );
+};
+
+const isScenarioEventConditionType = (
+  value: string,
+): value is ScenarioEventCondition["type"] =>
+  SCENARIO_EVENT_CONDITION_TYPES.some(
+    (conditionType) => conditionType === value,
+  );
+
+interface ConditionTypeOption {
+  value: ScenarioEventCondition["type"];
+  label: string;
+  disabled?: boolean;
+}
+
+const getDefaultConditionForType = (
+  conditionType: ScenarioEventCondition["type"],
+): ScenarioEventCondition => {
+  switch (conditionType) {
+    case "networth-is-above":
+      return {
+        type: "networth-is-above",
+        amount: 0,
+      };
+    case "cash-is-above":
+      return {
+        type: "cash-is-above",
+        amount: 0,
+      };
+    case "event-happened":
+      return {
+        type: "event-happened",
+        eventName: "",
+      };
+    case "income-is-above":
+      return {
+        type: "income-is-above",
+        eventName: "",
+        amount: 0,
+      };
+    default:
+      return assertNever(conditionType);
+  }
+};
+
+const getConditionTypeOptions = (input: {
+  initialValueBasis: ScenarioInitialValueBasis;
+  currentType: ScenarioEventCondition["type"] | undefined;
+}): ConditionTypeOption[] => {
+  const options: ConditionTypeOption[] = [];
+  const allowedThresholdType = getProjectedSeriesThresholdConditionTypeForBasis(
+    input.initialValueBasis,
+  );
+
+  if (
+    input.currentType &&
+    isProjectedSeriesThresholdConditionType(input.currentType) &&
+    input.currentType !== allowedThresholdType
+  ) {
+    options.push({
+      value: input.currentType,
+      label: `${getProjectedSeriesThresholdConditionLabel(input.currentType)} (Inactive)`,
+      disabled: true,
+    });
+  }
+
+  if (allowedThresholdType) {
+    options.push({
+      value: allowedThresholdType,
+      label: getProjectedSeriesThresholdConditionLabel(allowedThresholdType),
+    });
+  }
+
+  options.push(
+    {
+      value: "event-happened",
+      label: "Event Happened",
+    },
+    {
+      value: "income-is-above",
+      label: "Income is Above",
+    },
+  );
+
+  return options;
+};
+
+const getDefaultCondition = (
+  initialValueBasis: ScenarioInitialValueBasis,
+): ScenarioEventCondition => {
+  const thresholdType =
+    getProjectedSeriesThresholdConditionTypeForBasis(initialValueBasis);
+  if (thresholdType) {
+    return getDefaultConditionForType(thresholdType);
+  }
+
+  return getDefaultConditionForType("event-happened");
+};
+
 export function UpsertEventForm({
   scenarioId,
   onCancel,
@@ -125,6 +257,7 @@ export function UpsertEventForm({
   event = null,
   eventIndex = null,
   currency,
+  initialValueBasis,
 }: {
   scenarioId: string;
   onCancel: () => void;
@@ -133,6 +266,7 @@ export function UpsertEventForm({
   event?: ScenarioEvent | null;
   eventIndex?: number | null;
   currency: string;
+  initialValueBasis: ScenarioInitialValueBasis;
 }) {
   const router = useRouter();
   const isEditing = event !== null && eventIndex !== null;
@@ -219,6 +353,10 @@ export function UpsertEventForm({
     }),
     [locale],
   );
+  const availableThresholdConditionType = useMemo(
+    () => getProjectedSeriesThresholdConditionTypeForBasis(initialValueBasis),
+    [initialValueBasis],
+  );
 
   // Clear end date if start date moves past it
   useEffect(() => {
@@ -240,22 +378,30 @@ export function UpsertEventForm({
       switch (condition.type) {
         case "networth-is-above":
           return {
-            tag: "balance" as const,
+            tag: "projected-series" as const,
             type: "networth-is-above" as const,
-            value: { eventRef: "", amount: condition.amount },
+            value: { amount: condition.amount },
+          };
+        case "cash-is-above":
+          return {
+            tag: "projected-series" as const,
+            type: "cash-is-above" as const,
+            value: { amount: condition.amount },
           };
         case "event-happened":
           return {
-            tag: "balance" as const,
+            tag: "event" as const,
             type: "event-happened" as const,
             value: { eventName: condition.eventName },
           };
         case "income-is-above":
           return {
-            tag: "balance" as const,
+            tag: "event" as const,
             type: "income-is-above" as const,
             value: { eventName: condition.eventName, amount: condition.amount },
           };
+        default:
+          return assertNever(condition);
       }
     });
 
@@ -578,6 +724,12 @@ export function UpsertEventForm({
               <p className="text-muted-foreground text-sm">
                 Add conditions that must be met for this event to occur
               </p>
+              {availableThresholdConditionType === null ? (
+                <p className="mt-1 text-sm text-amber-600">
+                  Projected value threshold conditions are unavailable while
+                  Initial value uses Manual basis.
+                </p>
+              ) : null}
             </div>
 
             {/* Conditions List */}
@@ -585,6 +737,18 @@ export function UpsertEventForm({
               <div className="space-y-4">
                 {fields.map((arrayField, index) => {
                   const conditionType = conditionTypes?.[index]?.type;
+                  const conditionTypeOptions = getConditionTypeOptions({
+                    initialValueBasis,
+                    currentType: conditionType,
+                  });
+                  const isIncompatibleThresholdCondition =
+                    conditionType !== undefined &&
+                    isProjectedSeriesThresholdConditionType(conditionType) &&
+                    conditionType !== availableThresholdConditionType;
+                  const thresholdConditionDescription =
+                    conditionType === "cash-is-above"
+                      ? "Event fires when projected cash exceeds this amount"
+                      : "Event fires when projected net worth exceeds this amount";
 
                   return (
                     <div
@@ -605,24 +769,14 @@ export function UpsertEventForm({
                               </FieldLabel>
                               <Select
                                 onValueChange={(value) => {
-                                  // Reset fields when changing type using update method
-                                  if (value === "networth-is-above") {
-                                    update(index, {
-                                      type: "networth-is-above" as const,
-                                      amount: 0,
-                                    });
-                                  } else if (value === "event-happened") {
-                                    update(index, {
-                                      type: "event-happened" as const,
-                                      eventName: "",
-                                    });
-                                  } else if (value === "income-is-above") {
-                                    update(index, {
-                                      type: "income-is-above" as const,
-                                      eventName: "",
-                                      amount: 0,
-                                    });
+                                  if (!isScenarioEventConditionType(value)) {
+                                    return;
                                   }
+
+                                  update(
+                                    index,
+                                    getDefaultConditionForType(value),
+                                  );
                                 }}
                                 value={field.value}
                               >
@@ -633,15 +787,15 @@ export function UpsertEventForm({
                                   <SelectValue placeholder="Select condition type" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="networth-is-above">
-                                    Net Worth is Above
-                                  </SelectItem>
-                                  <SelectItem value="event-happened">
-                                    Event Happened
-                                  </SelectItem>
-                                  <SelectItem value="income-is-above">
-                                    Income is Above
-                                  </SelectItem>
+                                  {conditionTypeOptions.map((option) => (
+                                    <SelectItem
+                                      key={option.value}
+                                      value={option.value}
+                                      disabled={option.disabled}
+                                    >
+                                      {option.label}
+                                    </SelectItem>
+                                  ))}
                                 </SelectContent>
                               </Select>
                               {fieldState.invalid && (
@@ -663,48 +817,56 @@ export function UpsertEventForm({
                       </div>
 
                       {/* Condition-specific fields */}
-                      {conditionType === "networth-is-above" && (
-                        <Controller
-                          key={`${index}-networth-amount`}
-                          control={form.control}
-                          name={`conditions.${index}.amount`}
-                          render={({ field, fieldState }) => (
-                            <Field data-invalid={fieldState.invalid}>
-                              <FieldLabel htmlFor={field.name}>
-                                Amount
-                              </FieldLabel>
-                              <InputGroup>
-                                <LocalizedNumberInput
-                                  mode="input-group-input"
-                                  id={field.name}
-                                  placeholder={numberPlaceholders.amount}
-                                  min={0}
-                                  aria-invalid={fieldState.invalid}
-                                  name={field.name}
-                                  ref={field.ref}
-                                  onBlur={field.onBlur}
-                                  value={
-                                    (field.value as string | number | null) ??
-                                    ""
-                                  }
-                                  onValueChange={(nextValue) =>
-                                    field.onChange(nextValue)
-                                  }
-                                />
-                                <InputGroupAddon align="inline-end">
-                                  <InputGroupText>{currency}</InputGroupText>
-                                </InputGroupAddon>
-                              </InputGroup>
-                              <FieldDescription>
-                                Event fires when net worth exceeds this amount
-                              </FieldDescription>
-                              {fieldState.invalid && (
-                                <FieldError errors={[fieldState.error]} />
-                              )}
-                            </Field>
-                          )}
-                        />
-                      )}
+                      {conditionType !== undefined &&
+                        isProjectedSeriesThresholdConditionType(
+                          conditionType,
+                        ) && (
+                          <Controller
+                            key={`${index}-${conditionType}-amount`}
+                            control={form.control}
+                            name={`conditions.${index}.amount`}
+                            render={({ field, fieldState }) => (
+                              <Field data-invalid={fieldState.invalid}>
+                                <FieldLabel htmlFor={field.name}>
+                                  Amount
+                                </FieldLabel>
+                                <InputGroup>
+                                  <LocalizedNumberInput
+                                    mode="input-group-input"
+                                    id={field.name}
+                                    placeholder={numberPlaceholders.amount}
+                                    disabled={isIncompatibleThresholdCondition}
+                                    min={0}
+                                    aria-invalid={fieldState.invalid}
+                                    name={field.name}
+                                    ref={field.ref}
+                                    onBlur={field.onBlur}
+                                    value={
+                                      (field.value as string | number | null) ??
+                                      ""
+                                    }
+                                    onValueChange={(nextValue) =>
+                                      field.onChange(nextValue)
+                                    }
+                                  />
+                                  <InputGroupAddon align="inline-end">
+                                    <InputGroupText>{currency}</InputGroupText>
+                                  </InputGroupAddon>
+                                </InputGroup>
+                                <FieldDescription>
+                                  {isIncompatibleThresholdCondition
+                                    ? getBasisCompatibilityDescription(
+                                        initialValueBasis,
+                                      )
+                                    : thresholdConditionDescription}
+                                </FieldDescription>
+                                {fieldState.invalid && (
+                                  <FieldError errors={[fieldState.error]} />
+                                )}
+                              </Field>
+                            )}
+                          />
+                        )}
 
                       {conditionType === "event-happened" && (
                         <Controller
@@ -859,12 +1021,7 @@ export function UpsertEventForm({
               type="button"
               variant="outline"
               size="sm"
-              onClick={() =>
-                append({
-                  type: "networth-is-above",
-                  amount: "",
-                })
-              }
+              onClick={() => append(getDefaultCondition(initialValueBasis))}
             >
               <Plus />
               Add Condition

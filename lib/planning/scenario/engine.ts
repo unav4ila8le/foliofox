@@ -8,10 +8,15 @@ import {
   isWithinIntervalLD,
 } from "@/lib/date/date-utils";
 import {
-  BalanceConditions,
   CashflowConditions,
+  ScenarioEventCondition,
   ScenarioEvent,
 } from "./helpers";
+import type { ScenarioInitialValueBasis } from "@/lib/planning/initial-value-basis";
+import {
+  isProjectedSeriesThresholdCondition,
+  isProjectedSeriesThresholdConditionCompatibleWithBasis,
+} from "./projected-series";
 
 type Scenario = {
   name: string;
@@ -35,15 +40,16 @@ type FiredEventInfo = {
 
 type EvaluationState = {
   cashflow: Record<string, CashflowEntry>;
-  balance: Record<string, number>;
-  currentBalance: number;
+  projectedSeries: Record<string, number>;
+  currentProjectedValue: number;
   firedEvents: Map<string, FiredEventInfo>;
 };
 
 type MonthEvaluationContext = {
   month: LocalDate;
   monthKey: string;
-  currentBalance: number;
+  currentProjectedValue: number;
+  initialValueBasis: ScenarioInitialValueBasis;
   firedEvents: Map<string, FiredEventInfo>;
   monthlyEvents: ScenarioEvent[];
 };
@@ -52,9 +58,20 @@ const isSameMonthLD = (a: LocalDate, b: LocalDate): boolean =>
   a.y === b.y && a.m === b.m;
 
 const evaluateCondition = (
-  condition: CashflowConditions | BalanceConditions,
+  condition: ScenarioEventCondition,
   context: MonthEvaluationContext,
 ): boolean => {
+  if (
+    condition.tag === "projected-series" &&
+    isProjectedSeriesThresholdCondition(condition) &&
+    !isProjectedSeriesThresholdConditionCompatibleWithBasis(
+      condition,
+      context.initialValueBasis,
+    )
+  ) {
+    return false;
+  }
+
   switch (condition.type) {
     case "date-is":
       return isSameMonthLD(context.month, condition.value);
@@ -68,7 +85,8 @@ const evaluateCondition = (
     }
 
     case "networth-is-above":
-      return context.currentBalance > condition.value.amount;
+    case "cash-is-above":
+      return context.currentProjectedValue > condition.value.amount;
 
     case "event-happened":
       return context.firedEvents.has(condition.value.eventName);
@@ -161,17 +179,25 @@ const evaluateScenario = (input: {
   startDate: LocalDate;
   endDate: LocalDate;
   initialValue: number;
+  initialValueBasis: ScenarioInitialValueBasis;
   assumptions?: DeterministicScenarioAssumptions;
 }): EvaluationState => {
-  const { scenario, startDate, endDate, initialValue, assumptions } = input;
+  const {
+    scenario,
+    startDate,
+    endDate,
+    initialValue,
+    initialValueBasis,
+    assumptions,
+  } = input;
   const monthlyGrowthRate = toMonthlyGrowthRate(
     assumptions?.expectedAnnualReturnPercent,
   );
 
   const state: EvaluationState = {
     cashflow: {},
-    balance: {},
-    currentBalance: initialValue,
+    projectedSeries: {},
+    currentProjectedValue: initialValue,
     firedEvents: new Map(),
   };
 
@@ -183,36 +209,40 @@ const evaluateScenario = (input: {
 
     state.cashflow[monthKey] = { amount: 0, events: [] };
 
-    // Apply deterministic return to opening balance for the month.
+    // Apply deterministic return to opening projected value for the month.
     // This is not modeled as cashflow, so event-only cashflow remains clean.
-    if (monthlyGrowthRate !== 0 && state.currentBalance !== 0) {
-      state.currentBalance += state.currentBalance * monthlyGrowthRate;
+    if (monthlyGrowthRate !== 0 && state.currentProjectedValue !== 0) {
+      state.currentProjectedValue +=
+        state.currentProjectedValue * monthlyGrowthRate;
     }
 
     const context: MonthEvaluationContext = {
       month: currentMonth,
       monthKey,
-      currentBalance: state.currentBalance,
+      currentProjectedValue: state.currentProjectedValue,
+      initialValueBasis,
       firedEvents: state.firedEvents,
       monthlyEvents: [],
     };
 
-    // Separate events into those with and without balance conditions
-    const eventsWithoutBalanceConditions = scenario.events.filter(
-      (e) => !e.unlockedBy.some((c) => c.tag === "balance"),
+    // Separate events into those with only time-based conditions and those with
+    // projected-series or event-trigger conditions.
+    const eventsWithoutTriggerConditions = scenario.events.filter(
+      (event) =>
+        !event.unlockedBy.some((condition) => condition.tag !== "cashflow"),
     );
-    const eventsWithBalanceConditions = scenario.events.filter((e) =>
-      e.unlockedBy.some((c) => c.tag === "balance"),
+    const eventsWithTriggerConditions = scenario.events.filter((event) =>
+      event.unlockedBy.some((condition) => condition.tag !== "cashflow"),
     );
 
-    // First pass: process events without balance conditions
-    for (const event of eventsWithoutBalanceConditions) {
+    // First pass: process events without projected-series or event triggers.
+    for (const event of eventsWithoutTriggerConditions) {
       if (shouldEventFire(event, context)) {
         const impact = event.type === "income" ? event.amount : -event.amount;
 
         state.cashflow[monthKey].amount += impact;
         state.cashflow[monthKey].events.push(event);
-        state.currentBalance += impact;
+        state.currentProjectedValue += impact;
 
         const firedInfo = state.firedEvents.get(event.name);
         if (!firedInfo) {
@@ -230,17 +260,17 @@ const evaluateScenario = (input: {
       }
     }
 
-    // Update context balance for second pass
-    context.currentBalance = state.currentBalance;
+    // Update context projected value for second pass.
+    context.currentProjectedValue = state.currentProjectedValue;
 
-    // Second pass: process events with balance conditions
-    for (const event of eventsWithBalanceConditions) {
+    // Second pass: process events with projected-series or event triggers.
+    for (const event of eventsWithTriggerConditions) {
       if (shouldEventFire(event, context)) {
         const impact = event.type === "income" ? event.amount : -event.amount;
 
         state.cashflow[monthKey].amount += impact;
         state.cashflow[monthKey].events.push(event);
-        state.currentBalance += impact;
+        state.currentProjectedValue += impact;
 
         const firedInfo = state.firedEvents.get(event.name);
         if (!firedInfo) {
@@ -255,11 +285,11 @@ const evaluateScenario = (input: {
         }
 
         context.monthlyEvents.push(event);
-        context.currentBalance = state.currentBalance;
+        context.currentProjectedValue = state.currentProjectedValue;
       }
     }
 
-    state.balance[monthKey] = state.currentBalance;
+    state.projectedSeries[monthKey] = state.currentProjectedValue;
     currentMonth = addMonthsLD(currentMonth, 1);
   }
 
@@ -278,13 +308,14 @@ const runScenario = (input: {
   startDate: LocalDate;
   endDate: LocalDate;
   initialValue: number;
+  initialValueBasis: ScenarioInitialValueBasis;
   assumptions?: DeterministicScenarioAssumptions;
 }) => {
   const state = evaluateScenario(input);
 
   return {
     cashflow: state.cashflow,
-    balance: state.balance,
+    projectedSeries: state.projectedSeries,
   };
 };
 
@@ -293,7 +324,7 @@ const makeOneOff = (input: {
   name: string;
   amount: number;
   date: LocalDate;
-  unlockedBy?: Array<CashflowConditions | BalanceConditions>;
+  unlockedBy?: ScenarioEventCondition[];
 }): ScenarioEvent => {
   return {
     type: input.type,
@@ -310,7 +341,7 @@ const makeEvent = (input: {
   type: "income" | "expense";
   name: string;
   amount: number;
-  unlockedBy: Array<CashflowConditions | BalanceConditions>;
+  unlockedBy: ScenarioEventCondition[];
 }): ScenarioEvent => {
   return {
     type: input.type,
@@ -328,7 +359,7 @@ const makeRecurring = (input: {
   startDate: LocalDate;
   endDate: LocalDate | null;
   frequency: "monthly" | "yearly";
-  unlockedBy?: Array<CashflowConditions | BalanceConditions>;
+  unlockedBy?: ScenarioEventCondition[];
 }): ScenarioEvent => {
   return {
     type: input.type,

@@ -1,6 +1,12 @@
 "use server";
 
+import type { ScenarioInitialValueBasis } from "@/lib/planning/initial-value-basis";
 import { runScenario } from "@/lib/planning/scenario/engine";
+import {
+  getBasisCompatibilityDescription,
+  getProjectedSeriesLabel,
+  isProjectedSeriesThresholdConditionCompatibleWithBasis,
+} from "@/lib/planning/scenario/projected-series";
 import { ld, resolveTodayDateKey } from "@/lib/date/date-utils";
 import { fetchOrCreateDefaultScenario } from "@/server/financial-scenarios/fetch";
 import { fetchProfile } from "@/server/profile/actions";
@@ -9,6 +15,27 @@ interface GetFinancialScenariosParams {
   runSimulation: boolean | null;
   simulationYears: number | null;
 }
+
+const getProjectedSeriesThresholdActivity = (input: {
+  condition: {
+    type: "networth-is-above" | "cash-is-above";
+    value: { amount: number };
+    tag: "projected-series";
+  };
+  initialValueBasis: ScenarioInitialValueBasis;
+}) => {
+  const isActive = isProjectedSeriesThresholdConditionCompatibleWithBasis(
+    input.condition,
+    input.initialValueBasis,
+  );
+
+  return {
+    isActive,
+    inactiveReason: isActive
+      ? null
+      : getBasisCompatibilityDescription(input.initialValueBasis),
+  };
+};
 
 /**
  * Get the user's financial scenario with events and optional simulation.
@@ -45,7 +72,25 @@ export async function getFinancialScenarios(
               : null,
           };
         case "networth-is-above":
-          return { ...base, threshold: c.value.amount };
+          return {
+            ...base,
+            threshold: c.value.amount,
+            thresholdSeries: "net_worth" as const,
+            ...getProjectedSeriesThresholdActivity({
+              condition: c,
+              initialValueBasis: scenario.initialValueBasis,
+            }),
+          };
+        case "cash-is-above":
+          return {
+            ...base,
+            threshold: c.value.amount,
+            thresholdSeries: "cash" as const,
+            ...getProjectedSeriesThresholdActivity({
+              condition: c,
+              initialValueBasis: scenario.initialValueBasis,
+            }),
+          };
         case "event-happened":
           return { ...base, eventName: c.value.eventName };
         case "income-is-above":
@@ -72,19 +117,23 @@ export async function getFinancialScenarios(
     scenarioName: string;
     scenarioId: string;
     initialValue: number;
+    initialValueBasis: typeof scenario.initialValueBasis;
+    projectedSeriesLabel: string;
     eventsCount: number;
     events: typeof events;
     simulation?: {
       years: number;
       startDate: string;
       endDate: string;
-      finalBalance: number;
-      balanceByYear: Array<{ year: number; balance: number }>;
+      finalProjectedValue: number;
+      projectedSeriesByYear: Array<{ year: number; projectedValue: number }>;
     };
   } = {
     scenarioName: scenario.name,
     scenarioId: scenario.id,
     initialValue: scenario.initialValue,
+    initialValueBasis: scenario.initialValueBasis,
+    projectedSeriesLabel: getProjectedSeriesLabel(scenario.initialValueBasis),
     eventsCount: events.length,
     events,
   };
@@ -99,36 +148,45 @@ export async function getFinancialScenarios(
     const startDate = ld(year, month, 1);
     const endDate = ld(year + simulationYears, month, 1);
 
-    const { balance } = runScenario({
+    const { projectedSeries: simulatedProjectedSeries } = runScenario({
       scenario,
       startDate,
       endDate,
       initialValue: scenario.initialValue,
+      initialValueBasis: scenario.initialValueBasis,
       assumptions: {
         expectedAnnualReturnPercent:
           scenario.assumptions.values.expectedAnnualReturnPercent,
       },
     });
 
-    // Extract year-end balances for summary
-    const balanceByYear: Array<{ year: number; balance: number }> = [];
+    // Extract year-end projected values for summary.
+    const projectedSeriesByYear: Array<{
+      year: number;
+      projectedValue: number;
+    }> = [];
     for (let year = startDate.y; year <= endDate.y; year++) {
       const yearEndKey = `${year}-12`;
-      if (balance[yearEndKey] !== undefined) {
-        balanceByYear.push({ year, balance: balance[yearEndKey] });
+      if (simulatedProjectedSeries[yearEndKey] !== undefined) {
+        projectedSeriesByYear.push({
+          year,
+          projectedValue: simulatedProjectedSeries[yearEndKey],
+        });
       }
     }
 
-    const balanceKeys = Object.keys(balance).sort();
-    const finalBalance =
-      balance[balanceKeys[balanceKeys.length - 1]] ?? scenario.initialValue;
+    const projectedSeriesKeys = Object.keys(simulatedProjectedSeries).sort();
+    const finalProjectedValue =
+      simulatedProjectedSeries[
+        projectedSeriesKeys[projectedSeriesKeys.length - 1]
+      ] ?? scenario.initialValue;
 
     result.simulation = {
       years: simulationYears,
       startDate: `${startDate.y}-${String(startDate.m).padStart(2, "0")}`,
       endDate: `${endDate.y}-${String(endDate.m).padStart(2, "0")}`,
-      finalBalance,
-      balanceByYear,
+      finalProjectedValue,
+      projectedSeriesByYear,
     };
   }
 

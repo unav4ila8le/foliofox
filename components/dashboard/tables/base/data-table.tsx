@@ -27,6 +27,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+import type { ScenarioInitialValueBasis } from "@/lib/planning/initial-value-basis";
 import { useLocale } from "@/hooks/use-locale";
 import { cn } from "@/lib/utils";
 
@@ -34,6 +35,7 @@ import { cn } from "@/lib/utils";
 declare module "@tanstack/react-table" {
   interface TableMeta<TData> {
     locale?: string;
+    initialValueBasis?: ScenarioInitialValueBasis;
     onEdit?: (row: TData, index: number) => void;
     onDelete?: (index: number) => void;
   }

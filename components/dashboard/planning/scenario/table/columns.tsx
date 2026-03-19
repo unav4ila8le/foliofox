@@ -17,10 +17,22 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  getBasisCompatibilityDescription,
+  eventHasIncompatibleProjectedSeriesThresholdCondition,
+  getProjectedSeriesThresholdConditionLabel,
+  isProjectedSeriesThresholdCondition,
+} from "@/lib/planning/scenario/projected-series";
 import type { ScenarioEvent } from "@/lib/planning/scenario/engine";
 import { getScenarioEventDateRange } from "@/lib/planning/scenario/event-dates";
 import { formatDate } from "@/lib/date/date-format";
 import { formatNumber } from "@/lib/number-format";
+
+const assertNever = (value: never): never => {
+  throw new Error(
+    `Unhandled scenario event condition: ${JSON.stringify(value)}`,
+  );
+};
 
 // Extended type with id for table
 export type ScenarioEventWithId = ScenarioEvent & { id: string };
@@ -80,7 +92,48 @@ function ActionsCell({
 }
 
 function getAdditionalConditionsCount(event: ScenarioEvent): number {
-  return event.unlockedBy.filter((c) => c.tag === "balance").length;
+  return event.unlockedBy.filter((condition) => condition.tag !== "cashflow")
+    .length;
+}
+
+function getConditionSummary(input: { event: ScenarioEvent; locale?: string }) {
+  const conditionSummaries = input.event.unlockedBy
+    .filter((condition) => condition.tag !== "cashflow")
+    .map((condition) => {
+      if (isProjectedSeriesThresholdCondition(condition)) {
+        return `${getProjectedSeriesThresholdConditionLabel(condition.type)} ${formatNumber(
+          condition.value.amount,
+          {
+            locale: input.locale,
+            maximumFractionDigits: 2,
+          },
+        )}`;
+      }
+
+      if (condition.type === "event-happened") {
+        return `${condition.value.eventName} happened`;
+      }
+
+      if (condition.type === "income-is-above") {
+        return `${condition.value.eventName} income >= ${formatNumber(
+          condition.value.amount,
+          {
+            locale: input.locale,
+            maximumFractionDigits: 2,
+          },
+        )}`;
+      }
+
+      return assertNever(condition);
+    });
+
+  if (conditionSummaries.length <= 2) {
+    return conditionSummaries.join(", ");
+  }
+
+  return `${conditionSummaries.slice(0, 2).join(", ")} +${
+    conditionSummaries.length - 2
+  } more`;
 }
 
 export const columns: ColumnDef<ScenarioEventWithId>[] = [
@@ -193,12 +246,34 @@ export const columns: ColumnDef<ScenarioEventWithId>[] = [
   {
     id: "conditions",
     header: "Conditions",
-    cell: ({ row }) => {
+    cell: ({ row, table }) => {
       const count = getAdditionalConditionsCount(row.original);
+      const initialValueBasis =
+        table.options.meta?.initialValueBasis ?? "manual";
       if (count === 0) {
         return <div className="text-muted-foreground">No conditions</div>;
       }
-      return <div>{count} condition(s)</div>;
+
+      const summary = getConditionSummary({
+        event: row.original,
+        locale: table.options.meta?.locale,
+      });
+      const hasIncompatibleConditions =
+        eventHasIncompatibleProjectedSeriesThresholdCondition(
+          row.original,
+          initialValueBasis,
+        );
+
+      return (
+        <div>
+          <p>{summary}</p>
+          {hasIncompatibleConditions ? (
+            <p className="text-xs text-amber-600">
+              {getBasisCompatibilityDescription(initialValueBasis)}
+            </p>
+          ) : null}
+        </div>
+      );
     },
   },
   {

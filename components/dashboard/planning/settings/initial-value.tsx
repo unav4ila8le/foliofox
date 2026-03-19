@@ -29,6 +29,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 
 import {
+  SCENARIO_INITIAL_VALUE_BASIS_LABELS,
   ScenarioInitialValueBasis as ScenarioInitialValueBasisSchema,
   type ScenarioInitialValueBasis,
 } from "@/lib/planning/initial-value-basis";
@@ -46,16 +47,10 @@ interface PlanningInitialValueProps {
   initialValueSuggestions: ScenarioInitialValueSuggestions;
 }
 
-const INITIAL_VALUE_BASIS_LABELS: Record<ScenarioInitialValueBasis, string> = {
-  net_worth: "Net Worth",
-  cash: "Cash",
-  manual: "Manual",
-};
-
 const INITIAL_VALUE_BASIS_OPTIONS = SCENARIO_INITIAL_VALUE_BASES.map(
   (value) => ({
     value,
-    label: INITIAL_VALUE_BASIS_LABELS[value],
+    label: SCENARIO_INITIAL_VALUE_BASIS_LABELS[value],
   }),
 );
 

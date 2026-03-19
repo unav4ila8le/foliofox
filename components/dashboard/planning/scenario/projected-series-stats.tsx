@@ -15,39 +15,48 @@ import {
   TooltipContent,
 } from "@/components/ui/tooltip";
 
+import type { ScenarioInitialValueBasis } from "@/lib/planning/initial-value-basis";
+import {
+  getAverageProjectedSeriesChangeLabel,
+  getFinalProjectedSeriesLabel,
+  getLowestProjectedSeriesLabel,
+  getProjectedNetChangeLabel,
+  getProjectedSeriesLabel,
+} from "@/lib/planning/scenario/projected-series";
 import type { CashflowEntry } from "@/lib/planning/scenario/engine";
 import { formatMonthYear } from "@/lib/date/date-format";
 import { formatPercentage, formatCurrency } from "@/lib/number-format";
 import { useLocale } from "@/hooks/use-locale";
 import { cn } from "@/lib/utils";
 
-interface BalanceStatsProps {
+interface ProjectedSeriesStatsProps {
   initialValue: number;
-  finalBalance: number;
+  initialValueBasis: ScenarioInitialValueBasis;
+  finalProjectedValue: number;
   currency: string;
   scenarioResult: {
-    balance: Record<string, number>;
+    projectedSeries: Record<string, number>;
     cashflow: Record<string, CashflowEntry>;
   };
   endDate: Date;
 }
 
-const calculateStats = (
-  scenarioResult: BalanceStatsProps["scenarioResult"],
+const calculateProjectedSeriesStats = (
+  scenarioResult: ProjectedSeriesStatsProps["scenarioResult"],
   initialValue: number,
-  finalBalance: number,
+  finalProjectedValue: number,
 ) => {
   // 1. Net Change calculations
-  const netChange = finalBalance - initialValue;
+  const netChange = finalProjectedValue - initialValue;
   const netChangePercentage =
     initialValue !== 0 ? (netChange / initialValue) * 100 : 0;
 
-  // 2. Lowest Balance calculations
-  const balanceEntries = Object.entries(scenarioResult.balance);
-  const lowestEntry = balanceEntries.reduce(
-    (min, [monthKey, balance]) =>
-      balance < min.balance ? { monthKey, balance } : min,
-    { monthKey: "", balance: initialValue },
+  // 2. Lowest projected value calculations
+  const projectedSeriesEntries = Object.entries(scenarioResult.projectedSeries);
+  const lowestEntry = projectedSeriesEntries.reduce(
+    (min, [monthKey, projectedValue]) =>
+      projectedValue < min.projectedValue ? { monthKey, projectedValue } : min,
+    { monthKey: "", projectedValue: initialValue },
   );
 
   // Parse monthKey "YYYY-MM" to date
@@ -59,31 +68,41 @@ const calculateStats = (
     : new Date();
 
   // 3. Average Monthly Change
-  const monthCount = Object.keys(scenarioResult.balance).length;
+  const monthCount = Object.keys(scenarioResult.projectedSeries).length;
   const avgMonthlyChange = monthCount > 0 ? netChange / monthCount : 0;
 
   return {
     netChange,
     netChangePercentage,
-    lowestBalance: lowestEntry.balance,
-    lowestBalanceDate: lowestDate,
-    isLowestBelowInitial: lowestEntry.balance < initialValue,
+    lowestProjectedValue: lowestEntry.projectedValue,
+    lowestProjectedValueDate: lowestDate,
+    isLowestBelowInitial: lowestEntry.projectedValue < initialValue,
     avgMonthlyChange,
     monthCount,
   };
 };
 
-export const BalanceStats = ({
+export const ProjectedSeriesStats = ({
   initialValue,
-  finalBalance,
+  initialValueBasis,
+  finalProjectedValue,
   currency,
   scenarioResult,
   endDate,
-}: BalanceStatsProps) => {
+}: ProjectedSeriesStatsProps) => {
   const locale = useLocale();
+  const projectedSeriesLabel = useMemo(
+    () => getProjectedSeriesLabel(initialValueBasis).toLowerCase(),
+    [initialValueBasis],
+  );
   const stats = useMemo(
-    () => calculateStats(scenarioResult, initialValue, finalBalance),
-    [scenarioResult, initialValue, finalBalance],
+    () =>
+      calculateProjectedSeriesStats(
+        scenarioResult,
+        initialValue,
+        finalProjectedValue,
+      ),
+    [scenarioResult, initialValue, finalProjectedValue],
   );
 
   return (
@@ -91,7 +110,9 @@ export const BalanceStats = ({
       {/* Net Change */}
       <Card className="rounded-md py-4 shadow-xs">
         <CardHeader>
-          <CardDescription>Net Change</CardDescription>
+          <CardDescription>
+            {getProjectedNetChangeLabel(initialValueBasis)}
+          </CardDescription>
           <CardTitle
             className={cn(
               "flex items-center gap-2 whitespace-nowrap",
@@ -124,36 +145,37 @@ export const BalanceStats = ({
         </CardHeader>
       </Card>
 
-      {/* Lowest Balance */}
+      {/* Lowest projected value */}
       <Card className="rounded-md py-4 shadow-xs">
         <CardHeader>
           <CardDescription className="flex items-center gap-1">
-            Lowest Balance
+            {getLowestProjectedSeriesLabel(initialValueBasis)}
           </CardDescription>
           <CardTitle
             className={cn(
               "flex items-center gap-2",
-              stats.lowestBalance < 0
+              stats.lowestProjectedValue < 0
                 ? "text-red-600"
                 : stats.isLowestBelowInitial
                   ? "text-yellow-600"
                   : undefined,
             )}
           >
-            {formatCurrency(stats.lowestBalance, currency, { locale })}
+            {formatCurrency(stats.lowestProjectedValue, currency, { locale })}
             {stats.isLowestBelowInitial && (
               <Tooltip>
                 <TooltipTrigger>
                   <AlertTriangle className="size-4" />
                 </TooltipTrigger>
                 <TooltipContent>
-                  The lowest balance is below the initial value
+                  The lowest projected {projectedSeriesLabel} is below the
+                  initial value
                 </TooltipContent>
               </Tooltip>
             )}
           </CardTitle>
           <p className="text-muted-foreground text-xs">
-            {formatMonthYear(stats.lowestBalanceDate, {
+            {formatMonthYear(stats.lowestProjectedValueDate, {
               locale,
               month: "short",
               year: "numeric",
@@ -165,7 +187,9 @@ export const BalanceStats = ({
       {/* Avg Monthly Change */}
       <Card className="rounded-md py-4 shadow-xs">
         <CardHeader>
-          <CardDescription>Avg. Monthly Change</CardDescription>
+          <CardDescription>
+            {getAverageProjectedSeriesChangeLabel(initialValueBasis)}
+          </CardDescription>
           <CardTitle
             className={cn(
               "flex items-center gap-2",
@@ -181,26 +205,29 @@ export const BalanceStats = ({
         </CardHeader>
       </Card>
 
-      {/* Final Balance */}
+      {/* Final projected value */}
       <Card className="rounded-md py-4 shadow-xs">
         <CardHeader>
-          <CardDescription>Final Balance</CardDescription>
+          <CardDescription>
+            {getFinalProjectedSeriesLabel(initialValueBasis)}
+          </CardDescription>
           <CardTitle
             className={cn(
               "flex items-center gap-2",
-              finalBalance >= initialValue
+              finalProjectedValue >= initialValue
                 ? "text-green-600"
                 : "text-yellow-600",
             )}
           >
-            {formatCurrency(finalBalance, currency, { locale })}
-            {finalBalance < initialValue && (
+            {formatCurrency(finalProjectedValue, currency, { locale })}
+            {finalProjectedValue < initialValue && (
               <Tooltip>
                 <TooltipTrigger>
                   <AlertTriangle className="size-4" />
                 </TooltipTrigger>
                 <TooltipContent>
-                  The final balance is below the initial value
+                  The final projected {projectedSeriesLabel} is below the
+                  initial value
                 </TooltipContent>
               </Tooltip>
             )}

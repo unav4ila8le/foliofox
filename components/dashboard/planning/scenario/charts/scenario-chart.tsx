@@ -31,14 +31,21 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { UpsertEventDialog } from "../upsert-event/dialog";
-import { DemoBalanceChart } from "./demo-scenario-chart";
-import { BalanceStats } from "../balance-stats";
+import { DemoProjectedSeriesChart } from "./demo-projected-series-chart";
+import { ProjectedSeriesStats } from "../projected-series-stats";
 
+import type { ScenarioInitialValueBasis } from "@/lib/planning/initial-value-basis";
+import {
+  getProjectedSeriesDescription,
+  getProjectedSeriesLabel,
+  getProjectedSeriesTitle,
+} from "@/lib/planning/scenario/projected-series";
 import {
   runScenario,
   type Scenario,
   type ScenarioEvent,
 } from "@/lib/planning/scenario/engine";
+import { computeProjectedSeriesYAxisDomain } from "@/lib/planning/scenario/chart-utils";
 import { fromJSDate } from "@/lib/date/date-utils";
 import { formatMonthYear } from "@/lib/date/date-format";
 import { formatCompactNumber, formatCurrency } from "@/lib/number-format";
@@ -71,7 +78,7 @@ const CustomEventMarker = (props: {
 
   if (cx == null || cy == null) return null;
 
-  // Negative cashflow (balance drop) = bigger, more prominent
+  // Negative cashflow (projected value drop) = bigger, more prominent
   // Positive cashflow = smaller, less prominent
   const isNegative = netCashflow < 0;
   const baseRadius = isNegative ? 16 : 10;
@@ -155,6 +162,7 @@ export function ScenarioChart({
   scenario,
   currency,
   initialValue,
+  initialValueBasis,
   expectedAnnualReturnPercent,
 }: {
   scenario: Scenario & {
@@ -162,6 +170,7 @@ export function ScenarioChart({
   };
   currency: string;
   initialValue: number;
+  initialValueBasis: ScenarioInitialValueBasis;
   expectedAnnualReturnPercent: number;
 }) {
   const locale = useLocale();
@@ -179,13 +188,33 @@ export function ScenarioChart({
     return runScenario({
       scenario,
       initialValue,
+      initialValueBasis,
       startDate: fromJSDate(new Date()),
       endDate: fromJSDate(endDate),
       assumptions: {
         expectedAnnualReturnPercent,
       },
     });
-  }, [scenario, initialValue, endDate, expectedAnnualReturnPercent]);
+  }, [
+    scenario,
+    initialValue,
+    initialValueBasis,
+    endDate,
+    expectedAnnualReturnPercent,
+  ]);
+
+  const projectedSeriesTitle = useMemo(
+    () => getProjectedSeriesTitle(initialValueBasis),
+    [initialValueBasis],
+  );
+  const projectedSeriesDescription = useMemo(
+    () => getProjectedSeriesDescription(initialValueBasis),
+    [initialValueBasis],
+  );
+  const projectedSeriesLabel = useMemo(
+    () => getProjectedSeriesLabel(initialValueBasis).toLowerCase(),
+    [initialValueBasis],
+  );
 
   const getPeriodKey = useCallback(
     (date: Date): string => {
@@ -208,7 +237,7 @@ export function ScenarioChart({
   );
 
   const chartData = useMemo(() => {
-    const sortedMonths = Object.keys(scenarioResult.balance).sort();
+    const sortedMonths = Object.keys(scenarioResult.projectedSeries).sort();
 
     if (scale === "monthly") {
       // Monthly view - no aggregation needed
@@ -216,7 +245,7 @@ export function ScenarioChart({
         monthKey: string;
         timestamp: number;
         date: Date;
-        balance: number;
+        projectedValue: number;
         cashflow: number;
         events: ScenarioEvent[];
       }> = [];
@@ -229,7 +258,7 @@ export function ScenarioChart({
           monthKey,
           timestamp: date.getTime(),
           date,
-          balance: scenarioResult.balance[monthKey],
+          projectedValue: scenarioResult.projectedSeries[monthKey],
           cashflow: scenarioResult.cashflow[monthKey]?.amount || 0,
           events: scenarioResult.cashflow[monthKey]?.events || [],
         });
@@ -244,7 +273,7 @@ export function ScenarioChart({
           monthKey: string;
           timestamp: number;
           date: Date;
-          balance: number;
+          projectedValue: number;
           cashflow: number;
           events: ScenarioEvent[];
         }
@@ -260,7 +289,7 @@ export function ScenarioChart({
             monthKey: periodKey,
             timestamp: date.getTime(),
             date,
-            balance: scenarioResult.balance[monthKey],
+            projectedValue: scenarioResult.projectedSeries[monthKey],
             cashflow: 0,
             events: [],
           });
@@ -268,12 +297,13 @@ export function ScenarioChart({
 
         const period = periodMap.get(periodKey)!;
         // Keep point timestamp in sync with the latest month represented by the period.
-        // This avoids plotting a period-end balance on the period-start x-position.
+        // This avoids plotting a period-end projected value on the period-start
+        // x-position.
         period.monthKey = monthKey;
         period.timestamp = date.getTime();
         period.date = date;
-        // Use the latest balance for the period
-        period.balance = scenarioResult.balance[monthKey];
+        // Use the latest projected value for the period.
+        period.projectedValue = scenarioResult.projectedSeries[monthKey];
         // Sum cashflow
         period.cashflow += scenarioResult.cashflow[monthKey]?.amount || 0;
         // Collect all events
@@ -292,7 +322,7 @@ export function ScenarioChart({
       monthKey: string;
       timestamp: number;
       date: Date;
-      balance: number;
+      projectedValue: number;
       events: Array<{
         name: string;
         type: "income" | "expense";
@@ -333,7 +363,7 @@ export function ScenarioChart({
           monthKey: point.monthKey,
           timestamp: point.timestamp,
           date: point.date,
-          balance: point.balance,
+          projectedValue: point.projectedValue,
           events: point.events.map((e) => ({
             name: e.name,
             type: e.type,
@@ -354,82 +384,20 @@ export function ScenarioChart({
     return markers;
   }, [chartData]);
 
-  const yAxisDomain = useMemo(() => {
-    if (chartData.length === 0) return ["auto", "auto"] as const;
-
-    // Helper function to round to nice numbers
-    const roundToNice = (value: number, roundUp: boolean): number => {
-      if (value === 0) return 0;
-
-      const sign = value < 0 ? -1 : 1;
-      const absValue = Math.abs(value);
-
-      // Determine the magnitude (power of 10)
-      const magnitude = Math.pow(10, Math.floor(Math.log10(absValue)));
-
-      // Determine nice interval based on magnitude
-      let interval: number;
-      if (magnitude >= 100000) {
-        // For 100K+: use 20K intervals
-        interval = 20000;
-      } else if (magnitude >= 10000) {
-        // For 10K-100K: use 10K intervals
-        interval = 10000;
-      } else if (magnitude >= 1000) {
-        // For 1K-10K: use 5K intervals
-        interval = 5000;
-      } else if (magnitude >= 100) {
-        // For 100-1K: use 500 intervals
-        interval = 500;
-      } else if (magnitude >= 10) {
-        // For 10-100: use 50 intervals
-        interval = 50;
-      } else {
-        // For <10: use 5 intervals
-        interval = 5;
-      }
-
-      // Round to the nearest interval
-      const rounded = roundUp
-        ? Math.ceil(absValue / interval) * interval
-        : Math.floor(absValue / interval) * interval;
-
-      return sign * rounded;
-    };
-
-    // Find min and max balance values
-    const balances = chartData.map((d) => d.balance);
-    const minBalance = Math.min(...balances);
-    const maxBalance = Math.max(...balances);
-
-    // Calculate range
-    const range = maxBalance - minBalance;
-
-    // Add 20% padding on each side
-    const padding = range * 0.2;
-
-    // If range is 0 (all values are the same), add fixed padding
-    if (range === 0) {
-      const fixedPadding = Math.abs(minBalance) * 0.2 || 1000;
-      const domainMin = roundToNice(minBalance - fixedPadding, false);
-      const domainMax = roundToNice(maxBalance + fixedPadding, true);
-      return [domainMin, domainMax] as const;
-    }
-
-    // Apply padding and round to nice numbers
-    const domainMin = roundToNice(minBalance - padding, false);
-    const domainMax = roundToNice(maxBalance + padding, true);
-
-    return [domainMin, domainMax] as const;
+  const projectedSeriesDomain = useMemo(() => {
+    return computeProjectedSeriesYAxisDomain(
+      chartData.map((point) => point.projectedValue),
+      { roundToNice: true },
+    );
   }, [chartData]);
 
   const isPositiveTrend = useMemo(() => {
     if (chartData.length === 0) return true;
 
-    const firstBalance = chartData.at(0)?.balance || 0;
-    const lastBalance = chartData.at(-1)?.balance || 0;
+    const firstProjectedValue = chartData.at(0)?.projectedValue || 0;
+    const lastProjectedValue = chartData.at(-1)?.projectedValue || 0;
 
-    return lastBalance >= firstBalance;
+    return lastProjectedValue >= firstProjectedValue;
   }, [chartData]);
 
   const chartColor = isPositiveTrend
@@ -460,10 +428,8 @@ export function ScenarioChart({
       <Card className="rounded-lg shadow-xs">
         <CardHeader className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div className="flex w-full flex-col gap-1">
-            <CardTitle>Balance Over Time</CardTitle>
-            <CardDescription>
-              Financial projection with conditional events
-            </CardDescription>
+            <CardTitle>{projectedSeriesTitle}</CardTitle>
+            <CardDescription>{projectedSeriesDescription}</CardDescription>
           </div>
           <div className="flex w-full items-center gap-2 md:justify-end">
             <Select
@@ -512,7 +478,10 @@ export function ScenarioChart({
             <div className="relative h-full">
               {/* Demo chart in background */}
               <div className="absolute inset-0 opacity-25">
-                <DemoBalanceChart initialValue={initialValue} />
+                <DemoProjectedSeriesChart
+                  initialValue={initialValue}
+                  initialValueBasis={initialValueBasis}
+                />
               </div>
 
               {/* Empty state overlay */}
@@ -520,14 +489,16 @@ export function ScenarioChart({
                 <div className="bg-accent rounded-lg p-2">
                   <GitBranch className="text-muted-foreground size-4" />
                 </div>
-                <p className="mt-3 font-medium">Balance Over Time</p>
+                <p className="mt-3 font-medium">{projectedSeriesTitle}</p>
                 <p className="text-muted-foreground mt-1 mb-3 text-sm">
-                  Add events to see how your balance changes over time
+                  Add events to see how your projected {projectedSeriesLabel}{" "}
+                  changes over time
                 </p>
                 <UpsertEventDialog
                   scenarioId={scenario.id}
                   existingEvents={scenario.events}
                   currency={currency}
+                  initialValueBasis={initialValueBasis}
                   trigger={
                     <Button>
                       <Plus className="size-4" />
@@ -586,7 +557,7 @@ export function ScenarioChart({
                 </defs>
                 <CartesianGrid stroke="var(--border)" vertical={false} />
                 <YAxis
-                  dataKey="balance"
+                  dataKey="projectedValue"
                   tickFormatter={formatYAxisValue}
                   axisLine={false}
                   tickLine={false}
@@ -594,7 +565,7 @@ export function ScenarioChart({
                     fontSize: 12,
                     fill: "var(--muted-foreground)",
                   }}
-                  domain={yAxisDomain}
+                  domain={projectedSeriesDomain}
                   width={40}
                 />
                 <XAxis
@@ -612,7 +583,7 @@ export function ScenarioChart({
                   minTickGap={30}
                 />
                 <Area
-                  dataKey="balance"
+                  dataKey="projectedValue"
                   stroke={chartColor}
                   strokeWidth={1.5}
                   fill="url(#scenarioGradient)"
@@ -629,7 +600,7 @@ export function ScenarioChart({
                     <ReferenceDot
                       key={markerIndex}
                       x={marker.timestamp}
-                      y={marker.balance}
+                      y={marker.projectedValue}
                       shape={(props: { cx?: number; cy?: number }) => (
                         <CustomEventMarker
                           cx={props.cx}
@@ -723,17 +694,21 @@ export function ScenarioChart({
                             {periodLabel}
                           </p>
                           <p className="text-sm font-medium">
-                            Balance:{" "}
+                            {getProjectedSeriesLabel(initialValueBasis)}:{" "}
                             <span
                               className={
-                                monthData.balance < 0
+                                monthData.projectedValue < 0
                                   ? "text-red-600"
                                   : undefined
                               }
                             >
-                              {formatCurrency(monthData.balance, currency, {
-                                locale,
-                              })}
+                              {formatCurrency(
+                                monthData.projectedValue,
+                                currency,
+                                {
+                                  locale,
+                                },
+                              )}
                             </span>
                           </p>
                         </div>
@@ -833,9 +808,10 @@ export function ScenarioChart({
         </CardContent>
       </Card>
       {scenario.events.length > 0 && (
-        <BalanceStats
+        <ProjectedSeriesStats
           initialValue={initialValue}
-          finalBalance={chartData.at(-1)?.balance || 0}
+          initialValueBasis={initialValueBasis}
+          finalProjectedValue={chartData.at(-1)?.projectedValue || 0}
           currency={currency}
           scenarioResult={scenarioResult}
           endDate={endDate}

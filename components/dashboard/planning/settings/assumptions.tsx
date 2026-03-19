@@ -349,7 +349,7 @@ export function PlanningAssumptions({
       </div>
       {/* TODO(phase-4): surface volatility input when Simulations UI ships. */}
       <p className="text-muted-foreground text-xs">
-        Global settings shared across Scenario, FIRE, and Simulations.
+        Global settings are shared across Scenario, FIRE, and Simulations.
       </p>
     </div>
   );

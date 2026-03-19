@@ -14,6 +14,7 @@ import {
   withScenarioBaselineMetadata,
   withScenarioAssumptions,
 } from "@/lib/planning/settings";
+import { convertScenarioEventsProjectedSeriesThresholdConditions } from "@/lib/planning/scenario/projected-series";
 import { getCurrentUser } from "@/server/auth/actions";
 import type { ActionResult } from "./types";
 import type { Json } from "@/types/database.types";
@@ -119,11 +120,12 @@ export async function updateScenarioInitialValue(
   }
 
   let updatedSettings: Json | undefined;
+  let updatedEvents: Json | undefined;
 
   if (initialValueBasis) {
     const { data: scenario, error: scenarioError } = await supabase
       .from("financial_scenarios")
-      .select("settings")
+      .select("settings,events")
       .eq("id", scenarioId)
       .eq("user_id", user.id)
       .single();
@@ -166,12 +168,21 @@ export async function updateScenarioInitialValue(
       settings: scenario.settings,
       baseline: baselineMetadata,
     }) as Json;
+
+    const parsedEvents = Array.isArray(scenario.events)
+      ? ScenarioEvent.array().parse(scenario.events)
+      : [];
+    updatedEvents = convertScenarioEventsProjectedSeriesThresholdConditions(
+      parsedEvents,
+      initialValueBasis,
+    ) as Json;
   }
 
   const updatePayload: {
     initial_value: number;
     initial_value_basis?: ScenarioInitialValueBasisType;
     settings?: Json;
+    events?: Json;
   } = {
     initial_value: initialValue,
   };
@@ -180,6 +191,9 @@ export async function updateScenarioInitialValue(
   }
   if (updatedSettings !== undefined) {
     updatePayload.settings = updatedSettings;
+  }
+  if (updatedEvents !== undefined) {
+    updatePayload.events = updatedEvents;
   }
 
   const { error: updateError } = await supabase

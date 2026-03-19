@@ -11,6 +11,7 @@ import { DataTable } from "@/components/dashboard/tables/base/data-table";
 import { UpsertEventDialog } from "../upsert-event/dialog";
 import { columns, type ScenarioEventWithId } from "./columns";
 
+import type { ScenarioInitialValueBasis } from "@/lib/planning/initial-value-basis";
 import type { ScenarioEvent } from "@/lib/planning/scenario/engine";
 import { deleteScenarioEvent } from "@/server/financial-scenarios/delete";
 
@@ -18,12 +19,14 @@ interface ScenarioEventsTableProps {
   scenarioId: string;
   events: ScenarioEvent[];
   currency: string;
+  initialValueBasis: ScenarioInitialValueBasis;
 }
 
 export function ScenarioEventsTable({
   scenarioId,
   events,
   currency,
+  initialValueBasis,
 }: ScenarioEventsTableProps) {
   const router = useRouter();
   const [filterValue, setFilterValue] = useState("");
@@ -93,6 +96,7 @@ export function ScenarioEventsTable({
           eventIndex={editingEvent?.index ?? null}
           onSuccess={() => handleDialogOpenChange(false)}
           currency={currency}
+          initialValueBasis={initialValueBasis}
           trigger={
             <Button variant="outline">
               <Plus />
@@ -110,6 +114,7 @@ export function ScenarioEventsTable({
             filterValue={filterValue}
             filterColumnId="name"
             meta={{
+              initialValueBasis,
               onEdit: handleEventClick,
               onDelete: handleDelete,
             }}
