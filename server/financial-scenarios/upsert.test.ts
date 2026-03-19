@@ -15,6 +15,7 @@ type ScenarioRow = {
   id: string;
   user_id: string;
   settings: unknown;
+  events: unknown;
   initial_value: number;
   initial_value_basis: "net_worth" | "cash" | "manual";
 };
@@ -185,6 +186,33 @@ const createDefaultState = (): FakeState => ({
   scenarioRow: {
     id: "scenario-1",
     user_id: "user-1",
+    events: [
+      {
+        name: "Car purchase",
+        type: "expense",
+        amount: 15000,
+        recurrence: { type: "once" },
+        unlockedBy: [
+          {
+            tag: "projected-series",
+            type: "cash-is-above",
+            value: {
+              eventRef: "",
+              amount: 60000,
+            },
+          },
+          {
+            tag: "cashflow",
+            type: "date-is",
+            value: {
+              y: 2027,
+              m: 3,
+              d: 10,
+            },
+          },
+        ],
+      },
+    ],
     initial_value: 1000,
     initial_value_basis: "manual",
     settings: {
@@ -308,6 +336,33 @@ describe("financial scenario upsert actions", () => {
     expect(state.financialScenarioUpdatePayloads[0]).toEqual({
       initial_value: 12345.67,
       initial_value_basis: "net_worth",
+      events: [
+        {
+          name: "Car purchase",
+          type: "expense",
+          amount: 15000,
+          recurrence: { type: "once" },
+          unlockedBy: [
+            {
+              tag: "projected-series",
+              type: "networth-is-above",
+              value: {
+                eventRef: "",
+                amount: 60000,
+              },
+            },
+            {
+              tag: "cashflow",
+              type: "date-is",
+              value: {
+                y: 2027,
+                m: 3,
+                d: 10,
+              },
+            },
+          ],
+        },
+      ],
       settings: {
         assumptions: {
           preset: "average",
@@ -355,6 +410,33 @@ describe("financial scenario upsert actions", () => {
     expect(state.financialScenarioUpdatePayloads[0]).toEqual({
       initial_value: 9999,
       initial_value_basis: "manual",
+      events: [
+        {
+          name: "Car purchase",
+          type: "expense",
+          amount: 15000,
+          recurrence: { type: "once" },
+          unlockedBy: [
+            {
+              tag: "projected-series",
+              type: "cash-is-above",
+              value: {
+                eventRef: "",
+                amount: 60000,
+              },
+            },
+            {
+              tag: "cashflow",
+              type: "date-is",
+              value: {
+                y: 2027,
+                m: 3,
+                d: 10,
+              },
+            },
+          ],
+        },
+      ],
       settings: {
         assumptions: {
           preset: "average",
@@ -376,6 +458,179 @@ describe("financial scenario upsert actions", () => {
     expect(revalidatePathMock).toHaveBeenNthCalledWith(
       2,
       "/dashboard/planning/scenario",
+    );
+  });
+
+  it("converts threshold conditions when switching from net worth to cash", async () => {
+    const state = createDefaultState();
+    state.scenarioRow = {
+      ...(state.scenarioRow as ScenarioRow),
+      initial_value_basis: "net_worth",
+      events: [
+        {
+          name: "House deposit",
+          type: "expense",
+          amount: 40000,
+          recurrence: { type: "once" },
+          unlockedBy: [
+            {
+              tag: "projected-series",
+              type: "networth-is-above",
+              value: {
+                eventRef: "",
+                amount: 150000,
+              },
+            },
+          ],
+        },
+      ],
+    };
+    getCurrentUserMock.mockResolvedValue({
+      user: { id: "user-1" },
+      supabase: createSupabaseStub(state),
+    });
+
+    const { updateScenarioInitialValue } = await import("./upsert");
+
+    const result = await updateScenarioInitialValue("scenario-1", 5555, {
+      initialValueBasis: "cash",
+    });
+
+    expect(result).toEqual({ success: true });
+    expect(state.financialScenarioUpdatePayloads[0]).toEqual(
+      expect.objectContaining({
+        initial_value: 5555,
+        initial_value_basis: "cash",
+        events: [
+          {
+            name: "House deposit",
+            type: "expense",
+            amount: 40000,
+            recurrence: { type: "once" },
+            unlockedBy: [
+              {
+                tag: "projected-series",
+                type: "cash-is-above",
+                value: {
+                  eventRef: "",
+                  amount: 150000,
+                },
+              },
+            ],
+          },
+        ],
+      }),
+    );
+  });
+
+  it("converts threshold conditions when switching from cash to net worth", async () => {
+    const state = createDefaultState();
+    state.scenarioRow = {
+      ...(state.scenarioRow as ScenarioRow),
+      initial_value_basis: "cash",
+      events: [
+        {
+          name: "House deposit",
+          type: "expense",
+          amount: 40000,
+          recurrence: { type: "once" },
+          unlockedBy: [
+            {
+              tag: "projected-series",
+              type: "cash-is-above",
+              value: {
+                eventRef: "",
+                amount: 150000,
+              },
+            },
+          ],
+        },
+      ],
+    };
+    getCurrentUserMock.mockResolvedValue({
+      user: { id: "user-1" },
+      supabase: createSupabaseStub(state),
+    });
+
+    const { updateScenarioInitialValue } = await import("./upsert");
+
+    const result = await updateScenarioInitialValue("scenario-1", 7777, {
+      initialValueBasis: "net_worth",
+    });
+
+    expect(result).toEqual({ success: true });
+    expect(state.financialScenarioUpdatePayloads[0]).toEqual(
+      expect.objectContaining({
+        initial_value: 7777,
+        initial_value_basis: "net_worth",
+        events: [
+          {
+            name: "House deposit",
+            type: "expense",
+            amount: 40000,
+            recurrence: { type: "once" },
+            unlockedBy: [
+              {
+                tag: "projected-series",
+                type: "networth-is-above",
+                value: {
+                  eventRef: "",
+                  amount: 150000,
+                },
+              },
+            ],
+          },
+        ],
+      }),
+    );
+  });
+
+  it("converts preserved threshold conditions when switching from manual to net worth", async () => {
+    const state = createDefaultState();
+    getCurrentUserMock.mockResolvedValue({
+      user: { id: "user-1" },
+      supabase: createSupabaseStub(state),
+    });
+
+    const { updateScenarioInitialValue } = await import("./upsert");
+
+    const result = await updateScenarioInitialValue("scenario-1", 8888, {
+      initialValueBasis: "net_worth",
+    });
+
+    expect(result).toEqual({ success: true });
+    expect(state.financialScenarioUpdatePayloads[0]).toEqual(
+      expect.objectContaining({
+        initial_value: 8888,
+        initial_value_basis: "net_worth",
+        events: [
+          {
+            name: "Car purchase",
+            type: "expense",
+            amount: 15000,
+            recurrence: { type: "once" },
+            unlockedBy: [
+              {
+                tag: "projected-series",
+                type: "networth-is-above",
+                value: {
+                  eventRef: "",
+                  amount: 60000,
+                },
+              },
+              {
+                tag: "cashflow",
+                type: "date-is",
+                value: {
+                  y: 2027,
+                  m: 3,
+                  d: 10,
+                },
+              },
+            ],
+          },
+        ],
+      }),
     );
   });
 });

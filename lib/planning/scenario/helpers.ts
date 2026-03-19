@@ -19,9 +19,9 @@ const CashflowConditions = z.discriminatedUnion("type", [
   }),
 ]);
 
-const BalanceConditions = z.discriminatedUnion("type", [
+const ProjectedSeriesConditions = z.discriminatedUnion("type", [
   z.object({
-    tag: z.literal("balance"),
+    tag: z.literal("projected-series"),
     type: z.literal("networth-is-above"),
     value: z.object({
       eventRef: z.string(),
@@ -29,20 +29,37 @@ const BalanceConditions = z.discriminatedUnion("type", [
     }),
   }),
   z.object({
-    tag: z.literal("balance"),
+    tag: z.literal("projected-series"),
+    type: z.literal("cash-is-above"),
+    value: z.object({
+      eventRef: z.string(),
+      amount: z.number(),
+    }),
+  }),
+]);
+
+const EventConditions = z.discriminatedUnion("type", [
+  z.object({
+    tag: z.literal("event"),
     type: z.literal("event-happened"),
     value: z.object({
       eventName: z.string(),
     }),
   }),
   z.object({
-    tag: z.literal("balance"),
+    tag: z.literal("event"),
     type: z.literal("income-is-above"),
     value: z.object({
       eventName: z.string(),
       amount: z.number(),
     }),
   }),
+]);
+
+const ScenarioEventCondition = z.discriminatedUnion("tag", [
+  CashflowConditions,
+  ProjectedSeriesConditions,
+  EventConditions,
 ]);
 
 const ScenarioEvent = z.object({
@@ -60,9 +77,7 @@ const ScenarioEvent = z.object({
       type: z.literal("yearly"),
     }),
   ]),
-  unlockedBy: z.array(
-    z.discriminatedUnion("tag", [CashflowConditions, BalanceConditions]),
-  ),
+  unlockedBy: z.array(ScenarioEventCondition),
   metadata: z.record(z.string(), z.string()).optional(),
 });
 
@@ -74,7 +89,9 @@ const Scenario = z.object({
 type Scenario = z.infer<typeof Scenario>;
 type ScenarioEvent = z.infer<typeof ScenarioEvent>;
 type CashflowConditions = z.infer<typeof CashflowConditions>;
-type BalanceConditions = z.infer<typeof BalanceConditions>;
+type ProjectedSeriesConditions = z.infer<typeof ProjectedSeriesConditions>;
+type EventConditions = z.infer<typeof EventConditions>;
+type ScenarioEventCondition = z.infer<typeof ScenarioEventCondition>;
 
 const fromDatabaseScenarioToScenario = (
   database: FinancialScenario,
@@ -92,5 +109,7 @@ export {
   Scenario,
   ScenarioEvent,
   CashflowConditions,
-  BalanceConditions,
+  ProjectedSeriesConditions,
+  EventConditions,
+  ScenarioEventCondition,
 };

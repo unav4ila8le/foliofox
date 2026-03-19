@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import type { ScenarioInitialValueBasis } from "@/lib/planning/initial-value-basis";
 import {
   runScenario,
   makeRecurring,
@@ -108,7 +109,13 @@ const DEMO_SCENARIO: Scenario = {
   ],
 };
 
-export function DemoBalanceChart({ initialValue }: { initialValue: number }) {
+export function DemoProjectedSeriesChart({
+  initialValue,
+  initialValueBasis,
+}: {
+  initialValue: number;
+  initialValueBasis: ScenarioInitialValueBasis;
+}) {
   const locale = useLocale();
   const endDate = React.useMemo(() => {
     return addYears(new Date(), 5);
@@ -118,19 +125,20 @@ export function DemoBalanceChart({ initialValue }: { initialValue: number }) {
     return runScenario({
       scenario: DEMO_SCENARIO,
       initialValue,
+      initialValueBasis,
       startDate: fromJSDate(new Date()),
       endDate: fromJSDate(endDate),
     });
-  }, [initialValue, endDate]);
+  }, [initialValue, initialValueBasis, endDate]);
 
   const chartData = React.useMemo(() => {
-    const sortedMonths = Object.keys(scenarioResult.balance).sort();
+    const sortedMonths = Object.keys(scenarioResult.projectedSeries).sort();
 
     const data: Array<{
       monthKey: string;
       timestamp: number;
       date: Date;
-      balance: number;
+      projectedValue: number;
     }> = [];
 
     sortedMonths.forEach((monthKey) => {
@@ -141,7 +149,7 @@ export function DemoBalanceChart({ initialValue }: { initialValue: number }) {
         monthKey,
         timestamp: date.getTime(),
         date,
-        balance: scenarioResult.balance[monthKey],
+        projectedValue: scenarioResult.projectedSeries[monthKey],
       });
     });
 
@@ -151,28 +159,31 @@ export function DemoBalanceChart({ initialValue }: { initialValue: number }) {
   const yAxisDomain = React.useMemo(() => {
     if (chartData.length === 0) return ["auto", "auto"] as const;
 
-    const balances = chartData.map((d) => d.balance);
-    const minBalance = Math.min(...balances);
-    const maxBalance = Math.max(...balances);
+    const projectedValues = chartData.map((point) => point.projectedValue);
+    const minProjectedValue = Math.min(...projectedValues);
+    const maxProjectedValue = Math.max(...projectedValues);
 
-    const range = maxBalance - minBalance;
+    const range = maxProjectedValue - minProjectedValue;
     const padding = range * 0.2;
 
     if (range === 0) {
-      const fixedPadding = Math.abs(minBalance) * 0.2 || 1000;
-      return [minBalance - fixedPadding, maxBalance + fixedPadding] as const;
+      const fixedPadding = Math.abs(minProjectedValue) * 0.2 || 1000;
+      return [
+        minProjectedValue - fixedPadding,
+        maxProjectedValue + fixedPadding,
+      ] as const;
     }
 
-    return [minBalance - padding, maxBalance + padding] as const;
+    return [minProjectedValue - padding, maxProjectedValue + padding] as const;
   }, [chartData]);
 
   const isPositiveTrend = React.useMemo(() => {
     if (chartData.length === 0) return true;
 
-    const firstBalance = chartData.at(0)?.balance || 0;
-    const lastBalance = chartData.at(-1)?.balance || 0;
+    const firstProjectedValue = chartData.at(0)?.projectedValue || 0;
+    const lastProjectedValue = chartData.at(-1)?.projectedValue || 0;
 
-    return lastBalance >= firstBalance;
+    return lastProjectedValue >= firstProjectedValue;
   }, [chartData]);
 
   const chartColor = isPositiveTrend
@@ -206,7 +217,7 @@ export function DemoBalanceChart({ initialValue }: { initialValue: number }) {
         </defs>
         <CartesianGrid stroke="var(--border)" vertical={false} />
         <YAxis
-          dataKey="balance"
+          dataKey="projectedValue"
           tickFormatter={formatYAxisValue}
           axisLine={false}
           tickLine={false}
@@ -232,7 +243,7 @@ export function DemoBalanceChart({ initialValue }: { initialValue: number }) {
           minTickGap={30}
         />
         <Area
-          dataKey="balance"
+          dataKey="projectedValue"
           stroke={chartColor}
           strokeWidth={1.5}
           fill="url(#demoGradient)"

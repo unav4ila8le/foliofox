@@ -13,6 +13,7 @@ import {
 
 import { UpsertEventForm } from "./form";
 
+import type { ScenarioInitialValueBasis } from "@/lib/planning/initial-value-basis";
 import type { ScenarioEvent } from "@/lib/planning/scenario/engine";
 
 export function UpsertEventDialog({
@@ -25,6 +26,7 @@ export function UpsertEventDialog({
   eventIndex = null,
   onSuccess,
   currency,
+  initialValueBasis,
 }: {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -35,6 +37,7 @@ export function UpsertEventDialog({
   eventIndex?: number | null;
   onSuccess?: () => void;
   currency: string;
+  initialValueBasis: ScenarioInitialValueBasis;
 }) {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const isControlled = open !== undefined && onOpenChange !== undefined;
@@ -69,6 +72,7 @@ export function UpsertEventDialog({
           event={event}
           eventIndex={eventIndex}
           currency={currency}
+          initialValueBasis={initialValueBasis}
         />
       </DialogContent>
     </Dialog>

@@ -16,6 +16,7 @@ describe("scenario planning deterministic assumptions", () => {
       startDate: ld(2026, 1, 1),
       endDate: ld(2026, 3, 1),
       initialValue: 1200,
+      initialValueBasis: "net_worth",
       assumptions: {
         expectedAnnualReturnPercent: 12,
       },
@@ -26,9 +27,9 @@ describe("scenario planning deterministic assumptions", () => {
     const expectedFebruary = expectedJanuary * (1 + monthlyGrowthRate);
     const expectedMarch = expectedFebruary * (1 + monthlyGrowthRate);
 
-    expect(result.balance["2026-01"]).toBeCloseTo(expectedJanuary, 6);
-    expect(result.balance["2026-02"]).toBeCloseTo(expectedFebruary, 6);
-    expect(result.balance["2026-03"]).toBeCloseTo(expectedMarch, 6);
+    expect(result.projectedSeries["2026-01"]).toBeCloseTo(expectedJanuary, 6);
+    expect(result.projectedSeries["2026-02"]).toBeCloseTo(expectedFebruary, 6);
+    expect(result.projectedSeries["2026-03"]).toBeCloseTo(expectedMarch, 6);
   });
 
   test("does not apply growth when expected annual return is missing", () => {
@@ -42,10 +43,11 @@ describe("scenario planning deterministic assumptions", () => {
       startDate: ld(2026, 1, 1),
       endDate: ld(2026, 2, 1),
       initialValue: 5000,
+      initialValueBasis: "net_worth",
     });
 
-    expect(result.balance["2026-01"]).toBe(5000);
-    expect(result.balance["2026-02"]).toBe(5000);
+    expect(result.projectedSeries["2026-01"]).toBe(5000);
+    expect(result.projectedSeries["2026-02"]).toBe(5000);
   });
 
   test("caps extreme negative return at full capital loss", () => {
@@ -59,14 +61,15 @@ describe("scenario planning deterministic assumptions", () => {
       startDate: ld(2026, 1, 1),
       endDate: ld(2026, 3, 1),
       initialValue: 5000,
+      initialValueBasis: "net_worth",
       assumptions: {
         expectedAnnualReturnPercent: -100,
       },
     });
 
-    expect(result.balance["2026-01"]).toBe(0);
-    expect(result.balance["2026-02"]).toBe(0);
-    expect(result.balance["2026-03"]).toBe(0);
+    expect(result.projectedSeries["2026-01"]).toBe(0);
+    expect(result.projectedSeries["2026-02"]).toBe(0);
+    expect(result.projectedSeries["2026-03"]).toBe(0);
   });
 
   test("ignores non-finite expected annual return values", () => {
@@ -80,6 +83,7 @@ describe("scenario planning deterministic assumptions", () => {
       startDate: ld(2026, 1, 1),
       endDate: ld(2026, 2, 1),
       initialValue: 5000,
+      initialValueBasis: "net_worth",
       assumptions: {
         expectedAnnualReturnPercent: Number.NaN,
       },
@@ -90,14 +94,15 @@ describe("scenario planning deterministic assumptions", () => {
       startDate: ld(2026, 1, 1),
       endDate: ld(2026, 2, 1),
       initialValue: 5000,
+      initialValueBasis: "net_worth",
       assumptions: {
         expectedAnnualReturnPercent: Number.POSITIVE_INFINITY,
       },
     });
 
-    expect(nanResult.balance["2026-01"]).toBe(5000);
-    expect(nanResult.balance["2026-02"]).toBe(5000);
-    expect(infinityResult.balance["2026-01"]).toBe(5000);
-    expect(infinityResult.balance["2026-02"]).toBe(5000);
+    expect(nanResult.projectedSeries["2026-01"]).toBe(5000);
+    expect(nanResult.projectedSeries["2026-02"]).toBe(5000);
+    expect(infinityResult.projectedSeries["2026-01"]).toBe(5000);
+    expect(infinityResult.projectedSeries["2026-02"]).toBe(5000);
   });
 });

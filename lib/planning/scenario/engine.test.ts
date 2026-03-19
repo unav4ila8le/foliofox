@@ -44,9 +44,10 @@ describe("scenario planning", () => {
       startDate: ld(2023, 1, 1),
       endDate: ld(2023, 2, 28),
       initialValue: 0,
+      initialValueBasis: "net_worth",
     });
 
-    expect(result.balance).toStrictEqual({
+    expect(result.projectedSeries).toStrictEqual({
       "2023-01": 1000 - 500 - 250,
       "2023-02": 250 - 800,
     });
@@ -87,6 +88,7 @@ describe("scenario planning", () => {
       startDate: ld(2023, 1, 1),
       endDate: ld(2023, 4, 30),
       initialValue: 0,
+      initialValueBasis: "net_worth",
     });
 
     expect(result.cashflow).toStrictEqual({
@@ -96,7 +98,7 @@ describe("scenario planning", () => {
       "2023-04": expect.objectContaining({ amount: 1000 - 500 }),
     });
 
-    expect(result.balance).toStrictEqual({
+    expect(result.projectedSeries).toStrictEqual({
       "2023-01": 500,
       "2023-02": 1000,
       "2023-03": 1500,
@@ -144,9 +146,10 @@ describe("scenario planning", () => {
       startDate: ld(2025, 1, 1),
       endDate: ld(2027, 1, 1),
       initialValue: 10000,
+      initialValueBasis: "net_worth",
     });
 
-    expect(result.balance).toMatchInlineSnapshot(`
+    expect(result.projectedSeries).toMatchInlineSnapshot(`
       {
         "2025-01": 10600,
         "2025-02": 11200,
@@ -198,7 +201,7 @@ describe("scenario planning", () => {
               unlockedBy: [
                 {
                   type: "networth-is-above",
-                  tag: "balance",
+                  tag: "projected-series",
                   value: { eventRef: "Salary", amount: 6000 },
                 },
               ],
@@ -210,10 +213,11 @@ describe("scenario planning", () => {
           startDate: ld(2025, 1, 1),
           endDate: ld(2025, 5, 1),
           initialValue: 0,
+          initialValueBasis: "net_worth",
           scenario,
         });
 
-        expect(result.balance).toMatchInlineSnapshot(`
+        expect(result.projectedSeries).toMatchInlineSnapshot(`
           {
             "2025-01": 2000,
             "2025-02": 4000,
@@ -222,6 +226,102 @@ describe("scenario planning", () => {
             "2025-05": 6000,
           }
         `);
+      });
+
+      test("should not unlock net worth condition when the scenario basis is cash", () => {
+        const scenario = makeScenario({
+          name: "",
+          events: [
+            makeRecurring({
+              name: "Salary",
+              frequency: "monthly",
+              startDate: ld(2025, 1, 1),
+              amount: 2000,
+              endDate: null,
+              type: "income",
+            }),
+            makeEvent({
+              name: "Locked until net worth threshold",
+              amount: 4000,
+              type: "expense",
+              unlockedBy: [
+                {
+                  type: "networth-is-above",
+                  tag: "projected-series",
+                  value: { eventRef: "Salary", amount: 2000 },
+                },
+              ],
+            }),
+          ],
+        });
+
+        const result = runScenario({
+          startDate: ld(2025, 1, 1),
+          endDate: ld(2025, 3, 1),
+          initialValue: 0,
+          initialValueBasis: "cash",
+          scenario,
+        });
+
+        expect(result.cashflow["2025-02"].events).not.toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              name: "Locked until net worth threshold",
+            }),
+          ]),
+        );
+      });
+    });
+
+    describe("cash-is-above", () => {
+      test("should unlock event only when projected cash exceeds threshold", () => {
+        const scenario = makeScenario({
+          name: "",
+          events: [
+            makeRecurring({
+              name: "Salary",
+              frequency: "monthly",
+              startDate: ld(2025, 1, 1),
+              amount: 2000,
+              endDate: null,
+              type: "income",
+            }),
+            makeEvent({
+              name: "Emergency Fund Reached",
+              amount: 500,
+              type: "expense",
+              unlockedBy: [
+                {
+                  type: "cash-is-above",
+                  tag: "projected-series",
+                  value: { eventRef: "Salary", amount: 3000 },
+                },
+              ],
+            }),
+          ],
+        });
+
+        const result = runScenario({
+          startDate: ld(2025, 1, 1),
+          endDate: ld(2025, 3, 1),
+          initialValue: 0,
+          initialValueBasis: "cash",
+          scenario,
+        });
+
+        expect(result.projectedSeries).toMatchInlineSnapshot(`
+          {
+            "2025-01": 2000,
+            "2025-02": 3500,
+            "2025-03": 5500,
+          }
+        `);
+
+        expect(result.cashflow["2025-02"].events).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ name: "Emergency Fund Reached" }),
+          ]),
+        );
       });
     });
 
@@ -254,7 +354,7 @@ describe("scenario planning", () => {
               unlockedBy: [
                 {
                   type: "event-happened",
-                  tag: "balance",
+                  tag: "event",
                   value: { eventName: "Buy Car" },
                 },
               ],
@@ -266,18 +366,21 @@ describe("scenario planning", () => {
           startDate: ld(2025, 12, 1),
           endDate: ld(2026, 3, 1),
           initialValue: 0,
+          initialValueBasis: "net_worth",
           scenario,
         });
 
         // Car insurance should NOT appear in Dec 2025 (car not bought yet)
-        expect(result.balance["2025-12"]).toBe(2000);
+        expect(result.projectedSeries["2025-12"]).toBe(2000);
 
         // Car insurance SHOULD appear starting Jan 2026 (after car purchase)
         // Jan: +2000 salary -10000 car -120 insurance = -8120
-        expect(result.balance["2026-01"]).toBe(2000 - 8120);
+        expect(result.projectedSeries["2026-01"]).toBe(2000 - 8120);
 
         // Feb: +2000 salary -120 insurance
-        expect(result.balance["2026-02"]).toBe(2000 - 8120 + 2000 - 120);
+        expect(result.projectedSeries["2026-02"]).toBe(
+          2000 - 8120 + 2000 - 120,
+        );
       });
     });
 
@@ -310,7 +413,7 @@ describe("scenario planning", () => {
               unlockedBy: [
                 {
                   type: "income-is-above",
-                  tag: "balance",
+                  tag: "event",
                   value: { eventName: "Salary", amount: 4000 },
                 },
               ],
@@ -322,11 +425,12 @@ describe("scenario planning", () => {
           startDate: ld(2025, 1, 1),
           endDate: ld(2025, 8, 1),
           initialValue: 0,
+          initialValueBasis: "net_worth",
           scenario,
         });
 
         // Holiday should happen in July because salary is 5000 >= 4000
-        expect(result.balance["2025-07"]).toBe(
+        expect(result.projectedSeries["2025-07"]).toBe(
           2500 * 5 + 5000 * 2 - 3500, // 5 months @ 2500 + 2 months @ 5000 - holiday
         );
       });
@@ -375,7 +479,7 @@ describe("scenario planning", () => {
             unlockedBy: [
               {
                 type: "income-is-above",
-                tag: "balance",
+                tag: "event",
                 value: { eventName: "Full-time Salary", amount: 4000 },
               },
             ],
@@ -398,7 +502,7 @@ describe("scenario planning", () => {
             unlockedBy: [
               {
                 type: "event-happened",
-                tag: "balance",
+                tag: "event",
                 value: { eventName: "Buy Car" },
               },
             ],
@@ -414,7 +518,7 @@ describe("scenario planning", () => {
             unlockedBy: [
               {
                 type: "event-happened",
-                tag: "balance",
+                tag: "event",
                 value: { eventName: "Buy Car" },
               },
             ],
@@ -428,7 +532,7 @@ describe("scenario planning", () => {
             unlockedBy: [
               {
                 type: "income-is-above",
-                tag: "balance",
+                tag: "event",
                 value: { eventName: "Full-time Salary", amount: 4000 },
               },
             ],
@@ -442,7 +546,7 @@ describe("scenario planning", () => {
             unlockedBy: [
               {
                 type: "income-is-above",
-                tag: "balance",
+                tag: "event",
                 value: { eventName: "Full-time Salary", amount: 4000 },
               },
             ],
@@ -458,7 +562,7 @@ describe("scenario planning", () => {
             unlockedBy: [
               {
                 type: "event-happened",
-                tag: "balance",
+                tag: "event",
                 value: { eventName: "Buy House - Low Downpayment" },
               },
             ],
@@ -474,7 +578,7 @@ describe("scenario planning", () => {
             unlockedBy: [
               {
                 type: "event-happened",
-                tag: "balance",
+                tag: "event",
                 value: { eventName: "Buy House - Low Downpayment" },
               },
             ],
@@ -487,26 +591,27 @@ describe("scenario planning", () => {
         startDate: ld(2025, 1, 1),
         endDate: ld(2027, 12, 31),
         initialValue: 10000 * 10,
+        initialValueBasis: "net_worth",
       });
 
-      expect(result.balance["2025-01"]).toBe(100000 + 2500 - 1400);
+      expect(result.projectedSeries["2025-01"]).toBe(100000 + 2500 - 1400);
 
       const balanceMay2025 = 100000 + (2500 - 1400) * 5;
-      expect(result.balance["2025-06"]).toBe(
+      expect(result.projectedSeries["2025-06"]).toBe(
         balanceMay2025 + 5000 - 1400 - 400,
       );
 
       // Jan 2026: Car purchase
       // Should include car, insurance, and maintenance
       const balanceDec2025 = balanceMay2025 + (5000 - 1400 - 400) * 7; // 7 months full-time with investments
-      expect(result.balance["2026-01"]).toBe(
+      expect(result.projectedSeries["2026-01"]).toBe(
         balanceDec2025 + 5000 - 1400 - 400 - 15000 - 120 - 600,
       );
 
       // June 2026: Holiday should happen (salary >= 4000)
       const balanceMay2026 =
         balanceDec2025 + (5000 - 1400 - 400 - 120) * 5 - 15000 - 600; // 5 months with car costs
-      expect(result.balance["2026-06"]).toBe(
+      expect(result.projectedSeries["2026-06"]).toBe(
         balanceMay2026 + 5000 - 1400 - 400 - 120 - 3500,
       );
 
@@ -526,6 +631,49 @@ describe("scenario planning", () => {
           expect.objectContaining({ name: "Mortgage Payment" }),
         ]),
       );
+    });
+
+    test("manual basis should never satisfy projected-series-threshold conditions", () => {
+      const scenario = makeScenario({
+        name: "Manual basis",
+        events: [
+          makeRecurring({
+            name: "Salary",
+            amount: 5000,
+            frequency: "monthly",
+            type: "income",
+            startDate: ld(2025, 1, 1),
+            endDate: null,
+          }),
+          makeEvent({
+            name: "Threshold event",
+            amount: 2000,
+            type: "expense",
+            unlockedBy: [
+              {
+                type: "cash-is-above",
+                tag: "projected-series",
+                value: { eventRef: "Salary", amount: 1000 },
+              },
+            ],
+          }),
+        ],
+      });
+
+      const result = runScenario({
+        scenario,
+        startDate: ld(2025, 1, 1),
+        endDate: ld(2025, 2, 1),
+        initialValue: 1000,
+        initialValueBasis: "manual",
+      });
+
+      expect(result.cashflow["2025-01"].events).toEqual([
+        expect.objectContaining({ name: "Salary" }),
+      ]);
+      expect(result.cashflow["2025-02"].events).toEqual([
+        expect.objectContaining({ name: "Salary" }),
+      ]);
     });
   });
 });
