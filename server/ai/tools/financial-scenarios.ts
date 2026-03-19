@@ -1,7 +1,12 @@
 "use server";
 
-import { getProjectedSeriesLabel } from "@/lib/planning/scenario/projected-series";
+import type { ScenarioInitialValueBasis } from "@/lib/planning/initial-value-basis";
 import { runScenario } from "@/lib/planning/scenario/engine";
+import {
+  getBasisCompatibilityDescription,
+  getProjectedSeriesLabel,
+  isProjectedSeriesThresholdConditionCompatibleWithBasis,
+} from "@/lib/planning/scenario/projected-series";
 import { ld, resolveTodayDateKey } from "@/lib/date/date-utils";
 import { fetchOrCreateDefaultScenario } from "@/server/financial-scenarios/fetch";
 import { fetchProfile } from "@/server/profile/actions";
@@ -10,6 +15,27 @@ interface GetFinancialScenariosParams {
   runSimulation: boolean | null;
   simulationYears: number | null;
 }
+
+const getProjectedSeriesThresholdActivity = (input: {
+  condition: {
+    type: "networth-is-above" | "cash-is-above";
+    value: { amount: number };
+    tag: "projected-series";
+  };
+  initialValueBasis: ScenarioInitialValueBasis;
+}) => {
+  const isActive = isProjectedSeriesThresholdConditionCompatibleWithBasis(
+    input.condition,
+    input.initialValueBasis,
+  );
+
+  return {
+    isActive,
+    inactiveReason: isActive
+      ? null
+      : getBasisCompatibilityDescription(input.initialValueBasis),
+  };
+};
 
 /**
  * Get the user's financial scenario with events and optional simulation.
@@ -50,12 +76,20 @@ export async function getFinancialScenarios(
             ...base,
             threshold: c.value.amount,
             thresholdSeries: "net_worth" as const,
+            ...getProjectedSeriesThresholdActivity({
+              condition: c,
+              initialValueBasis: scenario.initialValueBasis,
+            }),
           };
         case "cash-is-above":
           return {
             ...base,
             threshold: c.value.amount,
             thresholdSeries: "cash" as const,
+            ...getProjectedSeriesThresholdActivity({
+              condition: c,
+              initialValueBasis: scenario.initialValueBasis,
+            }),
           };
         case "event-happened":
           return { ...base, eventName: c.value.eventName };

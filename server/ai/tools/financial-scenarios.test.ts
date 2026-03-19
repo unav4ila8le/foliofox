@@ -76,6 +76,8 @@ describe("getFinancialScenarios", () => {
           type: "cash-is-above",
           threshold: 60000,
           thresholdSeries: "cash",
+          isActive: true,
+          inactiveReason: null,
         }),
       ]),
     );
@@ -135,6 +137,61 @@ describe("getFinancialScenarios", () => {
           type: "networth-is-above",
           threshold: 750000,
           thresholdSeries: "net_worth",
+          isActive: true,
+          inactiveReason: null,
+        }),
+      ]),
+    );
+    expect(result.simulation).toBeUndefined();
+  });
+
+  it("marks preserved projected-series thresholds as inactive for manual basis scenarios", async () => {
+    fetchOrCreateDefaultScenarioMock.mockResolvedValue({
+      id: "scenario-3",
+      name: "Manual plan",
+      initialValue: 120000,
+      initialValueBasis: "manual",
+      assumptions: {
+        preset: "average",
+        values: {
+          expectedAnnualReturnPercent: 7,
+          inflationAnnualPercent: 2.5,
+          volatilityAnnualPercent: 15,
+        },
+      },
+      events: [
+        makeOneOff({
+          name: "Home remodel",
+          type: "expense",
+          amount: 30000,
+          date: ld(2027, 9, 1),
+          unlockedBy: [
+            {
+              tag: "projected-series",
+              type: "networth-is-above",
+              value: { amount: 400000 },
+            },
+          ],
+        }),
+      ],
+    });
+
+    const result = await getFinancialScenarios({
+      runSimulation: false,
+      simulationYears: 5,
+    });
+
+    expect(fetchProfileMock).not.toHaveBeenCalled();
+    expect(result.initialValueBasis).toBe("manual");
+    expect(result.projectedSeriesLabel).toBe("Value");
+    expect(result.events[0].conditions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "networth-is-above",
+          threshold: 400000,
+          thresholdSeries: "net_worth",
+          isActive: false,
+          inactiveReason: "Inactive while Initial value uses Manual basis.",
         }),
       ]),
     );
