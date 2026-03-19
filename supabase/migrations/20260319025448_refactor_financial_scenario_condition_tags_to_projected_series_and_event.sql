@@ -55,6 +55,8 @@ WHERE jsonb_typeof(events) = 'array';
 
 UPDATE public.financial_scenarios
 SET engine_version = 2
-WHERE engine_version < 2;
+WHERE
+  engine_version < 2
+  AND jsonb_typeof(events) IS DISTINCT FROM 'array';
 
 COMMIT;

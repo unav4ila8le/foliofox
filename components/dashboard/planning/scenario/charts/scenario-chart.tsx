@@ -45,6 +45,7 @@ import {
   type Scenario,
   type ScenarioEvent,
 } from "@/lib/planning/scenario/engine";
+import { computeProjectedSeriesYAxisDomain } from "@/lib/planning/scenario/chart-utils";
 import { fromJSDate } from "@/lib/date/date-utils";
 import { formatMonthYear } from "@/lib/date/date-format";
 import { formatCompactNumber, formatCurrency } from "@/lib/number-format";
@@ -384,72 +385,10 @@ export function ScenarioChart({
   }, [chartData]);
 
   const projectedSeriesDomain = useMemo(() => {
-    if (chartData.length === 0) return ["auto", "auto"] as const;
-
-    // Helper function to round to nice numbers
-    const roundToNice = (value: number, roundUp: boolean): number => {
-      if (value === 0) return 0;
-
-      const sign = value < 0 ? -1 : 1;
-      const absValue = Math.abs(value);
-
-      // Determine the magnitude (power of 10)
-      const magnitude = Math.pow(10, Math.floor(Math.log10(absValue)));
-
-      // Determine nice interval based on magnitude
-      let interval: number;
-      if (magnitude >= 100000) {
-        // For 100K+: use 20K intervals
-        interval = 20000;
-      } else if (magnitude >= 10000) {
-        // For 10K-100K: use 10K intervals
-        interval = 10000;
-      } else if (magnitude >= 1000) {
-        // For 1K-10K: use 5K intervals
-        interval = 5000;
-      } else if (magnitude >= 100) {
-        // For 100-1K: use 500 intervals
-        interval = 500;
-      } else if (magnitude >= 10) {
-        // For 10-100: use 50 intervals
-        interval = 50;
-      } else {
-        // For <10: use 5 intervals
-        interval = 5;
-      }
-
-      // Round to the nearest interval
-      const rounded = roundUp
-        ? Math.ceil(absValue / interval) * interval
-        : Math.floor(absValue / interval) * interval;
-
-      return sign * rounded;
-    };
-
-    // Find min and max projected values.
-    const projectedValues = chartData.map((point) => point.projectedValue);
-    const minProjectedValue = Math.min(...projectedValues);
-    const maxProjectedValue = Math.max(...projectedValues);
-
-    // Calculate range
-    const range = maxProjectedValue - minProjectedValue;
-
-    // Add 20% padding on each side
-    const padding = range * 0.2;
-
-    // If range is 0 (all values are the same), add fixed padding
-    if (range === 0) {
-      const fixedPadding = Math.abs(minProjectedValue) * 0.2 || 1000;
-      const domainMin = roundToNice(minProjectedValue - fixedPadding, false);
-      const domainMax = roundToNice(maxProjectedValue + fixedPadding, true);
-      return [domainMin, domainMax] as const;
-    }
-
-    // Apply padding and round to nice numbers
-    const domainMin = roundToNice(minProjectedValue - padding, false);
-    const domainMax = roundToNice(maxProjectedValue + padding, true);
-
-    return [domainMin, domainMax] as const;
+    return computeProjectedSeriesYAxisDomain(
+      chartData.map((point) => point.projectedValue),
+      { roundToNice: true },
+    );
   }, [chartData]);
 
   const isPositiveTrend = useMemo(() => {

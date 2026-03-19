@@ -129,7 +129,7 @@ describe("UpsertEventForm", () => {
         {
           tag: "projected-series",
           type: "networth-is-above",
-          value: { eventRef: "", amount: 60000 },
+          value: { amount: 60000 },
         },
         {
           tag: "cashflow",

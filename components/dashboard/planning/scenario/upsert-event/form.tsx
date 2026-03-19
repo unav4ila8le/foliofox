@@ -85,29 +85,31 @@ const conditionSchema = z.discriminatedUnion("type", [
 function extractConditionsFromEvent(event: ScenarioEvent) {
   return event.unlockedBy
     .filter((condition) => condition.tag !== "cashflow")
-    .map((c) => {
-      switch (c.type) {
+    .map((condition) => {
+      switch (condition.type) {
         case "networth-is-above":
           return {
             type: "networth-is-above" as const,
-            amount: c.value.amount,
+            amount: condition.value.amount,
           };
         case "cash-is-above":
           return {
             type: "cash-is-above" as const,
-            amount: c.value.amount,
+            amount: condition.value.amount,
           };
         case "event-happened":
           return {
             type: "event-happened" as const,
-            eventName: c.value.eventName,
+            eventName: condition.value.eventName,
           };
         case "income-is-above":
           return {
             type: "income-is-above" as const,
-            eventName: c.value.eventName,
-            amount: c.value.amount,
+            eventName: condition.value.eventName,
+            amount: condition.value.amount,
           };
+        default:
+          return assertNever(condition);
       }
     });
 }
@@ -137,12 +139,61 @@ const formSchema = z
 
 type ScenarioEventFormValues = z.infer<typeof formSchema>;
 type ScenarioEventCondition = ScenarioEventFormValues["conditions"][number];
+const SCENARIO_EVENT_CONDITION_TYPES = [
+  "networth-is-above",
+  "cash-is-above",
+  "event-happened",
+  "income-is-above",
+] as const;
+
+const assertNever = (value: never): never => {
+  throw new Error(
+    `Unhandled scenario event condition: ${JSON.stringify(value)}`,
+  );
+};
+
+const isScenarioEventConditionType = (
+  value: string,
+): value is ScenarioEventCondition["type"] =>
+  SCENARIO_EVENT_CONDITION_TYPES.some(
+    (conditionType) => conditionType === value,
+  );
 
 interface ConditionTypeOption {
   value: ScenarioEventCondition["type"];
   label: string;
   disabled?: boolean;
 }
+
+const getDefaultConditionForType = (
+  conditionType: ScenarioEventCondition["type"],
+): ScenarioEventCondition => {
+  switch (conditionType) {
+    case "networth-is-above":
+      return {
+        type: "networth-is-above",
+        amount: 0,
+      };
+    case "cash-is-above":
+      return {
+        type: "cash-is-above",
+        amount: 0,
+      };
+    case "event-happened":
+      return {
+        type: "event-happened",
+        eventName: "",
+      };
+    case "income-is-above":
+      return {
+        type: "income-is-above",
+        eventName: "",
+        amount: 0,
+      };
+    default:
+      return assertNever(conditionType);
+  }
+};
 
 const getConditionTypeOptions = (input: {
   initialValueBasis: ScenarioInitialValueBasis;
@@ -192,16 +243,10 @@ const getDefaultCondition = (
   const thresholdType =
     getProjectedSeriesThresholdConditionTypeForBasis(initialValueBasis);
   if (thresholdType) {
-    return {
-      type: thresholdType,
-      amount: 0,
-    };
+    return getDefaultConditionForType(thresholdType);
   }
 
-  return {
-    type: "event-happened",
-    eventName: "",
-  };
+  return getDefaultConditionForType("event-happened");
 };
 
 export function UpsertEventForm({
@@ -335,13 +380,13 @@ export function UpsertEventForm({
           return {
             tag: "projected-series" as const,
             type: "networth-is-above" as const,
-            value: { eventRef: "", amount: condition.amount },
+            value: { amount: condition.amount },
           };
         case "cash-is-above":
           return {
             tag: "projected-series" as const,
             type: "cash-is-above" as const,
-            value: { eventRef: "", amount: condition.amount },
+            value: { amount: condition.amount },
           };
         case "event-happened":
           return {
@@ -355,6 +400,8 @@ export function UpsertEventForm({
             type: "income-is-above" as const,
             value: { eventName: condition.eventName, amount: condition.amount },
           };
+        default:
+          return assertNever(condition);
       }
     });
 
@@ -722,29 +769,14 @@ export function UpsertEventForm({
                               </FieldLabel>
                               <Select
                                 onValueChange={(value) => {
-                                  // Reset fields when changing type using update method
-                                  if (value === "networth-is-above") {
-                                    update(index, {
-                                      type: "networth-is-above" as const,
-                                      amount: 0,
-                                    });
-                                  } else if (value === "cash-is-above") {
-                                    update(index, {
-                                      type: "cash-is-above" as const,
-                                      amount: 0,
-                                    });
-                                  } else if (value === "event-happened") {
-                                    update(index, {
-                                      type: "event-happened" as const,
-                                      eventName: "",
-                                    });
-                                  } else if (value === "income-is-above") {
-                                    update(index, {
-                                      type: "income-is-above" as const,
-                                      eventName: "",
-                                      amount: 0,
-                                    });
+                                  if (!isScenarioEventConditionType(value)) {
+                                    return;
                                   }
+
+                                  update(
+                                    index,
+                                    getDefaultConditionForType(value),
+                                  );
                                 }}
                                 value={field.value}
                               >

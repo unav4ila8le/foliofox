@@ -24,7 +24,6 @@ const ProjectedSeriesConditions = z.discriminatedUnion("type", [
     tag: z.literal("projected-series"),
     type: z.literal("networth-is-above"),
     value: z.object({
-      eventRef: z.string(),
       amount: z.number(),
     }),
   }),
@@ -32,7 +31,6 @@ const ProjectedSeriesConditions = z.discriminatedUnion("type", [
     tag: z.literal("projected-series"),
     type: z.literal("cash-is-above"),
     value: z.object({
-      eventRef: z.string(),
       amount: z.number(),
     }),
   }),

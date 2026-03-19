@@ -51,7 +51,7 @@ describe("getFinancialScenarios", () => {
             {
               tag: "projected-series",
               type: "cash-is-above",
-              value: { eventRef: "", amount: 60000 },
+              value: { amount: 60000 },
             },
           ],
         }),
@@ -114,7 +114,7 @@ describe("getFinancialScenarios", () => {
             {
               tag: "projected-series",
               type: "networth-is-above",
-              value: { eventRef: "", amount: 750000 },
+              value: { amount: 750000 },
             },
           ],
         }),

@@ -18,7 +18,7 @@ const thresholdEvent: ScenarioEvent = {
     {
       tag: "projected-series",
       type: "networth-is-above",
-      value: { eventRef: "", amount: 60000 },
+      value: { amount: 60000 },
     },
     {
       tag: "cashflow",
@@ -36,7 +36,7 @@ describe("scenario projected series helpers", () => {
         {
           tag: "projected-series",
           type: "cash-is-above",
-          value: { eventRef: "", amount: 25000 },
+          value: { amount: 25000 },
         },
       ],
     });
@@ -45,7 +45,7 @@ describe("scenario projected series helpers", () => {
       {
         tag: "projected-series",
         type: "cash-is-above",
-        value: { eventRef: "", amount: 25000 },
+        value: { amount: 25000 },
       },
     ]);
   });
@@ -60,7 +60,7 @@ describe("scenario projected series helpers", () => {
       {
         tag: "projected-series",
         type: "cash-is-above",
-        value: { eventRef: "", amount: 60000 },
+        value: { amount: 60000 },
       },
       {
         tag: "cashflow",
@@ -93,7 +93,7 @@ describe("scenario projected series helpers", () => {
       {
         tag: "projected-series",
         type: "cash-is-above",
-        value: { eventRef: "", amount: 60000 },
+        value: { amount: 60000 },
       },
       {
         tag: "cashflow",

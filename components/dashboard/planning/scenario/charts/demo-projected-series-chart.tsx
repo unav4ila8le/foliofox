@@ -20,6 +20,7 @@ import {
 } from "recharts";
 import { formatMonthYear } from "@/lib/date/date-format";
 import { formatCompactNumber } from "@/lib/number-format";
+import { computeProjectedSeriesYAxisDomain } from "@/lib/planning/scenario/chart-utils";
 import { useLocale } from "@/hooks/use-locale";
 
 // Demo scenario with realistic events showing growth and drops
@@ -157,24 +158,9 @@ export function DemoProjectedSeriesChart({
   }, [scenarioResult]);
 
   const yAxisDomain = React.useMemo(() => {
-    if (chartData.length === 0) return ["auto", "auto"] as const;
-
-    const projectedValues = chartData.map((point) => point.projectedValue);
-    const minProjectedValue = Math.min(...projectedValues);
-    const maxProjectedValue = Math.max(...projectedValues);
-
-    const range = maxProjectedValue - minProjectedValue;
-    const padding = range * 0.2;
-
-    if (range === 0) {
-      const fixedPadding = Math.abs(minProjectedValue) * 0.2 || 1000;
-      return [
-        minProjectedValue - fixedPadding,
-        maxProjectedValue + fixedPadding,
-      ] as const;
-    }
-
-    return [minProjectedValue - padding, maxProjectedValue + padding] as const;
+    return computeProjectedSeriesYAxisDomain(
+      chartData.map((point) => point.projectedValue),
+    );
   }, [chartData]);
 
   const isPositiveTrend = React.useMemo(() => {

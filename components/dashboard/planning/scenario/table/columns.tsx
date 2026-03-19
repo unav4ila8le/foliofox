@@ -28,6 +28,12 @@ import { getScenarioEventDateRange } from "@/lib/planning/scenario/event-dates";
 import { formatDate } from "@/lib/date/date-format";
 import { formatNumber } from "@/lib/number-format";
 
+const assertNever = (value: never): never => {
+  throw new Error(
+    `Unhandled scenario event condition: ${JSON.stringify(value)}`,
+  );
+};
+
 // Extended type with id for table
 export type ScenarioEventWithId = ScenarioEvent & { id: string };
 
@@ -108,13 +114,17 @@ function getConditionSummary(input: { event: ScenarioEvent; locale?: string }) {
         return `${condition.value.eventName} happened`;
       }
 
-      return `${condition.value.eventName} income >= ${formatNumber(
-        condition.value.amount,
-        {
-          locale: input.locale,
-          maximumFractionDigits: 2,
-        },
-      )}`;
+      if (condition.type === "income-is-above") {
+        return `${condition.value.eventName} income >= ${formatNumber(
+          condition.value.amount,
+          {
+            locale: input.locale,
+            maximumFractionDigits: 2,
+          },
+        )}`;
+      }
+
+      return assertNever(condition);
     });
 
   if (conditionSummaries.length <= 2) {

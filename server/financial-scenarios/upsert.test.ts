@@ -197,7 +197,6 @@ const createDefaultState = (): FakeState => ({
             tag: "projected-series",
             type: "cash-is-above",
             value: {
-              eventRef: "",
               amount: 60000,
             },
           },
@@ -347,7 +346,6 @@ describe("financial scenario upsert actions", () => {
               tag: "projected-series",
               type: "networth-is-above",
               value: {
-                eventRef: "",
                 amount: 60000,
               },
             },
@@ -421,7 +419,6 @@ describe("financial scenario upsert actions", () => {
               tag: "projected-series",
               type: "cash-is-above",
               value: {
-                eventRef: "",
                 amount: 60000,
               },
             },
@@ -477,7 +474,6 @@ describe("financial scenario upsert actions", () => {
               tag: "projected-series",
               type: "networth-is-above",
               value: {
-                eventRef: "",
                 amount: 150000,
               },
             },
@@ -512,7 +508,6 @@ describe("financial scenario upsert actions", () => {
                 tag: "projected-series",
                 type: "cash-is-above",
                 value: {
-                  eventRef: "",
                   amount: 150000,
                 },
               },
@@ -539,7 +534,6 @@ describe("financial scenario upsert actions", () => {
               tag: "projected-series",
               type: "cash-is-above",
               value: {
-                eventRef: "",
                 amount: 150000,
               },
             },
@@ -574,7 +568,6 @@ describe("financial scenario upsert actions", () => {
                 tag: "projected-series",
                 type: "networth-is-above",
                 value: {
-                  eventRef: "",
                   amount: 150000,
                 },
               },
@@ -614,7 +607,6 @@ describe("financial scenario upsert actions", () => {
                 tag: "projected-series",
                 type: "networth-is-above",
                 value: {
-                  eventRef: "",
                   amount: 60000,
                 },
               },

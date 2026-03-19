@@ -202,7 +202,7 @@ describe("scenario planning", () => {
                 {
                   type: "networth-is-above",
                   tag: "projected-series",
-                  value: { eventRef: "Salary", amount: 6000 },
+                  value: { amount: 6000 },
                 },
               ],
             }),
@@ -248,7 +248,7 @@ describe("scenario planning", () => {
                 {
                   type: "networth-is-above",
                   tag: "projected-series",
-                  value: { eventRef: "Salary", amount: 2000 },
+                  value: { amount: 2000 },
                 },
               ],
             }),
@@ -294,7 +294,7 @@ describe("scenario planning", () => {
                 {
                   type: "cash-is-above",
                   tag: "projected-series",
-                  value: { eventRef: "Salary", amount: 3000 },
+                  value: { amount: 3000 },
                 },
               ],
             }),
@@ -596,23 +596,24 @@ describe("scenario planning", () => {
 
       expect(result.projectedSeries["2025-01"]).toBe(100000 + 2500 - 1400);
 
-      const balanceMay2025 = 100000 + (2500 - 1400) * 5;
+      const projectedValueMay2025 = 100000 + (2500 - 1400) * 5;
       expect(result.projectedSeries["2025-06"]).toBe(
-        balanceMay2025 + 5000 - 1400 - 400,
+        projectedValueMay2025 + 5000 - 1400 - 400,
       );
 
       // Jan 2026: Car purchase
       // Should include car, insurance, and maintenance
-      const balanceDec2025 = balanceMay2025 + (5000 - 1400 - 400) * 7; // 7 months full-time with investments
+      const projectedValueDec2025 =
+        projectedValueMay2025 + (5000 - 1400 - 400) * 7; // 7 months full-time with investments
       expect(result.projectedSeries["2026-01"]).toBe(
-        balanceDec2025 + 5000 - 1400 - 400 - 15000 - 120 - 600,
+        projectedValueDec2025 + 5000 - 1400 - 400 - 15000 - 120 - 600,
       );
 
       // June 2026: Holiday should happen (salary >= 4000)
-      const balanceMay2026 =
-        balanceDec2025 + (5000 - 1400 - 400 - 120) * 5 - 15000 - 600; // 5 months with car costs
+      const projectedValueMay2026 =
+        projectedValueDec2025 + (5000 - 1400 - 400 - 120) * 5 - 15000 - 600; // 5 months with car costs
       expect(result.projectedSeries["2026-06"]).toBe(
-        balanceMay2026 + 5000 - 1400 - 400 - 120 - 3500,
+        projectedValueMay2026 + 5000 - 1400 - 400 - 120 - 3500,
       );
 
       // May 2027: House purchase with mortgage starting
@@ -653,7 +654,7 @@ describe("scenario planning", () => {
               {
                 type: "cash-is-above",
                 tag: "projected-series",
-                value: { eventRef: "Salary", amount: 1000 },
+                value: { amount: 1000 },
               },
             ],
           }),
