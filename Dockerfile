@@ -1,12 +1,10 @@
-FROM node:22.22-alpine AS base
+FROM node:22.22.2-alpine AS base
 
 # Ensure base image is up to date
 RUN apk upgrade --no-cache && \
     apk add --no-cache libc6-compat
 
 FROM base AS builder
-
-RUN npm i -g npm@11
 
 WORKDIR /app
 
