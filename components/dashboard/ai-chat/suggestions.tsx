@@ -29,7 +29,7 @@ export function ChatSuggestions({
             key={suggestion}
             onClick={() => onSuggestionClick(suggestion)}
             variant="ghost"
-            className="h-auto w-full justify-stretch p-2 text-start whitespace-normal"
+            className="h-auto justify-stretch p-2 text-start whitespace-normal"
           >
             {suggestion}
           </Button>
