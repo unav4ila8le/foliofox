@@ -29,10 +29,12 @@ export async function AssetHeader({
   position,
   symbol,
   positionWithProfitLoss,
+  realizedProfitLoss,
 }: {
   position: TransformedPosition;
   symbol: Symbol | null;
   positionWithProfitLoss: PositionWithProfitLoss;
+  realizedProfitLoss: number;
 }) {
   const locale = await getRequestLocale();
   const estimatedCapitalGainsTax = calculateCapitalGainsTaxAmount({
@@ -98,7 +100,7 @@ export async function AssetHeader({
         <p className="text-muted-foreground">{position.description}</p>
       )}
 
-      <div className="bg-card mt-3 grid grid-cols-2 gap-4 rounded-lg border px-4 py-2 text-sm md:grid-cols-4">
+      <div className="bg-card mt-3 grid grid-cols-2 gap-4 rounded-lg border px-4 py-2 text-sm @min-[40rem]/dashboard:grid-cols-3 @min-[64rem]/dashboard:grid-cols-5">
         {/* Position market data and profit/loss */}
         {position.has_market_data ? (
           <>
@@ -149,7 +151,7 @@ export async function AssetHeader({
               </p>
             </div>
             <div>
-              <p className="text-muted-foreground">P/L (%)</p>
+              <p className="text-muted-foreground">Unrealized P/L</p>
               <p
                 className={cn(
                   "font-semibold",
@@ -171,6 +173,19 @@ export async function AssetHeader({
                   )}
                   )
                 </span>
+              </p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Realized P/L</p>
+              <p
+                className={cn(
+                  "font-semibold",
+                  realizedProfitLoss >= 0 ? "text-green-600" : "text-red-600",
+                )}
+              >
+                {formatCurrency(realizedProfitLoss, position.currency, {
+                  locale,
+                })}
               </p>
             </div>
           </>

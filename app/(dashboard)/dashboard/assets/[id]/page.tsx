@@ -14,6 +14,7 @@ import { fetchProfile } from "@/server/profile/actions";
 import { fetchSymbol } from "@/server/symbols/fetch";
 import { fetchSymbolNews } from "@/server/news/fetch";
 import { calculateSymbolProjectedIncomePanelData } from "@/server/analysis/projected-income/symbol";
+import { calculateRealizedProfitLoss } from "@/server/analysis/realized-profit-loss";
 
 import { calculateProfitLoss } from "@/lib/profit-loss";
 import { formatPercentage, formatCurrency } from "@/lib/number-format";
@@ -225,18 +226,23 @@ async function AssetLayout({
   let asOfDateKey: CivilDateKey;
   let position: TransformedPosition;
   let snapshots: PositionSnapshot[];
+  let realizedProfitLoss = 0;
 
   try {
     const { profile } = await fetchProfile();
     // Resolve holdings day in the viewer's civil timezone (not UTC day).
     asOfDateKey = resolveTodayDateKey(profile.time_zone);
-    const result = await fetchSinglePosition(positionId, {
-      includeArchived: true,
-      includeSnapshots: true,
-      asOfDateKey,
-    });
+    const [result, realizedProfitLossValue] = await Promise.all([
+      fetchSinglePosition(positionId, {
+        includeArchived: true,
+        includeSnapshots: true,
+        asOfDateKey,
+      }),
+      calculateRealizedProfitLoss(positionId),
+    ]);
     position = result.position;
     snapshots = result.snapshots;
+    realizedProfitLoss = realizedProfitLossValue;
   } catch (error) {
     if (
       error instanceof Error &&
@@ -268,6 +274,7 @@ async function AssetLayout({
           position={position}
           symbol={symbol}
           positionWithProfitLoss={positionWithProfitLoss}
+          realizedProfitLoss={realizedProfitLoss}
         />
       </div>
 
