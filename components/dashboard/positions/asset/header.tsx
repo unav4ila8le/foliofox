@@ -17,30 +17,25 @@ import {
   formatPercentage,
 } from "@/lib/number-format";
 import { getRequestLocale } from "@/lib/locale/resolve-locale";
+import type { PositionProfitLossSummary } from "@/lib/profit-loss/types";
 import { cn } from "@/lib/utils";
 
-import type {
-  TransformedPosition,
-  Symbol,
-  PositionWithProfitLoss,
-} from "@/types/global.types";
+import type { TransformedPosition, Symbol } from "@/types/global.types";
 
 export async function AssetHeader({
   position,
   symbol,
-  positionWithProfitLoss,
-  realizedProfitLoss,
+  profitLossSummary,
 }: {
   position: TransformedPosition;
   symbol: Symbol | null;
-  positionWithProfitLoss: PositionWithProfitLoss;
-  realizedProfitLoss: number;
+  profitLossSummary: PositionProfitLossSummary;
 }) {
   const locale = await getRequestLocale();
   const estimatedCapitalGainsTax = calculateCapitalGainsTaxAmount({
     positionType: position.type,
     capitalGainsTaxRate: position.capital_gains_tax_rate,
-    unrealizedGain: positionWithProfitLoss.profit_loss,
+    unrealizedGain: profitLossSummary.unrealized.amount,
   });
   const positionValueAfterTax = Math.max(
     0,
@@ -144,7 +139,7 @@ export async function AssetHeader({
               <p className="text-muted-foreground">Cost Basis</p>
               <p className="font-semibold">
                 {formatCurrency(
-                  positionWithProfitLoss.cost_basis_per_unit ?? 0,
+                  profitLossSummary.costBasis.perUnit,
                   position.currency,
                   { locale },
                 )}
@@ -155,22 +150,21 @@ export async function AssetHeader({
               <p
                 className={cn(
                   "font-semibold",
-                  positionWithProfitLoss.profit_loss >= 0
+                  profitLossSummary.unrealized.amount >= 0
                     ? "text-green-600"
                     : "text-red-600",
                 )}
               >
                 {formatCurrency(
-                  positionWithProfitLoss.profit_loss,
+                  profitLossSummary.unrealized.amount,
                   position.currency,
                   { locale },
                 )}
                 <span className="ml-1">
                   (
-                  {formatPercentage(
-                    positionWithProfitLoss.profit_loss_percentage,
-                    { locale },
-                  )}
+                  {formatPercentage(profitLossSummary.unrealized.percentage, {
+                    locale,
+                  })}
                   )
                 </span>
               </p>
@@ -180,12 +174,18 @@ export async function AssetHeader({
               <p
                 className={cn(
                   "font-semibold",
-                  realizedProfitLoss >= 0 ? "text-green-600" : "text-red-600",
+                  profitLossSummary.realized.amount >= 0
+                    ? "text-green-600"
+                    : "text-red-600",
                 )}
               >
-                {formatCurrency(realizedProfitLoss, position.currency, {
-                  locale,
-                })}
+                {formatCurrency(
+                  profitLossSummary.realized.amount,
+                  position.currency,
+                  {
+                    locale,
+                  },
+                )}
               </p>
             </div>
           </>

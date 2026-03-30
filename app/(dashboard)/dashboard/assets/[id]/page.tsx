@@ -21,13 +21,11 @@ import { getRequestLocale } from "@/lib/locale/resolve-locale";
 import { parsePortfolioRecordTypes } from "@/lib/portfolio-records/filters";
 import { getSearchParam } from "@/lib/search-params";
 import { resolveTodayDateKey, toCivilDateKey } from "@/lib/date/date-utils";
+import type { PositionProfitLossSummary } from "@/lib/profit-loss/types";
 import { cn } from "@/lib/utils";
 import type { CivilDateKey } from "@/lib/date/date-utils";
 
-import type {
-  PositionWithProfitLoss,
-  TransformedPosition,
-} from "@/types/global.types";
+import type { TransformedPosition } from "@/types/global.types";
 
 // Skeleton for the full page, shown instantly during navigation
 function PageSkeleton() {
@@ -224,30 +222,23 @@ async function AssetLayout({
   // Fetch position - needed for header and to determine hasSymbol layout
   let asOfDateKey: CivilDateKey;
   let position: TransformedPosition;
-  let positionWithProfitLoss: PositionWithProfitLoss;
-  let realizedProfitLoss = 0;
+  let profitLossSummary: PositionProfitLossSummary;
 
   try {
     const { profile } = await fetchProfile();
     // Resolve holdings day in the viewer's civil timezone (not UTC day).
     asOfDateKey = resolveTodayDateKey(profile.time_zone);
-    const [result, profitLossSummary] = await Promise.all([
-      fetchSinglePosition(positionId, {
-        includeArchived: true,
-        includeSnapshots: true,
-        asOfDateKey,
-      }),
-      calculatePositionProfitLossSummary(positionId, asOfDateKey),
-    ]);
+    const result = await fetchSinglePosition(positionId, {
+      includeArchived: true,
+      includeSnapshots: true,
+      asOfDateKey,
+    });
+    const calculatedProfitLossSummary =
+      await calculatePositionProfitLossSummary(positionId, asOfDateKey, {
+        positionData: result,
+      });
     position = result.position;
-    positionWithProfitLoss = {
-      ...position,
-      cost_basis_per_unit: profitLossSummary.costBasisPerUnit,
-      total_cost_basis: profitLossSummary.totalCostBasis,
-      profit_loss: profitLossSummary.unrealizedProfitLoss,
-      profit_loss_percentage: profitLossSummary.unrealizedProfitLossPercentage,
-    };
-    realizedProfitLoss = profitLossSummary.realizedProfitLoss;
+    profitLossSummary = calculatedProfitLossSummary;
   } catch (error) {
     if (
       error instanceof Error &&
@@ -272,8 +263,7 @@ async function AssetLayout({
         <AssetHeader
           position={position}
           symbol={symbol}
-          positionWithProfitLoss={positionWithProfitLoss}
-          realizedProfitLoss={realizedProfitLoss}
+          profitLossSummary={profitLossSummary}
         />
       </div>
 

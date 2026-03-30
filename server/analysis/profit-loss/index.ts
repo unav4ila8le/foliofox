@@ -2,26 +2,30 @@
 
 import {
   calculatePositionUnrealizedProfitLoss,
-  type PositionUnrealizedProfitLossSummary,
+  type PositionProfitLossSourceData,
 } from "./unrealized";
-import {
-  calculatePositionRealizedProfitLoss,
-  type PositionRealizedProfitLossSummary,
-} from "./realized";
+import { calculatePositionRealizedProfitLoss } from "./realized";
 
 import type { CivilDateKey } from "@/lib/date/date-utils";
+import type { PositionProfitLossSummary } from "@/lib/profit-loss/types";
 
-export interface PositionProfitLossSummary
-  extends
-    PositionUnrealizedProfitLossSummary,
-    PositionRealizedProfitLossSummary {}
+interface CalculatePositionProfitLossSummaryOptions {
+  positionData?: PositionProfitLossSourceData;
+}
 
 export async function calculatePositionProfitLossSummary(
   positionId: string,
   asOfDateKey: CivilDateKey,
+  options: CalculatePositionProfitLossSummaryOptions = {},
 ): Promise<PositionProfitLossSummary> {
+  const unrealizedSummaryPromise = options.positionData
+    ? calculatePositionUnrealizedProfitLoss(positionId, asOfDateKey, {
+        positionData: options.positionData,
+      })
+    : calculatePositionUnrealizedProfitLoss(positionId, asOfDateKey);
+
   const [unrealizedSummary, realizedSummary] = await Promise.all([
-    calculatePositionUnrealizedProfitLoss(positionId, asOfDateKey),
+    unrealizedSummaryPromise,
     calculatePositionRealizedProfitLoss(positionId),
   ]);
 

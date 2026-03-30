@@ -26,9 +26,10 @@ vi.mock("@/components/dashboard/positions/asset/stale-badge", () => ({
 
 import { AssetHeader } from "./header";
 
-import type { PositionWithProfitLoss } from "@/types/global.types";
+import type { PositionProfitLossSummary } from "@/lib/profit-loss/types";
+import type { TransformedPosition } from "@/types/global.types";
 
-function createPositionWithProfitLoss(): PositionWithProfitLoss {
+function createPosition(): TransformedPosition {
   return {
     id: "pos-1",
     user_id: "user-1",
@@ -50,21 +51,33 @@ function createPositionWithProfitLoss(): PositionWithProfitLoss {
     total_value: 1250,
     has_market_data: true,
     cost_basis_per_unit: 100,
-    total_cost_basis: 1000,
-    profit_loss: 250,
-    profit_loss_percentage: 0.25,
+  };
+}
+
+function createProfitLossSummary(): PositionProfitLossSummary {
+  return {
+    costBasis: {
+      perUnit: 100,
+      total: 1000,
+    },
+    unrealized: {
+      amount: 250,
+      percentage: 0.25,
+    },
+    realized: {
+      amount: 400,
+    },
   };
 }
 
 describe("AssetHeader", () => {
   it("shows separate unrealized and realized profit/loss labels", async () => {
-    const position = createPositionWithProfitLoss();
+    const position = createPosition();
     const view = render(
       await AssetHeader({
         position,
         symbol: null,
-        positionWithProfitLoss: position,
-        realizedProfitLoss: 400,
+        profitLossSummary: createProfitLossSummary(),
       }),
     );
 

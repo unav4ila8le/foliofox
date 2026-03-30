@@ -127,7 +127,7 @@ describe("calculatePositionRealizedProfitLoss", () => {
 
     const result = await calculatePositionRealizedProfitLoss("pos-1");
 
-    expect(result).toEqual({ realizedProfitLoss: 0 });
+    expect(result).toEqual({ realized: { amount: 0 } });
   });
 
   it("calculates realized profit for a partial sell using weighted-average basis", async () => {
@@ -144,7 +144,7 @@ describe("calculatePositionRealizedProfitLoss", () => {
 
     const result = await calculatePositionRealizedProfitLoss("pos-1");
 
-    expect(result).toEqual({ realizedProfitLoss: 1500 });
+    expect(result).toEqual({ realized: { amount: 1500 } });
   });
 
   it("aggregates multiple sell records across requested positions", async () => {
@@ -208,6 +208,6 @@ describe("calculatePositionRealizedProfitLoss", () => {
 
     const result = await calculatePositionRealizedProfitLoss("pos-1");
 
-    expect(result).toEqual({ realizedProfitLoss: 100 });
+    expect(result).toEqual({ realized: { amount: 100 } });
   });
 });

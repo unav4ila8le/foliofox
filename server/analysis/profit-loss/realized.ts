@@ -5,10 +5,7 @@ import {
   calculateRealizedProfitLossTotals,
   type RealizedProfitLossSellRecord,
 } from "@/lib/profit-loss/realized";
-
-export interface PositionRealizedProfitLossSummary {
-  realizedProfitLoss: number;
-}
+import type { PositionRealizedProfitLossSummary } from "@/lib/profit-loss/types";
 
 type SnapshotBasisRow = {
   cost_basis_per_unit: number | null;
@@ -103,6 +100,8 @@ export async function calculatePositionRealizedProfitLoss(
     await calculateRealizedProfitLossByPositionIds([positionId]);
 
   return {
-    realizedProfitLoss: realizedProfitLossByPositionId.get(positionId) ?? 0,
+    realized: {
+      amount: realizedProfitLossByPositionId.get(positionId) ?? 0,
+    },
   };
 }

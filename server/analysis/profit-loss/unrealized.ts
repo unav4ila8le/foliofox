@@ -4,23 +4,33 @@ import { fetchSinglePosition } from "@/server/positions/fetch";
 import { calculateUnrealizedProfitLoss } from "@/lib/profit-loss/unrealized";
 
 import type { CivilDateKey } from "@/lib/date/date-utils";
+import type { PositionUnrealizedProfitLossSummary } from "@/lib/profit-loss/types";
+import type {
+  PositionSnapshot,
+  TransformedPosition,
+} from "@/types/global.types";
 
-export interface PositionUnrealizedProfitLossSummary {
-  costBasisPerUnit: number;
-  totalCostBasis: number;
-  unrealizedProfitLoss: number;
-  unrealizedProfitLossPercentage: number;
+export interface PositionProfitLossSourceData {
+  position: TransformedPosition;
+  snapshots: PositionSnapshot[];
+}
+
+interface CalculatePositionUnrealizedProfitLossOptions {
+  positionData?: PositionProfitLossSourceData;
 }
 
 export async function calculatePositionUnrealizedProfitLoss(
   positionId: string,
   asOfDateKey: CivilDateKey,
+  options: CalculatePositionUnrealizedProfitLossOptions = {},
 ): Promise<PositionUnrealizedProfitLossSummary> {
-  const { position, snapshots } = await fetchSinglePosition(positionId, {
-    includeArchived: true,
-    includeSnapshots: true,
-    asOfDateKey,
-  });
+  const { position, snapshots } =
+    options.positionData ??
+    (await fetchSinglePosition(positionId, {
+      includeArchived: true,
+      includeSnapshots: true,
+      asOfDateKey,
+    }));
 
   const [positionWithProfitLoss] = calculateUnrealizedProfitLoss(
     [position],
@@ -28,10 +38,13 @@ export async function calculatePositionUnrealizedProfitLoss(
   );
 
   return {
-    costBasisPerUnit: positionWithProfitLoss.cost_basis_per_unit ?? 0,
-    totalCostBasis: positionWithProfitLoss.total_cost_basis,
-    unrealizedProfitLoss: positionWithProfitLoss.profit_loss,
-    unrealizedProfitLossPercentage:
-      positionWithProfitLoss.profit_loss_percentage,
+    costBasis: {
+      perUnit: positionWithProfitLoss.cost_basis_per_unit ?? 0,
+      total: positionWithProfitLoss.total_cost_basis,
+    },
+    unrealized: {
+      amount: positionWithProfitLoss.profit_loss,
+      percentage: positionWithProfitLoss.profit_loss_percentage,
+    },
   };
 }
