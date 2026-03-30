@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { calculateUnrealizedProfitLoss } from "./unrealized-profit-loss";
+import { calculateUnrealizedProfitLoss } from "./unrealized";
 
 import type {
   TransformedPosition,

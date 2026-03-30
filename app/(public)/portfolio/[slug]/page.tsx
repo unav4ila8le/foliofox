@@ -19,7 +19,7 @@ import {
   calculateProjectedIncomeByAsset,
 } from "@/server/analysis/projected-income/portfolio";
 import { fetchPositions } from "@/server/positions/fetch";
-import { calculateUnrealizedProfitLoss } from "@/lib/unrealized-profit-loss";
+import { calculateUnrealizedProfitLoss } from "@/lib/profit-loss/unrealized";
 import { getRequestLocale } from "@/lib/locale/resolve-locale";
 import { resolveTodayDateKey } from "@/lib/date/date-utils";
 

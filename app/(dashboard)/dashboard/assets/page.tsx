@@ -6,7 +6,7 @@ import { AssetsTable } from "@/components/dashboard/positions/asset/table/assets
 import { fetchPositions } from "@/server/positions/fetch";
 import { fetchProfile } from "@/server/profile/actions";
 import { resolveTodayDateKey } from "@/lib/date/date-utils";
-import { calculateUnrealizedProfitLoss } from "@/lib/unrealized-profit-loss";
+import { calculateUnrealizedProfitLoss } from "@/lib/profit-loss/unrealized";
 
 async function AssetsTableWrapper() {
   "use cache: private";

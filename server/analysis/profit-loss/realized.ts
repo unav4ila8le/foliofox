@@ -1,6 +1,14 @@
 "use server";
 
 import { getCurrentUser } from "@/server/auth/actions";
+import {
+  calculateRealizedProfitLossTotals,
+  type RealizedProfitLossSellRecord,
+} from "@/lib/profit-loss/realized";
+
+export interface PositionRealizedProfitLossSummary {
+  realizedProfitLoss: number;
+}
 
 type SnapshotBasisRow = {
   cost_basis_per_unit: number | null;
@@ -15,7 +23,7 @@ type SellRecordRow = {
 
 function extractSnapshotBasis(
   snapshotSource: SellRecordRow["position_snapshots"],
-): number | null {
+) {
   const snapshot = Array.isArray(snapshotSource)
     ? (snapshotSource[0] ?? null)
     : snapshotSource;
@@ -27,12 +35,18 @@ function extractSnapshotBasis(
   return Number(snapshot.cost_basis_per_unit);
 }
 
-/**
- * Realized P/L lives under `server/` because this helper is responsible for
- * fetching the authenticated user's sell records from Supabase before doing
- * the calculation. Unrealized P/L lives under `lib/` because it only performs
- * pure math on positions and snapshots that were already fetched by callers.
- */
+function normalizeSellRecord(
+  record: SellRecordRow,
+): RealizedProfitLossSellRecord {
+  return {
+    positionId: record.position_id,
+    quantity: Number(record.quantity),
+    unitValue: Number(record.unit_value),
+    costBasisPerUnit: extractSnapshotBasis(record.position_snapshots),
+  };
+}
+
+// Server adapter: fetch auth-scoped sell rows, then delegate pure math to lib.
 export async function calculateRealizedProfitLossByPositionIds(
   positionIds: string[],
 ) {
@@ -68,30 +82,27 @@ export async function calculateRealizedProfitLossByPositionIds(
     throw new Error(`Failed to fetch realized profit/loss: ${error.message}`);
   }
 
-  (data as SellRecordRow[] | null)?.forEach((record) => {
-    const costBasisPerUnit = extractSnapshotBasis(record.position_snapshots);
-
-    if (costBasisPerUnit == null) {
-      return;
-    }
-
-    const realizedProfitLoss =
-      Number(record.quantity) *
-      (Number(record.unit_value) - Number(costBasisPerUnit));
-
-    realizedProfitLossByPositionId.set(
-      record.position_id,
-      (realizedProfitLossByPositionId.get(record.position_id) ?? 0) +
-        realizedProfitLoss,
+  const calculatedRealizedProfitLossByPositionId =
+    calculateRealizedProfitLossTotals(
+      ((data as SellRecordRow[] | null) ?? []).map(normalizeSellRecord),
     );
-  });
+
+  calculatedRealizedProfitLossByPositionId.forEach(
+    (realizedProfitLoss, positionId) => {
+      realizedProfitLossByPositionId.set(positionId, realizedProfitLoss);
+    },
+  );
 
   return realizedProfitLossByPositionId;
 }
 
-export async function calculateRealizedProfitLoss(positionId: string) {
+export async function calculatePositionRealizedProfitLoss(
+  positionId: string,
+): Promise<PositionRealizedProfitLossSummary> {
   const realizedProfitLossByPositionId =
     await calculateRealizedProfitLossByPositionIds([positionId]);
 
-  return realizedProfitLossByPositionId.get(positionId) ?? 0;
+  return {
+    realizedProfitLoss: realizedProfitLossByPositionId.get(positionId) ?? 0,
+  };
 }

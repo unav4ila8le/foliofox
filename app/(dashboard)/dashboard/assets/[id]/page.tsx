@@ -14,9 +14,8 @@ import { fetchProfile } from "@/server/profile/actions";
 import { fetchSymbol } from "@/server/symbols/fetch";
 import { fetchSymbolNews } from "@/server/news/fetch";
 import { calculateSymbolProjectedIncomePanelData } from "@/server/analysis/projected-income/symbol";
-import { calculateRealizedProfitLoss } from "@/server/analysis/realized-profit-loss";
+import { calculatePositionProfitLossSummary } from "@/server/analysis/profit-loss";
 
-import { calculateUnrealizedProfitLoss } from "@/lib/unrealized-profit-loss";
 import { formatPercentage, formatCurrency } from "@/lib/number-format";
 import { getRequestLocale } from "@/lib/locale/resolve-locale";
 import { parsePortfolioRecordTypes } from "@/lib/portfolio-records/filters";
@@ -26,7 +25,7 @@ import { cn } from "@/lib/utils";
 import type { CivilDateKey } from "@/lib/date/date-utils";
 
 import type {
-  PositionSnapshot,
+  PositionWithProfitLoss,
   TransformedPosition,
 } from "@/types/global.types";
 
@@ -225,24 +224,30 @@ async function AssetLayout({
   // Fetch position - needed for header and to determine hasSymbol layout
   let asOfDateKey: CivilDateKey;
   let position: TransformedPosition;
-  let snapshots: PositionSnapshot[];
+  let positionWithProfitLoss: PositionWithProfitLoss;
   let realizedProfitLoss = 0;
 
   try {
     const { profile } = await fetchProfile();
     // Resolve holdings day in the viewer's civil timezone (not UTC day).
     asOfDateKey = resolveTodayDateKey(profile.time_zone);
-    const [result, realizedProfitLossValue] = await Promise.all([
+    const [result, profitLossSummary] = await Promise.all([
       fetchSinglePosition(positionId, {
         includeArchived: true,
         includeSnapshots: true,
         asOfDateKey,
       }),
-      calculateRealizedProfitLoss(positionId),
+      calculatePositionProfitLossSummary(positionId, asOfDateKey),
     ]);
     position = result.position;
-    snapshots = result.snapshots;
-    realizedProfitLoss = realizedProfitLossValue;
+    positionWithProfitLoss = {
+      ...position,
+      cost_basis_per_unit: profitLossSummary.costBasisPerUnit,
+      total_cost_basis: profitLossSummary.totalCostBasis,
+      profit_loss: profitLossSummary.unrealizedProfitLoss,
+      profit_loss_percentage: profitLossSummary.unrealizedProfitLossPercentage,
+    };
+    realizedProfitLoss = profitLossSummary.realizedProfitLoss;
   } catch (error) {
     if (
       error instanceof Error &&
@@ -252,12 +257,6 @@ async function AssetLayout({
     }
     throw error;
   }
-
-  const snapshotsMap = new Map([[position.id, snapshots]]);
-  const [positionWithProfitLoss] = calculateUnrealizedProfitLoss(
-    [position],
-    snapshotsMap,
-  );
 
   // Fetch symbol - fast single row, needed for header + conditional layout
   const symbol = position.symbol_id

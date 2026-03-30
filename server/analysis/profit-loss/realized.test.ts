@@ -9,9 +9,9 @@ vi.mock("@/server/auth/actions", () => ({
 }));
 
 import {
-  calculateRealizedProfitLoss,
+  calculatePositionRealizedProfitLoss,
   calculateRealizedProfitLossByPositionIds,
-} from "./realized-profit-loss";
+} from "./realized";
 
 type PortfolioRecordRow = {
   user_id: string;
@@ -114,7 +114,7 @@ function createSellRecord(
   };
 }
 
-describe("calculateRealizedProfitLoss", () => {
+describe("calculatePositionRealizedProfitLoss", () => {
   beforeEach(() => {
     getCurrentUserMock.mockReset();
   });
@@ -125,9 +125,9 @@ describe("calculateRealizedProfitLoss", () => {
       supabase: createSupabaseStub([]),
     });
 
-    const result = await calculateRealizedProfitLoss("pos-1");
+    const result = await calculatePositionRealizedProfitLoss("pos-1");
 
-    expect(result).toBe(0);
+    expect(result).toEqual({ realizedProfitLoss: 0 });
   });
 
   it("calculates realized profit for a partial sell using weighted-average basis", async () => {
@@ -142,9 +142,9 @@ describe("calculateRealizedProfitLoss", () => {
       ]),
     });
 
-    const result = await calculateRealizedProfitLoss("pos-1");
+    const result = await calculatePositionRealizedProfitLoss("pos-1");
 
-    expect(result).toBe(1500);
+    expect(result).toEqual({ realizedProfitLoss: 1500 });
   });
 
   it("aggregates multiple sell records across requested positions", async () => {
@@ -206,8 +206,8 @@ describe("calculateRealizedProfitLoss", () => {
       ]),
     });
 
-    const result = await calculateRealizedProfitLoss("pos-1");
+    const result = await calculatePositionRealizedProfitLoss("pos-1");
 
-    expect(result).toBe(100);
+    expect(result).toEqual({ realizedProfitLoss: 100 });
   });
 });

@@ -6,7 +6,7 @@ import { resolvePositionLookup } from "@/server/positions/resolve-position-looku
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 import { resolveSymbolsBatch } from "@/server/symbols/resolve";
 
-import { calculateUnrealizedProfitLoss } from "@/lib/unrealized-profit-loss";
+import { calculateUnrealizedProfitLoss } from "@/lib/profit-loss/unrealized";
 import { convertCurrency } from "@/lib/currency-conversion";
 import { parseUTCDateKey, resolveTodayDateKey } from "@/lib/date/date-utils";
 import { clampDateRange } from "@/server/ai/tools/helpers/time-range";

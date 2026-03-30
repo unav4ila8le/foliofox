@@ -11,7 +11,7 @@ import {
   resolveTodayDateKey,
   type CivilDateKey,
 } from "@/lib/date/date-utils";
-import { calculateUnrealizedProfitLoss } from "@/lib/unrealized-profit-loss";
+import { calculateUnrealizedProfitLoss } from "@/lib/profit-loss/unrealized";
 import { calculateCapitalGainsTaxAmount } from "@/server/analysis/net-worth/capital-gains-tax";
 import type { PositionsQueryContext } from "@/server/positions/fetch";
 import type { NetWorthMode } from "@/server/analysis/net-worth/types";
