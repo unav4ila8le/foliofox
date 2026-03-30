@@ -14,20 +14,18 @@ import { fetchProfile } from "@/server/profile/actions";
 import { fetchSymbol } from "@/server/symbols/fetch";
 import { fetchSymbolNews } from "@/server/news/fetch";
 import { calculateSymbolProjectedIncomePanelData } from "@/server/analysis/projected-income/symbol";
+import { calculatePositionProfitLossSummary } from "@/server/analysis/profit-loss";
 
-import { calculateProfitLoss } from "@/lib/profit-loss";
 import { formatPercentage, formatCurrency } from "@/lib/number-format";
 import { getRequestLocale } from "@/lib/locale/resolve-locale";
 import { parsePortfolioRecordTypes } from "@/lib/portfolio-records/filters";
 import { getSearchParam } from "@/lib/search-params";
 import { resolveTodayDateKey, toCivilDateKey } from "@/lib/date/date-utils";
+import type { PositionProfitLossSummary } from "@/lib/profit-loss/types";
 import { cn } from "@/lib/utils";
 import type { CivilDateKey } from "@/lib/date/date-utils";
 
-import type {
-  PositionSnapshot,
-  TransformedPosition,
-} from "@/types/global.types";
+import type { TransformedPosition } from "@/types/global.types";
 
 // Skeleton for the full page, shown instantly during navigation
 function PageSkeleton() {
@@ -224,7 +222,7 @@ async function AssetLayout({
   // Fetch position - needed for header and to determine hasSymbol layout
   let asOfDateKey: CivilDateKey;
   let position: TransformedPosition;
-  let snapshots: PositionSnapshot[];
+  let profitLossSummary: PositionProfitLossSummary;
 
   try {
     const { profile } = await fetchProfile();
@@ -235,8 +233,12 @@ async function AssetLayout({
       includeSnapshots: true,
       asOfDateKey,
     });
+    const calculatedProfitLossSummary =
+      await calculatePositionProfitLossSummary(positionId, asOfDateKey, {
+        positionData: result,
+      });
     position = result.position;
-    snapshots = result.snapshots;
+    profitLossSummary = calculatedProfitLossSummary;
   } catch (error) {
     if (
       error instanceof Error &&
@@ -246,12 +248,6 @@ async function AssetLayout({
     }
     throw error;
   }
-
-  const snapshotsMap = new Map([[position.id, snapshots]]);
-  const [positionWithProfitLoss] = calculateProfitLoss(
-    [position],
-    snapshotsMap,
-  );
 
   // Fetch symbol - fast single row, needed for header + conditional layout
   const symbol = position.symbol_id
@@ -267,7 +263,7 @@ async function AssetLayout({
         <AssetHeader
           position={position}
           symbol={symbol}
-          positionWithProfitLoss={positionWithProfitLoss}
+          profitLossSummary={profitLossSummary}
         />
       </div>
 
