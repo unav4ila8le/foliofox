@@ -16,7 +16,7 @@ import { fetchSymbolNews } from "@/server/news/fetch";
 import { calculateSymbolProjectedIncomePanelData } from "@/server/analysis/projected-income/symbol";
 import { calculateRealizedProfitLoss } from "@/server/analysis/realized-profit-loss";
 
-import { calculateProfitLoss } from "@/lib/profit-loss";
+import { calculateUnrealizedProfitLoss } from "@/lib/unrealized-profit-loss";
 import { formatPercentage, formatCurrency } from "@/lib/number-format";
 import { getRequestLocale } from "@/lib/locale/resolve-locale";
 import { parsePortfolioRecordTypes } from "@/lib/portfolio-records/filters";
@@ -254,7 +254,7 @@ async function AssetLayout({
   }
 
   const snapshotsMap = new Map([[position.id, snapshots]]);
-  const [positionWithProfitLoss] = calculateProfitLoss(
+  const [positionWithProfitLoss] = calculateUnrealizedProfitLoss(
     [position],
     snapshotsMap,
   );

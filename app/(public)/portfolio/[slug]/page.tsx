@@ -19,7 +19,7 @@ import {
   calculateProjectedIncomeByAsset,
 } from "@/server/analysis/projected-income/portfolio";
 import { fetchPositions } from "@/server/positions/fetch";
-import { calculateProfitLoss } from "@/lib/profit-loss";
+import { calculateUnrealizedProfitLoss } from "@/lib/unrealized-profit-loss";
 import { getRequestLocale } from "@/lib/locale/resolve-locale";
 import { resolveTodayDateKey } from "@/lib/date/date-utils";
 
@@ -141,7 +141,7 @@ async function PositionsWrapper({
     context,
   );
 
-  const positionsWithProfitLoss = calculateProfitLoss(
+  const positionsWithProfitLoss = calculateUnrealizedProfitLoss(
     positionsResult.positions,
     positionsResult.snapshots,
   );

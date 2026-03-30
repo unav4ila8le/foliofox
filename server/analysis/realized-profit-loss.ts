@@ -27,6 +27,12 @@ function extractSnapshotBasis(
   return Number(snapshot.cost_basis_per_unit);
 }
 
+/**
+ * Realized P/L lives under `server/` because this helper is responsible for
+ * fetching the authenticated user's sell records from Supabase before doing
+ * the calculation. Unrealized P/L lives under `lib/` because it only performs
+ * pure math on positions and snapshots that were already fetched by callers.
+ */
 export async function calculateRealizedProfitLossByPositionIds(
   positionIds: string[],
 ) {

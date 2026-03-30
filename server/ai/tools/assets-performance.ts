@@ -6,7 +6,7 @@ import { resolvePositionLookup } from "@/server/positions/resolve-position-looku
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 import { resolveSymbolsBatch } from "@/server/symbols/resolve";
 
-import { calculateProfitLoss } from "@/lib/profit-loss";
+import { calculateUnrealizedProfitLoss } from "@/lib/unrealized-profit-loss";
 import { convertCurrency } from "@/lib/currency-conversion";
 import { parseUTCDateKey, resolveTodayDateKey } from "@/lib/date/date-utils";
 import { clampDateRange } from "@/server/ai/tools/helpers/time-range";
@@ -181,7 +181,7 @@ export async function getAssetsPerformance(params: GetAssetsPerformanceParams) {
     const startById = new Map(startPositions.map((p) => [p.id, p]));
 
     // Calculate unrealized P/L for current assets
-    const positionsWithPL = calculateProfitLoss(
+    const positionsWithPL = calculateUnrealizedProfitLoss(
       targetPositions,
       snapshotsByPosition,
     );

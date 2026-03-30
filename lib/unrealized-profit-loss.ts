@@ -11,7 +11,7 @@ import type {
  * - profit_loss: position.total_value - total_cost_basis
  * - profit_loss_percentage: profit_loss / total_cost_basis (0 if basis is 0)
  */
-export function calculateProfitLoss(
+export function calculateUnrealizedProfitLoss(
   positions: TransformedPosition[],
   snapshotsByPosition: Map<string, PositionSnapshot[]>,
 ): PositionWithProfitLoss[] {

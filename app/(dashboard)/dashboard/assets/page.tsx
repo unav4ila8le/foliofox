@@ -6,7 +6,7 @@ import { AssetsTable } from "@/components/dashboard/positions/asset/table/assets
 import { fetchPositions } from "@/server/positions/fetch";
 import { fetchProfile } from "@/server/profile/actions";
 import { resolveTodayDateKey } from "@/lib/date/date-utils";
-import { calculateProfitLoss } from "@/lib/profit-loss";
+import { calculateUnrealizedProfitLoss } from "@/lib/unrealized-profit-loss";
 
 async function AssetsTableWrapper() {
   "use cache: private";
@@ -19,7 +19,10 @@ async function AssetsTableWrapper() {
     includeSnapshots: true,
     asOfDateKey,
   });
-  const positionsWithProfitLoss = calculateProfitLoss(positions, snapshots);
+  const positionsWithProfitLoss = calculateUnrealizedProfitLoss(
+    positions,
+    snapshots,
+  );
 
   return <AssetsTable data={positionsWithProfitLoss} />;
 }

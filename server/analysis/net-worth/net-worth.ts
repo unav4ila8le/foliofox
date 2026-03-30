@@ -11,7 +11,7 @@ import {
   resolveTodayDateKey,
   type CivilDateKey,
 } from "@/lib/date/date-utils";
-import { calculateProfitLoss } from "@/lib/profit-loss";
+import { calculateUnrealizedProfitLoss } from "@/lib/unrealized-profit-loss";
 import { calculateCapitalGainsTaxAmount } from "@/server/analysis/net-worth/capital-gains-tax";
 import type { PositionsQueryContext } from "@/server/positions/fetch";
 import type { NetWorthMode } from "@/server/analysis/net-worth/types";
@@ -101,7 +101,7 @@ export const calculateNetWorth = cache(
     }
 
     // Reuse profit/loss helper so basis selection matches the rest of the app.
-    const positionsWithProfitLoss = calculateProfitLoss(
+    const positionsWithProfitLoss = calculateUnrealizedProfitLoss(
       positions,
       snapshotsByPosition ?? new Map(),
     );

@@ -1,7 +1,7 @@
 "use server";
 
 import { fetchPositions } from "@/server/positions/fetch";
-import { calculateProfitLoss } from "@/lib/profit-loss";
+import { calculateUnrealizedProfitLoss } from "@/lib/unrealized-profit-loss";
 import { escapeCsvCell } from "@/lib/shared/csv";
 import { createServiceClient } from "@/supabase/service";
 
@@ -25,7 +25,7 @@ export async function exportPositions(
     });
 
     // Compute cost basis and P/L
-    const positionsWithPL = calculateProfitLoss(positions, snapshots);
+    const positionsWithPL = calculateUnrealizedProfitLoss(positions, snapshots);
 
     // Resolve symbol UUIDs to tickers for export
     const uniqueSymbolUuids = Array.from(

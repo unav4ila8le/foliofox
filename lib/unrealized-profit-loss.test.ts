@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { calculateProfitLoss } from "./profit-loss";
+import { calculateUnrealizedProfitLoss } from "./unrealized-profit-loss";
 
 import type {
   TransformedPosition,
@@ -61,13 +61,13 @@ function createSnapshot(
   };
 }
 
-describe("calculateProfitLoss", () => {
+describe("calculateUnrealizedProfitLoss", () => {
   // 1. Basic Scenarios
   it("returns 0 for everything if there are no snapshots", () => {
     const position = createPosition("pos-1", 10, 1000);
     const snapshots = new Map<string, PositionSnapshot[]>();
 
-    const [result] = calculateProfitLoss([position], snapshots);
+    const [result] = calculateUnrealizedProfitLoss([position], snapshots);
 
     expect(result.profit_loss).toBe(0);
     expect(result.profit_loss_percentage).toBe(0);
@@ -81,7 +81,7 @@ describe("calculateProfitLoss", () => {
     const snapshot = createSnapshot("snap-1", "2024-01-01", 100);
     const snapshots = new Map([["pos-1", [snapshot]]]);
 
-    const [result] = calculateProfitLoss([position], snapshots);
+    const [result] = calculateUnrealizedProfitLoss([position], snapshots);
 
     // Cost Basis: 10 * 100 = 1000
     // Current Value: 1500
@@ -97,7 +97,7 @@ describe("calculateProfitLoss", () => {
     const snapshot = createSnapshot("snap-1", "2024-01-01", 100);
     const snapshots = new Map([["pos-1", [snapshot]]]);
 
-    const [result] = calculateProfitLoss([position], snapshots);
+    const [result] = calculateUnrealizedProfitLoss([position], snapshots);
 
     // Cost Basis: 10 * 100 = 1000
     // Current Value: 500
@@ -119,7 +119,7 @@ describe("calculateProfitLoss", () => {
 
     const snapshots = new Map([["pos-1", [oldSnap, newSnap]]]);
 
-    const [result] = calculateProfitLoss([position], snapshots);
+    const [result] = calculateUnrealizedProfitLoss([position], snapshots);
 
     // Should use $150 basis from 2024
     // Basis: 10 * 150 = 1500
@@ -140,7 +140,7 @@ describe("calculateProfitLoss", () => {
 
     const snapshots = new Map([["pos-1", [oldSnap, priceUpdateSnap]]]);
 
-    const [result] = calculateProfitLoss([position], snapshots);
+    const [result] = calculateUnrealizedProfitLoss([position], snapshots);
 
     // It should look back and find the $100 basis
     expect(result.cost_basis_per_unit).toBe(100);
@@ -166,7 +166,7 @@ describe("calculateProfitLoss", () => {
 
     const snapshots = new Map([["pos-1", [olderSnap, newerSnap]]]);
 
-    const [result] = calculateProfitLoss([position], snapshots);
+    const [result] = calculateUnrealizedProfitLoss([position], snapshots);
 
     expect(result.cost_basis_per_unit).toBe(150);
   });
@@ -179,7 +179,7 @@ describe("calculateProfitLoss", () => {
     const snapshot = createSnapshot("snap-1", "2024-01-01", null, 100);
 
     const snapshots = new Map([["pos-1", [snapshot]]]);
-    const [result] = calculateProfitLoss([position], snapshots);
+    const [result] = calculateUnrealizedProfitLoss([position], snapshots);
 
     // Should assume the unit_value (100) is the basis
     expect(result.cost_basis_per_unit).toBe(100);
@@ -191,7 +191,7 @@ describe("calculateProfitLoss", () => {
     const snapshot = createSnapshot("snap-1", "2024-01-01", 100);
 
     const snapshots = new Map([["pos-1", [snapshot]]]);
-    const [result] = calculateProfitLoss([position], snapshots);
+    const [result] = calculateUnrealizedProfitLoss([position], snapshots);
 
     expect(result.total_cost_basis).toBe(0);
     expect(result.profit_loss).toBe(0);
