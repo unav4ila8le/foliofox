@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 
 export function MarketBackedUpdateWarning() {
   return (
-    <Alert className="border-amber-200 bg-amber-50 text-amber-900">
+    <Alert className="border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-600/30 dark:bg-amber-600/20 dark:text-amber-50">
       <TriangleAlert />
       <AlertTitle className="line-clamp-none">
         Portfolio performance may be approximate.
