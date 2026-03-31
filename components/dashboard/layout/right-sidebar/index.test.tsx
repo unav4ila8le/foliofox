@@ -65,11 +65,11 @@ describe("RightSidebar", () => {
     hoistedMocks.setOpenMobileRight.mockClear();
   });
 
-  it("renders the sidebar outside /dashboard/ai-chat", () => {
+  it("renders the sidebar outside /dashboard/ai-chat", async () => {
     render(<RightSidebar />);
 
     expect(screen.getByTestId("right-sidebar")).not.toBeNull();
-    expect(screen.getByTestId("ai-chat-panel")).not.toBeNull();
+    expect(await screen.findByTestId("ai-chat-panel")).not.toBeNull();
   });
 
   it("hides the sidebar and forces closed state on /dashboard/ai-chat", () => {
