@@ -1,7 +1,8 @@
 "use client";
 
-import { createContext, useContext, useState } from "react";
+import dynamic from "next/dynamic";
 import { Plus } from "lucide-react";
+import { createContext, useContext, useState } from "react";
 
 import { Button, type buttonVariants } from "@/components/ui/button";
 import {
@@ -12,11 +13,31 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/custom/dialog";
-import { SelectionDialog } from "./selection-dialog";
+import { Skeleton } from "@/components/ui/custom/skeleton";
 
 import { useDashboardData } from "@/components/dashboard/providers/dashboard-data-provider";
 import type { Profile } from "@/types/global.types";
 import type { VariantProps } from "class-variance-authority";
+
+const SelectionDialog = dynamic(
+  () =>
+    import("./selection-dialog").then((module) => ({
+      default: module.SelectionDialog,
+    })),
+  {
+    loading: () => <NewAssetSelectionSkeleton />,
+  },
+);
+
+function NewAssetSelectionSkeleton() {
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      {Array.from({ length: 4 }, (_, index) => (
+        <Skeleton key={index} className="h-21 sm:h-31" />
+      ))}
+    </div>
+  );
+}
 
 export type SelectionType = "symbol" | "domain" | "custom";
 
@@ -66,7 +87,7 @@ export function NewAssetDialogProvider({
             </DialogDescription>
           </DialogHeader>
           <DialogBody>
-            <SelectionDialog />
+            {openSelectionDialog ? <SelectionDialog /> : null}
           </DialogBody>
         </DialogContent>
       </Dialog>
