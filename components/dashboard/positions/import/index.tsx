@@ -1,7 +1,8 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { createContext, useContext, useState } from "react";
-import { FileText, Sparkles, Upload } from "lucide-react";
+import { Upload } from "lucide-react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -11,15 +12,32 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/custom/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-import { CSVImportForm } from "./csv-form";
-import { AIImportForm } from "./ai-form";
+import { Skeleton } from "@/components/ui/custom/skeleton";
 import { ImportReviewDialog } from "./review";
 
 import type { VariantProps } from "class-variance-authority";
 import type { PositionImportRow } from "@/lib/import/positions/types";
 import type { SymbolValidationResult } from "@/server/symbols/validate";
+
+const ImportDialogBody = dynamic(
+  () =>
+    import("./import-dialog-body").then((module) => ({
+      default: module.ImportDialogBody,
+    })),
+  {
+    loading: () => <ImportDialogBodySkeleton />,
+  },
+);
+
+function ImportDialogBodySkeleton() {
+  return (
+    <div className="space-y-4 px-6 pb-6">
+      <Skeleton className="h-10 w-full" />
+      <Skeleton className="h-64 w-full" />
+      <Skeleton className="h-16 w-full" />
+    </div>
+  );
+}
 
 type ImportDialogContextType = {
   open: boolean;
@@ -87,34 +105,7 @@ export function ImportPositionsDialogProvider({
               Import your assets from a CSV file or AI.
             </DialogDescription>
           </DialogHeader>
-
-          <Tabs
-            defaultValue="csv-import"
-            className="flex min-h-0 flex-1 flex-col gap-4"
-          >
-            <div className="px-6">
-              <TabsList className="w-full">
-                <TabsTrigger value="csv-import">
-                  <FileText className="size-4" /> CSV Import
-                </TabsTrigger>
-                <TabsTrigger value="ai-import">
-                  <Sparkles className="size-4" /> AI Import
-                </TabsTrigger>
-              </TabsList>
-            </div>
-            <TabsContent
-              value="csv-import"
-              className="flex min-h-0 flex-1 flex-col overflow-hidden"
-            >
-              <CSVImportForm />
-            </TabsContent>
-            <TabsContent
-              value="ai-import"
-              className="flex min-h-0 flex-1 flex-col overflow-hidden"
-            >
-              <AIImportForm />
-            </TabsContent>
-          </Tabs>
+          {open ? <ImportDialogBody /> : null}
         </DialogContent>
       </Dialog>
       <ImportReviewDialog />
