@@ -86,6 +86,20 @@
     "typescript": "^5",
     "vitest": "^4.1.1"
   },
+  "//": "Temporary jsdom test override for ERR_REQUIRE_ASYNC_MODULE on clean installs. Remove after a clean install on Node 24 passes `npm test -- --run` without pinning jsdom -> @asamuzakjp/css-color -> lru-cache.",
+  "overrides": {
+    "jsdom": {
+      "@asamuzakjp/css-color": {
+        ".": "5.0.1",
+        "lru-cache": "11.2.7"
+      },
+      "@asamuzakjp/dom-selector": {
+        ".": "7.0.4",
+        "lru-cache": "11.2.7"
+      },
+      "lru-cache": "11.2.7"
+    }
+  },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,json,css,md}": "prettier --write",
     "*.{js,jsx,ts,tsx}": "eslint",
