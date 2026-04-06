@@ -40,7 +40,7 @@ You can build and run Foliofox locally using either Docker or a local Node.js se
 
 **For traditional Node.js setup:**
 
-- Node.js 22+
+- Node.js 24.x
 - npm 11+
 
 **Optional:**
