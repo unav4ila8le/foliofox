@@ -68,7 +68,7 @@ export function ChatMessage({
       )}
 
       {isAssistant && sourceParts.length > 0 && (
-        <Sources>
+        <Sources className="notranslate" translate="no">
           <SourcesTrigger count={sourceParts.length} />
           <SourcesContent>
             {sourceParts.map((part, sourceIndex) => {
@@ -107,8 +107,9 @@ export function ChatMessage({
           return (
             <Reasoning
               key={`${message.id}-r-${group.lastIndex}`}
-              className="mb-0 w-full"
+              className="notranslate mb-0 w-full"
               isStreaming={isReasoningStreaming}
+              translate="no"
             >
               <ReasoningTrigger />
               {mergedText && (
@@ -127,7 +128,11 @@ export function ChatMessage({
               <Fragment key={`${message.id}-${index}`}>
                 <Message
                   from={message.role}
-                  className={cn("max-w-[90%]", isAssistant && "max-w-full")}
+                  className={cn(
+                    "notranslate max-w-[90%]",
+                    isAssistant && "max-w-full",
+                  )}
+                  translate="no"
                 >
                   <MessageContent className="group-[.is-user]:bg-primary group-[.is-user]:text-primary-foreground">
                     {isAssistant ? (
@@ -168,7 +173,11 @@ export function ChatMessage({
           default:
             if (isStaticToolUIPart(part)) {
               return (
-                <Tool key={`${message.id}-part-${index}`} className="mb-0">
+                <Tool
+                  key={`${message.id}-part-${index}`}
+                  className="notranslate mb-0"
+                  translate="no"
+                >
                   <ToolHeader
                     type={part.type}
                     state={part.state}
