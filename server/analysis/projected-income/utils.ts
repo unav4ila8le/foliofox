@@ -146,12 +146,18 @@ export function buildDividendProjectionBasis(
   };
 }
 
-function resolveAnnualDividendAmount(
+const DIVIDEND_AMOUNT_TOLERANCE_RATIO = 0.1;
+// Two times the smaller reference amount is a strong enough signal to catch
+// cross-basis mismatches like TM without rejecting normal provider variance.
+const CLEAR_INFLATION_MULTIPLIER = 2;
+
+export function resolveAnnualDividendAmount(
   summary: Dividend,
   events: DividendEvent[],
   currentUnitValue?: number,
 ): number {
-  // Prefer provider amounts unless they are clearly inflated compared to payouts we observed.
+  // Prefer provider amounts unless other data points clearly show that the
+  // trailing annual amount is on a different basis than the current listing.
   const oneYearAgo = new Date();
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
@@ -159,40 +165,94 @@ function resolveAnnualDividendAmount(
     (event) => new Date(event.event_date) >= oneYearAgo,
   );
 
-  const eventAnnualAmount =
+  const annualAmountFromRecentEvents =
     recentEvents.length > 0
       ? recentEvents.reduce((sum, event) => sum + event.gross_amount, 0)
       : 0;
 
-  const providerTtm = summary.trailing_ttm_dividend || 0;
-  const providerForward = summary.forward_annual_dividend || 0;
+  const providerTrailingAnnualDividend = summary.trailing_ttm_dividend || 0;
+  const providerForwardAnnualDividend = summary.forward_annual_dividend || 0;
+  const annualAmountImpliedByYield = resolveAnnualDividendAmountFromYield(
+    summary,
+    currentUnitValue,
+  );
 
-  const hasEvents = eventAnnualAmount > 0;
-  const ttmWithinTolerance =
-    providerTtm > 0 && hasEvents
-      ? providerTtm >= eventAnnualAmount * 0.9 &&
-        providerTtm <= eventAnnualAmount * 1.1
-      : true;
+  const hasRecentEventAnnualAmount = annualAmountFromRecentEvents > 0;
+  const trailingAnnualDividendMatchesRecentEvents =
+    providerTrailingAnnualDividend > 0 && hasRecentEventAnnualAmount
+      ? areAmountsWithinTolerance(
+          providerTrailingAnnualDividend,
+          annualAmountFromRecentEvents,
+        )
+      : false;
 
-  // Keep TTM when it aligns with payouts (±10%); otherwise prefer events, then forward.
-  let annualAmount =
-    providerTtm > 0 && ttmWithinTolerance
-      ? providerTtm
-      : hasEvents
-        ? eventAnnualAmount
-        : providerForward > 0
-          ? providerForward
-          : providerTtm;
-
-  if (annualAmount <= 0) {
-    // Yahoo dividend_yield is an annual rate (decimal, e.g. 0.04 = 4%).
-    const yieldRate = summary.dividend_yield ?? 0;
-    if (yieldRate > 0 && currentUnitValue && currentUnitValue > 0) {
-      annualAmount = yieldRate * currentUnitValue;
-    }
+  if (trailingAnnualDividendMatchesRecentEvents) {
+    return providerTrailingAnnualDividend;
   }
 
-  return annualAmount > 0 ? annualAmount : 0;
+  if (hasRecentEventAnnualAmount) {
+    return annualAmountFromRecentEvents;
+  }
+
+  const referenceAnnualAmounts = [
+    providerForwardAnnualDividend,
+    annualAmountImpliedByYield,
+  ].filter((amount) => amount > 0);
+
+  const trailingAnnualDividendLooksClearlyInflated =
+    providerTrailingAnnualDividend > 0 &&
+    referenceAnnualAmounts.length > 0 &&
+    referenceAnnualAmounts.every((referenceAnnualAmount) =>
+      isAmountClearlyInflated(
+        providerTrailingAnnualDividend,
+        referenceAnnualAmount,
+      ),
+    );
+
+  if (
+    providerTrailingAnnualDividend > 0 &&
+    !trailingAnnualDividendLooksClearlyInflated
+  ) {
+    return providerTrailingAnnualDividend;
+  }
+
+  if (providerForwardAnnualDividend > 0) {
+    return providerForwardAnnualDividend;
+  }
+
+  if (annualAmountImpliedByYield > 0) {
+    return annualAmountImpliedByYield;
+  }
+
+  return 0;
+}
+
+function resolveAnnualDividendAmountFromYield(
+  summary: Dividend,
+  currentUnitValue?: number,
+): number {
+  // Yahoo dividend_yield is an annual rate (decimal, e.g. 0.04 = 4%).
+  const yieldRate = summary.dividend_yield ?? 0;
+
+  if (yieldRate <= 0 || !currentUnitValue || currentUnitValue <= 0) {
+    return 0;
+  }
+
+  return yieldRate * currentUnitValue;
+}
+
+function areAmountsWithinTolerance(leftAmount: number, rightAmount: number) {
+  return (
+    leftAmount >= rightAmount * (1 - DIVIDEND_AMOUNT_TOLERANCE_RATIO) &&
+    leftAmount <= rightAmount * (1 + DIVIDEND_AMOUNT_TOLERANCE_RATIO)
+  );
+}
+
+function isAmountClearlyInflated(
+  candidateAmount: number,
+  referenceAmount: number,
+) {
+  return candidateAmount > referenceAmount * CLEAR_INFLATION_MULTIPLIER;
 }
 
 function resolveLastPaymentMonth(

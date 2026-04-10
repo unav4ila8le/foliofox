@@ -233,6 +233,57 @@ describe("projected income", () => {
     expect(result.data?.[0]?.total).toBeCloseTo(2, 6);
   });
 
+  it("prefers the forward annual dividend when trailing annual dividend is clearly inflated", async () => {
+    const fxDateKey = formatUTCDateKey(new Date());
+    const asOfDateKey = toCivilDateKeyOrThrow("2026-04-10");
+
+    fetchPositionsMock.mockResolvedValue([
+      createPosition({
+        current_quantity: 1,
+        current_unit_value: 211.14,
+      }),
+    ]);
+
+    fetchDividendsMock.mockResolvedValue(
+      new Map([
+        [
+          "sym-1",
+          {
+            summary: createDividendSummary({
+              trailing_ttm_dividend: 95,
+              forward_annual_dividend: 5.73,
+              dividend_yield: 0.0272,
+              inferred_frequency: "semiannual",
+              last_dividend_date: "2025-03-31",
+            }),
+            events: [],
+          },
+        ],
+      ]),
+    );
+
+    fetchExchangeRatesMock.mockResolvedValue(
+      new Map([[`USD|${fxDateKey}`, 1]]),
+    );
+
+    const { calculateProjectedIncome } =
+      await import("@/server/analysis/projected-income/portfolio");
+
+    const result = await calculateProjectedIncome(
+      "USD",
+      12,
+      undefined,
+      asOfDateKey,
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.data?.[5]?.income).toBeCloseTo(2.865, 3);
+    expect(result.data?.[11]?.income).toBeCloseTo(2.865, 3);
+    expect(
+      result.data?.reduce((sum, month) => sum + month.income, 0),
+    ).toBeCloseTo(5.73, 2);
+  });
+
   it("uses the provided civil as-of date key for FX requests", async () => {
     const asOfDateKey = toCivilDateKeyOrThrow("2025-01-10");
 
