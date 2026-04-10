@@ -1,17 +1,9 @@
 "use server";
 
-import { addMonths } from "date-fns";
-
 import { fetchDividends } from "@/server/dividends/fetch";
 import { fetchSingleQuote } from "@/server/quotes/fetch";
+import { resolveAnnualDividendAmount } from "@/server/analysis/projected-income/utils";
 import { ensureSymbol } from "@/server/symbols/ensure";
-
-const FREQUENCY_MULTIPLIER: Record<string, number> = {
-  monthly: 12,
-  quarterly: 4,
-  semiannual: 2,
-  annual: 1,
-};
 
 /**
  * Fetch dividend data and compute a dividend yield for a symbol.
@@ -62,38 +54,6 @@ export async function calculateSymbolDividendYield(symbolLookup: string) {
   );
   const latestEvent = sortedEvents[0] ?? null;
 
-  // Prefer Yahoo-provided annual figures when available
-  let annualDividend =
-    (summary.trailing_ttm_dividend ?? 0) > 0
-      ? summary.trailing_ttm_dividend!
-      : (summary.forward_annual_dividend ?? 0);
-
-  // Fall back to the sum of dividends paid in the last year
-  if (annualDividend <= 0 && sortedEvents.length > 0) {
-    const oneYearAgo = addMonths(new Date(), -12);
-    const recentEvents = sortedEvents.filter(
-      (event) => new Date(event.event_date) >= oneYearAgo,
-    );
-    const totalRecent = recentEvents.reduce(
-      (sum, event) => sum + event.gross_amount,
-      0,
-    );
-    if (totalRecent > 0) {
-      annualDividend = totalRecent;
-    }
-  }
-
-  // Last resort: estimate using the most recent payout and inferred frequency
-  if (annualDividend <= 0 && latestEvent) {
-    const frequency = summary.inferred_frequency ?? "";
-    const multiplier = FREQUENCY_MULTIPLIER[frequency] ?? 0;
-    if (multiplier > 0) {
-      annualDividend = latestEvent.gross_amount * multiplier;
-    }
-  }
-
-  const annualDividendRate = annualDividend > 0 ? Number(annualDividend) : null;
-
   const reportedYield =
     summary.dividend_yield && summary.dividend_yield > 0
       ? summary.dividend_yield
@@ -116,6 +76,10 @@ export async function calculateSymbolDividendYield(symbolLookup: string) {
       error,
     );
   }
+
+  const annualDividendRate =
+    resolveAnnualDividendAmount(summary, events, latestPrice ?? undefined) ||
+    null;
 
   if (!reportedYield && annualDividendRate && latestPrice) {
     estimatedYield = annualDividendRate / latestPrice;

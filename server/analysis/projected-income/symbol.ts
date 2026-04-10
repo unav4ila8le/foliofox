@@ -1,7 +1,5 @@
 "use server";
 
-import { addMonths } from "date-fns";
-
 import { fetchDividends } from "@/server/dividends/fetch";
 import { fetchSingleQuote } from "@/server/quotes/fetch";
 import { resolveSymbolInput } from "@/server/symbols/resolve";
@@ -11,6 +9,7 @@ import {
   buildDividendProjectionBasis,
   calculateMonthlyDividend,
   formatUTCMonthKey,
+  resolveAnnualDividendAmount,
 } from "@/server/analysis/projected-income/utils";
 import {
   parseLocalDateKey,
@@ -41,13 +40,6 @@ export interface SymbolProjectedIncomePanelResult {
   projectedIncome: SymbolProjectedIncomeResult;
   dividendYield: number | null;
 }
-
-const DIVIDEND_FREQUENCY_MULTIPLIER: Record<string, number> = {
-  monthly: 12,
-  quarterly: 4,
-  semiannual: 2,
-  annual: 1,
-};
 
 async function fetchSymbolDividendContext(
   symbolLookup: string,
@@ -138,49 +130,6 @@ function buildProjectedIncomeResultFromDividendContext({
   };
 }
 
-function computeAnnualDividendRate({
-  summary,
-  events,
-}: {
-  summary: Dividend;
-  events: DividendEvent[];
-}): number | null {
-  const sortedEvents = [...events].sort(
-    (a, b) =>
-      new Date(b.event_date).getTime() - new Date(a.event_date).getTime(),
-  );
-  const latestEvent = sortedEvents[0] ?? null;
-
-  let annualDividend =
-    (summary.trailing_ttm_dividend ?? 0) > 0
-      ? summary.trailing_ttm_dividend!
-      : (summary.forward_annual_dividend ?? 0);
-
-  if (annualDividend <= 0 && sortedEvents.length > 0) {
-    const oneYearAgo = addMonths(new Date(), -12);
-    const recentEvents = sortedEvents.filter(
-      (event) => new Date(event.event_date) >= oneYearAgo,
-    );
-    const totalRecent = recentEvents.reduce(
-      (sum, event) => sum + event.gross_amount,
-      0,
-    );
-    if (totalRecent > 0) {
-      annualDividend = totalRecent;
-    }
-  }
-
-  if (annualDividend <= 0 && latestEvent) {
-    const frequency = summary.inferred_frequency ?? "";
-    const multiplier = DIVIDEND_FREQUENCY_MULTIPLIER[frequency] ?? 0;
-    if (multiplier > 0) {
-      annualDividend = latestEvent.gross_amount * multiplier;
-    }
-  }
-
-  return annualDividend > 0 ? annualDividend : null;
-}
-
 async function resolvePriceForYield(
   canonicalId: string,
   unitValue?: number,
@@ -231,7 +180,11 @@ async function computeDividendYieldFromDividendContext({
     return reportedYield;
   }
 
-  const annualDividendRate = computeAnnualDividendRate({ summary, events });
+  const annualDividendRate = resolveAnnualDividendAmount(
+    summary,
+    events,
+    unitValue,
+  );
   if (!annualDividendRate) {
     return null;
   }
