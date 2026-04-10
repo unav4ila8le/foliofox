@@ -212,6 +212,57 @@ describe("symbol projected income", () => {
     expect(result.dividendYield).toBe(0.0272);
   });
 
+  it("falls back to the latest historical dividend event when annual fields are unavailable", async () => {
+    const { calculateSymbolProjectedIncomePanelData } =
+      await import("@/server/analysis/projected-income/symbol");
+
+    resolveSymbolInputMock.mockResolvedValue({
+      symbol: { id: "sym-1" },
+    });
+    fetchDividendsMock.mockResolvedValue(
+      new Map([
+        [
+          "sym-1",
+          {
+            summary: createDividendSummary({
+              trailing_ttm_dividend: null,
+              forward_annual_dividend: null,
+              dividend_yield: null,
+              inferred_frequency: "annual",
+              last_dividend_date: "2023-12-15",
+            }),
+            events: [
+              createDividendEvent({
+                event_date: "2023-12-15",
+                gross_amount: 2,
+              }),
+            ],
+          },
+        ],
+      ]),
+    );
+    fetchSingleQuoteMock.mockResolvedValue(100);
+
+    const result = await calculateSymbolProjectedIncomePanelData(
+      "SYM",
+      1,
+      12,
+      undefined,
+      "USD",
+      toCivilDateKeyOrThrow("2025-01-15"),
+    );
+
+    expect(result.projectedIncome.success).toBe(true);
+    expect(result.projectedIncome.data?.[11]?.income).toBeCloseTo(2, 6);
+    expect(
+      result.projectedIncome.data?.reduce(
+        (sum, month) => sum + month.income,
+        0,
+      ),
+    ).toBeCloseTo(2, 6);
+    expect(result.dividendYield).toBeCloseTo(0.02, 6);
+  });
+
   it("returns a deterministic unresolved response when symbol cannot be resolved", async () => {
     const { calculateSymbolProjectedIncomePanelData } =
       await import("@/server/analysis/projected-income/symbol");

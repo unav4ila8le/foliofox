@@ -150,6 +150,13 @@ const DIVIDEND_AMOUNT_TOLERANCE_RATIO = 0.1;
 // Two times the smaller reference amount is a strong enough signal to catch
 // cross-basis mismatches like TM without rejecting normal provider variance.
 const CLEAR_INFLATION_MULTIPLIER = 2;
+const ANNUAL_DIVIDEND_MULTIPLIER_BY_INFERRED_FREQUENCY: Record<string, number> =
+  {
+    monthly: 12,
+    quarterly: 4,
+    semiannual: 2,
+    annual: 1,
+  };
 
 export function resolveAnnualDividendAmount(
   summary: Dividend,
@@ -224,6 +231,13 @@ export function resolveAnnualDividendAmount(
     return annualAmountImpliedByYield;
   }
 
+  const annualAmountFromLatestHistoricalEvent =
+    resolveAnnualDividendAmountFromLatestHistoricalEvent(summary, events);
+
+  if (annualAmountFromLatestHistoricalEvent > 0) {
+    return annualAmountFromLatestHistoricalEvent;
+  }
+
   return 0;
 }
 
@@ -239,6 +253,29 @@ function resolveAnnualDividendAmountFromYield(
   }
 
   return yieldRate * currentUnitValue;
+}
+
+function resolveAnnualDividendAmountFromLatestHistoricalEvent(
+  summary: Dividend,
+  events: DividendEvent[],
+): number {
+  // Low-confidence fallback for sparse histories: reuse the latest observed
+  // payout only when we also have an inferred payment cadence.
+  const latestDividendEvent = getLatestDividendEvent(events);
+  if (!latestDividendEvent) {
+    return 0;
+  }
+
+  const annualDividendMultiplier =
+    ANNUAL_DIVIDEND_MULTIPLIER_BY_INFERRED_FREQUENCY[
+      summary.inferred_frequency ?? ""
+    ] ?? 0;
+
+  if (annualDividendMultiplier <= 0) {
+    return 0;
+  }
+
+  return latestDividendEvent.gross_amount * annualDividendMultiplier;
 }
 
 function areAmountsWithinTolerance(leftAmount: number, rightAmount: number) {
