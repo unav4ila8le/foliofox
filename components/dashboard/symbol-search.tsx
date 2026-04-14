@@ -19,17 +19,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer";
 import { Spinner } from "@/components/ui/spinner";
 
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { searchYahooFinanceSymbols } from "@/server/symbols/search";
 
 import type { SymbolSearchResult } from "@/types/global.types";
@@ -67,7 +59,6 @@ export function SymbolSearch({
   const [isLoadingQuote, setIsLoadingQuote] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery] = useDebounce(searchQuery, 300);
-  const isMobile = useIsMobile();
 
   // Find the selected equity
   const selectedSymbol = results.find((symbol) => symbol.id === field.value);
@@ -75,6 +66,19 @@ export function SymbolSearch({
     ? selectedSymbol.id
     : field.value || "Search symbol";
   const hasSelectedValue = Boolean(field.value);
+
+  const handleClear = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (clearErrors && fieldName) clearErrors(fieldName);
+    field.onChange("");
+    setSearchQuery("");
+  };
+
+  const handleChange = (value: string) => {
+    if (clearErrors && fieldName) clearErrors(fieldName);
+    field.onChange(value);
+  };
 
   useEffect(() => {
     if (!debouncedQuery) {
@@ -135,77 +139,6 @@ export function SymbolSearch({
     })();
   }, [debouncedQuery]);
 
-  // SymbolList props
-  const symbolListProps = {
-    setOpen,
-    onChange: (v: string) => {
-      if (clearErrors && fieldName) clearErrors(fieldName);
-      field.onChange(v);
-    },
-    onSymbolSelect,
-    results,
-    isLoading,
-    isLoadingQuote,
-    setIsLoadingQuote,
-    searchQuery,
-    setSearchQuery,
-  };
-
-  if (isMobile) {
-    return (
-      <Drawer open={open} onOpenChange={setOpen}>
-        <DrawerTrigger asChild>
-          <Button
-            id={id}
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            aria-invalid={isInvalid}
-            className={cn(
-              "group relative justify-between font-normal",
-              "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
-              !hasSelectedValue && "text-muted-foreground",
-              className,
-            )}
-          >
-            {symbolName}
-            {hasSelectedValue && (
-              <div
-                className="text-muted-foreground hover:text-foreground absolute top-1/2 right-1 hidden h-7 w-7 -translate-y-1/2 group-hover:flex"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  if (clearErrors && fieldName) clearErrors(fieldName);
-                  field.onChange("");
-                  setSearchQuery("");
-                }}
-              >
-                <XIcon />
-                <span className="sr-only">Clear</span>
-              </div>
-            )}
-            {isLoadingQuote ? (
-              <Spinner />
-            ) : (
-              <Search
-                className={cn(
-                  "text-muted-foreground",
-                  hasSelectedValue && "group-hover:hidden",
-                )}
-              />
-            )}
-          </Button>
-        </DrawerTrigger>
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle>Equity</DrawerTitle>
-          </DrawerHeader>
-          <SymbolList {...symbolListProps} />
-        </DrawerContent>
-      </Drawer>
-    );
-  }
-
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -226,13 +159,7 @@ export function SymbolSearch({
           {hasSelectedValue && (
             <div
               className="text-muted-foreground hover:text-foreground absolute top-1/2 right-1 hidden h-7 w-7 -translate-y-1/2 items-center justify-center group-hover:flex"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (clearErrors && fieldName) clearErrors(fieldName);
-                field.onChange("");
-                setSearchQuery("");
-              }}
+              onClick={handleClear}
             >
               <XIcon />
               <span className="sr-only">Clear</span>
@@ -251,7 +178,17 @@ export function SymbolSearch({
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className={cn(popoverWidth, "p-0")}>
-        <SymbolList {...symbolListProps} />
+        <SymbolList
+          setOpen={setOpen}
+          onChange={handleChange}
+          onSymbolSelect={onSymbolSelect}
+          results={results}
+          isLoading={isLoading}
+          isLoadingQuote={isLoadingQuote}
+          setIsLoadingQuote={setIsLoadingQuote}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+        />
       </PopoverContent>
     </Popover>
   );

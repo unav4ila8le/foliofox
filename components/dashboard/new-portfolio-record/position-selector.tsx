@@ -18,17 +18,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer";
 import { useDashboardData } from "@/components/dashboard/providers/dashboard-data-provider";
 
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { resolveTodayDateKey } from "@/lib/date/date-utils";
 
 import { fetchPositions } from "@/server/positions/fetch";
@@ -56,7 +48,6 @@ export function PositionSelector({
   const [open, setOpen] = useState(false);
   const [positions, setPositions] = useState<TransformedPosition[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const isMobile = useIsMobile();
 
   // Load positions when the selector opens
   const getPositions = async () => {
@@ -81,46 +72,6 @@ export function PositionSelector({
       ? preselectedPosition
       : positions.find((p) => p.id === field.value);
   const positionName = selectedPosition ? selectedPosition.name : field.value;
-
-  if (isMobile) {
-    return (
-      <Drawer open={open} onOpenChange={setOpen}>
-        <DrawerTrigger asChild>
-          <Button
-            id={id}
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className={cn(
-              "w-full justify-between font-normal",
-              !positionName && "text-muted-foreground",
-            )}
-            onClick={() => {
-              if (open) return;
-              setIsLoading(true);
-              getPositions();
-            }}
-          >
-            {positionName || "Select position"}
-            <ChevronsUpDown className="text-muted-foreground" />
-          </Button>
-        </DrawerTrigger>
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle>Position</DrawerTitle>
-          </DrawerHeader>
-          <PositionList
-            setOpen={setOpen}
-            value={field.value}
-            onChange={field.onChange}
-            onPositionSelect={onPositionSelect}
-            positions={positions}
-            isLoading={isLoading}
-          />
-        </DrawerContent>
-      </Drawer>
-    );
-  }
 
   return (
     <Popover open={open} onOpenChange={setOpen} modal={true}>

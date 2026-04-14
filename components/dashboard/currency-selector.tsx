@@ -17,16 +17,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer";
 
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { useCurrencies } from "@/hooks/use-currencies";
 
 import type { Currency } from "@/types/global.types";
@@ -55,48 +47,9 @@ export function CurrencySelector({
   popoverWidth = "w-(--radix-popover-trigger-width)",
 }: CurrencySelectorProps) {
   const [open, setOpen] = useState(false);
-  const isMobile = useIsMobile();
 
   // Get currencies
   const { currencies, isLoading } = useCurrencies();
-
-  if (isMobile) {
-    return (
-      <Drawer open={open} onOpenChange={setOpen}>
-        <DrawerTrigger asChild>
-          <Button
-            id={id}
-            variant="outline"
-            role="combobox"
-            disabled={disabled}
-            aria-expanded={open}
-            aria-invalid={isInvalid}
-            className={cn(
-              "justify-between font-normal",
-              "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
-              !field.value && "text-muted-foreground",
-              className,
-            )}
-          >
-            {field.value || "Select currency"}
-            <ChevronsUpDown className="text-muted-foreground" />
-          </Button>
-        </DrawerTrigger>
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle>Currency</DrawerTitle>
-          </DrawerHeader>
-          <CurrencyList
-            setOpen={setOpen}
-            value={field.value}
-            onChange={field.onChange}
-            currencies={currencies}
-            isLoading={isLoading}
-          />
-        </DrawerContent>
-      </Drawer>
-    );
-  }
 
   return (
     <Popover open={open} onOpenChange={setOpen} modal={true}>

@@ -17,16 +17,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer";
 
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { usePositionCategories } from "@/hooks/use-position-categories";
 
 import type { PositionCategory } from "@/types/global.types";
@@ -55,7 +47,6 @@ export function PositionCategorySelector({
   popoverWidth = "w-(--radix-popover-trigger-width)",
 }: CategorySelectorProps) {
   const [open, setOpen] = useState(false);
-  const isMobile = useIsMobile();
 
   // Get position categories
   const { categories, isLoading } = usePositionCategories(positionType);
@@ -65,44 +56,6 @@ export function PositionCategorySelector({
   const categoryName = selectedCategory
     ? selectedCategory.name
     : field.value || "";
-
-  if (isMobile) {
-    return (
-      <Drawer open={open} onOpenChange={setOpen}>
-        <DrawerTrigger asChild>
-          <Button
-            id={id}
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            aria-invalid={isInvalid}
-            disabled={disabled}
-            className={cn(
-              "justify-between font-normal",
-              "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
-              !categoryName && "text-muted-foreground",
-              className,
-            )}
-          >
-            {categoryName || "Select category"}
-            <ChevronsUpDown className="text-muted-foreground" />
-          </Button>
-        </DrawerTrigger>
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle>Position category</DrawerTitle>
-          </DrawerHeader>
-          <PositionCategoryList
-            setOpen={setOpen}
-            value={field.value}
-            onChange={field.onChange}
-            categories={categories}
-            isLoading={isLoading}
-          />
-        </DrawerContent>
-      </Drawer>
-    );
-  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
