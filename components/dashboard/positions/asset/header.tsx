@@ -56,7 +56,7 @@ export async function AssetHeader({
           )}
           <EditAssetButton
             position={position}
-            currentSymbolTicker={symbol?.ticker}
+            currentSymbolTicker={position.symbol_ticker}
           />
           <AssetMoreActionsButton position={position} />
         </div>

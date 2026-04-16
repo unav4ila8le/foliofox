@@ -75,6 +75,7 @@ const createPosition = (
   archived_at: null,
   is_archived: false,
   category_name: "Equity",
+  symbol_ticker: null,
   current_quantity: 10,
   current_unit_value: 100,
   total_value: 1000,

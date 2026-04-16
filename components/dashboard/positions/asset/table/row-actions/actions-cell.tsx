@@ -6,6 +6,7 @@ import {
   Trash2,
   Archive,
   ArchiveRestore,
+  Settings,
   SquarePen,
   CircleMinus,
   CirclePlus,
@@ -22,6 +23,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { useNewPortfolioRecordDialog } from "@/components/dashboard/new-portfolio-record";
+import { UpdateAssetDialog } from "@/components/dashboard/positions/asset/update";
 import { ArchivePositionDialog } from "@/components/dashboard/positions/shared/archive-dialog";
 import { DeletePositionDialog } from "@/components/dashboard/positions/shared/delete-dialog";
 
@@ -35,6 +37,7 @@ export function ActionsCell({ position }: { position: TransformedPosition }) {
     useNewPortfolioRecordDialog();
   const { restorePosition, isRestoring } = useRestorePosition();
 
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
@@ -79,6 +82,12 @@ export function ActionsCell({ position }: { position: TransformedPosition }) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          {/* Edit position details (metadata) */}
+          <DropdownMenuItem onSelect={() => setShowEditDialog(true)}>
+            <Settings className="size-4" /> Edit details
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+
           {/* New update record */}
           <DropdownMenuItem
             onSelect={handleNewUpdateRecord}
@@ -107,6 +116,8 @@ export function ActionsCell({ position }: { position: TransformedPosition }) {
             </DropdownMenuItem>
           )}
 
+          <DropdownMenuSeparator />
+
           {/* Archive/restore position */}
           {position.is_archived ? (
             <DropdownMenuItem
@@ -125,7 +136,6 @@ export function ActionsCell({ position }: { position: TransformedPosition }) {
               <Archive className="size-4" /> Archive
             </DropdownMenuItem>
           )}
-          <DropdownMenuSeparator />
 
           {/* Delete position */}
           <DropdownMenuItem
@@ -136,6 +146,13 @@ export function ActionsCell({ position }: { position: TransformedPosition }) {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <UpdateAssetDialog
+        position={position}
+        currentSymbolTicker={position.symbol_ticker}
+        open={showEditDialog}
+        onOpenChangeAction={setShowEditDialog}
+      />
 
       <ArchivePositionDialog
         positions={[{ id: position.id, name: position.name }]} // Minimal DTO

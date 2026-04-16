@@ -91,7 +91,7 @@ async function fetchPositionsImpl(
 
   const { supabase, userId } = await resolvePositionsContext(context);
 
-  // Load base rows with category
+  // Load base rows with category and optional symbol ticker
   const baseQuery = supabase
     .from("positions")
     .select(
@@ -101,6 +101,9 @@ async function fetchPositionsImpl(
         name,
         position_type,
         display_order
+      ),
+      symbols (
+        ticker
       )
     `,
     )
@@ -221,10 +224,15 @@ async function fetchPositionsImpl(
 
     const has_market_data = allResolutions.has(position.id);
 
+    const symbolRow = Array.isArray(position.symbols)
+      ? position.symbols[0]
+      : position.symbols;
+
     return {
       ...(position as Position),
       is_archived: position.archived_at !== null,
       category_name: position.position_categories?.name,
+      symbol_ticker: symbolRow?.ticker ?? null,
       symbol_id: position.symbol_id ?? null,
       domain_id: position.domain_id ?? null,
       current_quantity,

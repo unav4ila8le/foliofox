@@ -14,7 +14,7 @@ import type { Position } from "@/types/global.types";
 
 interface UpdateAssetDialogProps {
   position: Position;
-  currentSymbolTicker?: string;
+  currentSymbolTicker?: string | null;
   open: boolean;
   onOpenChangeAction: (open: boolean) => void;
 }
@@ -29,7 +29,7 @@ export function UpdateAssetDialog({
     <Dialog open={open} onOpenChange={onOpenChangeAction}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit Asset</DialogTitle>
+          <DialogTitle>Edit details</DialogTitle>
           <DialogDescription>
             Edit the name, category, tax rate, and description for this asset.
           </DialogDescription>

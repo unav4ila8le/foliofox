@@ -12,6 +12,7 @@ export type Position = Tables<"positions">;
 export type TransformedPosition = Position & {
   is_archived: boolean;
   category_name?: string;
+  symbol_ticker: string | null;
   current_quantity: number;
   current_unit_value: number;
   total_value: number;

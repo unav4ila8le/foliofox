@@ -30,6 +30,7 @@ function createPosition(
     category_id: "cat-1",
     capital_gains_tax_rate: null,
     is_archived: false,
+    symbol_ticker: null,
     current_unit_value: currentQuantity > 0 ? totalValue / currentQuantity : 0,
     has_market_data: true,
     symbol_id: null,

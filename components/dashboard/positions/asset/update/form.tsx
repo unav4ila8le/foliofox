@@ -32,7 +32,7 @@ import type { Position } from "@/types/global.types";
 
 interface UpdateAssetFormProps {
   position: Position;
-  currentSymbolTicker?: string;
+  currentSymbolTicker?: string | null;
   onSuccess?: () => void;
 }
 

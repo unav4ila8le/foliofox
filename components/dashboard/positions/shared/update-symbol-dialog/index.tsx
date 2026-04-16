@@ -12,7 +12,7 @@ import { UpdateSymbolForm } from "./form";
 
 interface UpdateSymbolDialogProps {
   positionId: string;
-  currentSymbolTicker?: string;
+  currentSymbolTicker?: string | null;
   open: boolean;
   onOpenChangeAction: (open: boolean) => void;
   onSuccess?: () => void;

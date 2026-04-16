@@ -138,6 +138,7 @@ function createPositionFixture(
     created_at: "2026-01-01T00:00:00.000Z",
     updated_at: "2026-01-01T00:00:00.000Z",
     is_archived: false,
+    symbol_ticker: null,
     current_quantity: 10,
     current_unit_value: 100,
     total_value: 1000,

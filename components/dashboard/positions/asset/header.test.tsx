@@ -46,6 +46,7 @@ function createPosition(): TransformedPosition {
     description: null,
     is_archived: false,
     category_name: "Stocks",
+    symbol_ticker: null,
     current_quantity: 10,
     current_unit_value: 125,
     total_value: 1250,

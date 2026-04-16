@@ -19,7 +19,7 @@ import { updatePositionSymbol } from "@/server/positions/update-symbol";
 
 interface UpdateSymbolFormProps {
   positionId: string;
-  currentSymbolTicker?: string;
+  currentSymbolTicker?: string | null;
   onSuccess?: () => void;
   onCancel?: () => void;
 }
