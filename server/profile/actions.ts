@@ -13,6 +13,8 @@ import {
 import type { Profile } from "@/types/global.types";
 import { createClient } from "@/supabase/server";
 
+const LAST_APP_ACTIVITY_MIN_INTERVAL_MS = 6 * 60 * 60 * 1000;
+
 // Fetch current user profile
 export const fetchProfile = cache(async () => {
   const { supabase, user } = await getCurrentUser();
@@ -200,4 +202,74 @@ export async function updateAISettings(formData: FormData) {
 
   revalidatePath("/dashboard", "layout");
   return { success: true };
+}
+
+/**
+ * Update last_app_activity_at when the stored value is stale enough to matter.
+ * This is intentionally non-revalidating because it only feeds background
+ * lifecycle email logic and should stay invisible to the current request.
+ */
+export async function touchLastAppActivity() {
+  const { supabase, user } = await getCurrentUser();
+
+  // 1. Load the current activity timestamp so we can avoid noisy writes.
+  const { data: profileRow, error: profileError } = await supabase
+    .from("profiles")
+    .select("last_app_activity_at")
+    .eq("user_id", user.id)
+    .single();
+
+  if (profileError || !profileRow) {
+    return {
+      success: false as const,
+      changed: false as const,
+      code: profileError?.code ?? "PROFILE_NOT_FOUND",
+      message: profileError?.message ?? "Profile not found",
+    };
+  }
+
+  const now = new Date();
+  const lastActivityTimestamp = profileRow.last_app_activity_at
+    ? new Date(profileRow.last_app_activity_at).getTime()
+    : null;
+
+  // 2. Keep a six-hour write cooldown so page reloads do not spam updates.
+  if (
+    lastActivityTimestamp !== null &&
+    !Number.isNaN(lastActivityTimestamp) &&
+    now.getTime() - lastActivityTimestamp < LAST_APP_ACTIVITY_MIN_INTERVAL_MS
+  ) {
+    return {
+      success: true as const,
+      changed: false as const,
+      reason: "cooldown",
+      lastAppActivityAt: profileRow.last_app_activity_at,
+    };
+  }
+
+  const nextActivityTimestamp = now.toISOString();
+
+  // 3. Persist the fresh activity timestamp for lifecycle-email eligibility.
+  const { error: updateError } = await supabase
+    .from("profiles")
+    .update({
+      last_app_activity_at: nextActivityTimestamp,
+    })
+    .eq("user_id", user.id);
+
+  if (updateError) {
+    return {
+      success: false as const,
+      changed: false as const,
+      code: updateError.code,
+      message: updateError.message,
+    };
+  }
+
+  return {
+    success: true as const,
+    changed: true as const,
+    reason: "updated",
+    lastAppActivityAt: nextActivityTimestamp,
+  };
 }

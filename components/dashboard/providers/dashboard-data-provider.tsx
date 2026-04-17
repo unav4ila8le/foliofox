@@ -11,11 +11,16 @@ import {
   type ReactNode,
 } from "react";
 
-import type { FinancialProfile, Profile } from "@/types/global.types";
+import type {
+  EmailPreferences,
+  FinancialProfile,
+  Profile,
+} from "@/types/global.types";
 import type { StalePosition } from "@/server/positions/stale";
 
 type DashboardDataValue = {
   profile: Profile;
+  emailPreferences: EmailPreferences;
   email: string;
   financialProfile: FinancialProfile | null;
   netWorth: number;

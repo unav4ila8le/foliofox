@@ -8,14 +8,21 @@ import { resolveSymbolsBatch } from "@/server/symbols/resolve";
 
 import { calculateUnrealizedProfitLoss } from "@/lib/profit-loss/unrealized";
 import { convertCurrency } from "@/lib/currency-conversion";
-import { parseUTCDateKey, resolveTodayDateKey } from "@/lib/date/date-utils";
+import {
+  parseUTCDateKey,
+  resolveTodayDateKey,
+  type CivilDateKey,
+} from "@/lib/date/date-utils";
 import { clampDateRange } from "@/server/ai/tools/helpers/time-range";
+import type { PositionsQueryContext } from "@/server/positions/fetch";
 
 interface GetAssetsPerformanceParams {
   baseCurrency: string | null;
   positionIds: string[] | null;
   startDate: string | null;
   endDate: string | null;
+  todayDateKey?: CivilDateKey | null;
+  positionsQueryContext?: PositionsQueryContext;
 }
 
 interface AssetPerformanceData {
@@ -65,10 +72,15 @@ interface AssetPerformanceData {
  */
 export async function getAssetsPerformance(params: GetAssetsPerformanceParams) {
   try {
-    // 1. Resolve profile once for default currency and civil "today".
-    const { profile } = await fetchProfile();
-    const baseCurrency = params.baseCurrency ?? profile.display_currency;
-    const todayDateKey = resolveTodayDateKey(profile.time_zone);
+    // 1. Resolve only the missing profile-derived inputs.
+    let baseCurrency = params.baseCurrency;
+    let todayDateKey = params.todayDateKey ?? null;
+
+    if (!baseCurrency || !todayDateKey) {
+      const { profile } = await fetchProfile();
+      baseCurrency = baseCurrency ?? profile.display_currency;
+      todayDateKey = todayDateKey ?? resolveTodayDateKey(profile.time_zone);
+    }
 
     // 2. Clamp date range in civil date-key space.
     const { startDate: startDateKey, endDate: endDateKey } = clampDateRange({
@@ -81,17 +93,23 @@ export async function getAssetsPerformance(params: GetAssetsPerformanceParams) {
 
     // Fetch end-date positions (with snapshots for P/L) and start-date positions (no snapshots needed)
     const [endSnapshot, startPositions] = await Promise.all([
-      fetchPositions({
-        positionType: "asset",
-        includeArchived: true,
-        includeSnapshots: true,
-        asOfDateKey: endDateKey,
-      }),
-      fetchPositions({
-        positionType: "asset",
-        includeArchived: true,
-        asOfDateKey: startDateKey,
-      }),
+      fetchPositions(
+        {
+          positionType: "asset",
+          includeArchived: true,
+          includeSnapshots: true,
+          asOfDateKey: endDateKey,
+        },
+        params.positionsQueryContext,
+      ),
+      fetchPositions(
+        {
+          positionType: "asset",
+          includeArchived: true,
+          asOfDateKey: startDateKey,
+        },
+        params.positionsQueryContext,
+      ),
     ]);
 
     const { positions: endPositions, snapshots: snapshotsByPosition } =
