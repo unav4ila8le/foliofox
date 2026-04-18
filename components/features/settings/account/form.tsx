@@ -7,25 +7,21 @@ import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Field,
   FieldDescription,
   FieldError,
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { DialogClose } from "@/components/ui/custom/dialog";
-import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
-import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { CurrencySelector } from "@/components/dashboard/currency-selector";
+import { useDashboardData } from "@/components/dashboard/providers/dashboard-data-provider";
 import { TimeZoneCombobox } from "@/components/features/settings/time-zone-combobox";
 import {
   AUTO_TIME_ZONE_VALUE,
@@ -35,19 +31,13 @@ import {
   resolveBrowserTimeZone,
   TIME_ZONE_MODES,
 } from "@/lib/date/time-zone";
-
 import {
-  updateProfile,
   checkUsernameAvailability,
+  updateProfile,
 } from "@/server/profile/actions";
-import { updateEmailPreferences } from "@/server/email-preferences/actions";
-import { useDashboardData } from "@/components/dashboard/providers/dashboard-data-provider";
+import { SettingsFormShell } from "@/components/features/settings/form-shell";
 
-interface SettingsFormProps {
-  onSuccess?: () => void;
-}
-
-const formSchema = z.object({
+const accountSettingsFormSchema = z.object({
   username: z
     .string()
     .trim()
@@ -69,20 +59,23 @@ const formSchema = z.object({
         error: "Please select a valid timezone.",
       },
     ),
-  weekly_recap_enabled: z.boolean(),
-  marketing_emails_enabled: z.boolean(),
 });
+
+type AccountSettingsFormValues = z.infer<typeof accountSettingsFormSchema>;
+
+interface AccountSettingsFormProps {
+  onSuccess?: () => void;
+}
 
 function resolveInitialTimeZoneSelection(
   profileTimeZone: string | null,
   profileTimeZoneMode: string | null,
 ) {
-  // Keep Auto sticky in the UI when user preference is auto mode.
+  // Keep Auto sticky in the UI when the saved preference is browser-driven.
   if (profileTimeZoneMode === TIME_ZONE_MODES.AUTO) {
     return AUTO_TIME_ZONE_VALUE;
   }
 
-  // Fall back to concrete profile timezone for manual/legacy rows.
   const normalizedProfileTimeZone = profileTimeZone
     ? normalizeIanaTimeZone(profileTimeZone)
     : null;
@@ -90,20 +83,27 @@ function resolveInitialTimeZoneSelection(
   return normalizedProfileTimeZone ?? AUTO_TIME_ZONE_VALUE;
 }
 
-export function SettingsForm({ onSuccess }: SettingsFormProps) {
-  const { profile, email, emailPreferences, refreshDashboardData } =
-    useDashboardData();
-
+export function AccountSettingsForm({ onSuccess }: AccountSettingsFormProps) {
+  const { email, profile, refreshDashboardData } = useDashboardData();
   const [isLoading, setIsLoading] = useState(false);
+
   const detectedBrowserTimeZone = useMemo(() => resolveBrowserTimeZone(), []);
+  const initialTimeZoneSelection = useMemo(
+    () =>
+      resolveInitialTimeZoneSelection(
+        profile.time_zone,
+        profile.time_zone_mode,
+      ),
+    [profile.time_zone, profile.time_zone_mode],
+  );
   const timeZoneOptions = useMemo(() => {
     const supportedTimeZones = getSupportedIanaTimeZones();
-
-    // Keep currently saved value visible even if runtime support differs.
     const savedTimeZone = profile.time_zone
       ? normalizeIanaTimeZone(profile.time_zone)
       : null;
 
+    // Keep the saved value visible even if this runtime supports a smaller
+    // timezone list than the one used when the profile was last updated.
     if (
       savedTimeZone &&
       !supportedTimeZones.some((timeZone) => timeZone === savedTimeZone)
@@ -114,52 +114,40 @@ export function SettingsForm({ onSuccess }: SettingsFormProps) {
     return supportedTimeZones;
   }, [profile.time_zone]);
 
-  const form = useForm({
-    resolver: zodResolver(formSchema),
+  const form = useForm<AccountSettingsFormValues>({
+    resolver: zodResolver(accountSettingsFormSchema),
     defaultValues: {
       username: profile.username,
       display_currency: profile.display_currency,
-      time_zone: resolveInitialTimeZoneSelection(
-        profile.time_zone,
-        profile.time_zone_mode,
-      ),
-      weekly_recap_enabled: emailPreferences.weekly_recap_enabled,
-      marketing_emails_enabled: emailPreferences.marketing_emails_enabled,
+      time_zone: initialTimeZoneSelection,
     },
   });
 
-  // Get isDirty state from formState
   const { isDirty } = form.formState;
 
-  // Submit handler
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: AccountSettingsFormValues) {
     setIsLoading(true);
-    try {
-      const hasProfileChanges =
-        values.username.trim() !== profile.username ||
-        values.display_currency.trim().toUpperCase() !==
-          profile.display_currency ||
-        values.time_zone !==
-          resolveInitialTimeZoneSelection(
-            profile.time_zone,
-            profile.time_zone_mode,
-          );
-      const hasEmailPreferenceChanges =
-        values.weekly_recap_enabled !== emailPreferences.weekly_recap_enabled ||
-        values.marketing_emails_enabled !==
-          emailPreferences.marketing_emails_enabled;
 
-      if (!hasProfileChanges && !hasEmailPreferenceChanges) {
+    try {
+      const normalizedUsername = values.username.trim();
+      const normalizedDisplayCurrency = values.display_currency
+        .trim()
+        .toUpperCase();
+      const hasProfileChanges =
+        normalizedUsername !== profile.username ||
+        normalizedDisplayCurrency !== profile.display_currency ||
+        values.time_zone !== initialTimeZoneSelection;
+
+      if (!hasProfileChanges) {
         onSuccess?.();
         return;
       }
 
-      if (values.username.trim() !== profile?.username) {
-        const usernameCheck = await checkUsernameAvailability(
-          values.username.trim(),
-        );
+      if (normalizedUsername !== profile.username) {
+        const usernameAvailability =
+          await checkUsernameAvailability(normalizedUsername);
 
-        if (usernameCheck.error) {
+        if (usernameAvailability.error) {
           form.setError("username", {
             type: "manual",
             message:
@@ -168,7 +156,7 @@ export function SettingsForm({ onSuccess }: SettingsFormProps) {
           return;
         }
 
-        if (!usernameCheck.available) {
+        if (!usernameAvailability.available) {
           form.setError("username", {
             type: "manual",
             message:
@@ -179,11 +167,8 @@ export function SettingsForm({ onSuccess }: SettingsFormProps) {
       }
 
       const isAutoTimeZone = values.time_zone === AUTO_TIME_ZONE_VALUE;
-      const timeZoneMode = isAutoTimeZone
-        ? TIME_ZONE_MODES.AUTO
-        : TIME_ZONE_MODES.MANUAL;
       const resolvedTimeZone = isAutoTimeZone
-        ? resolveBrowserTimeZone()
+        ? (detectedBrowserTimeZone ?? resolveBrowserTimeZone())
         : normalizeIanaTimeZone(values.time_zone);
 
       if (!resolvedTimeZone) {
@@ -195,48 +180,28 @@ export function SettingsForm({ onSuccess }: SettingsFormProps) {
         return;
       }
 
-      let didPersistAnySettings = false;
+      const profileFormData = new FormData();
+      profileFormData.append("username", normalizedUsername);
+      profileFormData.append("display_currency", normalizedDisplayCurrency);
+      profileFormData.append("time_zone", resolvedTimeZone);
+      profileFormData.append(
+        "time_zone_mode",
+        isAutoTimeZone ? TIME_ZONE_MODES.AUTO : TIME_ZONE_MODES.MANUAL,
+      );
 
-      if (hasProfileChanges) {
-        const profileFormData = new FormData();
-        profileFormData.append("username", values.username.trim());
-        profileFormData.append(
-          "display_currency",
-          values.display_currency.trim().toUpperCase(),
-        );
-        profileFormData.append("time_zone", resolvedTimeZone);
-        profileFormData.append("time_zone_mode", timeZoneMode);
+      const updateProfileResult = await updateProfile(profileFormData);
 
-        const profileResult = await updateProfile(profileFormData);
-
-        if (!profileResult.success) {
-          throw new Error(profileResult.message);
-        }
-
-        didPersistAnySettings = true;
+      if (!updateProfileResult.success) {
+        throw new Error(updateProfileResult.message);
       }
 
-      if (hasEmailPreferenceChanges) {
-        const emailPreferencesResult = await updateEmailPreferences({
-          weeklyRecapEnabled: values.weekly_recap_enabled,
-          marketingEmailsEnabled: values.marketing_emails_enabled,
-        });
-
-        if (!emailPreferencesResult.success) {
-          throw new Error(
-            didPersistAnySettings
-              ? `${emailPreferencesResult.message} Some profile changes were already saved.`
-              : emailPreferencesResult.message,
-          );
-        }
-
-        didPersistAnySettings = true;
-      }
-
-      toast.success("Settings updated successfully");
+      form.reset({
+        username: normalizedUsername,
+        display_currency: normalizedDisplayCurrency,
+        time_zone: isAutoTimeZone ? AUTO_TIME_ZONE_VALUE : resolvedTimeZone,
+      });
+      toast.success("Account settings updated successfully");
       refreshDashboardData();
-
-      // Close the dialog
       onSuccess?.();
     } catch (error) {
       toast.error(
@@ -252,9 +217,11 @@ export function SettingsForm({ onSuccess }: SettingsFormProps) {
       onSubmit={form.handleSubmit(onSubmit)}
       className="flex min-h-0 flex-1 flex-col overflow-hidden"
     >
-      <DialogBody>
+      <SettingsFormShell
+        isLoading={isLoading}
+        isSubmitDisabled={isLoading || !isDirty}
+      >
         <div className="grid gap-4">
-          {/* Username */}
           <Controller
             control={form.control}
             name="username"
@@ -264,18 +231,18 @@ export function SettingsForm({ onSuccess }: SettingsFormProps) {
                 <Input
                   id={field.name}
                   autoComplete="username"
+                  disabled={isLoading}
                   placeholder="username"
                   aria-invalid={fieldState.invalid}
                   {...field}
                 />
-                {fieldState.invalid && (
+                {fieldState.invalid ? (
                   <FieldError errors={[fieldState.error]} />
-                )}
+                ) : null}
               </Field>
             )}
           />
 
-          {/* Display currency */}
           <Controller
             control={form.control}
             name="display_currency"
@@ -290,15 +257,14 @@ export function SettingsForm({ onSuccess }: SettingsFormProps) {
                   id={field.name}
                   isInvalid={fieldState.invalid}
                 />
-                {fieldState.invalid && (
+                {fieldState.invalid ? (
                   <FieldError errors={[fieldState.error]} />
-                )}
+                ) : null}
               </Field>
             )}
           />
 
           <div className="grid items-start gap-x-2 gap-y-4 sm:grid-cols-2">
-            {/* Time zone */}
             <Controller
               control={form.control}
               name="time_zone"
@@ -307,24 +273,23 @@ export function SettingsForm({ onSuccess }: SettingsFormProps) {
                   <FieldLabel htmlFor={field.name}>Time zone</FieldLabel>
                   <TimeZoneCombobox
                     field={field}
-                    options={timeZoneOptions}
                     id={field.name}
+                    options={timeZoneOptions}
                     isInvalid={fieldState.invalid}
                   />
                   {field.value === AUTO_TIME_ZONE_VALUE &&
-                    detectedBrowserTimeZone && (
-                      <FieldDescription>
-                        {detectedBrowserTimeZone}
-                      </FieldDescription>
-                    )}
-                  {fieldState.invalid && (
+                  detectedBrowserTimeZone ? (
+                    <FieldDescription>
+                      {detectedBrowserTimeZone}
+                    </FieldDescription>
+                  ) : null}
+                  {fieldState.invalid ? (
                     <FieldError errors={[fieldState.error]} />
-                  )}
+                  ) : null}
                 </Field>
               )}
             />
 
-            {/* Static locale field (not connected to form) */}
             <Field>
               <FieldLabel htmlFor="locale">Locale</FieldLabel>
               <Select disabled value="auto" name="locale" autoComplete="off">
@@ -339,7 +304,6 @@ export function SettingsForm({ onSuccess }: SettingsFormProps) {
             </Field>
           </div>
 
-          {/* Read-only email field */}
           <Field>
             <FieldLabel htmlFor="email">Email</FieldLabel>
             <Input
@@ -350,102 +314,11 @@ export function SettingsForm({ onSuccess }: SettingsFormProps) {
               disabled
             />
             <FieldDescription>
-              If you need to change your email, please contact support.
+              Email changes are managed through authentication settings.
             </FieldDescription>
           </Field>
-
-          <div id="email-preferences-section" className="grid gap-3">
-            <div className="space-y-1">
-              <h3 className="text-sm font-semibold">Email preferences</h3>
-              <p className="text-muted-foreground text-sm">
-                Control which automated emails Foliofox can send you.
-              </p>
-            </div>
-
-            <Controller
-              control={form.control}
-              name="weekly_recap_enabled"
-              render={({ field, fieldState }) => (
-                <Field
-                  data-invalid={fieldState.invalid}
-                  className="rounded-lg border px-4 py-3 text-sm"
-                >
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      id="weekly-recap-enabled"
-                      checked={field.value}
-                      disabled={isLoading}
-                      onCheckedChange={field.onChange}
-                      aria-invalid={fieldState.invalid}
-                      className="data-[state=checked]:bg-green-500"
-                    />
-                    <FieldLabel htmlFor="weekly-recap-enabled">
-                      Weekly recap
-                    </FieldLabel>
-                  </div>
-                  <FieldDescription className="text-muted-foreground">
-                    A summary of your weekly portfolio change, top movers, and
-                    projected income.
-                  </FieldDescription>
-                  {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error]} />
-                  )}
-                </Field>
-              )}
-            />
-
-            <Controller
-              control={form.control}
-              name="marketing_emails_enabled"
-              render={({ field, fieldState }) => (
-                <Field
-                  data-invalid={fieldState.invalid}
-                  className="rounded-lg border px-4 py-3 text-sm"
-                >
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      id="marketing-emails-enabled"
-                      checked={field.value}
-                      disabled={isLoading}
-                      onCheckedChange={field.onChange}
-                      aria-invalid={fieldState.invalid}
-                      className="data-[state=checked]:bg-green-500"
-                    />
-                    <FieldLabel htmlFor="marketing-emails-enabled">
-                      Marketing emails
-                    </FieldLabel>
-                  </div>
-                  <FieldDescription className="text-muted-foreground">
-                    Re-engagement reminders and future product nudges meant to
-                    bring you back when there is something worth reviewing.
-                  </FieldDescription>
-                  {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error]} />
-                  )}
-                </Field>
-              )}
-            />
-          </div>
         </div>
-      </DialogBody>
-
-      <DialogFooter>
-        <DialogClose asChild>
-          <Button disabled={isLoading} type="button" variant="outline">
-            Cancel
-          </Button>
-        </DialogClose>
-        <Button disabled={isLoading || !isDirty} type="submit">
-          {isLoading ? (
-            <>
-              <Spinner />
-              Saving...
-            </>
-          ) : (
-            "Save changes"
-          )}
-        </Button>
-      </DialogFooter>
+      </SettingsFormShell>
     </form>
   );
 }

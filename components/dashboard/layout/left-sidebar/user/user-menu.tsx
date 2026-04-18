@@ -34,7 +34,7 @@ export function UserMenu({
   menuAlign = "end",
   menuSideOffset = 4,
 }: UserMenuProps) {
-  const { profile, email: emailValue } = useDashboardData();
+  const { email: emailValue } = useDashboardData();
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -147,8 +147,6 @@ export function UserMenu({
       <SettingsDialog
         open={settingsDialogOpen}
         onOpenChange={handleSettingsDialogChange}
-        profile={profile}
-        email={emailValue}
       />
     </>
   );

@@ -11,9 +11,9 @@ import type {
 } from "@/emails/types";
 
 const previewLinks: AutomatedEmailTemplateLinks = {
-  dashboardUrl: "https://foliofox.app/dashboard",
-  settingsUrl: "https://foliofox.app/dashboard?settings=emails",
-  unsubscribeUrl: "https://foliofox.app/unsubscribe?token=preview-token",
+  dashboardUrl: "https://www.foliofox.com/dashboard",
+  settingsUrl: "https://www.foliofox.com/dashboard?settings=emails",
+  unsubscribeUrl: "https://www.foliofox.com/unsubscribe?token=preview-token",
 };
 
 const previewDigest: AutomatedEmailDigest = {
