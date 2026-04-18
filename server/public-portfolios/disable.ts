@@ -3,10 +3,11 @@
 import { revalidatePath } from "next/cache";
 
 import { getCurrentUser } from "@/server/auth/actions";
+import { resolveSiteUrl } from "@/server/shared/site-url";
 
 import { toPublicPortfolioMetadata } from "@/lib/public-portfolio";
 
-import { fetchPublicPortfolio, resolveSiteUrl } from "./fetch";
+import { fetchPublicPortfolio } from "./fetch";
 
 export async function disablePublicPortfolio() {
   const { supabase, user } = await getCurrentUser();

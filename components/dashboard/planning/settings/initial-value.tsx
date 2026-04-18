@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useEffectEvent,
   useMemo,
   useRef,
   useState,
@@ -103,16 +104,6 @@ export function PlanningInitialValue({
   const [isSavingValue, setIsSavingValue] = useState(false);
   const [isRefreshPending, startRefreshTransition] = useTransition();
 
-  useEffect(() => {
-    const normalizedNextValue = normalizeScenarioValue(initialValue);
-
-    setInitialValueInput(normalizedNextValue.toString());
-    setSavedValue(normalizedNextValue);
-    setSelectedValueBasis(initialValueBasis);
-    setSavedValueBasis(initialValueBasis);
-    lastAutoSyncKey.current = null;
-  }, [initialValue, initialValueBasis]);
-
   const isManualMode = selectedValueBasis === "manual";
   const isManualValueDirty =
     isManualMode &&
@@ -148,6 +139,10 @@ export function PlanningInitialValue({
 
     return normalizeScenarioValue(nextValue);
   }, [selectedValueBasis, initialValueSuggestions]);
+  const displayValueInput =
+    isManualMode || syncedValue === null
+      ? initialValueInput
+      : syncedValue.toString();
 
   const persistInitialValue = useCallback(
     async (input: {
@@ -201,6 +196,39 @@ export function PlanningInitialValue({
     [router, scenarioId],
   );
 
+  const syncDerivedInitialValue = useEffectEvent(async () => {
+    // Non-manual basis values stay synced with current portfolio-derived suggestions.
+    if (selectedValueBasis === "manual") {
+      return;
+    }
+
+    if (syncedValue === null) {
+      return;
+    }
+
+    const nextSyncKey = `${selectedValueBasis}:${syncedValue}`;
+
+    if (savedValueBasis === selectedValueBasis && savedValue === syncedValue) {
+      lastAutoSyncKey.current = nextSyncKey;
+      return;
+    }
+
+    if (lastAutoSyncKey.current === nextSyncKey) {
+      return;
+    }
+
+    lastAutoSyncKey.current = nextSyncKey;
+    const didSave = await persistInitialValue({
+      value: syncedValue,
+      valueBasis: selectedValueBasis,
+      refreshAfterSave: true,
+    });
+
+    if (!didSave && lastAutoSyncKey.current === nextSyncKey) {
+      lastAutoSyncKey.current = null;
+    }
+  });
+
   const handleManualSave = async () => {
     const trimmedValue = initialValueInput.trim();
 
@@ -224,49 +252,8 @@ export function PlanningInitialValue({
   };
 
   useEffect(() => {
-    // Non-manual basis values stay synced with current portfolio-derived suggestions.
-    if (selectedValueBasis === "manual") {
-      return;
-    }
-
-    if (syncedValue === null) {
-      return;
-    }
-
-    const nextSyncKey = `${selectedValueBasis}:${syncedValue}`;
-
-    setInitialValueInput((previousValue) =>
-      previousValue === syncedValue.toString()
-        ? previousValue
-        : syncedValue.toString(),
-    );
-
-    if (savedValueBasis === selectedValueBasis && savedValue === syncedValue) {
-      lastAutoSyncKey.current = nextSyncKey;
-      return;
-    }
-
-    if (lastAutoSyncKey.current === nextSyncKey) {
-      return;
-    }
-
-    lastAutoSyncKey.current = nextSyncKey;
-    void persistInitialValue({
-      value: syncedValue,
-      valueBasis: selectedValueBasis,
-      refreshAfterSave: true,
-    }).then((didSave) => {
-      if (!didSave && lastAutoSyncKey.current === nextSyncKey) {
-        lastAutoSyncKey.current = null;
-      }
-    });
-  }, [
-    selectedValueBasis,
-    syncedValue,
-    savedValueBasis,
-    savedValue,
-    persistInitialValue,
-  ]);
+    void syncDerivedInitialValue();
+  }, [selectedValueBasis, syncedValue, savedValueBasis, savedValue]);
 
   const handleBasisChange = (nextBasisRaw: string) => {
     lastAutoSyncKey.current = null;
@@ -288,8 +275,6 @@ export function PlanningInitialValue({
         toast.error("Unable to sync this value right now");
         return;
       }
-
-      setInitialValueInput(normalizeScenarioValue(nextSyncedValue).toString());
     }
 
     setSelectedValueBasis(nextBasis);
@@ -330,7 +315,7 @@ export function PlanningInitialValue({
             decimalScale={2}
             placeholder={initialValuePlaceholder}
             name="initial-value"
-            value={initialValueInput}
+            value={displayValueInput}
             onValueChange={(nextValue) => setInitialValueInput(nextValue)}
             onKeyDown={(event) => {
               if (event.key === "Enter" && isManualMode) {

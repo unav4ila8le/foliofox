@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { Upload } from "lucide-react";
 import { toast } from "sonner";
 
@@ -25,7 +25,6 @@ import type { PositionImportResult } from "@/lib/import/positions/types";
 export function CSVImportForm() {
   const {
     setOpen,
-    open,
     setReviewOpen,
     setReviewPositions,
     setReviewSymbolValidation,
@@ -105,14 +104,6 @@ export function CSVImportForm() {
     setParseResult(null);
     setCsvContent("");
   };
-
-  // Reset when dialog closes
-  useEffect(() => {
-    if (!open) {
-      handleReset();
-    }
-  }, [open]);
-
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <DialogBody className="space-y-4">

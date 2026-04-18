@@ -4,62 +4,28 @@ import { cache } from "react";
 import { revalidatePath } from "next/cache";
 
 import { getCurrentUser } from "@/server/auth/actions";
+import { ensureEmailPreferencesRow } from "@/server/email-preferences/shared";
 
 import type { EmailPreferences } from "@/types/global.types";
 
-type EmailPreferenceUpdatePayload = Partial<
+type EmailPreferenceUpdateInput = Partial<
   Pick<EmailPreferences, "weekly_recap_enabled" | "marketing_emails_enabled">
 >;
-
-async function ensureEmailPreferencesRow(params: {
-  userId: string;
-  supabase: Awaited<ReturnType<typeof getCurrentUser>>["supabase"];
-}) {
-  const { userId, supabase } = params;
-
-  // 1. Read the existing row first so regular fetches stay side-effect free.
-  const { data: existingPreferences, error: existingPreferencesError } =
-    await supabase
-      .from("email_preferences")
-      .select("*")
-      .eq("user_id", userId)
-      .maybeSingle();
-
-  if (existingPreferencesError) {
-    throw new Error(existingPreferencesError.message);
-  }
-
-  if (existingPreferences) {
-    return existingPreferences;
-  }
-
-  // 2. Self-heal missing rows for legacy or partially migrated environments.
-  const { data: insertedPreferences, error: insertPreferencesError } =
-    await supabase
-      .from("email_preferences")
-      .insert({
-        user_id: userId,
-      })
-      .select("*")
-      .single();
-
-  if (insertPreferencesError || !insertedPreferences) {
-    throw new Error(
-      insertPreferencesError?.message ||
-        "Failed to create missing email preferences row",
-    );
-  }
-
-  return insertedPreferences;
-}
 
 /**
  * Fetch the current user's automated email preferences.
  */
-export const fetchEmailPreferences = cache(async () => {
+const getCachedEmailPreferences = cache(async () => {
   const { supabase, user } = await getCurrentUser();
   return ensureEmailPreferencesRow({ supabase, userId: user.id });
 });
+
+/**
+ * Public async wrapper so this module only exports valid Server Actions.
+ */
+export async function fetchEmailPreferences() {
+  return getCachedEmailPreferences();
+}
 
 export interface UpdateEmailPreferencesInput {
   weeklyRecapEnabled?: boolean;
@@ -75,7 +41,7 @@ export async function updateEmailPreferences(
   const { supabase, user } = await getCurrentUser();
 
   // 1. Build a minimal update payload so unchanged fields stay untouched.
-  const updatePayload: EmailPreferenceUpdatePayload = {};
+  const updatePayload: EmailPreferenceUpdateInput = {};
 
   if (typeof input.weeklyRecapEnabled === "boolean") {
     updatePayload.weekly_recap_enabled = input.weeklyRecapEnabled;

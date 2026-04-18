@@ -99,6 +99,7 @@ async function NetWorthChartWrapper() {
 
   return (
     <NetWorthAreaChart
+      key={`${profile.display_currency}:${netWorthMode}:${todayDateKey}`}
       currency={profile.display_currency}
       netWorth={netWorth}
       history={netWorthHistory}

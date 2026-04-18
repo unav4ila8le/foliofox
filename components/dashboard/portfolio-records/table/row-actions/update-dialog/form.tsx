@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { CalendarIcon, Info } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { format } from "date-fns";
 
@@ -135,7 +135,10 @@ export function UpdatePortfolioRecordForm({
     },
   });
 
-  const recordType = form.watch("type");
+  const recordType = useWatch({
+    control: form.control,
+    name: "type",
+  });
 
   useEffect(() => {
     if (recordType !== "update") {

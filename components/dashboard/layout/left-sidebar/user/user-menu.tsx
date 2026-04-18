@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { CircleUser, LogOut, Settings } from "lucide-react";
 import { toast } from "sonner";
 
@@ -34,11 +35,42 @@ export function UserMenu({
   menuSideOffset = 4,
 }: UserMenuProps) {
   const { profile, email: emailValue } = useDashboardData();
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
+  const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
+  const [isSettingsDialogDismissed, setIsSettingsDialogDismissed] =
+    useState(false);
   const [financialProfileDialogOpen, setFinancialProfileDialogOpen] =
     useState(false);
+  const settingsQueryValue = searchParams.get("settings");
+  const settingsRequestedFromQuery =
+    settingsQueryValue === "profile" || settingsQueryValue === "emails";
+  const settingsDialogOpen =
+    isSettingsDialogOpen ||
+    (settingsRequestedFromQuery && !isSettingsDialogDismissed);
+
+  function handleSettingsDialogChange(open: boolean) {
+    setIsSettingsDialogOpen(open);
+    setIsSettingsDialogDismissed(!open && settingsRequestedFromQuery);
+
+    if (open || !settingsQueryValue) {
+      return;
+    }
+
+    const nextSearchParams = new URLSearchParams(searchParams.toString());
+    nextSearchParams.delete("settings");
+
+    const nextUrl = nextSearchParams.size
+      ? `${pathname}?${nextSearchParams.toString()}`
+      : pathname;
+
+    router.replace(nextUrl, {
+      scroll: false,
+    });
+  }
 
   async function handleSignOut() {
     setIsLoading(true);
@@ -78,7 +110,8 @@ export function UserMenu({
           </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={() => {
-              setSettingsDialogOpen(true);
+              setIsSettingsDialogDismissed(false);
+              handleSettingsDialogChange(true);
             }}
           >
             <Settings className="size-4" />
@@ -113,7 +146,7 @@ export function UserMenu({
       />
       <SettingsDialog
         open={settingsDialogOpen}
-        onOpenChange={setSettingsDialogOpen}
+        onOpenChange={handleSettingsDialogChange}
         profile={profile}
         email={emailValue}
       />

@@ -5,7 +5,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/custom/dialog";
-import { SettingsForm } from "./form";
+import { SettingsForm } from "./account/form";
 
 import type { Profile } from "@/types/global.types";
 
@@ -23,7 +23,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         <DialogHeader>
           <DialogTitle>Settings</DialogTitle>
           <DialogDescription>
-            Change here your profile information
+            Update your profile details and automated email preferences here.
           </DialogDescription>
         </DialogHeader>
         <SettingsForm onSuccess={() => onOpenChange(false)} />

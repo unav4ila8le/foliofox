@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { Upload } from "lucide-react";
 import { toast } from "sonner";
 
@@ -18,7 +18,7 @@ import { validatePortfolioRecordPositionNames } from "@/server/portfolio-records
 import type { PortfolioRecordImportResult } from "@/lib/import/portfolio-records/types";
 
 export function CSVImportForm() {
-  const { setOpen, open } = useImportPortfolioRecordsDialog();
+  const { setOpen } = useImportPortfolioRecordsDialog();
 
   // State for the entire import flow
   const [isProcessing, setIsProcessing] = useState(false);
@@ -108,14 +108,6 @@ export function CSVImportForm() {
     setParseResult(null);
     setCsvContent("");
   };
-
-  // Reset when dialog closes
-  useEffect(() => {
-    if (!open) {
-      handleReset();
-    }
-  }, [open]);
-
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <DialogBody className="space-y-4">

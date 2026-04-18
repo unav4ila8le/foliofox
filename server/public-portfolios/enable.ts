@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { getCurrentUser } from "@/server/auth/actions";
+import { resolveSiteUrl } from "@/server/shared/site-url";
 
 import {
   PUBLIC_PORTFOLIO_EXPIRATIONS,
@@ -21,7 +22,7 @@ import type {
 import type { Database } from "@/types/database.types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { fetchPublicPortfolio, resolveSiteUrl } from "./fetch";
+import { fetchPublicPortfolio } from "./fetch";
 import { ensurePublicSharingTimeZoneReady } from "./guards";
 
 function isRecord(value: unknown): value is Record<string, unknown> {

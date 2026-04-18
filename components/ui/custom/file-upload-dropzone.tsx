@@ -51,6 +51,16 @@ export function FileUploadDropzone({
   processingHint,
   onReset,
 }: FileUploadDropzoneProps) {
+  // Helper function to read file content
+  function readFileContent(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target?.result as string);
+      reader.onerror = reject;
+      reader.readAsText(file);
+    });
+  }
+
   // Handle file drop/selection
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
@@ -99,16 +109,6 @@ export function FileUploadDropzone({
       multiple: maxFiles > 1,
       disabled: disabled || isProcessing,
     });
-
-  // Helper function to read file content
-  const readFileContent = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => resolve(e.target?.result as string);
-      reader.onerror = reject;
-      reader.readAsText(file);
-    });
-  };
 
   // Handle reset
   const handleReset = (e: React.MouseEvent) => {

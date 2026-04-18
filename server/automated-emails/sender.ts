@@ -1,5 +1,3 @@
-"use server";
-
 import type { ReactElement } from "react";
 import { Resend } from "resend";
 

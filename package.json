@@ -66,6 +66,7 @@
   },
   "devDependencies": {
     "@react-email/preview-server": "^5.2.10",
+    "@react-email/ui": "^6.0.0",
     "@tailwindcss/postcss": "^4.0.8",
     "@tailwindcss/typography": "^0.5.19",
     "@testing-library/dom": "^10.4.1",

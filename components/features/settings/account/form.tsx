@@ -20,6 +20,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { DialogClose } from "@/components/ui/custom/dialog";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -39,6 +40,7 @@ import {
   updateProfile,
   checkUsernameAvailability,
 } from "@/server/profile/actions";
+import { updateEmailPreferences } from "@/server/email-preferences/actions";
 import { useDashboardData } from "@/components/dashboard/providers/dashboard-data-provider";
 
 interface SettingsFormProps {
@@ -67,6 +69,8 @@ const formSchema = z.object({
         error: "Please select a valid timezone.",
       },
     ),
+  weekly_recap_enabled: z.boolean(),
+  marketing_emails_enabled: z.boolean(),
 });
 
 function resolveInitialTimeZoneSelection(
@@ -87,7 +91,8 @@ function resolveInitialTimeZoneSelection(
 }
 
 export function SettingsForm({ onSuccess }: SettingsFormProps) {
-  const { profile, email } = useDashboardData();
+  const { profile, email, emailPreferences, refreshDashboardData } =
+    useDashboardData();
 
   const [isLoading, setIsLoading] = useState(false);
   const detectedBrowserTimeZone = useMemo(() => resolveBrowserTimeZone(), []);
@@ -118,6 +123,8 @@ export function SettingsForm({ onSuccess }: SettingsFormProps) {
         profile.time_zone,
         profile.time_zone_mode,
       ),
+      weekly_recap_enabled: emailPreferences.weekly_recap_enabled,
+      marketing_emails_enabled: emailPreferences.marketing_emails_enabled,
     },
   });
 
@@ -128,6 +135,25 @@ export function SettingsForm({ onSuccess }: SettingsFormProps) {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
+      const hasProfileChanges =
+        values.username.trim() !== profile.username ||
+        values.display_currency.trim().toUpperCase() !==
+          profile.display_currency ||
+        values.time_zone !==
+          resolveInitialTimeZoneSelection(
+            profile.time_zone,
+            profile.time_zone_mode,
+          );
+      const hasEmailPreferenceChanges =
+        values.weekly_recap_enabled !== emailPreferences.weekly_recap_enabled ||
+        values.marketing_emails_enabled !==
+          emailPreferences.marketing_emails_enabled;
+
+      if (!hasProfileChanges && !hasEmailPreferenceChanges) {
+        onSuccess?.();
+        return;
+      }
+
       if (values.username.trim() !== profile?.username) {
         const usernameCheck = await checkUsernameAvailability(
           values.username.trim(),
@@ -152,7 +178,6 @@ export function SettingsForm({ onSuccess }: SettingsFormProps) {
         }
       }
 
-      const formData = new FormData();
       const isAutoTimeZone = values.time_zone === AUTO_TIME_ZONE_VALUE;
       const timeZoneMode = isAutoTimeZone
         ? TIME_ZONE_MODES.AUTO
@@ -170,22 +195,46 @@ export function SettingsForm({ onSuccess }: SettingsFormProps) {
         return;
       }
 
-      formData.append("username", values.username.trim());
-      formData.append(
-        "display_currency",
-        values.display_currency.trim().toUpperCase(),
-      );
-      formData.append("time_zone", resolvedTimeZone);
-      formData.append("time_zone_mode", timeZoneMode);
+      let didPersistAnySettings = false;
 
-      const result = await updateProfile(formData);
+      if (hasProfileChanges) {
+        const profileFormData = new FormData();
+        profileFormData.append("username", values.username.trim());
+        profileFormData.append(
+          "display_currency",
+          values.display_currency.trim().toUpperCase(),
+        );
+        profileFormData.append("time_zone", resolvedTimeZone);
+        profileFormData.append("time_zone_mode", timeZoneMode);
 
-      // Handle error response from server action
-      if (!result.success) {
-        throw new Error(result.message);
+        const profileResult = await updateProfile(profileFormData);
+
+        if (!profileResult.success) {
+          throw new Error(profileResult.message);
+        }
+
+        didPersistAnySettings = true;
       }
 
-      toast.success("Profile updated successfully");
+      if (hasEmailPreferenceChanges) {
+        const emailPreferencesResult = await updateEmailPreferences({
+          weeklyRecapEnabled: values.weekly_recap_enabled,
+          marketingEmailsEnabled: values.marketing_emails_enabled,
+        });
+
+        if (!emailPreferencesResult.success) {
+          throw new Error(
+            didPersistAnySettings
+              ? `${emailPreferencesResult.message} Some profile changes were already saved.`
+              : emailPreferencesResult.message,
+          );
+        }
+
+        didPersistAnySettings = true;
+      }
+
+      toast.success("Settings updated successfully");
+      refreshDashboardData();
 
       // Close the dialog
       onSuccess?.();
@@ -304,6 +353,79 @@ export function SettingsForm({ onSuccess }: SettingsFormProps) {
               If you need to change your email, please contact support.
             </FieldDescription>
           </Field>
+
+          <div id="email-preferences-section" className="grid gap-3">
+            <div className="space-y-1">
+              <h3 className="text-sm font-semibold">Email preferences</h3>
+              <p className="text-muted-foreground text-sm">
+                Control which automated emails Foliofox can send you.
+              </p>
+            </div>
+
+            <Controller
+              control={form.control}
+              name="weekly_recap_enabled"
+              render={({ field, fieldState }) => (
+                <Field
+                  data-invalid={fieldState.invalid}
+                  className="rounded-lg border px-4 py-3 text-sm"
+                >
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id="weekly-recap-enabled"
+                      checked={field.value}
+                      disabled={isLoading}
+                      onCheckedChange={field.onChange}
+                      aria-invalid={fieldState.invalid}
+                      className="data-[state=checked]:bg-green-500"
+                    />
+                    <FieldLabel htmlFor="weekly-recap-enabled">
+                      Weekly recap
+                    </FieldLabel>
+                  </div>
+                  <FieldDescription className="text-muted-foreground">
+                    A summary of your weekly portfolio change, top movers, and
+                    projected income.
+                  </FieldDescription>
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
+
+            <Controller
+              control={form.control}
+              name="marketing_emails_enabled"
+              render={({ field, fieldState }) => (
+                <Field
+                  data-invalid={fieldState.invalid}
+                  className="rounded-lg border px-4 py-3 text-sm"
+                >
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id="marketing-emails-enabled"
+                      checked={field.value}
+                      disabled={isLoading}
+                      onCheckedChange={field.onChange}
+                      aria-invalid={fieldState.invalid}
+                      className="data-[state=checked]:bg-green-500"
+                    />
+                    <FieldLabel htmlFor="marketing-emails-enabled">
+                      Marketing emails
+                    </FieldLabel>
+                  </div>
+                  <FieldDescription className="text-muted-foreground">
+                    Re-engagement reminders and future product nudges meant to
+                    bring you back when there is something worth reviewing.
+                  </FieldDescription>
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
+          </div>
         </div>
       </DialogBody>
 
