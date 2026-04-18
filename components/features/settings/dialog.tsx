@@ -1,3 +1,5 @@
+import { Mail, Settings } from "lucide-react";
+
 import {
   Dialog,
   DialogContent,
@@ -24,8 +26,12 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         </DialogHeader>
         <Tabs defaultValue="account">
           <TabsList className="mx-6 mb-2">
-            <TabsTrigger value="account">Account</TabsTrigger>
-            <TabsTrigger value="emails">Email Notifications</TabsTrigger>
+            <TabsTrigger value="account">
+              <Settings /> Account
+            </TabsTrigger>
+            <TabsTrigger value="emails">
+              <Mail /> Email Notifications
+            </TabsTrigger>
           </TabsList>
           <TabsContent value="account">
             <AccountSettingsForm onSuccess={() => onOpenChange(false)} />
