@@ -19,38 +19,38 @@ export interface AutomatedEmailSender {
   sendEmail(message: AutomatedEmailMessage): Promise<AutomatedEmailSendResult>;
 }
 
-class ResendAutomatedEmailSender implements AutomatedEmailSender {
-  private readonly resendClient: Resend;
+function createResendAutomatedEmailSender(
+  apiKey: string,
+): AutomatedEmailSender {
+  const resendClient = new Resend(apiKey);
 
-  constructor(apiKey: string) {
-    this.resendClient = new Resend(apiKey);
-  }
+  return {
+    async sendEmail(message) {
+      const { data, error } = await resendClient.emails.send({
+        from: message.from,
+        to: message.to,
+        subject: message.subject,
+        html: message.html,
+        text: message.text,
+        react: message.react,
+      });
 
-  async sendEmail(
-    message: AutomatedEmailMessage,
-  ): Promise<AutomatedEmailSendResult> {
-    const { data, error } = await this.resendClient.emails.send({
-      from: message.from,
-      to: message.to,
-      subject: message.subject,
-      html: message.html,
-      text: message.text,
-      react: message.react,
-    });
+      if (error) {
+        throw new Error(error.message);
+      }
 
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    return {
-      provider: "resend",
-      messageId: data?.id ?? null,
-    };
-  }
+      return {
+        provider: "resend",
+        messageId: data?.id ?? null,
+      };
+    },
+  };
 }
 
 /**
  * Build the default automated-email sender for the configured provider.
+ * The interface is provider-shaped so an SMTP adapter can replace this
+ * factory without touching callers.
  */
 export function createAutomatedEmailSender(): AutomatedEmailSender {
   const resendApiKey = process.env.RESEND_API_KEY?.trim();
@@ -59,5 +59,5 @@ export function createAutomatedEmailSender(): AutomatedEmailSender {
     throw new Error("Missing RESEND_API_KEY for automated email sending");
   }
 
-  return new ResendAutomatedEmailSender(resendApiKey);
+  return createResendAutomatedEmailSender(resendApiKey);
 }

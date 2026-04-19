@@ -42,7 +42,12 @@ export interface AutomatedEmailDigestProjectedIncome {
   currency: string;
   windowDays: number;
   monthsAhead: number;
-  nextThirtyDaysEstimate: number;
+  /**
+   * Prorated income estimate for the configured rolling window starting at
+   * `asOfDateKey`. Defaults to the next 30 days but follows
+   * `projectedIncomeWindowDays` when overridden.
+   */
+  windowEstimate: number;
   monthlySeries: ProjectedIncomeData[];
 }
 
@@ -233,7 +238,7 @@ export async function buildAutomatedEmailDigest(
                 projectedIncome.currency ?? input.profile.display_currency,
               windowDays: projectedIncomeWindowDays,
               monthsAhead: projectedIncomeMonthsAhead,
-              nextThirtyDaysEstimate: calculateRollingProjectedIncomeTotal({
+              windowEstimate: calculateRollingProjectedIncomeTotal({
                 monthlySeries: monthlyProjectedIncomeSeries,
                 asOfDateKey,
                 windowDays: projectedIncomeWindowDays,

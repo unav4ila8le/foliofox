@@ -64,7 +64,7 @@ export default function WeeklyRecapEmail({
         <EmailStatCard
           label="Projected income"
           value={formatEmailCurrency(
-            digest.projectedIncome.nextThirtyDaysEstimate,
+            digest.projectedIncome.windowEstimate,
             digest.projectedIncome.currency,
           )}
           description={`Estimated over the next ${digest.projectedIncome.windowDays} days`}
@@ -99,7 +99,7 @@ export default function WeeklyRecapEmail({
               Foliofox currently projects{" "}
               <strong>
                 {formatEmailCurrency(
-                  digest.projectedIncome.nextThirtyDaysEstimate,
+                  digest.projectedIncome.windowEstimate,
                   digest.projectedIncome.currency,
                 )}
               </strong>{" "}

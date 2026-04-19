@@ -1,6 +1,20 @@
 import Link from "next/link";
 
+import {
+  Card,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+
 import { unsubscribeFromEmailPreference } from "@/server/email-preferences/unsubscribe";
+import { Button } from "@/components/ui/button";
+
+// This route is intentionally unauthenticated. The signed unsubscribe token
+// in the query string is the sole authentication surface; do not gate this
+// page on getCurrentUser() or it will break one-click unsubscribe from email
+// clients that follow links without a user session.
 
 function UnsubscribeCard({
   title,
@@ -14,27 +28,18 @@ function UnsubscribeCard({
   ctaHref: string;
 }) {
   return (
-    <div className="mx-auto max-w-xl px-4 py-16">
-      <div className="rounded-3xl border bg-white p-8 shadow-sm">
-        <p className="text-sm font-semibold tracking-[0.18em] text-green-700 uppercase">
-          Foliofox
-        </p>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-balance">
-          {title}
-        </h1>
-        <p className="text-muted-foreground mt-4 text-sm leading-6">
-          {description}
-        </p>
-        <div className="mt-6">
-          <Link
-            href={ctaHref}
-            className="inline-flex rounded-full bg-green-700 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-green-800"
-          >
-            {ctaLabel}
-          </Link>
-        </div>
-      </div>
-    </div>
+    <Card className="mx-auto my-8 max-w-xl">
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+
+      <CardFooter>
+        <Button asChild>
+          <Link href={ctaHref}>{ctaLabel}</Link>
+        </Button>
+      </CardFooter>
+    </Card>
   );
 }
 
@@ -50,8 +55,8 @@ export default async function UnsubscribePage(props: {
       <UnsubscribeCard
         title="This unsubscribe link is incomplete"
         description="The link you opened is missing the token we need to identify the email preference. Please use the link directly from the email footer."
-        ctaLabel="Go to Foliofox"
-        ctaHref="/"
+        ctaLabel="Open dashboard"
+        ctaHref="/dashboard"
       />
     );
   }

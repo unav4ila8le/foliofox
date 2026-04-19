@@ -81,9 +81,9 @@ export default function ReengagementEmail({
 
       {digest.projectedIncome ? (
         <EmailStatCard
-          label="Next 30 days"
+          label={`Next ${digest.projectedIncome.windowDays} days`}
           value={formatEmailCurrency(
-            digest.projectedIncome.nextThirtyDaysEstimate,
+            digest.projectedIncome.windowEstimate,
             digest.projectedIncome.currency,
           )}
           description="Projected portfolio income"

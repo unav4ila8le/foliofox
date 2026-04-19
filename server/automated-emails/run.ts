@@ -138,12 +138,22 @@ function createBaseStats(
   };
 }
 
+/**
+ * Supabase relation typings can return the joined `profiles` row as either an
+ * object or a single-element array depending on inference context. Normalize
+ * to a single profile or null so callers do not branch on shape.
+ */
 function normalizeCandidateProfile(candidateRow: EmailPreferenceCandidateRow) {
   return Array.isArray(candidateRow.profiles)
     ? (candidateRow.profiles[0] ?? null)
     : candidateRow.profiles;
 }
 
+/**
+ * Load every user with an email-preferences row joined to profile fields the
+ * scheduler needs (timezone, currency, last activity). Runs as the service
+ * role so RLS does not need to allow cross-user reads.
+ */
 async function fetchAutomatedEmailCandidates() {
   const supabase = createServiceClient();
 
@@ -188,6 +198,11 @@ async function fetchAutomatedEmailCandidates() {
   );
 }
 
+/**
+ * Build a `userId -> latest sent_at` map for re-engagement deliveries inside
+ * the cooldown window. Used by the scheduler to enforce the 21-day cooldown
+ * without requiring per-user delivery lookups.
+ */
 async function fetchRecentReengagementDeliveries(now: Date) {
   const supabase = createServiceClient();
   const cooldownCutoffTimestamp = new Date(
@@ -219,6 +234,11 @@ async function fetchRecentReengagementDeliveries(now: Date) {
   return latestSentAtByUserId;
 }
 
+/**
+ * Run the schedule rules across every candidate and return the ordered list
+ * of jobs that should attempt delivery this run. Updates the running stats
+ * with weekly/reengagement/dueUsers counters as a side-effect.
+ */
 function buildDueAutomatedEmailJobs(params: {
   candidates: AutomatedEmailCandidate[];
   lastReengagementSentAtByUserId: Map<string, string>;
@@ -266,6 +286,12 @@ function buildDueAutomatedEmailJobs(params: {
   return dueJobs;
 }
 
+/**
+ * End-to-end processing for a single due job: dedupe, build the digest,
+ * render the matching template, and persist the delivery via
+ * `sendAutomatedEmail`. Returns a discriminated result the orchestrator maps
+ * into stats counters.
+ */
 async function processAutomatedEmailJob(params: {
   job: DueAutomatedEmailJob;
   recipientEmail: string;

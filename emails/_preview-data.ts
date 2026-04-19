@@ -87,7 +87,7 @@ const previewDigest: AutomatedEmailDigest = {
     currency: "USD",
     windowDays: 30,
     monthsAhead: 2,
-    nextThirtyDaysEstimate: 260,
+    windowEstimate: 260,
     monthlySeries: [
       {
         date: new Date(Date.UTC(2026, 3, 1)),

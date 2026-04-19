@@ -145,10 +145,7 @@ describe("buildAutomatedEmailDigest", () => {
       throw new Error("Expected projected income to be present in digest");
     }
 
-    expect(result.digest.projectedIncome.nextThirtyDaysEstimate).toBeCloseTo(
-      460,
-      6,
-    );
+    expect(result.digest.projectedIncome.windowEstimate).toBeCloseTo(460, 6);
   });
 
   it("omits empty optional sections when analytics helpers return no content", async () => {

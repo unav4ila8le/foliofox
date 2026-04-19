@@ -1,5 +1,4 @@
 import {
-  AUTOMATED_EMAIL_BATCH_SIZE,
   AUTOMATED_EMAIL_SEND_HOUR_LOCAL,
   REENGAGEMENT_COOLDOWN_DAYS,
   REENGAGEMENT_INACTIVITY_DAYS,
@@ -15,8 +14,6 @@ import type { Database } from "@/types/database.types";
 type AutomatedEmailType = Database["public"]["Enums"]["automated_email_type"];
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
-const LOCAL_HOUR_FORMATTER_LOCALE = "en-US";
 
 interface AutomatedEmailScheduleInput {
   timeZone: string;
@@ -37,7 +34,9 @@ export interface AutomatedEmailScheduleDecision {
 }
 
 function resolveLocalHour(date: Date, timeZone: string) {
-  const formatter = new Intl.DateTimeFormat(LOCAL_HOUR_FORMATTER_LOCALE, {
+  // Locale only governs digit shaping for the `hour` part, which we parse as
+  // an integer below; "en-US" is just an explicit anchor for that.
+  const formatter = new Intl.DateTimeFormat("en-US", {
     timeZone,
     hour: "2-digit",
     hourCycle: "h23",
@@ -71,6 +70,10 @@ function resolveLocalDateKey(timestamp: string, timeZone: string) {
   return formatDateKeyInTimeZone(parsedTimestamp, timeZone);
 }
 
+/**
+ * Whole civil days between two `CivilDateKey` values. Both keys are parsed at
+ * UTC midnight so DST shifts in any user-local timezone never bias the count.
+ */
 function differenceInCivilDays(
   laterDateKey: CivilDateKey,
   earlierDateKey: CivilDateKey,
@@ -110,6 +113,9 @@ export function evaluateAutomatedEmailSchedule(
       input.timeZone,
     );
 
+    // Inactivity and cooldown are measured in user-local civil days, not
+    // 24-hour blocks. So "14 inactive days" really means 14 calendar days
+    // have passed since the user's last activity in their own timezone.
     if (
       lastActivityDateKey &&
       differenceInCivilDays(localDateKey, lastActivityDateKey) >=
@@ -157,5 +163,3 @@ export function evaluateAutomatedEmailSchedule(
     deliveryKey: null,
   };
 }
-
-export { AUTOMATED_EMAIL_BATCH_SIZE };
