@@ -50,6 +50,21 @@ async function findExistingDeliveryRecord(params: {
   return data;
 }
 
+/**
+ * Whether a delivery for the given (user, email type, delivery key) tuple has
+ * already been marked as sent. Used by the cron orchestrator to short-circuit
+ * before building the digest when a previous run already delivered the same
+ * window.
+ */
+export async function isAutomatedEmailDeliveryAlreadySent(params: {
+  userId: string;
+  emailType: AutomatedEmailType;
+  deliveryKey: string;
+}) {
+  const existingDeliveryRecord = await findExistingDeliveryRecord(params);
+  return existingDeliveryRecord?.status === "sent";
+}
+
 async function createPendingDeliveryRecord(params: {
   userId: string;
   emailType: AutomatedEmailType;

@@ -4,6 +4,7 @@ import { cache } from "react";
 import { revalidatePath } from "next/cache";
 
 import { getCurrentUser, getOptionalUser } from "@/server/auth/actions";
+import { LAST_APP_ACTIVITY_MIN_INTERVAL_MS } from "@/server/automated-emails/constants";
 import {
   isValidTimeZoneMode,
   normalizeIanaTimeZone,
@@ -12,8 +13,6 @@ import {
 
 import type { Profile } from "@/types/global.types";
 import { createClient } from "@/supabase/server";
-
-const LAST_APP_ACTIVITY_MIN_INTERVAL_MS = 6 * 60 * 60 * 1000;
 
 // Fetch current user profile
 export const fetchProfile = cache(async () => {

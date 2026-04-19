@@ -2,9 +2,8 @@
 
 import { useEffect, useRef } from "react";
 
+import { LAST_APP_ACTIVITY_MIN_INTERVAL_MS } from "@/server/automated-emails/constants";
 import { touchLastAppActivity } from "@/server/profile/actions";
-
-const LAST_APP_ACTIVITY_MIN_INTERVAL_MS = 6 * 60 * 60 * 1000;
 
 function getActivityStorageKey(userId: string) {
   return `foliofox:last-app-activity-sync:${userId}`;

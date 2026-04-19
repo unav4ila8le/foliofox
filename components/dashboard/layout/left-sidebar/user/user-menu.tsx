@@ -14,7 +14,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Spinner } from "@/components/ui/spinner";
 
-import { SettingsDialog } from "@/components/features/settings/dialog";
+import {
+  SettingsDialog,
+  type SettingsDialogTab,
+} from "@/components/features/settings/dialog";
 import { FinancialProfileDialog } from "@/components/features/financial-profile/dialog";
 import { ThemeToggle } from "@/components/features/theme/theme-toggle";
 import { useDashboardData } from "@/components/dashboard/providers/dashboard-data-provider";
@@ -26,6 +29,19 @@ interface UserMenuProps {
   menuSide?: "top" | "right" | "bottom" | "left";
   menuAlign?: "start" | "center" | "end";
   menuSideOffset?: number;
+}
+
+const SETTINGS_QUERY_PARAM = "settings";
+const DEFAULT_SETTINGS_TAB: SettingsDialogTab = "account";
+
+function parseSettingsTabFromQuery(
+  rawValue: string | null,
+): SettingsDialogTab | null {
+  if (rawValue === "account" || rawValue === "emails") {
+    return rawValue;
+  }
+
+  return null;
 }
 
 export function UserMenu({
@@ -41,29 +57,31 @@ export function UserMenu({
 
   const [isLoading, setIsLoading] = useState(false);
   const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
-  const [isSettingsDialogDismissed, setIsSettingsDialogDismissed] =
-    useState(false);
+  // Tracks whether the user has explicitly closed the dialog after a deep
+  // link opened it. Needed because `router.replace` clears the URL param
+  // asynchronously; without this, the next render would re-open the dialog.
+  const [isDeepLinkDismissed, setIsDeepLinkDismissed] = useState(false);
   const [financialProfileDialogOpen, setFinancialProfileDialogOpen] =
     useState(false);
-  const settingsQueryValue = searchParams.get("settings");
-  const settingsRequestedFromQuery =
-    settingsQueryValue === "profile" || settingsQueryValue === "emails";
-  const requestedSettingsTab =
-    settingsQueryValue === "emails" ? "emails" : "account";
-  const settingsDialogOpen =
-    isSettingsDialogOpen ||
-    (settingsRequestedFromQuery && !isSettingsDialogDismissed);
+
+  const requestedTabFromQuery = parseSettingsTabFromQuery(
+    searchParams.get(SETTINGS_QUERY_PARAM),
+  );
+  const isOpenedByDeepLink =
+    requestedTabFromQuery !== null && !isDeepLinkDismissed;
+  const settingsDialogOpen = isSettingsDialogOpen || isOpenedByDeepLink;
+  const requestedSettingsTab = requestedTabFromQuery ?? DEFAULT_SETTINGS_TAB;
 
   function handleSettingsDialogChange(open: boolean) {
     setIsSettingsDialogOpen(open);
-    setIsSettingsDialogDismissed(!open && settingsRequestedFromQuery);
+    setIsDeepLinkDismissed(!open && requestedTabFromQuery !== null);
 
-    if (open || !settingsQueryValue) {
+    if (open || requestedTabFromQuery === null) {
       return;
     }
 
     const nextSearchParams = new URLSearchParams(searchParams.toString());
-    nextSearchParams.delete("settings");
+    nextSearchParams.delete(SETTINGS_QUERY_PARAM);
 
     const nextUrl = nextSearchParams.size
       ? `${pathname}?${nextSearchParams.toString()}`
@@ -112,7 +130,7 @@ export function UserMenu({
           </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={() => {
-              setIsSettingsDialogDismissed(false);
+              setIsDeepLinkDismissed(false);
               handleSettingsDialogChange(true);
             }}
           >

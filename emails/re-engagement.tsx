@@ -5,6 +5,7 @@ import {
   EmailMutedText,
   EmailSectionHeading,
   emailCardStyles,
+  emailColors,
 } from "@/emails/_components/email-layout";
 import { EmailStatCard } from "@/emails/_components/email-stat-card";
 import { reengagementPreviewProps } from "@/emails/_preview-data";
@@ -12,6 +13,7 @@ import {
   formatEmailCurrency,
   formatSignedEmailCurrency,
   formatSignedPercentage,
+  renderEmailAssetLabel,
 } from "@/emails/_lib/format";
 
 import type { AutomatedEmailTemplateProps } from "@/emails/types";
@@ -32,10 +34,6 @@ function resolveStrongestMover(digest: AutomatedEmailTemplateProps["digest"]) {
       ? current
       : strongest,
   );
-}
-
-function renderAssetLabel(name: string, symbol: string | null) {
-  return symbol ? `${name} (${symbol})` : name;
 }
 
 export default function ReengagementEmail({
@@ -73,7 +71,7 @@ export default function ReengagementEmail({
       {strongestMover ? (
         <EmailStatCard
           label="Strongest mover"
-          value={renderAssetLabel(
+          value={renderEmailAssetLabel(
             strongestMover.asset.name,
             strongestMover.asset.symbol,
           )}
@@ -105,12 +103,12 @@ export default function ReengagementEmail({
                 margin: "14px 0 0",
                 fontSize: "14px",
                 lineHeight: "1.6",
-                color: "#121814",
+                color: emailColors.foreground,
               }}
             >
               Biggest move:{" "}
               <strong>
-                {renderAssetLabel(
+                {renderEmailAssetLabel(
                   strongestMover.asset.name,
                   strongestMover.asset.symbol,
                 )}

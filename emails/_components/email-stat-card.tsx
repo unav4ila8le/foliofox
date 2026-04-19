@@ -1,5 +1,7 @@
 import { Section, Text } from "@react-email/components";
 
+import { emailColors } from "@/emails/_components/email-layout";
+
 interface EmailStatCardProps {
   label: string;
   value: string;
@@ -15,7 +17,7 @@ export function EmailStatCard({
     <Section
       style={{
         marginBottom: "12px",
-        border: "1px solid #dadfd4",
+        border: `1px solid ${emailColors.border}`,
         borderRadius: "18px",
         padding: "16px",
       }}
@@ -23,7 +25,7 @@ export function EmailStatCard({
       <Text
         style={{
           margin: "0 0 6px",
-          color: "#5f6d62",
+          color: emailColors.muted,
           fontSize: "13px",
           lineHeight: "1.4",
           textTransform: "uppercase",
@@ -36,7 +38,7 @@ export function EmailStatCard({
       <Text
         style={{
           margin: "0 0 6px",
-          color: "#121814",
+          color: emailColors.foreground,
           fontSize: "24px",
           lineHeight: "1.2",
           fontWeight: 700,
@@ -48,7 +50,7 @@ export function EmailStatCard({
         <Text
           style={{
             margin: 0,
-            color: "#5f6d62",
+            color: emailColors.muted,
             fontSize: "13px",
             lineHeight: "1.5",
           }}

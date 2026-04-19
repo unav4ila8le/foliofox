@@ -26,7 +26,11 @@ interface EmailLayoutProps {
   children: ReactNode;
 }
 
-const colors = {
+// Shared palette and typography for every automated email template. These are
+// inline style values (not Tailwind tokens) because email clients require fully
+// resolved CSS. Keep all template-level color and font usage routed through
+// these exports so a future styling pass updates one source of truth.
+export const emailColors = {
   background: "#f6f7f4",
   card: "#ffffff",
   border: "#dadfd4",
@@ -36,7 +40,7 @@ const colors = {
   accentSoft: "#e7f0e9",
 } as const;
 
-const fontFamily =
+export const emailFontFamily =
   "Manrope, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
 
 export function EmailLayout({
@@ -57,9 +61,9 @@ export function EmailLayout({
       <Body
         style={{
           margin: 0,
-          backgroundColor: colors.background,
-          color: colors.foreground,
-          fontFamily,
+          backgroundColor: emailColors.background,
+          color: emailColors.foreground,
+          fontFamily: emailFontFamily,
           padding: "32px 16px",
         }}
       >
@@ -71,8 +75,8 @@ export function EmailLayout({
         >
           <Section
             style={{
-              backgroundColor: colors.card,
-              border: `1px solid ${colors.border}`,
+              backgroundColor: emailColors.card,
+              border: `1px solid ${emailColors.border}`,
               borderRadius: "24px",
               padding: "28px",
               boxShadow: "0 8px 24px rgba(18, 24, 20, 0.06)",
@@ -81,7 +85,7 @@ export function EmailLayout({
             <Text
               style={{
                 margin: "0 0 10px",
-                color: colors.accent,
+                color: emailColors.accent,
                 fontSize: "13px",
                 fontWeight: 700,
                 letterSpacing: "0.08em",
@@ -97,7 +101,7 @@ export function EmailLayout({
                 margin: "0 0 12px",
                 fontSize: "32px",
                 lineHeight: "1.1",
-                color: colors.foreground,
+                color: emailColors.foreground,
               }}
             >
               {title}
@@ -108,7 +112,7 @@ export function EmailLayout({
                 margin: "0 0 24px",
                 fontSize: "16px",
                 lineHeight: "1.6",
-                color: colors.muted,
+                color: emailColors.muted,
               }}
             >
               {subtitle}
@@ -122,7 +126,7 @@ export function EmailLayout({
                 style={{
                   display: "inline-block",
                   borderRadius: "999px",
-                  backgroundColor: colors.accent,
+                  backgroundColor: emailColors.accent,
                   color: "#ffffff",
                   fontSize: "14px",
                   fontWeight: 700,
@@ -137,7 +141,7 @@ export function EmailLayout({
             <Hr
               style={{
                 margin: "28px 0 20px",
-                borderColor: colors.border,
+                borderColor: emailColors.border,
               }}
             />
 
@@ -146,7 +150,7 @@ export function EmailLayout({
                 margin: "0 0 12px",
                 fontSize: "13px",
                 lineHeight: "1.6",
-                color: colors.muted,
+                color: emailColors.muted,
               }}
             >
               {reasonText}
@@ -157,14 +161,14 @@ export function EmailLayout({
                 margin: 0,
                 fontSize: "13px",
                 lineHeight: "1.6",
-                color: colors.muted,
+                color: emailColors.muted,
               }}
             >
-              <Link href={settingsUrl} style={{ color: colors.accent }}>
+              <Link href={settingsUrl} style={{ color: emailColors.accent }}>
                 Manage email settings
               </Link>
               {" · "}
-              <Link href={unsubscribeUrl} style={{ color: colors.accent }}>
+              <Link href={unsubscribeUrl} style={{ color: emailColors.accent }}>
                 Unsubscribe from this email type
               </Link>
             </Text>
@@ -183,7 +187,7 @@ export function EmailSectionHeading({ children }: { children: ReactNode }) {
         margin: "0 0 12px",
         fontSize: "18px",
         lineHeight: "1.3",
-        color: colors.foreground,
+        color: emailColors.foreground,
       }}
     >
       {children}
@@ -198,7 +202,7 @@ export function EmailMutedText({ children }: { children: ReactNode }) {
         margin: 0,
         fontSize: "14px",
         lineHeight: "1.6",
-        color: colors.muted,
+        color: emailColors.muted,
       }}
     >
       {children}
@@ -208,7 +212,7 @@ export function EmailMutedText({ children }: { children: ReactNode }) {
 
 export const emailCardStyles = {
   wrapper: {
-    backgroundColor: colors.accentSoft,
+    backgroundColor: emailColors.accentSoft,
     borderRadius: "18px",
     padding: "18px",
   },

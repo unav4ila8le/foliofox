@@ -5,7 +5,9 @@ import {
   EmailMutedText,
   EmailSectionHeading,
   emailCardStyles,
+  emailColors,
 } from "@/emails/_components/email-layout";
+import { EmailMoverList } from "@/emails/_components/email-mover-list";
 import { EmailStatCard } from "@/emails/_components/email-stat-card";
 import { weeklyRecapPreviewProps } from "@/emails/_preview-data";
 import {
@@ -15,10 +17,6 @@ import {
 } from "@/emails/_lib/format";
 
 import type { AutomatedEmailTemplateProps } from "@/emails/types";
-
-function renderAssetLabel(name: string, symbol: string | null) {
-  return symbol ? `${name} (${symbol})` : name;
-}
 
 export default function WeeklyRecapEmail({
   username,
@@ -78,75 +76,17 @@ export default function WeeklyRecapEmail({
           <EmailSectionHeading>Top movers</EmailSectionHeading>
 
           <Section style={emailCardStyles.wrapper}>
-            <Text
-              style={{
-                margin: "0 0 10px",
-                color: "#2c5b3b",
-                fontSize: "13px",
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.06em",
-              }}
-            >
-              Gainers
-            </Text>
-            {digest.topMovers.gainers.map((mover) => (
-              <Text
-                key={mover.asset.id}
-                style={{
-                  margin: "0 0 10px",
-                  fontSize: "14px",
-                  lineHeight: "1.6",
-                  color: "#121814",
-                }}
-              >
-                <strong>
-                  {renderAssetLabel(mover.asset.name, mover.asset.symbol)}
-                </strong>
-                {" · "}
-                {formatSignedEmailCurrency(
-                  mover.valueChangeAbs,
-                  digest.currency,
-                )}
-                {" · "}
-                {formatSignedPercentage(mover.valueChangePct)}
-              </Text>
-            ))}
-
-            <Text
-              style={{
-                margin: "16px 0 10px",
-                color: "#2c5b3b",
-                fontSize: "13px",
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.06em",
-              }}
-            >
-              Losers
-            </Text>
-            {digest.topMovers.losers.map((mover) => (
-              <Text
-                key={mover.asset.id}
-                style={{
-                  margin: "0 0 10px",
-                  fontSize: "14px",
-                  lineHeight: "1.6",
-                  color: "#121814",
-                }}
-              >
-                <strong>
-                  {renderAssetLabel(mover.asset.name, mover.asset.symbol)}
-                </strong>
-                {" · "}
-                {formatSignedEmailCurrency(
-                  mover.valueChangeAbs,
-                  digest.currency,
-                )}
-                {" · "}
-                {formatSignedPercentage(mover.valueChangePct)}
-              </Text>
-            ))}
+            <EmailMoverList
+              title="Gainers"
+              movers={digest.topMovers.gainers}
+              currency={digest.currency}
+            />
+            <EmailMoverList
+              title="Losers"
+              movers={digest.topMovers.losers}
+              currency={digest.currency}
+              titleTopMarginPx={16}
+            />
           </Section>
         </Section>
       ) : null}
@@ -185,11 +125,11 @@ export default function WeeklyRecapEmail({
             margin: 0,
             fontSize: "14px",
             lineHeight: "1.6",
-            color: "#5f6d62",
+            color: emailColors.muted,
           }}
         >
           Prefer a different cadence? You can fine-tune this in{" "}
-          <Link href={links.settingsUrl} style={{ color: "#2c5b3b" }}>
+          <Link href={links.settingsUrl} style={{ color: emailColors.accent }}>
             your settings
           </Link>
           .

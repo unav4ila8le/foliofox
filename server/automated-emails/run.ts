@@ -3,7 +3,10 @@
 import { chunkArray } from "@/server/shared/chunk-array";
 import { createServiceClient } from "@/supabase/service";
 import { buildAutomatedEmailDigest } from "@/server/automated-emails/digest";
-import { sendAutomatedEmail } from "@/server/automated-emails/deliveries";
+import {
+  isAutomatedEmailDeliveryAlreadySent,
+  sendAutomatedEmail,
+} from "@/server/automated-emails/deliveries";
 import { fetchRecipientEmailsByUserId } from "@/server/automated-emails/recipient-emails";
 import { createAutomatedEmailSender } from "@/server/automated-emails/sender";
 import { evaluateAutomatedEmailSchedule } from "@/server/automated-emails/schedule";
@@ -270,8 +273,26 @@ async function processAutomatedEmailJob(params: {
   sender: ReturnType<typeof createAutomatedEmailSender>;
 }) {
   const { fromAddress, job, recipientEmail, sender } = params;
+
+  // 1. Short-circuit before any heavy work when this user has already received
+  // the email for the current local window (e.g. a same-hour cron retry).
+  const alreadySent = await isAutomatedEmailDeliveryAlreadySent({
+    userId: job.userId,
+    emailType: job.emailType,
+    deliveryKey: job.deliveryKey,
+  });
+
+  if (alreadySent) {
+    return {
+      success: true as const,
+      skipped: true as const,
+      reason: "already_sent",
+    };
+  }
+
   const supabase = createServiceClient();
 
+  // 2. Build the analytics payload only after the dedupe check passes.
   const digestResult = await buildAutomatedEmailDigest({
     profile: {
       user_id: job.userId,

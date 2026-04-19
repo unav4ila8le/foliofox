@@ -16,3 +16,11 @@ export function formatSignedPercentage(value: number) {
 
   return `${prefix}${Math.abs(value).toFixed(1)}%`;
 }
+
+/**
+ * Render a position label for email body text.
+ * Symbol is appended in parentheses when present (e.g. "NVIDIA (NVDA)").
+ */
+export function renderEmailAssetLabel(name: string, symbol: string | null) {
+  return symbol ? `${name} (${symbol})` : name;
+}
