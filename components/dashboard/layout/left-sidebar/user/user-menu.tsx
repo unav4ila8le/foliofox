@@ -48,6 +48,8 @@ export function UserMenu({
   const settingsQueryValue = searchParams.get("settings");
   const settingsRequestedFromQuery =
     settingsQueryValue === "profile" || settingsQueryValue === "emails";
+  const requestedSettingsTab =
+    settingsQueryValue === "emails" ? "emails" : "account";
   const settingsDialogOpen =
     isSettingsDialogOpen ||
     (settingsRequestedFromQuery && !isSettingsDialogDismissed);
@@ -147,6 +149,7 @@ export function UserMenu({
       <SettingsDialog
         open={settingsDialogOpen}
         onOpenChange={handleSettingsDialogChange}
+        requestedTab={requestedSettingsTab}
       />
     </>
   );

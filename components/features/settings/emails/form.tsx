@@ -151,8 +151,8 @@ export function EmailSettingsForm({ onSuccess }: EmailSettingsFormProps) {
                   </FieldLabel>
                 </div>
                 <FieldDescription className="text-muted-foreground">
-                  Re-engagement reminders and future product nudges meant to
-                  bring you back when there is something worth reviewing.
+                  Reminders and future product nudges meant to bring you back
+                  when there is something worth reviewing.
                 </FieldDescription>
                 {fieldState.invalid && (
                   <FieldError errors={[fieldState.error]} />

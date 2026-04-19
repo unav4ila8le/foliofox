@@ -1,3 +1,5 @@
+"use client";
+
 import { Mail, Settings } from "lucide-react";
 
 import {
@@ -11,12 +13,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AccountSettingsForm } from "./account/form";
 import { EmailSettingsForm } from "./emails/form";
 
+export type SettingsDialogTab = "account" | "emails";
+
 interface SettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  requestedTab?: SettingsDialogTab;
 }
 
-export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
+export function SettingsDialog({
+  open,
+  onOpenChange,
+  requestedTab = "account",
+}: SettingsDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
@@ -24,7 +33,10 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           <DialogTitle>Settings</DialogTitle>
           <DialogDescription>Update your settings here.</DialogDescription>
         </DialogHeader>
-        <Tabs defaultValue="account">
+        <Tabs
+          key={`${open ? "open" : "closed"}:${requestedTab}`}
+          defaultValue={requestedTab}
+        >
           <TabsList className="mx-6 mb-2">
             <TabsTrigger value="account">
               <Settings /> Account

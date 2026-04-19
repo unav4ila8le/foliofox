@@ -33,7 +33,9 @@ async function resolveAutomatedEmailLinks(params: {
   userId: string;
   preferenceKey: AutomatedEmailPreferenceKey;
 }) {
-  const siteUrl = await resolveSiteUrl();
+  const siteUrl = await resolveSiteUrl({
+    requireConfiguredPublicUrl: true,
+  });
   const unsubscribeToken = createUnsubscribeToken({
     userId: params.userId,
     preferenceKey: params.preferenceKey,
