@@ -58,31 +58,17 @@ cd foliofox
 
 #### 2) Docker: configure environment
 
-Create a `.env.local` file in the project root:
+Copy the example environment file:
 
 ```bash
-# Required
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
-SUPABASE_SECRET_KEY=your_supabase_secret_key
-
-# Optional (used to authorize cron invocations)
-CRON_SECRET=generate_a_strong_random_string
-
-# Optional (used for AI features)
-AI_PROVIDER=openai
-AI_PROVIDER_API_KEY=your_provider_api_key
-AI_CHAT_MODEL_ID=gpt-5-mini
-AI_EXTRACTION_MODEL_ID=gpt-5-mini
-
-# Optional (used for domain valuations)
-REPLICATE_API_TOKEN=your_replicate_api_token
-
-# Optional (used for PostHog)
-NEXT_PUBLIC_POSTHOG_KEY=<ph_project_api_key>
-NEXT_PUBLIC_POSTHOG_HOST=https://<us | eu>.i.posthog.com
+cp .env.example .env.local
 ```
+
+Then edit `.env.local` for your environment.
+
+- Required values are grouped at the top of [.env.example](./.env.example).
+- Optional integrations, cron auth, and automated email settings are documented there as well.
+- Keep `.env.example` updated whenever you add, rename, or remove an environment variable.
 
 #### 3) Docker: apply database migrations
 
@@ -122,7 +108,7 @@ npm install
 
 #### 2) Configure local environment
 
-Create a `.env.local` file in the project root, same as [Docker setup above](#2-docker-configure-environment).
+Copy `.env.example` to `.env.local`, same as [Docker setup above](#2-docker-configure-environment), then fill in the values for your environment.
 
 #### 3) Apply database migrations
 
@@ -201,9 +187,10 @@ supabase gen types typescript --project-id <your-project-ref> > types/database.t
 ### 6) (Optional) Deploy to Vercel
 
 - Import the repo into Vercel.
-- Set the same environment variables (Project Settings → Environment Variables).
-- `vercel.json` includes daily cron jobs at 22:00 UTC for quotes and FX updates.
+- Set the same environment variables listed in [.env.example](./.env.example) (Project Settings → Environment Variables).
+- `vercel.json` includes daily cron jobs at 22:00 UTC for quotes and FX updates, plus an hourly automated-email cron.
 - Cron endpoints expect `Authorization: Bearer <CRON_SECRET>`.
+- The automated-email cron stays inactive unless `AUTOMATED_EMAILS_ENABLED=true` and the email env vars are configured.
 
 If headers can’t be configured in your environment, trigger manually:
 
@@ -214,6 +201,10 @@ curl "http://localhost:3000/api/cron/fetch-exchange-rates" \
 
 # Quotes
 curl "http://localhost:3000/api/cron/fetch-quotes" \
+  -H "authorization: Bearer $CRON_SECRET"
+
+# Automated emails
+curl "http://localhost:3000/api/cron/send-automated-emails" \
   -H "authorization: Bearer $CRON_SECRET"
 ```
 

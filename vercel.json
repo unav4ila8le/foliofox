@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/fetch-quotes",
       "schedule": "0 22 * * *"
+    },
+    {
+      "path": "/api/cron/send-automated-emails",
+      "schedule": "0 * * * *"
     }
   ]
 }
