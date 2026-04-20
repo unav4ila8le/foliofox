@@ -102,9 +102,8 @@ export default function ReengagementEmail({
         {strongestMover ? (
           <Text
             style={{
-              margin: "14px 0 0",
+              margin: "12px 0 0",
               fontSize: "14px",
-              lineHeight: "1.6",
               color: emailColors.foreground,
             }}
           >

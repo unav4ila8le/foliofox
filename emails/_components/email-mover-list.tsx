@@ -1,6 +1,6 @@
 import { Text } from "@react-email/components";
 
-import { emailColors } from "@/emails/_components/email-layout";
+import { EmailMutedText, emailColors } from "@/emails/_components/email-layout";
 import {
   formatSignedEmailCurrency,
   formatSignedPercentage,
@@ -22,7 +22,7 @@ interface EmailMoverListProps {
 }
 
 /**
- * Render a small uppercase title and a vertical list of mover lines.
+ * Render a small title and a vertical list of mover lines.
  * Used by the weekly recap to render the Gainers and Losers blocks with the
  * same markup and styling.
  */
@@ -38,25 +38,17 @@ export function EmailMoverList({
 
   return (
     <>
-      <Text
-        style={{
-          margin: `${titleTopMarginPx}px 0 10px`,
-          color: emailColors.foreground,
-          fontSize: "12px",
-          fontWeight: 700,
-          textTransform: "uppercase",
-          letterSpacing: "0.06em",
-        }}
+      <EmailMutedText
+        style={{ margin: `${titleTopMarginPx}px 0 8px`, fontSize: "13px" }}
       >
         {title}
-      </Text>
+      </EmailMutedText>
       {movers.map((mover) => (
         <Text
           key={mover.asset.id}
           style={{
-            margin: "0 0 8px",
+            margin: "0 0 6px",
             fontSize: "14px",
-            lineHeight: "1.6",
             color: emailColors.foreground,
           }}
         >

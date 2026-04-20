@@ -1,6 +1,10 @@
 import { Section, Text } from "@react-email/components";
 
-import { emailColors, emailRadius } from "@/emails/_components/email-layout";
+import {
+  EmailMutedText,
+  emailColors,
+  emailRadius,
+} from "@/emails/_components/email-layout";
 
 interface EmailStatCardProps {
   label: string;
@@ -19,45 +23,23 @@ export function EmailStatCard({
         marginBottom: "10px",
         border: `1px solid ${emailColors.border}`,
         borderRadius: emailRadius.nested,
-        padding: "14px 16px",
+        padding: "16px",
       }}
     >
+      <EmailMutedText style={{ fontSize: "12px" }}>{label}</EmailMutedText>
       <Text
         style={{
-          margin: "0 0 4px",
-          color: emailColors.muted,
-          fontSize: "12px",
-          lineHeight: "1.4",
-          textTransform: "uppercase",
-          letterSpacing: "0.06em",
-          fontWeight: 600,
-        }}
-      >
-        {label}
-      </Text>
-      <Text
-        style={{
-          margin: "0 0 4px",
+          margin: "4px 0 0",
+          fontSize: "20px",
           color: emailColors.foreground,
-          fontSize: "22px",
-          lineHeight: "1.2",
-          fontWeight: 700,
-          letterSpacing: "-0.01em",
         }}
       >
         {value}
       </Text>
       {description ? (
-        <Text
-          style={{
-            margin: 0,
-            color: emailColors.muted,
-            fontSize: "13px",
-            lineHeight: "1.5",
-          }}
-        >
+        <EmailMutedText style={{ marginTop: "4px", fontSize: "13px" }}>
           {description}
-        </Text>
+        </EmailMutedText>
       ) : null}
     </Section>
   );

@@ -1,4 +1,4 @@
-import { Link, Section, Text } from "@react-email/components";
+import { Link, Section } from "@react-email/components";
 
 import {
   EmailLayout,
@@ -121,23 +121,13 @@ export default function WeeklyRecapEmail({
       )}
 
       <Section style={{ marginTop: "20px" }}>
-        <Text
-          style={{
-            margin: 0,
-            fontSize: "14px",
-            lineHeight: "1.6",
-            color: emailColors.muted,
-          }}
-        >
+        <EmailMutedText style={{ fontSize: "14px" }}>
           Prefer a different cadence? You can fine-tune this in{" "}
-          <Link
-            href={links.settingsUrl}
-            style={{ color: emailColors.brand, textDecoration: "underline" }}
-          >
+          <Link href={links.settingsUrl} style={{ color: emailColors.brand }}>
             your settings
           </Link>
           .
-        </Text>
+        </EmailMutedText>
       </Section>
     </EmailLayout>
   );

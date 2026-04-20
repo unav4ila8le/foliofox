@@ -53,7 +53,7 @@ export const emailColors = {
 
 export const emailRadius = {
   card: "10px",
-  nested: "4px",
+  nested: "6px",
 } as const;
 
 // Deliberately system-only. Installing a webfont raises weight and fails in
