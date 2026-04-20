@@ -227,7 +227,7 @@ export function EmailLayout({
               }}
             >
               Foliofox, Room 402-J14, 10, Pangyo-ro 71-beon-gil, Bundang-gu,
-              Gyeonggi-do, Republic of Korea.
+              Seongnam-si, Gyeonggi-do, Republic of Korea
             </EmailMutedText>
             <EmailMutedText
               style={{
