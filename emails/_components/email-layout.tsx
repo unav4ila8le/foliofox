@@ -61,9 +61,57 @@ export const emailRadius = {
 export const emailFontFamily =
   'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 
-// Logo is 561x137 native; displayed at 1/4 scale for crisp retina rendering.
-const LOGO_DISPLAY_WIDTH = 140;
-const LOGO_DISPLAY_HEIGHT = 34;
+// Logo is 561x137 native; displayed at 1/5 scale for crisp retina rendering.
+const LOGO_DISPLAY_WIDTH = 112;
+const LOGO_DISPLAY_HEIGHT = 27;
+
+export function EmailSectionHeading({ children }: { children: ReactNode }) {
+  return (
+    <Heading
+      as="h2"
+      style={{
+        fontSize: "20px",
+        fontWeight: 400,
+        color: emailColors.foreground,
+      }}
+    >
+      {children}
+    </Heading>
+  );
+}
+
+export function EmailMutedText({
+  children,
+  style,
+}: {
+  children: ReactNode;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <Text
+      style={{
+        margin: 0,
+        color: emailColors.muted,
+        ...style,
+      }}
+    >
+      {children}
+    </Text>
+  );
+}
+
+// Hairline horizontal rule used to separate content sections inside the card.
+// Mirrors the editorial spacing rhythm of the Foliofox marketing emails.
+export function EmailSectionDivider() {
+  return (
+    <Hr
+      style={{
+        margin: "24px 0",
+        borderTop: `1px solid ${emailColors.border}`,
+      }}
+    />
+  );
+}
 
 export function EmailLayout({
   previewText,
@@ -83,10 +131,10 @@ export function EmailLayout({
       <Preview>{previewText}</Preview>
       <Body
         style={{
-          margin: 0,
           backgroundColor: emailColors.pageBackground,
           color: emailColors.foreground,
           fontFamily: emailFontFamily,
+          margin: 0,
           padding: "32px 16px",
         }}
       >
@@ -101,101 +149,80 @@ export function EmailLayout({
               backgroundColor: emailColors.cardBackground,
               border: `1px solid ${emailColors.border}`,
               borderRadius: emailRadius.card,
-              padding: "32px",
+              padding: "24px",
             }}
           >
+            {/* Logo */}
             <Img
               src={logoUrl}
               width={LOGO_DISPLAY_WIDTH}
               height={LOGO_DISPLAY_HEIGHT}
-              alt="Foliofox"
-              style={{
-                display: "block",
-                margin: "0 0 28px",
-                border: 0,
-                outline: "none",
-                textDecoration: "none",
-              }}
+              alt="Foliofox Logo"
             />
 
+            {/* Title */}
             <Heading
               as="h1"
               style={{
-                margin: "0 0 12px",
-                fontSize: "28px",
-                lineHeight: "1.2",
-                fontWeight: 700,
-                letterSpacing: "-0.02em",
+                fontSize: "24px",
+                fontWeight: 400,
                 color: emailColors.foreground,
+                marginTop: "32px",
               }}
             >
               {title}
             </Heading>
 
-            <Text
+            {/* Subtitle */}
+            <EmailMutedText
               style={{
-                margin: "0 0 28px",
+                marginBottom: "24px",
                 fontSize: "16px",
-                lineHeight: "1.6",
-                color: emailColors.muted,
               }}
             >
               {subtitle}
-            </Text>
+            </EmailMutedText>
 
+            {/* Content */}
             {children}
 
-            <Section style={{ marginTop: "28px", textAlign: "left" }}>
+            {/* Dashboard Button */}
+            <Section style={{ marginTop: "24px" }}>
               <Button
                 href={dashboardUrl}
                 style={{
-                  display: "inline-block",
                   borderRadius: emailRadius.card,
                   backgroundColor: emailColors.brand,
                   color: "#ffffff",
                   fontSize: "14px",
-                  fontWeight: 600,
-                  padding: "12px 22px",
-                  textDecoration: "none",
-                  letterSpacing: "-0.01em",
+                  padding: "12px 24px",
                 }}
               >
                 {dashboardLabel}
               </Button>
             </Section>
 
-            <Hr
-              style={{
-                margin: "32px 0 20px",
-                border: 0,
-                borderTop: `1px solid ${emailColors.border}`,
-              }}
-            />
+            <EmailSectionDivider />
 
-            <Text
+            {/* Footer */}
+            <EmailMutedText
               style={{
-                margin: "0 0 10px",
                 fontSize: "12px",
-                lineHeight: "1.6",
-                color: emailColors.muted,
+                margin: 0,
               }}
             >
               {reasonText}
-            </Text>
-
-            <Text
+            </EmailMutedText>
+            <EmailMutedText
               style={{
-                margin: 0,
                 fontSize: "12px",
-                lineHeight: "1.6",
-                color: emailColors.muted,
+                margin: 0,
               }}
             >
               <Link
                 href={settingsUrl}
                 style={{
                   color: emailColors.brand,
-                  textDecoration: "underline",
                 }}
               >
                 Manage email settings
@@ -205,62 +232,14 @@ export function EmailLayout({
                 href={unsubscribeUrl}
                 style={{
                   color: emailColors.brand,
-                  textDecoration: "underline",
                 }}
               >
                 Unsubscribe from this email type
               </Link>
-            </Text>
+            </EmailMutedText>
           </Section>
         </Container>
       </Body>
     </Html>
-  );
-}
-
-export function EmailSectionHeading({ children }: { children: ReactNode }) {
-  return (
-    <Heading
-      as="h2"
-      style={{
-        margin: "0 0 12px",
-        fontSize: "18px",
-        lineHeight: "1.3",
-        fontWeight: 700,
-        letterSpacing: "-0.01em",
-        color: emailColors.foreground,
-      }}
-    >
-      {children}
-    </Heading>
-  );
-}
-
-export function EmailMutedText({ children }: { children: ReactNode }) {
-  return (
-    <Text
-      style={{
-        margin: 0,
-        fontSize: "14px",
-        lineHeight: "1.6",
-        color: emailColors.muted,
-      }}
-    >
-      {children}
-    </Text>
-  );
-}
-
-// Hairline horizontal rule used to separate content sections inside the card.
-// Mirrors the editorial spacing rhythm of the Foliofox marketing emails.
-export function EmailSectionDivider() {
-  return (
-    <Hr
-      style={{
-        margin: "28px 0",
-        border: 0,
-        borderTop: `1px solid ${emailColors.border}`,
-      }}
-    />
   );
 }
