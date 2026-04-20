@@ -65,7 +65,13 @@ export const emailFontFamily =
 const LOGO_DISPLAY_WIDTH = 112;
 const LOGO_DISPLAY_HEIGHT = 27;
 
-export function EmailSectionHeading({ children }: { children: ReactNode }) {
+export function EmailSectionHeading({
+  children,
+  style,
+}: {
+  children: ReactNode;
+  style?: React.CSSProperties;
+}) {
   return (
     <Heading
       as="h2"
@@ -73,6 +79,7 @@ export function EmailSectionHeading({ children }: { children: ReactNode }) {
         fontSize: "20px",
         fontWeight: 400,
         color: emailColors.foreground,
+        ...style,
       }}
     >
       {children}
@@ -212,6 +219,15 @@ export function EmailLayout({
               }}
             >
               {reasonText}
+            </EmailMutedText>
+            <EmailMutedText
+              style={{
+                fontSize: "12px",
+                margin: 0,
+              }}
+            >
+              Foliofox, Room 402-J14, 10, Pangyo-ro 71-beon-gil, Bundang-gu,
+              Gyeonggi-do, Republic of Korea.
             </EmailMutedText>
             <EmailMutedText
               style={{

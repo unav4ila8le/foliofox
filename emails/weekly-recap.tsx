@@ -1,11 +1,9 @@
-import { Link, Section, Column, Row } from "@react-email/components";
+import { Section } from "@react-email/components";
 
 import {
   EmailLayout,
-  EmailMutedText,
   EmailSectionDivider,
   EmailSectionHeading,
-  emailColors,
 } from "@/emails/_components/email-layout";
 import { EmailMoverList } from "@/emails/_components/email-mover-list";
 import { EmailStatCard } from "@/emails/_components/email-stat-card";
@@ -77,75 +75,20 @@ export default function WeeklyRecapEmail({
           <EmailSectionDivider />
           <Section>
             <EmailSectionHeading>Top movers</EmailSectionHeading>
-            <Row>
-              <Column
-                style={{
-                  width: "50%",
-                  paddingRight: "8px",
-                  verticalAlign: "top",
-                }}
-              >
-                <EmailMoverList
-                  title="Gainers"
-                  movers={digest.topMovers.gainers}
-                  currency={digest.currency}
-                />
-              </Column>
-              <Column
-                style={{
-                  width: "50%",
-                  paddingLeft: "8px",
-                  verticalAlign: "top",
-                }}
-              >
-                <EmailMoverList
-                  title="Losers"
-                  movers={digest.topMovers.losers}
-                  currency={digest.currency}
-                />
-              </Column>
-            </Row>
+            <EmailMoverList
+              title="Gainers"
+              movers={digest.topMovers.gainers}
+              currency={digest.currency}
+            />
+
+            <EmailMoverList
+              title="Losers"
+              movers={digest.topMovers.losers}
+              currency={digest.currency}
+            />
           </Section>
         </>
       ) : null}
-
-      <EmailSectionDivider />
-
-      {digest.projectedIncome ? (
-        <Section>
-          <EmailSectionHeading>Upcoming income</EmailSectionHeading>
-          <EmailMutedText>
-            Foliofox currently projects{" "}
-            <strong style={{ color: emailColors.foreground }}>
-              {formatEmailCurrency(
-                digest.projectedIncome.windowEstimate,
-                digest.projectedIncome.currency,
-              )}
-            </strong>{" "}
-            in income over the next {digest.projectedIncome.windowDays} days,
-            based on your next {digest.projectedIncome.monthsAhead} months of
-            projected payouts.
-          </EmailMutedText>
-        </Section>
-      ) : (
-        <Section>
-          <EmailSectionHeading>What to review next</EmailSectionHeading>
-          <EmailMutedText>
-            Open your dashboard to review position-level performance, update
-            stale records, and see whether anything needs a closer look.
-          </EmailMutedText>
-        </Section>
-      )}
-
-      <Section style={{ marginTop: "20px" }}>
-        <EmailMutedText style={{ fontSize: "14px" }}>
-          Prefer a different cadence? You can fine-tune this in{" "}
-          <Link href={links.settingsUrl} style={{ color: emailColors.brand }}>
-            your settings
-          </Link>
-          .
-        </EmailMutedText>
-      </Section>
     </EmailLayout>
   );
 }

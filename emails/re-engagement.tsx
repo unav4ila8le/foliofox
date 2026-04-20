@@ -1,11 +1,10 @@
-import { Section, Text } from "@react-email/components";
+import { Section } from "@react-email/components";
 
 import {
   EmailLayout,
   EmailMutedText,
   EmailSectionDivider,
   EmailSectionHeading,
-  emailColors,
 } from "@/emails/_components/email-layout";
 import { EmailStatCard } from "@/emails/_components/email-stat-card";
 import { reengagementPreviewProps } from "@/emails/_preview-data";
@@ -66,7 +65,7 @@ export default function ReengagementEmail({
           digest.netWorth.currentValue,
           digest.currency,
         )}
-        description={`Change: ${formatSignedEmailCurrency(digest.netWorth.absoluteChange, digest.currency)} (${formatSignedPercentage(digest.netWorth.percentageChange)})`}
+        description={`${formatSignedEmailCurrency(digest.netWorth.absoluteChange, digest.currency)} (${formatSignedPercentage(digest.netWorth.percentageChange)})`}
       />
 
       {strongestMover ? (
@@ -76,7 +75,7 @@ export default function ReengagementEmail({
             strongestMover.asset.name,
             strongestMover.asset.symbol,
           )}
-          description={`${formatSignedEmailCurrency(strongestMover.valueChangeAbs, digest.currency)} · ${formatSignedPercentage(strongestMover.valueChangePct)}`}
+          description={`${formatSignedEmailCurrency(strongestMover.valueChangeAbs, digest.currency)} (${formatSignedPercentage(strongestMover.valueChangePct)})`}
         />
       ) : null}
 
@@ -87,42 +86,21 @@ export default function ReengagementEmail({
             digest.projectedIncome.windowEstimate,
             digest.projectedIncome.currency,
           )}
-          description="Projected portfolio income"
+          description="Projected portfolio dividends income"
         />
       ) : null}
 
       <EmailSectionDivider />
 
       <Section>
-        <EmailSectionHeading>Why open Foliofox now</EmailSectionHeading>
+        <EmailSectionHeading>
+          A lot has changed since you last signed in
+        </EmailSectionHeading>
         <EmailMutedText>
-          A quick dashboard check will show whether this week&apos;s move came
-          from a single position or a broader portfolio shift.
+          Make sure you have your finances under control. A quick visit to the
+          dashboard or a short chat with Foliofox AI advisor will help you get
+          back on track.
         </EmailMutedText>
-        {strongestMover ? (
-          <Text
-            style={{
-              margin: "12px 0 0",
-              fontSize: "14px",
-              color: emailColors.foreground,
-            }}
-          >
-            Biggest move:{" "}
-            <strong>
-              {renderEmailAssetLabel(
-                strongestMover.asset.name,
-                strongestMover.asset.symbol,
-              )}
-            </strong>
-            {" · "}
-            {formatSignedEmailCurrency(
-              strongestMover.valueChangeAbs,
-              digest.currency,
-            )}
-            {" · "}
-            {formatSignedPercentage(strongestMover.valueChangePct)}
-          </Text>
-        ) : null}
       </Section>
     </EmailLayout>
   );
