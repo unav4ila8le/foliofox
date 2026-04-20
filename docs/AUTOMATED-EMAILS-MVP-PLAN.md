@@ -158,3 +158,10 @@
 - No Resend webhook ingestion, bounce automation, or complaint handling in MVP.
 - No SMTP adapter in MVP, but the sender boundary is designed so it can be added later.
 - Complex orchestration files should follow the repo’s current commenting style: exported docblocks, explicit naming, and numbered flow comments in multi-step logic.
+
+## Vercel Cron
+
+{
+"path": "/api/cron/send-automated-emails",
+"schedule": "0 \* \* \* \*"
+}
