@@ -27,6 +27,38 @@ import { searchYahooFinanceSymbols } from "@/server/symbols/search";
 import type { SymbolSearchResult } from "@/types/global.types";
 
 const YAHOO_FINANCE_LOOKUP_URL = "https://finance.yahoo.com/lookup/?s=";
+const POPULAR_SYMBOL_RESULTS: SymbolSearchResult[] = [
+  {
+    id: "AAPL",
+    nameDisp: "Apple Inc.",
+    exchange: "NMS",
+    typeDisp: "Equity",
+  },
+  {
+    id: "MSFT",
+    nameDisp: "Microsoft Corporation",
+    exchange: "NMS",
+    typeDisp: "Equity",
+  },
+  {
+    id: "TSLA",
+    nameDisp: "Tesla Inc.",
+    exchange: "NMS",
+    typeDisp: "Equity",
+  },
+  {
+    id: "VWCE.DE",
+    nameDisp: "Vanguard FTSE All-World UCITS ETF USD Accumulation",
+    exchange: "GER",
+    typeDisp: "ETF",
+  },
+  {
+    id: "BTC-USD",
+    nameDisp: "Bitcoin USD",
+    exchange: "CCC",
+    typeDisp: "Cryptocurrency",
+  },
+];
 
 // Props interface for react-hook-form integration
 interface SymbolSearchProps {
@@ -59,9 +91,12 @@ export function SymbolSearch({
   const [isLoadingQuote, setIsLoadingQuote] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery] = useDebounce(searchQuery, 300);
+  const displayedResults = debouncedQuery ? results : POPULAR_SYMBOL_RESULTS;
 
   // Find the selected equity
-  const selectedSymbol = results.find((symbol) => symbol.id === field.value);
+  const selectedSymbol = displayedResults.find(
+    (symbol) => symbol.id === field.value,
+  );
   const symbolName = selectedSymbol
     ? selectedSymbol.id
     : field.value || "Search symbol";
@@ -82,61 +117,31 @@ export function SymbolSearch({
 
   useEffect(() => {
     if (!debouncedQuery) {
-      // Show popular symbols when no search query
-      setResults([
-        {
-          id: "AAPL",
-          nameDisp: "Apple Inc.",
-          exchange: "NMS",
-          typeDisp: "Equity",
-        },
-        {
-          id: "MSFT",
-          nameDisp: "Microsoft Corporation",
-          exchange: "NMS",
-          typeDisp: "Equity",
-        },
-        {
-          id: "TSLA",
-          nameDisp: "Tesla Inc.",
-          exchange: "NMS",
-          typeDisp: "Equity",
-        },
-        {
-          id: "VWCE.DE",
-          nameDisp: "Vanguard FTSE All-World UCITS ETF USD Accumulation",
-          exchange: "GER",
-          typeDisp: "ETF",
-        },
-        {
-          id: "BTC-USD",
-          nameDisp: "Bitcoin USD",
-          exchange: "CCC",
-          typeDisp: "Cryptocurrency",
-        },
-      ]);
       return;
     }
 
-    setIsLoading(true);
-    (async () => {
-      try {
-        const result = await searchYahooFinanceSymbols({
-          query: debouncedQuery,
-          limit: 10,
-        });
-        if (result.success && result.data) {
-          setResults(result.data);
-        } else {
+    queueMicrotask(() => {
+      setIsLoading(true);
+
+      void (async () => {
+        try {
+          const result = await searchYahooFinanceSymbols({
+            query: debouncedQuery,
+            limit: 10,
+          });
+          if (result.success && result.data) {
+            setResults(result.data);
+          } else {
+            setResults([]);
+          }
+        } catch (error) {
+          console.error("Error searching symbols:", error);
           setResults([]);
+        } finally {
+          setIsLoading(false);
         }
-      } catch (error) {
-        console.error("Error searching symbols:", error);
-        setResults([]);
-      } finally {
-        setIsLoading(false);
-      }
-    })();
+      })();
+    });
   }, [debouncedQuery]);
 
   return (
@@ -182,7 +187,7 @@ export function SymbolSearch({
           setOpen={setOpen}
           onChange={handleChange}
           onSymbolSelect={onSymbolSelect}
-          results={results}
+          results={displayedResults}
           isLoading={isLoading}
           isLoadingQuote={isLoadingQuote}
           setIsLoadingQuote={setIsLoadingQuote}

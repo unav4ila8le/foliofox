@@ -3,7 +3,7 @@
 import { toast } from "sonner";
 import { useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
 import {
@@ -89,6 +89,10 @@ export function FinancialProfileForm({ onSuccess }: FinancialProfileFormProps) {
 
   // Get isDirty state from formState
   const { isDirty } = form.formState;
+  const incomeCurrency = useWatch({
+    control: form.control,
+    name: "income_currency",
+  });
 
   const incomePlaceholder = useMemo(
     () => `E.g., ${formatNumber(80000, { locale })}`,
@@ -194,9 +198,7 @@ export function FinancialProfileForm({ onSuccess }: FinancialProfileFormProps) {
                       }
                     />
                     <InputGroupAddon align="inline-end">
-                      <InputGroupText>
-                        {form.watch("income_currency")}
-                      </InputGroupText>
+                      <InputGroupText>{incomeCurrency}</InputGroupText>
                     </InputGroupAddon>
                   </InputGroup>
                   {fieldState.invalid && (

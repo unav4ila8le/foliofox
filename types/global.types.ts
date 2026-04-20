@@ -2,6 +2,8 @@ import type { Tables, TablesInsert } from "@/types/database.types";
 
 // Profile
 export type Profile = Tables<"profiles">;
+export type EmailPreferences = Tables<"email_preferences">;
+export type AutomatedEmailDelivery = Tables<"automated_email_deliveries">;
 
 // Currency
 export type Currency = Pick<Tables<"currencies">, "alphabetic_code" | "name">;

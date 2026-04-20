@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { format } from "date-fns";
 import { CalendarIcon, Info } from "lucide-react";
@@ -154,16 +154,23 @@ export function UpdateForm() {
       });
 
       if (preselectedPosition.symbol_id) {
-        fetchQuoteForPosition(preselectedPosition, new Date());
+        queueMicrotask(() => {
+          void fetchQuoteForPosition(preselectedPosition, new Date());
+        });
       }
     }
   }, [preselectedPosition, form, fetchQuoteForPosition]);
 
   // Re-fetch quote when date changes (for historical prices)
-  const watchedDate = form.watch("date");
+  const watchedDate = useWatch({
+    control: form.control,
+    name: "date",
+  });
   useEffect(() => {
     if (preselectedPosition?.symbol_id && watchedDate) {
-      fetchQuoteForPosition(preselectedPosition, watchedDate);
+      queueMicrotask(() => {
+        void fetchQuoteForPosition(preselectedPosition, watchedDate);
+      });
     }
   }, [watchedDate, preselectedPosition, fetchQuoteForPosition]);
 

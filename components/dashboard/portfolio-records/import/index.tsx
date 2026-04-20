@@ -51,7 +51,7 @@ export function ImportPortfolioRecordsDialogProvider({
               Import records for your positions from a CSV file.
             </DialogDescription>
           </DialogHeader>
-          <CSVImportForm />
+          {open ? <CSVImportForm /> : null}
         </DialogContent>
       </Dialog>
     </ImportPortfolioRecordsDialogContext.Provider>

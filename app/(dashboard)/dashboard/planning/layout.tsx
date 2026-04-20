@@ -20,6 +20,7 @@ async function PlanningInitialValueWrapper() {
 
   return (
     <PlanningInitialValue
+      key={`${scenario.id}:${scenario.initialValueBasis}:${scenario.initialValue}`}
       scenarioId={scenario.id}
       initialValue={scenario.initialValue}
       initialValueBasis={scenario.initialValueBasis}
@@ -35,6 +36,7 @@ async function PlanningAssumptionsWrapper() {
 
   return (
     <PlanningAssumptions
+      key={`${scenario.id}:${scenario.assumptions.preset ?? "manual"}:${scenario.assumptions.values.expectedAnnualReturnPercent}:${scenario.assumptions.values.inflationAnnualPercent}:${scenario.assumptions.values.volatilityAnnualPercent}`}
       scenarioId={scenario.id}
       assumptions={scenario.assumptions}
     />

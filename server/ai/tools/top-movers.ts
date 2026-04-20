@@ -1,5 +1,8 @@
 "use server";
 
+import type { CivilDateKey } from "@/lib/date/date-utils";
+import type { PositionsQueryContext } from "@/server/positions/fetch";
+
 import { getAssetsPerformance } from "./assets-performance";
 
 interface GetTopMoversParams {
@@ -7,6 +10,8 @@ interface GetTopMoversParams {
   startDate: string | null;
   endDate: string | null;
   limit: number | null; // defaults to 5
+  todayDateKey?: CivilDateKey | null;
+  positionsQueryContext?: PositionsQueryContext;
 }
 
 export async function getTopMovers(params: GetTopMoversParams) {
@@ -17,6 +22,8 @@ export async function getTopMovers(params: GetTopMoversParams) {
     positionIds: null, // Not filtering by specific positions
     startDate: params.startDate,
     endDate: params.endDate,
+    todayDateKey: params.todayDateKey,
+    positionsQueryContext: params.positionsQueryContext,
   });
 
   const assets = perf.assets;

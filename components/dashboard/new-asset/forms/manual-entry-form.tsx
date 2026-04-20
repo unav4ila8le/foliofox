@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { Info } from "lucide-react";
 import { toast } from "sonner";
@@ -99,6 +99,10 @@ export function ManualEntryForm() {
 
   // Get isDirty state from formState
   const { isDirty } = form.formState;
+  const currency = useWatch({
+    control: form.control,
+    name: "currency",
+  });
 
   // Number placeholders
   const numberPlaceholders = useMemo(
@@ -285,7 +289,7 @@ export function ManualEntryForm() {
                       onValueChange={(nextValue) => field.onChange(nextValue)}
                     />
                     <InputGroupAddon align="inline-end">
-                      <InputGroupText>{form.watch("currency")}</InputGroupText>
+                      <InputGroupText>{currency}</InputGroupText>
                     </InputGroupAddon>
                   </InputGroup>
                   {fieldState.invalid && (

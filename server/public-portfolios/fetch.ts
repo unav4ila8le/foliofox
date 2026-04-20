@@ -1,9 +1,9 @@
 "use server";
 
 import { cache } from "react";
-import { headers } from "next/headers";
 
 import { getCurrentUser } from "@/server/auth/actions";
+import { resolveSiteUrl } from "@/server/shared/site-url";
 import { createServiceClient } from "@/supabase/service";
 
 import {
@@ -35,26 +35,6 @@ export async function fetchPublicPortfolio(
   }
 
   return data;
-}
-
-export async function resolveSiteUrl() {
-  const envUrl = process.env.NEXT_PUBLIC_SITE_URL;
-  if (envUrl) return envUrl.replace(/\/$/, "");
-
-  try {
-    const headerStore = await headers();
-    const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host");
-    if (host) {
-      const protocol =
-        headerStore.get("x-forwarded-proto") ??
-        (host.includes("localhost") ? "http" : "https");
-      return `${protocol}://${host}`.replace(/\/$/, "");
-    }
-  } catch {
-    // Ignore header resolution issues – fall back below.
-  }
-
-  return "http://localhost:3000";
 }
 
 export async function fetchCurrentPublicPortfolio(): Promise<PublicPortfolioMetadata | null> {

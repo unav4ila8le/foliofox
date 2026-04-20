@@ -35,14 +35,13 @@ If you’re curious about why Foliofox exists and where it’s going, read the f
    cd foliofox
    ```
 
-2. Create `.env.local` with your [Supabase](https://supabase.com/) credentials:
+2. Copy the example environment file and fill in your own values:
 
    ```bash
-   NEXT_PUBLIC_SITE_URL=http://localhost:3000
-   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
-   SUPABASE_SECRET_KEY=your_supabase_secret_key
+   cp .env.example .env.local
    ```
+
+   Then update `.env.local` with your [Supabase](https://supabase.com/) credentials and any optional integrations you want to enable.
 
 3. Apply database migrations:
 

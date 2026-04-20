@@ -113,12 +113,7 @@ export function NetWorthAreaChart({
     useState<ChartTimeRange>(DEFAULT_TIME_RANGE);
   const [netWorthRanges, setNetWorthRanges] = useState<
     Partial<Record<ChartTimeRange, NetWorthRangePayload>>
-  >({
-    [DEFAULT_TIME_RANGE]: {
-      history: initialHistory,
-      change: initialChange,
-    },
-  });
+  >({});
   const [performanceRanges, setPerformanceRanges] = useState<
     Partial<Record<ChartTimeRange, PerformanceRangeData>>
   >({});
@@ -132,49 +127,27 @@ export function NetWorthAreaChart({
   const locale = useLocale();
 
   useEffect(() => {
-    setNetWorthRanges({
-      [DEFAULT_TIME_RANGE]: {
-        history: initialHistory,
-        change: initialChange,
-      },
-    });
-  }, [initialHistory, initialChange]);
-
-  useEffect(() => {
     netWorthRangesRef.current = netWorthRanges;
   }, [netWorthRanges]);
 
   useEffect(() => {
     performanceRangesRef.current = performanceRanges;
   }, [performanceRanges]);
+  const activeChartMode =
+    !performanceEligibility.isEligible && selectedChartMode === "performance"
+      ? "net_worth"
+      : selectedChartMode;
 
-  useEffect(() => {
-    if (selectedChartMode === "net_worth") {
-      setSelectedTimeRange(DEFAULT_TIME_RANGE);
-    }
-  }, [netWorthMode, selectedChartMode]);
-
-  useEffect(() => {
-    setPerformanceRanges({});
-  }, [currency]);
-
-  useEffect(() => {
-    if (
-      !performanceEligibility.isEligible &&
-      selectedChartMode === "performance"
-    ) {
-      setSelectedChartMode("net_worth");
-    }
-  }, [performanceEligibility.isEligible, selectedChartMode]);
-
-  const netWorthRange =
-    netWorthRanges[selectedTimeRange] ?? netWorthRanges[DEFAULT_TIME_RANGE];
+  const netWorthRange = netWorthRanges[selectedTimeRange] ?? {
+    history: initialHistory,
+    change: initialChange,
+  };
   const performanceRange = performanceRanges[selectedTimeRange];
   const isChartLoading =
-    isLoading || (selectedChartMode === "net_worth" && isModeRefreshing);
+    isLoading || (activeChartMode === "net_worth" && isModeRefreshing);
 
   const shouldShowTaxLine =
-    selectedChartMode === "net_worth" && netWorthMode === "after_capital_gains";
+    activeChartMode === "net_worth" && netWorthMode === "after_capital_gains";
   const taxValue = estimatedCapitalGainsTax ?? 0;
 
   const netWorthHistory = netWorthRange?.history ?? initialHistory;
@@ -184,12 +157,12 @@ export function NetWorthAreaChart({
   const performanceSummary =
     performanceRange?.isAvailable === true ? performanceRange.summary : null;
   const shouldShowEstimatedPerformanceBadge =
-    selectedChartMode === "performance" &&
+    activeChartMode === "performance" &&
     performanceRange?.isAvailable === true &&
     performanceRange.includesEstimatedFlows;
 
   const chartColor =
-    selectedChartMode === "performance"
+    activeChartMode === "performance"
       ? (performanceSummary?.cumulativeReturnPct ?? 0) >= 0
         ? "oklch(0.72 0.19 150)"
         : "oklch(0.64 0.21 25)"
@@ -205,6 +178,10 @@ export function NetWorthAreaChart({
 
   const loadNetWorthRange = useCallback(
     async (timeRange: ChartTimeRange, options?: { force?: boolean }) => {
+      if (timeRange === DEFAULT_TIME_RANGE && !options?.force) {
+        return;
+      }
+
       if (!options?.force && netWorthRangesRef.current[timeRange]) {
         return;
       }
@@ -279,24 +256,15 @@ export function NetWorthAreaChart({
       return;
     }
 
-    let isCancelled = false;
-    setIsLoading(true);
-
-    void ensureRangeLoaded(selectedChartMode, selectedTimeRange, {
-      force: true,
-    }).finally(() => {
-      if (!isCancelled) {
-        setIsLoading(false);
-      }
+    queueMicrotask(() => {
+      void ensureRangeLoaded(activeChartMode, selectedTimeRange, {
+        force: true,
+      });
     });
-
-    return () => {
-      isCancelled = true;
-    };
   }, [
     dashboardDataVersion,
+    activeChartMode,
     ensureRangeLoaded,
-    selectedChartMode,
     selectedTimeRange,
   ]);
 
@@ -306,7 +274,7 @@ export function NetWorthAreaChart({
     setIsLoading(true);
 
     try {
-      await ensureRangeLoaded(selectedChartMode, nextRange);
+      await ensureRangeLoaded(activeChartMode, nextRange);
     } finally {
       setIsLoading(false);
     }
@@ -314,11 +282,12 @@ export function NetWorthAreaChart({
 
   const handleChartModeChange = async (value: string) => {
     const nextMode = value as ChartMode;
-    setSelectedChartMode(nextMode);
 
     if (nextMode === "performance" && !performanceEligibility.isEligible) {
       return;
     }
+
+    setSelectedChartMode(nextMode);
 
     setIsLoading(true);
     try {
@@ -329,15 +298,15 @@ export function NetWorthAreaChart({
   };
 
   const chartMetricLabel =
-    selectedChartMode === "performance"
+    activeChartMode === "performance"
       ? `Rate of Return (${TIME_RANGE_LABELS[selectedTimeRange].short})`
       : `Change (${TIME_RANGE_LABELS[selectedTimeRange].short})`;
   const chartMetricIsPositive =
-    selectedChartMode === "performance"
+    activeChartMode === "performance"
       ? (performanceSummary?.cumulativeReturnPct ?? 0) >= 0
       : netWorthChange.absoluteChange >= 0;
   const chartMetricValue =
-    selectedChartMode === "performance"
+    activeChartMode === "performance"
       ? isPrivacyMode
         ? "* * * * * *"
         : performanceSummary
@@ -460,7 +429,7 @@ export function NetWorthAreaChart({
             <div className="flex items-center gap-2">
               {/* Chart mode selector - Desktop only, mobile TO-DO */}
               <Tabs
-                value={selectedChartMode}
+                value={activeChartMode}
                 onValueChange={handleChartModeChange}
                 className="hidden sm:block"
               >
@@ -523,9 +492,9 @@ export function NetWorthAreaChart({
               </Select>
             </div>
           </CardHeader>
-          {selectedChartMode === "performance" && performanceMessage ? (
+          {activeChartMode === "performance" && performanceMessage ? (
             <PerformanceUnavailableState message={performanceMessage} />
-          ) : selectedChartMode === "performance" && !performanceRange ? (
+          ) : activeChartMode === "performance" && !performanceRange ? (
             <CardContent className="text-muted-foreground flex flex-1 items-center justify-center text-sm">
               Loading performance...
             </CardContent>
@@ -537,7 +506,7 @@ export function NetWorthAreaChart({
               )}
             >
               {/* Charts */}
-              {selectedChartMode === "performance" ? (
+              {activeChartMode === "performance" ? (
                 // Performance chart
                 <PortfolioPerformanceAreaChart
                   history={performanceHistory}

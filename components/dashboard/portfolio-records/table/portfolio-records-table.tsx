@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import {
+  useEffect,
   useState,
   useMemo,
   useCallback,
   useTransition,
-  useEffect,
 } from "react";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { ArrowLeftRight, Download, Trash2 } from "lucide-react";
@@ -86,10 +86,6 @@ function ServerSearchInput({
 }: ServerSearchInputProps) {
   const [inputValue, setInputValue] = useState(initialValue);
   const [debouncedValue] = useDebounce(inputValue, 400);
-
-  useEffect(() => {
-    setInputValue(initialValue);
-  }, [initialValue]);
 
   useEffect(() => {
     if (debouncedValue.trim() === initialValue.trim()) return;
@@ -442,6 +438,7 @@ export function PortfolioRecordsTable({
           <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
             {showSearch && (
               <ServerSearchInput
+                key={searchParamValue}
                 initialValue={searchParamValue}
                 onSearch={handleSearchSubmit}
                 className="flex-1"

@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useEffectEvent,
   useMemo,
   useRef,
   useState,
@@ -175,6 +176,28 @@ export function PlanningAssumptions({
     [router, scenarioId],
   );
 
+  const persistManualAssumptions = useEffectEvent(async () => {
+    if (!isManualMode) {
+      return;
+    }
+
+    if (!debouncedManualValues || !isManualDirty) {
+      hasQueuedManualSaveRef.current = false;
+      return;
+    }
+
+    if (isSaving) {
+      hasQueuedManualSaveRef.current = true;
+      return;
+    }
+
+    hasQueuedManualSaveRef.current = false;
+    await persistAssumptions({
+      preset: null,
+      values: debouncedManualValues,
+    });
+  });
+
   const handlePresetChange = async (nextPresetRaw: string) => {
     if (nextPresetRaw === MANUAL_PRESET_VALUE) {
       setSelectedPreset(null);
@@ -209,76 +232,18 @@ export function PlanningAssumptions({
   const isProjectionUpdating = isSaving || isRefreshPending;
 
   useEffect(() => {
-    // Preserve local selection/inputs while a save + refresh is in-flight.
-    // This avoids snapping back to stale server props (often seen as "Manual").
-    const shouldPreserveDraft =
-      isProjectionUpdating || (selectedPreset === null && isManualDirty);
-
-    if (shouldPreserveDraft) {
-      return;
-    }
-
-    setSelectedPreset(assumptions.preset);
-    setExpectedReturnInput(
-      toInputString(assumptions.values.expectedAnnualReturnPercent),
-    );
-    setInflationInput(toInputString(assumptions.values.inflationAnnualPercent));
-    setVolatilityInput(
-      toInputString(assumptions.values.volatilityAnnualPercent),
-    );
-    setSavedAssumptions(assumptions);
-  }, [assumptions, isManualDirty, isProjectionUpdating, selectedPreset]);
+    queueMicrotask(() => {
+      void persistManualAssumptions();
+    });
+  }, [debouncedManualValues, isManualDirty, isManualMode, isSaving]);
 
   useEffect(() => {
-    if (!isManualMode) {
-      return;
+    if (!isSaving && hasQueuedManualSaveRef.current) {
+      queueMicrotask(() => {
+        void persistManualAssumptions();
+      });
     }
-
-    if (!debouncedManualValues || !isManualDirty) {
-      hasQueuedManualSaveRef.current = false;
-      return;
-    }
-
-    if (isSaving) {
-      hasQueuedManualSaveRef.current = true;
-      return;
-    }
-
-    hasQueuedManualSaveRef.current = false;
-    void persistAssumptions({
-      preset: null,
-      values: debouncedManualValues,
-    });
-  }, [
-    debouncedManualValues,
-    isManualDirty,
-    isManualMode,
-    isSaving,
-    persistAssumptions,
-  ]);
-
-  useEffect(() => {
-    if (isSaving || !hasQueuedManualSaveRef.current) {
-      return;
-    }
-
-    if (!isManualMode || !debouncedManualValues || !isManualDirty) {
-      hasQueuedManualSaveRef.current = false;
-      return;
-    }
-
-    hasQueuedManualSaveRef.current = false;
-    void persistAssumptions({
-      preset: null,
-      values: debouncedManualValues,
-    });
-  }, [
-    debouncedManualValues,
-    isManualDirty,
-    isManualMode,
-    isSaving,
-    persistAssumptions,
-  ]);
+  }, [debouncedManualValues, isManualDirty, isManualMode, isSaving]);
 
   return (
     <div className="w-full space-y-2 sm:w-auto">

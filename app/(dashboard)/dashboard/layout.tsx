@@ -6,6 +6,7 @@ import { AIChatProvider } from "@/components/dashboard/ai-chat/provider";
 import { LeftSidebar } from "@/components/dashboard/layout/left-sidebar";
 import { RightSidebar } from "@/components/dashboard/layout/right-sidebar";
 import { Header } from "@/components/dashboard/layout/header";
+import { DashboardActivityTracker } from "@/components/dashboard/layout/activity-tracker";
 import { TimeZoneAutoSync } from "@/components/dashboard/layout/time-zone-sync";
 
 import { DashboardDataProvider } from "@/components/dashboard/providers/dashboard-data-provider";
@@ -14,6 +15,7 @@ import { PrivacyModeProvider } from "@/components/dashboard/providers/privacy-mo
 import { NetWorthModeProvider } from "@/components/dashboard/net-worth-mode/net-worth-mode-provider";
 
 import { fetchProfile } from "@/server/profile/actions";
+import { fetchEmailPreferences } from "@/server/email-preferences/actions";
 import { fetchFinancialProfile } from "@/server/financial-profiles/actions";
 import { calculateNetWorth } from "@/server/analysis/net-worth/net-worth";
 import { fetchStalePositions } from "@/server/positions/stale";
@@ -54,18 +56,25 @@ export default async function Layout({
 
   // 2) Keep the dashboard path fully data-driven; timezone auto-sync happens in
   // the background for auto-mode users without introducing a visible gate.
-  const [financialProfile, netWorth, stalePositions, hasPositions] =
-    await Promise.all([
-      fetchFinancialProfile(),
-      calculateNetWorth(profile.display_currency, todayDateKey),
-      fetchStalePositions(),
-      hasActivePositions(),
-    ]);
+  const [
+    emailPreferences,
+    financialProfile,
+    netWorth,
+    stalePositions,
+    hasPositions,
+  ] = await Promise.all([
+    fetchEmailPreferences(),
+    fetchFinancialProfile(),
+    calculateNetWorth(profile.display_currency, todayDateKey),
+    fetchStalePositions(),
+    hasActivePositions(),
+  ]);
 
   return (
     <DashboardDataProvider
       value={{
         profile,
+        emailPreferences,
         email,
         financialProfile,
         netWorth,
@@ -93,6 +102,10 @@ export default async function Layout({
                 <SidebarInset className="min-w-0">
                   <Header />
                   <div className="@container/dashboard mx-auto w-full max-w-7xl p-4 pt-2">
+                    <DashboardActivityTracker
+                      userId={profile.user_id}
+                      lastAppActivityAt={profile.last_app_activity_at}
+                    />
                     {profile.time_zone_mode === TIME_ZONE_MODES.AUTO && (
                       <TimeZoneAutoSync currentTimeZone={profile.time_zone} />
                     )}

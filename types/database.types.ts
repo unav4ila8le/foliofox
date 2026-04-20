@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.1"
-  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -83,6 +78,53 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "conversations"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      automated_email_deliveries: {
+        Row: {
+          created_at: string
+          delivery_key: string
+          email_type: Database["public"]["Enums"]["automated_email_type"]
+          error_message: string | null
+          id: string
+          provider_message_id: string | null
+          sent_at: string | null
+          status: Database["public"]["Enums"]["automated_email_delivery_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          delivery_key: string
+          email_type: Database["public"]["Enums"]["automated_email_type"]
+          error_message?: string | null
+          id?: string
+          provider_message_id?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["automated_email_delivery_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          delivery_key?: string
+          email_type?: Database["public"]["Enums"]["automated_email_type"]
+          error_message?: string | null
+          id?: string
+          provider_message_id?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["automated_email_delivery_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automated_email_deliveries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -293,6 +335,38 @@ export type Database = {
           price?: number
         }
         Relationships: []
+      }
+      email_preferences: {
+        Row: {
+          created_at: string
+          marketing_emails_enabled: boolean
+          updated_at: string
+          user_id: string
+          weekly_recap_enabled: boolean
+        }
+        Insert: {
+          created_at?: string
+          marketing_emails_enabled?: boolean
+          updated_at?: string
+          user_id: string
+          weekly_recap_enabled?: boolean
+        }
+        Update: {
+          created_at?: string
+          marketing_emails_enabled?: boolean
+          updated_at?: string
+          user_id?: string
+          weekly_recap_enabled?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       exchange_rates: {
         Row: {
@@ -702,6 +776,7 @@ export type Database = {
           created_at: string
           data_sharing_consent: boolean
           display_currency: string
+          last_app_activity_at: string | null
           time_zone: string
           time_zone_mode: string
           updated_at: string
@@ -713,6 +788,7 @@ export type Database = {
           created_at?: string
           data_sharing_consent?: boolean
           display_currency?: string
+          last_app_activity_at?: string | null
           time_zone?: string
           time_zone_mode?: string
           updated_at?: string
@@ -724,6 +800,7 @@ export type Database = {
           created_at?: string
           data_sharing_consent?: boolean
           display_currency?: string
+          last_app_activity_at?: string | null
           time_zone?: string
           time_zone_mode?: string
           updated_at?: string
@@ -922,6 +999,8 @@ export type Database = {
     }
     Enums: {
       age_band: "18-24" | "25-34" | "35-44" | "45-54" | "55-64" | "65+"
+      automated_email_delivery_status: "pending" | "sent" | "failed"
+      automated_email_type: "weekly_recap" | "reengagement"
       conversation_role: "system" | "user" | "assistant" | "tool"
       feedback_type: "issue" | "idea" | "other"
       portfolio_record_type: "buy" | "sell" | "update"
@@ -1064,6 +1143,8 @@ export const Constants = {
   public: {
     Enums: {
       age_band: ["18-24", "25-34", "35-44", "45-54", "55-64", "65+"],
+      automated_email_delivery_status: ["pending", "sent", "failed"],
+      automated_email_type: ["weekly_recap", "reengagement"],
       conversation_role: ["system", "user", "assistant", "tool"],
       feedback_type: ["issue", "idea", "other"],
       portfolio_record_type: ["buy", "sell", "update"],
@@ -1079,3 +1160,4 @@ export const Constants = {
     },
   },
 } as const
+

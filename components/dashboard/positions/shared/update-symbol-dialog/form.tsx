@@ -4,7 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { AlertCircle, Info } from "lucide-react";
 
@@ -54,7 +54,10 @@ export function UpdateSymbolForm({
   });
 
   const { isDirty } = form.formState;
-  const selectedSymbol = form.watch("symbolLookup");
+  const selectedSymbol = useWatch({
+    control: form.control,
+    name: "symbolLookup",
+  });
 
   async function onSubmit(
     values: FormValues,

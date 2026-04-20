@@ -55,7 +55,9 @@ export function NetWorthModeProvider({
 }) {
   const router = useRouter();
   const [isRefreshing, startRefreshTransition] = useTransition();
-  const [netWorthMode, setNetWorthMode] = useState<NetWorthMode>(defaultMode);
+  const [localNetWorthMode, setLocalNetWorthMode] =
+    useState<NetWorthMode | null>(null);
+  const netWorthMode = localNetWorthMode ?? defaultMode;
   const netWorthModeRef = useRef(netWorthMode);
 
   useEffect(() => {
@@ -63,16 +65,12 @@ export function NetWorthModeProvider({
   }, [netWorthMode]);
 
   useEffect(() => {
-    setNetWorthMode(defaultMode);
-  }, [defaultMode]);
-
-  useEffect(() => {
     const handleStorageEvent = (storageEvent: StorageEvent) => {
       if (storageEvent.key !== NET_WORTH_MODE_COOKIE_NAME) return;
       const nextMode = parseNetWorthMode(storageEvent.newValue);
       if (nextMode === netWorthModeRef.current) return;
 
-      setNetWorthMode(nextMode);
+      setLocalNetWorthMode(nextMode);
       // Keep server-rendered data aligned when another tab updates mode.
       startRefreshTransition(() => {
         router.refresh();
@@ -87,7 +85,7 @@ export function NetWorthModeProvider({
     (nextMode: NetWorthMode) => {
       if (nextMode === netWorthMode) return;
 
-      setNetWorthMode(nextMode);
+      setLocalNetWorthMode(nextMode);
       persistNetWorthMode(nextMode);
 
       startRefreshTransition(() => {

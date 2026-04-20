@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { Search } from "lucide-react";
 import { toast } from "sonner";
@@ -82,8 +82,14 @@ export function DomainForm() {
   });
 
   // Watch form values
-  const domain = form.watch("domain");
-  const valuation = form.watch("valuation") as number;
+  const domain = useWatch({
+    control: form.control,
+    name: "domain",
+  });
+  const valuation = useWatch({
+    control: form.control,
+    name: "valuation",
+  }) as number;
 
   // Check if domain is valid for API call
   const isDomainValid = domain && z.regexes.domain.test(domain);

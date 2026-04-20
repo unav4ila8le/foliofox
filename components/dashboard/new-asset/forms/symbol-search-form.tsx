@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { Info } from "lucide-react";
 import { toast } from "sonner";
@@ -107,7 +107,11 @@ export function SymbolSearchForm() {
   );
 
   // Watch field changes
-  const symbolLookup = form.watch("symbolLookup") || "";
+  const symbolLookup =
+    useWatch({
+      control: form.control,
+      name: "symbolLookup",
+    }) || "";
 
   // Handle symbol selection from dropdown
   const handleSymbolSelect = async (symbolLookup: string) => {
