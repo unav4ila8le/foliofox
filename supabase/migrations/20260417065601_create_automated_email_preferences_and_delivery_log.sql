@@ -142,6 +142,17 @@ END $$;
 
 DO $$
 BEGIN
+  CREATE POLICY "Users can insert own email preferences"
+    ON public.email_preferences
+    FOR INSERT
+    TO authenticated
+    WITH CHECK ((SELECT auth.uid()) = user_id);
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$
+BEGIN
   CREATE POLICY "Users can update own email preferences"
     ON public.email_preferences
     FOR UPDATE

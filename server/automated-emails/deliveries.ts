@@ -18,7 +18,10 @@ interface DeliveryRecordSummary {
   id: string;
   status: AutomatedEmailDeliveryStatus;
   provider_message_id: string | null;
+  updated_at: string;
 }
+
+const PENDING_DELIVERY_RECLAIM_MS = 15 * 60 * 1000;
 
 function normalizeErrorMessage(error: unknown) {
   if (error instanceof Error) {
@@ -37,7 +40,7 @@ async function findExistingDeliveryRecord(params: {
 
   const { data, error } = await supabase
     .from("automated_email_deliveries")
-    .select("id, status, provider_message_id")
+    .select("id, status, provider_message_id, updated_at")
     .eq("user_id", params.userId)
     .eq("email_type", params.emailType)
     .eq("delivery_key", params.deliveryKey)
@@ -80,7 +83,7 @@ async function createPendingDeliveryRecord(params: {
       delivery_key: params.deliveryKey,
       status: "pending",
     })
-    .select("id, status, provider_message_id")
+    .select("id, status, provider_message_id, updated_at")
     .single<DeliveryRecordSummary>();
 
   // Handle concurrent sends racing on the unique delivery key by falling back
@@ -88,7 +91,10 @@ async function createPendingDeliveryRecord(params: {
   if (error?.code === "23505") {
     const existingDeliveryRecord = await findExistingDeliveryRecord(params);
     if (existingDeliveryRecord) {
-      return existingDeliveryRecord;
+      return {
+        created: false as const,
+        deliveryRecord: existingDeliveryRecord,
+      };
     }
   }
 
@@ -96,7 +102,59 @@ async function createPendingDeliveryRecord(params: {
     throw new Error(error?.message ?? "Failed to create pending delivery log");
   }
 
-  return data;
+  return {
+    created: true as const,
+    deliveryRecord: data,
+  };
+}
+
+function isPendingDeliveryReclaimable(deliveryRecord: DeliveryRecordSummary) {
+  const updatedAtTimestamp = Date.parse(deliveryRecord.updated_at);
+
+  if (Number.isNaN(updatedAtTimestamp)) {
+    return false;
+  }
+
+  return Date.now() - updatedAtTimestamp >= PENDING_DELIVERY_RECLAIM_MS;
+}
+
+async function claimExistingDeliveryRecord(params: {
+  deliveryRecord: DeliveryRecordSummary;
+}) {
+  const supabase = createServiceClient();
+  const { deliveryRecord } = params;
+
+  const { data, error } = await supabase
+    .from("automated_email_deliveries")
+    .update({
+      status: "pending",
+      provider_message_id: null,
+      error_message: null,
+      sent_at: null,
+    })
+    .eq("id", deliveryRecord.id)
+    .eq("status", deliveryRecord.status)
+    .eq("updated_at", deliveryRecord.updated_at)
+    .select("id, status, provider_message_id, updated_at");
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data?.[0] ?? null;
+}
+
+function buildSkippedDeliveryResult(params: {
+  reason: "already_sent" | "in_flight";
+  deliveryRecord: DeliveryRecordSummary;
+}) {
+  return {
+    success: true as const,
+    skipped: true as const,
+    reason: params.reason,
+    deliveryRecordId: params.deliveryRecord.id,
+    providerMessageId: params.deliveryRecord.provider_message_id,
+  };
 }
 
 async function markDeliveryRecordStatus(params: {
@@ -135,7 +193,7 @@ export type SendAutomatedEmailResult =
   | {
       success: true;
       skipped: true;
-      reason: "already_sent";
+      reason: "already_sent" | "in_flight";
       deliveryRecordId: string;
       providerMessageId: string | null;
     }
@@ -165,23 +223,101 @@ export async function sendAutomatedEmail(
   });
 
   if (existingDeliveryRecord?.status === "sent") {
-    return {
-      success: true,
-      skipped: true,
+    return buildSkippedDeliveryResult({
       reason: "already_sent",
-      deliveryRecordId: existingDeliveryRecord.id,
-      providerMessageId: existingDeliveryRecord.provider_message_id,
-    };
+      deliveryRecord: existingDeliveryRecord,
+    });
   }
 
-  // 2. Create the pending log row before attempting provider delivery.
-  const deliveryRecord =
-    existingDeliveryRecord ??
-    (await createPendingDeliveryRecord({
+  let deliveryRecord: DeliveryRecordSummary;
+
+  // 2. Claim or create a pending row before attempting provider delivery.
+  if (!existingDeliveryRecord) {
+    const pendingCreation = await createPendingDeliveryRecord({
       userId: input.userId,
       emailType: input.emailType,
       deliveryKey: input.deliveryKey,
-    }));
+    });
+
+    if (!pendingCreation.created) {
+      if (pendingCreation.deliveryRecord.status === "sent") {
+        return buildSkippedDeliveryResult({
+          reason: "already_sent",
+          deliveryRecord: pendingCreation.deliveryRecord,
+        });
+      }
+
+      return buildSkippedDeliveryResult({
+        reason: "in_flight",
+        deliveryRecord: pendingCreation.deliveryRecord,
+      });
+    }
+
+    deliveryRecord = pendingCreation.deliveryRecord;
+  } else if (existingDeliveryRecord.status === "pending") {
+    if (!isPendingDeliveryReclaimable(existingDeliveryRecord)) {
+      return buildSkippedDeliveryResult({
+        reason: "in_flight",
+        deliveryRecord: existingDeliveryRecord,
+      });
+    }
+
+    const reclaimedDeliveryRecord = await claimExistingDeliveryRecord({
+      deliveryRecord: existingDeliveryRecord,
+    });
+
+    if (!reclaimedDeliveryRecord) {
+      const latestDeliveryRecord = await findExistingDeliveryRecord({
+        userId: input.userId,
+        emailType: input.emailType,
+        deliveryKey: input.deliveryKey,
+      });
+
+      if (latestDeliveryRecord?.status === "sent") {
+        return buildSkippedDeliveryResult({
+          reason: "already_sent",
+          deliveryRecord: latestDeliveryRecord,
+        });
+      }
+
+      return buildSkippedDeliveryResult({
+        reason: "in_flight",
+        deliveryRecord: latestDeliveryRecord ?? existingDeliveryRecord,
+      });
+    }
+
+    deliveryRecord = reclaimedDeliveryRecord;
+  } else {
+    const claimedFailedDeliveryRecord = await claimExistingDeliveryRecord({
+      deliveryRecord: existingDeliveryRecord,
+    });
+
+    if (!claimedFailedDeliveryRecord) {
+      const latestDeliveryRecord = await findExistingDeliveryRecord({
+        userId: input.userId,
+        emailType: input.emailType,
+        deliveryKey: input.deliveryKey,
+      });
+
+      if (latestDeliveryRecord?.status === "sent") {
+        return buildSkippedDeliveryResult({
+          reason: "already_sent",
+          deliveryRecord: latestDeliveryRecord,
+        });
+      }
+
+      if (latestDeliveryRecord) {
+        return buildSkippedDeliveryResult({
+          reason: "in_flight",
+          deliveryRecord: latestDeliveryRecord,
+        });
+      }
+
+      throw new Error("Failed to claim delivery record for retry");
+    }
+
+    deliveryRecord = claimedFailedDeliveryRecord;
+  }
 
   const sender = input.sender ?? createAutomatedEmailSender();
 

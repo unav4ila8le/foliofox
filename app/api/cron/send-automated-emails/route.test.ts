@@ -48,6 +48,19 @@ describe("GET /api/cron/send-automated-emails", () => {
     expect(runAutomatedEmailCronMock).not.toHaveBeenCalled();
   });
 
+  it("fails closed when CRON_SECRET is missing", async () => {
+    delete process.env.CRON_SECRET;
+    headersMock.mockResolvedValue(
+      new Headers({ authorization: "Bearer undefined" }),
+    );
+
+    const { GET } = await import("./route");
+    const response = await GET();
+
+    expect(response.status).toBe(500);
+    expect(runAutomatedEmailCronMock).not.toHaveBeenCalled();
+  });
+
   it("returns the structured cron result", async () => {
     headersMock.mockResolvedValue(
       new Headers({ authorization: "Bearer test-cron-secret" }),
@@ -104,5 +117,21 @@ describe("GET /api/cron/send-automated-emails", () => {
       },
     });
     expect(runAutomatedEmailCronMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns a 500 response when the cron runner throws", async () => {
+    headersMock.mockResolvedValue(
+      new Headers({ authorization: "Bearer test-cron-secret" }),
+    );
+    runAutomatedEmailCronMock.mockRejectedValue(new Error("boom"));
+
+    const { GET } = await import("./route");
+    const response = await GET();
+
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({
+      success: false,
+      error: "boom",
+    });
   });
 });

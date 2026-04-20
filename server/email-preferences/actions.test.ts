@@ -42,6 +42,11 @@ class FakeEmailPreferencesQuery {
     return this;
   }
 
+  upsert(payload: { user_id: string }) {
+    this.insertPayload = payload;
+    return this;
+  }
+
   update(payload: Record<string, unknown>) {
     this.updatePayload = payload;
     return this;

@@ -15,6 +15,7 @@ interface FakeDeliveryRow {
   provider_message_id: string | null;
   error_message: string | null;
   sent_at: string | null;
+  updated_at: string;
 }
 
 interface FakeDeliveriesState {
@@ -64,10 +65,6 @@ function createFakeServiceClient(state: FakeDeliveriesState) {
         },
         eq(column: string, value: string) {
           eqFilters[column] = value;
-          if (mode === "update") {
-            // Updates resolve when .eq("id", ...) is awaited.
-            return Promise.resolve(runUpdate());
-          }
           return builder;
         },
         maybeSingle() {
@@ -102,6 +99,7 @@ function createFakeServiceClient(state: FakeDeliveriesState) {
               provider_message_id: null,
               error_message: null,
               sent_at: null,
+              updated_at: `2026-04-20T13:00:0${state.rows.length}.000Z`,
             };
             state.rows.push(newRow);
             return Promise.resolve({ data: newRow, error: null });
@@ -112,6 +110,21 @@ function createFakeServiceClient(state: FakeDeliveriesState) {
             error: { message: "Unexpected single() call" },
           });
         },
+        then(
+          onFulfilled: (value: unknown) => unknown,
+          onRejected?: (reason: unknown) => unknown,
+        ) {
+          if (mode === "update") {
+            return Promise.resolve(runUpdate()).then(onFulfilled, onRejected);
+          }
+
+          return Promise.resolve(
+            onFulfilled({
+              data: null,
+              error: { message: "Unexpected then() call" },
+            }),
+          );
+        },
       };
 
       function runUpdate() {
@@ -119,17 +132,23 @@ function createFakeServiceClient(state: FakeDeliveriesState) {
           return { error: { message: "Update payload missing" } };
         }
 
-        const targetRow = state.rows.find((row) => row.id === eqFilters.id);
+        const targetRow = state.rows.find(
+          (row) =>
+            row.id === eqFilters.id &&
+            (!eqFilters.status || row.status === eqFilters.status) &&
+            (!eqFilters.updated_at || row.updated_at === eqFilters.updated_at),
+        );
         if (!targetRow) {
-          return { error: { message: "Row not found" } };
+          return { data: [], error: null };
         }
 
         Object.assign(targetRow, updatePayload);
+        targetRow.updated_at = "2026-04-20T13:30:00.000Z";
         state.updateLog.push({
           id: targetRow.id,
           payload: updatePayload,
         });
-        return { error: null };
+        return { data: [targetRow], error: null };
       }
 
       return builder;
@@ -153,6 +172,7 @@ describe("isAutomatedEmailDeliveryAlreadySent", () => {
       provider_message_id: "provider-x",
       error_message: null,
       sent_at: "2026-04-20T13:00:00.000Z",
+      updated_at: "2026-04-20T13:00:00.000Z",
     });
     createServiceClientMock.mockReturnValue(createFakeServiceClient(state));
 
@@ -194,6 +214,7 @@ describe("isAutomatedEmailDeliveryAlreadySent", () => {
       provider_message_id: null,
       error_message: "boom",
       sent_at: null,
+      updated_at: "2026-04-20T13:00:00.000Z",
     });
     createServiceClientMock.mockReturnValue(createFakeServiceClient(state));
 
@@ -225,6 +246,7 @@ describe("sendAutomatedEmail", () => {
       provider_message_id: "provider-existing",
       error_message: null,
       sent_at: "2026-04-20T13:00:00.000Z",
+      updated_at: "2026-04-20T13:00:00.000Z",
     });
     createServiceClientMock.mockReturnValue(createFakeServiceClient(state));
 
@@ -332,7 +354,7 @@ describe("sendAutomatedEmail", () => {
     });
   });
 
-  it("recovers from a unique-key race by reusing the existing pending row", async () => {
+  it("treats a unique-key race on a pending row as in flight and does not send twice", async () => {
     const state = createState();
     // Pre-seed the row another worker would have just created.
     state.rows.push({
@@ -344,6 +366,7 @@ describe("sendAutomatedEmail", () => {
       provider_message_id: null,
       error_message: null,
       sent_at: null,
+      updated_at: "2026-04-20T13:00:00.000Z",
     });
     state.insertError = { code: "23505", message: "duplicate key" };
     createServiceClientMock.mockReturnValue(createFakeServiceClient(state));
@@ -367,21 +390,72 @@ describe("sendAutomatedEmail", () => {
       },
     });
 
-    // Existing row was pending (not "sent"), so the early skip branch should
-    // not fire. Instead we should attempt the send, hit 23505 on insert,
-    // recover the existing row, and mark it sent.
-    expect(sendEmail).toHaveBeenCalledTimes(1);
+    // Another worker created the pending row first, so this worker must treat
+    // it as in-flight and avoid a duplicate provider send.
+    expect(sendEmail).not.toHaveBeenCalled();
     expect(state.rows).toHaveLength(1);
     expect(state.rows[0]).toMatchObject({
       id: "delivery-race",
+      status: "pending",
+      provider_message_id: null,
+    });
+    expect(result).toEqual({
+      success: true,
+      skipped: true,
+      reason: "in_flight",
+      deliveryRecordId: "delivery-race",
+      providerMessageId: null,
+    });
+  });
+
+  it("reclaims a stale pending row before retrying the provider send", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-20T13:30:00.000Z"));
+
+    const state = createState();
+    state.rows.push({
+      id: "delivery-stale",
+      user_id: "user-4",
+      email_type: "weekly_recap",
+      delivery_key: "weekly:2026-04-20",
+      status: "pending",
+      provider_message_id: null,
+      error_message: null,
+      sent_at: null,
+      updated_at: "2026-04-20T13:00:00.000Z",
+    });
+    createServiceClientMock.mockReturnValue(createFakeServiceClient(state));
+
+    const sendEmail = vi.fn().mockResolvedValue({
+      provider: "resend",
+      messageId: "provider-reclaimed",
+    });
+
+    const { sendAutomatedEmail } = await import("./deliveries");
+    const result = await sendAutomatedEmail({
+      userId: "user-4",
+      emailType: "weekly_recap",
+      deliveryKey: "weekly:2026-04-20",
+      sender: { sendEmail },
+      message: {
+        from: "from@test",
+        to: "to@test",
+        subject: "Hi",
+        html: "<p>Hi</p>",
+      },
+    });
+
+    expect(sendEmail).toHaveBeenCalledTimes(1);
+    expect(state.rows[0]).toMatchObject({
+      id: "delivery-stale",
       status: "sent",
-      provider_message_id: "provider-after-race",
+      provider_message_id: "provider-reclaimed",
     });
     expect(result).toEqual({
       success: true,
       skipped: false,
-      deliveryRecordId: "delivery-race",
-      providerMessageId: "provider-after-race",
+      deliveryRecordId: "delivery-stale",
+      providerMessageId: "provider-reclaimed",
     });
   });
 });

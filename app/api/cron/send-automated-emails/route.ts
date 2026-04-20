@@ -8,8 +8,19 @@ export async function GET() {
   await connection();
 
   try {
+    const cronSecret = process.env.CRON_SECRET?.trim();
+    if (!cronSecret) {
+      console.error(
+        "CRON_SECRET is not configured for the automated email cron route",
+      );
+
+      return new Response("Server misconfigured", {
+        status: 500,
+      });
+    }
+
     const authHeader = (await headers()).get("authorization");
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    if (authHeader !== `Bearer ${cronSecret}`) {
       return new Response("Unauthorized", {
         status: 401,
       });
