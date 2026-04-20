@@ -4,6 +4,7 @@ export interface AutomatedEmailTemplateLinks {
   dashboardUrl: string;
   settingsUrl: string;
   unsubscribeUrl: string;
+  logoUrl: string;
 }
 
 export interface AutomatedEmailTemplateProps {

@@ -47,6 +47,7 @@ async function resolveAutomatedEmailLinks(params: {
     unsubscribeUrl: `${siteUrl}/unsubscribe?token=${encodeURIComponent(
       unsubscribeToken,
     )}`,
+    logoUrl: `${siteUrl}/images/foliofox-logo.png`,
   };
 }
 

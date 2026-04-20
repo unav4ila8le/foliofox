@@ -41,8 +41,8 @@ export function EmailMoverList({
       <Text
         style={{
           margin: `${titleTopMarginPx}px 0 10px`,
-          color: emailColors.accent,
-          fontSize: "13px",
+          color: emailColors.foreground,
+          fontSize: "12px",
           fontWeight: 700,
           textTransform: "uppercase",
           letterSpacing: "0.06em",
@@ -54,7 +54,7 @@ export function EmailMoverList({
         <Text
           key={mover.asset.id}
           style={{
-            margin: "0 0 10px",
+            margin: "0 0 8px",
             fontSize: "14px",
             lineHeight: "1.6",
             color: emailColors.foreground,

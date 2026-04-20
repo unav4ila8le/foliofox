@@ -3,8 +3,8 @@ import { Link, Section, Text } from "@react-email/components";
 import {
   EmailLayout,
   EmailMutedText,
+  EmailSectionDivider,
   EmailSectionHeading,
-  emailCardStyles,
   emailColors,
 } from "@/emails/_components/email-layout";
 import { EmailMoverList } from "@/emails/_components/email-mover-list";
@@ -46,6 +46,7 @@ export default function WeeklyRecapEmail({
       reasonText={reasonText}
       settingsUrl={links.settingsUrl}
       unsubscribeUrl={links.unsubscribeUrl}
+      logoUrl={links.logoUrl}
     >
       <EmailStatCard
         label="Net worth"
@@ -72,10 +73,10 @@ export default function WeeklyRecapEmail({
       ) : null}
 
       {digest.topMovers ? (
-        <Section style={{ marginTop: "24px" }}>
-          <EmailSectionHeading>Top movers</EmailSectionHeading>
-
-          <Section style={emailCardStyles.wrapper}>
+        <>
+          <EmailSectionDivider />
+          <Section>
+            <EmailSectionHeading>Top movers</EmailSectionHeading>
             <EmailMoverList
               title="Gainers"
               movers={digest.topMovers.gainers}
@@ -88,29 +89,29 @@ export default function WeeklyRecapEmail({
               titleTopMarginPx={16}
             />
           </Section>
-        </Section>
+        </>
       ) : null}
 
+      <EmailSectionDivider />
+
       {digest.projectedIncome ? (
-        <Section style={{ marginTop: "24px" }}>
+        <Section>
           <EmailSectionHeading>Upcoming income</EmailSectionHeading>
-          <Section style={emailCardStyles.wrapper}>
-            <EmailMutedText>
-              Foliofox currently projects{" "}
-              <strong>
-                {formatEmailCurrency(
-                  digest.projectedIncome.windowEstimate,
-                  digest.projectedIncome.currency,
-                )}
-              </strong>{" "}
-              in income over the next {digest.projectedIncome.windowDays} days,
-              based on your next {digest.projectedIncome.monthsAhead} months of
-              projected payouts.
-            </EmailMutedText>
-          </Section>
+          <EmailMutedText>
+            Foliofox currently projects{" "}
+            <strong style={{ color: emailColors.foreground }}>
+              {formatEmailCurrency(
+                digest.projectedIncome.windowEstimate,
+                digest.projectedIncome.currency,
+              )}
+            </strong>{" "}
+            in income over the next {digest.projectedIncome.windowDays} days,
+            based on your next {digest.projectedIncome.monthsAhead} months of
+            projected payouts.
+          </EmailMutedText>
         </Section>
       ) : (
-        <Section style={{ marginTop: "24px" }}>
+        <Section>
           <EmailSectionHeading>What to review next</EmailSectionHeading>
           <EmailMutedText>
             Open your dashboard to review position-level performance, update
@@ -119,7 +120,7 @@ export default function WeeklyRecapEmail({
         </Section>
       )}
 
-      <Section style={{ marginTop: "24px" }}>
+      <Section style={{ marginTop: "20px" }}>
         <Text
           style={{
             margin: 0,
@@ -129,7 +130,10 @@ export default function WeeklyRecapEmail({
           }}
         >
           Prefer a different cadence? You can fine-tune this in{" "}
-          <Link href={links.settingsUrl} style={{ color: emailColors.accent }}>
+          <Link
+            href={links.settingsUrl}
+            style={{ color: emailColors.brand, textDecoration: "underline" }}
+          >
             your settings
           </Link>
           .

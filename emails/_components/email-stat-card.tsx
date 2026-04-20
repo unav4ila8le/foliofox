@@ -1,6 +1,6 @@
 import { Section, Text } from "@react-email/components";
 
-import { emailColors } from "@/emails/_components/email-layout";
+import { emailColors, emailRadius } from "@/emails/_components/email-layout";
 
 interface EmailStatCardProps {
   label: string;
@@ -16,32 +16,33 @@ export function EmailStatCard({
   return (
     <Section
       style={{
-        marginBottom: "12px",
+        marginBottom: "10px",
         border: `1px solid ${emailColors.border}`,
-        borderRadius: "18px",
-        padding: "16px",
+        borderRadius: emailRadius.nested,
+        padding: "14px 16px",
       }}
     >
       <Text
         style={{
-          margin: "0 0 6px",
+          margin: "0 0 4px",
           color: emailColors.muted,
-          fontSize: "13px",
+          fontSize: "12px",
           lineHeight: "1.4",
           textTransform: "uppercase",
           letterSpacing: "0.06em",
-          fontWeight: 700,
+          fontWeight: 600,
         }}
       >
         {label}
       </Text>
       <Text
         style={{
-          margin: "0 0 6px",
+          margin: "0 0 4px",
           color: emailColors.foreground,
-          fontSize: "24px",
+          fontSize: "22px",
           lineHeight: "1.2",
           fontWeight: 700,
+          letterSpacing: "-0.01em",
         }}
       >
         {value}

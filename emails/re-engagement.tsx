@@ -3,8 +3,8 @@ import { Section, Text } from "@react-email/components";
 import {
   EmailLayout,
   EmailMutedText,
+  EmailSectionDivider,
   EmailSectionHeading,
-  emailCardStyles,
   emailColors,
 } from "@/emails/_components/email-layout";
 import { EmailStatCard } from "@/emails/_components/email-stat-card";
@@ -58,6 +58,7 @@ export default function ReengagementEmail({
       reasonText={reasonText}
       settingsUrl={links.settingsUrl}
       unsubscribeUrl={links.unsubscribeUrl}
+      logoUrl={links.logoUrl}
     >
       <EmailStatCard
         label="Net worth today"
@@ -90,39 +91,39 @@ export default function ReengagementEmail({
         />
       ) : null}
 
-      <Section style={{ marginTop: "24px" }}>
+      <EmailSectionDivider />
+
+      <Section>
         <EmailSectionHeading>Why open Foliofox now</EmailSectionHeading>
-        <Section style={emailCardStyles.wrapper}>
-          <EmailMutedText>
-            A quick dashboard check will show whether this week&apos;s move came
-            from a single position or a broader portfolio shift.
-          </EmailMutedText>
-          {strongestMover ? (
-            <Text
-              style={{
-                margin: "14px 0 0",
-                fontSize: "14px",
-                lineHeight: "1.6",
-                color: emailColors.foreground,
-              }}
-            >
-              Biggest move:{" "}
-              <strong>
-                {renderEmailAssetLabel(
-                  strongestMover.asset.name,
-                  strongestMover.asset.symbol,
-                )}
-              </strong>
-              {" · "}
-              {formatSignedEmailCurrency(
-                strongestMover.valueChangeAbs,
-                digest.currency,
+        <EmailMutedText>
+          A quick dashboard check will show whether this week&apos;s move came
+          from a single position or a broader portfolio shift.
+        </EmailMutedText>
+        {strongestMover ? (
+          <Text
+            style={{
+              margin: "14px 0 0",
+              fontSize: "14px",
+              lineHeight: "1.6",
+              color: emailColors.foreground,
+            }}
+          >
+            Biggest move:{" "}
+            <strong>
+              {renderEmailAssetLabel(
+                strongestMover.asset.name,
+                strongestMover.asset.symbol,
               )}
-              {" · "}
-              {formatSignedPercentage(strongestMover.valueChangePct)}
-            </Text>
-          ) : null}
-        </Section>
+            </strong>
+            {" · "}
+            {formatSignedEmailCurrency(
+              strongestMover.valueChangeAbs,
+              digest.currency,
+            )}
+            {" · "}
+            {formatSignedPercentage(strongestMover.valueChangePct)}
+          </Text>
+        ) : null}
       </Section>
     </EmailLayout>
   );

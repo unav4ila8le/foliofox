@@ -10,10 +10,14 @@ import type {
   AutomatedEmailTemplateProps,
 } from "@/emails/types";
 
+// Preview URLs point at production for the `npm run email:dev` preview server.
+// The real cron path constructs these from NEXT_PUBLIC_SITE_URL at send time,
+// so these values only matter for the local preview UI.
 const previewLinks: AutomatedEmailTemplateLinks = {
   dashboardUrl: "https://www.foliofox.com/dashboard",
   settingsUrl: "https://www.foliofox.com/dashboard?settings=emails",
   unsubscribeUrl: "https://www.foliofox.com/unsubscribe?token=preview-token",
+  logoUrl: "https://www.foliofox.com/images/foliofox-logo.png",
 };
 
 const previewDigest: AutomatedEmailDigest = {
