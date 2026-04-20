@@ -26,7 +26,8 @@ export async function fetchRecipientEmailsByUserId(userIds: string[]) {
 
         if (error) {
           console.warn(
-            `Failed to resolve auth email for automated email recipient ${userId}:`,
+            "Failed to resolve auth email for automated email recipient %s:",
+            userId,
             error,
           );
           return null;
