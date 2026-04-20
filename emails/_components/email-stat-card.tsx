@@ -26,7 +26,9 @@ export function EmailStatCard({
         padding: "16px",
       }}
     >
-      <EmailMutedText style={{ fontSize: "12px" }}>{label}</EmailMutedText>
+      <EmailMutedText style={{ fontSize: "14px", textTransform: "uppercase" }}>
+        {label}
+      </EmailMutedText>
       <Text
         style={{
           margin: "4px 0 0",
@@ -37,7 +39,7 @@ export function EmailStatCard({
         {value}
       </Text>
       {description ? (
-        <EmailMutedText style={{ marginTop: "4px", fontSize: "13px" }}>
+        <EmailMutedText style={{ marginTop: "4px", fontSize: "14px" }}>
           {description}
         </EmailMutedText>
       ) : null}

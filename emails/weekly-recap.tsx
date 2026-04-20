@@ -1,4 +1,4 @@
-import { Link, Section } from "@react-email/components";
+import { Link, Section, Column, Row } from "@react-email/components";
 
 import {
   EmailLayout,
@@ -63,7 +63,7 @@ export default function WeeklyRecapEmail({
       />
       {digest.projectedIncome ? (
         <EmailStatCard
-          label="Projected income"
+          label="Projected dividends"
           value={formatEmailCurrency(
             digest.projectedIncome.windowEstimate,
             digest.projectedIncome.currency,
@@ -77,17 +77,34 @@ export default function WeeklyRecapEmail({
           <EmailSectionDivider />
           <Section>
             <EmailSectionHeading>Top movers</EmailSectionHeading>
-            <EmailMoverList
-              title="Gainers"
-              movers={digest.topMovers.gainers}
-              currency={digest.currency}
-            />
-            <EmailMoverList
-              title="Losers"
-              movers={digest.topMovers.losers}
-              currency={digest.currency}
-              titleTopMarginPx={16}
-            />
+            <Row>
+              <Column
+                style={{
+                  width: "50%",
+                  paddingRight: "8px",
+                  verticalAlign: "top",
+                }}
+              >
+                <EmailMoverList
+                  title="Gainers"
+                  movers={digest.topMovers.gainers}
+                  currency={digest.currency}
+                />
+              </Column>
+              <Column
+                style={{
+                  width: "50%",
+                  paddingLeft: "8px",
+                  verticalAlign: "top",
+                }}
+              >
+                <EmailMoverList
+                  title="Losers"
+                  movers={digest.topMovers.losers}
+                  currency={digest.currency}
+                />
+              </Column>
+            </Row>
           </Section>
         </>
       ) : null}

@@ -1,6 +1,10 @@
-import { Text } from "@react-email/components";
+import { Section, Text } from "@react-email/components";
 
-import { EmailMutedText, emailColors } from "@/emails/_components/email-layout";
+import {
+  EmailMutedText,
+  emailColors,
+  emailRadius,
+} from "@/emails/_components/email-layout";
 import {
   formatSignedEmailCurrency,
   formatSignedPercentage,
@@ -17,8 +21,6 @@ interface EmailMoverListProps {
   title: string;
   movers: Mover[];
   currency: string;
-  /** Top margin in px applied to the list title; defaults to 0. */
-  titleTopMarginPx?: number;
 }
 
 /**
@@ -30,16 +32,26 @@ export function EmailMoverList({
   title,
   movers,
   currency,
-  titleTopMarginPx = 0,
 }: EmailMoverListProps) {
   if (movers.length === 0) {
     return null;
   }
 
   return (
-    <>
+    <Section
+      style={{
+        marginBottom: "12px",
+        border: `1px solid ${emailColors.border}`,
+        borderRadius: emailRadius.nested,
+        padding: "16px",
+      }}
+    >
       <EmailMutedText
-        style={{ margin: `${titleTopMarginPx}px 0 8px`, fontSize: "13px" }}
+        style={{
+          marginBottom: "8px",
+          fontSize: "14px",
+          textTransform: "uppercase",
+        }}
       >
         {title}
       </EmailMutedText>
@@ -47,7 +59,7 @@ export function EmailMoverList({
         <Text
           key={mover.asset.id}
           style={{
-            margin: "0 0 6px",
+            margin: "0 0 8px",
             fontSize: "14px",
             color: emailColors.foreground,
           }}
@@ -55,12 +67,11 @@ export function EmailMoverList({
           <strong>
             {renderEmailAssetLabel(mover.asset.name, mover.asset.symbol)}
           </strong>
-          {" · "}
-          {formatSignedEmailCurrency(mover.valueChangeAbs, currency)}
-          {" · "}
-          {formatSignedPercentage(mover.valueChangePct)}
+          <br />
+          {formatSignedEmailCurrency(mover.valueChangeAbs, currency)} (
+          {formatSignedPercentage(mover.valueChangePct)})
         </Text>
       ))}
-    </>
+    </Section>
   );
 }
