@@ -68,7 +68,7 @@ You may be able to access, update, or delete information in your account setting
 
 If you want us to delete your data or have a privacy request, contact us through our Discord server:
 
-[https://discord.gg/9AGutMkvUR](https://discord.gg/9AGutMkvUR)
+[/discord](/discord)
 
 Depending on where you live, you may have additional privacy rights under applicable law.
 

@@ -13,7 +13,7 @@ export async function Footer() {
     <footer className="text-muted-foreground container mx-auto mt-8 grid max-w-7xl grid-cols-3 gap-4 p-3 py-6 text-sm font-medium">
       <div className="col-span-full sm:col-span-1">
         <Link
-          href="https://discord.gg/9AGutMkvUR"
+          href="/discord"
           target="_blank"
           className="flex items-center gap-1.5 justify-self-start transition-colors hover:text-[#5865F2]"
         >
