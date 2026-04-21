@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
-import { Logomark } from "@/components/ui/logos/logomark";
+import { FoliofoxIcon } from "@/components/ui/logos/foliofox-icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PublicPortfolioHeader } from "@/components/public-portfolio/header";
 import { PublicPortfolioAssetsTable } from "@/components/public-portfolio/assets-table";
@@ -179,7 +179,7 @@ export default async function PublicPortfolioPage(props: {
     return (
       <div className="flex flex-col items-center justify-center p-8 text-center">
         <Link href="/" aria-label="Foliofox - Go to homepage">
-          <Logomark
+          <FoliofoxIcon
             height={64}
             className="text-muted-foreground/20 hover:text-brand transition-colors"
           />

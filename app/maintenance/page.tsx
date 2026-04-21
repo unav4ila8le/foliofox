@@ -1,12 +1,12 @@
 import Link from "next/link";
 
-import { Logomark } from "@/components/ui/logos/logomark";
+import { FoliofoxIcon } from "@/components/ui/logos/foliofox-icon";
 
 export default function MaintenancePage() {
   return (
     <main className="flex min-h-svh flex-col items-center justify-center p-4 text-center">
       <Link href="/" aria-label="Foliofox - Go to homepage">
-        <Logomark
+        <FoliofoxIcon
           height={40}
           className="hover:text-brand/70 transition-colors"
         />

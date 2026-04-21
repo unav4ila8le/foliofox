@@ -2,21 +2,21 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Logo } from "@/components/ui/logos/logo";
-import { GithubLogo } from "@/components/ui/logos/github-logo";
+import { FoliofoxLogo } from "@/components/ui/logos/foliofox-logo";
+import { GithubIcon } from "@/components/ui/logos/github-icon";
 import { CTAWrapper } from "@/components/homepage/cta-wrapper";
 
 export async function Header() {
   return (
     <header className="container mx-auto flex max-w-7xl items-center justify-between p-3">
       <Link href="/" aria-label="Foliofox - Go to homepage">
-        <Logo />
+        <FoliofoxLogo />
       </Link>
 
       <nav className="flex items-center gap-2">
         <Link
           href="/changelog"
-          className="text-sm font-medium hover:opacity-70"
+          className="text-sm font-medium transition-opacity hover:opacity-70"
         >
           Changelog
         </Link>
@@ -26,7 +26,7 @@ export async function Header() {
             target="_blank"
             aria-label="Go to GitHub repository"
           >
-            <GithubLogo />
+            <GithubIcon />
           </Link>
         </Button>
         <Button asChild size="sm">

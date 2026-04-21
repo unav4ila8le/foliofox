@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 
 import { AuthToastHandler } from "@/components/features/auth/auth-toast-handler";
-import { Logo } from "@/components/ui/logos/logo";
+import { FoliofoxLogo } from "@/components/ui/logos/foliofox-logo";
 import { LoginForm } from "@/components/features/auth/login-form";
 
 import { createClient } from "@/supabase/server";
@@ -27,7 +27,7 @@ export default async function LoginPage() {
       <AuthToastHandler />
       <div className="flex w-full max-w-sm flex-col gap-6">
         <Link href="/" className="self-center">
-          <Logo />
+          <FoliofoxLogo />
         </Link>
         <LoginForm />
       </div>
