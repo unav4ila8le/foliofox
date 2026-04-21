@@ -1,11 +1,12 @@
 import Link from "next/link";
 
 import { DiscordIcon } from "@/components/ui/logos/discord-icon";
-import { CurrentYear } from "@/components/homepage/footer/current-year";
 
 import { PUBLIC_LEGAL_LINKS } from "@/lib/legal/registry";
 
 export function Footer() {
+  const currentYear = new Date().getFullYear();
+
   return (
     <footer className="text-muted-foreground container mx-auto mt-8 grid max-w-7xl grid-cols-3 gap-4 p-3 py-6 text-sm font-medium">
       <div className="col-span-full sm:col-span-1">
@@ -20,7 +21,7 @@ export function Footer() {
       </div>
       <div className="col-span-full sm:col-span-1">
         <p className="sm:text-center">
-          Copyright © <CurrentYear />. All rights reserved.
+          Copyright © {currentYear}. All rights reserved.
           <br />
           v0.1.0-beta
         </p>
