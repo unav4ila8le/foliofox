@@ -20,20 +20,14 @@ export function LegalDocumentView({
   });
 
   return (
-    <div className="container mx-auto max-w-3xl space-y-8 p-3 py-10 md:py-16">
+    <div className="container mx-auto max-w-3xl space-y-6 p-3 py-8 md:py-16">
       <header className="space-y-4 border-b pb-6">
-        <div className="space-y-2">
-          <p className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
-            Legal
-          </p>
-          <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
-            {document.title}
-          </h1>
-          <p className="text-muted-foreground max-w-2xl text-sm md:text-base">
-            {document.description}
-          </p>
-        </div>
-
+        <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
+          {document.title}
+        </h1>
+        <p className="text-muted-foreground max-w-2xl text-sm md:text-base">
+          {document.description}
+        </p>
         <div className="text-muted-foreground flex flex-wrap gap-x-6 gap-y-2 text-sm">
           <p>
             Effective date:{" "}

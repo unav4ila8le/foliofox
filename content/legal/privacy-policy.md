@@ -1,77 +1,81 @@
 ---
 title: "Privacy Policy"
 description: "How Foliofox collects, uses, stores, and shares personal information."
-effectiveDate: "2026-04-20"
-lastUpdated: "2026-04-20"
+effectiveDate: "2026-04-21"
+lastUpdated: "2026-04-21"
 ---
 
-> Working draft. Review and adapt this document before relying on it as production legal text.
-
-## Overview
-
-Foliofox is a portfolio intelligence and net worth tracking application. This Privacy Policy explains what information Foliofox collects, how that information is used, and the choices available to users.
+Foliofox is operated by 주식회사 파운더스레어. This Privacy Policy explains what information we collect, how we use it, when we share it, and what choices you have.
 
 ## Information We Collect
 
-We may collect the following categories of information:
+We collect information you provide directly to us, including:
 
-- Account information, such as your email address and authentication details.
-- Portfolio information you provide, including positions, transactions, snapshots, and planning inputs.
-- Data you choose to import from files, spreadsheets, or connected workflows.
-- Usage and device information, such as app interactions, browser details, and analytics events.
-- Communication preferences, feedback submissions, and email interaction data.
+- account information such as your email address, authentication data, and profile details like username, display currency, avatar, and time zone;
+- portfolio data such as positions, transactions, snapshots, financial planning inputs, and imported files or spreadsheets;
+- AI feature inputs, including prompts, messages, and files you submit when you use AI features after enabling AI-related consent;
+- communication data such as feedback, support messages, and email preferences; and
+- usage data such as device, browser, log, cookie, and analytics information.
 
 ## How We Use Information
 
-Foliofox may use personal information to:
+We use personal information to:
 
-- provide, operate, and secure the product;
-- personalize portfolio analysis, planning, and reporting features;
-- send product, account, and optional email communications;
-- measure product usage and improve reliability, performance, and usability; and
-- comply with legal obligations and enforce platform policies.
+- provide, maintain, and secure Foliofox;
+- authenticate users and manage accounts;
+- calculate portfolio values, analytics, and reports;
+- operate AI features you choose to use;
+- send account-related emails and weekly digest emails, unless you opt out of non-essential emails;
+- understand product usage and improve reliability and performance; and
+- comply with legal obligations and enforce our terms and policies.
 
-## Third-Party Services
+## How We Share Information
 
-Foliofox relies on third-party infrastructure and service providers. Depending on the enabled features and deployment, these may include:
+We share information only as needed to operate Foliofox, including with service providers such as:
 
-- Supabase for authentication, database, and storage infrastructure;
+- Supabase for authentication, database, and storage;
+- Vercel for hosting and delivery;
 - PostHog for product analytics;
-- OpenAI for AI-assisted features;
-- Resend for transactional or automated email delivery; and
-- hosting and deployment providers such as Vercel.
+- OpenAI for AI-powered features;
+- Resend for transactional and automated emails; and
+- Discord, when you submit feedback or contact us through our Discord community.
 
-Update this section so it reflects the actual services, regions, and processors used in production.
+We may also disclose information if required by law or if necessary to protect Foliofox, our users, or others.
 
-## Cookies and Similar Technologies
+We do not sell personal information or share it for cross-context behavioral advertising.
 
-Foliofox may use cookies or similar storage mechanisms for authentication, security, localization, analytics, and interface preferences. A separate cookie policy can provide more detailed disclosures if needed.
+## Cookies and Analytics
+
+Foliofox uses cookies and similar technologies for authentication, security, language and interface preferences, and analytics. If you block or remove cookies, some parts of the service may not work properly.
+
+## AI Features
+
+If you enable AI-related consent and use AI features, the prompts, messages, and files you submit may be sent to OpenAI to generate responses. We may also store related conversation history and service metadata to operate, secure, and improve the feature experience inside Foliofox.
 
 ## Public Portfolio Sharing
 
-If you enable public portfolio sharing, certain portfolio information may become accessible through a public link. This policy should clearly explain what becomes public, how long links remain active, and how users can disable sharing.
+If you enable public portfolio sharing, information connected to that shared view may be visible to anyone with the link. This can include your username, avatar, asset holdings, allocation and income views, and other portfolio information included in the shared page. Public links remain available until they expire or you disable sharing.
 
 ## Data Retention
 
-Foliofox retains information for as long as needed to operate the service, comply with legal obligations, resolve disputes, and enforce agreements. Update this section with any concrete retention periods you decide to adopt.
+We keep personal information for as long as needed to operate Foliofox, provide requested features, comply with legal obligations, resolve disputes, and protect the service.
+
+If you request deletion, we will delete your personal data from our active systems within 48 hours, unless we need to keep limited information for legal, security, fraud-prevention, or backup-recovery purposes.
 
 ## Your Choices
 
-Depending on your jurisdiction and the way Foliofox is configured, you may be able to:
+You may be able to access, update, or delete information in your account settings. You can also opt out of non-essential emails using the unsubscribe link in those emails.
 
-- access, update, or delete certain account and portfolio information;
-- manage communication preferences;
-- disable optional analytics or marketing communications; and
-- request additional privacy-related support.
+If you want us to delete your data or have a privacy request, contact us through our Discord server:
 
-## International Data Transfers
+[https://discord.gg/9AGutMkvUR](https://discord.gg/9AGutMkvUR)
 
-If Foliofox uses service providers or infrastructure in multiple countries, personal information may be transferred across borders. Update this section with any jurisdiction-specific disclosures that apply to your deployment.
+Depending on where you live, you may have additional privacy rights under applicable law.
+
+## International Users
+
+Foliofox and its service providers may process personal information in countries other than your own. By using Foliofox, you understand that your information may be transferred to and processed in those countries.
 
 ## Changes to This Policy
 
-Foliofox may update this Privacy Policy from time to time. When the policy changes, update the `lastUpdated` frontmatter field in this document and revise the effective date when appropriate.
-
-## Contact
-
-Replace this section with the correct privacy or support contact details for Foliofox.
+We may update this Privacy Policy from time to time. When we do, we will update the `Last Updated` date above. Your continued use of Foliofox after an update means the updated policy will apply going forward.

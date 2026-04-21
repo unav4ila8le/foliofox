@@ -28,6 +28,18 @@ export default async function SignupPage() {
           <FoliofoxLogo />
         </Link>
         <SignupForm />
+        <p className="text-muted-foreground text-center text-xs">
+          By signing up you acknowledge that you have read, understood and agree
+          to our{" "}
+          <Link
+            href="/privacy"
+            target="_blank"
+            className="hover:text-foreground underline underline-offset-4 transition-colors"
+          >
+            Privacy Policy
+          </Link>
+          .
+        </p>
       </div>
     </div>
   );
