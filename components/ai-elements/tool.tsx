@@ -18,7 +18,7 @@ import {
 import type { ComponentProps, ReactNode } from "react";
 import { isValidElement } from "react";
 import { CodeBlock } from "./code-block";
-import { Logomark } from "@/components/ui/logos/logomark";
+import { FoliofoxIcon } from "@/components/ui/logos/foliofox-icon";
 
 export type ToolProps = ComponentProps<typeof Collapsible>;
 
@@ -80,7 +80,7 @@ export const ToolHeader = ({
     {...props}
   >
     <div className="flex items-center gap-2">
-      <Logomark />
+      <FoliofoxIcon />
       <span className="text-sm font-medium">
         {title ?? type.split("-").slice(1).join("-")}
       </span>

@@ -12,7 +12,7 @@ import {
 } from "@/components/ai-elements/conversation";
 import type { PromptInputMessage } from "@/components/ai-elements/prompt-input";
 import { usePromptInputController } from "@/components/ai-elements/prompt-input";
-import { Logomark } from "@/components/ui/logos/logomark";
+import { FoliofoxIcon } from "@/components/ui/logos/foliofox-icon";
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 import {
   AI_CHAT_CONVERSATION_CAP_FRIENDLY_MESSAGE,
@@ -407,7 +407,10 @@ export function Chat({
               <ConversationEmptyState
                 className="p-4"
                 icon={
-                  <Logomark width={64} className="text-muted-foreground/25" />
+                  <FoliofoxIcon
+                    width={64}
+                    className="text-muted-foreground/25"
+                  />
                 }
                 title="Foliofox AI Advisor"
                 description="Type a message below to start a conversation"

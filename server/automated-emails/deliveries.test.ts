@@ -21,6 +21,9 @@ interface FakeDeliveryRow {
 interface FakeDeliveriesState {
   rows: FakeDeliveryRow[];
   insertError: { code?: string; message: string } | null;
+  // Optional queue for maybeSingle() so tests can model races across repeated
+  // reads without changing the shared row state shape.
+  selectQueue?: Array<FakeDeliveryRow | null>;
   // Each update operation appends to this list with the row id and the
   // payload that landed, so tests can assert ordering and content.
   updateLog: Array<{ id: string; payload: Record<string, unknown> }>;
@@ -30,6 +33,7 @@ function createState(): FakeDeliveriesState {
   return {
     rows: [],
     insertError: null,
+    selectQueue: undefined,
     updateLog: [],
   };
 }
@@ -68,6 +72,14 @@ function createFakeServiceClient(state: FakeDeliveriesState) {
           return builder;
         },
         maybeSingle() {
+          const queuedResult = state.selectQueue?.shift();
+          if (queuedResult !== undefined) {
+            return Promise.resolve({
+              data: queuedResult,
+              error: null,
+            });
+          }
+
           const matchingRow = state.rows.find(
             (row) =>
               row.user_id === eqFilters.user_id &&
@@ -356,8 +368,7 @@ describe("sendAutomatedEmail", () => {
 
   it("treats a unique-key race on a pending row as in flight and does not send twice", async () => {
     const state = createState();
-    // Pre-seed the row another worker would have just created.
-    state.rows.push({
+    const racedRow: FakeDeliveryRow = {
       id: "delivery-race",
       user_id: "user-3",
       email_type: "weekly_recap",
@@ -367,7 +378,10 @@ describe("sendAutomatedEmail", () => {
       error_message: null,
       sent_at: null,
       updated_at: "2026-04-20T13:00:00.000Z",
-    });
+    };
+    // Another worker wins the race after our first read but before our insert.
+    state.rows.push(racedRow);
+    state.selectQueue = [null, racedRow];
     state.insertError = { code: "23505", message: "duplicate key" };
     createServiceClientMock.mockReturnValue(createFakeServiceClient(state));
 
