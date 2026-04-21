@@ -19,7 +19,12 @@ const manrope = Manrope({
   variable: "--font-manrope",
 });
 
+const metadataBase = new URL(
+  process.env.NEXT_PUBLIC_SITE_URL?.trim() || "http://localhost:3000",
+);
+
 export const metadata: Metadata = {
+  metadataBase,
   title: {
     default: "Foliofox - The AI-Powered Portfolio Intelligence Platform",
     template: "%s - Foliofox",

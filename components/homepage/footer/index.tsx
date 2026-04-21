@@ -4,7 +4,9 @@ import { DiscordIcon } from "@/components/ui/logos/discord-icon";
 
 import { PUBLIC_LEGAL_LINKS } from "@/lib/legal/registry";
 
-export function Footer() {
+export async function Footer() {
+  "use cache";
+
   const currentYear = new Date().getFullYear();
 
   return (
