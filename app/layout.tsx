@@ -16,7 +16,7 @@ import "./globals.css";
 
 const manrope = Manrope({
   subsets: ["latin"],
-  variable: "--font-manrope",
+  variable: "--font-sans",
 });
 
 const metadataBase = new URL(
@@ -65,8 +65,12 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${manrope.variable} antialiased`}>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${manrope.variable} antialiased`}
+    >
+      <body>
         <Suspense>
           <PostHogUserProvider>
             <ThemeProvider

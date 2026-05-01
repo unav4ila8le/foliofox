@@ -1,13 +1,12 @@
 @import "tailwindcss";
-@plugin "@tailwindcss/typography";
 
-/*
-  ---break---
-*/
+@plugin "@tailwindcss/typography";
 
 @import "tw-animate-css/prefix";
 
 @import "tw-animate-css";
+
+@import "shadcn/tailwind.css";
 
 /*
   ---break---
@@ -21,27 +20,23 @@
 }
 
 /*
-  The default border color has changed to `currentColor` in Tailwind CSS v4,
-  so we've added these compatibility styles to make sure everything still
-  looks the same as it did with Tailwind CSS v3.
-
-  If we ever want to remove these styles, we need to add an explicit border
-  color utility to any element that depends on these defaults.
+  ---break---
 */
 
 @layer base {
-  *,
-  ::after,
-  ::before,
-  ::backdrop,
-  ::file-selector-button {
-    border-color: var(--color-gray-200, currentColor);
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
   }
 }
 
 body {
-  font-family:
-    var(--font-manrope), system-ui, Helvetica, "Roboto", Arial, sans-serif;
+  font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
   scrollbar-width: thin;
   scrollbar-color: var(--color-border) transparent;
 }
@@ -175,76 +170,15 @@ body {
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --font-heading: var(--font-sans);
+  --font-sans: var(--font-sans);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 /*
-  ---break---
-*/
-
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-}
-
-/*
-  ---break---
+  Streamdown styles
 */
 
 @source "../node_modules/streamdown/dist/*.js";
-
-/*
-  Accordion/Collapsible animation
-*/
-
-@keyframes content-down {
-  from {
-    height: 0;
-  }
-  to {
-    height: var(
-      --radix-collapsible-content-height,
-      var(--radix-accordion-content-height)
-    );
-  }
-}
-
-@keyframes content-up {
-  from {
-    height: var(
-      --radix-collapsible-content-height,
-      var(--radix-accordion-content-height)
-    );
-  }
-  to {
-    height: 0;
-  }
-}
-
-@layer utilities {
-  .animate-accordion-down,
-  .animate-collapsible-down {
-    animation: content-down 0.2s ease-out;
-  }
-
-  .animate-accordion-up,
-  .animate-collapsible-up {
-    animation: content-up 0.2s ease-out;
-  }
-}
-
-/*
-  Override RadixUI scroll-locked behavior
-*/
-
-html body[data-scroll-locked] {
-  overflow: visible !important;
-  margin-right: 0 !important;
-}
-
-/*
-  ---break---
-*/
