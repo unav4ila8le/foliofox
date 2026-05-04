@@ -3,7 +3,10 @@
 import { cache } from "react";
 
 import { fetchPositions } from "@/server/positions/fetch";
-import { fetchDividends } from "@/server/dividends/fetch";
+import {
+  fetchDividends,
+  type FetchDividendsOptions,
+} from "@/server/dividends/fetch";
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 
 import { convertCurrency } from "@/lib/currency-conversion";
@@ -36,6 +39,10 @@ export interface ProjectedIncomeResult {
   data?: ProjectedIncomeData[];
   message?: string;
   currency?: string;
+}
+
+export interface ProjectedIncomeOptions {
+  dividendFetch?: FetchDividendsOptions;
 }
 
 export interface ProjectedIncomeStackedSeries {
@@ -163,6 +170,7 @@ export const calculateProjectedIncome = cache(
     monthsAhead: number = 12,
     context?: PositionsQueryContext,
     asOfDateKey?: CivilDateKey,
+    options: ProjectedIncomeOptions = {},
   ) => {
     try {
       // 1. Resolve analysis day in civil-date semantics.
@@ -195,6 +203,7 @@ export const calculateProjectedIncome = cache(
 
       const dividendsMap = await fetchDividends(
         symbolIds.map((symbolId) => ({ symbolId })),
+        options.dividendFetch,
       );
 
       const projectionBasisBySymbolId = buildProjectionBasisBySymbolId(

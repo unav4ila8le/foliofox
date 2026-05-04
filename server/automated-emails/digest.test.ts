@@ -117,6 +117,11 @@ describe("buildAutomatedEmailDigest", () => {
       2,
       undefined,
       "2026-04-17",
+      {
+        dividendFetch: {
+          refreshMissing: false,
+        },
+      },
     );
 
     expect(result).toMatchObject({

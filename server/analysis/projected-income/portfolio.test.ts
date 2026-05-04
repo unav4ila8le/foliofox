@@ -375,4 +375,36 @@ describe("projected income", () => {
       ),
     ).toBe(true);
   });
+
+  it("passes dividend fetch options and returns empty data when cache has no dividend basis", async () => {
+    const asOfDateKey = toCivilDateKeyOrThrow("2025-01-15");
+
+    fetchPositionsMock.mockResolvedValue([createPosition()]);
+    fetchDividendsMock.mockResolvedValue(new Map());
+
+    const { calculateProjectedIncome } =
+      await import("@/server/analysis/projected-income/portfolio");
+
+    const result = await calculateProjectedIncome(
+      "USD",
+      1,
+      undefined,
+      asOfDateKey,
+      {
+        dividendFetch: {
+          refreshMissing: false,
+        },
+      },
+    );
+
+    expect(fetchDividendsMock).toHaveBeenCalledWith([{ symbolId: "sym-1" }], {
+      refreshMissing: false,
+    });
+    expect(fetchExchangeRatesMock).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      success: true,
+      data: [],
+      message: "No dividend-paying positions found in your portfolio",
+    });
+  });
 });

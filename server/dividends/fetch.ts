@@ -6,20 +6,147 @@ import { v4 as uuidv4 } from "uuid";
 import { yahooFinance } from "@/server/yahoo-finance/client";
 import { createServiceClient } from "@/supabase/service";
 import { resolveSymbolsBatch } from "@/server/symbols/resolve";
+import {
+  extractStatusCode,
+  isTransientError,
+  stringifyError,
+} from "@/server/shared/retry";
 import { formatUTCDateKey } from "@/lib/date/date-utils";
 
 import type { Dividend, DividendEvent } from "@/types/global.types";
 
+export interface FetchDividendsOptions {
+  /**
+   * Write refreshed Yahoo results back to `dividends` and `dividend_events`.
+   * Defaults to true for normal user-facing reads.
+   */
+  upsert?: boolean;
+  /**
+   * Read existing dividend rows before calling Yahoo. Defaults to true.
+   * Use false for on-demand probes that should bypass cached data entirely.
+   */
+  readCache?: boolean;
+  /**
+   * Fetch missing or stale cache entries from Yahoo. Defaults to true.
+   * Use false for cron/email paths where predictable runtime matters more
+   * than refreshing dividend data.
+   */
+  refreshMissing?: boolean;
+}
+
+interface ResolvedFetchDividendsOptions {
+  upsert: boolean;
+  readCache: boolean;
+  refreshMissing: boolean;
+  allowStaleCache: boolean;
+}
+
+interface FetchedDividendResult {
+  symbolId: string;
+  events: DividendEvent[];
+  summary: Dividend | null;
+  shouldUpsert?: boolean;
+}
+
+function resolveFetchDividendsOptions(
+  options: FetchDividendsOptions = {},
+): ResolvedFetchDividendsOptions {
+  const refreshMissing = options.refreshMissing ?? true;
+  const readCache = options.readCache ?? true;
+
+  return {
+    upsert: options.upsert ?? true,
+    readCache,
+    refreshMissing,
+    allowStaleCache: readCache && refreshMissing === false,
+  };
+}
+
+function isTransientDividendProviderError(error: unknown) {
+  const statusCode = extractStatusCode(error);
+  if (statusCode === 408 || statusCode === 429) {
+    return true;
+  }
+
+  return isTransientError(error);
+}
+
+function isKnownNoDividendDataError(error: unknown) {
+  return /no fundamentals data/i.test(stringifyError(error));
+}
+
+function createNoDividendsMarker(symbolId: string): Dividend {
+  const now = new Date().toISOString();
+
+  return {
+    symbol_id: symbolId,
+    forward_annual_dividend: null,
+    trailing_ttm_dividend: null,
+    dividend_yield: null,
+    ex_dividend_date: null,
+    last_dividend_date: null,
+    inferred_frequency: null,
+    pays_dividends: false,
+    dividends_checked_at: now,
+    created_at: now,
+    updated_at: now,
+  };
+}
+
+function resolveLatestDividendEventDate(events: DividendEvent[]) {
+  let latestDate: string | null = null;
+
+  events.forEach((event) => {
+    if (!latestDate || event.event_date > latestDate) {
+      latestDate = event.event_date;
+    }
+  });
+
+  return latestDate;
+}
+
+/**
+ * Reconstruct a lightweight summary when stale cache mode finds event rows
+ * but no matching `dividends` row. This lets cron use known historical data
+ * without refreshing Yahoo during email sending.
+ */
+function createDividendSummaryFromEvents(
+  symbolId: string,
+  events: DividendEvent[],
+): Dividend {
+  const now = new Date().toISOString();
+
+  return {
+    symbol_id: symbolId,
+    forward_annual_dividend: null,
+    trailing_ttm_dividend: null,
+    dividend_yield: null,
+    ex_dividend_date: null,
+    last_dividend_date: resolveLatestDividendEventDate(events),
+    inferred_frequency: detectDividendFrequency(events),
+    pays_dividends: true,
+    dividends_checked_at: now,
+    created_at: now,
+    updated_at: now,
+  };
+}
+
 /**
  * Fetch dividend data for multiple symbols in bulk.
  * @param requests - Array of {symbolId} objects
- * @param upsert - Whether to cache results in database (defaults to true)
+ * @param options - Cache read, provider refresh, and cache write behavior.
+ * Default: read fresh cache, refresh misses/stale entries from Yahoo, then
+ * upsert refreshed results. Cron/email callers pass `{ refreshMissing: false }`
+ * for cache-only reads that may use stale summaries. On-demand probes can pass
+ * `{ upsert: false }` to reuse cache and live-refresh without writing results.
  * @returns Map where key is symbolId and value is {events, summary} objects
  */
 export async function fetchDividends(
   requests: Array<{ symbolId: string }>,
-  upsert: boolean = true,
+  options: FetchDividendsOptions = {},
 ) {
+  const resolvedOptions = resolveFetchDividendsOptions(options);
+
   // Early return if no requests
   if (!requests.length) return new Map();
 
@@ -46,21 +173,23 @@ export async function fetchDividends(
   const eventsBySymbol = new Map<string, DividendEvent[]>();
   const summariesBySymbol = new Map<string, Dividend>();
 
-  if (upsert) {
+  if (resolvedOptions.readCache) {
     const eventsDateThreshold = subYears(new Date(), 3).toISOString();
     const summariesDateThreshold = subDays(new Date(), 7).toISOString();
+    const cachedEventsQuery = supabase
+      .from("dividend_events")
+      .select("*")
+      .in("symbol_id", canonicalIds);
+    const cachedSummariesQuery = supabase
+      .from("dividends")
+      .select("*")
+      .in("symbol_id", canonicalIds);
 
     const [cachedEvents, cachedSummaries] = await Promise.all([
-      supabase
-        .from("dividend_events")
-        .select("*")
-        .in("symbol_id", canonicalIds)
-        .gte("event_date", eventsDateThreshold),
-      supabase
-        .from("dividends")
-        .select("*")
-        .in("symbol_id", canonicalIds)
-        .gte("updated_at", summariesDateThreshold),
+      cachedEventsQuery.gte("event_date", eventsDateThreshold),
+      resolvedOptions.allowStaleCache
+        ? cachedSummariesQuery
+        : cachedSummariesQuery.gte("updated_at", summariesDateThreshold),
     ]);
 
     if (cachedEvents.error) {
@@ -92,21 +221,31 @@ export async function fetchDividends(
       const summary = summariesBySymbol.get(symbolId);
 
       const hasEvents = events.length > 0;
-      const hasSummary = !!summary;
       const isFreshCheck =
         summary?.dividends_checked_at &&
         new Date(summary.dividends_checked_at) >=
           new Date(summariesDateThreshold);
 
-      const isFreshNonPayer = summary?.pays_dividends === false && isFreshCheck;
-      const isFreshPayer =
-        summary?.pays_dividends === true && hasEvents && isFreshCheck;
+      if (resolvedOptions.allowStaleCache) {
+        if (summary) {
+          canonicalResults.set(symbolId, { events, summary });
+          return;
+        }
 
-      if (isFreshPayer || isFreshNonPayer) {
-        canonicalResults.set(symbolId, { events, summary: summary! });
+        if (!summary && hasEvents) {
+          canonicalResults.set(symbolId, {
+            events,
+            summary: createDividendSummaryFromEvents(symbolId, events),
+          });
+        }
       } else {
-        if (!hasEvents && !hasSummary) {
-          // Both missing - this is expected for new symbols
+        const isFreshNonPayer =
+          summary?.pays_dividends === false && isFreshCheck;
+        const isFreshPayer =
+          summary?.pays_dividends === true && hasEvents && isFreshCheck;
+
+        if (isFreshPayer || isFreshNonPayer) {
+          canonicalResults.set(symbolId, { events, summary: summary! });
         }
       }
     });
@@ -116,20 +255,20 @@ export async function fetchDividends(
     (symbolId) => !canonicalResults.has(symbolId),
   );
 
-  if (missingCanonicalIds.length > 0) {
+  if (resolvedOptions.refreshMissing && missingCanonicalIds.length > 0) {
     // 3) Fetch missing dividend data from Yahoo Finance (bulk per canonical symbol)
-    const fetchPromises = missingCanonicalIds.map(async (symbolId) => {
-      const resolution = byCanonicalId.get(symbolId);
-      const yahooTicker = resolution?.providerAlias;
-      if (!yahooTicker) {
-        console.error(
-          `Failed to fetch dividends for ${symbolId}: missing Yahoo ticker alias.`,
-        );
-        return { symbolId, events: [], summary: null as Dividend | null };
-      }
+    const fetchPromises = missingCanonicalIds.map(
+      async (symbolId): Promise<FetchedDividendResult> => {
+        const resolution = byCanonicalId.get(symbolId);
+        const yahooTicker = resolution?.providerAlias;
+        if (!yahooTicker) {
+          console.error(
+            `Failed to fetch dividends for ${symbolId}: missing Yahoo ticker alias.`,
+          );
+          return { symbolId, events: [], summary: null as Dividend | null };
+        }
 
-      try {
-        const [summary, chart] = await Promise.all([
+        const [summaryResult, chartResult] = await Promise.allSettled([
           yahooFinance.quoteSummary(yahooTicker, {
             modules: ["summaryDetail", "calendarEvents"],
           }),
@@ -139,9 +278,22 @@ export async function fetchDividends(
             events: "div",
           }),
         ]);
+        const summary =
+          summaryResult.status === "fulfilled" ? summaryResult.value : null;
+        const chart =
+          chartResult.status === "fulfilled" ? chartResult.value : null;
+        const providerErrors = [summaryResult, chartResult].flatMap((result) =>
+          result.status === "rejected" ? [result.reason] : [],
+        );
+        const hasTransientProviderError = providerErrors.some(
+          isTransientDividendProviderError,
+        );
+        const hasKnownNoDataError = providerErrors.some(
+          isKnownNoDividendDataError,
+        );
 
         const events: DividendEvent[] = [];
-        if (chart.events?.dividends) {
+        if (chart?.events?.dividends) {
           chart.events.dividends.forEach((dividend) => {
             events.push({
               id: uuidv4(),
@@ -156,101 +308,103 @@ export async function fetchDividends(
         }
 
         const inferred_frequency = detectDividendFrequency(events);
-        const last_dividend_date =
-          events.length > 0
-            ? events.sort(
-                (a, b) =>
-                  new Date(b.event_date).getTime() -
-                  new Date(a.event_date).getTime(),
-              )[0].event_date
-            : null;
+        const last_dividend_date = resolveLatestDividendEventDate(events);
 
         const hasDividendData =
-          summary.summaryDetail?.dividendRate ||
-          summary.summaryDetail?.trailingAnnualDividendRate ||
-          summary.summaryDetail?.dividendYield ||
-          (chart.events?.dividends && chart.events.dividends.length > 0);
+          summary?.summaryDetail?.dividendRate ||
+          summary?.summaryDetail?.trailingAnnualDividendRate ||
+          summary?.summaryDetail?.dividendYield ||
+          events.length > 0;
 
         if (hasDividendData) {
+          const now = new Date().toISOString();
           const summaryData: Dividend = {
             symbol_id: symbolId,
             forward_annual_dividend:
-              summary.summaryDetail?.dividendRate || null,
+              summary?.summaryDetail?.dividendRate || null,
             trailing_ttm_dividend:
-              summary.summaryDetail?.trailingAnnualDividendRate || null,
-            dividend_yield: summary.summaryDetail?.dividendYield || null,
-            ex_dividend_date: summary.calendarEvents?.exDividendDate
+              summary?.summaryDetail?.trailingAnnualDividendRate || null,
+            dividend_yield: summary?.summaryDetail?.dividendYield || null,
+            ex_dividend_date: summary?.calendarEvents?.exDividendDate
               ? formatUTCDateKey(summary.calendarEvents.exDividendDate)
               : null,
             last_dividend_date,
             inferred_frequency,
             pays_dividends: true,
-            dividends_checked_at: new Date().toISOString(),
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
+            dividends_checked_at: now,
+            created_at: now,
+            updated_at: now,
           };
 
           return { symbolId, events, summary: summaryData };
         }
 
-        // Avoid overwriting existing payer data if it exists
+        // Avoid overwriting existing payer data if it exists.
         const existingSummary = summariesBySymbol.get(symbolId);
-        const existingHasPayerData =
+        const existingHasPayerData = Boolean(
           existingSummary?.pays_dividends === true ||
           existingSummary?.forward_annual_dividend ||
           existingSummary?.trailing_ttm_dividend ||
           existingSummary?.dividend_yield ||
-          existingSummary?.last_dividend_date;
+          existingSummary?.last_dividend_date,
+        );
 
-        if (existingHasPayerData) {
-          return { symbolId, events, summary: null as Dividend | null };
+        if (existingSummary && existingHasPayerData) {
+          return {
+            symbolId,
+            events: eventsBySymbol.get(symbolId) || [],
+            summary: existingSummary,
+            shouldUpsert: false,
+          };
         }
 
-        const noDividendsMarker: Dividend = {
-          symbol_id: symbolId,
-          forward_annual_dividend: null,
-          trailing_ttm_dividend: null,
-          dividend_yield: null,
-          ex_dividend_date: null,
-          last_dividend_date: null,
-          inferred_frequency: null,
-          pays_dividends: false,
-          dividends_checked_at: new Date().toISOString(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
+        if (
+          hasTransientProviderError ||
+          (providerErrors.length > 0 && !hasKnownNoDataError)
+        ) {
+          console.warn(
+            `Failed to fetch dividends for ${symbolId} (${yahooTicker}):`,
+            providerErrors.map(stringifyError).join("; "),
+          );
+          return { symbolId, events: [], summary: null as Dividend | null };
+        }
 
-        return { symbolId, events, summary: noDividendsMarker };
-      } catch (error) {
-        console.error(
-          `Failed to fetch dividends for ${symbolId} (${yahooTicker}):`,
-          error,
-        );
-        return { symbolId, events: [], summary: null as Dividend | null };
-      }
-    });
+        return {
+          symbolId,
+          events,
+          summary: createNoDividendsMarker(symbolId),
+        };
+      },
+    );
 
     const fetchResults = await Promise.all(fetchPromises);
 
     const allEvents: DividendEvent[] = [];
     const allSummaries: Dividend[] = [];
 
-    fetchResults.forEach(({ symbolId, events, summary }) => {
-      if (events.length > 0) {
+    fetchResults.forEach(({ symbolId, events, summary, shouldUpsert }) => {
+      const shouldUpsertResult = shouldUpsert ?? true;
+
+      if (events.length > 0 && shouldUpsertResult) {
         allEvents.push(...events);
       }
 
       if (summary) {
         canonicalResults.set(symbolId, { events, summary });
-        allSummaries.push(summary);
+        if (shouldUpsertResult) {
+          allSummaries.push(summary);
+        }
       }
     });
 
-    if (upsert) {
+    if (resolvedOptions.upsert) {
       // Sort by PK components to avoid lock-order deadlocks
       allEvents.sort((a, b) => {
         if (a.symbol_id === b.symbol_id) {
-          return a.event_date.localeCompare(b.event_date);
+          if (a.event_date === b.event_date) {
+            return 0;
+          }
+          return a.event_date < b.event_date ? -1 : 1;
         }
         return a.symbol_id.localeCompare(b.symbol_id);
       });
@@ -307,10 +461,12 @@ function detectDividendFrequency(events: DividendEvent[]): string {
   if (events.length < 2) return "irregular";
 
   // Sort events by date
-  const sortedEvents = events.sort(
-    (a, b) =>
-      new Date(a.event_date).getTime() - new Date(b.event_date).getTime(),
-  );
+  const sortedEvents = events.slice().sort((a, b) => {
+    if (a.event_date === b.event_date) {
+      return 0;
+    }
+    return a.event_date < b.event_date ? -1 : 1;
+  });
 
   // Calculate gaps between payments in months
   const gaps = sortedEvents.reduce((acc, curr, i) => {

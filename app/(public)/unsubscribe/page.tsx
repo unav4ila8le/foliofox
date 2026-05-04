@@ -28,18 +28,20 @@ function UnsubscribeCard({
   ctaHref: string;
 }) {
   return (
-    <Card className="mx-auto my-8 max-w-xl">
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
+    <div className="mx-auto my-8 max-w-xl p-3">
+      <Card className="rounded-lg shadow-xs">
+        <CardHeader>
+          <CardTitle>{title}</CardTitle>
+          <CardDescription>{description}</CardDescription>
+        </CardHeader>
 
-      <CardFooter>
-        <Button asChild>
-          <Link href={ctaHref}>{ctaLabel}</Link>
-        </Button>
-      </CardFooter>
-    </Card>
+        <CardFooter>
+          <Button asChild>
+            <Link href={ctaHref}>{ctaLabel}</Link>
+          </Button>
+        </CardFooter>
+      </Card>
+    </div>
   );
 }
 
