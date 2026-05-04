@@ -148,6 +148,48 @@ describe("getTopMovers", () => {
     expect(result.topByAbs.losers.map((l) => l.asset.id)).toEqual(["p-down"]);
   });
 
+  it("returns empty lists for non-positive or fractional limits", async () => {
+    mockPerfWithAssets([
+      { id: "g-1", symbol: "GA", priceReturnPct: 5, valueChangeAbs: 50 },
+      { id: "l-1", symbol: "LA", priceReturnPct: -5, valueChangeAbs: -50 },
+      { id: "l-2", symbol: "LB", priceReturnPct: -10, valueChangeAbs: -100 },
+    ]);
+
+    for (const limitInput of [0, -3, 0.4]) {
+      const result = await getTopMovers({
+        baseCurrency: "USD",
+        startDate: "2026-04-27",
+        endDate: "2026-05-04",
+        limit: limitInput,
+      });
+
+      expect(result.topByPct.gainers).toEqual([]);
+      expect(result.topByPct.losers).toEqual([]);
+      expect(result.topByAbs.gainers).toEqual([]);
+      expect(result.topByAbs.losers).toEqual([]);
+    }
+  });
+
+  it("truncates fractional limits before slicing", async () => {
+    mockPerfWithAssets([
+      { id: "g-1", symbol: "GA", priceReturnPct: 12, valueChangeAbs: 120 },
+      { id: "g-2", symbol: "GB", priceReturnPct: 8, valueChangeAbs: 80 },
+      { id: "g-3", symbol: "GC", priceReturnPct: 4, valueChangeAbs: 40 },
+    ]);
+
+    const result = await getTopMovers({
+      baseCurrency: "USD",
+      startDate: "2026-04-27",
+      endDate: "2026-05-04",
+      limit: 2.9,
+    });
+
+    expect(result.topByPct.gainers.map((g) => g.asset.id)).toEqual([
+      "g-1",
+      "g-2",
+    ]);
+  });
+
   it("orders gainers descending and losers most-negative first, capping at limit", async () => {
     mockPerfWithAssets([
       { id: "g-1", symbol: "GA", priceReturnPct: 12, valueChangeAbs: 120 },
