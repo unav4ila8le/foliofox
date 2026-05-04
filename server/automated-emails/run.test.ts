@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const buildAutomatedEmailDigestMock = vi.fn();
 const sendAutomatedEmailMock = vi.fn();
+const sendAutomatedEmailBatchMock = vi.fn();
 const isAutomatedEmailDeliveryAlreadySentMock = vi.fn();
 const fetchRecipientEmailsByUserIdMock = vi.fn();
 const createAutomatedEmailSenderMock = vi.fn();
@@ -16,6 +17,7 @@ vi.mock("@/server/automated-emails/digest", () => ({
 
 vi.mock("@/server/automated-emails/deliveries", () => ({
   sendAutomatedEmail: sendAutomatedEmailMock,
+  sendAutomatedEmailBatch: sendAutomatedEmailBatchMock,
   isAutomatedEmailDeliveryAlreadySent: isAutomatedEmailDeliveryAlreadySentMock,
 }));
 
@@ -120,6 +122,7 @@ describe("runAutomatedEmailCron", () => {
 
     buildAutomatedEmailDigestMock.mockReset();
     sendAutomatedEmailMock.mockReset();
+    sendAutomatedEmailBatchMock.mockReset();
     isAutomatedEmailDeliveryAlreadySentMock.mockReset();
     fetchRecipientEmailsByUserIdMock.mockReset();
     createAutomatedEmailSenderMock.mockReset();
@@ -129,6 +132,7 @@ describe("runAutomatedEmailCron", () => {
     createServiceClientMock.mockReset();
 
     isAutomatedEmailDeliveryAlreadySentMock.mockResolvedValue(false);
+    sendAutomatedEmailBatchMock.mockResolvedValue([]);
     createAutomatedEmailSenderMock.mockReturnValue({
       sendEmail: vi.fn(),
     });
@@ -300,12 +304,14 @@ describe("runAutomatedEmailCron", () => {
       },
     });
 
-    sendAutomatedEmailMock.mockResolvedValue({
-      success: true,
-      skipped: false,
-      deliveryRecordId: "delivery-1",
-      providerMessageId: "provider-1",
-    });
+    sendAutomatedEmailBatchMock.mockResolvedValue([
+      {
+        success: true,
+        skipped: false,
+        deliveryRecordId: "delivery-1",
+        providerMessageId: "provider-1",
+      },
+    ]);
 
     const { runAutomatedEmailCron } = await import("./run");
     const result = await runAutomatedEmailCron(
@@ -331,12 +337,17 @@ describe("runAutomatedEmailCron", () => {
         profile: expect.objectContaining({ user_id: "user-due" }),
       }),
     );
-    expect(sendAutomatedEmailMock).toHaveBeenCalledTimes(1);
-    expect(sendAutomatedEmailMock).toHaveBeenCalledWith(
+    expect(sendAutomatedEmailMock).not.toHaveBeenCalled();
+    expect(sendAutomatedEmailBatchMock).toHaveBeenCalledTimes(1);
+    expect(sendAutomatedEmailBatchMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        userId: "user-due",
-        emailType: "weekly_recap",
-        deliveryKey: "weekly:2026-04-20",
+        items: [
+          expect.objectContaining({
+            userId: "user-due",
+            emailType: "weekly_recap",
+            deliveryKey: "weekly:2026-04-20",
+          }),
+        ],
       }),
     );
   });
@@ -390,6 +401,9 @@ describe("runAutomatedEmailCron", () => {
     expect(result.stats.skippedNoActivePositions).toBe(1);
     expect(result.stats.sent).toBe(0);
     expect(sendAutomatedEmailMock).not.toHaveBeenCalled();
+    expect(sendAutomatedEmailBatchMock).toHaveBeenCalledWith(
+      expect.objectContaining({ items: [] }),
+    );
     expect(buildWeeklyRecapEmailTemplateMock).not.toHaveBeenCalled();
   });
 
@@ -436,5 +450,8 @@ describe("runAutomatedEmailCron", () => {
     expect(result.stats.sent).toBe(0);
     expect(buildAutomatedEmailDigestMock).not.toHaveBeenCalled();
     expect(sendAutomatedEmailMock).not.toHaveBeenCalled();
+    expect(sendAutomatedEmailBatchMock).toHaveBeenCalledWith(
+      expect.objectContaining({ items: [] }),
+    );
   });
 });

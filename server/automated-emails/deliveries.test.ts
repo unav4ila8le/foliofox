@@ -472,4 +472,77 @@ describe("sendAutomatedEmail", () => {
       providerMessageId: "provider-reclaimed",
     });
   });
+
+  it("sends multiple claimed deliveries through one provider batch call", async () => {
+    const state = createState();
+    createServiceClientMock.mockReturnValue(createFakeServiceClient(state));
+
+    const sendEmail = vi.fn();
+    const sendEmailBatch = vi.fn().mockResolvedValue({
+      provider: "resend",
+      messageIds: ["provider-batch-1", "provider-batch-2"],
+    });
+
+    const { sendAutomatedEmailBatch } = await import("./deliveries");
+    const results = await sendAutomatedEmailBatch({
+      sender: { sendEmail, sendEmailBatch },
+      items: [
+        {
+          userId: "user-1",
+          emailType: "weekly_recap",
+          deliveryKey: "weekly:2026-04-20",
+          message: {
+            from: "from@test",
+            to: "one@test",
+            subject: "One",
+            html: "<p>One</p>",
+          },
+        },
+        {
+          userId: "user-2",
+          emailType: "weekly_recap",
+          deliveryKey: "weekly:2026-04-20",
+          message: {
+            from: "from@test",
+            to: "two@test",
+            subject: "Two",
+            html: "<p>Two</p>",
+          },
+        },
+      ],
+    });
+
+    expect(sendEmail).not.toHaveBeenCalled();
+    expect(sendEmailBatch).toHaveBeenCalledTimes(1);
+    expect(sendEmailBatch).toHaveBeenCalledWith([
+      expect.objectContaining({ to: "one@test", subject: "One" }),
+      expect.objectContaining({ to: "two@test", subject: "Two" }),
+    ]);
+
+    expect(state.rows).toHaveLength(2);
+    expect(state.rows[0]).toMatchObject({
+      user_id: "user-1",
+      status: "sent",
+      provider_message_id: "provider-batch-1",
+    });
+    expect(state.rows[1]).toMatchObject({
+      user_id: "user-2",
+      status: "sent",
+      provider_message_id: "provider-batch-2",
+    });
+    expect(results).toEqual([
+      {
+        success: true,
+        skipped: false,
+        deliveryRecordId: state.rows[0].id,
+        providerMessageId: "provider-batch-1",
+      },
+      {
+        success: true,
+        skipped: false,
+        deliveryRecordId: state.rows[1].id,
+        providerMessageId: "provider-batch-2",
+      },
+    ]);
+  });
 });

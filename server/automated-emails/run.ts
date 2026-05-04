@@ -5,7 +5,7 @@ import { createServiceClient } from "@/supabase/service";
 import { buildAutomatedEmailDigest } from "@/server/automated-emails/digest";
 import {
   isAutomatedEmailDeliveryAlreadySent,
-  sendAutomatedEmail,
+  sendAutomatedEmailBatch,
 } from "@/server/automated-emails/deliveries";
 import { fetchRecipientEmailsByUserId } from "@/server/automated-emails/recipient-emails";
 import { createAutomatedEmailSender } from "@/server/automated-emails/sender";
@@ -67,6 +67,36 @@ interface DueAutomatedEmailJob {
   emailType: "weekly_recap" | "reengagement";
   deliveryKey: string;
 }
+
+type PreparedAutomatedEmailJobResult =
+  | {
+      ready: true;
+      input: {
+        userId: string;
+        emailType: "weekly_recap" | "reengagement";
+        deliveryKey: string;
+        message: {
+          from: string;
+          to: string;
+          subject: string;
+          html: string;
+          text: string;
+        };
+      };
+    }
+  | {
+      ready: false;
+      result:
+        | {
+            success: true;
+            skipped: true;
+            reason: "already_sent" | "no_active_positions" | "no_email_address";
+          }
+        | {
+            success: false;
+            errorMessage: string;
+          };
+    };
 
 export interface AutomatedEmailCronStats {
   enabled: boolean;
@@ -287,18 +317,16 @@ function buildDueAutomatedEmailJobs(params: {
 }
 
 /**
- * End-to-end processing for a single due job: dedupe, build the digest,
- * render the matching template, and persist the delivery via
- * `sendAutomatedEmail`. Returns a discriminated result the orchestrator maps
- * into stats counters.
+ * Prepare one due job for delivery: dedupe, build the digest, and render the
+ * matching template. Provider sending happens once per prepared batch so the
+ * cron does not burst past Resend's request rate limit.
  */
-async function processAutomatedEmailJob(params: {
+async function prepareAutomatedEmailJob(params: {
   job: DueAutomatedEmailJob;
   recipientEmail: string;
   fromAddress: string;
-  sender: ReturnType<typeof createAutomatedEmailSender>;
-}) {
-  const { fromAddress, job, recipientEmail, sender } = params;
+}): Promise<PreparedAutomatedEmailJobResult> {
+  const { fromAddress, job, recipientEmail } = params;
 
   // 1. Short-circuit before any heavy work when this user has already received
   // the email for the current local window (e.g. a same-hour cron retry).
@@ -310,9 +338,12 @@ async function processAutomatedEmailJob(params: {
 
   if (alreadySent) {
     return {
-      success: true as const,
-      skipped: true as const,
-      reason: "already_sent",
+      ready: false as const,
+      result: {
+        success: true as const,
+        skipped: true as const,
+        reason: "already_sent" as const,
+      },
     };
   }
 
@@ -333,9 +364,12 @@ async function processAutomatedEmailJob(params: {
 
   if (!digestResult.eligible) {
     return {
-      success: true as const,
-      skipped: true as const,
-      reason: "no_active_positions",
+      ready: false as const,
+      result: {
+        success: true as const,
+        skipped: true as const,
+        reason: "no_active_positions" as const,
+      },
     };
   }
 
@@ -352,19 +386,21 @@ async function processAutomatedEmailJob(params: {
           digest: digestResult.digest,
         });
 
-  return sendAutomatedEmail({
-    userId: job.userId,
-    emailType: job.emailType,
-    deliveryKey: job.deliveryKey,
-    sender,
-    message: {
-      from: fromAddress,
-      to: recipientEmail,
-      subject: renderedTemplate.subject,
-      html: renderedTemplate.html,
-      text: renderedTemplate.text,
+  return {
+    ready: true as const,
+    input: {
+      userId: job.userId,
+      emailType: job.emailType,
+      deliveryKey: job.deliveryKey,
+      message: {
+        from: fromAddress,
+        to: recipientEmail,
+        subject: renderedTemplate.subject,
+        html: renderedTemplate.html,
+        text: renderedTemplate.text,
+      },
     },
-  });
+  };
 }
 
 /**
@@ -435,34 +471,52 @@ export async function runAutomatedEmailCron(
       jobBatch.map((job) => job.userId),
     );
 
-    const batchResults = await Promise.all(
+    const preparedBatchResults = await Promise.all(
       jobBatch.map(async (job) => {
         const recipientEmail = recipientEmailsByUserId.get(job.userId);
 
         if (!recipientEmail) {
           return {
-            success: true as const,
-            skipped: true as const,
-            reason: "no_email_address",
+            ready: false as const,
+            result: {
+              success: true as const,
+              skipped: true as const,
+              reason: "no_email_address" as const,
+            },
           };
         }
 
         try {
-          return await processAutomatedEmailJob({
+          return await prepareAutomatedEmailJob({
             job,
             recipientEmail,
             fromAddress,
-            sender,
           });
         } catch (error) {
           return {
-            success: false as const,
-            errorMessage:
-              error instanceof Error ? error.message : "Unknown send error",
+            ready: false as const,
+            result: {
+              success: false as const,
+              errorMessage:
+                error instanceof Error ? error.message : "Unknown send error",
+            },
           };
         }
       }),
     );
+    const sendInputs = preparedBatchResults.flatMap((preparedBatchResult) =>
+      preparedBatchResult.ready ? [preparedBatchResult.input] : [],
+    );
+    const sendResults = await sendAutomatedEmailBatch({
+      items: sendInputs,
+      sender,
+    });
+    const batchResults = [
+      ...preparedBatchResults.flatMap((preparedBatchResult) =>
+        preparedBatchResult.ready ? [] : [preparedBatchResult.result],
+      ),
+      ...sendResults,
+    ];
 
     batchResults.forEach((batchResult) => {
       if (batchResult.success && batchResult.skipped) {
