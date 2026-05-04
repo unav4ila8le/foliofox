@@ -45,11 +45,28 @@ export async function getTopMovers(params: GetTopMoversParams) {
     partialPeriod: a.period.partialPeriod,
   });
 
-  const gainersByPct = byPct.slice(0, limit).map(mapItem);
-  const losersByPct = byPct.slice(-limit).reverse().map(mapItem);
+  // Filter by sign before slicing so gainers and losers never overlap and
+  // never include flat or wrong-sign assets, even when the portfolio has
+  // fewer than `limit` assets or all assets moved the same direction.
+  const gainersByPct = byPct
+    .filter((a) => a.performance.priceReturnPct > 0)
+    .slice(0, limit)
+    .map(mapItem);
+  const losersByPct = byPct
+    .filter((a) => a.performance.priceReturnPct < 0)
+    .slice(-limit)
+    .reverse()
+    .map(mapItem);
 
-  const gainersByAbs = byAbs.slice(0, limit).map(mapItem);
-  const losersByAbs = byAbs.slice(-limit).reverse().map(mapItem);
+  const gainersByAbs = byAbs
+    .filter((a) => a.performance.valueChangeAbs > 0)
+    .slice(0, limit)
+    .map(mapItem);
+  const losersByAbs = byAbs
+    .filter((a) => a.performance.valueChangeAbs < 0)
+    .slice(-limit)
+    .reverse()
+    .map(mapItem);
 
   const partialCount = assets.reduce(
     (acc, a) => acc + (a.period.partialPeriod ? 1 : 0),
