@@ -131,6 +131,33 @@ function createDividendSummaryFromEvents(
   };
 }
 
+function resolveExistingPayerDividendResult(params: {
+  symbolId: string;
+  eventsBySymbol: Map<string, DividendEvent[]>;
+  summariesBySymbol: Map<string, Dividend>;
+}): FetchedDividendResult | null {
+  const { eventsBySymbol, summariesBySymbol, symbolId } = params;
+  const existingSummary = summariesBySymbol.get(symbolId);
+  const existingHasPayerData = Boolean(
+    existingSummary?.pays_dividends === true ||
+    existingSummary?.forward_annual_dividend ||
+    existingSummary?.trailing_ttm_dividend ||
+    existingSummary?.dividend_yield ||
+    existingSummary?.last_dividend_date,
+  );
+
+  if (!existingSummary || !existingHasPayerData) {
+    return null;
+  }
+
+  return {
+    symbolId,
+    events: eventsBySymbol.get(symbolId) || [],
+    summary: existingSummary,
+    shouldUpsert: false,
+  };
+}
+
 /**
  * Fetch dividend data for multiple symbols in bulk.
  * @param requests - Array of {symbolId} objects
@@ -268,112 +295,119 @@ export async function fetchDividends(
           return { symbolId, events: [], summary: null as Dividend | null };
         }
 
-        const [summaryResult, chartResult] = await Promise.allSettled([
-          yahooFinance.quoteSummary(yahooTicker, {
-            modules: ["summaryDetail", "calendarEvents"],
-          }),
-          yahooFinance.chart(yahooTicker, {
-            period1: subYears(new Date(), 3),
-            period2: new Date(),
-            events: "div",
-          }),
-        ]);
-        const summary =
-          summaryResult.status === "fulfilled" ? summaryResult.value : null;
-        const chart =
-          chartResult.status === "fulfilled" ? chartResult.value : null;
-        const providerErrors = [summaryResult, chartResult].flatMap((result) =>
-          result.status === "rejected" ? [result.reason] : [],
-        );
-        const hasTransientProviderError = providerErrors.some(
-          isTransientDividendProviderError,
-        );
-        const hasKnownNoDataError = providerErrors.some(
-          isKnownNoDividendDataError,
-        );
+        try {
+          const [summaryResult, chartResult] = await Promise.allSettled([
+            yahooFinance.quoteSummary(yahooTicker, {
+              modules: ["summaryDetail", "calendarEvents"],
+            }),
+            yahooFinance.chart(yahooTicker, {
+              period1: subYears(new Date(), 3),
+              period2: new Date(),
+              events: "div",
+            }),
+          ]);
+          const summary =
+            summaryResult.status === "fulfilled" ? summaryResult.value : null;
+          const chart =
+            chartResult.status === "fulfilled" ? chartResult.value : null;
+          const providerErrors = [summaryResult, chartResult].flatMap(
+            (result) => (result.status === "rejected" ? [result.reason] : []),
+          );
+          const hasTransientProviderError = providerErrors.some(
+            isTransientDividendProviderError,
+          );
+          const hasKnownNoDataError = providerErrors.some(
+            isKnownNoDividendDataError,
+          );
 
-        const events: DividendEvent[] = [];
-        if (chart?.events?.dividends) {
-          chart.events.dividends.forEach((dividend) => {
-            events.push({
-              id: uuidv4(),
-              symbol_id: symbolId,
-              event_date: formatUTCDateKey(dividend.date),
-              gross_amount: dividend.amount,
-              currency: chart.meta.currency || "USD",
-              source: "yahoo",
-              created_at: new Date().toISOString(),
+          const events: DividendEvent[] = [];
+          if (chart?.events?.dividends) {
+            chart.events.dividends.forEach((dividend) => {
+              events.push({
+                id: uuidv4(),
+                symbol_id: symbolId,
+                event_date: formatUTCDateKey(dividend.date),
+                gross_amount: dividend.amount,
+                currency: chart.meta.currency || "USD",
+                source: "yahoo",
+                created_at: new Date().toISOString(),
+              });
             });
+          }
+
+          const inferred_frequency = detectDividendFrequency(events);
+          const last_dividend_date = resolveLatestDividendEventDate(events);
+
+          const hasDividendData =
+            summary?.summaryDetail?.dividendRate ||
+            summary?.summaryDetail?.trailingAnnualDividendRate ||
+            summary?.summaryDetail?.dividendYield ||
+            events.length > 0;
+
+          if (hasDividendData) {
+            const now = new Date().toISOString();
+            const summaryData: Dividend = {
+              symbol_id: symbolId,
+              forward_annual_dividend:
+                summary?.summaryDetail?.dividendRate || null,
+              trailing_ttm_dividend:
+                summary?.summaryDetail?.trailingAnnualDividendRate || null,
+              dividend_yield: summary?.summaryDetail?.dividendYield || null,
+              ex_dividend_date: summary?.calendarEvents?.exDividendDate
+                ? formatUTCDateKey(summary.calendarEvents.exDividendDate)
+                : null,
+              last_dividend_date,
+              inferred_frequency,
+              pays_dividends: true,
+              dividends_checked_at: now,
+              created_at: now,
+              updated_at: now,
+            };
+
+            return { symbolId, events, summary: summaryData };
+          }
+
+          // Avoid overwriting existing payer data if it exists.
+          const existingPayerResult = resolveExistingPayerDividendResult({
+            symbolId,
+            eventsBySymbol,
+            summariesBySymbol,
           });
-        }
 
-        const inferred_frequency = detectDividendFrequency(events);
-        const last_dividend_date = resolveLatestDividendEventDate(events);
+          if (existingPayerResult) {
+            return existingPayerResult;
+          }
 
-        const hasDividendData =
-          summary?.summaryDetail?.dividendRate ||
-          summary?.summaryDetail?.trailingAnnualDividendRate ||
-          summary?.summaryDetail?.dividendYield ||
-          events.length > 0;
+          if (
+            hasTransientProviderError ||
+            (providerErrors.length > 0 && !hasKnownNoDataError)
+          ) {
+            console.warn(
+              `Failed to fetch dividends for ${symbolId} (${yahooTicker}):`,
+              providerErrors.map(stringifyError).join("; "),
+            );
+            return { symbolId, events: [], summary: null as Dividend | null };
+          }
 
-        if (hasDividendData) {
-          const now = new Date().toISOString();
-          const summaryData: Dividend = {
-            symbol_id: symbolId,
-            forward_annual_dividend:
-              summary?.summaryDetail?.dividendRate || null,
-            trailing_ttm_dividend:
-              summary?.summaryDetail?.trailingAnnualDividendRate || null,
-            dividend_yield: summary?.summaryDetail?.dividendYield || null,
-            ex_dividend_date: summary?.calendarEvents?.exDividendDate
-              ? formatUTCDateKey(summary.calendarEvents.exDividendDate)
-              : null,
-            last_dividend_date,
-            inferred_frequency,
-            pays_dividends: true,
-            dividends_checked_at: now,
-            created_at: now,
-            updated_at: now,
-          };
-
-          return { symbolId, events, summary: summaryData };
-        }
-
-        // Avoid overwriting existing payer data if it exists.
-        const existingSummary = summariesBySymbol.get(symbolId);
-        const existingHasPayerData = Boolean(
-          existingSummary?.pays_dividends === true ||
-          existingSummary?.forward_annual_dividend ||
-          existingSummary?.trailing_ttm_dividend ||
-          existingSummary?.dividend_yield ||
-          existingSummary?.last_dividend_date,
-        );
-
-        if (existingSummary && existingHasPayerData) {
           return {
             symbolId,
-            events: eventsBySymbol.get(symbolId) || [],
-            summary: existingSummary,
-            shouldUpsert: false,
+            events,
+            summary: createNoDividendsMarker(symbolId),
           };
-        }
-
-        if (
-          hasTransientProviderError ||
-          (providerErrors.length > 0 && !hasKnownNoDataError)
-        ) {
+        } catch (error) {
           console.warn(
-            `Failed to fetch dividends for ${symbolId} (${yahooTicker}):`,
-            providerErrors.map(stringifyError).join("; "),
+            `Failed to parse dividends for ${symbolId} (${yahooTicker}):`,
+            error,
           );
-          return { symbolId, events: [], summary: null as Dividend | null };
-        }
 
-        return {
-          symbolId,
-          events,
-          summary: createNoDividendsMarker(symbolId),
-        };
+          return (
+            resolveExistingPayerDividendResult({
+              symbolId,
+              eventsBySymbol,
+              summariesBySymbol,
+            }) ?? { symbolId, events: [], summary: null as Dividend | null }
+          );
+        }
       },
     );
 

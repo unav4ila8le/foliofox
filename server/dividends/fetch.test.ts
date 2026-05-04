@@ -145,6 +145,22 @@ function mockResolvedSymbol() {
   });
 }
 
+function mockResolvedSymbols(
+  symbols: Array<{ input: string; canonicalId: string; providerAlias: string }>,
+) {
+  resolveSymbolsBatchMock.mockResolvedValue({
+    byInput: new Map(
+      symbols.map(({ canonicalId, input }) => [input, { canonicalId }]),
+    ),
+    byCanonicalId: new Map(
+      symbols.map(({ canonicalId, providerAlias }) => [
+        canonicalId,
+        { providerAlias },
+      ]),
+    ),
+  });
+}
+
 describe("fetchDividends", () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -390,5 +406,72 @@ describe("fetchDividends", () => {
         last_dividend_date: "2025-12-15",
       }),
     );
+  });
+
+  it("does not fail the whole batch when one Yahoo dividend payload is malformed", async () => {
+    mockResolvedSymbols([
+      {
+        input: "sym-bad",
+        canonicalId: "sym-bad",
+        providerAlias: "BAD",
+      },
+      {
+        input: "sym-good",
+        canonicalId: "sym-good",
+        providerAlias: "GOOD",
+      },
+    ]);
+    const state: FakeDividendState = {
+      events: [],
+      summaries: [],
+      upserts: [],
+    };
+    createServiceClientMock.mockReturnValue(createFakeServiceClient(state));
+    yahooQuoteSummaryMock.mockRejectedValue(
+      new Error("No fundamentals data found for symbol"),
+    );
+    yahooChartMock
+      .mockResolvedValueOnce({
+        events: {
+          dividends: [
+            {
+              date: "not-a-date",
+              amount: 1,
+            },
+          ],
+        },
+        meta: { currency: "USD" },
+      })
+      .mockResolvedValueOnce({
+        events: {
+          dividends: [
+            {
+              date: new Date("2025-12-15T00:00:00.000Z"),
+              amount: 1.25,
+            },
+          ],
+        },
+        meta: { currency: "USD" },
+      });
+
+    const { fetchDividends } = await import("./fetch");
+    const result = await fetchDividends([
+      { symbolId: "sym-bad" },
+      { symbolId: "sym-good" },
+    ]);
+
+    expect(result.has("sym-bad")).toBe(false);
+    expect(result.get("sym-good")?.summary).toEqual(
+      expect.objectContaining({
+        symbol_id: "sym-good",
+        pays_dividends: true,
+        last_dividend_date: "2025-12-15",
+      }),
+    );
+    expect(
+      state.upserts
+        .find((upsert) => upsert.table === "dividends")
+        ?.payload.map((summary) => (summary as Dividend).symbol_id),
+    ).toEqual(["sym-good"]);
   });
 });
