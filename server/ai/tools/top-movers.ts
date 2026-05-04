@@ -15,7 +15,9 @@ interface GetTopMoversParams {
 }
 
 export async function getTopMovers(params: GetTopMoversParams) {
-  const limit = params.limit ?? 5;
+  // Clamp to a non-negative integer so callers passing 0, a negative value,
+  // or a fractional limit can't trigger `slice(-0)` returning every asset.
+  const limit = Math.max(0, Math.trunc(params.limit ?? 5));
 
   const perf = await getAssetsPerformance({
     baseCurrency: params.baseCurrency,
@@ -45,11 +47,30 @@ export async function getTopMovers(params: GetTopMoversParams) {
     partialPeriod: a.period.partialPeriod,
   });
 
-  const gainersByPct = byPct.slice(0, limit).map(mapItem);
-  const losersByPct = byPct.slice(-limit).reverse().map(mapItem);
+  // Filter by sign before slicing so gainers and losers never overlap and
+  // never include flat or wrong-sign assets, even when the portfolio has
+  // fewer than `limit` assets or all assets moved the same direction.
+  // Losers reverse the sort first so a `limit` of 0 still produces an empty
+  // list (avoiding the `slice(-0)` "return everything" trap).
+  const gainersByPct = byPct
+    .filter((a) => a.performance.priceReturnPct > 0)
+    .slice(0, limit)
+    .map(mapItem);
+  const losersByPct = byPct
+    .filter((a) => a.performance.priceReturnPct < 0)
+    .reverse()
+    .slice(0, limit)
+    .map(mapItem);
 
-  const gainersByAbs = byAbs.slice(0, limit).map(mapItem);
-  const losersByAbs = byAbs.slice(-limit).reverse().map(mapItem);
+  const gainersByAbs = byAbs
+    .filter((a) => a.performance.valueChangeAbs > 0)
+    .slice(0, limit)
+    .map(mapItem);
+  const losersByAbs = byAbs
+    .filter((a) => a.performance.valueChangeAbs < 0)
+    .reverse()
+    .slice(0, limit)
+    .map(mapItem);
 
   const partialCount = assets.reduce(
     (acc, a) => acc + (a.period.partialPeriod ? 1 : 0),

@@ -98,6 +98,20 @@ type PreparedAutomatedEmailJobResult =
           };
     };
 
+interface AutomatedEmailCronTimingsMs {
+  total: number;
+  loadCandidates: number;
+  scheduleEvaluation: number;
+  recipientLookup: number;
+  digestAndTemplatePreparation: number;
+  providerSend: number;
+}
+
+type AutomatedEmailCronTimingKey = Exclude<
+  keyof AutomatedEmailCronTimingsMs,
+  "total"
+>;
+
 export interface AutomatedEmailCronStats {
   enabled: boolean;
   now: string;
@@ -116,6 +130,7 @@ export interface AutomatedEmailCronStats {
   failed: number;
   batchCount: number;
   missingEnvVars: string[];
+  timingsMs: AutomatedEmailCronTimingsMs;
 }
 
 interface RunAutomatedEmailCronResult {
@@ -143,6 +158,43 @@ function resolveMissingAutomatedEmailEnvVars() {
   });
 }
 
+function createEmptyTimings(): AutomatedEmailCronTimingsMs {
+  return {
+    total: 0,
+    loadCandidates: 0,
+    scheduleEvaluation: 0,
+    recipientLookup: 0,
+    digestAndTemplatePreparation: 0,
+    providerSend: 0,
+  };
+}
+
+function resolveElapsedMs(startedAtMs: number) {
+  return Math.round((performance.now() - startedAtMs) * 100) / 100;
+}
+
+async function measureCronTiming<T>(params: {
+  stats: AutomatedEmailCronStats;
+  key: AutomatedEmailCronTimingKey;
+  operation: () => Promise<T>;
+}) {
+  const startedAtMs = performance.now();
+
+  try {
+    return await params.operation();
+  } finally {
+    params.stats.timingsMs[params.key] += resolveElapsedMs(startedAtMs);
+  }
+}
+
+function finalizeCronStats(
+  stats: AutomatedEmailCronStats,
+  cronStartedAtMs: number,
+) {
+  stats.timingsMs.total = resolveElapsedMs(cronStartedAtMs);
+  return stats;
+}
+
 function createBaseStats(
   now: Date,
   missingEnvVars: string[],
@@ -165,6 +217,7 @@ function createBaseStats(
     failed: 0,
     batchCount: 0,
     missingEnvVars,
+    timingsMs: createEmptyTimings(),
   };
 }
 
@@ -410,6 +463,7 @@ async function prepareAutomatedEmailJob(params: {
 export async function runAutomatedEmailCron(
   now: Date = new Date(),
 ): Promise<RunAutomatedEmailCronResult> {
+  const cronStartedAtMs = performance.now();
   const missingEnvVars = resolveMissingAutomatedEmailEnvVars();
   const baseStats = createBaseStats(now, missingEnvVars);
 
@@ -417,7 +471,7 @@ export async function runAutomatedEmailCron(
     return {
       success: true,
       message: "Automated emails are disabled",
-      stats: baseStats,
+      stats: finalizeCronStats(baseStats, cronStartedAtMs),
     };
   }
 
@@ -425,7 +479,7 @@ export async function runAutomatedEmailCron(
     return {
       success: true,
       message: "Automated emails skipped because configuration is incomplete",
-      stats: baseStats,
+      stats: finalizeCronStats(baseStats, cronStartedAtMs),
     };
   }
 
@@ -434,31 +488,40 @@ export async function runAutomatedEmailCron(
     return {
       success: true,
       message: "Automated emails skipped because configuration is incomplete",
-      stats: baseStats,
+      stats: finalizeCronStats(baseStats, cronStartedAtMs),
     };
   }
 
-  const [candidates, lastReengagementSentAtByUserId] = await Promise.all([
-    fetchAutomatedEmailCandidates(),
-    fetchRecentReengagementDeliveries(now),
-  ]);
-
-  const stats = {
-    ...baseStats,
-    scannedUsers: candidates.length,
-  };
-  const dueJobs = buildDueAutomatedEmailJobs({
-    candidates,
-    lastReengagementSentAtByUserId,
-    now,
+  const stats = baseStats;
+  const [candidates, lastReengagementSentAtByUserId] = await measureCronTiming({
     stats,
+    key: "loadCandidates",
+    operation: () =>
+      Promise.all([
+        fetchAutomatedEmailCandidates(),
+        fetchRecentReengagementDeliveries(now),
+      ]),
+  });
+
+  stats.scannedUsers = candidates.length;
+
+  const dueJobs = await measureCronTiming({
+    stats,
+    key: "scheduleEvaluation",
+    operation: async () =>
+      buildDueAutomatedEmailJobs({
+        candidates,
+        lastReengagementSentAtByUserId,
+        now,
+        stats,
+      }),
   });
 
   if (dueJobs.length === 0) {
     return {
       success: true,
       message: "No automated emails were due",
-      stats,
+      stats: finalizeCronStats(stats, cronStartedAtMs),
     };
   }
 
@@ -467,49 +530,64 @@ export async function runAutomatedEmailCron(
   for (const jobBatch of chunkArray(dueJobs, AUTOMATED_EMAIL_BATCH_SIZE)) {
     stats.batchCount += 1;
 
-    const recipientEmailsByUserId = await fetchRecipientEmailsByUserId(
-      jobBatch.map((job) => job.userId),
-    );
+    const recipientEmailsByUserId = await measureCronTiming({
+      stats,
+      key: "recipientLookup",
+      operation: () =>
+        fetchRecipientEmailsByUserId(jobBatch.map((job) => job.userId)),
+    });
 
-    const preparedBatchResults = await Promise.all(
-      jobBatch.map(async (job) => {
-        const recipientEmail = recipientEmailsByUserId.get(job.userId);
+    const preparedBatchResults = await measureCronTiming({
+      stats,
+      key: "digestAndTemplatePreparation",
+      operation: () =>
+        Promise.all(
+          jobBatch.map(async (job) => {
+            const recipientEmail = recipientEmailsByUserId.get(job.userId);
 
-        if (!recipientEmail) {
-          return {
-            ready: false as const,
-            result: {
-              success: true as const,
-              skipped: true as const,
-              reason: "no_email_address" as const,
-            },
-          };
-        }
+            if (!recipientEmail) {
+              return {
+                ready: false as const,
+                result: {
+                  success: true as const,
+                  skipped: true as const,
+                  reason: "no_email_address" as const,
+                },
+              };
+            }
 
-        try {
-          return await prepareAutomatedEmailJob({
-            job,
-            recipientEmail,
-            fromAddress,
-          });
-        } catch (error) {
-          return {
-            ready: false as const,
-            result: {
-              success: false as const,
-              errorMessage:
-                error instanceof Error ? error.message : "Unknown send error",
-            },
-          };
-        }
-      }),
-    );
+            try {
+              return await prepareAutomatedEmailJob({
+                job,
+                recipientEmail,
+                fromAddress,
+              });
+            } catch (error) {
+              return {
+                ready: false as const,
+                result: {
+                  success: false as const,
+                  errorMessage:
+                    error instanceof Error
+                      ? error.message
+                      : "Unknown send error",
+                },
+              };
+            }
+          }),
+        ),
+    });
     const sendInputs = preparedBatchResults.flatMap((preparedBatchResult) =>
       preparedBatchResult.ready ? [preparedBatchResult.input] : [],
     );
-    const sendResults = await sendAutomatedEmailBatch({
-      items: sendInputs,
-      sender,
+    const sendResults = await measureCronTiming({
+      stats,
+      key: "providerSend",
+      operation: () =>
+        sendAutomatedEmailBatch({
+          items: sendInputs,
+          sender,
+        }),
     });
     const batchResults = [
       ...preparedBatchResults.flatMap((preparedBatchResult) =>
@@ -552,6 +630,6 @@ export async function runAutomatedEmailCron(
       stats.failed > 0
         ? "Automated email cron completed with partial failures"
         : "Automated email cron completed",
-    stats,
+    stats: finalizeCronStats(stats, cronStartedAtMs),
   };
 }

@@ -116,6 +116,26 @@ function clearAutomatedEmailEnvVars() {
   delete process.env.NEXT_PUBLIC_SITE_URL;
 }
 
+function expectCronTimings(stats: {
+  timingsMs?: {
+    total: unknown;
+    loadCandidates: unknown;
+    scheduleEvaluation: unknown;
+    recipientLookup: unknown;
+    digestAndTemplatePreparation: unknown;
+    providerSend: unknown;
+  };
+}) {
+  expect(stats.timingsMs).toEqual({
+    total: expect.any(Number),
+    loadCandidates: expect.any(Number),
+    scheduleEvaluation: expect.any(Number),
+    recipientLookup: expect.any(Number),
+    digestAndTemplatePreparation: expect.any(Number),
+    providerSend: expect.any(Number),
+  });
+}
+
 describe("runAutomatedEmailCron", () => {
   beforeEach(() => {
     clearAutomatedEmailEnvVars();
@@ -155,6 +175,7 @@ describe("runAutomatedEmailCron", () => {
     expect(result.message).toBe("Automated emails are disabled");
     expect(result.stats.enabled).toBe(false);
     expect(result.stats.scannedUsers).toBe(0);
+    expectCronTimings(result.stats);
     expect(createServiceClientMock).not.toHaveBeenCalled();
     expect(sendAutomatedEmailMock).not.toHaveBeenCalled();
   });
@@ -180,8 +201,53 @@ describe("runAutomatedEmailCron", () => {
         "NEXT_PUBLIC_SITE_URL",
       ]),
     );
+    expectCronTimings(result.stats);
     expect(createServiceClientMock).not.toHaveBeenCalled();
     expect(sendAutomatedEmailMock).not.toHaveBeenCalled();
+  });
+
+  it("returns timing stats when no users are due", async () => {
+    setRequiredAutomatedEmailEnvVars();
+
+    createServiceClientMock.mockReturnValue(
+      createFakeServiceClient({
+        candidateRows: [
+          {
+            user_id: "user-not-due",
+            weekly_recap_enabled: true,
+            marketing_emails_enabled: true,
+            profiles: {
+              user_id: "user-not-due",
+              username: "Not Due",
+              display_currency: "USD",
+              time_zone: "America/New_York",
+              last_app_activity_at: null,
+            },
+          },
+        ],
+        recentReengagementRows: [],
+      }),
+    );
+    evaluateAutomatedEmailScheduleMock.mockReturnValue({
+      weeklyRecapDue: false,
+      reengagementDue: false,
+      selectedEmailType: null,
+      deliveryKey: null,
+      localDateKey: "2026-04-20",
+      localHour: 13,
+    });
+
+    const { runAutomatedEmailCron } = await import("./run");
+    const result = await runAutomatedEmailCron(
+      new Date("2026-04-20T13:00:00.000Z"),
+    );
+
+    expect(result.message).toBe("No automated emails were due");
+    expect(result.stats.scannedUsers).toBe(1);
+    expect(result.stats.dueUsers).toBe(0);
+    expectCronTimings(result.stats);
+    expect(fetchRecipientEmailsByUserIdMock).not.toHaveBeenCalled();
+    expect(sendAutomatedEmailBatchMock).not.toHaveBeenCalled();
   });
 
   it("sends a weekly recap and short-circuits already-sent users before building the digest", async () => {
@@ -327,6 +393,7 @@ describe("runAutomatedEmailCron", () => {
     expect(result.stats.skippedAlreadySent).toBe(1);
     expect(result.stats.failed).toBe(0);
     expect(result.stats.batchCount).toBe(1);
+    expectCronTimings(result.stats);
 
     // Already-sent user must not trigger digest construction or template
     // rendering — the early dedupe check should skip them entirely.

@@ -188,11 +188,18 @@ export async function buildAutomatedEmailDigest(
         todayDateKey: asOfDateKey,
         positionsQueryContext: input.positionsQueryContext,
       }),
+      // Cron path: never block email sending on Yahoo dividend refreshes.
+      // Projected income is omitted when the cache has no dividend basis.
       calculateProjectedIncome(
         input.profile.display_currency,
         projectedIncomeMonthsAhead,
         input.positionsQueryContext,
         asOfDateKey,
+        {
+          dividendFetch: {
+            refreshMissing: false,
+          },
+        },
       ),
     ]);
 

@@ -35,11 +35,11 @@ export interface RetryOptions {
   onRetry?: (context: RetryAttemptContext) => void;
 }
 
-function isObjectLike(value: unknown): value is Record<string, unknown> {
+export function isObjectLike(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-function extractStatusCode(error: unknown): number | null {
+export function extractStatusCode(error: unknown): number | null {
   if (!isObjectLike(error)) return null;
 
   // Support both `status` (Fetch-style) and `statusCode` (Node/client libs).
@@ -52,7 +52,7 @@ function extractStatusCode(error: unknown): number | null {
   return null;
 }
 
-function stringifyError(error: unknown): string {
+export function stringifyError(error: unknown): string {
   if (error instanceof Error) return error.message;
   if (typeof error === "string") return error;
   if (isObjectLike(error) && typeof error.message === "string") {

@@ -24,8 +24,11 @@ export async function calculateSymbolDividendYield(symbolLookup: string) {
   const displayTicker =
     ensuredSymbol.primaryAlias?.value ?? ensuredSymbol.symbol.ticker ?? input;
 
-  // 2) Attempt to reuse cached dividend data when available
-  const dividendsMap = await fetchDividends([{ symbolId: canonicalId }], false);
+  // 2) Reuse cached dividend data when present, but do not seed the cache from
+  // an on-demand yield probe.
+  const dividendsMap = await fetchDividends([{ symbolId: canonicalId }], {
+    upsert: false,
+  });
   const entry = dividendsMap.get(canonicalId);
 
   if (!entry || !entry.summary || entry.summary.pays_dividends === false) {
