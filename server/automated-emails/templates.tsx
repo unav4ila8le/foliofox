@@ -1,6 +1,6 @@
 "use server";
 
-import { render } from "@react-email/render";
+import { render } from "react-email";
 import type { ReactElement } from "react";
 
 import ReengagementEmail from "@/emails/re-engagement";

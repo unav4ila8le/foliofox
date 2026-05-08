@@ -11,7 +11,7 @@ import {
   Preview,
   Section,
   Text,
-} from "@react-email/components";
+} from "react-email";
 
 import type { ReactNode } from "react";
 
