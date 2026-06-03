@@ -135,6 +135,7 @@ export async function postProcessExtractedPositions(
   const {
     positions: normalizedPositions,
     warnings: normalizationWarnings,
+    errors: normalizationErrors,
     symbolValidationResults,
   } = await normalizePositionsArray(initial);
 
@@ -143,6 +144,7 @@ export async function postProcessExtractedPositions(
     normalizedPositions,
     symbolValidationResults,
   );
+  const errors = [...normalizationErrors, ...validationErrors];
 
   // Map raw warnings and merge with normalization warnings
   const warnRaw = obj.warnings ?? [];
@@ -160,13 +162,13 @@ export async function postProcessExtractedPositions(
     (c) => c.alphabetic_code,
   );
 
-  if (validationErrors.length > 0) {
+  if (errors.length > 0) {
     // Validation failed: return parsed positions alongside errors so user can review/fix
     return {
       success: false,
       positions: normalizedPositions,
       warnings: mergedWarnings.length ? mergedWarnings : undefined,
-      errors: validationErrors,
+      errors,
       symbolValidation,
       supportedCurrencies,
     };

@@ -7,7 +7,6 @@ describe("normalizeProviderQuoteUnit", () => {
     ["GBp", "GBP", 0.01],
     ["GBX", "GBP", 0.01],
     ["KWF", "KWD", 0.001],
-    ["USX", "USD", 0.01],
   ])("normalizes provider quote unit %s", (quoteCurrency, currency, rate) => {
     const result = normalizeProviderQuoteUnit(quoteCurrency);
 

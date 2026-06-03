@@ -259,6 +259,36 @@ National Bank of Kuwait,100,KWF,838,800,NBK.KW`;
     );
   });
 
+  it("should reject quote-unit amounts when the symbol resolves to a different currency", async () => {
+    validateSymbolsBatchMock.mockResolvedValue({
+      valid: true,
+      results: new Map([
+        [
+          "AAPL",
+          {
+            valid: true,
+            normalized: "AAPL",
+            currency: "USD",
+          },
+        ],
+      ]),
+      errors: [],
+    });
+
+    const csv = `name,quantity,currency,unit_value,cost_basis_per_unit,symbol
+Wrong symbol,10,GBp,524.4,500,AAPL`;
+
+    const result = await parsePositionsCSV(csv);
+
+    expect(result.success).toBe(false);
+    expect(result.positions[0].currency).toBe("GBp");
+    expect(result.positions[0].unit_value).toBe(524.4);
+    expect(result.positions[0].cost_basis_per_unit).toBe(500);
+    expect(result.errors?.[0]).toBe(
+      'Row 1: Quote unit GBp normalizes to GBP, but symbol lookup "AAPL" uses USD. Check the symbol or currency column before importing.',
+    );
+  });
+
   it("should return validation error for invalid capital gains tax rate", async () => {
     const csv = `name,quantity,currency,unit_value,capital_gains_tax_rate
 Apple Inc,10,USD,120,120`;

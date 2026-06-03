@@ -2,6 +2,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { normalizeQuoteToCurrencyRate } from "@/server/market-data/quote-units";
 import { chunkArray } from "@/server/shared/chunk-array";
 import { normalizeSymbol } from "@/server/symbols/validate";
 import { createServiceClient } from "@/supabase/service";
@@ -611,16 +612,12 @@ async function fetchSymbolMetadataById(
     }
 
     data?.forEach((symbolRow) => {
-      const quoteToCurrencyRate =
-        Number.isFinite(symbolRow.quote_to_currency_rate) &&
-        symbolRow.quote_to_currency_rate > 0
-          ? symbolRow.quote_to_currency_rate
-          : 1;
-
       metadataBySymbolId.set(symbolRow.id, {
         ticker: symbolRow.ticker,
         currency: symbolRow.currency,
-        quoteToCurrencyRate,
+        quoteToCurrencyRate: normalizeQuoteToCurrencyRate(
+          symbolRow.quote_to_currency_rate,
+        ),
       });
     });
   }

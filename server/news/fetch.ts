@@ -23,6 +23,11 @@ type EnrichedNewsArticle = NewsArticle & {
   related_symbols: Array<{ id: string; ticker: string | null }>;
 };
 
+type NewsSymbolMetadata = {
+  providerAlias: string;
+  displayTicker: string | null;
+};
+
 // Cache duration: 30 minutes
 const CACHE_DURATION_MS = 30 * 60 * 1000;
 
@@ -62,7 +67,15 @@ export async function fetchNewsForSymbols(
     const canonicalIdSet = new Set(canonicalIds);
 
     // Start with batch-resolved metadata, then extend as we discover related symbols
-    const canonicalMeta = new Map(byCanonicalId);
+    const canonicalMeta = new Map<string, NewsSymbolMetadata>(
+      Array.from(byCanonicalId, ([canonicalId, meta]) => [
+        canonicalId,
+        {
+          providerAlias: meta.providerAlias,
+          displayTicker: meta.displayTicker,
+        },
+      ]),
+    );
 
     const supabase = createServiceClient();
     const cacheThreshold = new Date(Date.now() - CACHE_DURATION_MS);
@@ -159,8 +172,6 @@ export async function fetchNewsForSymbols(
                 canonicalMeta.set(existingResolution.canonicalId, {
                   providerAlias: existingResolution.providerAlias,
                   displayTicker: existingResolution.displayTicker,
-                  currency: existingResolution.currency,
-                  quoteToCurrencyRate: existingResolution.quoteToCurrencyRate,
                 });
               }
               continue;
@@ -177,8 +188,6 @@ export async function fetchNewsForSymbols(
                   canonicalMeta.set(cached.canonicalId, {
                     providerAlias: cached.displayTicker,
                     displayTicker: cached.displayTicker,
-                    currency: "USD",
-                    quoteToCurrencyRate: 1,
                   });
                 }
               }
@@ -201,8 +210,6 @@ export async function fetchNewsForSymbols(
                 canonicalMeta.set(relatedCanonical, {
                   providerAlias: relatedDisplayTicker ?? trimmed,
                   displayTicker: relatedDisplayTicker,
-                  currency: relatedResolved?.symbol?.currency ?? "USD",
-                  quoteToCurrencyRate: 1,
                 });
               }
             }

@@ -17,24 +17,34 @@ function scaleNullableAmount(
   return amount == null ? null : amount * quoteToCurrencyRate;
 }
 
+type SymbolBackedQuoteUnitNormalization =
+  | { status: "not_applicable" }
+  | { status: "normalized"; warning: string }
+  | { status: "mismatched_quote_unit"; error: string };
+
 function normalizeSymbolBackedQuoteUnit(
   position: PositionImportRow,
   symbolCurrency: string,
-): { normalized: boolean; warning?: string } {
+  rowNumber: number,
+): SymbolBackedQuoteUnitNormalization {
   // Broker exports can use provider quote units for listed securities
   // (GBX/GBp pence, KWF fils). If the symbol confirms the matching ISO
   // accounting currency, scale per-unit amounts before validation/persistence.
   const quoteUnit = normalizeProviderQuoteUnit(position.currency);
 
   if (!quoteUnit.success) {
-    return { normalized: false };
+    return { status: "not_applicable" };
   }
 
-  if (
-    quoteUnit.data.currency !== symbolCurrency ||
-    quoteUnit.data.quoteToCurrencyRate === 1
-  ) {
-    return { normalized: false };
+  if (quoteUnit.data.quoteToCurrencyRate === 1) {
+    return { status: "not_applicable" };
+  }
+
+  if (quoteUnit.data.currency !== symbolCurrency) {
+    return {
+      status: "mismatched_quote_unit",
+      error: `Row ${rowNumber}: Quote unit ${position.currency} normalizes to ${quoteUnit.data.currency}, but symbol lookup "${position.symbolLookup}" uses ${symbolCurrency}. Check the symbol or currency column before importing.`,
+    };
   }
 
   const originalCurrency = position.currency;
@@ -64,7 +74,7 @@ function normalizeSymbolBackedQuoteUnit(
       : "";
 
   return {
-    normalized: true,
+    status: "normalized",
     warning: `Normalized quote unit ${originalCurrency} for ${position.symbolLookup} to ${symbolCurrency}${scaledSuffix}`,
   };
 }
@@ -146,9 +156,11 @@ export async function normalizePositionsArray(
 ): Promise<{
   positions: PositionImportRow[];
   warnings: string[];
+  errors: string[];
   symbolValidationResults?: Map<string, SymbolValidationResult>;
 }> {
   const warnings: string[] = [];
+  const errors: string[] = [];
 
   // Clone rows to avoid mutating input
   const cloned = rows.map((h) => ({ ...h }));
@@ -179,12 +191,12 @@ export async function normalizePositionsArray(
     .map((r) => (r.symbolLookup || "").trim())
     .filter(Boolean);
   if (symbols.length === 0) {
-    return { positions: cloned, warnings };
+    return { positions: cloned, warnings, errors };
   }
 
   const batch = await validateSymbolsBatch(symbols);
 
-  cloned.forEach((h) => {
+  cloned.forEach((h, index) => {
     if (!h.symbolLookup) return;
     const v = batch.results.get(h.symbolLookup);
     if (!v) return;
@@ -193,12 +205,16 @@ export async function normalizePositionsArray(
       const quoteUnitNormalization = normalizeSymbolBackedQuoteUnit(
         h,
         v.currency,
+        index + 1,
       );
 
-      if (quoteUnitNormalization.normalized) {
-        if (quoteUnitNormalization.warning) {
-          warnings.push(quoteUnitNormalization.warning);
-        }
+      if (quoteUnitNormalization.status === "normalized") {
+        warnings.push(quoteUnitNormalization.warning);
+      } else if (quoteUnitNormalization.status === "mismatched_quote_unit") {
+        // Do not rewrite the row when a quote unit points at a different ISO
+        // currency than the symbol. Keeping the original input visible prevents
+        // pence/fils amounts from being treated as an unrelated major currency.
+        errors.push(quoteUnitNormalization.error);
       } else {
         warnings.push(
           `Adjusted accounting currency for ${h.symbolLookup} from ${h.currency} to ${v.currency}`,
@@ -216,6 +232,7 @@ export async function normalizePositionsArray(
   return {
     positions: cloned,
     warnings,
+    errors,
     symbolValidationResults: batch.results,
   };
 }

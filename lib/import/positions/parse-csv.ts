@@ -238,6 +238,7 @@ export async function parsePositionsCSV(
     const {
       positions: normalizedPositions,
       warnings,
+      errors: normalizationErrors,
       symbolValidationResults,
     } = await normalizePositionsArray(parsedPositions);
 
@@ -246,19 +247,20 @@ export async function parsePositionsCSV(
       normalizedPositions,
       symbolValidationResults,
     );
+    const errors = [...normalizationErrors, ...validationErrors];
 
     // Convert Map to Record for JSON-friendly shape
     const symbolValidation = symbolValidationResults
       ? Object.fromEntries(symbolValidationResults)
       : undefined;
 
-    if (validationErrors.length > 0) {
+    if (errors.length > 0) {
       // Validation failed: return parsed positions alongside errors so user can review/fix
       return {
         success: false,
         positions: normalizedPositions,
         warnings: warnings && warnings.length ? warnings : undefined,
-        errors: validationErrors,
+        errors,
         symbolValidation,
         supportedCurrencies,
       };

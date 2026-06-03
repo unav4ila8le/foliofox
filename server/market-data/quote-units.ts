@@ -25,7 +25,6 @@ const QUOTE_UNIT_OVERRIDES: Record<
   GBp: { currency: "GBP", quoteToCurrencyRate: 0.01 },
   GBX: { currency: "GBP", quoteToCurrencyRate: 0.01 },
   KWF: { currency: "KWD", quoteToCurrencyRate: 0.001 },
-  USX: { currency: "USD", quoteToCurrencyRate: 0.01 },
 };
 
 const ISO_CURRENCY_PATTERN = /^[A-Z]{3}$/;
