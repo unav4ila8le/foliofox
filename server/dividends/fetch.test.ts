@@ -140,23 +140,52 @@ function createFakeServiceClient(state: FakeDividendState) {
 
 function mockResolvedSymbol() {
   resolveSymbolsBatchMock.mockResolvedValue({
-    byInput: new Map([["sym-1", { canonicalId: "sym-1" }]]),
-    byCanonicalId: new Map([["sym-1", { providerAlias: "TEST" }]]),
+    byInput: new Map([
+      [
+        "sym-1",
+        { canonicalId: "sym-1", currency: "USD", quoteToCurrencyRate: 1 },
+      ],
+    ]),
+    byCanonicalId: new Map([
+      [
+        "sym-1",
+        { providerAlias: "TEST", currency: "USD", quoteToCurrencyRate: 1 },
+      ],
+    ]),
   });
 }
 
 function mockResolvedSymbols(
-  symbols: Array<{ input: string; canonicalId: string; providerAlias: string }>,
+  symbols: Array<{
+    input: string;
+    canonicalId: string;
+    providerAlias: string;
+    currency?: string;
+    quoteToCurrencyRate?: number;
+  }>,
 ) {
   resolveSymbolsBatchMock.mockResolvedValue({
     byInput: new Map(
-      symbols.map(({ canonicalId, input }) => [input, { canonicalId }]),
+      symbols.map(({ canonicalId, currency, input, quoteToCurrencyRate }) => [
+        input,
+        {
+          canonicalId,
+          currency: currency ?? "USD",
+          quoteToCurrencyRate: quoteToCurrencyRate ?? 1,
+        },
+      ]),
     ),
     byCanonicalId: new Map(
-      symbols.map(({ canonicalId, providerAlias }) => [
-        canonicalId,
-        { providerAlias },
-      ]),
+      symbols.map(
+        ({ canonicalId, currency, providerAlias, quoteToCurrencyRate }) => [
+          canonicalId,
+          {
+            providerAlias,
+            currency: currency ?? "USD",
+            quoteToCurrencyRate: quoteToCurrencyRate ?? 1,
+          },
+        ],
+      ),
     ),
   });
 }
@@ -405,6 +434,140 @@ describe("fetchDividends", () => {
         pays_dividends: true,
         last_dividend_date: "2025-12-15",
       }),
+    );
+  });
+
+  it("normalizes UK chart dividend event amounts to GBP", async () => {
+    mockResolvedSymbols([
+      {
+        input: "bp-symbol",
+        canonicalId: "bp-symbol",
+        providerAlias: "BP.L",
+        currency: "GBP",
+        quoteToCurrencyRate: 0.01,
+      },
+    ]);
+    const state: FakeDividendState = {
+      events: [],
+      summaries: [],
+      upserts: [],
+    };
+    createServiceClientMock.mockReturnValue(createFakeServiceClient(state));
+    yahooQuoteSummaryMock.mockRejectedValue(
+      new Error("No fundamentals data found for symbol: BP.L"),
+    );
+    yahooChartMock.mockResolvedValue({
+      events: {
+        dividends: [
+          {
+            date: new Date("2025-12-15T00:00:00.000Z"),
+            amount: 6.1780996,
+          },
+        ],
+      },
+      meta: { currency: "GBp" },
+    });
+
+    const { fetchDividends } = await import("./fetch");
+    const result = await fetchDividends([{ symbolId: "bp-symbol" }]);
+    const event = result.get("bp-symbol")?.events[0];
+
+    expect(event?.currency).toBe("GBP");
+    expect(event?.gross_amount).toBeCloseTo(0.061780996, 10);
+
+    const eventUpsert = state.upserts.find(
+      (upsert) => upsert.table === "dividend_events",
+    );
+    const payloadEvent = eventUpsert?.payload[0] as DividendEvent | undefined;
+    expect(payloadEvent?.currency).toBe("GBP");
+    expect(payloadEvent?.gross_amount).toBeCloseTo(0.061780996, 10);
+  });
+
+  it("normalizes Kuwait chart dividend event amounts to KWD", async () => {
+    mockResolvedSymbols([
+      {
+        input: "nbk-symbol",
+        canonicalId: "nbk-symbol",
+        providerAlias: "NBK.KW",
+        currency: "KWD",
+        quoteToCurrencyRate: 0.001,
+      },
+    ]);
+    const state: FakeDividendState = {
+      events: [],
+      summaries: [],
+      upserts: [],
+    };
+    createServiceClientMock.mockReturnValue(createFakeServiceClient(state));
+    yahooQuoteSummaryMock.mockRejectedValue(
+      new Error("No fundamentals data found for symbol: NBK.KW"),
+    );
+    yahooChartMock.mockResolvedValue({
+      events: {
+        dividends: [
+          {
+            date: new Date("2025-12-15T00:00:00.000Z"),
+            amount: 35,
+          },
+        ],
+      },
+      meta: { currency: "KWF" },
+    });
+
+    const { fetchDividends } = await import("./fetch");
+    const result = await fetchDividends([{ symbolId: "nbk-symbol" }]);
+    const event = result.get("nbk-symbol")?.events[0];
+
+    expect(event?.currency).toBe("KWD");
+    expect(event?.gross_amount).toBeCloseTo(0.035, 10);
+  });
+
+  it("does not quote-unit scale summary dividend amounts", async () => {
+    mockResolvedSymbols([
+      {
+        input: "bp-symbol",
+        canonicalId: "bp-symbol",
+        providerAlias: "BP.L",
+        currency: "GBP",
+        quoteToCurrencyRate: 0.01,
+      },
+    ]);
+    const state: FakeDividendState = {
+      events: [],
+      summaries: [],
+      upserts: [],
+    };
+    createServiceClientMock.mockReturnValue(createFakeServiceClient(state));
+    yahooQuoteSummaryMock.mockResolvedValue({
+      summaryDetail: {
+        dividendRate: 1.2,
+        trailingAnnualDividendRate: 1.1,
+        dividendYield: 0.04,
+      },
+      calendarEvents: {},
+    });
+    yahooChartMock.mockResolvedValue({
+      events: {
+        dividends: [
+          {
+            date: new Date("2025-12-15T00:00:00.000Z"),
+            amount: 6.1780996,
+          },
+        ],
+      },
+      meta: { currency: "GBp" },
+    });
+
+    const { fetchDividends } = await import("./fetch");
+    const result = await fetchDividends([{ symbolId: "bp-symbol" }]);
+    const summary = result.get("bp-symbol")?.summary;
+
+    expect(summary?.forward_annual_dividend).toBe(1.2);
+    expect(summary?.trailing_ttm_dividend).toBe(1.1);
+    expect(summary?.dividend_yield).toBe(0.04);
+    expect(result.get("bp-symbol")?.events[0]?.gross_amount).toBeCloseTo(
+      0.061780996,
+      10,
     );
   });
 

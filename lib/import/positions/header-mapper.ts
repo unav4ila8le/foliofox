@@ -119,7 +119,8 @@ const POSITION_HEADER_ALIASES: Record<PositionCanonicalHeader, string[]> = {
     "cgt rate",
   ],
 
-  // Currency code (ISO 4217 where possible)
+  // Position accounting currency. Symbol-backed imports may arrive with broker
+  // quote units such as GBX/GBp/KWF; normalization converts those to ISO.
   currency: [
     "currency",
     "ccy",

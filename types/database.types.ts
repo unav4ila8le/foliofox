@@ -946,6 +946,8 @@ export type Database = {
           industry: string | null
           last_quote_at: string | null
           long_name: string | null
+          quote_currency: string
+          quote_to_currency_rate: number
           quote_type: string
           sector: string | null
           short_name: string | null
@@ -960,6 +962,8 @@ export type Database = {
           industry?: string | null
           last_quote_at?: string | null
           long_name?: string | null
+          quote_currency?: string
+          quote_to_currency_rate?: number
           quote_type: string
           sector?: string | null
           short_name?: string | null
@@ -974,6 +978,8 @@ export type Database = {
           industry?: string | null
           last_quote_at?: string | null
           long_name?: string | null
+          quote_currency?: string
+          quote_to_currency_rate?: number
           quote_type?: string
           sector?: string | null
           short_name?: string | null

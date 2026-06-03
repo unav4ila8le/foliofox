@@ -312,8 +312,8 @@ export function ReviewForm({
                       <Info className="size-4" />
                     </TooltipTrigger>
                     <TooltipContent>
-                      Currency is automatically set to the currency of the
-                      symbol if a symbol is provided.
+                      Symbol-backed rows use the symbol&apos;s normalized ISO
+                      accounting currency.
                     </TooltipContent>
                   </Tooltip>
                 </span>
@@ -328,8 +328,8 @@ export function ReviewForm({
                     </TooltipTrigger>
                     <TooltipContent>
                       Unit value is required unless symbol is provided. For
-                      assets with symbol, the unit value will be fetched from
-                      the market.
+                      symbols using a recognized quote unit, imported amounts
+                      are scaled into the ISO currency.
                     </TooltipContent>
                   </Tooltip>
                 </span>

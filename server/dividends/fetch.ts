@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 
 import { yahooFinance } from "@/server/yahoo-finance/client";
 import { createServiceClient } from "@/supabase/service";
+import { normalizeQuoteToCurrencyRate } from "@/server/market-data/quote-units";
 import { resolveSymbolsBatch } from "@/server/symbols/resolve";
 import {
   extractStatusCode,
@@ -287,13 +288,18 @@ export async function fetchDividends(
     const fetchPromises = missingCanonicalIds.map(
       async (symbolId): Promise<FetchedDividendResult> => {
         const resolution = byCanonicalId.get(symbolId);
-        const yahooTicker = resolution?.providerAlias;
-        if (!yahooTicker) {
+        if (!resolution?.providerAlias) {
           console.error(
             `Failed to fetch dividends for ${symbolId}: missing Yahoo ticker alias.`,
           );
           return { symbolId, events: [], summary: null as Dividend | null };
         }
+
+        const yahooTicker = resolution.providerAlias;
+        const dividendCurrency = resolution.currency;
+        const quoteToCurrencyRate = normalizeQuoteToCurrencyRate(
+          resolution.quoteToCurrencyRate,
+        );
 
         try {
           const [summaryResult, chartResult] = await Promise.allSettled([
@@ -323,12 +329,16 @@ export async function fetchDividends(
           const events: DividendEvent[] = [];
           if (chart?.events?.dividends) {
             chart.events.dividends.forEach((dividend) => {
+              // Yahoo chart dividend amounts use the same provider quote unit
+              // as chart prices. The symbol row already stores the normalized
+              // ISO currency and multiplier, so cache dividend events in that
+              // accounting currency instead of leaking GBp/KWF-style units.
               events.push({
                 id: uuidv4(),
                 symbol_id: symbolId,
                 event_date: formatUTCDateKey(dividend.date),
-                gross_amount: dividend.amount,
-                currency: chart.meta.currency || "USD",
+                gross_amount: dividend.amount * quoteToCurrencyRate,
+                currency: dividendCurrency,
                 source: "yahoo",
                 created_at: new Date().toISOString(),
               });
@@ -346,6 +356,9 @@ export async function fetchDividends(
 
           if (hasDividendData) {
             const now = new Date().toISOString();
+            // Do not quote-unit scale summaryDetail dividend amounts here.
+            // Yahoo's summary fields are independent from chart events and can
+            // already be reported as major-currency annual values.
             const summaryData: Dividend = {
               symbol_id: symbolId,
               forward_annual_dividend:

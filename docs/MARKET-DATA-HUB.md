@@ -13,6 +13,11 @@
 
 - No extra database "hub" table is required. Reads use identifiers already stored on `positions`.
 
+- Currency reference data remains ISO-only. Provider quote units such as GBp,
+  GBX, and KWF are decoded at symbol-ingestion time and persisted on
+  `symbols.quote_currency` / `symbols.quote_to_currency_rate`; market-data
+  handlers should store normalized ISO-currency values in downstream caches.
+
 - Registry-based operations route by handler source:
 
 ```ts

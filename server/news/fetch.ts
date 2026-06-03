@@ -23,6 +23,11 @@ type EnrichedNewsArticle = NewsArticle & {
   related_symbols: Array<{ id: string; ticker: string | null }>;
 };
 
+type NewsSymbolMetadata = {
+  providerAlias: string;
+  displayTicker: string | null;
+};
+
 // Cache duration: 30 minutes
 const CACHE_DURATION_MS = 30 * 60 * 1000;
 
@@ -62,7 +67,15 @@ export async function fetchNewsForSymbols(
     const canonicalIdSet = new Set(canonicalIds);
 
     // Start with batch-resolved metadata, then extend as we discover related symbols
-    const canonicalMeta = new Map(byCanonicalId);
+    const canonicalMeta = new Map<string, NewsSymbolMetadata>(
+      Array.from(byCanonicalId, ([canonicalId, meta]) => [
+        canonicalId,
+        {
+          providerAlias: meta.providerAlias,
+          displayTicker: meta.displayTicker,
+        },
+      ]),
+    );
 
     const supabase = createServiceClient();
     const cacheThreshold = new Date(Date.now() - CACHE_DURATION_MS);
@@ -306,17 +319,12 @@ export async function fetchNewsForSymbols(
     );
 
     const canonicalIdToTicker = new Map<string, string>();
-    canonicalMeta.forEach(
-      (
-        meta: { providerAlias: string; displayTicker: string | null },
-        canonicalId: string,
-      ) => {
-        const ticker = meta.displayTicker ?? meta.providerAlias;
-        if (ticker) {
-          canonicalIdToTicker.set(canonicalId, ticker);
-        }
-      },
-    );
+    canonicalMeta.forEach((meta, canonicalId) => {
+      const ticker = meta.displayTicker ?? meta.providerAlias;
+      if (ticker) {
+        canonicalIdToTicker.set(canonicalId, ticker);
+      }
+    });
 
     const enrichedArticles = uniqueArticles.map((article) => ({
       ...article,

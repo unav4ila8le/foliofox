@@ -45,7 +45,9 @@ export async function createSymbol(symbolTicker: string) {
     };
   }
 
-  // 3) Insert/update symbol metadata and fetch canonical row
+  // 3) Insert/update symbol metadata and fetch canonical row. The Yahoo fetcher
+  // already returns a DB insert payload with normalized ISO currency plus the
+  // original provider quote unit and multiplier.
   const { data: upsertedSymbol, error: upsertError } = await supabase
     .from("symbols")
     .upsert(symbolData, { onConflict: "ticker" })

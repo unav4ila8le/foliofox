@@ -52,3 +52,6 @@ supabase/.temp/
 supabase/config.toml
 supabase/.branches/
 supabase/snippets/
+
+# temporary files
+*.tmp

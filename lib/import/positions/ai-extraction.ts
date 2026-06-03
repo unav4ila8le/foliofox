@@ -77,8 +77,9 @@ export async function createExtractionPrompt(): Promise<string> {
 
 Return data that strictly matches the provided JSON schema. Do not invent values:
 - If a field is unreadable or not present, set it to null and add a helpful warning in "warnings".
-- Currency must be a 3-letter ISO 4217 code in uppercase (e.g., USD, EUR, CHF). Do not include symbols.
-- When symbolLookup is present, set currency to the symbol's native trading currency from Yahoo Finance, never the page's base/portfolio currency.
+- Currency must be the 3-letter ISO 4217 accounting currency in uppercase (e.g., USD, EUR, GBP). Do not include symbols or provider quote units.
+- When symbolLookup is present, set currency to the symbol's normalized ISO accounting currency from Yahoo Finance, never the page's base/portfolio currency.
+- If a broker statement uses quote units, normalize them before output: GBp/GBX prices are pence, so use currency GBP and divide unit_value/cost_basis_per_unit by 100; KWF prices are Kuwaiti fils, so use currency KWD and divide unit_value/cost_basis_per_unit by 1000.
 - Quantity can be fractional, must be >= 0.
 - Unit numbers: strip thousand separators, use "." for decimals, no currency symbols.
 - category_id must be one of: ${categoriesList}.
@@ -87,7 +88,7 @@ Return data that strictly matches the provided JSON schema. Do not invent values
 - For cryptocurrencies, set symbolLookup to the Yahoo Finance crypto pair with "-USD" (e.g., BTC-USD, ETH-USD, XRP-USD). If only the coin code is visible, output the "-USD" pair. Set currency to USD for cryptocurrencies.
 - For listed securities with a recognizable symbol (Yahoo Finance tickers, e.g., AAPL, VT, VWCE.DE), set symbolLookup and you MAY set unit_value to null (it will be fetched).
 - If a row looks like a tradable ticker (uppercase letters/numbers 1–8 chars, e.g., PLTR, NVDA, QQQ), you MUST set symbolLookup to that ticker. If uncertain, set your best guess and add a warning like "symbol uncertain". Do not leave symbolLookup empty for listed securities.
-- cost_basis_per_unit: if an explicit "avg cost"/"average price"/"cost basis"/etc. column exists, set it; otherwise set null. It must be in the same currency as "currency".
+- cost_basis_per_unit: if an explicit "avg cost"/"average price"/"cost basis"/etc. column exists, set it; otherwise set null. It must be in the same normalized ISO currency as "currency".
 - capital_gains_tax_rate: if a tax rate column or tax information is present, extract it as either decimal (0..1) or percentage (0..100). If missing, set null.
  - If multiple rows refer to the same symbol/name, prefer a single merged position summing quantities. If cost basis differs across rows, set cost_basis_per_unit to null and add a warning.
 - Use full company names for the "name" field (e.g., "Ford Motor Company", "Toyota Motor Corporation"), not ticker symbols. Symbols go in "symbolLookup".
@@ -134,6 +135,7 @@ export async function postProcessExtractedPositions(
   const {
     positions: normalizedPositions,
     warnings: normalizationWarnings,
+    errors: normalizationErrors,
     symbolValidationResults,
   } = await normalizePositionsArray(initial);
 
@@ -142,6 +144,7 @@ export async function postProcessExtractedPositions(
     normalizedPositions,
     symbolValidationResults,
   );
+  const errors = [...normalizationErrors, ...validationErrors];
 
   // Map raw warnings and merge with normalization warnings
   const warnRaw = obj.warnings ?? [];
@@ -159,13 +162,13 @@ export async function postProcessExtractedPositions(
     (c) => c.alphabetic_code,
   );
 
-  if (validationErrors.length > 0) {
+  if (errors.length > 0) {
     // Validation failed: return parsed positions alongside errors so user can review/fix
     return {
       success: false,
       positions: normalizedPositions,
       warnings: mergedWarnings.length ? mergedWarnings : undefined,
-      errors: validationErrors,
+      errors,
       symbolValidation,
       supportedCurrencies,
     };

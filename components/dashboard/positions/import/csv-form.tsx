@@ -116,7 +116,19 @@ export function CSVImportForm() {
             <span className="text-foreground font-medium">
               Required columns:
             </span>{" "}
-            name, currency, quantity,{" "}
+            name,{" "}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="text-foreground inline-block cursor-help underline-offset-4 hover:underline">
+                  currency
+                </span>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                Use the ISO accounting currency. For symbol rows, broker quote
+                units are normalized automatically when recognized.
+              </TooltipContent>
+            </Tooltip>
+            , quantity,{" "}
             <Tooltip>
               <TooltipTrigger asChild>
                 <span className="text-foreground inline-block cursor-help underline-offset-4 hover:underline">
@@ -125,8 +137,8 @@ export function CSVImportForm() {
               </TooltipTrigger>
               <TooltipContent className="max-w-xs">
                 Unit value is required unless a symbol lookup is provided. When
-                a lookup (ticker/ISIN/etc.) is present we fetch the price for
-                you.
+                a recognized quote unit (GBX, GBp, KWF, etc.) is used for a
+                symbol row, the amount is scaled into the ISO currency.
               </TooltipContent>
             </Tooltip>
             .

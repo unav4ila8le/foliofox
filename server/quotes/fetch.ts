@@ -3,6 +3,7 @@
 import { addDays, subDays } from "date-fns";
 
 import { formatUTCDateKey, parseUTCDateKey } from "@/lib/date/date-utils";
+import { normalizeQuoteToCurrencyRate } from "@/server/market-data/quote-units";
 import { chunkArray } from "@/server/shared/chunk-array";
 import { yahooFinance } from "@/server/yahoo-finance/client";
 import { createServiceClient } from "@/supabase/service";
@@ -121,6 +122,21 @@ function findLatestEntryAtOrBefore(
     }
   }
   return null;
+}
+
+function scaleProviderQuoteEntries(
+  entries: ReturnType<typeof normalizeChartQuoteEntries>,
+  quoteToCurrencyRate: number,
+): ReturnType<typeof normalizeChartQuoteEntries> {
+  if (quoteToCurrencyRate === 1) return entries;
+
+  // Yahoo chart prices are in the provider quote unit. Cache only normalized
+  // major-currency prices so valuations, P/L, and display code stay simple.
+  return entries.map((entry) => ({
+    ...entry,
+    closePrice: entry.closePrice * quoteToCurrencyRate,
+    adjustedClosePrice: entry.adjustedClosePrice * quoteToCurrencyRate,
+  }));
 }
 
 function buildLiveMissCooldownKey(request: {
@@ -415,6 +431,9 @@ export async function fetchQuotes(
 
       const resolution = byCanonicalId.get(symbolId);
       const ticker = resolution?.providerAlias;
+      const quoteToCurrencyRate = normalizeQuoteToCurrencyRate(
+        resolution?.quoteToCurrencyRate,
+      );
       if (!ticker) {
         console.warn(
           `Skipping quote fetch for symbol ${symbolId}: missing Yahoo ticker alias.`,
@@ -439,7 +458,10 @@ export async function fetchQuotes(
         chartData = null;
       }
 
-      const quoteEntries = normalizeChartQuoteEntries(chartData);
+      const quoteEntries = scaleProviderQuoteEntries(
+        normalizeChartQuoteEntries(chartData),
+        quoteToCurrencyRate,
+      );
 
       if (resolvedOptions.upsert) {
         quoteEntries.forEach((entry) => {
@@ -472,13 +494,17 @@ export async function fetchQuotes(
       // Final safety net when chart rows do not resolve all requests.
       const fallbackPrice = chartData?.meta?.regularMarketPrice;
       const fallbackTime = chartData?.meta?.regularMarketTime;
+      const normalizedFallbackPrice =
+        typeof fallbackPrice === "number"
+          ? fallbackPrice * quoteToCurrencyRate
+          : fallbackPrice;
       const allSymbolRequestsResolved = symbolRequests.every((request) =>
         results.has(`${request.canonicalId}|${request.requestedDateKey}`),
       );
       if (
         !allSymbolRequestsResolved &&
-        fallbackPrice &&
-        fallbackPrice > 0 &&
+        normalizedFallbackPrice &&
+        normalizedFallbackPrice > 0 &&
         fallbackTime instanceof Date
       ) {
         const fallbackDateKey = formatUTCDateKey(fallbackTime);
@@ -488,8 +514,8 @@ export async function fetchQuotes(
           upsertRowsByKey.set(fallbackRowKey, {
             symbol_id: symbolId,
             date: fallbackDateKey,
-            close_price: fallbackPrice,
-            adjusted_close_price: fallbackPrice,
+            close_price: normalizedFallbackPrice,
+            adjusted_close_price: normalizedFallbackPrice,
           });
         }
 
@@ -498,7 +524,7 @@ export async function fetchQuotes(
           if (results.has(mapKey)) return;
 
           if (fallbackDateKey <= request.effectiveDateKey) {
-            results.set(mapKey, fallbackPrice);
+            results.set(mapKey, normalizedFallbackPrice);
             resolutionTypeByRequestKey.set(
               mapKey,
               fallbackDateKey === request.effectiveDateKey

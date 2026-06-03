@@ -15,6 +15,14 @@
 - Favor explicit, typed, functional code over clever abstractions.
 - Optimize for cache/batching; avoid N+1 database calls.
 
+## Planning & Execution Guardrails
+
+- For phased plans, stop after each phase and wait for explicit user approval before continuing.
+- Do not run Supabase CLI commands, Next CLI commands, or any command against any database or production system.
+- Allowed verification commands are limited to lint, type, format-check, and test checks.
+- Do not create Supabase migration files. Ask the user to create an empty migration file first, then edit that file only after it exists.
+- Once the migration file is ready, the user will apply the migration against the local database and they will regenerate the types.
+
 ## Architecture
 
 - Favor React Server Components (RSC) over Client Components

@@ -1,4 +1,5 @@
 import { fetchCurrencies } from "@/server/currencies/fetch";
+import { normalizeProviderQuoteUnit } from "@/server/market-data/quote-units";
 import {
   validateSymbolsBatch,
   type SymbolValidationResult,
@@ -8,6 +9,75 @@ import { normalizeCapitalGainsTaxRateToDecimal } from "@/lib/capital-gains-tax-r
 // Categories are normalized via mapper upstream; no need to validate codes here
 
 import type { PositionImportRow } from "./types";
+
+function scaleNullableAmount(
+  amount: number | null,
+  quoteToCurrencyRate: number,
+): number | null {
+  return amount == null ? null : amount * quoteToCurrencyRate;
+}
+
+type SymbolBackedQuoteUnitNormalization =
+  | { status: "not_applicable" }
+  | { status: "normalized"; warning: string }
+  | { status: "mismatched_quote_unit"; error: string };
+
+function normalizeSymbolBackedQuoteUnit(
+  position: PositionImportRow,
+  symbolCurrency: string,
+  rowNumber: number,
+): SymbolBackedQuoteUnitNormalization {
+  // Broker exports can use provider quote units for listed securities
+  // (GBX/GBp pence, KWF fils). If the symbol confirms the matching ISO
+  // accounting currency, scale per-unit amounts before validation/persistence.
+  const quoteUnit = normalizeProviderQuoteUnit(position.currency);
+
+  if (!quoteUnit.success) {
+    return { status: "not_applicable" };
+  }
+
+  if (quoteUnit.data.quoteToCurrencyRate === 1) {
+    return { status: "not_applicable" };
+  }
+
+  if (quoteUnit.data.currency !== symbolCurrency) {
+    return {
+      status: "mismatched_quote_unit",
+      error: `Row ${rowNumber}: Quote unit ${position.currency} normalizes to ${quoteUnit.data.currency}, but symbol lookup "${position.symbolLookup}" uses ${symbolCurrency}. Check the symbol or currency column before importing.`,
+    };
+  }
+
+  const originalCurrency = position.currency;
+  const scaledFields: string[] = [];
+
+  if (position.unit_value != null) {
+    position.unit_value = scaleNullableAmount(
+      position.unit_value,
+      quoteUnit.data.quoteToCurrencyRate,
+    );
+    scaledFields.push("unit value");
+  }
+
+  if (position.cost_basis_per_unit != null) {
+    position.cost_basis_per_unit = scaleNullableAmount(
+      position.cost_basis_per_unit,
+      quoteUnit.data.quoteToCurrencyRate,
+    );
+    scaledFields.push("cost basis");
+  }
+
+  position.currency = symbolCurrency;
+
+  const scaledSuffix =
+    scaledFields.length > 0
+      ? ` and scaled ${scaledFields.join(" and ")} by ${quoteUnit.data.quoteToCurrencyRate}`
+      : "";
+
+  return {
+    status: "normalized",
+    warning: `Normalized quote unit ${originalCurrency} for ${position.symbolLookup} to ${symbolCurrency}${scaledSuffix}`,
+  };
+}
 
 /**
  * Validates an array of positions with optional pre-validated symbol results
@@ -77,7 +147,7 @@ export async function validatePositionsArray(
 
 /**
  * Normalize positions using symbol metadata (currency and normalized symbol id)
- * - Adjusts currency to the symbol's native trading currency
+ * - Adjusts currency to the symbol's normalized ISO accounting currency
  * - Normalizes symbol id when possible
  * - Returns warnings describing adjustments made
  */
@@ -86,9 +156,11 @@ export async function normalizePositionsArray(
 ): Promise<{
   positions: PositionImportRow[];
   warnings: string[];
+  errors: string[];
   symbolValidationResults?: Map<string, SymbolValidationResult>;
 }> {
   const warnings: string[] = [];
+  const errors: string[] = [];
 
   // Clone rows to avoid mutating input
   const cloned = rows.map((h) => ({ ...h }));
@@ -119,21 +191,36 @@ export async function normalizePositionsArray(
     .map((r) => (r.symbolLookup || "").trim())
     .filter(Boolean);
   if (symbols.length === 0) {
-    return { positions: cloned, warnings };
+    return { positions: cloned, warnings, errors };
   }
 
   const batch = await validateSymbolsBatch(symbols);
 
-  cloned.forEach((h) => {
+  cloned.forEach((h, index) => {
     if (!h.symbolLookup) return;
     const v = batch.results.get(h.symbolLookup);
     if (!v) return;
 
     if (v.currency && h.currency !== v.currency) {
-      warnings.push(
-        `Adjusted currency for ${h.symbolLookup} from ${h.currency} to ${v.currency}`,
+      const quoteUnitNormalization = normalizeSymbolBackedQuoteUnit(
+        h,
+        v.currency,
+        index + 1,
       );
-      h.currency = v.currency;
+
+      if (quoteUnitNormalization.status === "normalized") {
+        warnings.push(quoteUnitNormalization.warning);
+      } else if (quoteUnitNormalization.status === "mismatched_quote_unit") {
+        // Do not rewrite the row when a quote unit points at a different ISO
+        // currency than the symbol. Keeping the original input visible prevents
+        // pence/fils amounts from being treated as an unrelated major currency.
+        errors.push(quoteUnitNormalization.error);
+      } else {
+        warnings.push(
+          `Adjusted accounting currency for ${h.symbolLookup} from ${h.currency} to ${v.currency}`,
+        );
+        h.currency = v.currency;
+      }
     }
 
     if (v.normalized && v.normalized !== h.symbolLookup) {
@@ -145,6 +232,7 @@ export async function normalizePositionsArray(
   return {
     positions: cloned,
     warnings,
+    errors,
     symbolValidationResults: batch.results,
   };
 }
@@ -237,7 +325,7 @@ export function validatePosition(
  * Validates symbol currency matches CSV currency
  * @param position - The position to validate
  * @param rowNumber - The row number for error reporting
- * @param symbolCurrency - The currency from symbol validation
+ * @param symbolCurrency - The normalized ISO accounting currency from symbol validation
  * @returns Array of validation errors (empty if valid)
  */
 export function validateSymbolCurrency(
@@ -247,7 +335,7 @@ export function validateSymbolCurrency(
 ): string[] {
   if (symbolCurrency && symbolCurrency !== position.currency) {
     return [
-      `Row ${rowNumber}: Symbol lookup "${position.symbolLookup}" uses ${symbolCurrency} currency, but CSV specifies ${position.currency}. Please use ${symbolCurrency} for this symbol.`,
+      `Row ${rowNumber}: Symbol lookup "${position.symbolLookup}" uses ${symbolCurrency} as its normalized ISO accounting currency, but CSV specifies ${position.currency}. Please use ${symbolCurrency} for this symbol.`,
     ];
   }
   return [];

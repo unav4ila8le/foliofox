@@ -2,6 +2,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { normalizeQuoteToCurrencyRate } from "@/server/market-data/quote-units";
 import { chunkArray } from "@/server/shared/chunk-array";
 import { normalizeSymbol } from "@/server/symbols/validate";
 import { createServiceClient } from "@/supabase/service";
@@ -32,6 +33,27 @@ export interface ResolveSymbolOptions {
 export interface ProviderAliasOptions {
   type?: string;
   includeInactive?: boolean;
+}
+
+interface ResolvedSymbolInputMetadata {
+  canonicalId: string;
+  providerAlias: string;
+  displayTicker: string | null;
+  currency: string;
+  quoteToCurrencyRate: number;
+}
+
+interface ResolvedSymbolCanonicalMetadata {
+  providerAlias: string;
+  displayTicker: string | null;
+  currency: string;
+  quoteToCurrencyRate: number;
+}
+
+interface SymbolResolutionMetadata {
+  ticker: string;
+  currency: string;
+  quoteToCurrencyRate: number;
 }
 
 /**
@@ -319,41 +341,15 @@ export async function resolveSymbolsBatch(
     onError?: "throw" | "warn" | "skip";
   } = {},
 ): Promise<{
-  byInput: Map<
-    string,
-    {
-      canonicalId: string;
-      providerAlias: string;
-      displayTicker: string | null;
-    }
-  >;
-  byCanonicalId: Map<
-    string,
-    {
-      providerAlias: string;
-      displayTicker: string | null;
-    }
-  >;
+  byInput: Map<string, ResolvedSymbolInputMetadata>;
+  byCanonicalId: Map<string, ResolvedSymbolCanonicalMetadata>;
 }> {
   const provider = options.provider ?? DEFAULT_ALIAS_SOURCE;
   const providerType = options.providerType ?? DEFAULT_ALIAS_TYPE;
   const onError = options.onError ?? "throw";
 
-  const byInput = new Map<
-    string,
-    {
-      canonicalId: string;
-      providerAlias: string;
-      displayTicker: string | null;
-    }
-  >();
-  const byCanonicalId = new Map<
-    string,
-    {
-      providerAlias: string;
-      displayTicker: string | null;
-    }
-  >();
+  const byInput = new Map<string, ResolvedSymbolInputMetadata>();
+  const byCanonicalId = new Map<string, ResolvedSymbolCanonicalMetadata>();
 
   // Deduplicate and normalize inputs once.
   const uniqueInputs = [
@@ -383,7 +379,7 @@ export async function resolveSymbolsBatch(
   );
 
   let canonicalByInput = new Map<string, string>();
-  let tickerBySymbolId = new Map<string, string>();
+  let metadataBySymbolId = new Map<string, SymbolResolutionMetadata>();
   let primaryAliasBySymbolId = new Map<string, string>();
   let providerAliasBySymbolId = new Map<string, string>();
 
@@ -432,7 +428,7 @@ export async function resolveSymbolsBatch(
     });
 
     const canonicalIds = [...new Set(canonicalByInput.values())];
-    tickerBySymbolId = await fetchSymbolTickersById(supabase, canonicalIds);
+    metadataBySymbolId = await fetchSymbolMetadataById(supabase, canonicalIds);
     primaryAliasBySymbolId = await fetchPrimaryAliasesBySymbolId(
       supabase,
       canonicalIds,
@@ -464,7 +460,10 @@ export async function resolveSymbolsBatch(
     try {
       // 1) Resolve input to canonical symbol ID.
       const canonicalId = canonicalByInput.get(inputKey);
-      if (!canonicalId || !tickerBySymbolId.has(canonicalId)) {
+      const symbolMetadata = canonicalId
+        ? metadataBySymbolId.get(canonicalId)
+        : undefined;
+      if (!canonicalId || !symbolMetadata) {
         const errorMsg = `Unable to resolve symbol identifier "${inputKey}" to a canonical symbol.`;
         if (onError === "throw") {
           throw new Error(errorMsg);
@@ -479,7 +478,7 @@ export async function resolveSymbolsBatch(
       const providerAlias =
         providerAliasBySymbolId.get(canonicalId) ??
         primaryAliasBySymbolId.get(canonicalId) ??
-        tickerBySymbolId.get(canonicalId);
+        symbolMetadata.ticker;
 
       if (!providerAlias) {
         const errorMsg = `Symbol "${inputKey}" is missing a ${provider} ${providerType} alias.`;
@@ -495,19 +494,23 @@ export async function resolveSymbolsBatch(
       // 3) Resolve display ticker and store maps.
       const displayTicker =
         primaryAliasBySymbolId.get(canonicalId) ??
-        tickerBySymbolId.get(canonicalId) ??
+        symbolMetadata.ticker ??
         null;
 
       byInput.set(inputKey, {
         canonicalId,
         providerAlias,
         displayTicker,
+        currency: symbolMetadata.currency,
+        quoteToCurrencyRate: symbolMetadata.quoteToCurrencyRate,
       });
 
       if (!byCanonicalId.has(canonicalId)) {
         byCanonicalId.set(canonicalId, {
           providerAlias,
           displayTicker,
+          currency: symbolMetadata.currency,
+          quoteToCurrencyRate: symbolMetadata.quoteToCurrencyRate,
         });
       }
     } catch (error) {
@@ -591,17 +594,17 @@ async function fetchCanonicalIdsByAliasLookupsCaseInsensitive(
   return canonicalByAliasLookup;
 }
 
-async function fetchSymbolTickersById(
+async function fetchSymbolMetadataById(
   supabase: SupabaseClient<Database>,
   symbolIds: string[],
 ) {
-  const tickerBySymbolId = new Map<string, string>();
-  if (!symbolIds.length) return tickerBySymbolId;
+  const metadataBySymbolId = new Map<string, SymbolResolutionMetadata>();
+  if (!symbolIds.length) return metadataBySymbolId;
 
   for (const symbolIdChunk of chunkArray(symbolIds, BATCH_QUERY_CHUNK_SIZE)) {
     const { data, error } = await supabase
       .from("symbols")
-      .select("id, ticker")
+      .select("id, ticker, currency, quote_to_currency_rate")
       .in("id", symbolIdChunk);
 
     if (error) {
@@ -609,11 +612,17 @@ async function fetchSymbolTickersById(
     }
 
     data?.forEach((symbolRow) => {
-      tickerBySymbolId.set(symbolRow.id, symbolRow.ticker);
+      metadataBySymbolId.set(symbolRow.id, {
+        ticker: symbolRow.ticker,
+        currency: symbolRow.currency,
+        quoteToCurrencyRate: normalizeQuoteToCurrencyRate(
+          symbolRow.quote_to_currency_rate,
+        ),
+      });
     });
   }
 
-  return tickerBySymbolId;
+  return metadataBySymbolId;
 }
 
 async function fetchPrimaryAliasesBySymbolId(

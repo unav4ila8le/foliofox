@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 type SymbolRow = {
   id: string;
   ticker: string;
+  currency?: string;
+  quote_to_currency_rate?: number;
 };
 
 type SymbolAliasRow = {
@@ -135,7 +137,13 @@ function createSupabaseStub(data: {
             });
           });
 
-          return Promise.resolve({ data: rows, error: null }).then(
+          const rowsWithDefaults = rows.map((row) => ({
+            currency: "USD",
+            quote_to_currency_rate: 1,
+            ...row,
+          }));
+
+          return Promise.resolve({ data: rowsWithDefaults, error: null }).then(
             onfulfilled ?? undefined,
             onrejected,
           );
@@ -320,15 +328,21 @@ describe("resolveSymbolsBatch", () => {
       canonicalId: symbolIdOne,
       providerAlias: "AAPL",
       displayTicker: "AAPL",
+      currency: "USD",
+      quoteToCurrencyRate: 1,
     });
     expect(result.byInput.get("msft")).toEqual({
       canonicalId: symbolIdTwo,
       providerAlias: "MSFT",
       displayTicker: "MSFT",
+      currency: "USD",
+      quoteToCurrencyRate: 1,
     });
     expect(result.byCanonicalId.get(symbolIdTwo)).toEqual({
       providerAlias: "MSFT",
       displayTicker: "MSFT",
+      currency: "USD",
+      quoteToCurrencyRate: 1,
     });
 
     expect(state.symbolQueryCount).toBe(1);
@@ -370,11 +384,59 @@ describe("resolveSymbolsBatch", () => {
       canonicalId: symbolIdPrimaryFallback,
       providerAlias: "ALIAS_PRI",
       displayTicker: "ALIAS_PRI",
+      currency: "USD",
+      quoteToCurrencyRate: 1,
     });
     expect(result.byInput.get(symbolIdTickerFallback)).toEqual({
       canonicalId: symbolIdTickerFallback,
       providerAlias: "TICKER_ONLY",
       displayTicker: "TICKER_ONLY",
+      currency: "USD",
+      quoteToCurrencyRate: 1,
+    });
+  });
+
+  it("includes normalized currency and quote-to-currency rate from symbol metadata", async () => {
+    const symbolId = "99999999-9999-9999-9999-999999999999";
+    const { client } = createSupabaseStub({
+      symbols: [
+        {
+          id: symbolId,
+          ticker: "BP.L",
+          currency: "GBP",
+          quote_to_currency_rate: 0.01,
+        },
+      ],
+      symbolAliases: [
+        {
+          symbol_id: symbolId,
+          value: "BP.L",
+          type: "ticker",
+          source: "yahoo",
+          is_primary: true,
+          effective_from: "2026-01-01T00:00:00.000Z",
+          effective_to: null,
+        },
+      ],
+    });
+
+    createServiceClientMock.mockResolvedValue(client);
+    const { resolveSymbolsBatch } = await import("./resolve");
+
+    const result = await resolveSymbolsBatch(["bp.l"]);
+
+    expect(result.byInput.get("bp.l")).toEqual({
+      canonicalId: symbolId,
+      providerAlias: "BP.L",
+      displayTicker: "BP.L",
+      currency: "GBP",
+      quoteToCurrencyRate: 0.01,
+    });
+    expect(result.byCanonicalId.get(symbolId)).toEqual({
+      providerAlias: "BP.L",
+      displayTicker: "BP.L",
+      currency: "GBP",
+      quoteToCurrencyRate: 0.01,
     });
   });
 
@@ -404,6 +466,8 @@ describe("resolveSymbolsBatch", () => {
       canonicalId: symbolId,
       providerAlias: "MsFt",
       displayTicker: "MsFt",
+      currency: "USD",
+      quoteToCurrencyRate: 1,
     });
     expect(state.symbolQueryCount).toBe(1);
     expect(state.symbolAliasesQueryCount).toBe(4);
@@ -440,6 +504,8 @@ describe("resolveSymbolsBatch", () => {
       canonicalId: symbolId,
       providerAlias: "VALID",
       displayTicker: "VALID",
+      currency: "USD",
+      quoteToCurrencyRate: 1,
     });
     expect(result.byInput.has("missing")).toBe(false);
     expect(consoleWarnSpy).toHaveBeenCalledWith(
@@ -494,6 +560,8 @@ describe("resolveSymbolsBatch", () => {
       canonicalId: symbolId,
       providerAlias: "VALID",
       displayTicker: "VALID",
+      currency: "USD",
+      quoteToCurrencyRate: 1,
     });
     expect(result.byInput.has("missing")).toBe(false);
     expect(consoleWarnSpy).not.toHaveBeenCalled();

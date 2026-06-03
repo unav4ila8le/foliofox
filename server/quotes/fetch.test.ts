@@ -202,14 +202,18 @@ function mockSymbolResolution(options?: {
   lookup?: string;
   canonicalId?: string;
   providerAlias?: string;
+  quoteToCurrencyRate?: number;
 }) {
   const lookup = options?.lookup ?? "sym-1";
   const canonicalId = options?.canonicalId ?? "sym-1";
   const providerAlias = options?.providerAlias ?? "AAPL";
+  const quoteToCurrencyRate = options?.quoteToCurrencyRate ?? 1;
 
   resolveSymbolsBatchMock.mockResolvedValue({
-    byInput: new Map([[lookup, { canonicalId }]]),
-    byCanonicalId: new Map([[canonicalId, { providerAlias }]]),
+    byInput: new Map([[lookup, { canonicalId, quoteToCurrencyRate }]]),
+    byCanonicalId: new Map([
+      [canonicalId, { providerAlias, quoteToCurrencyRate }],
+    ]),
   });
 }
 
@@ -350,6 +354,141 @@ describe("fetchQuotes", () => {
         last_quote_at: "2026-02-14T00:00:00.000Z",
       },
     ]);
+  });
+
+  it("normalizes GBp chart prices before caching and returning", async () => {
+    vi.setSystemTime(new Date("2026-02-15T23:00:00.000Z"));
+
+    const { client, state } = createSupabaseStub([]);
+    createServiceClientMock.mockResolvedValue(client);
+    mockSymbolResolution({
+      lookup: "BP.L",
+      canonicalId: "bp-symbol",
+      providerAlias: "BP.L",
+      quoteToCurrencyRate: 0.01,
+    });
+    yahooChartMock.mockResolvedValue({
+      quotes: [
+        {
+          date: new Date("2026-02-14T00:00:00.000Z"),
+          close: 524.4,
+          adjclose: 523.2,
+        },
+      ],
+    });
+
+    const { fetchQuotes } = await import("./fetch");
+
+    const result = await fetchQuotes(
+      [
+        {
+          symbolLookup: "BP.L",
+          date: new Date("2026-02-15T00:00:00.000Z"),
+        },
+      ],
+      { staleGuardDays: 0 },
+    );
+
+    expect(result.get("bp-symbol|2026-02-15")).toBeCloseTo(5.244, 10);
+    expect(result.get("BP.L|2026-02-15")).toBeCloseTo(5.244, 10);
+    expect(state.upsertCalls).toHaveLength(1);
+
+    const row = state.upsertCalls[0]?.rows[0];
+    expect(row).toMatchObject({
+      symbol_id: "bp-symbol",
+      date: "2026-02-14",
+    });
+    expect(row?.close_price).toBeCloseTo(5.244, 10);
+    expect(row?.adjusted_close_price).toBeCloseTo(5.232, 10);
+  });
+
+  it("normalizes KWF chart prices before caching and returning", async () => {
+    vi.setSystemTime(new Date("2026-02-15T23:00:00.000Z"));
+
+    const { client, state } = createSupabaseStub([]);
+    createServiceClientMock.mockResolvedValue(client);
+    mockSymbolResolution({
+      lookup: "NBK.KW",
+      canonicalId: "nbk-symbol",
+      providerAlias: "NBK.KW",
+      quoteToCurrencyRate: 0.001,
+    });
+    yahooChartMock.mockResolvedValue({
+      quotes: [
+        {
+          date: new Date("2026-02-14T00:00:00.000Z"),
+          close: 838,
+          adjclose: 837,
+        },
+      ],
+    });
+
+    const { fetchQuotes } = await import("./fetch");
+
+    const result = await fetchQuotes(
+      [
+        {
+          symbolLookup: "NBK.KW",
+          date: new Date("2026-02-15T00:00:00.000Z"),
+        },
+      ],
+      { staleGuardDays: 0 },
+    );
+
+    expect(result.get("nbk-symbol|2026-02-15")).toBeCloseTo(0.838, 10);
+    expect(state.upsertCalls).toHaveLength(1);
+
+    const row = state.upsertCalls[0]?.rows[0];
+    expect(row).toMatchObject({
+      symbol_id: "nbk-symbol",
+      date: "2026-02-14",
+    });
+    expect(row?.close_price).toBeCloseTo(0.838, 10);
+    expect(row?.adjusted_close_price).toBeCloseTo(0.837, 10);
+  });
+
+  it("normalizes regularMarketPrice fallback before caching and returning", async () => {
+    vi.setSystemTime(new Date("2026-02-15T23:00:00.000Z"));
+
+    const { client, state } = createSupabaseStub([]);
+    createServiceClientMock.mockResolvedValue(client);
+    mockSymbolResolution({
+      lookup: "BP.L",
+      canonicalId: "bp-symbol",
+      providerAlias: "BP.L",
+      quoteToCurrencyRate: 0.01,
+    });
+    yahooChartMock.mockResolvedValue({
+      quotes: [],
+      meta: {
+        regularMarketPrice: 524.4,
+        regularMarketTime: new Date("2026-02-14T00:00:00.000Z"),
+      },
+    });
+
+    const { fetchQuotes } = await import("./fetch");
+
+    const result = await fetchQuotes(
+      [
+        {
+          symbolLookup: "BP.L",
+          date: new Date("2026-02-15T00:00:00.000Z"),
+        },
+      ],
+      { staleGuardDays: 0 },
+    );
+
+    expect(result.get("bp-symbol|2026-02-15")).toBeCloseTo(5.244, 10);
+    expect(state.upsertCalls).toHaveLength(1);
+    expect(state.upsertCalls[0]?.rows).toHaveLength(1);
+
+    const row = state.upsertCalls[0]?.rows[0];
+    expect(row).toMatchObject({
+      symbol_id: "bp-symbol",
+      date: "2026-02-14",
+    });
+    expect(row?.close_price).toBeCloseTo(5.244, 10);
+    expect(row?.adjusted_close_price).toBeCloseTo(5.244, 10);
   });
 
   it("uses previous trading day before cutoff for today requests", async () => {
@@ -607,14 +746,14 @@ describe("fetchQuotes", () => {
 
     resolveSymbolsBatchMock.mockResolvedValue({
       byInput: new Map([
-        ["sym-1", { canonicalId: "sym-1" }],
-        ["sym-2", { canonicalId: "sym-2" }],
-        ["sym-3", { canonicalId: "sym-3" }],
+        ["sym-1", { canonicalId: "sym-1", quoteToCurrencyRate: 1 }],
+        ["sym-2", { canonicalId: "sym-2", quoteToCurrencyRate: 1 }],
+        ["sym-3", { canonicalId: "sym-3", quoteToCurrencyRate: 1 }],
       ]),
       byCanonicalId: new Map([
-        ["sym-1", { providerAlias: "AAPL" }],
-        ["sym-2", { providerAlias: "MSFT" }],
-        ["sym-3", { providerAlias: "GOOG" }],
+        ["sym-1", { providerAlias: "AAPL", quoteToCurrencyRate: 1 }],
+        ["sym-2", { providerAlias: "MSFT", quoteToCurrencyRate: 1 }],
+        ["sym-3", { providerAlias: "GOOG", quoteToCurrencyRate: 1 }],
       ]),
     });
 
