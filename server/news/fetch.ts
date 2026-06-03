@@ -159,6 +159,8 @@ export async function fetchNewsForSymbols(
                 canonicalMeta.set(existingResolution.canonicalId, {
                   providerAlias: existingResolution.providerAlias,
                   displayTicker: existingResolution.displayTicker,
+                  currency: existingResolution.currency,
+                  quoteToCurrencyRate: existingResolution.quoteToCurrencyRate,
                 });
               }
               continue;
@@ -175,6 +177,8 @@ export async function fetchNewsForSymbols(
                   canonicalMeta.set(cached.canonicalId, {
                     providerAlias: cached.displayTicker,
                     displayTicker: cached.displayTicker,
+                    currency: "USD",
+                    quoteToCurrencyRate: 1,
                   });
                 }
               }
@@ -197,6 +201,8 @@ export async function fetchNewsForSymbols(
                 canonicalMeta.set(relatedCanonical, {
                   providerAlias: relatedDisplayTicker ?? trimmed,
                   displayTicker: relatedDisplayTicker,
+                  currency: relatedResolved?.symbol?.currency ?? "USD",
+                  quoteToCurrencyRate: 1,
                 });
               }
             }
@@ -306,17 +312,12 @@ export async function fetchNewsForSymbols(
     );
 
     const canonicalIdToTicker = new Map<string, string>();
-    canonicalMeta.forEach(
-      (
-        meta: { providerAlias: string; displayTicker: string | null },
-        canonicalId: string,
-      ) => {
-        const ticker = meta.displayTicker ?? meta.providerAlias;
-        if (ticker) {
-          canonicalIdToTicker.set(canonicalId, ticker);
-        }
-      },
-    );
+    canonicalMeta.forEach((meta, canonicalId) => {
+      const ticker = meta.displayTicker ?? meta.providerAlias;
+      if (ticker) {
+        canonicalIdToTicker.set(canonicalId, ticker);
+      }
+    });
 
     const enrichedArticles = uniqueArticles.map((article) => ({
       ...article,

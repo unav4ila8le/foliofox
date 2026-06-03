@@ -18,8 +18,27 @@ It focuses on behavior, not implementation details, so it should stay useful eve
 - exact cache hit: a `quotes` row exists for the exact effective date
 - cached fallback: use the latest prior cached quote within the configured stale window
 - live read repair: call Yahoo Finance for unresolved requests and upsert returned market-day rows
+- quote unit: a provider price unit that is not an ISO currency, such as GBp/GBX
+  for pence or KWF for Kuwaiti fils
 
 ## Core Rules
+
+### 0) Provider quote units are normalized before storage
+
+`public.currencies` stays ISO-only. Symbol metadata stores both:
+
+- `currency`: normalized ISO accounting currency, such as GBP or KWD
+- `quote_currency`: original provider quote unit, such as GBp, GBX, or KWF
+- `quote_to_currency_rate`: multiplier from provider quote unit into the ISO
+  currency
+
+Quote cache rows store normalized major-currency prices. For example, a raw
+Yahoo close of `524.4` in GBp is cached as `5.244` GBP, and a raw close of
+`838` in KWF is cached as `0.838` KWD.
+
+Yahoo chart dividend events follow the same rule. Summary dividend fields are
+not blindly scaled because Yahoo can already report those as major-currency
+annual values.
 
 ### 1) Quote rows are stored only for provider market days
 
@@ -145,7 +164,9 @@ This prevents old market data from overriding a newer snapshot state.
 ## Related Files
 
 - `server/quotes/fetch.ts`
+- `server/market-data/quote-units.ts`
 - `server/market-data/sources/symbol-handler.ts`
+- `server/dividends/fetch.ts`
 - `server/analysis/net-worth/net-worth-history.ts`
 - `server/analysis/valuations-history/synthesize.ts`
 

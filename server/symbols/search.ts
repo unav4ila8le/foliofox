@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 
+import { normalizeProviderQuoteUnit } from "@/server/market-data/quote-units";
 import { yahooFinance } from "@/server/yahoo-finance/client";
 
 import type { SymbolInsert, SymbolSearchResult } from "@/types/global.types";
@@ -68,13 +69,26 @@ export async function fetchYahooFinanceSymbol(symbolId: string) {
     const price = summary.price;
     const profile = summary.assetProfile;
 
+    const normalizedQuoteUnit = normalizeProviderQuoteUnit(price?.currency);
+    if (!normalizedQuoteUnit.success) {
+      return {
+        success: false,
+        code: normalizedQuoteUnit.code,
+        message: normalizedQuoteUnit.message,
+      };
+    }
+
     const normalizedTicker = symbolId.trim().toUpperCase();
+    // Yahoo price.currency can be a quote unit such as GBp/KWF rather than an
+    // ISO accounting currency. Normalize it before the symbol ever reaches DB.
     const data: SymbolInsert = {
       ticker: normalizedTicker,
       quote_type: price?.quoteType || "",
       short_name: price?.shortName || symbolId,
       long_name: price?.longName || price?.shortName || symbolId,
-      currency: price?.currency || "",
+      currency: normalizedQuoteUnit.data.currency,
+      quote_currency: normalizedQuoteUnit.data.quoteCurrency,
+      quote_to_currency_rate: normalizedQuoteUnit.data.quoteToCurrencyRate,
       exchange: price?.exchangeName || price?.exchange || null,
       sector: profile?.sector || null,
       industry: profile?.industry || null,

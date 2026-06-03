@@ -235,6 +235,7 @@ describe("symbol projected income", () => {
               createDividendEvent({
                 event_date: "2023-12-15",
                 gross_amount: 2,
+                currency: "GBP",
               }),
             ],
           },
@@ -253,6 +254,7 @@ describe("symbol projected income", () => {
     );
 
     expect(result.projectedIncome.success).toBe(true);
+    expect(result.projectedIncome.currency).toBe("GBP");
     expect(result.projectedIncome.data?.[11]?.income).toBeCloseTo(2, 6);
     expect(
       result.projectedIncome.data?.reduce(

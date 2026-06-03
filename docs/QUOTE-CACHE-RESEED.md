@@ -34,6 +34,10 @@ Use a two-stage refill:
 
 This avoids unnecessary provider traffic and keeps operational risk low.
 
+Quote rows should be reseeded as normalized ISO-currency prices. For securities
+whose provider prices arrive in quote units such as GBp/GBX or KWF, the runtime
+fetcher applies `symbols.quote_to_currency_rate` before writing `public.quotes`.
+
 ## Procedure
 
 ### 1) Optional maintenance window

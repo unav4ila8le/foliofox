@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+
 import { parsePositionsCSV } from "./parse-csv";
 import { positionsToCSV } from "./serialize";
+
+const { validateSymbolsBatchMock } = vi.hoisted(() => ({
+  validateSymbolsBatchMock: vi.fn(),
+}));
 
 // Mock only the currencies fetch function
 vi.mock("@/server/currencies/fetch", () => ({
@@ -8,12 +13,22 @@ vi.mock("@/server/currencies/fetch", () => ({
     { alphabetic_code: "USD" },
     { alphabetic_code: "EUR" },
     { alphabetic_code: "GBP" },
+    { alphabetic_code: "KWD" },
   ]),
+}));
+
+vi.mock("@/server/symbols/validate", () => ({
+  validateSymbolsBatch: validateSymbolsBatchMock,
 }));
 
 describe("parsePositionsCSV", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    validateSymbolsBatchMock.mockResolvedValue({
+      valid: true,
+      results: new Map(),
+      errors: [],
+    });
   });
 
   it("should return error when CSV has less than 2 lines", async () => {
@@ -182,6 +197,66 @@ Apple Inc,10,USD,120`;
     expect(result.success).toBe(true);
     expect(result.positions).toHaveLength(1);
     expect(result.positions[0].capital_gains_tax_rate).toBe(0.26);
+  });
+
+  it("should normalize GBp quote-unit values for symbol-backed rows", async () => {
+    validateSymbolsBatchMock.mockResolvedValue({
+      valid: true,
+      results: new Map([
+        [
+          "BP.L",
+          {
+            valid: true,
+            normalized: "BP.L",
+            currency: "GBP",
+          },
+        ],
+      ]),
+      errors: [],
+    });
+
+    const csv = `name,quantity,currency,unit_value,cost_basis_per_unit,symbol
+BP p.l.c.,10,GBp,524.4,500,BP.L`;
+
+    const result = await parsePositionsCSV(csv);
+
+    expect(result.success).toBe(true);
+    expect(result.positions[0].currency).toBe("GBP");
+    expect(result.positions[0].unit_value).toBeCloseTo(5.244, 10);
+    expect(result.positions[0].cost_basis_per_unit).toBeCloseTo(5, 10);
+    expect(result.warnings?.[0]).toContain(
+      "Normalized quote unit GBp for BP.L to GBP",
+    );
+  });
+
+  it("should normalize KWF quote-unit values for symbol-backed rows", async () => {
+    validateSymbolsBatchMock.mockResolvedValue({
+      valid: true,
+      results: new Map([
+        [
+          "NBK.KW",
+          {
+            valid: true,
+            normalized: "NBK.KW",
+            currency: "KWD",
+          },
+        ],
+      ]),
+      errors: [],
+    });
+
+    const csv = `name,quantity,currency,unit_value,cost_basis_per_unit,symbol
+National Bank of Kuwait,100,KWF,838,800,NBK.KW`;
+
+    const result = await parsePositionsCSV(csv);
+
+    expect(result.success).toBe(true);
+    expect(result.positions[0].currency).toBe("KWD");
+    expect(result.positions[0].unit_value).toBeCloseTo(0.838, 10);
+    expect(result.positions[0].cost_basis_per_unit).toBeCloseTo(0.8, 10);
+    expect(result.warnings?.[0]).toContain(
+      "Normalized quote unit KWF for NBK.KW to KWD",
+    );
   });
 
   it("should return validation error for invalid capital gains tax rate", async () => {

@@ -11,6 +11,8 @@ import {
   splitCSVRecords,
 } from "@/lib/import/shared/csv-parser-utils";
 import { parseNumberStrict } from "@/lib/import/shared/number-parser";
+import { normalizeProviderQuoteUnit } from "@/server/market-data/quote-units";
+import { fetchCurrencies } from "@/server/currencies/fetch";
 
 import {
   buildPositionColumnMap,
@@ -18,8 +20,6 @@ import {
 } from "./header-mapper";
 import { mapCategory } from "./category-mapper";
 import { normalizePositionsArray, validatePositionsArray } from "./validation";
-
-import { fetchCurrencies } from "@/server/currencies/fetch";
 
 import type { PositionImportRow, PositionImportResult } from "./types";
 
@@ -86,6 +86,21 @@ function inferCurrencyColumnIndex(
   }
 
   return bestIndex;
+}
+
+function normalizeImportedCurrency(rawCurrency: string | undefined): string {
+  const trimmedCurrency = (rawCurrency || "").trim();
+  if (!trimmedCurrency) return "";
+
+  const quoteUnit = normalizeProviderQuoteUnit(trimmedCurrency);
+
+  if (quoteUnit.success && quoteUnit.data.quoteToCurrencyRate !== 1) {
+    // Preserve provider quote-unit spelling such as GBp. Uppercasing too early
+    // would make GBp indistinguishable from ISO GBP before amount scaling.
+    return trimmedCurrency;
+  }
+
+  return trimmedCurrency.toUpperCase();
 }
 
 /**
@@ -199,7 +214,7 @@ export async function parsePositionsCSV(
       const position: PositionImportRow = {
         name: nameValue,
         category_id: mapCategory(categoryRaw),
-        currency: (currencyRaw || "").trim().toUpperCase(),
+        currency: normalizeImportedCurrency(currencyRaw),
         quantity: parseNumberStrict(values[columnMap.get("quantity")!]),
         unit_value: isNaN(parsedUnitValue) ? null : parsedUnitValue,
         cost_basis_per_unit: isNaN(parsedCostBasis) ? null : parsedCostBasis,
