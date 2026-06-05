@@ -20,8 +20,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SettingsFormShell } from "@/components/features/settings/form-shell";
 import { CurrencySelector } from "@/components/dashboard/currency-selector";
 import { useDashboardData } from "@/components/dashboard/providers/dashboard-data-provider";
+import { DeleteAccountDialog } from "@/components/features/settings/account/delete/dialog";
 import { TimeZoneCombobox } from "@/components/features/settings/time-zone-combobox";
 import {
   AUTO_TIME_ZONE_VALUE,
@@ -35,7 +37,6 @@ import {
   checkUsernameAvailability,
   updateProfile,
 } from "@/server/profile/actions";
-import { SettingsFormShell } from "@/components/features/settings/form-shell";
 
 const accountSettingsFormSchema = z.object({
   username: z
@@ -314,9 +315,28 @@ export function AccountSettingsForm({ onSuccess }: AccountSettingsFormProps) {
               disabled
             />
             <FieldDescription>
-              Email changes are managed through authentication settings.
+              <a
+                href="/discord"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-foreground"
+              >
+                Contact support
+              </a>{" "}
+              to change your email address.
             </FieldDescription>
           </Field>
+
+          {/* Delete account */}
+          <div className="border-border mt-2 rounded-lg border p-4">
+            <h3 className="text-sm font-medium">Delete account</h3>
+            <p className="text-muted-foreground mt-1 text-sm">
+              Permanently remove your Personal Account and all of its contents
+              from Foliofox. This action is not reversible, so please continue
+              with caution.
+            </p>
+            <DeleteAccountDialog email={email} disabled={isLoading} />
+          </div>
         </div>
       </SettingsFormShell>
     </form>

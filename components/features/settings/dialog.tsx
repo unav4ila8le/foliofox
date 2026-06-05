@@ -36,8 +36,9 @@ export function SettingsDialog({
         <Tabs
           key={`${open ? "open" : "closed"}:${requestedTab}`}
           defaultValue={requestedTab}
+          className="min-h-0 flex-1 overflow-hidden"
         >
-          <TabsList className="mx-6 mb-2">
+          <TabsList className="mx-6 mb-2 shrink-0">
             <TabsTrigger value="account">
               <Settings /> Account
             </TabsTrigger>
@@ -45,10 +46,16 @@ export function SettingsDialog({
               <Mail /> Email Notifications
             </TabsTrigger>
           </TabsList>
-          <TabsContent value="account">
+          <TabsContent
+            value="account"
+            className="flex min-h-0 flex-1 flex-col overflow-hidden"
+          >
             <AccountSettingsForm onSuccess={() => onOpenChange(false)} />
           </TabsContent>
-          <TabsContent value="emails">
+          <TabsContent
+            value="emails"
+            className="flex min-h-0 flex-1 flex-col overflow-hidden"
+          >
             <EmailSettingsForm onSuccess={() => onOpenChange(false)} />
           </TabsContent>
         </Tabs>

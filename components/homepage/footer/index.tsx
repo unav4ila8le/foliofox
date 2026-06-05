@@ -12,14 +12,16 @@ export async function Footer() {
   return (
     <footer className="text-muted-foreground container mx-auto mt-8 grid max-w-7xl grid-cols-3 gap-4 p-3 py-6 text-sm font-medium">
       <div className="col-span-full sm:col-span-1">
-        <Link
+        <a
           href="/discord"
           target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Join our Discord"
           className="flex items-center gap-1.5 justify-self-start transition-colors hover:text-[#5865F2]"
         >
           <DiscordIcon width={20} />
           <p>Join our Discord</p>
-        </Link>
+        </a>
       </div>
       <div className="col-span-full sm:col-span-1">
         <p className="sm:text-center">
