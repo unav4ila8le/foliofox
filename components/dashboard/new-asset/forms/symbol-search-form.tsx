@@ -46,6 +46,7 @@ const formSchema = z.object({
     .min(3, { error: "Name must be at least 3 characters." })
     .max(64, { error: "Name must not exceed 64 characters." }),
   category_id: z.string().min(1, { error: "Category is required." }),
+  user_category_id: z.string().nullable(),
   currency: z.string().length(3),
   quantity: requiredNumberWithConstraints("Quantity is required.", {
     gte: { value: 0, error: "Quantity must be 0 or greater" },
@@ -86,6 +87,7 @@ export function SymbolSearchForm() {
       symbolLookup: "",
       name: "",
       category_id: "",
+      user_category_id: null,
       currency: "",
       quantity: "",
       cost_basis_per_unit: "",
@@ -112,6 +114,10 @@ export function SymbolSearchForm() {
       control: form.control,
       name: "symbolLookup",
     }) || "";
+  const userCategoryId = useWatch({
+    control: form.control,
+    name: "user_category_id",
+  });
 
   // Handle symbol selection from dropdown
   const handleSymbolSelect = async (symbolLookup: string) => {
@@ -133,6 +139,7 @@ export function SymbolSearchForm() {
       );
       if (categoryKey) {
         form.setValue("category_id", categoryKey);
+        form.setValue("user_category_id", null);
       }
 
       // Currency
@@ -165,6 +172,9 @@ export function SymbolSearchForm() {
       formData.append("symbolLookup", values.symbolLookup);
       formData.append("name", values.name);
       formData.append("category_id", values.category_id);
+      if (values.user_category_id) {
+        formData.append("user_category_id", values.user_category_id);
+      }
       formData.append("currency", values.currency);
       formData.append("quantity", values.quantity.toString());
 
@@ -286,8 +296,16 @@ export function SymbolSearchForm() {
                 <FieldLabel htmlFor={field.name}>Category</FieldLabel>
                 <PositionCategorySelector
                   field={field}
+                  userCategoryId={userCategoryId}
+                  onUserCategoryChange={(value) =>
+                    form.setValue("user_category_id", value, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    })
+                  }
                   id={field.name}
                   positionType="asset"
+                  allowCustomCategories
                   disabled={!isFormReady}
                   isInvalid={fieldState.invalid}
                 />

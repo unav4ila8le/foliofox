@@ -18,7 +18,15 @@ interface CreateUserPositionCategoryInput {
   description?: string | null;
 }
 
-export type PositionCategoryOption = {
+interface FetchPositionCategoriesOptions {
+  positionType?: PositionType;
+  includeCustomCategories?: boolean;
+}
+
+// Normalized category row used by selectors and imports. System and custom
+// categories share one shape so the UI can persist selections without branching
+// on database table names.
+export type PositionCategoryListItem = {
   id: string;
   name: string;
   source: "system" | "custom";
@@ -72,68 +80,35 @@ async function fetchExistingUserCategoryByName(
   );
 }
 
-async function resolveNextUserCategoryDisplayOrder(
-  userId: string,
-  positionType: PositionType,
-) {
-  const supabase = await createClient();
-
-  const { data: latestCategory, error } = await supabase
-    .from("user_position_categories")
-    .select("display_order")
-    .eq("user_id", userId)
-    .eq("position_type", positionType)
-    .order("display_order", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (error) {
-    throw new Error(
-      `Failed to resolve custom category order: ${error.message}`,
-    );
-  }
-
-  return (latestCategory?.display_order ?? -1) + 1;
-}
-
 /**
- * Fetch all supported position categories
+ * Fetch position categories for UI and import flows.
+ *
+ * By default this returns only Foliofox system categories. Custom categories are
+ * opt-in because import and AI flows still need the canonical system taxonomy.
  */
-export async function fetchPositionCategories(
-  positionType: PositionType = "asset",
-) {
+export async function fetchPositionCategories({
+  positionType = "asset",
+  includeCustomCategories = false,
+}: FetchPositionCategoriesOptions = {}): Promise<PositionCategoryListItem[]> {
   const supabase = await createClient();
 
-  const { data: categories, error } = await supabase
+  const systemQuery = supabase
     .from("position_categories")
-    .select("id, name")
+    .select("id, name, position_type")
     .eq("position_type", positionType)
     .order("display_order", { ascending: true });
 
-  if (error) {
-    throw new Error(`Failed to fetch position categories: ${error.message}`);
-  }
-
-  return categories;
-}
-
-export async function fetchCombinedPositionCategories(
-  positionType: PositionType = "asset",
-): Promise<PositionCategoryOption[]> {
-  const supabase = await createClient();
+  const customQuery = includeCustomCategories
+    ? supabase
+        .from("user_position_categories")
+        .select("id, name, position_type")
+        .eq("position_type", positionType)
+        .order("name", { ascending: true })
+    : null;
 
   const [systemResult, customResult] = await Promise.all([
-    supabase
-      .from("position_categories")
-      .select("id, name, position_type")
-      .eq("position_type", positionType)
-      .order("display_order", { ascending: true }),
-    supabase
-      .from("user_position_categories")
-      .select("id, name, position_type")
-      .eq("position_type", positionType)
-      .order("display_order", { ascending: true })
-      .order("name", { ascending: true }),
+    systemQuery,
+    customQuery,
   ]);
 
   if (systemResult.error) {
@@ -142,7 +117,7 @@ export async function fetchCombinedPositionCategories(
     );
   }
 
-  if (customResult.error) {
+  if (customResult?.error) {
     throw new Error(
       `Failed to fetch custom position categories: ${customResult.error.message}`,
     );
@@ -159,13 +134,16 @@ export async function fetchCombinedPositionCategories(
     }),
   );
 
-  const customCategories = (customResult.data ?? []).map(
+  const customCategories = (customResult?.data ?? []).map(
     (
       category: Pick<UserPositionCategory, "id" | "name" | "position_type">,
     ) => ({
       id: category.id,
       name: category.name,
       source: "custom" as const,
+      // Custom categories intentionally opt out of the Foliofox taxonomy.
+      // "other" satisfies the required system category while user_category_id
+      // drives the visible label and user-facing grouping.
       category_id: "other",
       user_category_id: category.id,
       position_type: category.position_type,
@@ -204,11 +182,6 @@ export async function createUserPositionCategory({
     };
   }
 
-  const displayOrder = await resolveNextUserCategoryDisplayOrder(
-    user.id,
-    positionType,
-  );
-
   const { data: category, error } = await supabase
     .from("user_position_categories")
     .insert({
@@ -216,7 +189,6 @@ export async function createUserPositionCategory({
       position_type: positionType,
       name: normalizedName,
       description,
-      display_order: displayOrder,
     })
     .select("*")
     .single();

@@ -1,51 +1,87 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
-import { createClient } from "@/supabase/client";
+import { fetchPositionCategories } from "@/server/position-categories/fetch";
 
-import type { PositionCategory } from "@/types/global.types";
+import type { PositionCategoryListItem } from "@/server/position-categories/fetch";
 
-export function usePositionCategories(
-  positionType: "asset" | "liability" = "asset",
-) {
-  const [categories, setCategories] = useState<PositionCategory[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+interface UsePositionCategoriesOptions {
+  positionType?: "asset" | "liability";
+  // Keep system-only as the default. Custom categories are user-facing labels,
+  // while import and AI flows still validate against Foliofox system categories.
+  includeCustomCategories?: boolean;
+  enabled?: boolean;
+}
+
+export function usePositionCategories({
+  positionType = "asset",
+  includeCustomCategories = false,
+  enabled = true,
+}: UsePositionCategoriesOptions = {}) {
+  const [categories, setCategories] = useState<PositionCategoryListItem[]>([]);
+  const [isLoading, setIsLoading] = useState(enabled);
   const [error, setError] = useState<Error | null>(null);
 
+  // Exposed so create flows can refresh the selector after adding a category
+  // without duplicating fetch logic in the component.
+  const refreshCategories = useCallback(async () => {
+    if (!enabled) {
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const data = await fetchPositionCategories({
+        positionType,
+        includeCustomCategories,
+      });
+      setCategories(data);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      setError(new Error(errorMessage));
+      console.error("Failed to fetch position categories:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [positionType, includeCustomCategories, enabled]);
+
   useEffect(() => {
-    async function fetchPositionCategories() {
+    if (!enabled) {
+      return;
+    }
+
+    let isCurrent = true;
+
+    async function fetchCategories() {
       try {
-        // Supabase client
-        const supabase = createClient();
-
-        // Get position categories
-        const { data, error: supabaseError } = await supabase
-          .from("position_categories")
-          .select("*")
-          .eq("position_type", positionType)
-          .order("display_order", { ascending: true });
-
-        // Handle error
-        if (supabaseError) {
-          throw new Error(
-            `Error fetching position categories: ${supabaseError.message}`,
-          );
-        }
-
-        setCategories(data || []);
+        const data = await fetchPositionCategories({
+          positionType,
+          includeCustomCategories,
+        });
+        if (!isCurrent) return;
+        setCategories(data);
       } catch (err) {
+        if (!isCurrent) return;
         const errorMessage =
           err instanceof Error ? err.message : "Unknown error";
         setError(new Error(errorMessage));
         console.error("Failed to fetch position categories:", err);
       } finally {
-        setIsLoading(false);
+        if (isCurrent) {
+          setIsLoading(false);
+        }
       }
     }
 
-    fetchPositionCategories();
-  }, [positionType]);
+    fetchCategories();
 
-  return { categories, isLoading, error };
+    return () => {
+      isCurrent = false;
+    };
+  }, [positionType, includeCustomCategories, enabled]);
+
+  return { categories, isLoading, error, refreshCategories };
 }

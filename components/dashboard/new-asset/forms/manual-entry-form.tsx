@@ -45,6 +45,7 @@ const formSchema = z.object({
     .min(3, { error: "Name must be at least 3 characters." })
     .max(64, { error: "Name must not exceed 64 characters." }),
   category_id: z.string().min(1, { error: "Category is required." }),
+  user_category_id: z.string().nullable(),
   currency: z.string().length(3),
   unit_value: requiredNumberWithConstraints("Unit value is required.", {
     gte: { value: 0, error: "Value must be 0 or greater." },
@@ -88,6 +89,7 @@ export function ManualEntryForm() {
     defaultValues: {
       name: "",
       category_id: "",
+      user_category_id: null,
       currency: profile.display_currency,
       unit_value: "",
       quantity: "",
@@ -102,6 +104,10 @@ export function ManualEntryForm() {
   const currency = useWatch({
     control: form.control,
     name: "currency",
+  });
+  const userCategoryId = useWatch({
+    control: form.control,
+    name: "user_category_id",
   });
 
   // Number placeholders
@@ -122,6 +128,9 @@ export function ManualEntryForm() {
       const formData = new FormData();
       formData.append("name", values.name);
       formData.append("category_id", values.category_id);
+      if (values.user_category_id) {
+        formData.append("user_category_id", values.user_category_id);
+      }
       formData.append("currency", values.currency);
       formData.append("unit_value", values.unit_value.toString());
       formData.append("quantity", values.quantity.toString());
@@ -206,8 +215,16 @@ export function ManualEntryForm() {
                 <FieldLabel htmlFor={field.name}>Category</FieldLabel>
                 <PositionCategorySelector
                   field={field}
+                  userCategoryId={userCategoryId}
+                  onUserCategoryChange={(value) =>
+                    form.setValue("user_category_id", value, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    })
+                  }
                   id={field.name}
                   positionType="asset"
+                  allowCustomCategories
                   isInvalid={fieldState.invalid}
                 />
                 {fieldState.invalid && (

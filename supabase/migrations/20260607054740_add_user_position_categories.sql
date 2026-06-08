@@ -9,14 +9,11 @@ CREATE TABLE IF NOT EXISTS public.user_position_categories (
   position_type public.position_type NOT NULL,
   name text NOT NULL,
   description text,
-  display_order integer NOT NULL DEFAULT 0,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
 
   CONSTRAINT user_position_categories_name_not_blank_check
-    CHECK (btrim(name) <> ''),
-  CONSTRAINT user_position_categories_display_order_non_negative_check
-    CHECK (display_order >= 0)
+    CHECK (btrim(name) <> '')
 );
 
 COMMENT ON TABLE public.user_position_categories IS
@@ -25,14 +22,11 @@ COMMENT ON TABLE public.user_position_categories IS
 COMMENT ON COLUMN public.user_position_categories.position_type IS
   'Scopes custom categories to assets or liabilities.';
 
-COMMENT ON COLUMN public.user_position_categories.display_order IS
-  'Per-user ordering hint for custom category selectors.';
-
 CREATE UNIQUE INDEX IF NOT EXISTS uq_user_position_categories_user_type_lower_name
   ON public.user_position_categories(user_id, position_type, lower(btrim(name)));
 
-CREATE INDEX IF NOT EXISTS idx_user_position_categories_user_type_display_order
-  ON public.user_position_categories(user_id, position_type, display_order, name);
+CREATE INDEX IF NOT EXISTS idx_user_position_categories_user_type_name
+  ON public.user_position_categories(user_id, position_type, name);
 
 ALTER TABLE public.positions
   ADD COLUMN IF NOT EXISTS user_category_id uuid;

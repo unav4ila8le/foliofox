@@ -103,8 +103,7 @@ async function fetchPositionsImpl(
         display_order
       ),
       user_position_categories (
-        name,
-        display_order
+        name
       ),
       symbols (
         ticker

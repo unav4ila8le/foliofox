@@ -48,7 +48,7 @@ export async function AssetHeader({
       <div className="flex flex-col flex-wrap items-start gap-2 md:flex-row md:items-center">
         <h1 className="text-2xl font-semibold">{position.name}</h1>
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="secondary">{position.category_name}</Badge>
+          <Badge variant="secondary">{position.display_category_name}</Badge>
           {position.is_archived && (
             <Badge variant="secondary">
               <Archive className="size-4" /> Archived

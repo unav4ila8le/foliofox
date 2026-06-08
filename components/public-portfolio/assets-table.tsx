@@ -81,9 +81,9 @@ export function PublicPortfolioAssetsTable({
                       </TooltipTrigger>
                       <TooltipContent>{position.name}</TooltipContent>
                     </Tooltip>
-                    {position.category_name && (
+                    {position.display_category_name && (
                       <span className="text-muted-foreground text-xs">
-                        {position.category_name}
+                        {position.display_category_name}
                       </span>
                     )}
                   </div>
