@@ -84,15 +84,15 @@ export const calculateAssetAllocation = cache(
     } = {};
 
     positionsInTarget.forEach((position) => {
-      const category_id = position.display_category_id;
+      const displayCategoryId = position.display_category_id;
 
-      if (assetAllocationInTarget[category_id]) {
-        assetAllocationInTarget[category_id].total_value_target +=
+      if (assetAllocationInTarget[displayCategoryId]) {
+        assetAllocationInTarget[displayCategoryId].total_value_target +=
           position.total_value_target;
       } else {
-        assetAllocationInTarget[category_id] = {
-          category_id: category_id,
-          name: position.display_category_name || "",
+        assetAllocationInTarget[displayCategoryId] = {
+          category_id: displayCategoryId,
+          name: position.display_category_name,
           total_value_target: position.total_value_target,
         };
       }

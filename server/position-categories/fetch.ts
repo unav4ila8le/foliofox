@@ -56,11 +56,11 @@ function getUserCategoryLookupKey(name: string) {
 }
 
 async function fetchExistingUserCategoryByName(
+  supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
   positionType: PositionType,
   name: string,
 ): Promise<UserPositionCategory | null> {
-  const supabase = await createClient();
   const lookupKey = getUserCategoryLookupKey(name);
 
   const { data: categories, error } = await supabase
@@ -170,6 +170,7 @@ export async function createUserPositionCategory({
   }
 
   const existingCategory = await fetchExistingUserCategoryByName(
+    supabase,
     user.id,
     positionType,
     normalizedName,
@@ -204,6 +205,7 @@ export async function createUserPositionCategory({
 
   if (error?.code === "23505") {
     const duplicateCategory = await fetchExistingUserCategoryByName(
+      supabase,
       user.id,
       positionType,
       normalizedName,
@@ -222,10 +224,4 @@ export async function createUserPositionCategory({
     code: error?.code ?? "CUSTOM_CATEGORY_CREATE_FAILED",
     message: error?.message ?? "Failed to create custom category.",
   };
-}
-
-export async function resolveUserPositionCategoryByName(
-  input: CreateUserPositionCategoryInput,
-): Promise<UserPositionCategoryResult> {
-  return createUserPositionCategory(input);
 }

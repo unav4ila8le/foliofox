@@ -11,25 +11,19 @@ interface UsePositionCategoriesOptions {
   // Keep system-only as the default. Custom categories are user-facing labels,
   // while import and AI flows still validate against Foliofox system categories.
   includeCustomCategories?: boolean;
-  enabled?: boolean;
 }
 
 export function usePositionCategories({
   positionType = "asset",
   includeCustomCategories = false,
-  enabled = true,
 }: UsePositionCategoriesOptions = {}) {
   const [categories, setCategories] = useState<PositionCategoryListItem[]>([]);
-  const [isLoading, setIsLoading] = useState(enabled);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   // Exposed so create flows can refresh the selector after adding a category
   // without duplicating fetch logic in the component.
   const refreshCategories = useCallback(async () => {
-    if (!enabled) {
-      return;
-    }
-
     setIsLoading(true);
     setError(null);
 
@@ -46,13 +40,9 @@ export function usePositionCategories({
     } finally {
       setIsLoading(false);
     }
-  }, [positionType, includeCustomCategories, enabled]);
+  }, [positionType, includeCustomCategories]);
 
   useEffect(() => {
-    if (!enabled) {
-      return;
-    }
-
     let isCurrent = true;
 
     async function fetchCategories() {
@@ -81,7 +71,7 @@ export function usePositionCategories({
     return () => {
       isCurrent = false;
     };
-  }, [positionType, includeCustomCategories, enabled]);
+  }, [positionType, includeCustomCategories]);
 
   return { categories, isLoading, error, refreshCategories };
 }

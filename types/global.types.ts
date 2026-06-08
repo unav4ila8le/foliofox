@@ -16,7 +16,7 @@ export type TransformedPosition = Position & {
   category_name?: string;
   user_category_name?: string | null;
   display_category_id: string;
-  display_category_name?: string;
+  display_category_name: string;
   is_custom_category: boolean;
   symbol_ticker: string | null;
   current_quantity: number;
