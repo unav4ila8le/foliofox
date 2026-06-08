@@ -290,7 +290,8 @@ export async function getAssetsPerformance(params: GetAssetsPerformanceParams) {
           symbol: position.symbol_id
             ? (symbolIdToTicker.get(position.symbol_id) ?? null)
             : null,
-          category: position.category_name ?? position.category_id,
+          category:
+            position.display_category_name ?? position.display_category_id,
           currency: position.currency,
           isArchived: position.is_archived,
         },

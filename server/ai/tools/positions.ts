@@ -63,8 +63,8 @@ export async function getPositions(params: GetPositionsParams) {
   const items = filtered.map((p) => ({
     id: p.id as string,
     name: p.name as string,
-    category_id: p.category_id as string,
-    category: p.category_name as string,
+    category_id: p.display_category_id as string,
+    category: p.display_category_name as string,
     symbol: p.symbol_id ? (symbolIdToTicker.get(p.symbol_id) ?? null) : null,
     currency: p.currency as string,
     capital_gains_tax_rate: p.capital_gains_tax_rate as number | null,

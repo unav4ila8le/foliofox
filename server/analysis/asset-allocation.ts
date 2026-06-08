@@ -71,7 +71,10 @@ export const calculateAssetAllocation = cache(
       ),
     }));
 
-    // 5. Group by category and sum target-currency values
+    // 5. Group by the user-facing category and sum target-currency values.
+    // Custom categories intentionally use display_category_* here so allocation
+    // charts treat them as first-class slices instead of merging them into
+    // Foliofox's hidden system "other" fallback.
     const assetAllocationInTarget: {
       [key: string]: {
         category_id: string;
@@ -81,7 +84,7 @@ export const calculateAssetAllocation = cache(
     } = {};
 
     positionsInTarget.forEach((position) => {
-      const category_id = position.category_id;
+      const category_id = position.display_category_id;
 
       if (assetAllocationInTarget[category_id]) {
         assetAllocationInTarget[category_id].total_value_target +=
@@ -89,7 +92,7 @@ export const calculateAssetAllocation = cache(
       } else {
         assetAllocationInTarget[category_id] = {
           category_id: category_id,
-          name: (position as { category_name?: string }).category_name || "",
+          name: position.display_category_name || "",
           total_value_target: position.total_value_target,
         };
       }

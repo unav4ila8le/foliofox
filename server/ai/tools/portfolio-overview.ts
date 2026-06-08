@@ -131,8 +131,8 @@ export async function getPortfolioOverview(params: {
           symbol: position.symbol_id
             ? (symbolIdToTicker.get(position.symbol_id) ?? null)
             : null,
-          category: position.category_name!,
-          categoryId: position.category_id,
+          category: position.display_category_name!,
+          categoryId: position.display_category_id,
           capital_gains_tax_rate: position.capital_gains_tax_rate ?? null,
           quantity,
           unitValue: unitValueBase,
