@@ -26,7 +26,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
 import { HumbleWorthLogo } from "@/components/ui/logos/humbleworth-logo";
 import { CapitalGainsTaxRateField } from "@/components/dashboard/positions/shared/capital-gains-tax-rate-field";
-import { PositionCategorySelector } from "@/components/dashboard/position-category-selector";
+import { PositionCategorySelector } from "@/components/dashboard/categories/position-category-selector";
 
 import { useNewAssetDialog } from "../index";
 

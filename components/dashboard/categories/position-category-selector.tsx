@@ -1,8 +1,7 @@
 "use client";
 
-import { type SyntheticEvent, useState } from "react";
+import { useState } from "react";
 import { Check, ChevronsUpDown, PlusIcon } from "lucide-react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -15,28 +14,17 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Field, FieldError, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Spinner } from "@/components/ui/spinner";
 
+import { CreateCategoryDialog } from "@/components/dashboard/categories/create-category-dialog";
 import { cn } from "@/lib/utils";
 import { usePositionCategories } from "@/hooks/use-position-categories";
-import { createUserPositionCategory } from "@/server/position-categories/fetch";
 
 import type { PositionCategoryListItem } from "@/server/position-categories/fetch";
 
-// Props interface for react-hook-form integration
 interface CategorySelectorProps {
   field: {
     value: string | undefined;
@@ -153,9 +141,6 @@ function PositionCategoryList({
   refreshCategories,
 }: CategoryListProps) {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState("");
-  const [isCreating, setIsCreating] = useState(false);
-  const [createError, setCreateError] = useState<string | null>(null);
 
   const systemCategories = categories.filter(
     (category) => category.source === "system",
@@ -173,51 +158,14 @@ function PositionCategoryList({
     setOpen(false);
   }
 
-  async function handleCreateCategory(event: SyntheticEvent<HTMLFormElement>) {
-    event.preventDefault();
-    event.stopPropagation();
-
-    const normalizedName = newCategoryName.trim();
-    if (!normalizedName) {
-      setCreateError("Category name is required.");
-      return;
-    }
-
-    setIsCreating(true);
-    setCreateError(null);
-
-    try {
-      const result = await createUserPositionCategory({
-        name: normalizedName,
-        positionType,
-      });
-
-      if (!result.success) {
-        setCreateError(result.message);
-        return;
-      }
-
-      await refreshCategories();
-      // Creating a custom category immediately selects it. The hidden system
-      // category remains "other" so DB constraints and system-only analytics
-      // still have a canonical category to work with.
-      onChange("other");
-      onUserCategoryChange?.(result.category.id);
-      setNewCategoryName("");
-      setCreateDialogOpen(false);
-      setOpen(false);
-      toast.success(
-        result.created ? "Custom category created" : "Custom category selected",
-      );
-    } catch (error) {
-      setCreateError(
-        error instanceof Error
-          ? error.message
-          : "Failed to create custom category.",
-      );
-    } finally {
-      setIsCreating(false);
-    }
+  async function handleCategoryCreated(category: { id: string; name: string }) {
+    await refreshCategories();
+    // Creating a custom category immediately selects it. The hidden system
+    // category remains "other" so DB constraints and system-only analytics
+    // still have a canonical category to work with.
+    onChange("other");
+    onUserCategoryChange?.(category.id);
+    setOpen(false);
   }
 
   return (
@@ -283,7 +231,7 @@ function PositionCategoryList({
         </CommandList>
       </Command>
 
-      <Dialog
+      <CreateCategoryDialog
         open={createDialogOpen}
         onOpenChange={(nextOpen) => {
           setCreateDialogOpen(nextOpen);
@@ -291,49 +239,9 @@ function PositionCategoryList({
             setOpen(false);
           }
         }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add a custom category</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleCreateCategory} className="flex flex-col gap-4">
-            <Field data-invalid={Boolean(createError)}>
-              <FieldLabel htmlFor="custom-category-name">Name</FieldLabel>
-              <Input
-                id="custom-category-name"
-                value={newCategoryName}
-                onChange={(event) => setNewCategoryName(event.target.value)}
-                autoComplete="off"
-                aria-invalid={Boolean(createError)}
-              />
-              {createError && <FieldError>{createError}</FieldError>}
-            </Field>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setCreateDialogOpen(false);
-                  setOpen(false);
-                }}
-                disabled={isCreating}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isCreating}>
-                {isCreating ? (
-                  <>
-                    <Spinner />
-                    Saving...
-                  </>
-                ) : (
-                  "Save"
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+        positionType={positionType}
+        onCreated={handleCategoryCreated}
+      />
     </>
   );
 }
