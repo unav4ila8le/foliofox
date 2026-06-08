@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/supabase/server";
+import { resolvePositionCategorySelection } from "@/server/positions/category-selection";
 
 import type { Position } from "@/types/global.types";
 
@@ -10,14 +11,20 @@ export async function updatePosition(formData: FormData, positionId: string) {
   const supabase = await createClient();
 
   // Extract and validate data from formData
+  const categorySelection = resolvePositionCategorySelection(formData);
   const updateData: Partial<
     Pick<
       Position,
-      "name" | "category_id" | "description" | "capital_gains_tax_rate"
+      | "name"
+      | "category_id"
+      | "user_category_id"
+      | "description"
+      | "capital_gains_tax_rate"
     >
   > = {
     name: formData.get("name") as string,
-    category_id: formData.get("category_id") as string,
+    category_id: categorySelection.category_id,
+    user_category_id: categorySelection.user_category_id,
     description: (formData.get("description") as string) || null,
   };
 

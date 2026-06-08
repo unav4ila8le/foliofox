@@ -31,7 +31,9 @@ export async function getAllocationDrift(params: GetAllocationDriftParams) {
     const compareKey = toCivilDateKey(params.compareToDate) ?? todayDateKey;
     const currentKey = todayDateKey;
 
-    // 2. Get asset allocations for both dates using centralized function.
+    // 2. Get user-facing asset allocations for both dates. The centralized
+    // function groups custom categories by display_category_* so drift compares
+    // the same labels users see in dashboard allocation charts.
     const [previousAllocation, currentAllocation] = await Promise.all([
       calculateAssetAllocation(baseCurrency, compareKey),
       calculateAssetAllocation(baseCurrency, currentKey),

@@ -3,7 +3,7 @@
 import { toast } from "sonner";
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
-import { PositionCategorySelector } from "@/components/dashboard/position-category-selector";
+import { PositionCategorySelector } from "@/components/dashboard/categories/position-category-selector";
 import { CapitalGainsTaxRateField } from "@/components/dashboard/positions/shared/capital-gains-tax-rate-field";
 import { UpdateSymbolDialog } from "@/components/dashboard/positions/shared/update-symbol-dialog";
 
@@ -42,6 +42,7 @@ const formSchema = z.object({
     .min(3, { error: "Name must be at least 3 characters." })
     .max(64, { error: "Name must not exceed 64 characters." }),
   category_id: z.string().min(1, { error: "Category is required." }),
+  user_category_id: z.string().nullable(),
   capital_gains_tax_rate: capitalGainsTaxRatePercentSchema,
   description: z
     .string()
@@ -64,6 +65,7 @@ export function UpdateAssetForm({
     defaultValues: {
       name: position.name,
       category_id: position.category_id,
+      user_category_id: position.user_category_id,
       capital_gains_tax_rate: formatCapitalGainsTaxRatePercent(
         position.capital_gains_tax_rate,
       ),
@@ -73,6 +75,10 @@ export function UpdateAssetForm({
 
   // Get isDirty state from formState
   const { isDirty } = form.formState;
+  const userCategoryId = useWatch({
+    control: form.control,
+    name: "user_category_id",
+  });
 
   // Submit handler
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -81,6 +87,9 @@ export function UpdateAssetForm({
       const formData = new FormData();
       formData.append("name", values.name);
       formData.append("category_id", values.category_id);
+      if (values.user_category_id) {
+        formData.append("user_category_id", values.user_category_id);
+      }
       formData.append("description", values.description || "");
       const capitalGainsTaxRate = parseCapitalGainsTaxRatePercent(
         values.capital_gains_tax_rate,
@@ -147,7 +156,15 @@ export function UpdateAssetForm({
                   <FieldLabel htmlFor={field.name}>Category</FieldLabel>
                   <PositionCategorySelector
                     field={field}
+                    userCategoryId={userCategoryId}
+                    onUserCategoryChange={(value) =>
+                      form.setValue("user_category_id", value, {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      })
+                    }
                     isInvalid={fieldState.invalid}
+                    allowCustomCategories
                   />
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />

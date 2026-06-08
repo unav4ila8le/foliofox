@@ -14,6 +14,10 @@ export type Position = Tables<"positions">;
 export type TransformedPosition = Position & {
   is_archived: boolean;
   category_name?: string;
+  user_category_name?: string | null;
+  display_category_id: string;
+  display_category_name: string;
+  is_custom_category: boolean;
   symbol_ticker: string | null;
   current_quantity: number;
   current_unit_value: number;
@@ -70,6 +74,7 @@ export type TransformedPositionSnapshot = PositionSnapshot & {
 
 // Position Categories
 export type PositionCategory = Tables<"position_categories">;
+export type UserPositionCategory = Tables<"user_position_categories">;
 
 // Exchange Rate
 export type ExchangeRate = Tables<"exchange_rates">;

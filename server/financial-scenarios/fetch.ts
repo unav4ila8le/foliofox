@@ -165,6 +165,9 @@ export const fetchScenarioInitialValueSuggestions = cache(
         }),
       ]);
 
+      // Scenario starting-cash suggestions intentionally use the fixed Foliofox
+      // system category. A custom category named "Emergency Cash" is not treated
+      // as cash unless the position itself is assigned to system category cash.
       const cashPositions = assetPositions.filter(
         (position) => position.category_id === "cash",
       );

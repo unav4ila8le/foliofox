@@ -129,10 +129,10 @@ function PositionList({
   positions,
   isLoading,
 }: PositionListProps) {
-  // Group by category name (server already orders by category display_order)
+  // Group by visible category name (custom category when present)
   const grouped = [...positions].reduce<Record<string, TransformedPosition[]>>(
     (acc, p) => {
-      const key = p.category_name || "Other";
+      const key = p.display_category_name || "Other";
       (acc[key] ||= []).push(p);
       return acc;
     },

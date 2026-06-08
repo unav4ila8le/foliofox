@@ -51,7 +51,7 @@ export const columns: ColumnDef<PositionWithProfitLoss>[] = [
   },
   // Category header - hidden
   {
-    accessorKey: "category_id",
+    accessorKey: "display_category_id",
     header: () => null,
     cell: () => null,
     enableSorting: false,
@@ -77,7 +77,7 @@ export const columns: ColumnDef<PositionWithProfitLoss>[] = [
       if (row.getIsGrouped()) {
         // group row → show category name and number of positions aligned under Name column
         const firstLeaf = row.getLeafRows()[0];
-        const categoryName = firstLeaf?.original.category_name;
+        const categoryName = firstLeaf?.original.display_category_name;
         return (
           <div className="flex items-center gap-2 font-semibold">
             {categoryName}

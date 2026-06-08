@@ -6,6 +6,7 @@ import { createSymbol } from "@/server/symbols/create";
 import { resolveSymbolInput } from "@/server/symbols/resolve";
 import { createPositionSnapshot } from "@/server/position-snapshots/create";
 import { fetchSingleQuote } from "@/server/quotes/fetch";
+import { resolvePositionCategorySelection } from "@/server/positions/category-selection";
 import { formatUTCDateKey } from "@/lib/date/date-utils";
 
 import type { Position } from "@/types/global.types";
@@ -42,7 +43,7 @@ export async function createPosition(formData: FormData) {
   // Required fields
   const name = (formData.get("name") as string) || "";
   const currency = (formData.get("currency") as string) || "";
-  const category_id = (formData.get("category_id") as string) || "other";
+  const categorySelection = resolvePositionCategorySelection(formData);
   const type = (formData.get("type") as Position["type"]) || "asset";
   const description = (formData.get("description") as string) || null;
 
@@ -159,7 +160,8 @@ export async function createPosition(formData: FormData) {
       type,
       name,
       currency,
-      category_id,
+      category_id: categorySelection.category_id,
+      user_category_id: categorySelection.user_category_id,
       description,
       symbol_id: symbolUuid,
       domain_id: domainId,

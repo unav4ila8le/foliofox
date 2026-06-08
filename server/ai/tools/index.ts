@@ -58,7 +58,7 @@ export const aiTools = {
   getPositions: routedTool({
     telemetryRoutes: ["general"],
     description:
-      "Get raw positions in original currencies (no FX conversion). Optionally filter by position IDs. Uses market prices as-of the given date (defaults to today) for market-backed positions (e.g., securities, domains, etc.).",
+      "Get raw positions in original currencies (no FX conversion). Optionally filter by position IDs. Uses market prices as-of the given date (defaults to today) for market-backed positions (e.g., securities, domains, etc.). Category fields: category_id is the canonical Foliofox system category id; category is the user-facing category label; display_category_id is the user-facing grouping id.",
     inputSchema: z.object({
       positionIds: z
         .array(z.string())

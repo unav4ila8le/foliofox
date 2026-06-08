@@ -27,7 +27,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-import { PositionCategorySelector } from "@/components/dashboard/position-category-selector";
+import { PositionCategorySelector } from "@/components/dashboard/categories/position-category-selector";
 import { CurrencySelector } from "@/components/dashboard/currency-selector";
 import { SymbolSearch } from "@/components/dashboard/symbol-search";
 
@@ -36,7 +36,7 @@ import { formatNumber } from "@/lib/number-format";
 import { normalizeCapitalGainsTaxRateToDecimal } from "@/lib/capital-gains-tax-rate";
 import { useLocale } from "@/hooks/use-locale";
 
-import type { PositionCategory } from "@/types/global.types";
+import type { PositionCategoryListItem } from "@/server/position-categories/fetch";
 import type { CurrencyValidationResult } from "@/server/currencies/validate";
 import type { SymbolValidationResult } from "@/server/symbols/validate";
 import type { PositionImportRow } from "@/lib/import/positions/types";
@@ -47,7 +47,7 @@ interface ReviewFormProps {
   onCancel: () => void;
   onImport: (positions: PositionImportRow[]) => Promise<ImportActionResult>;
   onSuccess: () => void;
-  categories: PositionCategory[];
+  categories: Pick<PositionCategoryListItem, "id" | "name">[];
   currencyValidation: Record<string, CurrencyValidationResult>;
   symbolValidation: Record<string, SymbolValidationResult>;
 }

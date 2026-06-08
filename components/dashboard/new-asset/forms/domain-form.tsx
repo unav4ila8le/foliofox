@@ -26,6 +26,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
 import { HumbleWorthLogo } from "@/components/ui/logos/humbleworth-logo";
 import { CapitalGainsTaxRateField } from "@/components/dashboard/positions/shared/capital-gains-tax-rate-field";
+import { PositionCategorySelector } from "@/components/dashboard/categories/position-category-selector";
 
 import { useNewAssetDialog } from "../index";
 
@@ -51,6 +52,8 @@ function cleanDomain(domain: string): string {
 
 const formSchema = z.object({
   domain: z.string().regex(z.regexes.domain, { error: "Invalid domain name." }),
+  category_id: z.string().min(1, { error: "Category is required." }),
+  user_category_id: z.string().nullable(),
   valuation: z.number().gte(0).optional(),
   capital_gains_tax_rate: capitalGainsTaxRatePercentSchema,
   description: z
@@ -75,6 +78,8 @@ export function DomainForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       domain: "",
+      category_id: "domain",
+      user_category_id: null,
       valuation: undefined,
       capital_gains_tax_rate: "",
       description: "",
@@ -90,6 +95,10 @@ export function DomainForm() {
     control: form.control,
     name: "valuation",
   }) as number;
+  const userCategoryId = useWatch({
+    control: form.control,
+    name: "user_category_id",
+  });
 
   // Check if domain is valid for API call
   const isDomainValid = domain && z.regexes.domain.test(domain);
@@ -139,7 +148,10 @@ export function DomainForm() {
       const formData = new FormData();
       formData.append("name", values.domain);
       formData.append("domain_id", values.domain);
-      formData.append("category_id", "domain");
+      formData.append("category_id", values.category_id);
+      if (values.user_category_id) {
+        formData.append("user_category_id", values.user_category_id);
+      }
       formData.append("currency", "USD");
       formData.append("quantity", "1");
       formData.append("unit_value", finalValuation.toString());
@@ -232,6 +244,34 @@ export function DomainForm() {
                   Do not include the &quot;https://&quot; or &quot;www.&quot;
                   prefix.
                 </FieldDescription>
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+          />
+
+          {/* Category */}
+          <Controller
+            control={form.control}
+            name="category_id"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor={field.name}>Category</FieldLabel>
+                <PositionCategorySelector
+                  field={field}
+                  userCategoryId={userCategoryId}
+                  onUserCategoryChange={(value) =>
+                    form.setValue("user_category_id", value, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    })
+                  }
+                  id={field.name}
+                  positionType="asset"
+                  allowCustomCategories
+                  isInvalid={fieldState.invalid}
+                />
                 {fieldState.invalid && (
                   <FieldError errors={[fieldState.error]} />
                 )}

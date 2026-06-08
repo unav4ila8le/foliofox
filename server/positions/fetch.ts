@@ -102,6 +102,9 @@ async function fetchPositionsImpl(
         position_type,
         display_order
       ),
+      user_position_categories (
+        name
+      ),
       symbols (
         ticker
       )
@@ -227,11 +230,25 @@ async function fetchPositionsImpl(
     const symbolRow = Array.isArray(position.symbols)
       ? position.symbols[0]
       : position.symbols;
+    const userCategoryRow = Array.isArray(position.user_position_categories)
+      ? position.user_position_categories[0]
+      : position.user_position_categories;
+    const userCategoryName = userCategoryRow?.name ?? null;
+    const isCustomCategory = Boolean(
+      position.user_category_id && userCategoryName,
+    );
+    const categoryName = position.position_categories?.name;
 
     return {
       ...(position as Position),
       is_archived: position.archived_at !== null,
-      category_name: position.position_categories?.name,
+      category_name: categoryName,
+      user_category_name: userCategoryName,
+      display_category_id: isCustomCategory
+        ? position.user_category_id!
+        : position.category_id,
+      display_category_name: userCategoryName ?? categoryName,
+      is_custom_category: isCustomCategory,
       symbol_ticker: symbolRow?.ticker ?? null,
       symbol_id: position.symbol_id ?? null,
       domain_id: position.domain_id ?? null,

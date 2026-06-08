@@ -37,7 +37,9 @@ const WarningSchema = z.union([z.string(), z.object({ warning: z.string() })]);
 
 // Function to create the position row schema with dynamic categories
 async function createPositionRowSchema() {
-  const positionCategories = await fetchPositionCategories("asset");
+  const positionCategories = await fetchPositionCategories({
+    positionType: "asset",
+  });
   const categoryIds = positionCategories.map((cat) => cat.id);
 
   return z.object({
@@ -69,7 +71,9 @@ export async function createExtractionResultSchema() {
 
 // Function to create prompt with dynamic categories
 export async function createExtractionPrompt(): Promise<string> {
-  const positionCategories = await fetchPositionCategories("asset");
+  const positionCategories = await fetchPositionCategories({
+    positionType: "asset",
+  });
   const categoryIds = positionCategories.map((cat) => cat.id);
   const categoriesList = categoryIds.join(", ");
 
