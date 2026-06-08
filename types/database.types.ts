@@ -714,6 +714,7 @@ export type Database = {
           symbol_id: string | null
           type: Database["public"]["Enums"]["position_type"]
           updated_at: string
+          user_category_id: string | null
           user_id: string
         }
         Insert: {
@@ -729,6 +730,7 @@ export type Database = {
           symbol_id?: string | null
           type: Database["public"]["Enums"]["position_type"]
           updated_at?: string
+          user_category_id?: string | null
           user_id: string
         }
         Update: {
@@ -744,6 +746,7 @@ export type Database = {
           symbol_id?: string | null
           type?: Database["public"]["Enums"]["position_type"]
           updated_at?: string
+          user_category_id?: string | null
           user_id?: string
         }
         Relationships: [
@@ -766,6 +769,13 @@ export type Database = {
             columns: ["symbol_id"]
             isOneToOne: false
             referencedRelation: "symbols"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "positions_user_category_id_fkey"
+            columns: ["user_category_id"]
+            isOneToOne: false
+            referencedRelation: "user_position_categories"
             referencedColumns: ["id"]
           },
         ]
@@ -995,6 +1005,39 @@ export type Database = {
             referencedColumns: ["alphabetic_code"]
           },
         ]
+      }
+      user_position_categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          name: string
+          position_type: Database["public"]["Enums"]["position_type"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          name: string
+          position_type: Database["public"]["Enums"]["position_type"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          name?: string
+          position_type?: Database["public"]["Enums"]["position_type"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
