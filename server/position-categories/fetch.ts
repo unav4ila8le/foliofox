@@ -1,7 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-
 import { getCurrentUser } from "@/server/auth/actions";
 import { createClient } from "@/supabase/server";
 
@@ -10,74 +8,19 @@ import type {
   UserPositionCategory,
 } from "@/types/global.types";
 
-type PositionType = "asset" | "liability";
-
-interface CreateUserPositionCategoryInput {
-  name: string;
-  positionType?: PositionType;
-  description?: string | null;
-}
+import type {
+  PositionCategoryListItem,
+  PositionType,
+  UserPositionCategoryListItem,
+} from "./types";
 
 interface FetchPositionCategoriesOptions {
   positionType?: PositionType;
   includeCustomCategories?: boolean;
 }
 
-// Normalized category row used by selectors and imports. System and custom
-// categories share one shape so the UI can persist selections without branching
-// on database table names.
-export type PositionCategoryListItem = {
-  id: string;
-  name: string;
-  source: "system" | "custom";
-  category_id: string;
-  user_category_id: string | null;
-  position_type: PositionType;
-};
-
-type UserPositionCategoryResult =
-  | {
-      success: true;
-      category: UserPositionCategory;
-      created: boolean;
-    }
-  | {
-      success: false;
-      code: string;
-      message: string;
-    };
-
-function normalizeUserCategoryName(name: string) {
-  return name.trim();
-}
-
-function getUserCategoryLookupKey(name: string) {
-  return normalizeUserCategoryName(name).toLocaleLowerCase();
-}
-
-async function fetchExistingUserCategoryByName(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  userId: string,
-  positionType: PositionType,
-  name: string,
-): Promise<UserPositionCategory | null> {
-  const lookupKey = getUserCategoryLookupKey(name);
-
-  const { data: categories, error } = await supabase
-    .from("user_position_categories")
-    .select("*")
-    .eq("user_id", userId)
-    .eq("position_type", positionType);
-
-  if (error) {
-    throw new Error(`Failed to fetch custom categories: ${error.message}`);
-  }
-
-  return (
-    categories?.find(
-      (category) => getUserCategoryLookupKey(category.name) === lookupKey,
-    ) ?? null
-  );
+interface FetchUserPositionCategoriesWithUsageOptions {
+  positionType?: PositionType;
 }
 
 /**
@@ -153,75 +96,56 @@ export async function fetchPositionCategories({
   return [...systemCategories, ...customCategories];
 }
 
-export async function createUserPositionCategory({
-  name,
+export async function fetchUserPositionCategoriesWithUsage({
   positionType = "asset",
-  description = null,
-}: CreateUserPositionCategoryInput): Promise<UserPositionCategoryResult> {
+}: FetchUserPositionCategoriesWithUsageOptions = {}): Promise<
+  UserPositionCategoryListItem[]
+> {
   const { supabase, user } = await getCurrentUser();
-  const normalizedName = normalizeUserCategoryName(name);
 
-  if (!normalizedName) {
-    return {
-      success: false,
-      code: "INVALID_INPUT",
-      message: "Category name is required.",
-    };
-  }
+  const [categoriesResult, positionsResult] = await Promise.all([
+    supabase
+      .from("user_position_categories")
+      .select("id, name, position_type")
+      .eq("user_id", user.id)
+      .eq("position_type", positionType)
+      .order("name", { ascending: true }),
+    supabase
+      .from("positions")
+      .select("user_category_id")
+      .eq("user_id", user.id)
+      .eq("type", positionType)
+      .not("user_category_id", "is", null),
+  ]);
 
-  const existingCategory = await fetchExistingUserCategoryByName(
-    supabase,
-    user.id,
-    positionType,
-    normalizedName,
-  );
-  if (existingCategory) {
-    return {
-      success: true,
-      category: existingCategory,
-      created: false,
-    };
-  }
-
-  const { data: category, error } = await supabase
-    .from("user_position_categories")
-    .insert({
-      user_id: user.id,
-      position_type: positionType,
-      name: normalizedName,
-      description,
-    })
-    .select("*")
-    .single();
-
-  if (category) {
-    revalidatePath("/dashboard", "layout");
-    return {
-      success: true,
-      category,
-      created: true,
-    };
-  }
-
-  if (error?.code === "23505") {
-    const duplicateCategory = await fetchExistingUserCategoryByName(
-      supabase,
-      user.id,
-      positionType,
-      normalizedName,
+  if (categoriesResult.error) {
+    throw new Error(
+      `Failed to fetch custom position categories: ${categoriesResult.error.message}`,
     );
-    if (duplicateCategory) {
-      return {
-        success: true,
-        category: duplicateCategory,
-        created: false,
-      };
-    }
   }
 
-  return {
-    success: false,
-    code: error?.code ?? "CUSTOM_CATEGORY_CREATE_FAILED",
-    message: error?.message ?? "Failed to create custom category.",
-  };
+  if (positionsResult.error) {
+    throw new Error(
+      `Failed to fetch position category usage: ${positionsResult.error.message}`,
+    );
+  }
+
+  const positionCountByCategoryId = new Map<string, number>();
+  for (const position of positionsResult.data ?? []) {
+    if (!position.user_category_id) {
+      continue;
+    }
+
+    positionCountByCategoryId.set(
+      position.user_category_id,
+      (positionCountByCategoryId.get(position.user_category_id) ?? 0) + 1,
+    );
+  }
+
+  return (categoriesResult.data ?? []).map((category) => ({
+    id: category.id,
+    name: category.name,
+    position_type: category.position_type,
+    position_count: positionCountByCategoryId.get(category.id) ?? 0,
+  }));
 }

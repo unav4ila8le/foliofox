@@ -15,7 +15,7 @@ import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 
-import { createUserPositionCategory } from "@/server/position-categories/fetch";
+import { createUserPositionCategory } from "@/server/position-categories/create";
 
 interface CreateCategoryDialogProps {
   open: boolean;
@@ -85,7 +85,7 @@ export function CreateCategoryDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent>
+      <DialogContent aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>Add a custom category</DialogTitle>
         </DialogHeader>

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { fetchPositionCategories } from "@/server/position-categories/fetch";
 
-import type { PositionCategoryListItem } from "@/server/position-categories/fetch";
+import type { PositionCategoryListItem } from "@/server/position-categories/types";
 
 interface UsePositionCategoriesOptions {
   positionType?: "asset" | "liability";

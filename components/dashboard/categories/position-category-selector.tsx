@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ChevronsUpDown, PlusIcon } from "lucide-react";
+import { Check, ChevronsUpDown, PlusIcon, Settings2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -20,10 +20,11 @@ import {
 } from "@/components/ui/popover";
 
 import { CreateCategoryDialog } from "@/components/dashboard/categories/create-category-dialog";
+import { ManageCategoriesDialog } from "@/components/dashboard/categories/manage-categories-dialog";
 import { cn } from "@/lib/utils";
 import { usePositionCategories } from "@/hooks/use-position-categories";
 
-import type { PositionCategoryListItem } from "@/server/position-categories/fetch";
+import type { PositionCategoryListItem } from "@/server/position-categories/types";
 
 interface CategorySelectorProps {
   field: {
@@ -141,6 +142,7 @@ function PositionCategoryList({
   refreshCategories,
 }: CategoryListProps) {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [manageDialogOpen, setManageDialogOpen] = useState(false);
 
   const systemCategories = categories.filter(
     (category) => category.source === "system",
@@ -166,6 +168,16 @@ function PositionCategoryList({
     onChange("other");
     onUserCategoryChange?.(category.id);
     setOpen(false);
+  }
+
+  async function handleCategoriesChanged() {
+    await refreshCategories();
+  }
+
+  function handleCategoryDeleted(deletedCategoryId: string) {
+    if (userCategoryId === deletedCategoryId) {
+      onUserCategoryChange?.(null);
+    }
   }
 
   return (
@@ -198,7 +210,21 @@ function PositionCategoryList({
           {allowCustomCategories && (
             <>
               <CommandSeparator />
-              <CommandGroup heading="Custom Categories">
+              <CommandGroup
+                heading={
+                  <div className="flex items-center justify-between gap-2">
+                    <span>Custom Categories</span>
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      onClick={() => setManageDialogOpen(true)}
+                    >
+                      <Settings2 />
+                      Manage
+                    </Button>
+                  </div>
+                }
+              >
                 {customCategories.map((category) => (
                   <CommandItem
                     key={category.id}
@@ -223,7 +249,7 @@ function PositionCategoryList({
                   value="add-new-custom-category"
                 >
                   <PlusIcon />
-                  Add new custom category
+                  Add new
                 </CommandItem>
               </CommandGroup>
             </>
@@ -241,6 +267,19 @@ function PositionCategoryList({
         }}
         positionType={positionType}
         onCreated={handleCategoryCreated}
+      />
+
+      <ManageCategoriesDialog
+        open={manageDialogOpen}
+        onOpenChange={(nextOpen) => {
+          setManageDialogOpen(nextOpen);
+          if (!nextOpen) {
+            setOpen(false);
+          }
+        }}
+        positionType={positionType}
+        onCategoriesChanged={handleCategoriesChanged}
+        onCategoryDeleted={handleCategoryDeleted}
       />
     </>
   );

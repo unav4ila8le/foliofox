@@ -50,8 +50,12 @@ vi.mock("@/hooks/use-position-categories", () => ({
   }),
 }));
 
-vi.mock("@/server/position-categories/fetch", () => ({
+vi.mock("@/server/position-categories/create", () => ({
   createUserPositionCategory: mocks.createUserPositionCategory,
+}));
+
+vi.mock("@/server/position-categories/fetch", () => ({
+  fetchUserPositionCategoriesWithUsage: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock("sonner", () => ({
@@ -90,6 +94,7 @@ describe("PositionCategorySelector", () => {
     expect(screen.getAllByText("Equity").length).toBeGreaterThan(0);
     expect(screen.getByText("Retirement")).toBeTruthy();
     expect(screen.getByText("Add new custom category")).toBeTruthy();
+    expect(screen.getByText("Manage custom categories")).toBeTruthy();
   });
 
   it("selects a custom category as other plus user category id", () => {

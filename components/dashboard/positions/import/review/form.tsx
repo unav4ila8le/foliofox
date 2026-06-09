@@ -36,7 +36,7 @@ import { formatNumber } from "@/lib/number-format";
 import { normalizeCapitalGainsTaxRateToDecimal } from "@/lib/capital-gains-tax-rate";
 import { useLocale } from "@/hooks/use-locale";
 
-import type { PositionCategoryListItem } from "@/server/position-categories/fetch";
+import type { PositionCategoryListItem } from "@/server/position-categories/types";
 import type { CurrencyValidationResult } from "@/server/currencies/validate";
 import type { SymbolValidationResult } from "@/server/symbols/validate";
 import type { PositionImportRow } from "@/lib/import/positions/types";
