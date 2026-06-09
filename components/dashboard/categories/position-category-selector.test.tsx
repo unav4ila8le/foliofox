@@ -93,8 +93,10 @@ describe("PositionCategorySelector", () => {
     expect(screen.getByText("Custom Categories")).toBeTruthy();
     expect(screen.getAllByText("Equity").length).toBeGreaterThan(0);
     expect(screen.getByText("Retirement")).toBeTruthy();
-    expect(screen.getByText("Add new custom category")).toBeTruthy();
-    expect(screen.getByText("Manage custom categories")).toBeTruthy();
+    expect(screen.getByText("Add new")).toBeTruthy();
+    expect(
+      screen.getByRole("group", { name: "Custom Categories Manage" }),
+    ).toBeTruthy();
   });
 
   it("selects a custom category as other plus user category id", () => {
@@ -139,7 +141,7 @@ describe("PositionCategorySelector", () => {
     );
 
     openSelector();
-    fireEvent.click(screen.getByText("Add new custom category"));
+    fireEvent.click(screen.getByText("Add new"));
     fireEvent.change(screen.getByLabelText("Name"), {
       target: { value: "Wine Collection" },
     });
@@ -181,7 +183,7 @@ describe("PositionCategorySelector", () => {
     );
 
     openSelector();
-    fireEvent.click(screen.getByText("Add new custom category"));
+    fireEvent.click(screen.getByText("Add new"));
     fireEvent.change(screen.getByLabelText("Name"), {
       target: { value: "Wine Collection" },
     });
