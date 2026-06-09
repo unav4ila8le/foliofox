@@ -39,8 +39,8 @@ import {
 
 // Allow streaming responses up to 160 seconds (reasoning models need more time)
 export const maxDuration = 160;
-const MAX_TOOL_CALLS_PER_TURN = 8;
-const MAX_CALLS_PER_TOOL_PER_TURN = 4;
+const MAX_TOOL_CALLS_PER_TURN = 16;
+const MAX_CALLS_PER_TOOL_PER_TURN = 6;
 const TOOL_BUDGET_FINAL_SYNTHESIS_INSTRUCTION =
   "Tool-call budget is exhausted for this turn. Do not emit tool-call syntax, JSON function-call payloads, or pseudo tool invocations. Use already retrieved tool results to provide the best direct answer now. If critical data is still missing, ask one concise clarification question.";
 
