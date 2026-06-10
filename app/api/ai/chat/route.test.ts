@@ -563,7 +563,7 @@ describe("POST /api/ai/chat", () => {
     expect(overviewTool?.execute).toBeDefined();
     expect(searchSymbolsTool?.execute).toBeDefined();
 
-    for (let call = 0; call < 4; call += 1) {
+    for (let call = 0; call < 6; call += 1) {
       await overviewTool!.execute!({ call, tool: "overview" }, {} as never);
       await searchSymbolsTool!.execute!({ call, tool: "search" }, {} as never);
     }
