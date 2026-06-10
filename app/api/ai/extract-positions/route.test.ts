@@ -14,7 +14,7 @@ vi.mock("ai", () => ({
 
 vi.mock("@/server/ai/provider", () => ({
   aiModel: vi.fn(() => "model"),
-  extractionModelId: "gpt-5-mini",
+  extractionModelId: "gpt-5.4-mini",
 }));
 
 vi.mock("@/lib/import/positions/ai-extraction", () => ({

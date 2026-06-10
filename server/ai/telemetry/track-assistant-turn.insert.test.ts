@@ -31,7 +31,7 @@ describe("trackAssistantTurn insert behavior", () => {
     await trackAssistantTurn({
       conversationId: "d9ef7f5c-9077-4703-8164-802e44f278a1",
       assistantMessageId: "assistant-1",
-      model: "gpt-5-mini",
+      model: "gpt-5.4-mini",
       promptSource: "typed",
       message: {
         id: "assistant-1",
@@ -51,7 +51,7 @@ describe("trackAssistantTurn insert behavior", () => {
     await trackAssistantTurn({
       conversationId: "not-a-uuid",
       assistantMessageId: "c18d1bdf-32ef-4f5a-9c37-d44229f1e7ea",
-      model: "gpt-5-mini",
+      model: "gpt-5.4-mini",
       promptSource: "typed",
       message: {
         id: "c18d1bdf-32ef-4f5a-9c37-d44229f1e7ea",
@@ -71,7 +71,7 @@ describe("trackAssistantTurn insert behavior", () => {
     await trackAssistantTurn({
       conversationId: "d9ef7f5c-9077-4703-8164-802e44f278a1",
       assistantMessageId: "c18d1bdf-32ef-4f5a-9c37-d44229f1e7ea",
-      model: "gpt-5-mini",
+      model: "gpt-5.4-mini",
       promptSource: "typed",
       message: {
         id: "c18d1bdf-32ef-4f5a-9c37-d44229f1e7ea",

@@ -23,14 +23,14 @@ Columns: `id, conversation_id, role, content, model`
 - Users vs assistant: 151 user, 149 assistant
 - Single-turn conversations (1 user + 1 assistant): 47/75 (62.7%)
 - Models in sample:
-  - `gpt-5-mini` (including `openai/gpt-5-mini`): 202 messages
+  - `gpt-5.4-mini` (including `openai/gpt-5.4-mini`): 202 messages
   - `gpt-4o-mini`: 98 messages
 
 ### Key Behavioral Signals
 
 - User messages are short: average ~70 characters.
 - Assistant messages are long: average ~3209 characters (median ~2790).
-- For `gpt-5-mini` specifically, assistant average is ~4012 characters.
+- For `gpt-5.4-mini` specifically, assistant average is ~4012 characters.
 - Suggestion bias is material:
   - 22.5% of all user turns are exact quick-question prompts.
   - 40.0% of first user prompts per conversation are exact quick-question prompts.
@@ -55,7 +55,7 @@ Columns: `id, conversation_id, role, content, model`
 ## Important Caveats
 
 1. Quick-question prompts significantly bias message distribution and engagement metrics.
-2. This dataset spans at least two model eras (`gpt-4o-mini` and `gpt-5-mini`), so quality/length comparisons must be segmented.
+2. This dataset spans at least two model eras (`gpt-4o-mini` and `gpt-5.4-mini`), so quality/length comparisons must be segmented.
 3. CSV includes only persisted message text, not explicit metadata for prompt source (typed vs suggestion click), tool success, or render success.
 
 ---

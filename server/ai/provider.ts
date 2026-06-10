@@ -3,7 +3,7 @@ import type { LanguageModel } from "ai";
 
 type SupportedAIProvider = "openai";
 
-const DEFAULT_MODEL_ID = "gpt-5-mini";
+const DEFAULT_MODEL_ID = "gpt-5.4-mini";
 const DEFAULT_AI_PROVIDER: SupportedAIProvider = "openai";
 
 const resolveProvider = (
