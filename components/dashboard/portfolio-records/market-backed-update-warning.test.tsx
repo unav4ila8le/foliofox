@@ -166,6 +166,8 @@ function createPortfolioRecordFixture(
     quantity: 10,
     unit_value: 100,
     description: null,
+    import_source: null,
+    external_transaction_id: null,
     created_at: "2026-01-02T00:00:00.000Z",
     updated_at: "2026-01-02T00:00:00.000Z",
     positions: {

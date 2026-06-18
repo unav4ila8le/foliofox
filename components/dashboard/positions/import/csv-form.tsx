@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Upload } from "lucide-react";
 import { toast } from "sonner";
 
@@ -14,13 +14,19 @@ import {
 } from "@/components/ui/tooltip";
 import { FileUploadDropzone } from "@/components/ui/custom/file-upload-dropzone";
 import { ImportResults } from "./import-results";
+import { BrokerTransactionResults } from "./broker-transaction-results";
 import { useImportPositionsDialog } from "./index";
 
 import { usePositionCategories } from "@/hooks/use-position-categories";
 import { parsePositionsCSV } from "@/lib/import/positions/parse-csv";
-import { importPositionsFromCSV } from "@/server/positions/import";
+import { parseBrokerTransactionsCSV } from "@/lib/import/broker-transactions/registry";
+import {
+  importPositionsFromCSV,
+  previewBrokerTransactionImport,
+} from "@/server/positions/import";
 
 import type { PositionImportResult } from "@/lib/import/positions/types";
+import type { BrokerTransactionImportPreview } from "@/server/import/broker-transactions/instrument-resolution";
 
 export function CSVImportForm() {
   const {
@@ -40,6 +46,26 @@ export function CSVImportForm() {
     null,
   );
   const [csvContent, setCsvContent] = useState<string>("");
+  const [isBrokerTransactionImport, setIsBrokerTransactionImport] =
+    useState(false);
+  const [brokerPreview, setBrokerPreview] =
+    useState<BrokerTransactionImportPreview | null>(null);
+  const [selectedSymbolTickers, setSelectedSymbolTickers] = useState<
+    Record<string, string>
+  >({});
+  const [manualPositionKeys, setManualPositionKeys] = useState<string[]>([]);
+
+  const canImportBrokerTransactions = useMemo(() => {
+    if (!brokerPreview?.success) return true;
+
+    return brokerPreview.resolutions.every((resolution) => {
+      if (resolution.state === "auto_linked") return true;
+      if (resolution.state === "needs_review") {
+        return Boolean(selectedSymbolTickers[resolution.positionKey]);
+      }
+      return manualPositionKeys.includes(resolution.positionKey);
+    });
+  }, [brokerPreview, manualPositionKeys, selectedSymbolTickers]);
 
   // Handle file drop/selection and immediate parsing
   const handleFileSelect = useCallback(async (file: File, content: string) => {
@@ -47,8 +73,53 @@ export function CSVImportForm() {
     setParseResult(null);
     setIsProcessing(true);
     setCsvContent(content);
+    setIsBrokerTransactionImport(false);
+    setBrokerPreview(null);
+    setSelectedSymbolTickers({});
+    setManualPositionKeys([]);
 
     try {
+      const brokerResult = await parseBrokerTransactionsCSV(content);
+      if (brokerResult.success) {
+        setIsBrokerTransactionImport(true);
+        const preview = await previewBrokerTransactionImport(content);
+        setBrokerPreview(preview);
+        if (!preview.success) {
+          setParseResult({
+            success: false,
+            positions: [],
+            errors: [preview.error],
+          });
+          return;
+        }
+        setParseResult({
+          success: true,
+          positions: brokerResult.positions.map((position) => ({
+            name: position.name,
+            category_id: position.category_id,
+            currency: position.currency,
+            quantity: position.endingQuantity,
+            unit_value: position.firstUnitValue,
+            cost_basis_per_unit: null,
+            capital_gains_tax_rate: null,
+            symbolLookup: null,
+            description: null,
+          })),
+          warnings: brokerResult.warnings,
+        });
+        return;
+      }
+
+      if (brokerResult.source) {
+        setIsBrokerTransactionImport(true);
+        setParseResult({
+          success: false,
+          positions: [],
+          errors: brokerResult.errors ?? ["Failed to parse broker CSV."],
+        });
+        return;
+      }
+
       const result = await parsePositionsCSV(content);
       setParseResult(result);
     } catch (error) {
@@ -66,17 +137,27 @@ export function CSVImportForm() {
   // Handle final import
   const handleImport = async () => {
     if (!csvContent) return;
+    if (isBrokerTransactionImport && !canImportBrokerTransactions) return;
 
     setIsImporting(true);
     try {
-      const result = await importPositionsFromCSV(csvContent, "asset");
+      const result = await importPositionsFromCSV(csvContent, "asset", {
+        broker: isBrokerTransactionImport
+          ? {
+              selectedSymbolTickers,
+              manualPositionKeys,
+            }
+          : undefined,
+      });
 
       if (!result.success) {
         throw new Error(result.error);
       }
 
       toast.success(
-        `Successfully imported ${result.importedCount} position(s)!`,
+        isBrokerTransactionImport
+          ? `Successfully imported ${result.importedCount} portfolio record(s)!`
+          : `Successfully imported ${result.importedCount} position(s)!`,
       );
       setOpen(false);
     } catch (error) {
@@ -92,6 +173,7 @@ export function CSVImportForm() {
   // Handler for reviewing the import
   const handleReview = () => {
     if (!parseResult) return;
+    if (isBrokerTransactionImport) return;
     setReviewPositions(parseResult.positions);
     setReviewSymbolValidation(parseResult.symbolValidation ?? null);
     setReviewSupportedCurrencies(parseResult.supportedCurrencies ?? null);
@@ -103,14 +185,34 @@ export function CSVImportForm() {
     setSelectedFile(null);
     setParseResult(null);
     setCsvContent("");
+    setIsBrokerTransactionImport(false);
+    setBrokerPreview(null);
+    setSelectedSymbolTickers({});
+    setManualPositionKeys([]);
   };
+
+  const handleSelectBrokerSymbol = (positionKey: string, ticker: string) => {
+    setSelectedSymbolTickers((current) => ({
+      ...current,
+      [positionKey]: ticker,
+    }));
+  };
+
+  const handleToggleManualPosition = (positionKey: string) => {
+    setManualPositionKeys((current) =>
+      current.includes(positionKey)
+        ? current.filter((key) => key !== positionKey)
+        : [...current, positionKey],
+    );
+  };
+
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <DialogBody className="space-y-4">
         <div className="text-muted-foreground space-y-2 text-sm">
           <p>
-            Upload a CSV or TSV file to import your positions. The first row
-            should contain the headers listed below.
+            Upload a positions/holdings CSV or a supported broker transaction
+            CSV. The first row should contain headers.
           </p>
           <p>
             <span className="text-foreground font-medium">
@@ -192,7 +294,18 @@ export function CSVImportForm() {
         />
 
         {/* Parse results */}
-        {parseResult && !isProcessing && <ImportResults result={parseResult} />}
+        {parseResult && !isProcessing && !brokerPreview?.success && (
+          <ImportResults result={parseResult} />
+        )}
+        {brokerPreview?.success && !isProcessing && (
+          <BrokerTransactionResults
+            preview={brokerPreview}
+            selectedSymbolTickers={selectedSymbolTickers}
+            manualPositionKeys={manualPositionKeys}
+            onSelectSymbol={handleSelectBrokerSymbol}
+            onToggleManual={handleToggleManualPosition}
+          />
+        )}
 
         {/* Help text */}
         <div className="text-muted-foreground text-sm">
@@ -218,20 +331,31 @@ export function CSVImportForm() {
           Cancel
         </Button>
 
-        {parseResult && !parseResult.success && !isProcessing && (
-          <Button onClick={handleReview}>Review Errors</Button>
-        )}
+        {parseResult &&
+          !parseResult.success &&
+          !isProcessing &&
+          !isBrokerTransactionImport && (
+            <Button onClick={handleReview}>Review Errors</Button>
+          )}
 
         {parseResult?.success && !isProcessing && (
           <>
+            {!isBrokerTransactionImport && (
+              <Button
+                variant="outline"
+                onClick={handleReview}
+                disabled={isImporting}
+              >
+                Review Import
+              </Button>
+            )}
             <Button
-              variant="outline"
-              onClick={handleReview}
-              disabled={isImporting}
+              onClick={handleImport}
+              disabled={
+                isImporting ||
+                (isBrokerTransactionImport && !canImportBrokerTransactions)
+              }
             >
-              Review Import
-            </Button>
-            <Button onClick={handleImport} disabled={isImporting}>
               {isImporting ? (
                 <>
                   <Spinner />
@@ -240,7 +364,9 @@ export function CSVImportForm() {
               ) : (
                 <>
                   <Upload className="size-4" />
-                  Import {parseResult.positions?.length ?? 0} position(s)
+                  {isBrokerTransactionImport
+                    ? "Import broker transactions"
+                    : `Import ${parseResult.positions?.length ?? 0} position(s)`}
                 </>
               )}
             </Button>

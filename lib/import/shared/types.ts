@@ -9,5 +9,12 @@
  * Used by both position and portfolio record imports.
  */
 export type ImportActionResult =
-  | { success: true; importedCount: number }
+  | {
+      success: true;
+      importedCount: number;
+      createdPositionCount?: number;
+      matchedPositionCount?: number;
+      skippedCount?: number;
+      warnings?: string[];
+    }
   | { success: false; error: string };
