@@ -165,27 +165,20 @@ function SymbolReviewRow({
   selectedTicker?: string;
   onSelectSymbol: (positionKey: string, ticker: string) => void;
 }) {
-  const sameCurrencyCandidates = resolution.candidates.filter(
-    (candidate) => candidate.currency === transactionCurrency,
-  );
-
   return (
     <div className="space-y-3 rounded-md border p-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <div className="font-medium">{resolution.warning}</div>
           <div className="text-muted-foreground text-xs">
-            Different-currency candidates are shown for context only.
+            Different-currency selections convert broker records with historical
+            FX before import.
           </div>
         </div>
-        <Badge
-          variant={sameCurrencyCandidates.length > 0 ? "secondary" : "outline"}
-        >
-          {transactionCurrency}
-        </Badge>
+        <Badge variant="outline">{transactionCurrency}</Badge>
       </div>
 
-      {sameCurrencyCandidates.length > 0 ? (
+      {resolution.candidates.length > 0 && (
         <Select
           value={selectedTicker ?? ""}
           onValueChange={(ticker) =>
@@ -193,25 +186,20 @@ function SymbolReviewRow({
           }
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Choose matching symbol" />
+            <SelectValue placeholder="Choose symbol" />
           </SelectTrigger>
           <SelectContent>
-            {sameCurrencyCandidates.map((candidate) => (
+            {resolution.candidates.map((candidate) => (
               <SelectItem key={candidate.ticker} value={candidate.ticker}>
                 {candidate.ticker} ({candidate.currency})
                 {candidate.exchange ? ` - ${candidate.exchange}` : ""}
+                {candidate.currency === transactionCurrency
+                  ? ""
+                  : " (FX conversion)"}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-      ) : (
-        <Alert variant="destructive">
-          <AlertCircle className="size-4" />
-          <AlertTitle>No same-currency symbol</AlertTitle>
-          <AlertDescription>
-            This position cannot be symbol-backed in v1 without FX conversion.
-          </AlertDescription>
-        </Alert>
       )}
 
       {resolution.candidates.length > 0 && (

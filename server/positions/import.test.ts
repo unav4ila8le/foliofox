@@ -6,6 +6,7 @@ const revalidatePathMock = vi.fn();
 const recalculateSnapshotsUntilNextUpdateMock = vi.fn();
 const validatePortfolioRecordTimelineWindowMock = vi.fn();
 const resolveBrokerTransactionInstrumentsMock = vi.fn();
+const fetchExchangeRatesMock = vi.fn();
 
 vi.mock("@/server/auth/actions", () => ({
   getCurrentUser: getCurrentUserMock,
@@ -28,6 +29,10 @@ vi.mock("@/server/import/broker-transactions/instrument-resolution", () => ({
   resolveBrokerTransactionInstruments: resolveBrokerTransactionInstrumentsMock,
 }));
 
+vi.mock("@/server/exchange-rates/fetch", () => ({
+  fetchExchangeRates: fetchExchangeRatesMock,
+}));
+
 vi.mock("next/cache", () => ({
   revalidatePath: revalidatePathMock,
 }));
@@ -35,6 +40,7 @@ vi.mock("next/cache", () => ({
 type PositionRow = {
   id: string;
   name: string;
+  currency: string;
 };
 
 type PortfolioRecordInsert = {
@@ -177,6 +183,7 @@ describe("importPositionsFromCSV broker transaction routing", () => {
       state.positions.push({
         id: `position-${state.positions.length + 1}`,
         name: String(formData.get("name")),
+        currency: String(formData.get("currency")),
       });
       return { success: true };
     });
@@ -190,6 +197,8 @@ describe("importPositionsFromCSV broker transaction routing", () => {
     validatePortfolioRecordTimelineWindowMock.mockResolvedValue({
       valid: true,
     });
+    fetchExchangeRatesMock.mockReset();
+    fetchExchangeRatesMock.mockResolvedValue(new Map());
     resolveBrokerTransactionInstrumentsMock.mockReset();
     resolveBrokerTransactionInstrumentsMock.mockImplementation(
       ({ positions }) =>
@@ -247,7 +256,7 @@ describe("importPositionsFromCSV broker transaction routing", () => {
   });
 
   it("skips already imported external transaction IDs", async () => {
-    state.positions.push({ id: "position-1", name: "Acme" });
+    state.positions.push({ id: "position-1", name: "Acme", currency: "EUR" });
     state.existingExternalTransactionIds.push("txn-1");
     const csv = createTradeRepublicCSV([
       "2024-01-01T00:00:00Z,2024-01-01,DEFAULT,TRADING,BUY,STOCK,Acme,US0000000001,2,10,-20,,,EUR,,,,Initial buy,txn-1,,,,",
@@ -317,5 +326,108 @@ describe("importPositionsFromCSV broker transaction routing", () => {
         },
       }),
     );
+  });
+
+  it("converts broker record values into selected symbol currency", async () => {
+    resolveBrokerTransactionInstrumentsMock.mockResolvedValue(
+      new Map([
+        [
+          "trade_republic:us0000000001:acme",
+          {
+            state: "auto_linked",
+            positionKey: "trade_republic:us0000000001:acme",
+            symbolId: "symbol-1",
+            selectedTicker: "ACME",
+            candidates: [{ ticker: "ACME", currency: "USD" }],
+          },
+        ],
+      ]),
+    );
+    fetchExchangeRatesMock.mockResolvedValue(
+      new Map([
+        ["EUR|2024-01-01", 0.5],
+        ["USD|2024-01-01", 1],
+      ]),
+    );
+    const csv = createTradeRepublicCSV([
+      "2024-01-01T00:00:00Z,2024-01-01,DEFAULT,TRADING,BUY,STOCK,Acme,US0000000001,2,10,-20,,,EUR,,,,Initial buy,txn-1,,,,",
+    ]);
+
+    const { importPositionsFromCSV } = await import("./import");
+    const result = await importPositionsFromCSV(csv, "asset", {
+      broker: {
+        selectedSymbolTickers: {
+          "trade_republic:us0000000001:acme": "ACME",
+        },
+      },
+    });
+
+    expect(result.success).toBe(true);
+    const createFormData = createPositionMock.mock.calls[0][0] as FormData;
+    expect(createFormData.get("currency")).toBe("USD");
+    expect(createFormData.get("unit_value")).toBe("20");
+    expect(state.insertedRecords[0]).toMatchObject({
+      unit_value: 20,
+    });
+  });
+
+  it("blocks cross-currency broker import when FX rates are missing", async () => {
+    resolveBrokerTransactionInstrumentsMock.mockResolvedValue(
+      new Map([
+        [
+          "trade_republic:us0000000001:acme",
+          {
+            state: "auto_linked",
+            positionKey: "trade_republic:us0000000001:acme",
+            symbolId: "symbol-1",
+            selectedTicker: "ACME",
+            candidates: [{ ticker: "ACME", currency: "USD" }],
+          },
+        ],
+      ]),
+    );
+    fetchExchangeRatesMock.mockResolvedValue(new Map([["USD|2024-01-01", 1]]));
+    const csv = createTradeRepublicCSV([
+      "2024-01-01T00:00:00Z,2024-01-01,DEFAULT,TRADING,BUY,STOCK,Acme,US0000000001,2,10,-20,,,EUR,,,,Initial buy,txn-1,,,,",
+    ]);
+
+    const { importPositionsFromCSV } = await import("./import");
+    const result = await importPositionsFromCSV(csv, "asset", {
+      broker: {
+        selectedSymbolTickers: {
+          "trade_republic:us0000000001:acme": "ACME",
+        },
+      },
+    });
+
+    expect(result).toMatchObject({
+      success: false,
+      error: expect.stringContaining("Missing historical FX rates"),
+    });
+    expect(createPositionMock).not.toHaveBeenCalled();
+    expect(state.insertedRecords).toHaveLength(0);
+  });
+
+  it("converts broker records into an existing matched position currency", async () => {
+    state.positions.push({ id: "position-1", name: "Acme", currency: "USD" });
+    fetchExchangeRatesMock.mockResolvedValue(
+      new Map([
+        ["EUR|2024-01-01", 0.5],
+        ["USD|2024-01-01", 1],
+      ]),
+    );
+    const csv = createTradeRepublicCSV([
+      "2024-01-01T00:00:00Z,2024-01-01,DEFAULT,TRADING,BUY,STOCK,Acme,US0000000001,2,10,-20,,,EUR,,,,Initial buy,txn-1,,,,",
+    ]);
+
+    const { importPositionsFromCSV } = await import("./import");
+    const result = await importPositionsFromCSV(csv);
+
+    expect(result.success).toBe(true);
+    expect(createPositionMock).not.toHaveBeenCalled();
+    expect(state.insertedRecords[0]).toMatchObject({
+      position_id: "position-1",
+      unit_value: 20,
+    });
   });
 });

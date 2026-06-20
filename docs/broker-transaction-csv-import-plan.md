@@ -93,6 +93,29 @@ Keep Foliofox’s model unchanged: positions are holdings, records are transacti
 - Keep the existing records import dialog unchanged.
 - Update the existing asset edit UI so positions without a current symbol show a “Link Symbol” action using the existing update-symbol dialog. This prevents manual broker fallbacks from becoming a dead end.
 
+## Phase 5: Cross-Currency Broker Record Conversion
+
+- Allow users to select a different-currency symbol candidate during broker import review.
+- When the selected symbol currency differs from the broker transaction currency, convert imported record `unit_value` values before saving them.
+- Use the selected or existing position currency as the target currency:
+  - new symbol-backed position: selected symbol currency
+  - existing matched position: existing position currency
+  - manual/custom fallback: broker transaction currency, no conversion
+- Convert only monetary per-unit values; never convert share quantities.
+- Convert each buy/sell record using historical FX for that record date.
+- Batch FX requests by unique `(currency, date)` pairs using the existing `fetchExchangeRates` path.
+- Use existing `convertCurrency` math only after confirming all required source and target currency rates exist. Do not silently keep the original amount when FX data is missing.
+- For converted symbol-backed positions, create the initial zero-quantity position in the target symbol currency and convert `firstUnitValue` into that target currency.
+- Surface conversion details in the broker review/results UI:
+  - broker transaction currency
+  - selected symbol currency
+  - count of records that will be converted
+  - warning that historical FX is applied per transaction date
+- Block final import if required FX rates cannot be fetched.
+- Keep fees, dividends, interest, taxes, and cash rows ignored in this phase; only buy/sell unit prices are converted.
+- Add tests for EUR transaction records imported into USD symbol-backed positions, same-currency no-op conversion, missing FX blocking, and existing matched position currency conversion.
+- Stop after this phase and verify with targeted tests, type check, lint, and format check only.
+
 ## Test Plan
 
 - Unit test adapter detection and Trade Republic parsing.
@@ -101,6 +124,7 @@ Keep Foliofox’s model unchanged: positions are holdings, records are transacti
 - Regression test existing portfolio records CSV parsing.
 - Unit test broker instrument resolution and currency-safety fallback.
 - UI/regression test that manual/custom asset positions expose the existing symbol-link dialog.
+- Unit test broker FX conversion for different-currency symbol selections and existing matched positions.
 - Verify with targeted `vitest`, type check, and lint only. No Supabase CLI, Next CLI, database commands, or production-system commands.
 
 ## Assumptions
@@ -109,5 +133,6 @@ Keep Foliofox’s model unchanged: positions are holdings, records are transacti
 - Fees, dividends, interest, taxes, and cash movements are ignored in v1 with warnings.
 - Trade Republic trading rows may use broker venue currency rather than the instrument home-listing currency; auto-linking must be currency-safe.
 - Users expect broker-imported positions to become symbol-backed when safe, but correctness is more important than silently linking the wrong quote currency.
+- Different-currency symbol-backed broker imports require historical FX conversion before records are saved.
 - Manual records do not need external transaction IDs.
 - Re-upload safety is based on `(user_id, import_source, external_transaction_id)`.

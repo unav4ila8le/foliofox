@@ -150,6 +150,42 @@ describe("broker instrument resolution", () => {
     expect(createSymbolMock).not.toHaveBeenCalled();
   });
 
+  it("accepts a user-selected different-currency symbol for FX conversion", async () => {
+    resolveSymbolInputMock.mockResolvedValue(null);
+    fetchYahooFinanceSymbolMock.mockResolvedValue({
+      success: true,
+      data: {
+        ticker: "ACME",
+        long_name: "Acme",
+        short_name: "Acme",
+        exchange: "NYQ",
+        quote_type: "EQUITY",
+        currency: "USD",
+      },
+    });
+    createSymbolMock.mockResolvedValue({
+      success: true,
+      data: { id: "symbol-1" },
+    });
+
+    const { resolveBrokerTransactionInstruments } =
+      await import("./instrument-resolution");
+    const result = await resolveBrokerTransactionInstruments({
+      positions: [basePosition],
+      importSource: "trade_republic",
+      selectedSymbolTickers: {
+        [basePosition.positionKey]: "ACME",
+      },
+    });
+
+    expect(result.get(basePosition.positionKey)).toMatchObject({
+      state: "auto_linked",
+      symbolId: "symbol-1",
+      selectedTicker: "ACME",
+      warning: expect.stringContaining("converted from EUR to USD"),
+    });
+  });
+
   it("returns unresolved when no usable candidates are found", async () => {
     resolveSymbolInputMock.mockResolvedValue(null);
     searchYahooFinanceSymbolsMock.mockResolvedValue({

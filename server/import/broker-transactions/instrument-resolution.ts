@@ -233,15 +233,6 @@ async function resolveSelectedTicker(options: {
     currency: fetched.data.currency,
   };
 
-  if (candidate.currency !== position.currency) {
-    return {
-      state: "needs_review",
-      positionKey: position.positionKey,
-      candidates: [candidate],
-      warning: `${position.name} selected symbol ${candidate.ticker} is quoted in ${candidate.currency}, but broker transactions are in ${position.currency}.`,
-    };
-  }
-
   if (!persistMatches) {
     return {
       state: "auto_linked",
@@ -249,6 +240,10 @@ async function resolveSelectedTicker(options: {
       symbolId: null,
       selectedTicker: candidate.ticker,
       candidates: [candidate],
+      warning:
+        candidate.currency !== position.currency
+          ? `${position.name} records will be converted from ${position.currency} to ${candidate.currency}.`
+          : undefined,
     };
   }
 
@@ -275,6 +270,10 @@ async function resolveSelectedTicker(options: {
     symbolId: creation.data.id,
     selectedTicker: candidate.ticker,
     candidates: [candidate],
+    warning:
+      candidate.currency !== position.currency
+        ? `${position.name} records were converted from ${position.currency} to ${candidate.currency}.`
+        : undefined,
   };
 }
 

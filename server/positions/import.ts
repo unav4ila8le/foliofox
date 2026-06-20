@@ -10,14 +10,16 @@ import { createPosition } from "@/server/positions/create";
 import { recalculateSnapshotsUntilNextUpdate } from "@/server/position-snapshots/recalculate";
 import { validatePortfolioRecordTimelineWindow } from "@/server/portfolio-records/validate-timeline";
 import { resolveBrokerTransactionInstruments } from "@/server/import/broker-transactions/instrument-resolution";
+import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 
 import { normalizeCapitalGainsTaxRateToDecimal } from "@/lib/capital-gains-tax-rate";
+import { convertCurrency } from "@/lib/currency-conversion";
 import { parsePositionsCSV } from "@/lib/import/positions/parse-csv";
 import {
   detectBrokerTransactionAdapter,
   parseBrokerTransactionsCSV,
 } from "@/lib/import/broker-transactions/registry";
-import { formatUTCDateKey } from "@/lib/date/date-utils";
+import { formatUTCDateKey, parseUTCDateKey } from "@/lib/date/date-utils";
 
 import type { ImportActionResult } from "@/lib/import/shared/types";
 import type { PortfolioRecord } from "@/types/global.types";
@@ -96,7 +98,7 @@ async function importBrokerTransactionsFromCSV(
   const { supabase, user } = await getCurrentUser();
   const { data: existingPositions, error: positionsError } = await supabase
     .from("positions")
-    .select("id, name")
+    .select("id, name, currency")
     .eq("user_id", user.id)
     .eq("type", "asset")
     .is("archived_at", null);
@@ -110,7 +112,7 @@ async function importBrokerTransactionsFromCSV(
 
   const positionByNormalizedName = new Map<
     string,
-    { id: string; name: string }
+    { id: string; name: string; currency: string }
   >();
   const duplicateExistingNames = new Set<string>();
   for (const position of existingPositions ?? []) {
@@ -160,14 +162,36 @@ async function importBrokerTransactionsFromCSV(
     };
   }
 
+  const targetCurrencyByPositionKey = buildBrokerTargetCurrencyMap({
+    positions: parsed.positions,
+    positionByNormalizedName,
+    instrumentResolutions,
+    manualPositionKeys,
+  });
+  const conversion = await convertBrokerImportCurrencies({
+    positions: parsed.positions,
+    records: parsed.records,
+    targetCurrencyByPositionKey,
+  });
+  if (!conversion.success) {
+    return {
+      success: false,
+      error: conversion.error,
+    };
+  }
+  const positionDraftByKey = new Map(
+    conversion.positions.map((position) => [position.positionKey, position]),
+  );
+
   for (const draft of missingPositions) {
+    const convertedDraft = positionDraftByKey.get(draft.positionKey) ?? draft;
     const resolution = instrumentResolutions.get(draft.positionKey);
     const symbolId =
       resolution?.state === "auto_linked" && resolution.symbolId
         ? resolution.symbolId
         : undefined;
     const result = await createPosition(
-      buildCreatePositionFormData(draft, symbolId),
+      buildCreatePositionFormData(convertedDraft, symbolId),
     );
     if (!result.success) {
       return {
@@ -192,9 +216,9 @@ async function importBrokerTransactionsFromCSV(
 
   const existingTransactionIds = await fetchExistingExternalTransactionIds({
     importSource: parsed.source,
-    records: parsed.records,
+    records: conversion.records,
   });
-  const recordsToImport = parsed.records.filter(
+  const recordsToImport = conversion.records.filter(
     (record) => !existingTransactionIds.has(record.external_transaction_id),
   );
 
@@ -205,9 +229,9 @@ async function importBrokerTransactionsFromCSV(
       importedCount: 0,
       createdPositionCount: missingPositions.length,
       matchedPositionCount: parsed.positions.length - missingPositions.length,
-      skippedCount: parsed.records.length,
+      skippedCount: conversion.records.length,
       warnings: buildBrokerImportWarnings(
-        parsed.warnings,
+        [...(parsed.warnings ?? []), ...conversion.warnings],
         instrumentResolutions,
       ),
     };
@@ -254,8 +278,184 @@ async function importBrokerTransactionsFromCSV(
     importedCount: inserted.length,
     createdPositionCount: missingPositions.length,
     matchedPositionCount: parsed.positions.length - missingPositions.length,
-    skippedCount: parsed.records.length - recordsToImport.length,
-    warnings: buildBrokerImportWarnings(parsed.warnings, instrumentResolutions),
+    skippedCount: conversion.records.length - recordsToImport.length,
+    warnings: buildBrokerImportWarnings(
+      [...(parsed.warnings ?? []), ...conversion.warnings],
+      instrumentResolutions,
+    ),
+  };
+}
+
+function buildBrokerTargetCurrencyMap({
+  positions,
+  positionByNormalizedName,
+  instrumentResolutions,
+  manualPositionKeys,
+}: {
+  positions: BrokerTransactionPositionDraft[];
+  positionByNormalizedName: Map<
+    string,
+    { id: string; name: string; currency: string }
+  >;
+  instrumentResolutions: Awaited<
+    ReturnType<typeof resolveBrokerTransactionInstruments>
+  >;
+  manualPositionKeys: Set<string>;
+}) {
+  const targetCurrencyByPositionKey = new Map<string, string>();
+
+  for (const position of positions) {
+    const existingPosition = positionByNormalizedName.get(
+      normalizePositionName(position.name),
+    );
+    if (existingPosition) {
+      targetCurrencyByPositionKey.set(
+        position.positionKey,
+        existingPosition.currency,
+      );
+      continue;
+    }
+
+    if (manualPositionKeys.has(position.positionKey)) {
+      targetCurrencyByPositionKey.set(position.positionKey, position.currency);
+      continue;
+    }
+
+    const resolution = instrumentResolutions.get(position.positionKey);
+    const selectedCandidate =
+      resolution?.state === "auto_linked"
+        ? resolution.candidates.find(
+            (candidate) => candidate.ticker === resolution.selectedTicker,
+          )
+        : undefined;
+    targetCurrencyByPositionKey.set(
+      position.positionKey,
+      selectedCandidate?.currency ?? position.currency,
+    );
+  }
+
+  return targetCurrencyByPositionKey;
+}
+
+async function convertBrokerImportCurrencies({
+  positions,
+  records,
+  targetCurrencyByPositionKey,
+}: {
+  positions: BrokerTransactionPositionDraft[];
+  records: BrokerTransactionRecordDraft[];
+  targetCurrencyByPositionKey: Map<string, string>;
+}): Promise<
+  | {
+      success: true;
+      positions: BrokerTransactionPositionDraft[];
+      records: BrokerTransactionRecordDraft[];
+      warnings: string[];
+    }
+  | { success: false; error: string }
+> {
+  const sourceCurrencyByPositionKey = new Map(
+    positions.map((position) => [position.positionKey, position.currency]),
+  );
+  const fxRequests = new Map<string, { currency: string; date: Date }>();
+  const addFxRequest = (currency: string, dateKey: string) => {
+    fxRequests.set(`${currency}|${dateKey}`, {
+      currency,
+      date: parseUTCDateKey(dateKey),
+    });
+  };
+
+  for (const position of positions) {
+    const targetCurrency =
+      targetCurrencyByPositionKey.get(position.positionKey) ??
+      position.currency;
+    if (targetCurrency === position.currency) continue;
+    addFxRequest(position.currency, position.earliestTradeDate);
+    addFxRequest(targetCurrency, position.earliestTradeDate);
+  }
+
+  for (const record of records) {
+    const sourceCurrency = sourceCurrencyByPositionKey.get(record.positionKey);
+    const targetCurrency = targetCurrencyByPositionKey.get(record.positionKey);
+    if (
+      !sourceCurrency ||
+      !targetCurrency ||
+      sourceCurrency === targetCurrency
+    ) {
+      continue;
+    }
+    addFxRequest(sourceCurrency, record.date);
+    addFxRequest(targetCurrency, record.date);
+  }
+
+  const exchangeRates =
+    fxRequests.size > 0
+      ? await fetchExchangeRates(Array.from(fxRequests.values()))
+      : new Map<string, number>();
+  const missingRates = Array.from(fxRequests.keys()).filter(
+    (key) => !exchangeRates.has(key),
+  );
+  if (missingRates.length > 0) {
+    return {
+      success: false,
+      error: `Missing historical FX rates for broker import: ${missingRates.join(", ")}`,
+    };
+  }
+
+  let convertedRecordCount = 0;
+  const convertedPositions = positions.map((position) => {
+    const targetCurrency =
+      targetCurrencyByPositionKey.get(position.positionKey) ??
+      position.currency;
+    if (targetCurrency === position.currency) return position;
+
+    return {
+      ...position,
+      currency: targetCurrency,
+      firstUnitValue: convertCurrency(
+        position.firstUnitValue,
+        position.currency,
+        targetCurrency,
+        exchangeRates,
+        position.earliestTradeDate,
+      ),
+    };
+  });
+
+  const convertedRecords = records.map((record) => {
+    const sourceCurrency = sourceCurrencyByPositionKey.get(record.positionKey);
+    const targetCurrency = targetCurrencyByPositionKey.get(record.positionKey);
+    if (
+      !sourceCurrency ||
+      !targetCurrency ||
+      sourceCurrency === targetCurrency
+    ) {
+      return record;
+    }
+
+    convertedRecordCount++;
+    return {
+      ...record,
+      unit_value: convertCurrency(
+        record.unit_value,
+        sourceCurrency,
+        targetCurrency,
+        exchangeRates,
+        record.date,
+      ),
+    };
+  });
+
+  return {
+    success: true,
+    positions: convertedPositions,
+    records: convertedRecords,
+    warnings:
+      convertedRecordCount > 0
+        ? [
+            `Converted ${convertedRecordCount} broker record unit value(s) using historical FX rates for their transaction dates.`,
+          ]
+        : [],
   };
 }
 

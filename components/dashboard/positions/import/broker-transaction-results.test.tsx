@@ -80,7 +80,8 @@ describe("BrokerTransactionResults", () => {
     expect(screen.getByText("Needs symbol review")).toBeDefined();
     expect(screen.getByText("Manual fallback")).toBeDefined();
     expect(screen.getByText(/ACME\.DE/)).toBeDefined();
-    expect(screen.getByText(/ACME USD/)).toBeDefined();
+    expect(screen.getByText(/ACME.*USD/)).toBeDefined();
+    expect(screen.getByText(/historical FX/)).toBeDefined();
     expect(screen.getByText("Import manually")).toBeDefined();
     expect(screen.getByText("Ignored cash rows.")).toBeDefined();
   });
