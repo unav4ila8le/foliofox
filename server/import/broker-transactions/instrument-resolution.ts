@@ -384,6 +384,6 @@ function toCandidate(symbol: Symbol): BrokerInstrumentCandidate {
   };
 }
 
-export function isIsinLike(value: string) {
+function isIsinLike(value: string) {
   return ISIN_PATTERN.test(value.trim().toUpperCase());
 }
