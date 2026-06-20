@@ -55,12 +55,9 @@ export function BrokerTransactionResults({
         <CheckCircle className="size-4" />
         <AlertTitle>Broker transaction CSV detected</AlertTitle>
         <AlertDescription className="text-green-600">
-          Found {preview.positionsToCreate.length} position
-          {preview.positionsToCreate.length === 1 ? "" : "s"} to create,{" "}
-          {preview.matchedPositions.length} existing match
-          {preview.matchedPositions.length === 1 ? "" : "es"}, and{" "}
-          {preview.recordsToImportCount} record
-          {preview.recordsToImportCount === 1 ? "" : "s"} to import.
+          Found {preview.positionsToCreate.length} position(s) to create,{" "}
+          {preview.matchedPositions.length} existing match(es), and{" "}
+          {preview.recordsToImportCount} record(s) to import.
         </AlertDescription>
       </Alert>
 
@@ -148,9 +145,11 @@ export function BrokerTransactionResults({
 
 function SummaryItem({ label, value }: { label: string; value: number }) {
   return (
-    <div className="bg-muted/40 flex items-center justify-between rounded-md border px-3 py-2">
-      <span className="text-muted-foreground">{label}</span>
-      <Badge variant="secondary">{value}</Badge>
+    <div className="bg-muted/30 flex items-center justify-between gap-2 rounded-md border px-3 py-2">
+      <span className="text-muted-foreground truncate">{label}</span>
+      <Badge variant="outline" className="bg-background">
+        {value}
+      </Badge>
     </div>
   );
 }
@@ -188,7 +187,7 @@ function SymbolReviewRow({
 
       {sameCurrencyCandidates.length > 0 ? (
         <Select
-          value={selectedTicker}
+          value={selectedTicker ?? ""}
           onValueChange={(ticker) =>
             onSelectSymbol(resolution.positionKey, ticker)
           }
@@ -199,8 +198,8 @@ function SymbolReviewRow({
           <SelectContent>
             {sameCurrencyCandidates.map((candidate) => (
               <SelectItem key={candidate.ticker} value={candidate.ticker}>
-                {candidate.ticker} · {candidate.currency}
-                {candidate.exchange ? ` · ${candidate.exchange}` : ""}
+                {candidate.ticker} ({candidate.currency})
+                {candidate.exchange ? ` - ${candidate.exchange}` : ""}
               </SelectItem>
             ))}
           </SelectContent>
@@ -222,12 +221,12 @@ function SymbolReviewRow({
               key={candidate.ticker}
               variant={
                 candidate.currency === transactionCurrency
-                  ? "secondary"
-                  : "outline"
+                  ? "outline"
+                  : "secondary"
               }
             >
               <Link2 className="size-3" />
-              {candidate.ticker} {candidate.currency}
+              {candidate.ticker} ({candidate.currency})
             </Badge>
           ))}
         </div>
