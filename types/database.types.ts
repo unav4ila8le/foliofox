@@ -580,7 +580,9 @@ export type Database = {
           created_at: string
           date: string
           description: string | null
+          external_transaction_id: string | null
           id: string
+          import_source: string | null
           position_id: string
           quantity: number
           type: Database["public"]["Enums"]["portfolio_record_type"]
@@ -592,7 +594,9 @@ export type Database = {
           created_at?: string
           date?: string
           description?: string | null
+          external_transaction_id?: string | null
           id?: string
+          import_source?: string | null
           position_id: string
           quantity: number
           type: Database["public"]["Enums"]["portfolio_record_type"]
@@ -604,7 +608,9 @@ export type Database = {
           created_at?: string
           date?: string
           description?: string | null
+          external_transaction_id?: string | null
           id?: string
+          import_source?: string | null
           position_id?: string
           quantity?: number
           type?: Database["public"]["Enums"]["portfolio_record_type"]

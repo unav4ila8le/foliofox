@@ -284,6 +284,81 @@ export async function setPrimarySymbolAlias(
   return inserted;
 }
 
+/**
+ * Create or refresh a non-primary alias without changing the symbol's display
+ * ticker. Broker imports use this for identifiers such as ISINs.
+ */
+export async function upsertSymbolAlias(
+  symbolId: string,
+  aliasValue: string,
+  options: { source?: string; type?: string } = {},
+): Promise<SymbolAlias> {
+  const supabase = await createServiceClient();
+  const type = options.type ?? DEFAULT_ALIAS_TYPE;
+  const source = options.source ?? DEFAULT_ALIAS_SOURCE;
+  const normalizedValue = await normalizeSymbolAliasValue(aliasValue, type);
+  const nowIso = new Date().toISOString();
+
+  const { data: existingAliases, error: fetchError } = await supabase
+    .from("symbol_aliases")
+    .select("*")
+    .eq("symbol_id", symbolId)
+    .eq("type", type)
+    .eq("value", normalizedValue)
+    .is("effective_to", null)
+    .limit(1);
+
+  if (fetchError) {
+    throw new Error(
+      `Failed to check existing alias "${normalizedValue}" for symbol "${symbolId}": ${fetchError.message}`,
+    );
+  }
+
+  const existingAlias = existingAliases?.[0];
+  if (existingAlias) {
+    const { data, error } = await supabase
+      .from("symbol_aliases")
+      .update({
+        source,
+        is_primary: false,
+        effective_to: null,
+        updated_at: nowIso,
+      })
+      .eq("id", existingAlias.id)
+      .select("*")
+      .single();
+
+    if (error || !data) {
+      throw new Error(
+        `Failed to refresh alias "${normalizedValue}" for symbol "${symbolId}": ${error?.message}`,
+      );
+    }
+
+    return data;
+  }
+
+  const { data: inserted, error: insertError } = await supabase
+    .from("symbol_aliases")
+    .insert({
+      symbol_id: symbolId,
+      value: normalizedValue,
+      type,
+      source,
+      is_primary: false,
+      effective_from: nowIso,
+    })
+    .select("*")
+    .single();
+
+  if (insertError || !inserted) {
+    throw new Error(
+      `Failed to insert alias "${normalizedValue}" for symbol "${symbolId}": ${insertError?.message}`,
+    );
+  }
+
+  return inserted;
+}
+
 async function loadPrimarySymbolAlias(
   supabase: SupabaseClient<Database>,
   symbolId: string,

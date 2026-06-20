@@ -204,35 +204,37 @@ export function UpdateAssetForm({
             />
 
             {/* Advanced */}
-            {currentSymbolTicker && (
-              <Accordion type="single" collapsible>
-                <AccordionItem value="advanced">
-                  <AccordionTrigger className="text-muted-foreground justify-start gap-1 text-sm">
-                    Advanced
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="bg-muted/50 space-y-3 rounded-lg border p-4">
-                      <div className="space-y-1 text-sm">
-                        <h4 className="flex items-center gap-2 font-medium">
-                          Change Ticker Symbol
-                        </h4>
-                        <p className="text-muted-foreground">
-                          Update the market data symbol linked to this position.
-                        </p>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setUpdateSymbolDialogOpen(true)}
-                      >
-                        Change Symbol
-                      </Button>
+            <Accordion type="single" collapsible>
+              <AccordionItem value="advanced">
+                <AccordionTrigger className="text-muted-foreground justify-start gap-1 text-sm">
+                  Advanced
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="bg-muted/50 space-y-3 rounded-lg border p-4">
+                    <div className="space-y-1 text-sm">
+                      <h4 className="flex items-center gap-2 font-medium">
+                        {currentSymbolTicker
+                          ? "Change Ticker Symbol"
+                          : "Link Ticker Symbol"}
+                      </h4>
+                      <p className="text-muted-foreground">
+                        {currentSymbolTicker
+                          ? "Update the market data symbol linked to this position."
+                          : "Link this position to a market data symbol."}
+                      </p>
                     </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setUpdateSymbolDialogOpen(true)}
+                    >
+                      {currentSymbolTicker ? "Change Symbol" : "Link Symbol"}
+                    </Button>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </div>
         </DialogBody>
 

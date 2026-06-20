@@ -7,15 +7,25 @@ import { createSymbol } from "@/server/symbols/create";
 import { resolveSymbolInput } from "@/server/symbols/resolve";
 import { fetchSingleQuote } from "@/server/quotes/fetch";
 import { createPosition } from "@/server/positions/create";
+import {
+  importBrokerTransactionsFromCSV,
+  previewBrokerTransactionImport as previewBrokerTransactionImportFromBrokerCSV,
+} from "@/server/import/broker-transactions/import";
 
 import { normalizeCapitalGainsTaxRateToDecimal } from "@/lib/capital-gains-tax-rate";
 import { parsePositionsCSV } from "@/lib/import/positions/parse-csv";
+import { detectBrokerTransactionAdapter } from "@/lib/import/broker-transactions/registry";
 
 import type { ImportActionResult } from "@/lib/import/shared/types";
+import type {
+  BrokerTransactionImportPreview,
+  BrokerTransactionImportRequestOptions,
+} from "@/server/import/broker-transactions/instrument-resolution";
 
 export async function importPositionsFromCSV(
   csvContent: string,
   positionType: "asset" | "liability" = "asset",
+  options: { broker?: BrokerTransactionImportRequestOptions } = {},
 ): Promise<ImportActionResult> {
   try {
     if (positionType !== "asset") {
@@ -23,6 +33,11 @@ export async function importPositionsFromCSV(
         success: false,
         error: "Only asset imports are supported right now",
       };
+    }
+
+    const brokerAdapter = detectBrokerTransactionAdapter(csvContent);
+    if (brokerAdapter) {
+      return await importBrokerTransactionsFromCSV(csvContent, options.broker);
     }
 
     // 1) Parse and validate CSV (shared logic)
@@ -163,4 +178,10 @@ export async function importPositionsFromCSV(
       error: err instanceof Error ? err.message : "Failed to import positions",
     };
   }
+}
+
+export async function previewBrokerTransactionImport(
+  csvContent: string,
+): Promise<BrokerTransactionImportPreview> {
+  return previewBrokerTransactionImportFromBrokerCSV(csvContent);
 }
