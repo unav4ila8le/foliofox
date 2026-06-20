@@ -344,6 +344,45 @@ async function validateMatchedBrokerPositionSources({
       .filter((record) => record.import_source !== importSource)
       .map((record) => record.position_id),
   );
+  const sameSourcePositionIds = new Set(
+    (data ?? [])
+      .filter((record) => record.import_source === importSource)
+      .map((record) => record.position_id),
+  );
+
+  const positionsWithoutBrokerRecords = matchedPositionIds.filter(
+    (position) => !sameSourcePositionIds.has(position.id),
+  );
+  if (positionsWithoutBrokerRecords.length > 0) {
+    const { data: snapshots, error: snapshotsError } = await supabase
+      .from("position_snapshots")
+      .select("position_id, quantity, portfolio_record_id")
+      .eq("user_id", user.id)
+      .in(
+        "position_id",
+        positionsWithoutBrokerRecords.map((position) => position.id),
+      );
+
+    if (snapshotsError) {
+      return {
+        success: false,
+        error: `Failed to validate matched position snapshots: ${snapshotsError.message}`,
+      };
+    }
+
+    // A broker-created retry position has only a zero bootstrap snapshot. A
+    // non-zero snapshot with no broker records means manual history already
+    // exists and importing transactions would double-count from that base.
+    for (const snapshot of snapshots ?? []) {
+      if (
+        snapshot.portfolio_record_id === null &&
+        Math.abs(snapshot.quantity) > 1e-9
+      ) {
+        unsafePositionIds.add(snapshot.position_id);
+      }
+    }
+  }
+
   if (unsafePositionIds.size === 0) {
     return { success: true, importedCount: 0 };
   }
@@ -668,9 +707,11 @@ function prepareBrokerRecords({
       );
     }
 
-    // Same-day broker rows use CSV order as a deterministic tie-breaker until
-    // adapters expose intraday timestamps to the record timeline.
-    const createdAt = new Date(importTimestampBase + rowIndex).toISOString();
+    // Same-day broker rows use broker execution time when the adapter provides
+    // it; CSV row order remains the fallback for adapters without intraday time.
+    const createdAt =
+      record.executedAt ??
+      new Date(importTimestampBase + rowIndex).toISOString();
     const timelineRecord = {
       position_id: positionId,
       type: record.type as (typeof PORTFOLIO_RECORD_TYPES)[number],

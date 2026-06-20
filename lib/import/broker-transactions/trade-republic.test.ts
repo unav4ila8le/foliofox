@@ -41,12 +41,14 @@ describe("Trade Republic broker transaction adapter", () => {
         quantity: 10,
         unit_value: 12.5,
         external_transaction_id: "txn-1",
+        executedAt: "2024-01-01T00:00:00.000Z",
       }),
       expect.objectContaining({
         type: "sell",
         quantity: 4,
         unit_value: 15,
         external_transaction_id: "txn-2",
+        executedAt: "2024-01-02T00:00:00.000Z",
       }),
     ]);
     expect(
@@ -104,5 +106,15 @@ describe("Trade Republic broker transaction adapter", () => {
 
     expect(result.success).toBe(false);
     expect(result.source).toBeNull();
+  });
+
+  it("rejects imported trade rows with invalid datetime", async () => {
+    const csv = `${TRADE_REPUBLIC_HEADER}
+not-a-date,2024-01-01,DEFAULT,TRADING,BUY,STOCK,Acme,US0000000001,1,10,-10,,,EUR,,,,,txn-1,,,,`;
+
+    const result = await parseBrokerTransactionsCSV(csv);
+
+    expect(result.success).toBe(false);
+    expect(result.errors?.[0]).toContain('Invalid datetime "not-a-date"');
   });
 });

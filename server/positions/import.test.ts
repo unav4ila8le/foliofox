@@ -63,6 +63,11 @@ type FakeState = {
     position_id: string;
     import_source: string | null;
   }>;
+  existingPositionSnapshots: Array<{
+    position_id: string;
+    quantity: number;
+    portfolio_record_id: string | null;
+  }>;
   insertedRecords: PortfolioRecordInsert[];
 };
 
@@ -71,6 +76,7 @@ class FakeQuery {
   private insertPayload: PortfolioRecordInsert[] | null = null;
   private importSourceFilter: string | null = null;
   private externalTransactionIdsFilter: string[] | null = null;
+  private positionIdsFilter: string[] | null = null;
 
   constructor(
     private readonly table: string,
@@ -103,6 +109,9 @@ class FakeQuery {
     if (column === "external_transaction_id") {
       this.externalTransactionIdsFilter = values;
     }
+    if (column === "position_id") {
+      this.positionIdsFilter = values;
+    }
     return this;
   }
 
@@ -120,6 +129,15 @@ class FakeQuery {
   private execute() {
     if (this.table === "positions") {
       return { data: this.state.positions, error: null };
+    }
+
+    if (this.table === "position_snapshots") {
+      return {
+        data: this.state.existingPositionSnapshots.filter((snapshot) =>
+          this.positionIdsFilter?.includes(snapshot.position_id),
+        ),
+        error: null,
+      };
     }
 
     if (this.table !== "portfolio_records") {
@@ -151,7 +169,9 @@ class FakeQuery {
 
     if (this.selectedColumns === "position_id, import_source") {
       return {
-        data: this.state.existingPortfolioRecords,
+        data: this.state.existingPortfolioRecords.filter((record) =>
+          this.positionIdsFilter?.includes(record.position_id),
+        ),
         error: null,
       };
     }
@@ -181,6 +201,7 @@ describe("importPositionsFromCSV broker transaction routing", () => {
       positions: [],
       existingExternalTransactionIds: [],
       existingPortfolioRecords: [],
+      existingPositionSnapshots: [],
       insertedRecords: [],
     };
 
@@ -334,6 +355,30 @@ describe("importPositionsFromCSV broker transaction routing", () => {
     expect(state.insertedRecords).toHaveLength(0);
   });
 
+  it("blocks matched positions that only have a non-zero manual snapshot", async () => {
+    state.positions.push({ id: "position-1", name: "Acme", currency: "EUR" });
+    state.existingPositionSnapshots.push({
+      position_id: "position-1",
+      quantity: 2,
+      portfolio_record_id: null,
+    });
+    const csv = createTradeRepublicCSV([
+      "2024-01-01T00:00:00Z,2024-01-01,DEFAULT,TRADING,BUY,STOCK,Acme,US0000000001,2,10,-20,,,EUR,,,,Initial buy,txn-1,,,,",
+    ]);
+
+    const { importPositionsFromCSV } = await import("./import");
+    const result = await importPositionsFromCSV(csv);
+
+    expect(result).toMatchObject({
+      success: false,
+      error: expect.stringContaining(
+        "existing positions with manual or different-source records",
+      ),
+    });
+    expect(createPositionMock).not.toHaveBeenCalled();
+    expect(state.insertedRecords).toHaveLength(0);
+  });
+
   it("allows matched positions with same-source broker records", async () => {
     state.positions.push({ id: "position-1", name: "Acme", currency: "EUR" });
     state.existingPortfolioRecords.push({
@@ -357,6 +402,28 @@ describe("importPositionsFromCSV broker transaction routing", () => {
       position_id: "position-1",
       import_source: "trade_republic",
     });
+  });
+
+  it("uses broker datetime to order same-day imported records", async () => {
+    const csv = createTradeRepublicCSV([
+      "2024-01-01T11:00:00Z,2024-01-01,DEFAULT,TRADING,SELL,STOCK,Acme,US0000000001,-1,12,12,,,EUR,,,,Later sell,txn-2,,,,",
+      "2024-01-01T10:00:00Z,2024-01-01,DEFAULT,TRADING,BUY,STOCK,Acme,US0000000001,2,10,-20,,,EUR,,,,Earlier buy,txn-1,,,,",
+    ]);
+
+    const { importPositionsFromCSV } = await import("./import");
+    const result = await importPositionsFromCSV(csv);
+
+    expect(result.success).toBe(true);
+    expect(state.insertedRecords).toMatchObject([
+      {
+        external_transaction_id: "txn-2",
+        created_at: "2024-01-01T11:00:00.000Z",
+      },
+      {
+        external_transaction_id: "txn-1",
+        created_at: "2024-01-01T10:00:00.000Z",
+      },
+    ]);
   });
 
   it("stops when a missing broker position needs symbol review", async () => {

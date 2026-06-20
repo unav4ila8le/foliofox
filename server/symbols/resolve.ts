@@ -303,9 +303,9 @@ export async function upsertSymbolAlias(
     .from("symbol_aliases")
     .select("*")
     .eq("symbol_id", symbolId)
-    .eq("source", source)
     .eq("type", type)
     .eq("value", normalizedValue)
+    .is("effective_to", null)
     .limit(1);
 
   if (fetchError) {

@@ -118,7 +118,9 @@ export const tradeRepublicAdapter: BrokerTransactionAdapter = {
 
       const name = row.get("name").trim();
       const brokerSymbol = row.get("symbol").trim();
+      const datetimeRaw = row.get("datetime").trim();
       const dateRaw = row.get("date").trim();
+      const parsedDatetime = new Date(datetimeRaw);
       const parsedDate = parseUTCDateKey(dateRaw);
       const quantity = Math.abs(parseNumberStrict(row.get("shares")));
       const unitValue = parseNumberStrict(row.get("price"));
@@ -131,6 +133,11 @@ export const tradeRepublicAdapter: BrokerTransactionAdapter = {
 
       if (Number.isNaN(parsedDate.getTime())) {
         errors.push(`Row ${row.rowNumber}: Invalid date "${dateRaw}"`);
+        continue;
+      }
+
+      if (Number.isNaN(parsedDatetime.getTime())) {
+        errors.push(`Row ${row.rowNumber}: Invalid datetime "${datetimeRaw}"`);
         continue;
       }
 
@@ -197,6 +204,7 @@ export const tradeRepublicAdapter: BrokerTransactionAdapter = {
         description: row.get("description").trim() || null,
         external_transaction_id: externalTransactionId,
         sourceRowNumber: row.rowNumber,
+        executedAt: parsedDatetime.toISOString(),
       });
     }
 

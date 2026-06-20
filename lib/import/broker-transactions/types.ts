@@ -37,6 +37,8 @@ export interface BrokerTransactionRecordDraft {
   description: string | null;
   external_transaction_id: string;
   sourceRowNumber: number;
+  // Broker execution timestamp used to order multiple trades on the same date.
+  executedAt?: string;
 }
 
 export interface BrokerTransactionImportResult {

@@ -617,3 +617,100 @@ describe("resolveSymbolsBatch", () => {
     consoleWarnSpy.mockRestore();
   });
 });
+
+describe("upsertSymbolAlias", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    createServiceClientMock.mockReset();
+    normalizeSymbolMock.mockReset();
+    normalizeSymbolMock.mockImplementation(async (value: string) =>
+      value.trim().toUpperCase(),
+    );
+  });
+
+  it("refreshes an active alias even when it was saved from another source", async () => {
+    const insertMock = vi.fn();
+    const existingAlias = {
+      id: "alias-1",
+      symbol_id: "symbol-1",
+      value: "US0000000001",
+      type: "isin",
+      source: "other_broker",
+      is_primary: false,
+      effective_from: "2026-01-01T00:00:00.000Z",
+      effective_to: null,
+      created_at: "2026-01-01T00:00:00.000Z",
+      updated_at: "2026-01-01T00:00:00.000Z",
+    };
+
+    createServiceClientMock.mockResolvedValue({
+      from(table: string) {
+        expect(table).toBe("symbol_aliases");
+        return {
+          select() {
+            return {
+              eq(column: string, value: unknown) {
+                expect(column).not.toBe("source");
+                expect(["symbol_id", "type", "value"].includes(column)).toBe(
+                  true,
+                );
+                expect(value).toBe(
+                  column === "symbol_id"
+                    ? "symbol-1"
+                    : column === "type"
+                      ? "isin"
+                      : "US0000000001",
+                );
+                return this;
+              },
+              is(column: string, value: unknown) {
+                expect(column).toBe("effective_to");
+                expect(value).toBeNull();
+                return this;
+              },
+              limit(value: number) {
+                expect(value).toBe(1);
+                return Promise.resolve({
+                  data: [existingAlias],
+                  error: null,
+                });
+              },
+            };
+          },
+          update(payload: Record<string, unknown>) {
+            return {
+              eq(column: string, value: unknown) {
+                expect(column).toBe("id");
+                expect(value).toBe("alias-1");
+                return this;
+              },
+              select() {
+                return this;
+              },
+              single() {
+                return Promise.resolve({
+                  data: { ...existingAlias, ...payload },
+                  error: null,
+                });
+              },
+            };
+          },
+          insert: insertMock,
+        };
+      },
+    });
+
+    const { upsertSymbolAlias } = await import("./resolve");
+    const result = await upsertSymbolAlias("symbol-1", "US0000000001", {
+      source: "trade_republic",
+      type: "isin",
+    });
+
+    expect(result).toMatchObject({
+      id: "alias-1",
+      source: "trade_republic",
+      effective_to: null,
+    });
+    expect(insertMock).not.toHaveBeenCalled();
+  });
+});
