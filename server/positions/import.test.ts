@@ -59,6 +59,10 @@ type PortfolioRecordInsert = {
 type FakeState = {
   positions: PositionRow[];
   existingExternalTransactionIds: string[];
+  existingPortfolioRecords: Array<{
+    position_id: string;
+    import_source: string | null;
+  }>;
   insertedRecords: PortfolioRecordInsert[];
 };
 
@@ -145,6 +149,13 @@ class FakeQuery {
       };
     }
 
+    if (this.selectedColumns === "position_id, import_source") {
+      return {
+        data: this.state.existingPortfolioRecords,
+        error: null,
+      };
+    }
+
     return { data: [], error: null };
   }
 }
@@ -169,6 +180,7 @@ describe("importPositionsFromCSV broker transaction routing", () => {
     state = {
       positions: [],
       existingExternalTransactionIds: [],
+      existingPortfolioRecords: [],
       insertedRecords: [],
     };
 
@@ -257,6 +269,10 @@ describe("importPositionsFromCSV broker transaction routing", () => {
 
   it("skips already imported external transaction IDs", async () => {
     state.positions.push({ id: "position-1", name: "Acme", currency: "EUR" });
+    state.existingPortfolioRecords.push({
+      position_id: "position-1",
+      import_source: "trade_republic",
+    });
     state.existingExternalTransactionIds.push("txn-1");
     const csv = createTradeRepublicCSV([
       "2024-01-01T00:00:00Z,2024-01-01,DEFAULT,TRADING,BUY,STOCK,Acme,US0000000001,2,10,-20,,,EUR,,,,Initial buy,txn-1,,,,",
@@ -274,6 +290,73 @@ describe("importPositionsFromCSV broker transaction routing", () => {
     });
     expect(state.insertedRecords).toHaveLength(0);
     expect(createPositionMock).not.toHaveBeenCalled();
+  });
+
+  it("does not create missing positions when all broker records are duplicates", async () => {
+    state.existingExternalTransactionIds.push("txn-1");
+    const csv = createTradeRepublicCSV([
+      "2024-01-01T00:00:00Z,2024-01-01,DEFAULT,TRADING,BUY,STOCK,Acme,US0000000001,2,10,-20,,,EUR,,,,Initial buy,txn-1,,,,",
+    ]);
+
+    const { importPositionsFromCSV } = await import("./import");
+    const result = await importPositionsFromCSV(csv);
+
+    expect(result).toMatchObject({
+      success: true,
+      importedCount: 0,
+      createdPositionCount: 0,
+      skippedCount: 1,
+    });
+    expect(createPositionMock).not.toHaveBeenCalled();
+    expect(resolveBrokerTransactionInstrumentsMock).not.toHaveBeenCalled();
+  });
+
+  it("blocks matched positions that already have manual records", async () => {
+    state.positions.push({ id: "position-1", name: "Acme", currency: "EUR" });
+    state.existingPortfolioRecords.push({
+      position_id: "position-1",
+      import_source: null,
+    });
+    const csv = createTradeRepublicCSV([
+      "2024-01-01T00:00:00Z,2024-01-01,DEFAULT,TRADING,BUY,STOCK,Acme,US0000000001,2,10,-20,,,EUR,,,,Initial buy,txn-1,,,,",
+    ]);
+
+    const { importPositionsFromCSV } = await import("./import");
+    const result = await importPositionsFromCSV(csv);
+
+    expect(result).toMatchObject({
+      success: false,
+      error: expect.stringContaining(
+        "existing positions with manual or different-source records",
+      ),
+    });
+    expect(createPositionMock).not.toHaveBeenCalled();
+    expect(state.insertedRecords).toHaveLength(0);
+  });
+
+  it("allows matched positions with same-source broker records", async () => {
+    state.positions.push({ id: "position-1", name: "Acme", currency: "EUR" });
+    state.existingPortfolioRecords.push({
+      position_id: "position-1",
+      import_source: "trade_republic",
+    });
+    const csv = createTradeRepublicCSV([
+      "2024-01-01T00:00:00Z,2024-01-01,DEFAULT,TRADING,BUY,STOCK,Acme,US0000000001,2,10,-20,,,EUR,,,,Initial buy,txn-1,,,,",
+    ]);
+
+    const { importPositionsFromCSV } = await import("./import");
+    const result = await importPositionsFromCSV(csv);
+
+    expect(result).toMatchObject({
+      success: true,
+      importedCount: 1,
+      matchedPositionCount: 1,
+    });
+    expect(createPositionMock).not.toHaveBeenCalled();
+    expect(state.insertedRecords[0]).toMatchObject({
+      position_id: "position-1",
+      import_source: "trade_republic",
+    });
   });
 
   it("stops when a missing broker position needs symbol review", async () => {
@@ -410,6 +493,10 @@ describe("importPositionsFromCSV broker transaction routing", () => {
 
   it("converts broker records into an existing matched position currency", async () => {
     state.positions.push({ id: "position-1", name: "Acme", currency: "USD" });
+    state.existingPortfolioRecords.push({
+      position_id: "position-1",
+      import_source: "trade_republic",
+    });
     fetchExchangeRatesMock.mockResolvedValue(
       new Map([
         ["EUR|2024-01-01", 0.5],

@@ -103,6 +103,9 @@ async function resolveBrokerTransactionInstrument(options: {
   }
 
   const isIsin = isIsinLike(brokerSymbol);
+  // 1. User review choices win. 2. Broker-scoped ISIN aliases reuse known
+  // mappings. 3. Provider search only auto-links one safe same-currency match.
+  // Different-currency selections are explicit and converted later by import.
   if (selectedTicker?.trim()) {
     return resolveSelectedTicker({
       position,
