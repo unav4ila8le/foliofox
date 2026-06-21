@@ -3,7 +3,6 @@
 import { AlertCircle, CheckCircle } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -39,9 +38,6 @@ export function BrokerTransactionResults({
       position,
     ]),
   );
-  const autoLinked = preview.resolutions.filter(
-    (resolution) => resolution.state === "auto_linked",
-  );
   const needsReview = preview.resolutions.filter(
     (resolution) => resolution.state === "needs_review",
   );
@@ -53,28 +49,24 @@ export function BrokerTransactionResults({
     <div className="space-y-4">
       <Alert className="text-green-600">
         <CheckCircle className="size-4" />
-        <AlertTitle>Broker transaction CSV detected</AlertTitle>
+        <AlertTitle>
+          {formatBrokerSource(preview.source)} transaction CSV detected
+        </AlertTitle>
         <AlertDescription className="text-green-600">
-          Found {preview.positionsToCreate.length} position(s) to create,{" "}
-          {preview.matchedPositions.length} existing match(es), and{" "}
-          {preview.recordsToImportCount} record(s) to import.
+          {preview.positionsToCreate.length} positions,{" "}
+          {preview.recordsToImportCount} transactions
+          {needsReview.length > 0
+            ? `, ${needsReview.length} need symbol review`
+            : ""}
+          {preview.duplicateRecordsSkippedCount > 0
+            ? `, ${preview.duplicateRecordsSkippedCount} duplicates skipped`
+            : ""}
+          {preview.ignoredRowCount > 0
+            ? `, ${preview.ignoredRowCount} non-trading rows ignored`
+            : ""}
+          .
         </AlertDescription>
       </Alert>
-
-      <div className="grid gap-2 text-sm sm:grid-cols-2">
-        <SummaryItem label="Auto-linked symbols" value={autoLinked.length} />
-        <SummaryItem label="Needs symbol review" value={needsReview.length} />
-        <SummaryItem label="Manual fallback" value={unresolved.length} />
-        <SummaryItem
-          label="Duplicate records skipped"
-          value={preview.duplicateRecordsSkippedCount}
-        />
-        <SummaryItem label="Ignored rows" value={preview.ignoredRowCount} />
-        <SummaryItem
-          label="Existing positions"
-          value={preview.matchedPositions.length}
-        />
-      </div>
 
       {needsReview.length > 0 && (
         <div className="space-y-2">
@@ -147,17 +139,6 @@ export function BrokerTransactionResults({
   );
 }
 
-function SummaryItem({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="bg-muted/30 flex items-center justify-between gap-2 rounded-md border px-3 py-2">
-      <span className="text-muted-foreground truncate">{label}</span>
-      <Badge variant="outline" className="bg-background">
-        {value}
-      </Badge>
-    </div>
-  );
-}
-
 function SymbolReviewRow({
   resolution,
   positionName,
@@ -219,4 +200,13 @@ function SymbolReviewRow({
 
 function isIsinLike(value: string) {
   return /^[A-Z]{2}[A-Z0-9]{9}\d$/.test(value.trim().toUpperCase());
+}
+
+function formatBrokerSource(source: string) {
+  if (source === "trade_republic") return "Trade Republic";
+  return source
+    .split("_")
+    .filter(Boolean)
+    .map((part) => part[0]?.toUpperCase() + part.slice(1))
+    .join(" ");
 }

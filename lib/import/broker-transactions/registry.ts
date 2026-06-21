@@ -36,7 +36,7 @@ export async function parseBrokerTransactionsCSV(
       records: [],
       ignoredRowCount: 0,
       duplicateTransactionIdCount: 0,
-      errors: ["No supported broker transaction CSV adapter matched this file"],
+      errors: ["No supported broker import format matched this file."],
     };
   }
 

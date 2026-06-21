@@ -1,3 +1,5 @@
+"use server";
+
 import { revalidatePath } from "next/cache";
 
 import { getCurrentUser } from "@/server/auth/actions";
@@ -912,7 +914,7 @@ async function recalculateImportedRecordSnapshots(
   return { success: true, importedCount: inserted.length };
 }
 
-export async function previewBrokerTransactionImport(
+export async function previewBrokerImport(
   csvContent: string,
 ): Promise<BrokerTransactionImportPreview> {
   const parsed = await parseBrokerTransactionsCSV(csvContent);

@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useDashboardData } from "@/components/dashboard/providers/dashboard-data-provider";
 
+import { useBrokerImportDialog } from "@/components/dashboard/broker-import";
 import { useNewPortfolioRecordDialog } from "@/components/dashboard/new-portfolio-record";
 import { useNewAssetDialog } from "@/components/dashboard/new-asset";
 
@@ -18,6 +19,7 @@ export function NewActionButton() {
   const { hasActivePositions } = useDashboardData();
   const { setOpen: setOpenNewPortfolioRecord } = useNewPortfolioRecordDialog();
   const { setOpenSelectionDialog: setOpenNewAsset } = useNewAssetDialog();
+  const { setOpen: setOpenBrokerImport } = useBrokerImportDialog();
 
   return (
     <DropdownMenu>
@@ -27,7 +29,7 @@ export function NewActionButton() {
           New
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-32">
+      <DropdownMenuContent align="end" className="w-40">
         <DropdownMenuItem
           disabled={!hasActivePositions}
           onSelect={() => setOpenNewPortfolioRecord(true)}
@@ -36,6 +38,9 @@ export function NewActionButton() {
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={() => setOpenNewAsset(true)}>
           New Asset
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => setOpenBrokerImport(true)}>
+          Broker Import
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

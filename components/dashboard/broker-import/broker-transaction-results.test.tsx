@@ -76,9 +76,16 @@ describe("BrokerTransactionResults", () => {
       />,
     );
 
-    expect(screen.getByText("Broker transaction CSV detected")).toBeDefined();
-    expect(screen.getByText("Needs symbol review")).toBeDefined();
-    expect(screen.getByText("Manual fallback")).toBeDefined();
+    expect(
+      screen.getByText("Trade Republic transaction CSV detected"),
+    ).toBeDefined();
+    expect(
+      screen.getByText(
+        /2 positions, 2 transactions, 1 need symbol review, 1 duplicates skipped, 3 non-trading rows ignored./,
+      ),
+    ).toBeDefined();
+    expect(screen.getByText("Symbol Review")).toBeDefined();
+    expect(screen.getByText("Manual Fallback")).toBeDefined();
     expect(screen.getByText("Acme")).toBeDefined();
     expect(screen.getByText(/ISIN US0000000001/)).toBeDefined();
     expect(
