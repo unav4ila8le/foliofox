@@ -103,9 +103,9 @@ async function resolveBrokerTransactionInstrument(options: {
   }
 
   const isIsin = isIsinLike(brokerSymbol);
-  // 1. User review choices win. 2. Broker-scoped ISIN aliases reuse known
-  // mappings. 3. Provider search only auto-links one safe same-currency match.
-  // Different-currency selections are explicit and converted later by import.
+  // 1. User review choices win. 2. Broker-scoped ISIN aliases seed candidates.
+  // 3. A single ISIN candidate can auto-link; multiple ISIN listings need
+  // review because Trade Republic transaction currency is settlement currency.
   if (selectedTicker?.trim()) {
     return resolveSelectedTicker({
       position,
@@ -125,22 +125,23 @@ async function resolveBrokerTransactionInstrument(options: {
     source: isIsin ? importSource : undefined,
   });
 
-  if (existing?.symbol) {
+  if (existing?.symbol && !isIsin) {
     return await resolveExistingSymbol({
       position,
-      brokerSymbol,
-      importSource,
       isIsin,
       symbol: existing.symbol,
-      persistMatches,
     });
   }
 
-  const candidates = await findProviderCandidates({
+  const providerCandidates = await findProviderCandidates({
     brokerSymbol,
     positionName: position.name,
     isIsin,
   });
+  const candidates = mergeBrokerInstrumentCandidates([
+    ...(existing?.symbol ? [toCandidate(existing.symbol)] : []),
+    ...providerCandidates,
+  ]);
   if (candidates.length === 0) {
     return unresolved(
       position,
@@ -152,7 +153,19 @@ async function resolveBrokerTransactionInstrument(options: {
     (candidate) => candidate.currency === position.currency,
   );
 
-  if (sameCurrencyCandidates.length !== 1) {
+  if (isIsin && candidates.length !== 1) {
+    return {
+      state: "needs_review",
+      positionKey: position.positionKey,
+      candidates,
+      warning:
+        sameCurrencyCandidates.length === 0
+          ? `${position.name} has symbol candidates, but none are quoted in ${position.currency}.`
+          : `${position.name} matches one or more ISIN candidates. Review the listing because one ISIN can trade on multiple venues and currencies.`,
+    };
+  }
+
+  if (!isIsin && sameCurrencyCandidates.length !== 1) {
     return {
       state: "needs_review",
       positionKey: position.positionKey,
@@ -164,7 +177,7 @@ async function resolveBrokerTransactionInstrument(options: {
     };
   }
 
-  const selected = sameCurrencyCandidates[0];
+  const selected = isIsin ? candidates[0] : sameCurrencyCandidates[0];
   if (!persistMatches) {
     return {
       state: "auto_linked",
@@ -175,18 +188,22 @@ async function resolveBrokerTransactionInstrument(options: {
     };
   }
 
-  const creation = await createSymbol(selected.ticker);
-  if (!creation.success || !creation.data?.id) {
-    return {
-      state: "needs_review",
-      positionKey: position.positionKey,
-      candidates,
-      warning: `Could not create market symbol ${selected.ticker} for ${position.name}.`,
-    };
+  let symbolId = selected.symbolId ?? null;
+  if (!symbolId) {
+    const creation = await createSymbol(selected.ticker);
+    if (!creation.success || !creation.data?.id) {
+      return {
+        state: "needs_review",
+        positionKey: position.positionKey,
+        candidates,
+        warning: `Could not create market symbol ${selected.ticker} for ${position.name}.`,
+      };
+    }
+    symbolId = creation.data.id;
   }
 
   if (isIsin) {
-    await upsertSymbolAlias(creation.data.id, brokerSymbol, {
+    await upsertSymbolAlias(symbolId, brokerSymbol, {
       source: importSource,
       type: "isin",
     });
@@ -195,9 +212,13 @@ async function resolveBrokerTransactionInstrument(options: {
   return {
     state: "auto_linked",
     positionKey: position.positionKey,
-    symbolId: creation.data.id,
+    symbolId,
     selectedTicker: selected.ticker,
     candidates,
+    warning:
+      selected.currency !== position.currency
+        ? `${position.name} records were converted from ${position.currency} to ${selected.currency}.`
+        : undefined,
   };
 }
 
@@ -282,21 +303,20 @@ async function resolveSelectedTicker(options: {
 
 async function resolveExistingSymbol(options: {
   position: BrokerTransactionPositionDraft;
-  brokerSymbol: string;
-  importSource: string;
   isIsin: boolean;
   symbol: Symbol;
-  persistMatches: boolean;
 }): Promise<BrokerInstrumentResolution> {
-  const {
-    position,
-    brokerSymbol,
-    importSource,
-    isIsin,
-    symbol,
-    persistMatches,
-  } = options;
+  const { position, isIsin, symbol } = options;
   const candidate = toCandidate(symbol);
+
+  if (isIsin) {
+    return {
+      state: "needs_review",
+      positionKey: position.positionKey,
+      candidates: [candidate],
+      warning: `${position.name} matches saved ISIN alias ${symbol.ticker}. Review the listing because one ISIN can trade on multiple venues and currencies.`,
+    };
+  }
 
   if (symbol.currency !== position.currency) {
     return {
@@ -305,15 +325,6 @@ async function resolveExistingSymbol(options: {
       candidates: [candidate],
       warning: `${position.name} resolves to ${symbol.ticker}, but it is quoted in ${symbol.currency} while broker transactions are in ${position.currency}.`,
     };
-  }
-
-  if (isIsin && persistMatches) {
-    // The alias may have been found from another broker. Refreshing it under
-    // this source keeps future imports fast without changing the Yahoo ticker.
-    await upsertSymbolAlias(symbol.id, brokerSymbol, {
-      source: importSource,
-      type: "isin",
-    });
   }
 
   return {
@@ -384,6 +395,19 @@ function toCandidate(symbol: Symbol): BrokerInstrumentCandidate {
     currency: symbol.currency,
     symbolId: symbol.id,
   };
+}
+
+function mergeBrokerInstrumentCandidates(
+  candidates: BrokerInstrumentCandidate[],
+) {
+  const byTicker = new Map<string, BrokerInstrumentCandidate>();
+  for (const candidate of candidates) {
+    const key = candidate.ticker.trim().toUpperCase();
+    if (!byTicker.has(key)) {
+      byTicker.set(key, candidate);
+    }
+  }
+  return Array.from(byTicker.values());
 }
 
 function isIsinLike(value: string) {

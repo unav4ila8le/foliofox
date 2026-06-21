@@ -79,9 +79,11 @@ describe("BrokerTransactionResults", () => {
     expect(screen.getByText("Broker transaction CSV detected")).toBeDefined();
     expect(screen.getByText("Needs symbol review")).toBeDefined();
     expect(screen.getByText("Manual fallback")).toBeDefined();
-    expect(screen.getByText(/ACME\.DE/)).toBeDefined();
-    expect(screen.getByText(/ACME.*USD/)).toBeDefined();
-    expect(screen.getByText(/historical FX/)).toBeDefined();
+    expect(screen.getByText("Acme")).toBeDefined();
+    expect(screen.getByText(/ISIN US0000000001/)).toBeDefined();
+    expect(
+      screen.getByText(/All transactions will be converted/),
+    ).toBeDefined();
     expect(screen.getByText("Import manually")).toBeDefined();
     expect(screen.getByText("Ignored cash rows.")).toBeDefined();
   });

@@ -319,7 +319,6 @@ export async function upsertSymbolAlias(
     const { data, error } = await supabase
       .from("symbol_aliases")
       .update({
-        source,
         is_primary: false,
         effective_to: null,
         updated_at: nowIso,

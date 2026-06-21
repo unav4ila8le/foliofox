@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, CheckCircle, Link2 } from "lucide-react";
+import { AlertCircle, CheckCircle } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -83,6 +83,10 @@ export function BrokerTransactionResults({
             <SymbolReviewRow
               key={resolution.positionKey}
               resolution={resolution}
+              positionName={positionByKey.get(resolution.positionKey)?.name}
+              brokerSymbol={
+                positionByKey.get(resolution.positionKey)?.brokerSymbol
+              }
               transactionCurrency={
                 positionByKey.get(resolution.positionKey)?.currency ?? ""
               }
@@ -156,26 +160,34 @@ function SummaryItem({ label, value }: { label: string; value: number }) {
 
 function SymbolReviewRow({
   resolution,
+  positionName,
+  brokerSymbol,
   transactionCurrency,
   selectedTicker,
   onSelectSymbol,
 }: {
   resolution: Extract<BrokerInstrumentResolution, { state: "needs_review" }>;
+  positionName?: string;
+  brokerSymbol?: string | null;
   transactionCurrency: string;
   selectedTicker?: string;
   onSelectSymbol: (positionKey: string, ticker: string) => void;
 }) {
+  const brokerIdentifier = brokerSymbol
+    ? `${isIsinLike(brokerSymbol) ? "ISIN" : "Broker symbol"} ${brokerSymbol}`
+    : null;
+
   return (
     <div className="space-y-3 rounded-md border p-3">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1">
-          <div className="font-medium">{resolution.warning}</div>
-          <div className="text-muted-foreground text-xs">
-            Different-currency selections convert broker records with historical
-            FX before import.
-          </div>
+      <div className="space-y-1">
+        <div className="font-medium">
+          {positionName ?? "Unknown position"}
+          {brokerIdentifier ? <span> - {brokerIdentifier}</span> : null}
         </div>
-        <Badge variant="outline">{transactionCurrency}</Badge>
+        <div className="text-muted-foreground text-xs">
+          Choose the market symbol to link. All transactions will be converted
+          to that symbol currency before import.
+        </div>
       </div>
 
       {resolution.candidates.length > 0 && (
@@ -201,24 +213,10 @@ function SymbolReviewRow({
           </SelectContent>
         </Select>
       )}
-
-      {resolution.candidates.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {resolution.candidates.map((candidate) => (
-            <Badge
-              key={candidate.ticker}
-              variant={
-                candidate.currency === transactionCurrency
-                  ? "outline"
-                  : "secondary"
-              }
-            >
-              <Link2 className="size-3" />
-              {candidate.ticker} ({candidate.currency})
-            </Badge>
-          ))}
-        </div>
-      )}
     </div>
   );
+}
+
+function isIsinLike(value: string) {
+  return /^[A-Z]{2}[A-Z0-9]{9}\d$/.test(value.trim().toUpperCase());
 }

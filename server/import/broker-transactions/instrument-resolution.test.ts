@@ -42,7 +42,7 @@ describe("broker instrument resolution", () => {
     fetchYahooFinanceSymbolMock.mockReset();
   });
 
-  it("auto-links an existing same-currency ISIN alias", async () => {
+  it("auto-links an existing ISIN alias when it is the only candidate", async () => {
     resolveSymbolInputMock.mockResolvedValue({
       symbol: {
         id: "symbol-1",
@@ -51,6 +51,21 @@ describe("broker instrument resolution", () => {
         long_name: "Acme",
         short_name: "Acme",
         exchange: "GER",
+      },
+    });
+    searchYahooFinanceSymbolsMock.mockResolvedValue({
+      success: true,
+      data: [{ id: "ACME.DE" }],
+    });
+    fetchYahooFinanceSymbolMock.mockResolvedValue({
+      success: true,
+      data: {
+        ticker: "ACME.DE",
+        long_name: "Acme",
+        short_name: "Acme",
+        exchange: "GER",
+        quote_type: "EQUITY",
+        currency: "EUR",
       },
     });
 
@@ -64,6 +79,7 @@ describe("broker instrument resolution", () => {
     expect(result.get(basePosition.positionKey)).toMatchObject({
       state: "auto_linked",
       symbolId: "symbol-1",
+      selectedTicker: "ACME.DE",
     });
     expect(resolveSymbolInputMock).toHaveBeenCalledWith("US0000000001", {
       type: "isin",
@@ -74,10 +90,10 @@ describe("broker instrument resolution", () => {
       "US0000000001",
       { source: "trade_republic", type: "isin" },
     );
-    expect(searchYahooFinanceSymbolsMock).not.toHaveBeenCalled();
+    expect(searchYahooFinanceSymbolsMock).toHaveBeenCalled();
   });
 
-  it("searches providers and persists an ISIN alias for one safe candidate", async () => {
+  it("auto-links a single provider ISIN candidate", async () => {
     resolveSymbolInputMock.mockResolvedValue(null);
     searchYahooFinanceSymbolsMock.mockResolvedValue({
       success: true,
@@ -109,6 +125,7 @@ describe("broker instrument resolution", () => {
     expect(result.get(basePosition.positionKey)).toMatchObject({
       state: "auto_linked",
       symbolId: "symbol-1",
+      selectedTicker: "ACME.DE",
     });
     expect(createSymbolMock).toHaveBeenCalledWith("ACME.DE");
     expect(upsertSymbolAliasMock).toHaveBeenCalledWith(
@@ -118,7 +135,156 @@ describe("broker instrument resolution", () => {
     );
   });
 
+  it("auto-links a single cross-currency ISIN candidate for FX conversion", async () => {
+    resolveSymbolInputMock.mockResolvedValue(null);
+    searchYahooFinanceSymbolsMock.mockResolvedValue({
+      success: true,
+      data: [{ id: "ACME" }],
+    });
+    fetchYahooFinanceSymbolMock.mockResolvedValue({
+      success: true,
+      data: {
+        ticker: "ACME",
+        long_name: "Acme",
+        short_name: "Acme",
+        exchange: "NYQ",
+        quote_type: "EQUITY",
+        currency: "USD",
+      },
+    });
+    createSymbolMock.mockResolvedValue({
+      success: true,
+      data: { id: "symbol-1" },
+    });
+
+    const { resolveBrokerTransactionInstruments } =
+      await import("./instrument-resolution");
+    const result = await resolveBrokerTransactionInstruments({
+      positions: [basePosition],
+      importSource: "trade_republic",
+    });
+
+    expect(result.get(basePosition.positionKey)).toMatchObject({
+      state: "auto_linked",
+      symbolId: "symbol-1",
+      selectedTicker: "ACME",
+      warning: expect.stringContaining("converted from EUR to USD"),
+    });
+  });
+
+  it("requires review when an ISIN has one matching-currency candidate plus other currencies", async () => {
+    resolveSymbolInputMock.mockResolvedValue({
+      symbol: {
+        id: "symbol-1",
+        ticker: "ACME.DE",
+        currency: "EUR",
+        long_name: "Acme",
+        short_name: "Acme",
+        exchange: "GER",
+      },
+    });
+    searchYahooFinanceSymbolsMock.mockResolvedValue({
+      success: true,
+      data: [{ id: "ACME.DE" }, { id: "ACME.MI" }],
+    });
+    fetchYahooFinanceSymbolMock
+      .mockResolvedValueOnce({
+        success: true,
+        data: {
+          ticker: "ACME.DE",
+          long_name: "Acme",
+          short_name: "Acme",
+          exchange: "GER",
+          quote_type: "EQUITY",
+          currency: "EUR",
+        },
+      })
+      .mockResolvedValueOnce({
+        success: true,
+        data: {
+          ticker: "ACME",
+          long_name: "Acme",
+          short_name: "Acme",
+          exchange: "NYQ",
+          quote_type: "EQUITY",
+          currency: "USD",
+        },
+      });
+
+    const { resolveBrokerTransactionInstruments } =
+      await import("./instrument-resolution");
+    const result = await resolveBrokerTransactionInstruments({
+      positions: [basePosition],
+      importSource: "trade_republic",
+    });
+
+    expect(result.get(basePosition.positionKey)).toMatchObject({
+      state: "needs_review",
+      candidates: [
+        expect.objectContaining({ ticker: "ACME.DE" }),
+        expect.objectContaining({ ticker: "ACME" }),
+      ],
+      warning: expect.stringContaining("one ISIN can trade"),
+    });
+    expect(createSymbolMock).not.toHaveBeenCalled();
+    expect(upsertSymbolAliasMock).not.toHaveBeenCalled();
+  });
+
+  it("requires review when an ISIN has multiple matching-currency candidates", async () => {
+    resolveSymbolInputMock.mockResolvedValue(null);
+    searchYahooFinanceSymbolsMock.mockResolvedValue({
+      success: true,
+      data: [{ id: "ACME.DE" }, { id: "ACME.MI" }],
+    });
+    fetchYahooFinanceSymbolMock
+      .mockResolvedValueOnce({
+        success: true,
+        data: {
+          ticker: "ACME.DE",
+          long_name: "Acme",
+          short_name: "Acme",
+          exchange: "GER",
+          quote_type: "EQUITY",
+          currency: "EUR",
+        },
+      })
+      .mockResolvedValueOnce({
+        success: true,
+        data: {
+          ticker: "ACME.MI",
+          long_name: "Acme",
+          short_name: "Acme",
+          exchange: "MIL",
+          quote_type: "EQUITY",
+          currency: "EUR",
+        },
+      });
+
+    const { resolveBrokerTransactionInstruments } =
+      await import("./instrument-resolution");
+    const result = await resolveBrokerTransactionInstruments({
+      positions: [basePosition],
+      importSource: "trade_republic",
+    });
+
+    expect(result.get(basePosition.positionKey)).toMatchObject({
+      state: "needs_review",
+      candidates: [
+        expect.objectContaining({ ticker: "ACME.DE" }),
+        expect.objectContaining({ ticker: "ACME.MI" }),
+      ],
+      warning: expect.stringContaining("one ISIN can trade"),
+    });
+    expect(createSymbolMock).not.toHaveBeenCalled();
+    expect(upsertSymbolAliasMock).not.toHaveBeenCalled();
+  });
+
   it("requires review when candidates do not match the broker currency", async () => {
+    const tickerPosition: BrokerTransactionPositionDraft = {
+      ...basePosition,
+      positionKey: "trade_republic:acme:acme",
+      brokerSymbol: "ACME",
+    };
     resolveSymbolInputMock.mockResolvedValue(null);
     searchYahooFinanceSymbolsMock.mockResolvedValue({
       success: true,
@@ -139,11 +305,11 @@ describe("broker instrument resolution", () => {
     const { resolveBrokerTransactionInstruments } =
       await import("./instrument-resolution");
     const result = await resolveBrokerTransactionInstruments({
-      positions: [basePosition],
+      positions: [tickerPosition],
       importSource: "trade_republic",
     });
 
-    expect(result.get(basePosition.positionKey)).toMatchObject({
+    expect(result.get(tickerPosition.positionKey)).toMatchObject({
       state: "needs_review",
       warning: expect.stringContaining("none are quoted in EUR"),
     });

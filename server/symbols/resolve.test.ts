@@ -708,7 +708,7 @@ describe("upsertSymbolAlias", () => {
 
     expect(result).toMatchObject({
       id: "alias-1",
-      source: "trade_republic",
+      source: "other_broker",
       effective_to: null,
     });
     expect(insertMock).not.toHaveBeenCalled();
