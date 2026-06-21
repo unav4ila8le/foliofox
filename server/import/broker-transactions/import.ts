@@ -697,6 +697,14 @@ function prepareBrokerRecords({
   >();
   const earliestImportedDateByPosition = new Map<string, string>();
   const importTimestampBase = Date.now();
+  const createdAtByTransactionId = new Map(
+    [...records]
+      .sort(compareBrokerRecordOrder)
+      .map((record, index) => [
+        record.external_transaction_id,
+        new Date(importTimestampBase + index).toISOString(),
+      ]),
+  );
 
   for (let rowIndex = 0; rowIndex < records.length; rowIndex++) {
     const record = records[rowIndex];
@@ -707,10 +715,10 @@ function prepareBrokerRecords({
       );
     }
 
-    // Same-day broker rows use broker execution time when the adapter provides
-    // it; CSV row order remains the fallback for adapters without intraday time.
+    // created_at is an import tie-breaker, not the broker execution timestamp.
+    // Keep it after the zero bootstrap snapshot, but rank it by broker time.
     const createdAt =
-      record.executedAt ??
+      createdAtByTransactionId.get(record.external_transaction_id) ??
       new Date(importTimestampBase + rowIndex).toISOString();
     const timelineRecord = {
       position_id: positionId,
@@ -745,6 +753,23 @@ function prepareBrokerRecords({
     importedTimelineByPosition,
     earliestImportedDateByPosition,
   };
+}
+
+function compareBrokerRecordOrder(
+  left: BrokerTransactionRecordDraft,
+  right: BrokerTransactionRecordDraft,
+) {
+  if (left.date !== right.date) {
+    return left.date.localeCompare(right.date);
+  }
+
+  const leftTime = left.executedAt ?? "";
+  const rightTime = right.executedAt ?? "";
+  if (leftTime !== rightTime) {
+    return leftTime.localeCompare(rightTime);
+  }
+
+  return left.sourceRowNumber - right.sourceRowNumber;
 }
 
 async function validatePreparedBrokerRecords(

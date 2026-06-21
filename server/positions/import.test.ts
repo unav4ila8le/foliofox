@@ -414,16 +414,16 @@ describe("importPositionsFromCSV broker transaction routing", () => {
     const result = await importPositionsFromCSV(csv);
 
     expect(result.success).toBe(true);
-    expect(state.insertedRecords).toMatchObject([
-      {
-        external_transaction_id: "txn-2",
-        created_at: "2024-01-01T11:00:00.000Z",
-      },
-      {
-        external_transaction_id: "txn-1",
-        created_at: "2024-01-01T10:00:00.000Z",
-      },
-    ]);
+    const laterSell = state.insertedRecords.find(
+      (record) => record.external_transaction_id === "txn-2",
+    );
+    const earlierBuy = state.insertedRecords.find(
+      (record) => record.external_transaction_id === "txn-1",
+    );
+    expect(earlierBuy).toBeDefined();
+    expect(laterSell).toBeDefined();
+    expect(earlierBuy?.created_at).not.toBe("2024-01-01T10:00:00.000Z");
+    expect(earlierBuy!.created_at < laterSell!.created_at).toBe(true);
   });
 
   it("stops when a missing broker position needs symbol review", async () => {
