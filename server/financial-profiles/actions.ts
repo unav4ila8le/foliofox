@@ -58,8 +58,7 @@ export async function upsertFinancialProfile(formData: FormData) {
     income_amount: pickNumberOrNull("income_amount"),
     income_currency: pickStringOrNull("income_currency"),
     risk_preference: pickStringOrNull("risk_preference") as
-      | (typeof RISK_PREFERENCES)[number]
-      | null,
+      (typeof RISK_PREFERENCES)[number] | null,
     about: pickStringOrNull("about"),
   };
 

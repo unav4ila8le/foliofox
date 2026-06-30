@@ -36,6 +36,7 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -203,11 +204,13 @@ export function EditSharing({
                         <SelectValue placeholder="Select expiration" />
                       </SelectTrigger>
                       <SelectContent>
-                        {PUBLIC_PORTFOLIO_EXPIRATIONS.map((value) => (
-                          <SelectItem key={value} value={value}>
-                            {labelForExpiration(value)}
-                          </SelectItem>
-                        ))}
+                        <SelectGroup>
+                          {PUBLIC_PORTFOLIO_EXPIRATIONS.map((value) => (
+                            <SelectItem key={value} value={value}>
+                              {labelForExpiration(value)}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
                       </SelectContent>
                     </Select>
                     {fieldState.invalid && (

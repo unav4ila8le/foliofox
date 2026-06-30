@@ -83,8 +83,7 @@ class FakeSupabaseQuery {
 
   then<TResult1 = FakeQueryResult, TResult2 = never>(
     onfulfilled?:
-      | ((value: FakeQueryResult) => TResult1 | PromiseLike<TResult1>)
-      | null,
+      ((value: FakeQueryResult) => TResult1 | PromiseLike<TResult1>) | null,
     onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
   ): Promise<TResult1 | TResult2> {
     let rows = [...(this.rowsByTable[this.table] ?? [])];

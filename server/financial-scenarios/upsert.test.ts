@@ -90,8 +90,7 @@ class FakeQuery {
 
   then<TResult1 = unknown, TResult2 = never>(
     onfulfilled?:
-      | ((value: { data: unknown; error: QueryError | null }) => TResult1)
-      | null,
+      ((value: { data: unknown; error: QueryError | null }) => TResult1) | null,
     onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
   ): Promise<TResult1 | TResult2> {
     return Promise.resolve(this.execute()).then(

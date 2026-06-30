@@ -21,7 +21,7 @@ function DialogContent({
   return (
     <DialogContentPrimitive
       className={cn(
-        "flex max-h-[calc(100dvh-1rem)] flex-col gap-0 overflow-hidden p-0",
+        "flex max-h-[calc(100dvh-1rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-lg",
         className,
       )}
       {...props}

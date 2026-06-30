@@ -56,11 +56,9 @@ function createSupabaseStub(initialRows: StoredExchangeRateRow[]) {
         },
         then<TResult1 = unknown, TResult2 = never>(
           onfulfilled?:
-            | ((value: { data: unknown[]; error: null }) => TResult1)
-            | null,
+            ((value: { data: unknown[]; error: null }) => TResult1) | null,
           onrejected?:
-            | ((reason: unknown) => TResult2 | PromiseLike<TResult2>)
-            | null,
+            ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
         ) {
           state.cacheQueryCalls.push({
             currencies: [...currencies],

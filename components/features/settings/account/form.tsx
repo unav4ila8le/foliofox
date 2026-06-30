@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -298,7 +299,9 @@ export function AccountSettingsForm({ onSuccess }: AccountSettingsFormProps) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="auto">Auto</SelectItem>
+                  <SelectGroup>
+                    <SelectItem value="auto">Auto</SelectItem>
+                  </SelectGroup>
                 </SelectContent>
               </Select>
               <FieldDescription>Date and number format.</FieldDescription>

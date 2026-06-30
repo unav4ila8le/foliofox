@@ -110,6 +110,7 @@ vi.mock("@/components/ui/input-group", () => ({
 
 vi.mock("@/components/ui/select", () => ({
   Select: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  SelectGroup: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   SelectTrigger: ({ children }: { children: ReactNode }) => (
     <button type="button">{children}</button>
   ),

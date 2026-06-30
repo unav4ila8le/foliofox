@@ -17,6 +17,7 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -269,15 +270,17 @@ export function UpdatePortfolioRecordForm({
                     <SelectValue placeholder="Select record type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {PORTFOLIO_RECORD_TYPES.map((type) => (
-                      <SelectItem
-                        key={type}
-                        value={type}
-                        className="capitalize"
-                      >
-                        {type}
-                      </SelectItem>
-                    ))}
+                    <SelectGroup>
+                      {PORTFOLIO_RECORD_TYPES.map((type) => (
+                        <SelectItem
+                          key={type}
+                          value={type}
+                          className="capitalize"
+                        >
+                          {type}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
                 {fieldState.invalid && (

@@ -74,5 +74,4 @@ export interface UnavailablePerformanceRangeData {
 }
 
 export type PerformanceRangeData =
-  | AvailablePerformanceRangeData
-  | UnavailablePerformanceRangeData;
+  AvailablePerformanceRangeData | UnavailablePerformanceRangeData;

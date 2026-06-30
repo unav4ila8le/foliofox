@@ -28,8 +28,10 @@ export function modeInstructions(mode: Mode): string {
 // Build a dynamic tools manifest so the model always knows what it can do
 const _manifestCache = new WeakMap<object, string>();
 
+type ToolManifestInput = Record<string, { description?: unknown }>;
+
 export function buildToolsManifest(
-  aiTools: Record<string, { description?: string }>,
+  aiTools: ToolManifestInput,
   maxLength = 200,
 ): string {
   const cached = _manifestCache.get(aiTools);
@@ -38,7 +40,10 @@ export function buildToolsManifest(
   const lines = Object.entries(aiTools)
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([name, t]) => {
-      const description = (t?.description ?? "").replace(/\s+/g, " ").trim();
+      const description =
+        typeof t?.description === "string"
+          ? t.description.replace(/\s+/g, " ").trim()
+          : "";
       const shortDescription = description
         ? description.length > maxLength
           ? `${description.slice(0, maxLength - 3)}...`
@@ -112,7 +117,7 @@ CURRENCY & DATES
 
 export function createSystemPrompt(args: {
   mode: Mode;
-  aiTools: Record<string, { description?: string }>;
+  aiTools: ToolManifestInput;
   currentDateKey: string;
 }): string {
   return [

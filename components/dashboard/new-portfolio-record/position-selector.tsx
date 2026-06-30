@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useState } from "react";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { ChevronsUpDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -143,8 +143,11 @@ function PositionList({
     arr.sort((a, b) => a.name.localeCompare(b.name)),
   );
 
+  const selectedPosition = positions.find((position) => position.id === value);
+  const commandValue = selectedPosition?.name ?? "";
+
   return (
-    <Command>
+    <Command value={commandValue}>
       <CommandInput placeholder="Search position..." className="h-9" />
       <CommandList>
         <CommandEmpty>
@@ -156,6 +159,7 @@ function PositionList({
               {items.map((position) => (
                 <CommandItem
                   key={position.id}
+                  data-checked={value === position.id}
                   onSelect={() => {
                     onChange(position.id);
                     onPositionSelect?.(position);
@@ -164,12 +168,6 @@ function PositionList({
                   value={position.name}
                 >
                   {position.name}
-                  <Check
-                    className={cn(
-                      "ml-auto",
-                      value === position.id ? "opacity-100" : "opacity-0",
-                    )}
-                  />
                 </CommandItem>
               ))}
             </CommandGroup>

@@ -71,8 +71,7 @@ function createSupabaseStub(initialQuotes: StoredQuoteRow[]) {
               }) => TResult1 | PromiseLike<TResult1>)
             | null,
           onrejected?:
-            | ((reason: unknown) => TResult2 | PromiseLike<TResult2>)
-            | null,
+            ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
         ) {
           state.cacheQueryCalls.push({
             symbolIds: [...symbolIds],

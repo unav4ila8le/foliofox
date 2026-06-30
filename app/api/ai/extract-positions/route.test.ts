@@ -14,6 +14,9 @@ vi.mock("ai", () => ({
 
 vi.mock("@/server/ai/provider", () => ({
   aiModel: vi.fn(() => "model"),
+  extractionGenerationOptions: {
+    reasoning: "high",
+  },
   extractionModelId: "gpt-5.4-mini",
 }));
 
@@ -119,6 +122,7 @@ describe("POST /api/ai/extract-positions", () => {
 
     expect(generateTextMock).toHaveBeenCalledTimes(1);
     const payload = generateTextMock.mock.calls[0][0];
+    expect(payload.reasoning).toBe("high");
     const content = payload.messages[0].content as Array<{
       type: string;
       text?: string;
@@ -364,6 +368,7 @@ describe("POST /api/ai/extract-positions", () => {
     expect(body.success).toBe(true);
 
     const payload = generateTextMock.mock.calls[0][0];
+    expect(payload.reasoning).toBe("high");
     const content = payload.messages[0].content as Array<{
       type: string;
       mediaType?: string;

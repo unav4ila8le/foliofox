@@ -4,8 +4,6 @@ import {
   PromptInputActionMenu,
   PromptInputActionMenuContent,
   PromptInputActionMenuTrigger,
-  PromptInputAttachment,
-  PromptInputAttachments,
   PromptInputBody,
   PromptInputFooter,
   PromptInputHeader,
@@ -14,11 +12,19 @@ import {
   PromptInputSelectItem,
   PromptInputSelectTrigger,
   PromptInputSelectValue,
-  PromptInputSpeechButton,
   PromptInputSubmit,
   PromptInputTextarea,
   PromptInputTools,
+  usePromptInputAttachments,
 } from "@/components/ai-elements/prompt-input";
+import {
+  Attachment,
+  AttachmentInfo,
+  AttachmentPreview,
+  AttachmentRemove,
+  Attachments,
+} from "@/components/ai-elements/attachments";
+import { SpeechInput } from "@/components/ai-elements/speech-input";
 import {
   CHAT_FILE_ACCEPT_ATTRIBUTE,
   MAX_CHAT_FILES_PER_MESSAGE,
@@ -27,6 +33,30 @@ import {
 import { cn } from "@/lib/utils";
 
 import type { ChatComposerProps } from "./types";
+
+function ChatComposerAttachments() {
+  const attachments = usePromptInputAttachments();
+
+  if (attachments.files.length === 0) {
+    return null;
+  }
+
+  return (
+    <Attachments className="p-2" variant="inline">
+      {attachments.files.map((attachment) => (
+        <Attachment
+          key={attachment.id}
+          data={attachment}
+          onRemove={() => attachments.remove(attachment.id)}
+        >
+          <AttachmentPreview />
+          <AttachmentInfo />
+          <AttachmentRemove />
+        </Attachment>
+      ))}
+    </Attachments>
+  );
+}
 
 export function ChatComposer({
   status,
@@ -60,9 +90,7 @@ export function ChatComposer({
         className="bg-background rounded-md"
       >
         <PromptInputHeader className="p-0">
-          <PromptInputAttachments className="p-2">
-            {(attachment) => <PromptInputAttachment data={attachment} />}
-          </PromptInputAttachments>
+          <ChatComposerAttachments />
         </PromptInputHeader>
 
         <PromptInputBody>
@@ -80,8 +108,11 @@ export function ChatComposer({
                 <PromptInputActionAddAttachments />
               </PromptInputActionMenuContent>
             </PromptInputActionMenu>
-            <PromptInputSpeechButton
-              textareaRef={textareaRef}
+            <SpeechInput
+              aria-label="Dictate message"
+              size="icon-sm"
+              variant="outline"
+              type="button"
               onTranscriptionChange={(text) => {
                 controller.textInput.setInput(text);
               }}

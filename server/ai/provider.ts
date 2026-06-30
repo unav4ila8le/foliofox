@@ -1,7 +1,11 @@
 import { createOpenAI } from "@ai-sdk/openai";
-import type { LanguageModel } from "ai";
+import type { LanguageModel, streamText } from "ai";
 
 type SupportedAIProvider = "openai";
+type AIGenerationOptions = Pick<
+  Parameters<typeof streamText>[0],
+  "providerOptions" | "reasoning"
+>;
 
 const DEFAULT_MODEL_ID = "gpt-5.4-mini";
 const DEFAULT_AI_PROVIDER: SupportedAIProvider = "openai";
@@ -42,7 +46,20 @@ export const aiModel = (id: string): LanguageModel => {
   return openAIProvider(normalizeOpenAIModelId(id));
 };
 
-// Optional: centralize model ids so routes don’t repeat literals
+// Centralize AI model ids and generation knobs.
 export const chatModelId = process.env.AI_CHAT_MODEL_ID ?? DEFAULT_MODEL_ID;
 export const extractionModelId =
   process.env.AI_EXTRACTION_MODEL_ID ?? DEFAULT_MODEL_ID;
+
+export const chatGenerationOptions = {
+  reasoning: "high",
+  providerOptions: {
+    openai: {
+      reasoningSummary: "auto",
+    },
+  },
+} satisfies AIGenerationOptions;
+
+export const extractionGenerationOptions = {
+  reasoning: "high",
+} satisfies AIGenerationOptions;

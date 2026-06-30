@@ -117,8 +117,7 @@ function createSupabaseStub(data: {
               }) => TResult1)
             | null,
           onrejected?:
-            | ((reason: unknown) => TResult2 | PromiseLike<TResult2>)
-            | null,
+            ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
         ) {
           state.symbolQueryCount += 1;
 
@@ -205,8 +204,7 @@ function createSupabaseStub(data: {
               }) => TResult1)
             | null,
           onrejected?:
-            | ((reason: unknown) => TResult2 | PromiseLike<TResult2>)
-            | null,
+            ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
         ) {
           state.symbolAliasesQueryCount += 1;
 

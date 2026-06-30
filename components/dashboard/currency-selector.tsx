@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { ChevronsUpDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -100,8 +100,10 @@ function CurrencyList({
   currencies,
   isLoading,
 }: CurrencyListProps) {
+  const selectedCurrencyCode = value ?? "";
+
   return (
-    <Command>
+    <Command value={selectedCurrencyCode}>
       <CommandInput placeholder="Search currency..." className="h-9" />
       <CommandList>
         <CommandEmpty>
@@ -111,6 +113,7 @@ function CurrencyList({
           {currencies.map((currency) => (
             <CommandItem
               key={currency.alphabetic_code}
+              data-checked={value === currency.alphabetic_code}
               onSelect={() => {
                 onChange(currency.alphabetic_code);
                 setOpen(false);
@@ -118,14 +121,6 @@ function CurrencyList({
               value={currency.alphabetic_code}
             >
               {currency.alphabetic_code} - {currency.name}
-              <Check
-                className={cn(
-                  "ml-auto",
-                  value === currency.alphabetic_code
-                    ? "opacity-100"
-                    : "opacity-0",
-                )}
-              />
             </CommandItem>
           ))}
         </CommandGroup>

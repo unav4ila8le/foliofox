@@ -33,7 +33,7 @@ export function TableActionsDropdown({
             <MoreHorizontal className="size-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
+        <DropdownMenuContent align="end" className="w-auto">
           <DropdownMenuItem onSelect={() => setOpenImportPositionsDialog(true)}>
             <Upload className="size-4" /> Import assets
           </DropdownMenuItem>

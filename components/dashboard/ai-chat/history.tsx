@@ -6,6 +6,7 @@ import { formatDistanceToNow } from "date-fns";
 import { History, Trash2 } from "lucide-react";
 
 import {
+  Command,
   CommandDialog,
   CommandEmpty,
   CommandGroup,
@@ -61,49 +62,51 @@ export function ChatHistory({
         title="Conversation History"
         description="Search and open previous AI chat conversations."
       >
-        <CommandInput placeholder="Search conversation..." />
-        <CommandList>
-          <CommandEmpty>No conversations found.</CommandEmpty>
-          <CommandGroup>
-            {conversations.map((conversation) => (
-              <CommandItem
-                key={conversation.id}
-                // Value must be unique per item for stable cmdk hover/active behavior.
-                value={`${conversation.title} ${conversation.id}`}
-                disabled={
-                  isLoadingConversation || deletingId === conversation.id
-                }
-                onSelect={() => {
-                  onSelectConversation(conversation.id);
-                  setOpenHistory(false);
-                }}
-                className="group items-start gap-2"
-              >
-                <div className="flex flex-1 flex-col items-start gap-0">
-                  <span className="text-muted-foreground text-xs">
-                    {formatDistanceToNow(new Date(conversation.updatedAt), {
-                      addSuffix: true,
-                    })}
-                  </span>
-                  <p className="line-clamp-2">{conversation.title}</p>
-                </div>
-                <div
-                  role="button"
-                  onClick={(e) => handleDelete(e, conversation.id)}
-                  className="group/delete flex-none"
-                  aria-label={`Delete ${conversation.title}`}
-                  tabIndex={0}
+        <Command>
+          <CommandInput placeholder="Search conversation..." />
+          <CommandList>
+            <CommandEmpty>No conversations found.</CommandEmpty>
+            <CommandGroup>
+              {conversations.map((conversation) => (
+                <CommandItem
+                  key={conversation.id}
+                  // Value must be unique per item for stable cmdk hover/active behavior.
+                  value={`${conversation.title} ${conversation.id}`}
+                  disabled={
+                    isLoadingConversation || deletingId === conversation.id
+                  }
+                  onSelect={() => {
+                    onSelectConversation(conversation.id);
+                    setOpenHistory(false);
+                  }}
+                  className="group items-start gap-2"
                 >
-                  {deletingId === conversation.id ? (
-                    <Spinner />
-                  ) : (
-                    <Trash2 className="text-muted-foreground group-hover/delete:text-destructive opacity-0 group-hover:opacity-100" />
-                  )}
-                </div>
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        </CommandList>
+                  <div className="flex flex-1 flex-col items-start gap-0">
+                    <span className="text-muted-foreground text-xs">
+                      {formatDistanceToNow(new Date(conversation.updatedAt), {
+                        addSuffix: true,
+                      })}
+                    </span>
+                    <p className="line-clamp-2">{conversation.title}</p>
+                  </div>
+                  <div
+                    role="button"
+                    onClick={(e) => handleDelete(e, conversation.id)}
+                    className="group/delete flex-none"
+                    aria-label={`Delete ${conversation.title}`}
+                    tabIndex={0}
+                  >
+                    {deletingId === conversation.id ? (
+                      <Spinner />
+                    ) : (
+                      <Trash2 className="text-muted-foreground group-hover/delete:text-destructive opacity-0 group-hover:opacity-100" />
+                    )}
+                  </div>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
       </CommandDialog>
     </>
   );

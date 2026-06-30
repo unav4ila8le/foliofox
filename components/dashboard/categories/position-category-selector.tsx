@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ChevronsUpDown, PlusIcon, Settings2 } from "lucide-react";
+import { ChevronsUpDown, PlusIcon, Settings2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -180,9 +180,20 @@ function PositionCategoryList({
     }
   }
 
+  function isCategorySelected(category: PositionCategoryListItem) {
+    if (userCategoryId) {
+      return userCategoryId === category.user_category_id;
+    }
+
+    return category.source === "system" && value === category.category_id;
+  }
+
+  const selectedCategory = categories.find(isCategorySelected);
+  const commandValue = selectedCategory?.name ?? "";
+
   return (
     <>
-      <Command>
+      <Command value={commandValue}>
         <CommandInput placeholder="Search category..." className="h-9" />
         <CommandList>
           <CommandEmpty>
@@ -192,18 +203,11 @@ function PositionCategoryList({
             {systemCategories.map((category) => (
               <CommandItem
                 key={category.id}
+                data-checked={isCategorySelected(category)}
                 onSelect={() => selectCategory(category)}
                 value={category.name}
               >
                 {category.name}
-                <Check
-                  className={cn(
-                    "ml-auto",
-                    !userCategoryId && value === category.category_id
-                      ? "opacity-100"
-                      : "opacity-0",
-                  )}
-                />
               </CommandItem>
             ))}
           </CommandGroup>
@@ -228,18 +232,11 @@ function PositionCategoryList({
                 {customCategories.map((category) => (
                   <CommandItem
                     key={category.id}
+                    data-checked={isCategorySelected(category)}
                     onSelect={() => selectCategory(category)}
                     value={category.name}
                   >
                     {category.name}
-                    <Check
-                      className={cn(
-                        "ml-auto",
-                        userCategoryId === category.user_category_id
-                          ? "opacity-100"
-                          : "opacity-0",
-                      )}
-                    />
                   </CommandItem>
                 ))}
                 <CommandItem

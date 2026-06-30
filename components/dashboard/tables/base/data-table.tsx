@@ -93,8 +93,7 @@ export function DataTable<TData extends DataWithId, TValue>({
   const handleRowSelectionChange = useCallback(
     (
       updaterOrValue:
-        | RowSelectionState
-        | ((old: RowSelectionState) => RowSelectionState),
+        RowSelectionState | ((old: RowSelectionState) => RowSelectionState),
     ) => {
       setRowSelection(updaterOrValue);
     },

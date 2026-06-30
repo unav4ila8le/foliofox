@@ -49,7 +49,7 @@ export function ProjectedIncomeWidget({
           <div className="bg-accent rounded-lg p-2">
             <BanknoteArrowDown className="text-muted-foreground size-4" />
           </div>
-          <p className="mt-3 font-medium">Projected Income</p>
+          <p className="mt-3">Projected Income</p>
           <p className="text-muted-foreground mt-1 text-sm">
             {projectedIncome.message || "Failed to load projected income data"}
           </p>
@@ -71,7 +71,7 @@ export function ProjectedIncomeWidget({
           <div className="bg-accent rounded-lg p-2">
             <BanknoteArrowDown className="text-muted-foreground size-4" />
           </div>
-          <p className="mt-3 font-medium">Projected Income</p>
+          <p className="mt-3">Projected Income</p>
           <p className="text-muted-foreground mt-1 text-sm">
             {projectedIncome.message || "No projected income data available"}
           </p>

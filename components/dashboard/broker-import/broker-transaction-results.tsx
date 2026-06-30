@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -182,15 +183,17 @@ function SymbolReviewRow({
             <SelectValue placeholder="Choose symbol" />
           </SelectTrigger>
           <SelectContent>
-            {resolution.candidates.map((candidate) => (
-              <SelectItem key={candidate.ticker} value={candidate.ticker}>
-                {candidate.ticker} ({candidate.currency})
-                {candidate.exchange ? ` - ${candidate.exchange}` : ""}
-                {candidate.currency === transactionCurrency
-                  ? ""
-                  : " (FX conversion)"}
-              </SelectItem>
-            ))}
+            <SelectGroup>
+              {resolution.candidates.map((candidate) => (
+                <SelectItem key={candidate.ticker} value={candidate.ticker}>
+                  {candidate.ticker} ({candidate.currency})
+                  {candidate.exchange ? ` - ${candidate.exchange}` : ""}
+                  {candidate.currency === transactionCurrency
+                    ? ""
+                    : " (FX conversion)"}
+                </SelectItem>
+              ))}
+            </SelectGroup>
           </SelectContent>
         </Select>
       )}
