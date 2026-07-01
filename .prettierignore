@@ -5,5 +5,5 @@ dist
 supabase/.temp
 supabase/migrations
 types/database.types.ts
-components/ui
-components/ai-elements
+components/ui/**
+components/ai-elements/**

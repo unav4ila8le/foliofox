@@ -37,7 +37,7 @@ function BrokerImportDialogSkeleton() {
     <div className="space-y-4 px-6 pb-6">
       <Skeleton className="h-10 w-full" />
       <Skeleton className="h-48 w-full" />
-      <Skeleton className="h-20 w-full" />
+      <Skeleton className="h-16 w-full" />
     </div>
   );
 }
@@ -53,7 +53,7 @@ export function BrokerImportDialogProvider({
     <BrokerImportDialogContext.Provider value={{ open, setOpen }}>
       {children}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent onInteractOutside={(event) => event.preventDefault()}>
+        <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Upload className="size-5" />
