@@ -26,7 +26,7 @@ function SelectionCard({
       onClick={onClick}
     >
       <div className="flex items-center justify-between gap-2">
-        <p className="text-base leading-none font-semibold">{title}</p>
+        <p className="text-base leading-none font-medium">{title}</p>
         <Icon className="size-4.5" />
       </div>
       <p className="text-muted-foreground text-sm">{description}</p>

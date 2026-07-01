@@ -140,6 +140,7 @@ export function UserMenu({
           <ThemeToggle />
           <DropdownMenuSeparator />
           <DropdownMenuItem
+            variant="destructive"
             onSelect={(event) => {
               event.preventDefault();
               handleSignOut();

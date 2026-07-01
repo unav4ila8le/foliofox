@@ -33,7 +33,7 @@ function DialogHeader({
   className,
   ...props
 }: React.ComponentProps<typeof DialogHeaderPrimitive>) {
-  return <DialogHeaderPrimitive className={cn("p-6", className)} {...props} />;
+  return <DialogHeaderPrimitive className={cn("p-6 gap-1", className)} {...props} />;
 }
 
 function DialogBody({ className, ...props }: React.ComponentProps<"div">) {
