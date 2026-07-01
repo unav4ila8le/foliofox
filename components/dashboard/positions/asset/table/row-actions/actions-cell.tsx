@@ -81,7 +81,7 @@ export function ActionsCell({ position }: { position: TransformedPosition }) {
             <MoreHorizontal className="size-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
+        <DropdownMenuContent align="end" className="w-auto">
           {/* Edit position details (metadata) */}
           <DropdownMenuItem onSelect={() => setShowEditDialog(true)}>
             <Settings className="size-4" /> Edit details
