@@ -5,8 +5,7 @@ import { portfolioRecordsToCSV } from "@/lib/export/portfolio-records/csv";
 import { mapPortfolioRecordToCsvRow } from "@/lib/export/portfolio-records/map-record-to-csv";
 
 type PortfolioRecordExportResult =
-  | { success: true; data: string }
-  | { success: false; message: string };
+  { success: true; data: string } | { success: false; message: string };
 
 /**
  * Export all user portfolio records to CSV.

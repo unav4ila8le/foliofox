@@ -1,46 +1,39 @@
 #!/usr/bin/env node
 
-import { execFileSync } from "child_process";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
+import { execFileSync } from "node:child_process";
+import { readdirSync } from "node:fs";
+import path from "node:path";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const components = readdirSync(path.join(process.cwd(), "components/ui"), {
+  withFileTypes: true,
+})
+  .filter((entry) => entry.isFile() && entry.name.endsWith(".tsx"))
+  .map((entry) => entry.name.replace(/\.tsx$/, ""))
+  .sort();
 
-// Get all .tsx files in components/ui (excluding subdirectories like ai/ and logos/)
-const uiPath = path.join(__dirname, "../components/ui");
-const allFiles = fs.readdirSync(uiPath);
+console.log(`Found ${components.length} shadcn components.`);
 
-// Filter to only .tsx files and extract component names (without extension)
-const allComponents = allFiles
-  .filter(
-    (file) =>
-      file.endsWith(".tsx") && fs.statSync(path.join(uiPath, file)).isFile(),
-  )
-  .map((file) => file.replace(".tsx", ""));
+let errors = 0;
 
-const componentsToUpdate = allComponents;
+for (const component of components) {
+  console.log(`\nUpdating ${component}...`);
 
-console.log(`📦 Found ${allComponents.length} components in ui/`);
-console.log(`✅ Updating ${componentsToUpdate.length} components...\n`);
-
-let successCount = 0;
-let errorCount = 0;
-
-for (const component of componentsToUpdate) {
   try {
-    const args = ["shadcn@latest", "add", "-y", "-o", component];
-
-    console.log(`Updating ${component}...`);
-    execFileSync("npx", args, { stdio: "pipe" });
-
-    successCount++;
+    execFileSync(
+      "npx",
+      ["shadcn@latest", "add", "--yes", "--overwrite", component],
+      {
+        stdio: "inherit",
+      },
+    );
   } catch {
-    console.error(`❌ Error updating ${component}`);
-    errorCount++;
+    errors += 1;
   }
 }
 
-console.log("\n✅ Update complete!");
-console.log(`Updated: ${successCount}`);
-console.log(`Errors: ${errorCount}`);
+if (errors > 0) {
+  console.error(`\n${errors} component update(s) failed.`);
+  process.exitCode = 1;
+} else {
+  console.log("\nAll shadcn components updated.");
+}

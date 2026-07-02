@@ -6,11 +6,14 @@ import {
   Message,
   MessageAction,
   MessageActions,
-  MessageAttachment,
-  MessageAttachments,
   MessageContent,
   MessageResponse,
 } from "@/components/ai-elements/message";
+import {
+  Attachment,
+  AttachmentPreview,
+  Attachments,
+} from "@/components/ai-elements/attachments";
 import {
   Reasoning,
   ReasoningContent,
@@ -34,7 +37,6 @@ import { cn } from "@/lib/utils";
 import type { ChatMessageProps } from "./types";
 import {
   getSourceLabel,
-  groupAdjacentParts,
   isMessageFilePart,
   isMessageSourcePart,
 } from "./utils";
@@ -53,18 +55,31 @@ export function ChatMessage({
   const isStreaming = status === "streaming";
   const fileParts = message.parts.filter(isMessageFilePart);
   const sourceParts = message.parts.filter(isMessageSourcePart);
+  const reasoningParts = message.parts.filter(
+    (part) => part.type === "reasoning",
+  );
+  const reasoningText = reasoningParts.map((part) => part.text).join("\n\n");
+  const lastPart = message.parts.at(-1);
+  const isReasoningStreaming =
+    isLastMessage && isStreaming && lastPart?.type === "reasoning";
 
   return (
     <>
       {message.role === "user" && fileParts.length > 0 && (
-        <MessageAttachments>
-          {fileParts.map((attachment, attachmentIndex) => (
-            <MessageAttachment
-              key={`${message.id}-attachment-${attachmentIndex}`}
-              data={attachment}
-            />
-          ))}
-        </MessageAttachments>
+        <Attachments variant="grid">
+          {fileParts.map((attachment, attachmentIndex) => {
+            const attachmentId = `${message.id}-attachment-${attachmentIndex}`;
+
+            return (
+              <Attachment
+                key={attachmentId}
+                data={{ ...attachment, id: attachmentId }}
+              >
+                <AttachmentPreview />
+              </Attachment>
+            );
+          })}
+        </Attachments>
       )}
 
       {isAssistant && sourceParts.length > 0 && (
@@ -97,31 +112,22 @@ export function ChatMessage({
         </Sources>
       )}
 
-      {groupAdjacentParts(message.parts).map((group) => {
-        if (group.kind === "reasoning") {
-          const mergedText = group.texts.filter(Boolean).join("\n\n");
-          const isLastPart = group.lastIndex === message.parts.length - 1;
-          const isReasoningStreaming =
-            isLastMessage && isStreaming && isLastPart;
+      {reasoningParts.length > 0 && (
+        <Reasoning
+          className="notranslate mb-0 w-full"
+          isStreaming={isReasoningStreaming}
+          translate="no"
+        >
+          <ReasoningTrigger />
+          {reasoningText && (
+            <ReasoningContent className="mt-2 text-xs leading-normal *:space-y-1">
+              {reasoningText}
+            </ReasoningContent>
+          )}
+        </Reasoning>
+      )}
 
-          return (
-            <Reasoning
-              key={`${message.id}-r-${group.lastIndex}`}
-              className="notranslate mb-0 w-full"
-              isStreaming={isReasoningStreaming}
-              translate="no"
-            >
-              <ReasoningTrigger />
-              {mergedText && (
-                <ReasoningContent className="mt-2 text-xs leading-normal *:space-y-1">
-                  {mergedText}
-                </ReasoningContent>
-              )}
-            </Reasoning>
-          );
-        }
-
-        const { part, index } = group;
+      {message.parts.map((part, index) => {
         switch (part.type) {
           case "text":
             return (
@@ -169,6 +175,7 @@ export function ChatMessage({
             );
           case "source-url":
           case "source-document":
+          case "reasoning":
             return null;
           default:
             if (isStaticToolUIPart(part)) {

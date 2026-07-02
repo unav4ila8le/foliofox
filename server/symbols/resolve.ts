@@ -101,8 +101,7 @@ export async function resolveSymbolInput(
   }
 
   const aliasWithSymbol = aliasRows?.[0] as
-    | (SymbolAlias & { symbol: Symbol })
-    | undefined;
+    (SymbolAlias & { symbol: Symbol }) | undefined;
   if (!aliasWithSymbol) return null;
 
   const { symbol, ...alias } = aliasWithSymbol;

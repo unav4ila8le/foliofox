@@ -61,7 +61,7 @@ export function AssetsTable({ data }: AssetsTableProps) {
           <div className="bg-accent rounded-lg p-2">
             <Package className="text-muted-foreground size-4" />
           </div>
-          <p className="mt-3 font-medium">No assets found</p>
+          <p className="mt-3">No assets found</p>
           <p className="text-muted-foreground mt-1 text-sm">
             Start building your portfolio by adding your first asset
           </p>

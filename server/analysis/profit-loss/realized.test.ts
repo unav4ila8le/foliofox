@@ -58,8 +58,7 @@ class FakePortfolioRecordsQuery {
 
   then<TResult1 = unknown, TResult2 = never>(
     onfulfilled?:
-      | ((value: { data: PortfolioRecordRow[]; error: null }) => TResult1)
-      | null,
+      ((value: { data: PortfolioRecordRow[]; error: null }) => TResult1) | null,
     onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
   ): Promise<TResult1 | TResult2> {
     const filteredRows = this.rows.filter((row) => {

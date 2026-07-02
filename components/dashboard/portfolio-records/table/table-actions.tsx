@@ -32,7 +32,7 @@ export function TableActionsDropdown({
             <MoreHorizontal className="size-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
+        <DropdownMenuContent align="end" className="w-auto">
           <DropdownMenuItem
             onSelect={() => setOpenImportPortfolioRecordsDialog(true)}
           >

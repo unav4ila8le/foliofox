@@ -79,7 +79,3 @@ export type MessageFilePart = Extract<
   UIMessage["parts"][number],
   { type: "file" }
 >;
-
-export type GroupedMessagePart =
-  | { kind: "reasoning"; texts: string[]; lastIndex: number }
-  | { kind: "other"; part: UIMessage["parts"][number]; index: number };

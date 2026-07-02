@@ -19,6 +19,7 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -281,9 +282,7 @@ export function UpsertEventForm({
         type: (event?.type || "income") as "income" | "expense",
         amount: event?.amount || "",
         recurrence: (event?.recurrence.type || "once") as
-          | "once"
-          | "monthly"
-          | "yearly",
+          "once" | "monthly" | "yearly",
         startDate: eventDateRange.startDate ?? new Date(),
         endDate: eventDateRange.endDate,
         conditions: event ? extractConditionsFromEvent(event) : [],
@@ -513,12 +512,14 @@ export function UpsertEventForm({
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="income" className="capitalize">
-                        Income
-                      </SelectItem>
-                      <SelectItem value="expense" className="capitalize">
-                        Expense
-                      </SelectItem>
+                      <SelectGroup>
+                        <SelectItem value="income" className="capitalize">
+                          Income
+                        </SelectItem>
+                        <SelectItem value="expense" className="capitalize">
+                          Expense
+                        </SelectItem>
+                      </SelectGroup>
                     </SelectContent>
                   </Select>
                   {fieldState.invalid && (
@@ -582,15 +583,17 @@ export function UpsertEventForm({
                     <SelectValue placeholder="Select recurrence" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="once" className="capitalize">
-                      Once
-                    </SelectItem>
-                    <SelectItem value="monthly" className="capitalize">
-                      Monthly
-                    </SelectItem>
-                    <SelectItem value="yearly" className="capitalize">
-                      Yearly
-                    </SelectItem>
+                    <SelectGroup>
+                      <SelectItem value="once" className="capitalize">
+                        Once
+                      </SelectItem>
+                      <SelectItem value="monthly" className="capitalize">
+                        Monthly
+                      </SelectItem>
+                      <SelectItem value="yearly" className="capitalize">
+                        Yearly
+                      </SelectItem>
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
                 {fieldState.invalid && (
@@ -787,15 +790,17 @@ export function UpsertEventForm({
                                   <SelectValue placeholder="Select condition type" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {conditionTypeOptions.map((option) => (
-                                    <SelectItem
-                                      key={option.value}
-                                      value={option.value}
-                                      disabled={option.disabled}
-                                    >
-                                      {option.label}
-                                    </SelectItem>
-                                  ))}
+                                  <SelectGroup>
+                                    {conditionTypeOptions.map((option) => (
+                                      <SelectItem
+                                        key={option.value}
+                                        value={option.value}
+                                        disabled={option.disabled}
+                                      >
+                                        {option.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectGroup>
                                 </SelectContent>
                               </Select>
                               {fieldState.invalid && (
@@ -890,20 +895,22 @@ export function UpsertEventForm({
                                   <SelectValue placeholder="Select an event" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {existingEvents.length === 0 ? (
-                                    <SelectItem value="none" disabled>
-                                      No events available
-                                    </SelectItem>
-                                  ) : (
-                                    existingEvents.map((event) => (
-                                      <SelectItem
-                                        key={event.name}
-                                        value={event.name}
-                                      >
-                                        {event.name}
+                                  <SelectGroup>
+                                    {existingEvents.length === 0 ? (
+                                      <SelectItem value="none" disabled>
+                                        No events available
                                       </SelectItem>
-                                    ))
-                                  )}
+                                    ) : (
+                                      existingEvents.map((event) => (
+                                        <SelectItem
+                                          key={event.name}
+                                          value={event.name}
+                                        >
+                                          {event.name}
+                                        </SelectItem>
+                                      ))
+                                    )}
+                                  </SelectGroup>
                                 </SelectContent>
                               </Select>
                               <FieldDescription>
@@ -941,24 +948,26 @@ export function UpsertEventForm({
                                     <SelectValue placeholder="Select an event" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {existingEvents.filter(
-                                      (e) => e.type === "income",
-                                    ).length === 0 ? (
-                                      <SelectItem value="none" disabled>
-                                        No income events available
-                                      </SelectItem>
-                                    ) : (
-                                      existingEvents
-                                        .filter((e) => e.type === "income")
-                                        .map((event) => (
-                                          <SelectItem
-                                            key={event.name}
-                                            value={event.name}
-                                          >
-                                            {event.name}
-                                          </SelectItem>
-                                        ))
-                                    )}
+                                    <SelectGroup>
+                                      {existingEvents.filter(
+                                        (e) => e.type === "income",
+                                      ).length === 0 ? (
+                                        <SelectItem value="none" disabled>
+                                          No income events available
+                                        </SelectItem>
+                                      ) : (
+                                        existingEvents
+                                          .filter((e) => e.type === "income")
+                                          .map((event) => (
+                                            <SelectItem
+                                              key={event.name}
+                                              value={event.name}
+                                            >
+                                              {event.name}
+                                            </SelectItem>
+                                          ))
+                                      )}
+                                    </SelectGroup>
                                   </SelectContent>
                                 </Select>
                                 {fieldState.invalid && (

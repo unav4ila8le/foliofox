@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { ChevronsUpDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -112,20 +112,15 @@ export function TimeZoneCombobox({
             <CommandGroup heading="Automatic">
               <CommandItem
                 value={AUTO_TIME_ZONE_VALUE}
+                data-checked={
+                  field.value === AUTO_TIME_ZONE_VALUE || !field.value
+                }
                 onSelect={() => {
                   field.onChange(AUTO_TIME_ZONE_VALUE);
                   setOpen(false);
                 }}
               >
                 Auto
-                <Check
-                  className={cn(
-                    "ml-auto",
-                    field.value === AUTO_TIME_ZONE_VALUE || !field.value
-                      ? "opacity-100"
-                      : "opacity-0",
-                  )}
-                />
               </CommandItem>
             </CommandGroup>
 
@@ -138,20 +133,13 @@ export function TimeZoneCombobox({
                     <CommandItem
                       key={timeZone}
                       value={timeZone}
+                      data-checked={field.value === timeZone}
                       onSelect={() => {
                         field.onChange(timeZone);
                         setOpen(false);
                       }}
                     >
                       {formatTimeZoneLabel(timeZone)}
-                      <Check
-                        className={cn(
-                          "ml-auto",
-                          field.value === timeZone
-                            ? "opacity-100"
-                            : "opacity-0",
-                        )}
-                      />
                     </CommandItem>
                   ))}
                 </CommandGroup>

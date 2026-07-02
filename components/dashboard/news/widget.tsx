@@ -19,7 +19,7 @@ export function NewsWidget({ newsData }: NewsWidgetProps) {
           <div className="bg-accent rounded-lg p-2">
             <Newspaper className="text-muted-foreground size-4" />
           </div>
-          <p className="mt-3 font-medium">Portfolio News</p>
+          <p className="mt-3">Portfolio News</p>
           <p className="text-muted-foreground mt-1 text-sm">
             {newsData.message || "Failed to load news. Please try again later."}
           </p>
@@ -36,7 +36,7 @@ export function NewsWidget({ newsData }: NewsWidgetProps) {
           <div className="bg-accent rounded-lg p-2">
             <Newspaper className="text-muted-foreground size-4" />
           </div>
-          <p className="mt-3 font-medium">Portfolio News</p>
+          <p className="mt-3">Portfolio News</p>
           <p className="text-muted-foreground mt-1 text-sm">
             Add assets to start receiving news related to your portfolio
           </p>
@@ -68,7 +68,7 @@ export function NewsWidget({ newsData }: NewsWidgetProps) {
               className="group flex cursor-pointer items-start justify-between gap-4 py-3 first:pt-0 last:pb-0"
             >
               <div className="space-y-1">
-                <h4 className="line-clamp-3 text-sm font-medium md:line-clamp-2">
+                <h4 className="line-clamp-3 font-medium md:line-clamp-2">
                   {article.title}
                 </h4>
                 <p className="text-muted-foreground group-hover:text-foreground text-xs transition-colors">

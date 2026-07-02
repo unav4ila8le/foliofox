@@ -1,9 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const streamTextMock = vi.fn();
+const toUIMessageStreamMock = vi.fn();
+const createUIMessageStreamResponseMock = vi.fn(
+  () => new Response("ok", { status: 200 }),
+);
 const convertToModelMessagesMock = vi.fn(async (messages) => messages);
 const safeValidateUIMessagesMock = vi.fn();
-const stepCountIsMock = vi.fn(() => "stop-condition");
+const isStepCountMock = vi.fn(() => "stop-condition");
 const buildGuardrailedModelContextMock = vi.fn((messages) => messages);
 const fetchProfileMock = vi.fn();
 const persistConversationFromMessagesMock = vi.fn();
@@ -22,7 +26,7 @@ class MockAIChatPersistenceError extends Error {
   }
 }
 
-let capturedOnFinish:
+let capturedOnEnd:
   | ((params: {
       responseMessage: unknown;
       isAborted: boolean;
@@ -31,10 +35,12 @@ let capturedOnFinish:
   | undefined;
 
 vi.mock("ai", () => ({
+  createUIMessageStreamResponse: createUIMessageStreamResponseMock,
   streamText: streamTextMock,
+  toUIMessageStream: toUIMessageStreamMock,
   convertToModelMessages: convertToModelMessagesMock,
   safeValidateUIMessages: safeValidateUIMessagesMock,
-  stepCountIs: stepCountIsMock,
+  isStepCount: isStepCountMock,
 }));
 
 vi.mock("@/server/profile/actions", () => ({
@@ -54,6 +60,14 @@ vi.mock("@/server/ai/tools", () => ({
 
 vi.mock("@/server/ai/provider", () => ({
   aiModel: vi.fn(() => "model"),
+  chatGenerationOptions: {
+    reasoning: "high",
+    providerOptions: {
+      openai: {
+        reasoningSummary: "auto",
+      },
+    },
+  },
   chatModelId: "gpt-5.4-mini",
 }));
 
@@ -73,11 +87,13 @@ vi.mock("@/server/ai/telemetry/track-assistant-turn", () => ({
 
 describe("POST /api/ai/chat", () => {
   beforeEach(() => {
-    capturedOnFinish = undefined;
+    capturedOnEnd = undefined;
     streamTextMock.mockReset();
+    toUIMessageStreamMock.mockReset();
+    createUIMessageStreamResponseMock.mockClear();
     convertToModelMessagesMock.mockClear();
     safeValidateUIMessagesMock.mockReset();
-    stepCountIsMock.mockClear();
+    isStepCountMock.mockClear();
     buildGuardrailedModelContextMock.mockClear();
     fetchProfileMock.mockReset();
     persistConversationFromMessagesMock.mockReset();
@@ -88,20 +104,23 @@ describe("POST /api/ai/chat", () => {
     searchSymbolsToolExecuteMock.mockReset();
 
     streamTextMock.mockReturnValue({
-      totalUsage: Promise.resolve({ totalTokens: 222 }),
-      toUIMessageStreamResponse: ({
-        onFinish,
+      stream: new ReadableStream(),
+      usage: Promise.resolve({ totalTokens: 222 }),
+    });
+    toUIMessageStreamMock.mockImplementation(
+      ({
+        onEnd,
       }: {
-        onFinish: (params: {
+        onEnd: (params: {
           responseMessage: unknown;
           isAborted: boolean;
           finishReason?: string;
         }) => Promise<void>;
       }) => {
-        capturedOnFinish = onFinish;
-        return new Response("ok", { status: 200 });
+        capturedOnEnd = onEnd;
+        return new ReadableStream();
       },
-    });
+    );
     safeValidateUIMessagesMock.mockImplementation(async ({ messages }) => ({
       success: true,
       data: messages,
@@ -418,10 +437,10 @@ describe("POST /api/ai/chat", () => {
     expect(streamTextMock).toHaveBeenCalledWith(
       expect.objectContaining({
         maxOutputTokens: 8000,
+        reasoning: "high",
         providerOptions: {
           openai: {
             reasoningSummary: "auto",
-            reasoningEffort: "medium",
           },
         },
       }),
@@ -429,9 +448,15 @@ describe("POST /api/ai/chat", () => {
     expect(convertToModelMessagesMock).toHaveBeenCalledWith(
       guardrailedMessages,
     );
-    expect(capturedOnFinish).toBeDefined();
+    expect(toUIMessageStreamMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sendReasoning: true,
+        sendSources: true,
+      }),
+    );
+    expect(capturedOnEnd).toBeDefined();
 
-    await capturedOnFinish?.({
+    await capturedOnEnd?.({
       responseMessage: {
         id: "assistant-1",
         role: "assistant",
@@ -494,7 +519,7 @@ describe("POST /api/ai/chat", () => {
 
     await POST(request);
 
-    await capturedOnFinish?.({
+    await capturedOnEnd?.({
       responseMessage: {
         id: "assistant-regen",
         role: "assistant",
@@ -571,7 +596,7 @@ describe("POST /api/ai/chat", () => {
     const afterBudgetPlan = await streamArgs.prepareStep({ stepNumber: 1 });
     expect(afterBudgetPlan).toMatchObject({
       activeTools: [],
-      system: expect.stringContaining("Tool-call budget is exhausted"),
+      instructions: expect.stringContaining("Tool-call budget is exhausted"),
     });
     expect(streamArgs.stopWhen).toHaveLength(1);
   });
@@ -602,7 +627,7 @@ describe("POST /api/ai/chat", () => {
 
     await POST(request);
 
-    await capturedOnFinish?.({
+    await capturedOnEnd?.({
       responseMessage: {
         id: "assistant-suggestion",
         role: "assistant",
@@ -645,7 +670,7 @@ describe("POST /api/ai/chat", () => {
 
     await POST(request);
 
-    await capturedOnFinish?.({
+    await capturedOnEnd?.({
       responseMessage: {
         id: "assistant-invalid-source",
         role: "assistant",
@@ -690,7 +715,7 @@ describe("POST /api/ai/chat", () => {
 
     await POST(request);
 
-    await capturedOnFinish?.({
+    await capturedOnEnd?.({
       responseMessage: {
         id: "assistant-fail",
         role: "assistant",

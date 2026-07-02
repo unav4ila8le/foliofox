@@ -25,6 +25,7 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -446,9 +447,11 @@ export function ScenarioChart({
                 <SelectValue placeholder="Scale" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="monthly">Monthly</SelectItem>
-                <SelectItem value="quarterly">Quarterly</SelectItem>
-                <SelectItem value="yearly">Yearly</SelectItem>
+                <SelectGroup>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="quarterly">Quarterly</SelectItem>
+                  <SelectItem value="yearly">Yearly</SelectItem>
+                </SelectGroup>
               </SelectContent>
             </Select>
             <Select
@@ -465,10 +468,12 @@ export function ScenarioChart({
                 <SelectValue placeholder="Time horizon" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="2">2 years</SelectItem>
-                <SelectItem value="5">5 years</SelectItem>
-                <SelectItem value="10">10 years</SelectItem>
-                <SelectItem value="30">30 years</SelectItem>
+                <SelectGroup>
+                  <SelectItem value="2">2 years</SelectItem>
+                  <SelectItem value="5">5 years</SelectItem>
+                  <SelectItem value="10">10 years</SelectItem>
+                  <SelectItem value="30">30 years</SelectItem>
+                </SelectGroup>
               </SelectContent>
             </Select>
           </div>
@@ -489,7 +494,7 @@ export function ScenarioChart({
                 <div className="bg-accent rounded-lg p-2">
                   <GitBranch className="text-muted-foreground size-4" />
                 </div>
-                <p className="mt-3 font-medium">{projectedSeriesTitle}</p>
+                <p className="mt-3">{projectedSeriesTitle}</p>
                 <p className="text-muted-foreground mt-1 mb-3 text-sm">
                   Add events to see how your projected {projectedSeriesLabel}{" "}
                   changes over time

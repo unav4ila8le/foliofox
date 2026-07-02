@@ -34,7 +34,7 @@ export function PortfolioRecordsWidget({
           <div className="bg-accent rounded-lg p-2">
             <ArrowLeftRight className="text-muted-foreground size-4" />
           </div>
-          <p className="mt-3 font-medium">Portfolio Records</p>
+          <p className="mt-3">Portfolio Records</p>
           <p className="text-muted-foreground mt-1 text-sm">
             Add a new record to start tracking your portfolio
           </p>

@@ -100,7 +100,7 @@ export function DeleteAccountDialog({
         </DialogHeader>
 
         <DialogBody>
-          <div className="text-destructive flex items-center gap-2 rounded-lg bg-red-50 p-2">
+          <div className="text-destructive bg-destructive/10 flex items-center gap-2 rounded-lg p-2">
             <AlertCircleIcon className="size-4" />
             <p className="text-sm font-medium">
               This action is not reversible. Please be certain.

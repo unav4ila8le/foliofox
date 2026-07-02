@@ -53,12 +53,6 @@ vi.mock("@/components/ai-elements/message", () => ({
   Message: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),
-  MessageAttachments: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="message-attachments">{children}</div>
-  ),
-  MessageAttachment: ({ data }: { data: { filename?: string } }) => (
-    <div>{`attachment:${data.filename ?? "unknown"}`}</div>
-  ),
   MessageContent: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),
@@ -76,13 +70,40 @@ vi.mock("@/components/ai-elements/message", () => ({
   ),
 }));
 
+vi.mock("@/components/ai-elements/attachments", () => ({
+  Attachments: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="message-attachments">{children}</div>
+  ),
+  Attachment: ({
+    children,
+    data,
+  }: {
+    children: React.ReactNode;
+    data: { filename?: string };
+  }) => (
+    <div>
+      {`attachment:${data.filename ?? "unknown"}`}
+      {children}
+    </div>
+  ),
+  AttachmentInfo: () => null,
+  AttachmentPreview: () => null,
+  AttachmentRemove: () => null,
+}));
+
+vi.mock("@/components/ai-elements/speech-input", () => ({
+  SpeechInput: (props: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
+    <button {...props}>Speech</button>
+  ),
+}));
+
 vi.mock("@/components/ai-elements/message-loading", () => ({
   MessageLoading: () => <div>Loading...</div>,
 }));
 
 vi.mock("@/components/ai-elements/reasoning", () => ({
   Reasoning: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
+    <div data-testid="reasoning">{children}</div>
   ),
   ReasoningContent: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
@@ -155,12 +176,6 @@ vi.mock("@/components/ai-elements/prompt-input", () => ({
   PromptInputHeader: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),
-  PromptInputAttachments: ({
-    children,
-  }: {
-    children: (attachment: unknown) => React.ReactNode;
-  }) => <div>{children({ id: "file-1" })}</div>,
-  PromptInputAttachment: () => null,
   PromptInputActionMenu: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),
@@ -190,7 +205,6 @@ vi.mock("@/components/ai-elements/prompt-input", () => ({
   PromptInputFooter: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),
-  PromptInputSpeechButton: () => null,
   usePromptInputController: () => ({
     textInput: {
       value: hoistedMocks.promptSubmitPayload.text,
@@ -204,6 +218,14 @@ vi.mock("@/components/ai-elements/prompt-input", () => ({
       openFileDialog: vi.fn(),
       fileInputRef: { current: null },
     },
+  }),
+  usePromptInputAttachments: () => ({
+    files: hoistedMocks.promptSubmitPayload.files,
+    add: vi.fn(),
+    remove: vi.fn(),
+    clear: vi.fn(),
+    openFileDialog: vi.fn(),
+    fileInputRef: { current: null },
   }),
 }));
 
@@ -514,6 +536,18 @@ describe("Chat guardrail UI", () => {
     expect(hoistedMocks.sendMessageMock).not.toHaveBeenCalled();
   });
 
+  it("does not submit when clicking speech input", () => {
+    renderChat();
+
+    const speechButton = screen.getByRole("button", {
+      name: "Dictate message",
+    });
+
+    fireEvent.click(speechButton);
+
+    expect(hoistedMocks.sendMessageMock).not.toHaveBeenCalled();
+  });
+
   it("disables prompt input submit when AI is disabled", () => {
     renderChat({ isAIEnabled: false });
 
@@ -575,7 +609,6 @@ describe("Chat guardrail UI", () => {
         role: "assistant",
         parts: [
           { type: "reasoning", text: "Thinking step 1" },
-          { type: "reasoning", text: "Thinking step 2" },
           {
             type: "tool-position-lookup",
             state: "output-available",
@@ -583,6 +616,7 @@ describe("Chat guardrail UI", () => {
             output: { price: 123.45 },
             errorText: undefined,
           },
+          { type: "reasoning", text: "Thinking step 2" },
           { type: "text", text: "AAPL is trading near 123." },
         ],
       },
@@ -593,6 +627,7 @@ describe("Chat guardrail UI", () => {
     expect(
       screen.getByText(/Thinking step 1\s+Thinking step 2/),
     ).not.toBeNull();
+    expect(screen.getAllByTestId("reasoning")).toHaveLength(1);
     expect(
       screen.getByText("tool:tool-position-lookup:output-available"),
     ).not.toBeNull();

@@ -296,7 +296,7 @@ function SymbolList({
                 symbol.exchange ?? "",
               ].filter(Boolean)}
               disabled={isLoadingQuote}
-              className="flex flex-row justify-between gap-4"
+              className="flex flex-row justify-between gap-4 [&>svg:last-child]:hidden"
             >
               <div className="flex flex-col">
                 <span>{symbol.id}</span>

@@ -26,6 +26,7 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
 } from "@/components/ui/select";
@@ -82,7 +83,7 @@ function PerformanceUnavailableState({ message }: { message: string }) {
       <div className="bg-accent rounded-lg p-2">
         <Info className="text-muted-foreground size-4" />
       </div>
-      <p className="mt-3 font-medium">Investments Performance</p>
+      <p className="mt-3">Investments Performance</p>
       <p className="text-muted-foreground mt-1 max-w-sm text-sm">{message}</p>
     </CardContent>
   );
@@ -338,7 +339,7 @@ export function NetWorthAreaChart({
           <div className="bg-accent rounded-lg p-2">
             <TrendingUp className="text-muted-foreground size-4" />
           </div>
-          <p className="mt-3 font-medium">Net Worth History</p>
+          <p className="mt-3">Net Worth History</p>
           <p className="text-muted-foreground mt-1 mb-3 text-sm">
             Add your assets to start tracking your net worth
           </p>
@@ -470,24 +471,26 @@ export function NetWorthAreaChart({
                   </span>
                 </SelectTrigger>
                 <SelectContent align="end" position="popper">
-                  <SelectItem value="1m">
-                    {TIME_RANGE_LABELS["1m"].long}
-                  </SelectItem>
-                  <SelectItem value="3m">
-                    {TIME_RANGE_LABELS["3m"].long}
-                  </SelectItem>
-                  <SelectItem value="6m">
-                    {TIME_RANGE_LABELS["6m"].long}
-                  </SelectItem>
-                  <SelectItem value="ytd">
-                    {TIME_RANGE_LABELS.ytd.long}
-                  </SelectItem>
-                  <SelectItem value="1y">
-                    {TIME_RANGE_LABELS["1y"].long}
-                  </SelectItem>
-                  <SelectItem value="2y">
-                    {TIME_RANGE_LABELS["2y"].long}
-                  </SelectItem>
+                  <SelectGroup>
+                    <SelectItem value="1m">
+                      {TIME_RANGE_LABELS["1m"].long}
+                    </SelectItem>
+                    <SelectItem value="3m">
+                      {TIME_RANGE_LABELS["3m"].long}
+                    </SelectItem>
+                    <SelectItem value="6m">
+                      {TIME_RANGE_LABELS["6m"].long}
+                    </SelectItem>
+                    <SelectItem value="ytd">
+                      {TIME_RANGE_LABELS.ytd.long}
+                    </SelectItem>
+                    <SelectItem value="1y">
+                      {TIME_RANGE_LABELS["1y"].long}
+                    </SelectItem>
+                    <SelectItem value="2y">
+                      {TIME_RANGE_LABELS["2y"].long}
+                    </SelectItem>
+                  </SelectGroup>
                 </SelectContent>
               </Select>
             </div>

@@ -1,12 +1,18 @@
-import { aiModel, chatModelId } from "@/server/ai/provider";
 import {
+  aiModel,
+  chatGenerationOptions,
+  chatModelId,
+} from "@/server/ai/provider";
+import {
+  createUIMessageStreamResponse,
   streamText,
+  toUIMessageStream,
   type FileUIPart,
   type UIMessage,
   type InferUITools,
   convertToModelMessages,
   safeValidateUIMessages,
-  stepCountIs,
+  isStepCount,
 } from "ai";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
@@ -212,7 +218,7 @@ export async function POST(req: Request) {
 
   // 4. Bound model context size to keep latency/cost predictable.
   const guardrailedContextMessages = buildGuardrailedModelContext(messages);
-  const system = createSystemPrompt({
+  const instructions = createSystemPrompt({
     mode,
     aiTools,
     currentDateKey,
@@ -228,15 +234,10 @@ export async function POST(req: Request) {
     model: aiModel(chatModelId),
     messages: await convertToModelMessages(guardrailedContextMessages),
     tools: guardedTools,
-    system,
+    instructions,
     maxOutputTokens: 8000,
-    stopWhen: [stepCountIs(24)],
-    providerOptions: {
-      openai: {
-        reasoningSummary: "auto",
-        reasoningEffort: "medium",
-      },
-    },
+    stopWhen: [isStepCount(24)],
+    ...chatGenerationOptions,
 
     // Force portfolio overview on very first assistant step
     prepareStep: async ({ stepNumber }) => {
@@ -255,7 +256,7 @@ export async function POST(req: Request) {
         // Block additional tool calls, but still allow a text-only synthesis step.
         return {
           activeTools: [],
-          system: `${system}\n\n${TOOL_BUDGET_FINAL_SYNTHESIS_INSTRUCTION}`,
+          instructions: `${instructions}\n\n${TOOL_BUDGET_FINAL_SYNTHESIS_INSTRUCTION}`,
         };
       }
 
@@ -275,19 +276,20 @@ export async function POST(req: Request) {
     },
   });
 
-  return result.toUIMessageStreamResponse({
+  const stream = toUIMessageStream({
+    stream: result.stream,
     originalMessages: messages,
     generateMessageId: () => uuidv4(),
     sendReasoning: true,
     sendSources: true,
-    onFinish: async ({ responseMessage, isAborted, finishReason }) => {
+    onEnd: async ({ responseMessage, isAborted, finishReason }) => {
       // 5. Persist only the assistant response that just streamed.
       if (!conversationId || isAborted) {
         return;
       }
 
       try {
-        const tokens = await result.totalUsage;
+        const tokens = await result.usage;
         await persistAssistantMessage({
           conversationId,
           message: responseMessage,
@@ -315,4 +317,6 @@ export async function POST(req: Request) {
       }
     },
   });
+
+  return createUIMessageStreamResponse({ stream });
 }

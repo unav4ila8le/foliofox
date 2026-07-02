@@ -40,7 +40,7 @@ export function PublicPortfolioAssetsTable({
           <div className="bg-accent rounded-lg p-2">
             <Package className="text-muted-foreground size-4" />
           </div>
-          <p className="mt-3 font-medium">Positions</p>
+          <p className="mt-3">Positions</p>
           <p className="text-muted-foreground mt-1 text-sm">
             This portfolio does not contain any positions yet.
           </p>

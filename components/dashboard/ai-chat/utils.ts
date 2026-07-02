@@ -1,35 +1,6 @@
 import type { UIMessage } from "ai";
 
-import type {
-  GroupedMessagePart,
-  MessageFilePart,
-  MessageSourcePart,
-} from "./types";
-
-export function groupAdjacentParts(parts: UIMessage["parts"]) {
-  const groups: GroupedMessagePart[] = [];
-
-  parts.forEach((part, index) => {
-    if (part.type === "reasoning") {
-      const previousGroup = groups.at(-1);
-      if (previousGroup?.kind === "reasoning") {
-        previousGroup.texts.push(part.text);
-        previousGroup.lastIndex = index;
-      } else {
-        groups.push({
-          kind: "reasoning",
-          texts: [part.text],
-          lastIndex: index,
-        });
-      }
-      return;
-    }
-
-    groups.push({ kind: "other", part, index });
-  });
-
-  return groups;
-}
+import type { MessageFilePart, MessageSourcePart } from "./types";
 
 export function getSourceLabel(url: string, title?: string) {
   if (title?.trim()) {

@@ -17,12 +17,7 @@
  */
 
 export type PortfolioRecordCanonicalHeader =
-  | "position_name"
-  | "type"
-  | "date"
-  | "quantity"
-  | "unit_value"
-  | "description";
+  "position_name" | "type" | "date" | "quantity" | "unit_value" | "description";
 
 // Common aliases from brokers and spreadsheets
 const PORTFOLIO_RECORD_HEADER_ALIASES: Record<

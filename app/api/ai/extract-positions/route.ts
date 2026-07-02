@@ -1,4 +1,8 @@
-import { aiModel, extractionModelId } from "@/server/ai/provider";
+import {
+  aiModel,
+  extractionGenerationOptions,
+  extractionModelId,
+} from "@/server/ai/provider";
 import { generateText, Output } from "ai";
 
 import {
@@ -242,6 +246,7 @@ export async function POST(req: Request) {
       try {
         const aiResult = await generateText({
           model: aiModel(extractionModelId),
+          ...extractionGenerationOptions,
           messages: [
             {
               role: "user",
@@ -357,6 +362,7 @@ export async function POST(req: Request) {
   try {
     const result = await generateText({
       model: aiModel(extractionModelId),
+      ...extractionGenerationOptions,
       messages: [
         {
           role: "user",

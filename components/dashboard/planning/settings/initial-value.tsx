@@ -23,6 +23,7 @@ import { LocalizedNumberInput } from "@/components/ui/custom/localized-number-in
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -300,11 +301,13 @@ export function PlanningInitialValue({
             <SelectValue placeholder="Select basis" />
           </SelectTrigger>
           <SelectContent position="popper">
-            {INITIAL_VALUE_BASIS_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
+            <SelectGroup>
+              {INITIAL_VALUE_BASIS_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectGroup>
           </SelectContent>
         </Select>
         <InputGroup className="flex-1 sm:max-w-56">

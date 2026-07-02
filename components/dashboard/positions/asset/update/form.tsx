@@ -206,7 +206,7 @@ export function UpdateAssetForm({
             {/* Advanced */}
             <Accordion type="single" collapsible>
               <AccordionItem value="advanced">
-                <AccordionTrigger className="text-muted-foreground justify-start gap-1 text-sm">
+                <AccordionTrigger className="text-muted-foreground items-center justify-start text-sm **:data-[slot=accordion-trigger-icon]:ml-1">
                   Advanced
                 </AccordionTrigger>
                 <AccordionContent>

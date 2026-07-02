@@ -485,7 +485,7 @@ export function PortfolioRecordsTable({
             <div className="bg-accent rounded-lg p-2">
               <ArrowLeftRight className="text-muted-foreground size-4" />
             </div>
-            <p className="mt-3 font-medium">No records found</p>
+            <p className="mt-3">No records found</p>
             <p className="text-muted-foreground mt-1 mb-3 text-sm">
               {emptyStateDescription ||
                 "Records for this position will appear here"}

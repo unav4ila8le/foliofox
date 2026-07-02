@@ -70,7 +70,7 @@ function AssetAllocationDonutBase({
           <div className="bg-accent rounded-lg p-2">
             <ChartPie className="text-muted-foreground size-4" />
           </div>
-          <p className="mt-3 font-medium">Asset Allocation</p>
+          <p className="mt-3">Asset Allocation</p>
           <p className="text-muted-foreground mt-1 text-sm">
             Your assets will appear here once you add them
           </p>

@@ -56,10 +56,10 @@ export function ChatHeader({
     isLoadingConversation || !isAIEnabled || isAtConversationCap;
 
   const handleDelete = async (
-    e: MouseEvent<HTMLDivElement>,
+    event: MouseEvent<HTMLButtonElement>,
     conversationId: string,
   ) => {
-    e.stopPropagation(); // Prevent selecting the conversation
+    event.stopPropagation(); // Prevent selecting the conversation
     setDeletingId(conversationId);
     try {
       await deleteConversation(conversationId);

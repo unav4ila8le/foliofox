@@ -23,6 +23,7 @@ import { LocalizedNumberInput } from "@/components/ui/custom/localized-number-in
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -264,12 +265,14 @@ export function PlanningAssumptions({
               <SelectValue placeholder="Select preset" />
             </SelectTrigger>
             <SelectContent position="popper">
-              {ASSUMPTION_PRESET_DISPLAY_ORDER.map((presetId) => (
-                <SelectItem key={presetId} value={presetId}>
-                  {PRESET_LABELS[presetId]}
-                </SelectItem>
-              ))}
-              <SelectItem value={MANUAL_PRESET_VALUE}>Manual</SelectItem>
+              <SelectGroup>
+                {ASSUMPTION_PRESET_DISPLAY_ORDER.map((presetId) => (
+                  <SelectItem key={presetId} value={presetId}>
+                    {PRESET_LABELS[presetId]}
+                  </SelectItem>
+                ))}
+                <SelectItem value={MANUAL_PRESET_VALUE}>Manual</SelectItem>
+              </SelectGroup>
             </SelectContent>
           </Select>
         </div>

@@ -37,5 +37,4 @@ export type UserPositionCategoryCreateResult =
   | Extract<UserPositionCategoryMutationResult, { success: false }>;
 
 export type UserPositionCategoryDeleteResult =
-  | { success: true }
-  | { success: false; code: string; message: string };
+  { success: true } | { success: false; code: string; message: string };

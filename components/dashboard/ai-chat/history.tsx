@@ -6,6 +6,7 @@ import { formatDistanceToNow } from "date-fns";
 import { History, Trash2 } from "lucide-react";
 
 import {
+  Command,
   CommandDialog,
   CommandEmpty,
   CommandGroup,
@@ -15,6 +16,8 @@ import {
 } from "@/components/ui/command";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+
+import { cn } from "@/lib/utils";
 
 interface ChatHistoryProps {
   isAIEnabled?: boolean;
@@ -27,7 +30,7 @@ interface ChatHistoryProps {
   isLoadingConversation?: boolean;
   deletingId?: string | null;
   handleDelete: (
-    event: MouseEvent<HTMLDivElement>,
+    event: MouseEvent<HTMLButtonElement>,
     conversationId: string,
   ) => Promise<void> | void;
 }
@@ -61,49 +64,52 @@ export function ChatHistory({
         title="Conversation History"
         description="Search and open previous AI chat conversations."
       >
-        <CommandInput placeholder="Search conversation..." />
-        <CommandList>
-          <CommandEmpty>No conversations found.</CommandEmpty>
-          <CommandGroup>
-            {conversations.map((conversation) => (
-              <CommandItem
-                key={conversation.id}
-                // Value must be unique per item for stable cmdk hover/active behavior.
-                value={`${conversation.title} ${conversation.id}`}
-                disabled={
-                  isLoadingConversation || deletingId === conversation.id
-                }
-                onSelect={() => {
-                  onSelectConversation(conversation.id);
-                  setOpenHistory(false);
-                }}
-                className="group items-start gap-2"
-              >
-                <div className="flex flex-1 flex-col items-start gap-0">
-                  <span className="text-muted-foreground text-xs">
-                    {formatDistanceToNow(new Date(conversation.updatedAt), {
-                      addSuffix: true,
-                    })}
-                  </span>
-                  <p className="line-clamp-2">{conversation.title}</p>
-                </div>
-                <div
-                  role="button"
-                  onClick={(e) => handleDelete(e, conversation.id)}
-                  className="group/delete flex-none"
-                  aria-label={`Delete ${conversation.title}`}
-                  tabIndex={0}
+        <Command>
+          <CommandInput placeholder="Search conversation..." />
+          <CommandList>
+            <CommandEmpty>No conversations found.</CommandEmpty>
+            <CommandGroup>
+              {conversations.map((conversation) => (
+                <CommandItem
+                  key={conversation.id}
+                  // Value must be unique per item for stable cmdk hover/active behavior.
+                  value={`${conversation.title} ${conversation.id}`}
+                  disabled={
+                    isLoadingConversation || deletingId === conversation.id
+                  }
+                  onSelect={() => {
+                    onSelectConversation(conversation.id);
+                    setOpenHistory(false);
+                  }}
+                  className="group items-start gap-2 [&>svg:last-child]:hidden"
                 >
-                  {deletingId === conversation.id ? (
-                    <Spinner />
-                  ) : (
-                    <Trash2 className="text-muted-foreground group-hover/delete:text-destructive opacity-0 group-hover:opacity-100" />
-                  )}
-                </div>
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        </CommandList>
+                  <div className="flex flex-1 flex-col items-start gap-0">
+                    <span className="text-muted-foreground text-xs">
+                      {formatDistanceToNow(new Date(conversation.updatedAt), {
+                        addSuffix: true,
+                      })}
+                    </span>
+                    <p className="line-clamp-2">{conversation.title}</p>
+                  </div>
+                  <Button
+                    onClick={(event) => handleDelete(event, conversation.id)}
+                    className={cn(
+                      "hover:bg-destructive/10 hover:text-destructive hover:[&_svg]:text-destructive! flex-none transition-none",
+                      deletingId === conversation.id
+                        ? "opacity-100"
+                        : "opacity-0 group-hover:opacity-100",
+                    )}
+                    size="icon-xs"
+                    aria-label={`Delete ${conversation.title}`}
+                    variant="ghost"
+                  >
+                    {deletingId === conversation.id ? <Spinner /> : <Trash2 />}
+                  </Button>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
       </CommandDialog>
     </>
   );

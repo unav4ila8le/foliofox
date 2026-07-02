@@ -1,4 +1,4 @@
-import { tool, type Tool } from "ai";
+import type { Tool } from "ai";
 
 import type { AIAssistantRoute } from "@/server/ai/telemetry/constants";
 
@@ -17,9 +17,7 @@ export function routedTool<INPUT, OUTPUT>(
   const { telemetryRoutes, ...toolDefinition } = definition;
 
   return {
-    ...tool(toolDefinition),
+    ...toolDefinition,
     telemetryRoutes,
-    // AI SDK tool() returns a wide union that drops our custom field type.
-    // This assertion preserves full tool inference while attaching telemetry metadata.
   } as RoutedTool<INPUT, OUTPUT>;
 }
