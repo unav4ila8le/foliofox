@@ -280,6 +280,7 @@ export async function POST(req: Request) {
     stream: result.stream,
     originalMessages: messages,
     generateMessageId: () => uuidv4(),
+    sendReasoning: true,
     sendSources: true,
     onEnd: async ({ responseMessage, isAborted, finishReason }) => {
       // 5. Persist only the assistant response that just streamed.

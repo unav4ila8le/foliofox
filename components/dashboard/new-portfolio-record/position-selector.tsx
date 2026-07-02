@@ -143,11 +143,8 @@ function PositionList({
     arr.sort((a, b) => a.name.localeCompare(b.name)),
   );
 
-  const selectedPosition = positions.find((position) => position.id === value);
-  const commandValue = selectedPosition?.name ?? "";
-
   return (
-    <Command value={commandValue}>
+    <Command>
       <CommandInput placeholder="Search position..." className="h-9" />
       <CommandList>
         <CommandEmpty>

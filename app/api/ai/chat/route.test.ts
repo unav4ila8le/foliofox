@@ -448,6 +448,12 @@ describe("POST /api/ai/chat", () => {
     expect(convertToModelMessagesMock).toHaveBeenCalledWith(
       guardrailedMessages,
     );
+    expect(toUIMessageStreamMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sendReasoning: true,
+        sendSources: true,
+      }),
+    );
     expect(capturedOnEnd).toBeDefined();
 
     await capturedOnEnd?.({

@@ -79,10 +79,6 @@ export function TimeZoneCombobox({
     selectedLabel === "Auto"
       ? selectedLabel
       : formatTimeZoneLabel(selectedLabel);
-  const commandValue =
-    !field.value || field.value === AUTO_TIME_ZONE_VALUE
-      ? AUTO_TIME_ZONE_VALUE
-      : field.value;
 
   return (
     <Popover open={open} onOpenChange={setOpen} modal={true}>
@@ -108,7 +104,7 @@ export function TimeZoneCombobox({
         align="start"
         className="w-(--radix-popover-trigger-width) p-0"
       >
-        <Command value={commandValue}>
+        <Command>
           <CommandInput placeholder="Search timezone..." />
           <CommandList>
             <CommandEmpty>No timezone found.</CommandEmpty>

@@ -188,12 +188,9 @@ function PositionCategoryList({
     return category.source === "system" && value === category.category_id;
   }
 
-  const selectedCategory = categories.find(isCategorySelected);
-  const commandValue = selectedCategory?.name ?? "";
-
   return (
     <>
-      <Command value={commandValue}>
+      <Command>
         <CommandInput placeholder="Search category..." className="h-9" />
         <CommandList>
           <CommandEmpty>

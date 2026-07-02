@@ -114,7 +114,11 @@ export function ChatComposer({
               variant="outline"
               type="button"
               onTranscriptionChange={(text) => {
-                controller.textInput.setInput(text);
+                controller.textInput.setInput(
+                  [controller.textInput.value.trim(), text.trim()]
+                    .filter(Boolean)
+                    .join(" "),
+                );
               }}
             />
             <PromptInputSelect

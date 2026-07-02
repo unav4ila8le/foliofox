@@ -100,10 +100,8 @@ function CurrencyList({
   currencies,
   isLoading,
 }: CurrencyListProps) {
-  const selectedCurrencyCode = value ?? "";
-
   return (
-    <Command value={selectedCurrencyCode}>
+    <Command>
       <CommandInput placeholder="Search currency..." className="h-9" />
       <CommandList>
         <CommandEmpty>
