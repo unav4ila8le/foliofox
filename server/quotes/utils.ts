@@ -42,3 +42,18 @@ export function normalizeChartQuoteEntries(
     .filter((entry): entry is ChartQuoteEntry => entry !== null)
     .sort((a, b) => a.dateKey.localeCompare(b.dateKey));
 }
+
+export function scaleProviderQuoteEntries(
+  entries: ChartQuoteEntry[],
+  quoteToCurrencyRate: number,
+): ChartQuoteEntry[] {
+  if (quoteToCurrencyRate === 1) return entries;
+
+  // Yahoo chart prices are in the provider quote unit. Cache only normalized
+  // major-currency prices so valuations, P/L, and display code stay simple.
+  return entries.map((entry) => ({
+    ...entry,
+    closePrice: entry.closePrice * quoteToCurrencyRate,
+    adjustedClosePrice: entry.adjustedClosePrice * quoteToCurrencyRate,
+  }));
+}

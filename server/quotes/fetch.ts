@@ -12,7 +12,7 @@ import {
   resolveSymbolsBatch,
 } from "@/server/symbols/resolve";
 import { enqueueExactQuoteRepairs } from "./repair-queue";
-import { normalizeChartQuoteEntries } from "./utils";
+import { normalizeChartQuoteEntries, scaleProviderQuoteEntries } from "./utils";
 
 const DEFAULT_STALE_GUARD_DAYS = 7;
 const DEFAULT_CRON_CUTOFF_HOUR_UTC = 22;
@@ -125,21 +125,6 @@ function findLatestEntryAtOrBefore(
     }
   }
   return null;
-}
-
-function scaleProviderQuoteEntries(
-  entries: ReturnType<typeof normalizeChartQuoteEntries>,
-  quoteToCurrencyRate: number,
-): ReturnType<typeof normalizeChartQuoteEntries> {
-  if (quoteToCurrencyRate === 1) return entries;
-
-  // Yahoo chart prices are in the provider quote unit. Cache only normalized
-  // major-currency prices so valuations, P/L, and display code stay simple.
-  return entries.map((entry) => ({
-    ...entry,
-    closePrice: entry.closePrice * quoteToCurrencyRate,
-    adjustedClosePrice: entry.adjustedClosePrice * quoteToCurrencyRate,
-  }));
 }
 
 function buildLiveMissCooldownKey(request: {
