@@ -6,9 +6,9 @@ Reviewed against the current codebase on 2026-07-03.
 
 - `fetchQuotes()` already resolves quotes as `exact cache hit -> prior cached fallback -> optional live fetch`.
 - Range market-data reads are cache-first by default: `symbolHandler.fetchForPositionsRange()` passes `liveFetchOnMiss: false` unless the caller opts in.
-- `fetchNetWorthHistory()` is the important exception today: it still opts range history into blocking live repair with `liveFetchOnMiss: true`.
+- `fetchNetWorthHistory()` now keeps range history cache-first and opts into async exact-date repair with `enqueueExactRepairOnNonExact: true`.
 - The daily `/api/cron/fetch-quotes` route still owns the rolling `D`, `D-1`, `D-2` refresh and uses `staleGuardDays: 0` so those dates stay distinct.
-- There is no queue table, enqueue helper, server-side claim helper, or repair worker in the current codebase.
+- `public.quote_repair_queue`, the enqueue helper, and `/api/cron/repair-quote-gaps` now provide the async repair path.
 - Quote rows store provider market days only and normalized major-currency prices. `symbols.quote_to_currency_rate` is already part of the quote path.
 - `symbols.last_quote_at` already tracks the latest provider quote date and should be used to avoid endlessly queueing dead/delisted symbols while still allowing periodic recovery probes.
 - Vercel Pro removes the old practical blocker for another cron: current Vercel docs list Pro as 100 cron jobs per project with a once-per-minute minimum interval. Cron delivery can still overlap, duplicate, or miss runs, so the worker must be idempotent.

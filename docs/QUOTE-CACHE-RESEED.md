@@ -18,12 +18,17 @@ For the day-to-day runtime behavior of quote reads and chart fallbacks, see [QUO
 2. `CRON_SECRET` is configured in deployment.
 3. You can call:
    - `GET /api/cron/fetch-quotes`
+   - `GET /api/cron/repair-quote-gaps`
 4. The cron endpoint behavior is understood:
    - Each invocation processes a rolling 3-day window: `D`, `D-1`, `D-2`.
    - `?date=YYYY-MM-DD` anchors `D` to the provided date.
    - Response status is `200` for full success and partial success.
    - `401` and `400` are still used for auth/date validation failures.
-5. Optional: enable maintenance mode if you want zero user traffic during reseed.
+5. Quote repair queue behavior is understood:
+   - Net-worth history can enqueue exact-date quote gaps.
+   - `/api/cron/repair-quote-gaps` processes due queue rows and upserts provider market-day quotes.
+   - Queue rows ending in `non_trading_or_no_exact` are expected for market holidays and unsupported exact dates.
+6. Optional: enable maintenance mode if you want zero user traffic during reseed.
 
 ## Recommended strategy
 
@@ -182,9 +187,38 @@ from public.quotes;
 
 Expected: both counts should remain near zero after the refactor.
 
+### Quote repair queue status
+
+```sql
+select status, count(*) as jobs
+from public.quote_repair_queue
+group by status
+order by status;
+```
+
+### Due pending repair jobs
+
+```sql
+select count(*) as due_pending_jobs
+from public.quote_repair_queue
+where status = 'pending'
+  and next_attempt_at <= now();
+```
+
+### Recent terminal quote repair failures
+
+```sql
+select symbol_id, target_date, attempt_count, last_error, updated_at
+from public.quote_repair_queue
+where status = 'terminal_error'
+order by updated_at desc
+limit 50;
+```
+
 ## Exit criteria
 
 - Cron endpoint returns success.
 - `max(date)` is current expected as-of date.
 - Missing position-linked symbols are understood (for example, provider-unsupported tickers).
+- Quote repair queue has no unexpected due backlog or terminal-error spike.
 - No sustained quote insert/update errors in application logs.

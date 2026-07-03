@@ -37,6 +37,7 @@ export interface MarketDataFetchOptions {
 export interface MarketDataRangeFetchOptions extends MarketDataFetchOptions {
   eligibleDates?: Map<string, Set<string>>;
   liveFetchOnMiss?: boolean;
+  enqueueExactRepairOnNonExact?: boolean;
 }
 
 export interface MarketDataHandler {
@@ -95,7 +96,7 @@ export async function fetchMarketDataRange(
 - positions/create: write IDs directly to `positions` (symbol_id should be a UUID).
 - `resolveMarketDataKey` / `resolveMarketDataForPositions`: resolver helpers that map positions to handlers/keys so callers avoid inline branching.
 - Bulk history (charts, AI tools, etc.) should call `fetchMarketDataRange` with an optional `eligibleDates` map so handlers can skip days where a position wasn't active.
-- Range callers remain cache-first by default; opt into `liveFetchOnMiss` only for flows that need live read-repair on cold history gaps.
+- Range callers remain cache-first by default; opt into `enqueueExactRepairOnNonExact` for flows that should queue async quote-gap repair, or `liveFetchOnMiss` only for flows that still need blocking live repair on cold history gaps.
 
 ## Implementation Steps
 

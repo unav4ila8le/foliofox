@@ -230,9 +230,8 @@ export async function fetchNetWorthHistory({
       {
         upsert: true,
         eligibleDates: eligibleDatesForHandlers,
-        // Range history opts into read repair only after cached fallback
-        // coverage is exhausted inside fetchQuotes().
-        liveFetchOnMiss: true,
+        // Keep chart loads cache-first; exact-date gaps are repaired by cron.
+        enqueueExactRepairOnNonExact: true,
       },
     );
   }
