@@ -60,7 +60,11 @@ describe("symbolHandler", () => {
     expect(fetchQuotesMock).toHaveBeenCalledTimes(1);
     expect(fetchQuotesMock).toHaveBeenCalledWith(
       [{ symbolLookup: "sym-1", date: new Date("2026-02-25T00:00:00.000Z") }],
-      { upsert: true, liveFetchOnMiss: false },
+      {
+        upsert: true,
+        liveFetchOnMiss: false,
+        enqueueExactRepairOnNonExact: undefined,
+      },
     );
   });
 
@@ -86,7 +90,11 @@ describe("symbolHandler", () => {
     expect(fetchQuotesMock).toHaveBeenCalledTimes(1);
     expect(fetchQuotesMock).toHaveBeenCalledWith(
       [{ symbolLookup: "sym-1", date: new Date("2026-02-25T00:00:00.000Z") }],
-      { upsert: true, liveFetchOnMiss: true },
+      {
+        upsert: true,
+        liveFetchOnMiss: true,
+        enqueueExactRepairOnNonExact: undefined,
+      },
     );
   });
 

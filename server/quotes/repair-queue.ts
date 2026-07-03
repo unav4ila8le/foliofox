@@ -22,7 +22,7 @@ type ServiceClient = SupabaseClient<Database>;
 
 export interface ExactQuoteRepairRequest {
   symbolId: string;
-  targetDateKey: string;
+  targetDateKey: UTCDateKey;
 }
 
 interface SymbolRepairMetadata {
@@ -56,7 +56,7 @@ function isWeekendDate(dateKey: string): boolean {
 
 function isRepairEligibleMarketDate(
   symbol: SymbolRepairMetadata,
-  targetDateKey: string,
+  targetDateKey: UTCDateKey,
 ): boolean {
   if (symbol.quote_type === CRYPTO_QUOTE_TYPE) return true;
   return !isWeekendDate(targetDateKey);
@@ -64,7 +64,7 @@ function isRepairEligibleMarketDate(
 
 function isBeyondLastKnownQuoteWindow(
   symbol: SymbolRepairMetadata,
-  targetDateKey: string,
+  targetDateKey: UTCDateKey,
 ): boolean {
   if (!symbol.last_quote_at) return false;
 
@@ -99,7 +99,7 @@ function pickLatestTargetDateKey(
 ): UTCDateKey {
   return requests
     .map((request) => request.targetDateKey)
-    .sort((left, right) => right.localeCompare(left))[0] as UTCDateKey;
+    .sort((left, right) => right.localeCompare(left))[0];
 }
 
 async function fetchSymbolRepairMetadata(
@@ -124,21 +124,48 @@ async function fetchSymbolRepairMetadata(
 async function fetchExistingRepairRows(
   supabase: ServiceClient,
   symbolIds: string[],
+  now: Date,
 ) {
   if (!symbolIds.length) return new Map<string, ExistingRepairRow[]>();
 
-  const { data, error } = await supabase
-    .from("quote_repair_queue")
-    .select("symbol_id, status, created_at")
-    .in("symbol_id", symbolIds);
+  const recentCutoffIso = subDays(now, STALE_PROBE_WINDOW_DAYS).toISOString();
+  const repairRowQueries = [
+    supabase
+      .from("quote_repair_queue")
+      .select("symbol_id, status, created_at")
+      .in("symbol_id", symbolIds)
+      .in("status", Array.from(ACTIVE_REPAIR_STATUSES)),
+    supabase
+      .from("quote_repair_queue")
+      .select("symbol_id, status, created_at")
+      .in("symbol_id", symbolIds)
+      .gte("created_at", recentCutoffIso),
+    supabase
+      .from("quote_repair_queue")
+      .select("symbol_id, status, created_at")
+      .in("symbol_id", symbolIds)
+      .in("status", Array.from(FAILED_REPAIR_STATUSES)),
+  ];
 
-  if (error) {
-    console.warn("[quoteRepairQueue] Failed to load existing repairs:", error);
-    return new Map<string, ExistingRepairRow[]>();
+  const results = await Promise.all(repairRowQueries);
+  const rowsByKey = new Map<string, ExistingRepairRow>();
+
+  for (const { data, error } of results) {
+    if (error) {
+      console.warn(
+        "[quoteRepairQueue] Failed to load existing repairs:",
+        error,
+      );
+      continue;
+    }
+
+    (data ?? []).forEach((row) => {
+      rowsByKey.set(`${row.symbol_id}|${row.status}|${row.created_at}`, row);
+    });
   }
 
   const rowsBySymbol = new Map<string, ExistingRepairRow[]>();
-  (data ?? []).forEach((row) => {
+  rowsByKey.forEach((row) => {
     const rows = rowsBySymbol.get(row.symbol_id) ?? [];
     rows.push(row);
     rowsBySymbol.set(row.symbol_id, rows);
@@ -195,6 +222,7 @@ export async function enqueueExactQuoteRepairs({
   const existingRowsBySymbol = await fetchExistingRepairRows(
     supabase,
     probeCheckSymbolIds,
+    now,
   );
 
   const rowsToInsert: Array<{

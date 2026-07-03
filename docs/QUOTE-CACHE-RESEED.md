@@ -215,6 +215,22 @@ order by updated_at desc
 limit 50;
 ```
 
+### Requeue terminal repair rows
+
+Use this only after confirming the underlying provider/alias issue is fixed.
+
+```sql
+update public.quote_repair_queue
+set
+  status = 'pending',
+  attempt_count = 0,
+  next_attempt_at = now(),
+  claimed_at = null,
+  last_error = null
+where status = 'terminal_error'
+  and symbol_id = '<symbol-id>'::uuid;
+```
+
 ## Exit criteria
 
 - Cron endpoint returns success.

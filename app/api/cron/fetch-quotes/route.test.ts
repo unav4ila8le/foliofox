@@ -304,4 +304,19 @@ describe("GET /api/cron/fetch-quotes", () => {
     expect(response.status).toBe(401);
     expect(fetchQuotesMock).not.toHaveBeenCalled();
   });
+
+  it("fails closed when CRON_SECRET is missing", async () => {
+    delete process.env.CRON_SECRET;
+    headersMock.mockResolvedValue(
+      new Headers({ authorization: "Bearer undefined" }),
+    );
+
+    const { GET } = await import("@/app/api/cron/fetch-quotes/route");
+    const response = await GET(
+      new Request("http://localhost/api/cron/fetch-quotes") as never,
+    );
+
+    expect(response.status).toBe(500);
+    expect(fetchQuotesMock).not.toHaveBeenCalled();
+  });
 });

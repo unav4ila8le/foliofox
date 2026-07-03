@@ -2,7 +2,11 @@
 
 import { addDays, subDays } from "date-fns";
 
-import { formatUTCDateKey, parseUTCDateKey } from "@/lib/date/date-utils";
+import {
+  formatUTCDateKey,
+  parseUTCDateKey,
+  type UTCDateKey,
+} from "@/lib/date/date-utils";
 import { normalizeQuoteToCurrencyRate } from "@/server/market-data/quote-units";
 import { chunkArray } from "@/server/shared/chunk-array";
 import { yahooFinance } from "@/server/yahoo-finance/client";
@@ -42,8 +46,8 @@ export interface QuoteResolutionStats {
 interface ResolvedQuoteRequest {
   inputLookup: string;
   canonicalId: string;
-  requestedDateKey: string;
-  effectiveDateKey: string;
+  requestedDateKey: UTCDateKey;
+  effectiveDateKey: UTCDateKey;
 }
 
 interface QuotesCacheRow {
@@ -91,10 +95,10 @@ function resolveFetchQuotesOptions(
 }
 
 function resolveEffectiveDateKey(
-  requestedDateKey: string,
+  requestedDateKey: UTCDateKey,
   cronCutoffHourUtc: number,
   now: Date,
-): string {
+): UTCDateKey {
   const todayDateKey = formatUTCDateKey(now);
   if (requestedDateKey !== todayDateKey) return requestedDateKey;
 

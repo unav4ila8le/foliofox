@@ -3,14 +3,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { addUTCDays, parseUTCDateKey } from "@/lib/date/date-utils";
-import { normalizeQuoteToCurrencyRate } from "@/server/market-data/quote-units";
 import { isTransientError, stringifyError } from "@/server/shared/retry";
+import { resolveSymbolsBatch } from "@/server/symbols/resolve";
 import { yahooFinance } from "@/server/yahoo-finance/client";
 import { createServiceClient } from "@/supabase/service";
 import type { Database } from "@/types/database.types";
 import { normalizeChartQuoteEntries, scaleProviderQuoteEntries } from "./utils";
 
-const DEFAULT_BATCH_SIZE = 100;
+const DEFAULT_BATCH_SIZE = 50;
 const STALE_CLAIM_MINUTES = 30;
 const MAX_REPAIR_ATTEMPTS = 5;
 const BACKOFF_MINUTES_BY_ATTEMPT = [15, 60, 360, 1_440];
@@ -26,8 +26,8 @@ interface QuoteRepairJob {
 
 interface RepairSymbolMetadata {
   id: string;
-  ticker: string;
-  quote_to_currency_rate: number | null;
+  providerAlias: string;
+  quoteToCurrencyRate: number;
 }
 
 interface QuoteUpsertRow {
@@ -210,20 +210,32 @@ async function claimQuoteRepairJobs(
   return [...pendingJobs, ...staleJobs];
 }
 
-async function fetchSymbolsById(supabase: ServiceClient, symbolIds: string[]) {
+async function resolveRepairSymbols(symbolIds: string[]) {
   if (!symbolIds.length) return new Map<string, RepairSymbolMetadata>();
 
-  const { data, error } = await supabase
-    .from("symbols")
-    .select("id, ticker, quote_to_currency_rate")
-    .in("id", symbolIds);
+  const { byCanonicalId } = await resolveSymbolsBatch(symbolIds, {
+    provider: "yahoo",
+    providerType: "ticker",
+    onError: "warn",
+  });
 
-  if (error) {
-    console.warn("[quoteRepairWorker] Failed to load symbols:", error);
-    return new Map<string, RepairSymbolMetadata>();
-  }
+  return new Map(
+    symbolIds.flatMap((symbolId) => {
+      const resolution = byCanonicalId.get(symbolId);
+      if (!resolution) return [];
 
-  return new Map((data ?? []).map((symbol) => [symbol.id, symbol]));
+      return [
+        [
+          symbolId,
+          {
+            id: symbolId,
+            providerAlias: resolution.providerAlias,
+            quoteToCurrencyRate: resolution.quoteToCurrencyRate,
+          },
+        ],
+      ];
+    }),
+  );
 }
 
 async function fetchExistingExactQuoteKeys(
@@ -431,17 +443,14 @@ async function processSymbolJobs(params: {
   const latestTarget = parseUTCDateKey(targetDates[targetDates.length - 1]);
 
   try {
-    const chartData = await yahooFinance.chart(symbol.ticker, {
+    const chartData = await yahooFinance.chart(symbol.providerAlias, {
       period1: addUTCDays(earliestTarget, -7),
       period2: addUTCDays(latestTarget, 1),
       interval: "1d",
     });
-    const quoteToCurrencyRate = normalizeQuoteToCurrencyRate(
-      symbol.quote_to_currency_rate,
-    );
     const entries = scaleProviderQuoteEntries(
       normalizeChartQuoteEntries(chartData),
-      quoteToCurrencyRate,
+      symbol.quoteToCurrencyRate,
     );
 
     stats.quoteRowsUpserted += await upsertQuoteEntries(
@@ -467,7 +476,7 @@ async function processSymbolJobs(params: {
     }
   } catch (error) {
     console.warn(
-      `[quoteRepairWorker] Failed to repair quotes for ${symbol.id} (${symbol.ticker}):`,
+      `[quoteRepairWorker] Failed to repair quotes for ${symbol.id} (${symbol.providerAlias}):`,
       error,
     );
     await markProviderFailure(supabase, jobsNeedingProvider, stats, now, error);
@@ -499,7 +508,7 @@ export async function runQuoteRepairQueue(
   const jobsBySymbol = groupJobsBySymbol(claimedJobs);
   const symbolIds = Array.from(jobsBySymbol.keys());
   const [symbolsById, existingExactKeys] = await Promise.all([
-    fetchSymbolsById(supabase, symbolIds),
+    resolveRepairSymbols(symbolIds),
     fetchExistingExactQuoteKeys(supabase, jobsBySymbol),
   ]);
 
@@ -508,12 +517,12 @@ export async function runQuoteRepairQueue(
     if (!symbol) {
       stats.skippedMissingSymbol += jobs.length;
       for (const job of jobs) {
-        await markTerminal(
-          supabase,
-          job,
-          stats,
-          `Missing symbol metadata for ${symbolId}`,
-        );
+        await updateJob(supabase, job, {
+          status: "terminal_error",
+          attempt_count: job.attempt_count + 1,
+          claimed_at: null,
+          last_error: `Missing symbol metadata for ${symbolId}`,
+        });
       }
       continue;
     }

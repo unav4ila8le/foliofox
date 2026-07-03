@@ -184,5 +184,6 @@ This prevents old market data from overriding a newer snapshot state.
 ## Related Docs
 
 - [MARKET-DATA-HUB.md](./MARKET-DATA-HUB.md)
+- [QUOTE-REPAIR-QUEUE.md](./QUOTE-REPAIR-QUEUE.md)
 - [QUOTE-CACHE-RESEED.md](./QUOTE-CACHE-RESEED.md)
 - [DATE-HANDLING.md](./DATE-HANDLING.md)

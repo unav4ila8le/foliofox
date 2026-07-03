@@ -27,11 +27,16 @@ type QuoteRow = {
 };
 
 const yahooChartMock = vi.fn();
+const resolveSymbolsBatchMock = vi.fn();
 
 vi.mock("@/server/yahoo-finance/client", () => ({
   yahooFinance: {
     chart: yahooChartMock,
   },
+}));
+
+vi.mock("@/server/symbols/resolve", () => ({
+  resolveSymbolsBatch: resolveSymbolsBatchMock,
 }));
 
 function projectRow<T extends Record<string, unknown>>(
@@ -335,6 +340,18 @@ function createQueueRow(
 describe("runQuoteRepairQueue", () => {
   beforeEach(() => {
     yahooChartMock.mockReset();
+    resolveSymbolsBatchMock.mockReset();
+    resolveSymbolsBatchMock.mockResolvedValue({
+      byCanonicalId: new Map([
+        [
+          "sym-1",
+          {
+            providerAlias: "AAPL",
+            quoteToCurrencyRate: 1,
+          },
+        ],
+      ]),
+    });
   });
 
   it("returns zero-work stats when no jobs are due", async () => {
@@ -369,16 +386,35 @@ describe("runQuoteRepairQueue", () => {
     expect(yahooChartMock).not.toHaveBeenCalled();
   });
 
-  it("upserts exact provider rows and marks jobs resolved", async () => {
+  it("upserts exact provider rows using the resolved Yahoo alias", async () => {
     const { client, state } = createSupabaseStub({
+      symbols: [
+        {
+          id: "sym-1",
+          ticker: "OLD",
+          quote_to_currency_rate: 1,
+          last_quote_at: null,
+        },
+      ],
       queue: [createQueueRow()],
+    });
+    resolveSymbolsBatchMock.mockResolvedValue({
+      byCanonicalId: new Map([
+        [
+          "sym-1",
+          {
+            providerAlias: "AAPL",
+            quoteToCurrencyRate: 0.01,
+          },
+        ],
+      ]),
     });
     yahooChartMock.mockResolvedValue({
       quotes: [
         {
           date: new Date("2026-02-16T00:00:00.000Z"),
-          close: 100,
-          adjclose: 99,
+          close: 10_000,
+          adjclose: 9_900,
         },
       ],
     });
@@ -504,6 +540,34 @@ describe("runQuoteRepairQueue", () => {
     });
   });
 
+  it("schedules a retry for provider rate limits", async () => {
+    const { client, state } = createSupabaseStub({
+      queue: [createQueueRow()],
+    });
+    yahooChartMock.mockRejectedValue(
+      Object.assign(new Error("Too Many Requests"), { status: 429 }),
+    );
+
+    const { runQuoteRepairQueue } = await import("./repair-worker");
+    const result = await runQuoteRepairQueue({
+      supabase: client as never,
+      now: new Date("2026-02-20T12:00:00.000Z"),
+    });
+
+    expect(result.stats).toMatchObject({
+      claimedJobs: 1,
+      retriesScheduled: 1,
+      terminalFailures: 0,
+    });
+    expect(state.queue[0]).toMatchObject({
+      status: "pending",
+      attempt_count: 1,
+      next_attempt_at: "2026-02-20T12:15:00.000Z",
+      claimed_at: null,
+      last_error: "Too Many Requests",
+    });
+  });
+
   it("marks final provider failures terminal", async () => {
     const { client, state } = createSupabaseStub({
       queue: [createQueueRow({ attempt_count: 4 })],
@@ -527,5 +591,33 @@ describe("runQuoteRepairQueue", () => {
       claimed_at: null,
       last_error: "502 bad gateway",
     });
+  });
+
+  it("marks missing resolver metadata as skipped without counting terminal failure stats", async () => {
+    const { client, state } = createSupabaseStub({
+      queue: [createQueueRow()],
+    });
+    resolveSymbolsBatchMock.mockResolvedValue({
+      byCanonicalId: new Map(),
+    });
+
+    const { runQuoteRepairQueue } = await import("./repair-worker");
+    const result = await runQuoteRepairQueue({
+      supabase: client as never,
+      now: new Date("2026-02-20T12:00:00.000Z"),
+    });
+
+    expect(result.stats).toMatchObject({
+      claimedJobs: 1,
+      skippedMissingSymbol: 1,
+      terminalFailures: 0,
+    });
+    expect(state.queue[0]).toMatchObject({
+      status: "terminal_error",
+      attempt_count: 1,
+      claimed_at: null,
+      last_error: "Missing symbol metadata for sym-1",
+    });
+    expect(yahooChartMock).not.toHaveBeenCalled();
   });
 });

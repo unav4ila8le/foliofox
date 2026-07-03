@@ -250,16 +250,33 @@ function createSupabaseStub(
   const repairQueueApi = {
     select() {
       let symbolIds: string[] = [];
+      let statuses: string[] | null = null;
+      let createdAtGte: string | null = null;
 
       return {
         in(column: string, values: string[]) {
-          if (column !== "symbol_id") {
+          if (column === "symbol_id") {
+            symbolIds = values;
+            return this;
+          }
+
+          if (column === "status") {
+            statuses = values;
+            return this;
+          }
+
+          throw new Error(
+            `Expected quote_repair_queue.in to filter by symbol_id/status, got ${column}`,
+          );
+        },
+        gte(column: string, value: string) {
+          if (column !== "created_at") {
             throw new Error(
-              `Expected quote_repair_queue.in to filter by symbol_id, got ${column}`,
+              `Expected quote_repair_queue.gte to filter by created_at, got ${column}`,
             );
           }
 
-          symbolIds = values;
+          createdAtGte = value;
           return this;
         },
         then<TResult1 = unknown, TResult2 = never>(
@@ -273,7 +290,12 @@ function createSupabaseStub(
             ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
         ) {
           const data = state.repairQueue
-            .filter((row) => symbolIds.includes(row.symbol_id))
+            .filter((row) => {
+              if (!symbolIds.includes(row.symbol_id)) return false;
+              if (statuses && !statuses.includes(row.status)) return false;
+              if (createdAtGte && row.created_at < createdAtGte) return false;
+              return true;
+            })
             .map((row) => ({
               symbol_id: row.symbol_id,
               status: row.status,
