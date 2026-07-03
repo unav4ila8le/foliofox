@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.1"
-  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -873,6 +868,53 @@ export type Database = {
           },
         ]
       }
+      quote_repair_queue: {
+        Row: {
+          attempt_count: number
+          claimed_at: string | null
+          created_at: string
+          id: string
+          last_error: string | null
+          next_attempt_at: string
+          status: string
+          symbol_id: string
+          target_date: string
+          updated_at: string
+        }
+        Insert: {
+          attempt_count?: number
+          claimed_at?: string | null
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          next_attempt_at?: string
+          status?: string
+          symbol_id: string
+          target_date: string
+          updated_at?: string
+        }
+        Update: {
+          attempt_count?: number
+          claimed_at?: string | null
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          next_attempt_at?: string
+          status?: string
+          symbol_id?: string
+          target_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_repair_queue_symbol_id_fkey"
+            columns: ["symbol_id"]
+            isOneToOne: false
+            referencedRelation: "symbols"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quotes: {
         Row: {
           adjusted_close_price: number
@@ -1217,3 +1259,4 @@ export const Constants = {
     },
   },
 } as const
+

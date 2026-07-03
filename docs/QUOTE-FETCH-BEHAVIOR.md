@@ -18,6 +18,7 @@ It focuses on behavior, not implementation details, so it should stay useful eve
 - exact cache hit: a `quotes` row exists for the exact effective date
 - cached fallback: use the latest prior cached quote within the configured stale window
 - live read repair: call Yahoo Finance for unresolved requests and upsert returned market-day rows
+- async exact-date repair: enqueue unresolved exact dates for the cron repair worker
 - quote unit: a provider price unit that is not an ISO currency, such as GBp/GBX
   for pence or KWF for Kuwaiti fils
 
@@ -54,8 +55,9 @@ That means a warm cache can still have exact-date misses for calendar dates that
 2. Compute `effectiveDateKey`
 3. Check the quote cache for an exact-date row
 4. If exact-date lookup misses, look for the latest prior cached quote within `staleGuardDays`
-5. If the request is still unresolved and `liveFetchOnMiss` is enabled, call Yahoo Finance and upsert returned market-day rows
-6. Return results under both canonical and original lookup keys when needed
+5. If `enqueueExactRepairOnNonExact` is enabled, enqueue exact-date repair work for requests that missed the exact cache
+6. If the request is still unresolved and `liveFetchOnMiss` is enabled, call Yahoo Finance and upsert returned market-day rows
+7. Return results under both canonical and original lookup keys when needed
 
 Important:
 
@@ -109,9 +111,9 @@ Why:
 
 ## Net Worth History Behavior
 
-`fetchNetWorthHistory()` explicitly opts range reads into live read repair after cached fallback coverage has already been attempted.
+`fetchNetWorthHistory()` explicitly opts range reads into async exact-date repair after cached fallback coverage has already been attempted.
 
-This gives the chart a better cold-start path without regressing the warm-cache case that previously caused slow loads.
+This keeps the chart cache-first and fast on cold history gaps while the cron repair worker fills missing exact trading-day rows in the background.
 
 ## Chart Valuation Fallback Order
 
@@ -146,6 +148,14 @@ This prevents old market data from overriding a newer snapshot state.
 - Caller allows live read repair
 - Yahoo Finance is queried and returned market-day rows are upserted
 
+### Net worth history cold trading day
+
+- Requested day is a trading day
+- No exact `quotes` row exists
+- The chart uses cached fallback or snapshot valuation for this response
+- A repair job is queued for the missing exact date
+- The repair cron later upserts real provider market-day rows when Yahoo returns them
+
 ### Sparse history range
 
 - Some trading days are resolved from cache/provider
@@ -156,10 +166,11 @@ This prevents old market data from overriding a newer snapshot state.
 ## Operational Notes
 
 - Cron quote refresh fills a rolling 3-day window: `D`, `D-1`, `D-2`
+- Quote repair cron processes queued exact-date gaps at `/api/cron/repair-quote-gaps`
 - A cold local database will remain sparse unless:
   - cron backfills it
   - single-date reads warm specific dates
-  - a range caller explicitly opts into live read repair
+  - a range caller explicitly opts into async exact-date repair or live read repair
 
 ## Related Files
 
@@ -173,5 +184,6 @@ This prevents old market data from overriding a newer snapshot state.
 ## Related Docs
 
 - [MARKET-DATA-HUB.md](./MARKET-DATA-HUB.md)
+- [QUOTE-REPAIR-QUEUE.md](./QUOTE-REPAIR-QUEUE.md)
 - [QUOTE-CACHE-RESEED.md](./QUOTE-CACHE-RESEED.md)
 - [DATE-HANDLING.md](./DATE-HANDLING.md)

@@ -235,4 +235,19 @@ describe("GET /api/cron/fetch-exchange-rates", () => {
     expect(response.status).toBe(401);
     expect(fetchExchangeRatesMock).not.toHaveBeenCalled();
   });
+
+  it("fails closed when CRON_SECRET is missing", async () => {
+    delete process.env.CRON_SECRET;
+    headersMock.mockResolvedValue(
+      new Headers({ authorization: "Bearer undefined" }),
+    );
+
+    const { GET } = await import("@/app/api/cron/fetch-exchange-rates/route");
+    const response = await GET(
+      new Request("http://localhost/api/cron/fetch-exchange-rates") as never,
+    );
+
+    expect(response.status).toBe(500);
+    expect(fetchExchangeRatesMock).not.toHaveBeenCalled();
+  });
 });

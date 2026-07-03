@@ -18,8 +18,17 @@ export async function GET(request: NextRequest) {
 
   try {
     // 1. Security check: Verify the request is from Vercel Cron
+    const cronSecret = process.env.CRON_SECRET?.trim();
+    if (!cronSecret) {
+      console.error("CRON_SECRET is not configured for FX fetch cron");
+
+      return new Response("Server misconfigured", {
+        status: 500,
+      });
+    }
+
     const authHeader = (await headers()).get("authorization");
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    if (authHeader !== `Bearer ${cronSecret}`) {
       return new Response("Unauthorized", {
         status: 401,
       });

@@ -11,6 +11,8 @@ const TRANSIENT_ERROR_PATTERNS = [
   /timed out/i,
   /network/i,
   /fetch failed/i,
+  /too many requests/i,
+  /rate limit/i,
   /temporarily unavailable/i,
   /econnreset/i,
   /econnrefused/i,
@@ -88,6 +90,10 @@ function sleep(delayMs: number): Promise<void> {
 
 export function isTransientError(error: unknown): boolean {
   const statusCode = extractStatusCode(error);
+  if (statusCode === 429) {
+    return true;
+  }
+
   // Most upstream 5xx responses are transient and worth retrying.
   if (statusCode !== null && statusCode >= 500 && statusCode <= 599) {
     return true;

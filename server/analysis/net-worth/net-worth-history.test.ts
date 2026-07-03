@@ -200,8 +200,11 @@ describe("fetchNetWorthHistory", () => {
       ],
       expect.objectContaining({
         upsert: true,
-        liveFetchOnMiss: true,
+        enqueueExactRepairOnNonExact: true,
       }),
+    );
+    expect(fetchMarketDataRangeMock.mock.calls[0]?.[2]).not.toHaveProperty(
+      "liveFetchOnMiss",
     );
   });
 

@@ -2,7 +2,11 @@
 
 import { addDays, subDays } from "date-fns";
 
-import { formatUTCDateKey, parseUTCDateKey } from "@/lib/date/date-utils";
+import {
+  formatUTCDateKey,
+  parseUTCDateKey,
+  type UTCDateKey,
+} from "@/lib/date/date-utils";
 import { normalizeQuoteToCurrencyRate } from "@/server/market-data/quote-units";
 import { chunkArray } from "@/server/shared/chunk-array";
 import { yahooFinance } from "@/server/yahoo-finance/client";
@@ -11,7 +15,8 @@ import {
   resolveSymbolInput,
   resolveSymbolsBatch,
 } from "@/server/symbols/resolve";
-import { normalizeChartQuoteEntries } from "./utils";
+import { enqueueExactQuoteRepairs } from "./repair-queue";
+import { normalizeChartQuoteEntries, scaleProviderQuoteEntries } from "./utils";
 
 const DEFAULT_STALE_GUARD_DAYS = 7;
 const DEFAULT_CRON_CUTOFF_HOUR_UTC = 22;
@@ -29,6 +34,7 @@ export interface FetchQuotesOptions {
   cronCutoffHourUtc?: number;
   liveFetchOnMiss?: boolean;
   liveMissCooldownMinutes?: number;
+  enqueueExactRepairOnNonExact?: boolean;
   resolutionStats?: QuoteResolutionStats;
 }
 
@@ -40,8 +46,8 @@ export interface QuoteResolutionStats {
 interface ResolvedQuoteRequest {
   inputLookup: string;
   canonicalId: string;
-  requestedDateKey: string;
-  effectiveDateKey: string;
+  requestedDateKey: UTCDateKey;
+  effectiveDateKey: UTCDateKey;
 }
 
 interface QuotesCacheRow {
@@ -84,14 +90,15 @@ function resolveFetchQuotesOptions(
     cronCutoffHourUtc,
     liveFetchOnMiss: options.liveFetchOnMiss ?? true,
     liveMissCooldownMinutes,
+    enqueueExactRepairOnNonExact: options.enqueueExactRepairOnNonExact ?? false,
   };
 }
 
 function resolveEffectiveDateKey(
-  requestedDateKey: string,
+  requestedDateKey: UTCDateKey,
   cronCutoffHourUtc: number,
   now: Date,
-): string {
+): UTCDateKey {
   const todayDateKey = formatUTCDateKey(now);
   if (requestedDateKey !== todayDateKey) return requestedDateKey;
 
@@ -122,21 +129,6 @@ function findLatestEntryAtOrBefore(
     }
   }
   return null;
-}
-
-function scaleProviderQuoteEntries(
-  entries: ReturnType<typeof normalizeChartQuoteEntries>,
-  quoteToCurrencyRate: number,
-): ReturnType<typeof normalizeChartQuoteEntries> {
-  if (quoteToCurrencyRate === 1) return entries;
-
-  // Yahoo chart prices are in the provider quote unit. Cache only normalized
-  // major-currency prices so valuations, P/L, and display code stay simple.
-  return entries.map((entry) => ({
-    ...entry,
-    closePrice: entry.closePrice * quoteToCurrencyRate,
-    adjustedClosePrice: entry.adjustedClosePrice * quoteToCurrencyRate,
-  }));
 }
 
 function buildLiveMissCooldownKey(request: {
@@ -381,7 +373,20 @@ export async function fetchQuotes(
     resolutionTypeByRequestKey,
   });
 
-  // 5. Live fetch exact-date cache misses and persist provider market-date rows.
+  // 5. Opted-in range callers enqueue exact-date repair work after the fast
+  // cache path. The returned quote map remains unchanged.
+  if (resolvedOptions.enqueueExactRepairOnNonExact) {
+    await enqueueExactQuoteRepairs({
+      supabase,
+      requests: unresolvedRequests.map((request) => ({
+        symbolId: request.canonicalId,
+        targetDateKey: request.effectiveDateKey,
+      })),
+      now,
+    });
+  }
+
+  // 6. Live fetch exact-date cache misses and persist provider market-date rows.
   const liveMissCooldownMs =
     resolvedOptions.liveMissCooldownMinutes * MINUTE_IN_MS;
   pruneLiveMissCooldown(nowMs, liveMissCooldownMs);
@@ -627,7 +632,7 @@ export async function fetchQuotes(
     }
   }
 
-  // 6. Populate alias keys for original non-canonical lookup inputs.
+  // 7. Populate alias keys for original non-canonical lookup inputs.
   normalizedRequests.forEach((request) => {
     if (request.inputLookup === request.canonicalId) return;
 
