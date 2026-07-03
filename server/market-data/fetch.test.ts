@@ -66,4 +66,36 @@ describe("fetchMarketDataRange", () => {
     );
     expect(result).toEqual(new Map([["pos-1|2026-02-25", 123]]));
   });
+
+  it("forwards async exact repair queueing to range handlers", async () => {
+    fetchForPositionsRangeMock.mockResolvedValue(
+      new Map([["sym-1|2026-02-25", 123]]),
+    );
+
+    const { fetchMarketDataRange } = await import("./fetch");
+    await fetchMarketDataRange(
+      [
+        {
+          id: "pos-1",
+          currency: "USD",
+          symbol_id: "sym-1",
+          domain_id: null,
+        },
+      ],
+      [new Date("2026-02-25T00:00:00.000Z")],
+      {
+        upsert: true,
+        enqueueExactRepairOnNonExact: true,
+      },
+    );
+
+    expect(fetchForPositionsRangeMock).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.any(Array),
+      expect.objectContaining({
+        upsert: true,
+        enqueueExactRepairOnNonExact: true,
+      }),
+    );
+  });
 });

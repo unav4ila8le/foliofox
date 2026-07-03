@@ -11,6 +11,7 @@ import {
   resolveSymbolInput,
   resolveSymbolsBatch,
 } from "@/server/symbols/resolve";
+import { enqueueExactQuoteRepairs } from "./repair-queue";
 import { normalizeChartQuoteEntries } from "./utils";
 
 const DEFAULT_STALE_GUARD_DAYS = 7;
@@ -29,6 +30,7 @@ export interface FetchQuotesOptions {
   cronCutoffHourUtc?: number;
   liveFetchOnMiss?: boolean;
   liveMissCooldownMinutes?: number;
+  enqueueExactRepairOnNonExact?: boolean;
   resolutionStats?: QuoteResolutionStats;
 }
 
@@ -84,6 +86,7 @@ function resolveFetchQuotesOptions(
     cronCutoffHourUtc,
     liveFetchOnMiss: options.liveFetchOnMiss ?? true,
     liveMissCooldownMinutes,
+    enqueueExactRepairOnNonExact: options.enqueueExactRepairOnNonExact ?? false,
   };
 }
 
@@ -381,7 +384,20 @@ export async function fetchQuotes(
     resolutionTypeByRequestKey,
   });
 
-  // 5. Live fetch exact-date cache misses and persist provider market-date rows.
+  // 5. Opted-in range callers enqueue exact-date repair work after the fast
+  // cache path. The returned quote map remains unchanged.
+  if (resolvedOptions.enqueueExactRepairOnNonExact) {
+    await enqueueExactQuoteRepairs({
+      supabase,
+      requests: unresolvedRequests.map((request) => ({
+        symbolId: request.canonicalId,
+        targetDateKey: request.effectiveDateKey,
+      })),
+      now,
+    });
+  }
+
+  // 6. Live fetch exact-date cache misses and persist provider market-date rows.
   const liveMissCooldownMs =
     resolvedOptions.liveMissCooldownMinutes * MINUTE_IN_MS;
   pruneLiveMissCooldown(nowMs, liveMissCooldownMs);
@@ -627,7 +643,7 @@ export async function fetchQuotes(
     }
   }
 
-  // 6. Populate alias keys for original non-canonical lookup inputs.
+  // 7. Populate alias keys for original non-canonical lookup inputs.
   normalizedRequests.forEach((request) => {
     if (request.inputLookup === request.canonicalId) return;
 

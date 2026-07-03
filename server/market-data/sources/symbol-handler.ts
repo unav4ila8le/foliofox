@@ -65,11 +65,21 @@ export const symbolHandler: MarketDataHandler = {
     if (requests.length === 0) return new Map();
 
     try {
-      return await fetchQuotes(requests, {
+      const fetchOptions = {
         upsert: options?.upsert,
         // Range reads stay cache-first by default. Callers must opt in to
-        // provider repair after cached fallback coverage has been exhausted.
+        // provider repair or async exact-date repair queueing.
         liveFetchOnMiss: options?.liveFetchOnMiss ?? false,
+        ...(options?.enqueueExactRepairOnNonExact !== undefined
+          ? {
+              enqueueExactRepairOnNonExact:
+                options.enqueueExactRepairOnNonExact,
+            }
+          : {}),
+      };
+
+      return await fetchQuotes(requests, {
+        ...fetchOptions,
       });
     } catch {
       return new Map();

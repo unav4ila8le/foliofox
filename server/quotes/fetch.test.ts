@@ -7,6 +7,19 @@ type StoredQuoteRow = {
   adjusted_close_price: number;
 };
 
+type StoredSymbolRow = {
+  id: string;
+  quote_type: string;
+  last_quote_at: string | null;
+};
+
+type StoredRepairQueueRow = {
+  symbol_id: string;
+  target_date: string;
+  status: string;
+  created_at: string;
+};
+
 const resolveSymbolsBatchMock = vi.fn();
 const resolveSymbolInputMock = vi.fn();
 const createServiceClientMock = vi.fn();
@@ -27,9 +40,23 @@ vi.mock("@/server/yahoo-finance/client", () => ({
   },
 }));
 
-function createSupabaseStub(initialQuotes: StoredQuoteRow[]) {
+function createSupabaseStub(
+  initialQuotes: StoredQuoteRow[],
+  options: {
+    symbols?: StoredSymbolRow[];
+    repairQueue?: StoredRepairQueueRow[];
+  } = {},
+) {
   const state = {
     quotes: [...initialQuotes],
+    symbols: options.symbols ?? [
+      {
+        id: "sym-1",
+        quote_type: "EQUITY",
+        last_quote_at: "2026-02-14T00:00:00.000Z",
+      },
+    ],
+    repairQueue: [...(options.repairQueue ?? [])],
     cacheQueryCalls: [] as Array<{ symbolIds: string[]; dateKeys: string[] }>,
     upsertCalls: [] as Array<{
       rows: Array<{
@@ -39,6 +66,11 @@ function createSupabaseStub(initialQuotes: StoredQuoteRow[]) {
         adjusted_close_price: number;
       }>;
       onConflict?: string;
+    }>,
+    repairQueueUpsertCalls: [] as Array<{
+      rows: Array<{ symbol_id: string; target_date: string }>;
+      onConflict?: string;
+      ignoreDuplicates?: boolean;
     }>,
     symbolHealthUpdates: [] as Array<{
       ids: string[];
@@ -130,6 +162,41 @@ function createSupabaseStub(initialQuotes: StoredQuoteRow[]) {
   };
 
   const symbolsApi = {
+    select() {
+      let symbolIds: string[] = [];
+
+      return {
+        in(column: string, values: string[]) {
+          if (column !== "id") {
+            throw new Error(
+              `Expected symbols.in to filter by id, got ${column}`,
+            );
+          }
+
+          symbolIds = values;
+          return this;
+        },
+        then<TResult1 = unknown, TResult2 = never>(
+          onfulfilled?:
+            | ((value: {
+                data: unknown[];
+                error: null;
+              }) => TResult1 | PromiseLike<TResult1>)
+            | null,
+          onrejected?:
+            ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
+        ) {
+          const data = state.symbols.filter((symbol) =>
+            symbolIds.includes(symbol.id),
+          );
+
+          return Promise.resolve({ data, error: null }).then(
+            onfulfilled,
+            onrejected,
+          );
+        },
+      };
+    },
     update(payload: { last_quote_at: string }) {
       const validateOrExpression = (expression: string) => {
         if (!expression.includes("last_quote_at")) {
@@ -180,6 +247,79 @@ function createSupabaseStub(initialQuotes: StoredQuoteRow[]) {
     },
   };
 
+  const repairQueueApi = {
+    select() {
+      let symbolIds: string[] = [];
+
+      return {
+        in(column: string, values: string[]) {
+          if (column !== "symbol_id") {
+            throw new Error(
+              `Expected quote_repair_queue.in to filter by symbol_id, got ${column}`,
+            );
+          }
+
+          symbolIds = values;
+          return this;
+        },
+        then<TResult1 = unknown, TResult2 = never>(
+          onfulfilled?:
+            | ((value: {
+                data: unknown[];
+                error: null;
+              }) => TResult1 | PromiseLike<TResult1>)
+            | null,
+          onrejected?:
+            ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
+        ) {
+          const data = state.repairQueue
+            .filter((row) => symbolIds.includes(row.symbol_id))
+            .map((row) => ({
+              symbol_id: row.symbol_id,
+              status: row.status,
+              created_at: row.created_at,
+            }));
+
+          return Promise.resolve({ data, error: null }).then(
+            onfulfilled,
+            onrejected,
+          );
+        },
+      };
+    },
+    async upsert(
+      rows: Array<{ symbol_id: string; target_date: string }>,
+      options?: {
+        onConflict?: string;
+        ignoreDuplicates?: boolean;
+      },
+    ) {
+      state.repairQueueUpsertCalls.push({
+        rows: rows.map((row) => ({ ...row })),
+        onConflict: options?.onConflict,
+        ignoreDuplicates: options?.ignoreDuplicates,
+      });
+
+      rows.forEach((row) => {
+        const existing = state.repairQueue.some(
+          (queued) =>
+            queued.symbol_id === row.symbol_id &&
+            queued.target_date === row.target_date,
+        );
+
+        if (existing) return;
+
+        state.repairQueue.push({
+          ...row,
+          status: "pending",
+          created_at: new Date().toISOString(),
+        });
+      });
+
+      return { error: null };
+    },
+  };
+
   const client = {
     from(table: string) {
       if (table === "quotes") {
@@ -188,6 +328,10 @@ function createSupabaseStub(initialQuotes: StoredQuoteRow[]) {
 
       if (table === "symbols") {
         return symbolsApi;
+      }
+
+      if (table === "quote_repair_queue") {
+        return repairQueueApi;
       }
 
       throw new Error(`Unexpected table "${table}" requested in test.`);
@@ -285,6 +429,279 @@ describe("fetchQuotes", () => {
 
     expect(result.get("sym-1|2026-02-15")).toBe(148);
     expect(yahooChartMock).not.toHaveBeenCalled();
+  });
+
+  it("does not enqueue repair work for exact-date cache hits", async () => {
+    const { client, state } = createSupabaseStub([
+      {
+        symbol_id: "sym-1",
+        date: "2026-02-16",
+        close_price: 150,
+        adjusted_close_price: 150,
+      },
+    ]);
+
+    createServiceClientMock.mockResolvedValue(client);
+
+    const { fetchQuotes } = await import("./fetch");
+
+    await fetchQuotes(
+      [
+        {
+          symbolLookup: "sym-1",
+          date: new Date("2026-02-16T00:00:00.000Z"),
+        },
+      ],
+      { enqueueExactRepairOnNonExact: true },
+    );
+
+    expect(state.repairQueueUpsertCalls).toHaveLength(0);
+  });
+
+  it("enqueues exact-date repair for weekday fallback results", async () => {
+    const { client, state } = createSupabaseStub([
+      {
+        symbol_id: "sym-1",
+        date: "2026-02-13",
+        close_price: 148,
+        adjusted_close_price: 148,
+      },
+    ]);
+
+    createServiceClientMock.mockResolvedValue(client);
+
+    const { fetchQuotes } = await import("./fetch");
+
+    const result = await fetchQuotes(
+      [
+        {
+          symbolLookup: "sym-1",
+          date: new Date("2026-02-16T00:00:00.000Z"),
+        },
+      ],
+      {
+        staleGuardDays: 7,
+        liveFetchOnMiss: false,
+        enqueueExactRepairOnNonExact: true,
+      },
+    );
+
+    expect(result.get("sym-1|2026-02-16")).toBe(148);
+    expect(state.repairQueueUpsertCalls).toEqual([
+      {
+        rows: [{ symbol_id: "sym-1", target_date: "2026-02-16" }],
+        onConflict: "symbol_id,target_date",
+        ignoreDuplicates: true,
+      },
+    ]);
+  });
+
+  it("enqueues exact-date repair for unresolved weekday requests", async () => {
+    const { client, state } = createSupabaseStub([]);
+    createServiceClientMock.mockResolvedValue(client);
+
+    const { fetchQuotes } = await import("./fetch");
+
+    await fetchQuotes(
+      [
+        {
+          symbolLookup: "sym-1",
+          date: new Date("2026-02-16T00:00:00.000Z"),
+        },
+      ],
+      {
+        staleGuardDays: 0,
+        liveFetchOnMiss: false,
+        enqueueExactRepairOnNonExact: true,
+      },
+    );
+
+    expect(state.repairQueue).toContainEqual({
+      symbol_id: "sym-1",
+      target_date: "2026-02-16",
+      status: "pending",
+      created_at: "2026-02-20T12:00:00.000Z",
+    });
+  });
+
+  it("does not enqueue duplicate exact-date repairs for repeated requests", async () => {
+    const { client, state } = createSupabaseStub([]);
+    createServiceClientMock.mockResolvedValue(client);
+
+    const { fetchQuotes } = await import("./fetch");
+
+    await fetchQuotes(
+      [
+        {
+          symbolLookup: "sym-1",
+          date: new Date("2026-02-16T00:00:00.000Z"),
+        },
+        {
+          symbolLookup: "sym-1",
+          date: new Date("2026-02-16T00:00:00.000Z"),
+        },
+      ],
+      {
+        staleGuardDays: 0,
+        liveFetchOnMiss: false,
+        enqueueExactRepairOnNonExact: true,
+      },
+    );
+
+    expect(state.repairQueueUpsertCalls[0]?.rows).toEqual([
+      { symbol_id: "sym-1", target_date: "2026-02-16" },
+    ]);
+    expect(state.repairQueue).toHaveLength(1);
+  });
+
+  it("does not enqueue weekend repairs for non-crypto symbols", async () => {
+    const { client, state } = createSupabaseStub([]);
+    createServiceClientMock.mockResolvedValue(client);
+
+    const { fetchQuotes } = await import("./fetch");
+
+    await fetchQuotes(
+      [
+        {
+          symbolLookup: "sym-1",
+          date: new Date("2026-02-15T00:00:00.000Z"),
+        },
+      ],
+      {
+        staleGuardDays: 0,
+        liveFetchOnMiss: false,
+        enqueueExactRepairOnNonExact: true,
+      },
+    );
+
+    expect(state.repairQueueUpsertCalls).toHaveLength(0);
+  });
+
+  it("enqueues weekend repairs for crypto symbols", async () => {
+    const { client, state } = createSupabaseStub([], {
+      symbols: [
+        {
+          id: "crypto-1",
+          quote_type: "CRYPTOCURRENCY",
+          last_quote_at: "2026-02-14T00:00:00.000Z",
+        },
+      ],
+    });
+    createServiceClientMock.mockResolvedValue(client);
+    mockSymbolResolution({
+      lookup: "crypto-1",
+      canonicalId: "crypto-1",
+      providerAlias: "BTC-USD",
+    });
+
+    const { fetchQuotes } = await import("./fetch");
+
+    await fetchQuotes(
+      [
+        {
+          symbolLookup: "crypto-1",
+          date: new Date("2026-02-15T00:00:00.000Z"),
+        },
+      ],
+      {
+        staleGuardDays: 0,
+        liveFetchOnMiss: false,
+        enqueueExactRepairOnNonExact: true,
+      },
+    );
+
+    expect(state.repairQueue).toContainEqual({
+      symbol_id: "crypto-1",
+      target_date: "2026-02-15",
+      status: "pending",
+      created_at: "2026-02-20T12:00:00.000Z",
+    });
+  });
+
+  it("throttles stale symbols to one latest-date probe", async () => {
+    const { client, state } = createSupabaseStub([], {
+      symbols: [
+        {
+          id: "stale-1",
+          quote_type: "EQUITY",
+          last_quote_at: "2026-01-01T00:00:00.000Z",
+        },
+      ],
+    });
+    createServiceClientMock.mockResolvedValue(client);
+    mockSymbolResolution({
+      lookup: "stale-1",
+      canonicalId: "stale-1",
+      providerAlias: "OLD",
+    });
+
+    const { fetchQuotes } = await import("./fetch");
+
+    await fetchQuotes(
+      [
+        {
+          symbolLookup: "stale-1",
+          date: new Date("2026-02-16T00:00:00.000Z"),
+        },
+        {
+          symbolLookup: "stale-1",
+          date: new Date("2026-02-17T00:00:00.000Z"),
+        },
+      ],
+      {
+        staleGuardDays: 0,
+        liveFetchOnMiss: false,
+        enqueueExactRepairOnNonExact: true,
+      },
+    );
+
+    expect(state.repairQueueUpsertCalls[0]?.rows).toEqual([
+      { symbol_id: "stale-1", target_date: "2026-02-17" },
+    ]);
+  });
+
+  it("does not enqueue another stale-symbol probe during the throttle window", async () => {
+    const { client, state } = createSupabaseStub([], {
+      symbols: [
+        {
+          id: "stale-1",
+          quote_type: "EQUITY",
+          last_quote_at: "2026-01-01T00:00:00.000Z",
+        },
+      ],
+      repairQueue: [
+        {
+          symbol_id: "stale-1",
+          target_date: "2026-02-10",
+          status: "non_trading_or_no_exact",
+          created_at: "2026-02-18T00:00:00.000Z",
+        },
+      ],
+    });
+    createServiceClientMock.mockResolvedValue(client);
+    mockSymbolResolution({
+      lookup: "stale-1",
+      canonicalId: "stale-1",
+      providerAlias: "OLD",
+    });
+
+    const { fetchQuotes } = await import("./fetch");
+
+    await fetchQuotes(
+      [
+        {
+          symbolLookup: "stale-1",
+          date: new Date("2026-02-17T00:00:00.000Z"),
+        },
+      ],
+      {
+        staleGuardDays: 0,
+        liveFetchOnMiss: false,
+        enqueueExactRepairOnNonExact: true,
+      },
+    );
+
+    expect(state.repairQueueUpsertCalls).toHaveLength(0);
   });
 
   it("triggers live fetch when cache is older than stale guard", async () => {

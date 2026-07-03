@@ -23,6 +23,13 @@ export interface MarketDataRangeFetchOptions extends MarketDataFetchOptions {
    * hit the provider on every weekend/holiday miss.
    */
   liveFetchOnMiss?: boolean;
+  /**
+   * Opt-in async repair queueing for non-exact quote cache results.
+   *
+   * This lets broad history reads stay fast while a cron worker fills exact
+   * trading-day quote gaps later.
+   */
+  enqueueExactRepairOnNonExact?: boolean;
 }
 
 export interface MarketDataHandler {

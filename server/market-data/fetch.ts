@@ -142,6 +142,7 @@ export async function fetchMarketDataRange(
           upsert,
           eligibleDates,
           liveFetchOnMiss: options.liveFetchOnMiss,
+          enqueueExactRepairOnNonExact: options.enqueueExactRepairOnNonExact,
         },
       );
       handlerResults.set(handler.source, result);
