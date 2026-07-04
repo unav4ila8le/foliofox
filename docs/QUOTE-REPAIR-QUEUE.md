@@ -40,6 +40,9 @@ data to update `symbols.last_quote_at` and resume normal exact-date enqueueing.
 - Stale claim recovery: `in_progress` jobs older than 30 minutes can be
   reclaimed
 - Backoff: 15 minutes, 1 hour, 6 hours, 24 hours; max 5 attempts
+- Monthly backfill probe: `pg_cron` reopens up to 100
+  `non_trading_or_no_exact` jobs older than 30 days. This gives Yahoo
+  backfills another chance without retrying closed dates on every hourly run.
 
 Queue monitoring and manual requeue SQL live in
 [QUOTE-CACHE-RESEED.md](./QUOTE-CACHE-RESEED.md).

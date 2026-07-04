@@ -205,6 +205,20 @@ where status = 'pending'
   and next_attempt_at <= now();
 ```
 
+### Monthly reopened repair jobs
+
+The monthly DB cron reopens a small batch of old `non_trading_or_no_exact` rows
+so late Yahoo backfills can be discovered by the hourly worker.
+
+```sql
+select count(*) as reopened_pending_jobs
+from public.quote_repair_queue
+where status = 'pending'
+  and attempt_count = 0
+  and created_at < now() - interval '30 days'
+  and updated_at >= date_trunc('month', now());
+```
+
 ### Recent terminal quote repair failures
 
 ```sql
