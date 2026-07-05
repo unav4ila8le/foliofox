@@ -1,4 +1,6 @@
 import { Archive, Info } from "lucide-react";
+import Link from "next/link";
+import Image from "next/image";
 
 import {
   Tooltip,
@@ -65,12 +67,24 @@ export async function AssetHeader({
       {/* Symbol details */}
       {symbol && (
         <div className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-sm">
-          <p>
-            Ticker Symbol
-            <span className="text-foreground ml-1 font-medium">
-              {symbol.ticker}
-            </span>
-          </p>
+          <div className="flex items-center gap-1">
+            <p>Ticker Symbol</p>
+            <Link
+              href={`https://finance.yahoo.com/quote/${symbol.ticker}`}
+              target={"_blank"}
+              className="text-foreground ml-1 flex items-center gap-1 font-medium"
+            >
+              <span className="underline underline-offset-2">
+                {symbol.ticker}
+              </span>
+              <Image
+                src={"/images/yahoo-finance-icon.webp"}
+                alt="Yahoo Finance"
+                width={16}
+                height={16}
+              />
+            </Link>
+          </div>
           {symbol.exchange && (
             <p>
               Exchange
