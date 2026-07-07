@@ -111,7 +111,6 @@ export function ChatComposer({
             <SpeechInput
               aria-label="Dictate message"
               size="icon-sm"
-              variant="outline"
               type="button"
               onTranscriptionChange={(text) => {
                 controller.textInput.setInput(

@@ -13,12 +13,12 @@ import {
   ChevronDownIcon,
   CircleIcon,
   ClockIcon,
-  WrenchIcon,
   XCircleIcon,
 } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
 import { isValidElement } from "react";
 import { CodeBlock } from "./code-block";
+import { FoliofoxIcon } from "@/components/ui/logos/foliofox-icon";
 
 export type ToolProps = ComponentProps<typeof Collapsible>;
 
@@ -80,7 +80,7 @@ export const ToolHeader = ({
     {...props}
   >
     <div className="flex items-center gap-2">
-      <WrenchIcon className="size-4 text-muted-foreground" />
+      <FoliofoxIcon height={24}/>
       <span className="font-medium text-sm">
         {title ?? type.split("-").slice(1).join("-")}
       </span>
