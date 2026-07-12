@@ -50,6 +50,12 @@ export function CurrencySelector({
 
   // Get currencies
   const { currencies, isLoading } = useCurrencies();
+  const selectedCurrency = currencies.find(
+    (currency) => currency.alphabetic_code === field.value,
+  );
+  const selectedCurrencyLabel = selectedCurrency
+    ? `${selectedCurrency.alphabetic_code} - ${selectedCurrency.name}`
+    : field.value || "Select currency";
 
   return (
     <Popover open={open} onOpenChange={setOpen} modal={true}>
@@ -68,7 +74,7 @@ export function CurrencySelector({
             className,
           )}
         >
-          {field.value || "Select currency"}
+          {selectedCurrencyLabel}
           <ChevronsUpDown className="text-muted-foreground" />
         </Button>
       </PopoverTrigger>
@@ -116,7 +122,7 @@ function CurrencyList({
                 onChange(currency.alphabetic_code);
                 setOpen(false);
               }}
-              value={currency.alphabetic_code}
+              value={`${currency.alphabetic_code} - ${currency.name}`}
             >
               {currency.alphabetic_code} - {currency.name}
             </CommandItem>

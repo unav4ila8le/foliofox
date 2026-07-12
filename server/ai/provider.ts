@@ -7,7 +7,6 @@ type AIGenerationOptions = Pick<
   "providerOptions" | "reasoning"
 >;
 
-const DEFAULT_MODEL_ID = "gpt-5.4-mini";
 const DEFAULT_AI_PROVIDER: SupportedAIProvider = "openai";
 
 const resolveProvider = (
@@ -47,15 +46,14 @@ export const aiModel = (id: string): LanguageModel => {
 };
 
 // Centralize AI model ids and generation knobs.
-export const chatModelId = process.env.AI_CHAT_MODEL_ID ?? DEFAULT_MODEL_ID;
-export const extractionModelId =
-  process.env.AI_EXTRACTION_MODEL_ID ?? DEFAULT_MODEL_ID;
+export const chatModelId = "gpt-5.6-luna";
+export const extractionModelId = "gpt-5.6-luna";
 
 export const chatGenerationOptions = {
   reasoning: "high",
   providerOptions: {
     openai: {
-      reasoningSummary: "auto",
+      reasoningSummary: "concise",
     },
   },
 } satisfies AIGenerationOptions;

@@ -68,7 +68,7 @@ vi.mock("@/server/ai/provider", () => ({
       },
     },
   },
-  chatModelId: "gpt-5.4-mini",
+  chatModelId: "gpt-5.6-luna",
 }));
 
 vi.mock("@/server/ai/chat-guardrails", () => ({
@@ -473,7 +473,7 @@ describe("POST /api/ai/chat", () => {
         role: "assistant",
         parts: [{ type: "text", text: "assistant response" }],
       },
-      model: "gpt-5.4-mini",
+      model: "gpt-5.6-luna",
       usageTokens: 222,
       replaceLatestAssistantForRegenerate: false,
       targetAssistantMessageIdForRegenerate: undefined,
@@ -481,7 +481,7 @@ describe("POST /api/ai/chat", () => {
     expect(trackAssistantTurnMock).toHaveBeenCalledWith({
       conversationId: "76a2ace1-3165-4d5d-9552-c864ac08f130",
       assistantMessageId: "assistant-1",
-      model: "gpt-5.4-mini",
+      model: "gpt-5.6-luna",
       promptSource: "typed",
       message: {
         id: "assistant-1",
@@ -536,7 +536,7 @@ describe("POST /api/ai/chat", () => {
         role: "assistant",
         parts: [{ type: "text", text: "replacement response" }],
       },
-      model: "gpt-5.4-mini",
+      model: "gpt-5.6-luna",
       usageTokens: 222,
       replaceLatestAssistantForRegenerate: true,
       targetAssistantMessageIdForRegenerate: "assistant-target-id",
