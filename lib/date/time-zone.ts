@@ -12,13 +12,14 @@ const WELL_KNOWN_IANA_TIME_ZONE_ALIASES = new Set<string>(["UTC", "Etc/UTC"]);
 let cachedSupportedTimeZones: string[] | null = null;
 
 /**
- * Returns runtime-supported IANA timezone names.
+ * Returns runtime-supported IANA timezone names, or an empty list on
+ * runtimes without Intl.supportedValuesOf (pre-2022 browsers/WebViews).
  * Cached in module scope to avoid rebuilding large lists repeatedly.
  */
 export function getSupportedIanaTimeZones(): string[] {
-  cachedSupportedTimeZones ??= [...Intl.supportedValuesOf("timeZone")].sort(
-    (a, b) => a.localeCompare(b),
-  );
+  cachedSupportedTimeZones ??= [
+    ...(Intl.supportedValuesOf?.("timeZone") ?? []),
+  ].sort((a, b) => a.localeCompare(b));
   return cachedSupportedTimeZones;
 }
 
@@ -41,7 +42,18 @@ export function isValidIanaTimeZone(timeZone: string): boolean {
     }
   }
 
-  return getSupportedIanaTimeZones().includes(candidate);
+  const supportedTimeZones = getSupportedIanaTimeZones();
+  if (supportedTimeZones.length > 0) {
+    return supportedTimeZones.includes(candidate);
+  }
+
+  // Fallback for runtimes without Intl.supportedValuesOf.
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: candidate });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**
