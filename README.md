@@ -71,7 +71,7 @@ For local Node.js setup without Docker, see the [contributing guide](/CONTRIBUTI
 
 Please read the [contributing guide](/CONTRIBUTING.md).
 
-Join our [Discord server](/discord).
+Join our [Discord server](https://www.foliofox.com/discord).
 
 ## Roadmap
 

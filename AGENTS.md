@@ -158,4 +158,4 @@ export function ComponentName({ prop1, prop2 }: Props) {
 
 - Product/UX constraints: `VISION.md`
 - Setup & contribution: `README.md`, `CONTRIBUTING.md`
-- Deep technical notes: `docs/` (e.g., `docs/DATE-HANDLING.md`, `docs/SYMBOL-RENAME-HANDLING.md`, `docs/AI-ADVISOR.md`)
+- Deep technical notes: `docs/` (e.g., `docs/DATE-HANDLING.md`, `docs/SYMBOL-RENAME-HANDLING.md`, `docs/ai/AI-ADVISOR-ROADMAP.md`)

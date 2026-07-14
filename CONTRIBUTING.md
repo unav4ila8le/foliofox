@@ -144,7 +144,7 @@ supabase migration up --local # applies the tracked migrations to the local DB
 When running locally, a test user is automatically seeded on `db reset` or `db push --local`:
 
 - **Email:** `test@example.com`
-- **Password:** `Password123`
+- **Password:** `Password123!`
 
 #### Maintainers: creating database changes
 
@@ -179,7 +179,7 @@ If you use your own Supabase project, regenerate `types/database.types.ts`:
 supabase login
 supabase link --project-ref <your-project-ref>
 # Option A: use the provided script
-npm run types:supabase:local
+npm run types:supabase:linked
 # Option B: ad-hoc generation
 supabase gen types typescript --project-id <your-project-ref> > types/database.types.ts
 ```
@@ -188,7 +188,7 @@ supabase gen types typescript --project-id <your-project-ref> > types/database.t
 
 - Import the repo into Vercel.
 - Set the same environment variables listed in [.env.example](./.env.example) (Project Settings → Environment Variables).
-- `vercel.json` includes daily cron jobs at 22:00 UTC for quotes and FX updates, plus an hourly automated-email cron.
+- `vercel.json` includes daily cron jobs at 22:00 UTC for quotes and FX updates, plus hourly crons for quote-gap repair and automated emails.
 - Cron endpoints expect `Authorization: Bearer <CRON_SECRET>`.
 - The automated-email cron stays inactive unless `AUTOMATED_EMAILS_ENABLED=true` and the email env vars are configured.
 
@@ -208,10 +208,6 @@ curl "http://localhost:3000/api/cron/send-automated-emails" \
   -H "authorization: Bearer $CRON_SECRET"
 ```
 
-### Package dependencies notes
-
-N/A
-
 ## Types
 
 We use strict TypeScript for type safety. Some rules to follow:
@@ -226,7 +222,8 @@ We use strict TypeScript for type safety. Some rules to follow:
 Our linter will catch most styling issues that may exist in your code.
 
 - Check lint status: `npm run lint`
-- Check formatting: `npm run format`
+- Check formatting: `npm run format:check` (or fix with `npm run format`)
+- Check types: `npm run type`
 
 ## Commit Message Convention
 
