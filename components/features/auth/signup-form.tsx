@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
@@ -44,6 +45,7 @@ const formSchema = z
   });
 
 export function SignupForm() {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm({
@@ -92,13 +94,9 @@ export function SignupForm() {
         return;
       }
 
-      toast.success("Check your inbox to confirm your account", {
-        description:
-          "Click the confirmation link in the email to complete signup.",
-        position: "top-center",
-        duration: 8000,
-      });
-      form.reset();
+      router.push(
+        `/auth/check-email?email=${encodeURIComponent(values.email.trim().toLowerCase())}`,
+      );
     } catch (error) {
       // Handle unexpected errors
       toast.error("Signup failed", {

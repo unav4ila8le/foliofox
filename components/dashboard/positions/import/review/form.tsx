@@ -428,6 +428,7 @@ export function ReviewForm({
                             isInvalid={fieldState.invalid}
                             disabled={Boolean(symbolLookup?.trim())}
                             popoverWidth="w-64"
+                            showCurrencyName={false}
                           />
                           {fieldState.invalid && (
                             <FieldError errors={[fieldState.error]} />

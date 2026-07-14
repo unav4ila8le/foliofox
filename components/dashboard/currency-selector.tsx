@@ -35,6 +35,7 @@ interface CurrencySelectorProps {
   className?: string;
   popoverAlign?: "start" | "center" | "end";
   popoverWidth?: string;
+  showCurrencyName?: boolean;
 }
 
 export function CurrencySelector({
@@ -45,6 +46,7 @@ export function CurrencySelector({
   className,
   popoverAlign = "start",
   popoverWidth = "w-(--radix-popover-trigger-width)",
+  showCurrencyName = true,
 }: CurrencySelectorProps) {
   const [open, setOpen] = useState(false);
 
@@ -54,7 +56,9 @@ export function CurrencySelector({
     (currency) => currency.alphabetic_code === field.value,
   );
   const selectedCurrencyLabel = selectedCurrency
-    ? `${selectedCurrency.alphabetic_code} - ${selectedCurrency.name}`
+    ? showCurrencyName
+      ? `${selectedCurrency.alphabetic_code} - ${selectedCurrency.name}`
+      : selectedCurrency.alphabetic_code
     : field.value || "Select currency";
 
   return (
