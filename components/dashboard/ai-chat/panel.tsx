@@ -3,7 +3,6 @@
 import type { UIMessage } from "ai";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { v4 as uuidv4 } from "uuid";
 
 import { PromptInputProvider } from "@/components/ai-elements/prompt-input";
 import { Chat } from "@/components/dashboard/ai-chat/chat";
@@ -16,6 +15,7 @@ import {
 } from "@/server/ai/conversations/fetch";
 
 import { buildAIChatExpandHref } from "./navigation";
+import { generateUuid } from "./utils";
 import { useAIChatState } from "./provider";
 
 interface AIChatPanelProps {
@@ -72,7 +72,7 @@ export function AIChatPanel({
 
     lastAppliedInitialConversationIdRef.current = null;
     if (!activeConversationId) {
-      setActiveConversationId(uuidv4());
+      setActiveConversationId(generateUuid());
     }
   }, [
     normalizedInitialConversationId,
@@ -210,7 +210,7 @@ export function AIChatPanel({
     // Guard new thread creation in UI when cap is reached.
     if (isAtConversationCap) return;
 
-    const id = uuidv4();
+    const id = generateUuid();
     lastLoadedConversationIdRef.current = null;
     setActiveConversationId(id);
     setInitialMessages([]);

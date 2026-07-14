@@ -63,7 +63,7 @@ export function toCivilDateKeyOrThrow(value: string): CivilDateKey {
  * Build a branded UTC date key from a validated YYYY-MM-DD value.
  * Returns null instead of throwing to keep parser callsites ergonomic.
  */
-export function toUTCDateKey(value: string): UTCDateKey | null {
+function toUTCDateKey(value: string): UTCDateKey | null {
   const trimmed = value.trim();
   if (!isValidDateKeyString(trimmed)) {
     return null;

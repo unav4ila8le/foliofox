@@ -1,7 +1,3 @@
-type IntlWithSupportedValuesOf = typeof Intl & {
-  supportedValuesOf?: (key: "timeZone") => string[];
-};
-
 export const TIME_ZONE_MODES = {
   AUTO: "auto",
   MANUAL: "manual",
@@ -16,25 +12,14 @@ const WELL_KNOWN_IANA_TIME_ZONE_ALIASES = new Set<string>(["UTC", "Etc/UTC"]);
 let cachedSupportedTimeZones: string[] | null = null;
 
 /**
- * Returns runtime-supported IANA timezone names.
+ * Returns runtime-supported IANA timezone names, or an empty list on
+ * runtimes without Intl.supportedValuesOf (pre-2022 browsers/WebViews).
  * Cached in module scope to avoid rebuilding large lists repeatedly.
  */
 export function getSupportedIanaTimeZones(): string[] {
-  if (cachedSupportedTimeZones) {
-    return cachedSupportedTimeZones;
-  }
-
-  const supportedValuesOf = (Intl as IntlWithSupportedValuesOf)
-    .supportedValuesOf;
-
-  if (typeof supportedValuesOf !== "function") {
-    cachedSupportedTimeZones = [];
-    return cachedSupportedTimeZones;
-  }
-
-  cachedSupportedTimeZones = [...supportedValuesOf("timeZone")].sort((a, b) =>
-    a.localeCompare(b),
-  );
+  cachedSupportedTimeZones ??= [
+    ...(Intl.supportedValuesOf?.("timeZone") ?? []),
+  ].sort((a, b) => a.localeCompare(b));
   return cachedSupportedTimeZones;
 }
 
@@ -57,13 +42,12 @@ export function isValidIanaTimeZone(timeZone: string): boolean {
     }
   }
 
-  // 1. Prefer exact membership checks when supportedValuesOf is available.
   const supportedTimeZones = getSupportedIanaTimeZones();
   if (supportedTimeZones.length > 0) {
     return supportedTimeZones.includes(candidate);
   }
 
-  // 2. Fallback for runtimes without supportedValuesOf.
+  // Fallback for runtimes without Intl.supportedValuesOf.
   try {
     new Intl.DateTimeFormat("en-US", { timeZone: candidate });
     return true;

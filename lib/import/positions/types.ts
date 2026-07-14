@@ -18,6 +18,11 @@ export type PositionImportRow = {
   description: string | null;
 };
 
+export interface CurrencyValidationResult {
+  valid: boolean;
+  error?: string;
+}
+
 export interface PositionImportResult {
   success: boolean;
   positions: PositionImportRow[];

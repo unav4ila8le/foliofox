@@ -51,7 +51,7 @@ import type {
   PortfolioRecordWithPosition,
   TransformedPosition,
 } from "@/types/global.types";
-import type { DateRange } from "@daypicker/react";
+import type { DateRange } from "react-day-picker";
 
 interface PortfolioRecordsTableProps {
   data: PortfolioRecordWithPosition[];

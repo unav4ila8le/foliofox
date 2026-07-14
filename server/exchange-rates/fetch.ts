@@ -515,20 +515,3 @@ export async function fetchExchangeRates(
 
   return results;
 }
-
-/**
- * Fetch a single exchange rate for a specific currency and date.
- *
- * @param currency - The currency to fetch the rate for
- * @param date - The date to fetch the rate for
- * @returns The exchange rate
- */
-export async function fetchSingleExchangeRate(
-  currency: string,
-  date: Date = new Date(),
-  options: FetchExchangeRatesOptions = {},
-) {
-  const rates = await fetchExchangeRates([{ currency, date }], options);
-  const key = `${currency}|${formatUTCDateKey(date)}`;
-  return rates.get(key) || 1;
-}

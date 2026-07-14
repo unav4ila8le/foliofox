@@ -1,7 +1,6 @@
 "use server";
 
 import { subDays, subYears } from "date-fns";
-import { v4 as uuidv4 } from "uuid";
 
 import { yahooFinance } from "@/server/yahoo-finance/client";
 import { createServiceClient } from "@/supabase/service";
@@ -334,7 +333,7 @@ export async function fetchDividends(
               // ISO currency and multiplier, so cache dividend events in that
               // accounting currency instead of leaking GBp/KWF-style units.
               events.push({
-                id: uuidv4(),
+                id: crypto.randomUUID(),
                 symbol_id: symbolId,
                 event_date: formatUTCDateKey(dividend.date),
                 gross_amount: dividend.amount * quoteToCurrencyRate,

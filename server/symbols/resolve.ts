@@ -4,7 +4,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { normalizeQuoteToCurrencyRate } from "@/server/market-data/quote-units";
 import { chunkArray } from "@/server/shared/chunk-array";
-import { normalizeSymbol } from "@/server/symbols/validate";
 import { createServiceClient } from "@/supabase/service";
 
 import type { Database } from "@/types/database.types";
@@ -68,7 +67,7 @@ export async function resolveSymbolInput(
   if (!trimmed) return null;
 
   const type = options.type ?? DEFAULT_ALIAS_TYPE;
-  const normalized = await normalizeSymbolAliasValue(trimmed, type);
+  const normalized = normalizeSymbolAliasValue(trimmed);
   const supabase = await createServiceClient();
 
   if (UUID_PATTERN.test(normalized)) {
@@ -211,7 +210,7 @@ export async function setPrimarySymbolAlias(
   const supabase = await createServiceClient();
   const type = options.type ?? DEFAULT_ALIAS_TYPE;
   const source = options.source ?? DEFAULT_ALIAS_SOURCE;
-  const normalizedValue = await normalizeSymbolAliasValue(aliasValue, type);
+  const normalizedValue = normalizeSymbolAliasValue(aliasValue);
   const nowIso = new Date().toISOString();
 
   const { error: demoteError } = await supabase
@@ -295,7 +294,7 @@ export async function upsertSymbolAlias(
   const supabase = await createServiceClient();
   const type = options.type ?? DEFAULT_ALIAS_TYPE;
   const source = options.source ?? DEFAULT_ALIAS_SOURCE;
-  const normalizedValue = await normalizeSymbolAliasValue(aliasValue, type);
+  const normalizedValue = normalizeSymbolAliasValue(aliasValue);
   const nowIso = new Date().toISOString();
 
   const { data: existingAliases, error: fetchError } = await supabase
@@ -442,7 +441,7 @@ export async function resolveSymbolsBatch(
       const isUuid = UUID_PATTERN.test(inputKey);
       const normalized = isUuid
         ? inputKey.toLowerCase()
-        : await normalizeSymbolAliasValue(inputKey, DEFAULT_ALIAS_TYPE);
+        : normalizeSymbolAliasValue(inputKey);
       return {
         inputKey,
         normalized,
@@ -764,10 +763,8 @@ async function fetchProviderAliasesBySymbolId(
   return providerAliasBySymbolId;
 }
 
-async function normalizeSymbolAliasValue(value: string, type?: string) {
-  if ((type ?? DEFAULT_ALIAS_TYPE) === DEFAULT_ALIAS_TYPE) {
-    return await normalizeSymbol(value);
-  }
-
+// Both alias types normalize identically: symbols and provider aliases are
+// stored uppercase and trimmed.
+function normalizeSymbolAliasValue(value: string) {
   return value.trim().toUpperCase();
 }

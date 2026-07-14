@@ -16,7 +16,6 @@ type DateInput = Date | string | number;
  * formatDateTime(new Date(), { locale });             // "Mar 3, 2026, 9:41 AM"
  * formatMonthYear(new Date(), { locale });            // "Mar 2026"
  * formatMonthDay(new Date(), { locale });             // "Mar 3"
- * formatLocalDate({ y: 2026, m: 3, d: 3 }, { locale }); // "Mar 3, 2026"
  */
 
 /**
@@ -217,18 +216,4 @@ export function formatMonthDay(
   });
 
   return formatter.format(date);
-}
-
-/**
- * Format a LocalDate using Intl.DateTimeFormat with locale support.
- * @param value - The LocalDate to format
- * @param options - Formatting options including locale and date style
- * @returns The formatted date string
- */
-export function formatLocalDate(
-  value: { y: number; m: number; d: number },
-  options?: FormatDateOptions,
-): string {
-  const date = new Date(value.y, value.m - 1, value.d);
-  return formatDate(date, options);
 }

@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/custom/skeleton";
 import { usePositionCategories } from "@/hooks/use-position-categories";
 import { ReviewForm } from "./form";
 
-import type { CurrencyValidationResult } from "@/server/currencies/validate";
+import type { CurrencyValidationResult } from "@/lib/import/positions/types";
 import type { SymbolValidationResult } from "@/server/symbols/validate";
 import type { PositionImportRow } from "@/lib/import/positions/types";
 import type { ImportActionResult } from "@/lib/import/shared/types";

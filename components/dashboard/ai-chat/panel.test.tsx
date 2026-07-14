@@ -31,9 +31,10 @@ const hoistedMocks = vi.hoisted(() => ({
   fetchConversationMessages: vi.fn(async () => []),
 }));
 
-vi.mock("uuid", () => ({
-  v4: () => hoistedMocks.uuidValues.shift() ?? "generated-fallback",
-}));
+vi.stubGlobal("crypto", {
+  ...globalThis.crypto,
+  randomUUID: () => hoistedMocks.uuidValues.shift() ?? "generated-fallback",
+});
 
 vi.mock("next/navigation", () => ({
   usePathname: () => hoistedMocks.pathname,

@@ -37,7 +37,7 @@ import { normalizeCapitalGainsTaxRateToDecimal } from "@/lib/capital-gains-tax-r
 import { useLocale } from "@/hooks/use-locale";
 
 import type { PositionCategoryListItem } from "@/server/position-categories/types";
-import type { CurrencyValidationResult } from "@/server/currencies/validate";
+import type { CurrencyValidationResult } from "@/lib/import/positions/types";
 import type { SymbolValidationResult } from "@/server/symbols/validate";
 import type { PositionImportRow } from "@/lib/import/positions/types";
 import type { ImportActionResult } from "@/lib/import/shared/types";

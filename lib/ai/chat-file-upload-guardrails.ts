@@ -1,7 +1,4 @@
-export const CHAT_FILE_ACCEPT_PATTERNS = [
-  "image/*",
-  "application/pdf",
-] as const;
+const CHAT_FILE_ACCEPT_PATTERNS = ["image/*", "application/pdf"] as const;
 
 export const CHAT_FILE_ACCEPT_ATTRIBUTE = CHAT_FILE_ACCEPT_PATTERNS.join(",");
 export const CHAT_FILE_ALLOWED_TYPES_TEXT =
@@ -15,18 +12,10 @@ export const MAX_CHAT_FILE_SIZE_MB = Math.floor(
 
 export function isAllowedChatFileMediaType(mediaType: string): boolean {
   const normalizedMediaType = mediaType.trim().toLowerCase();
-  if (!normalizedMediaType) {
-    return false;
-  }
-
-  return CHAT_FILE_ACCEPT_PATTERNS.some((pattern) => {
-    if (pattern.endsWith("/*")) {
-      const prefix = pattern.slice(0, -1);
-      return normalizedMediaType.startsWith(prefix);
-    }
-
-    return normalizedMediaType === pattern.toLowerCase();
-  });
+  return (
+    normalizedMediaType.startsWith("image/") ||
+    normalizedMediaType === "application/pdf"
+  );
 }
 
 export function estimateDataUrlBytes(dataUrl: string): number | null {

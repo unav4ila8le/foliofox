@@ -1,5 +1,5 @@
-import { addDays, addHours } from "date-fns";
-import { randomInt } from "crypto";
+import { addHours } from "date-fns";
+import { customAlphabet } from "nanoid";
 
 import type {
   PublicPortfolio,
@@ -21,25 +21,18 @@ export const PUBLIC_PORTFOLIO_EXPIRATIONS = [
 
 export const FOREVER_EXPIRATION = "infinity";
 
-const RANDOM_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
-
-const EXPIRATION_CALCULATORS: Record<
+const EXPIRATION_HOURS: Record<
   Exclude<PublicPortfolioExpirationOption, "never">,
-  (base: Date) => Date
+  number
 > = {
-  "24h": (base) => addHours(base, 24),
-  "7d": (base) => addDays(base, 7),
-  "30d": (base) => addDays(base, 30),
+  "24h": 24,
+  "7d": 7 * 24,
+  "30d": 30 * 24,
 };
 
-export function generateRandomString(length: number) {
-  let output = "";
-  for (let i = 0; i < length; i += 1) {
-    const index = randomInt(RANDOM_CHARS.length);
-    output += RANDOM_CHARS[index];
-  }
-  return output;
-}
+export const generateRandomString = customAlphabet(
+  "abcdefghijklmnopqrstuvwxyz0123456789",
+);
 
 export function sanitizeSlug(input: string) {
   return input
@@ -63,8 +56,7 @@ export function computeExpiration(
   if (option === "never") {
     return FOREVER_EXPIRATION;
   }
-  const handler = EXPIRATION_CALCULATORS[option];
-  return handler(new Date()).toISOString();
+  return addHours(new Date(), EXPIRATION_HOURS[option]).toISOString();
 }
 
 export function isPortfolioActive(expiresAt: string | null) {

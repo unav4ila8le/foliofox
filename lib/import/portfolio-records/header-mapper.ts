@@ -154,7 +154,7 @@ function normalizeToken(raw: string): string {
  * Map a raw header to a canonical portfolio record header, or null if unknown.
  * Unknown headers are simply ignored by the parser.
  */
-export function normalizePortfolioRecordHeader(
+function normalizePortfolioRecordHeader(
   rawHeader: string,
 ): PortfolioRecordCanonicalHeader | null {
   const token = normalizeToken(rawHeader);
@@ -185,8 +185,13 @@ export function buildPortfolioRecordColumnMap(
 /**
  * Required canonical headers for portfolio record imports.
  */
-export const REQUIRED_PORTFOLIO_RECORD_HEADERS: PortfolioRecordCanonicalHeader[] =
-  ["position_name", "type", "date", "quantity", "unit_value"];
+const REQUIRED_PORTFOLIO_RECORD_HEADERS: PortfolioRecordCanonicalHeader[] = [
+  "position_name",
+  "type",
+  "date",
+  "quantity",
+  "unit_value",
+];
 
 /**
  * Helper: Are all required portfolio record headers present?
