@@ -23,7 +23,7 @@ export function Hero() {
           className="bg-brand hover:bg-brand/90 dark:text-primary mt-8 rounded-lg px-6 text-base"
         >
           <Link href="/dashboard">
-            <Suspense fallback="Get Started">
+            <Suspense fallback="Get started">
               <CTAWrapper />
             </Suspense>
           </Link>

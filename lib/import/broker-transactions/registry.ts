@@ -6,7 +6,7 @@ import type {
   BrokerTransactionImportResult,
 } from "./types";
 
-export const BROKER_TRANSACTION_ADAPTERS: BrokerTransactionAdapter[] = [
+const BROKER_TRANSACTION_ADAPTERS: BrokerTransactionAdapter[] = [
   tradeRepublicAdapter,
 ];
 

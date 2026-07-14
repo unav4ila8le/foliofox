@@ -1,4 +1,4 @@
-export interface LegalDocumentRoute {
+interface LegalDocumentRoute {
   href: `/${string}`;
   slug: string;
   title: string;

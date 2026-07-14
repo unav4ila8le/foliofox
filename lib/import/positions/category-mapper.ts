@@ -28,7 +28,7 @@ export type CategoryId =
   | "domain"
   | "other";
 
-export const CATEGORY_IDS: CategoryId[] = [
+const CATEGORY_IDS: CategoryId[] = [
   "cash",
   "equity",
   "fixed_income",
@@ -224,7 +224,7 @@ Object.entries(CATEGORY_ALIASES).forEach(([id, aliases]) => {
 /**
  * Is the provided string already a valid canonical category id?
  */
-export function isCategoryId(input: string): input is CategoryId {
+function isCategoryId(input: string): input is CategoryId {
   return CATEGORY_IDS.includes(input as CategoryId);
 }
 

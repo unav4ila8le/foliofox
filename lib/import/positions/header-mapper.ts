@@ -183,7 +183,7 @@ function normalizeToken(raw: string): string {
  * Map a raw header to a canonical position header, or null if unknown.
  * Unknown headers are simply ignored by the parser.
  */
-export function normalizePositionHeader(
+function normalizePositionHeader(
   rawHeader: string,
 ): PositionCanonicalHeader | null {
   const token = normalizeToken(rawHeader);

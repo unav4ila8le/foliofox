@@ -3,7 +3,6 @@ import type { Tables, TablesInsert } from "@/types/database.types";
 // Profile
 export type Profile = Tables<"profiles">;
 export type EmailPreferences = Tables<"email_preferences">;
-export type AutomatedEmailDelivery = Tables<"automated_email_deliveries">;
 
 // Currency
 export type Currency = Pick<Tables<"currencies">, "alphabetic_code" | "name">;
@@ -54,16 +53,6 @@ export type PortfolioRecordWithPosition = PortfolioRecord & {
     | null;
 };
 
-export type PortfolioRecordsPage = {
-  records: PortfolioRecordWithPosition[];
-  total: number;
-  page: number;
-  pageSize: number;
-  pageCount: number;
-  hasNextPage: boolean;
-  hasPreviousPage: boolean;
-};
-
 // Position Snapshots
 export type PositionSnapshot = Tables<"position_snapshots">;
 
@@ -75,9 +64,6 @@ export type TransformedPositionSnapshot = PositionSnapshot & {
 // Position Categories
 export type PositionCategory = Tables<"position_categories">;
 export type UserPositionCategory = Tables<"user_position_categories">;
-
-// Exchange Rate
-export type ExchangeRate = Tables<"exchange_rates">;
 
 // Symbol
 export type Symbol = Tables<"symbols">;
@@ -138,4 +124,3 @@ export type FinancialProfile = Tables<"financial_profiles">;
 
 // Financial Scenarios
 export type FinancialScenario = Tables<"financial_scenarios">;
-export type FinancialScenarioInsert = TablesInsert<"financial_scenarios">;

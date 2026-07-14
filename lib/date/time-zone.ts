@@ -1,7 +1,3 @@
-type IntlWithSupportedValuesOf = typeof Intl & {
-  supportedValuesOf?: (key: "timeZone") => string[];
-};
-
 export const TIME_ZONE_MODES = {
   AUTO: "auto",
   MANUAL: "manual",
@@ -20,20 +16,8 @@ let cachedSupportedTimeZones: string[] | null = null;
  * Cached in module scope to avoid rebuilding large lists repeatedly.
  */
 export function getSupportedIanaTimeZones(): string[] {
-  if (cachedSupportedTimeZones) {
-    return cachedSupportedTimeZones;
-  }
-
-  const supportedValuesOf = (Intl as IntlWithSupportedValuesOf)
-    .supportedValuesOf;
-
-  if (typeof supportedValuesOf !== "function") {
-    cachedSupportedTimeZones = [];
-    return cachedSupportedTimeZones;
-  }
-
-  cachedSupportedTimeZones = [...supportedValuesOf("timeZone")].sort((a, b) =>
-    a.localeCompare(b),
+  cachedSupportedTimeZones ??= [...Intl.supportedValuesOf("timeZone")].sort(
+    (a, b) => a.localeCompare(b),
   );
   return cachedSupportedTimeZones;
 }
@@ -57,19 +41,7 @@ export function isValidIanaTimeZone(timeZone: string): boolean {
     }
   }
 
-  // 1. Prefer exact membership checks when supportedValuesOf is available.
-  const supportedTimeZones = getSupportedIanaTimeZones();
-  if (supportedTimeZones.length > 0) {
-    return supportedTimeZones.includes(candidate);
-  }
-
-  // 2. Fallback for runtimes without supportedValuesOf.
-  try {
-    new Intl.DateTimeFormat("en-US", { timeZone: candidate });
-    return true;
-  } catch {
-    return false;
-  }
+  return getSupportedIanaTimeZones().includes(candidate);
 }
 
 /**

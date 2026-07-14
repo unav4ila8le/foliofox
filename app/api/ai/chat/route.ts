@@ -14,7 +14,6 @@ import {
   safeValidateUIMessages,
   isStepCount,
 } from "ai";
-import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
 import { fetchProfile } from "@/server/profile/actions";
@@ -279,7 +278,7 @@ export async function POST(req: Request) {
   const stream = toUIMessageStream({
     stream: result.stream,
     originalMessages: messages,
-    generateMessageId: () => uuidv4(),
+    generateMessageId: () => crypto.randomUUID(),
     sendReasoning: true,
     sendSources: true,
     onEnd: async ({ responseMessage, isAborted, finishReason }) => {

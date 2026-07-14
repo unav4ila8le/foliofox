@@ -58,7 +58,7 @@ export const emailRadius = {
 
 // Deliberately system-only. Installing a webfont raises weight and fails in
 // Outlook/Android Gmail anyway; sans-serif fallbacks render consistently.
-export const emailFontFamily =
+const emailFontFamily =
   'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 
 // Logo is 561x137 native; displayed at 1/5 scale for crisp retina rendering.

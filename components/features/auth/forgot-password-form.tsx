@@ -70,7 +70,11 @@ export function ResetPasswordForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form className="grid gap-4" onSubmit={form.handleSubmit(onSubmit)}>
+        <form
+          method="post"
+          className="grid gap-4"
+          onSubmit={form.handleSubmit(onSubmit)}
+        >
           <Controller
             control={form.control}
             name="email"

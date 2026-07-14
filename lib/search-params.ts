@@ -11,7 +11,7 @@ export function getSearchParam(
   return value;
 }
 
-export type SearchParamUpdates = Record<string, string | undefined | null>;
+type SearchParamUpdates = Record<string, string | undefined | null>;
 
 type SearchParamsLike = { toString: () => string };
 

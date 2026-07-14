@@ -251,7 +251,7 @@ interface ValidationContext {
  * @param context - Validation context with supported values
  * @returns Array of validation errors (empty if valid)
  */
-export function validatePosition(
+function validatePosition(
   position: PositionImportRow,
   rowNumber: number,
   context: ValidationContext,
@@ -328,7 +328,7 @@ export function validatePosition(
  * @param symbolCurrency - The normalized ISO accounting currency from symbol validation
  * @returns Array of validation errors (empty if valid)
  */
-export function validateSymbolCurrency(
+function validateSymbolCurrency(
   position: PositionImportRow,
   rowNumber: number,
   symbolCurrency: string,

@@ -1,4 +1,4 @@
-export interface ScenarioInitialValueSuggestion {
+interface ScenarioInitialValueSuggestion {
   value: number;
   currency: string;
 }
