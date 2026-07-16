@@ -10,6 +10,10 @@ import { resolveBrokerTransactionInstruments } from "@/server/import/broker-tran
 import { fetchExchangeRates } from "@/server/exchange-rates/fetch";
 
 import { convertCurrency } from "@/lib/currency-conversion";
+import {
+  compareBrokerRecordOrder,
+  inferOpeningQuantity,
+} from "@/lib/import/broker-transactions/adapter-utils";
 import { parseBrokerTransactionsCSV } from "@/lib/import/broker-transactions/registry";
 import { formatUTCDateKey, parseUTCDateKey } from "@/lib/date/date-utils";
 
@@ -32,15 +36,18 @@ function normalizePositionName(value: string) {
 function buildCreatePositionFormData(
   draft: BrokerTransactionPositionDraft,
   symbolId?: string,
+  openingQuantity = 0,
 ) {
   const formData = new FormData();
   formData.append("type", "asset");
   formData.append("name", draft.name);
   formData.append("currency", draft.currency);
   formData.append("category_id", draft.category_id);
-  // Broker transaction imports derive real quantity from records. This zero
-  // snapshot gives recalculation a clean base before the first imported trade.
-  formData.append("quantity", "0");
+  // Broker transaction imports derive real quantity from records. This base
+  // snapshot gives recalculation a clean start before the first imported
+  // trade: zero for full histories, or the inferred pre-export holding when a
+  // date-ranged export sells units it never bought within the window.
+  formData.append("quantity", String(openingQuantity));
   formData.append("unit_value", String(draft.firstUnitValue));
   formData.append("cost_basis_per_unit", String(draft.firstUnitValue));
   formData.append("date", draft.earliestTradeDate);
@@ -143,6 +150,10 @@ export async function importBrokerTransactionsFromCSV(
     (position) =>
       !positionByNormalizedName.has(normalizePositionName(position.name)),
   );
+  const openingBalances = buildBrokerOpeningBalances(
+    missingPositions,
+    parsed.records,
+  );
 
   // Idempotency is enforced twice: this pre-filter avoids noisy retries, while
   // the DB partial unique index protects against concurrent duplicate inserts.
@@ -218,7 +229,11 @@ export async function importBrokerTransactionsFromCSV(
         ? resolution.symbolId
         : undefined;
     const result = await createPosition(
-      buildCreatePositionFormData(convertedDraft, symbolId),
+      buildCreatePositionFormData(
+        convertedDraft,
+        symbolId,
+        openingBalances.openingQuantityByPositionKey.get(draft.positionKey),
+      ),
     );
     if (!result.success) {
       return {
@@ -288,7 +303,11 @@ export async function importBrokerTransactionsFromCSV(
     matchedPositionCount: parsed.positions.length - missingPositions.length,
     skippedCount: parsed.records.length - recordsToImport.length,
     warnings: buildBrokerImportWarnings(
-      [...(parsed.warnings ?? []), ...conversion.warnings],
+      [
+        ...(parsed.warnings ?? []),
+        ...conversion.warnings,
+        ...openingBalances.warnings,
+      ],
       instrumentResolutions,
     ),
   };
@@ -577,6 +596,31 @@ async function convertBrokerImportCurrencies({
   };
 }
 
+// Date-ranged exports can sell units bought before the export window. Infer
+// the pre-window holding per new position so those sells import against an
+// opening balance instead of failing timeline validation.
+function buildBrokerOpeningBalances(
+  positions: BrokerTransactionPositionDraft[],
+  records: BrokerTransactionRecordDraft[],
+) {
+  const openingQuantityByPositionKey = new Map<string, number>();
+  const warnings: string[] = [];
+
+  for (const position of positions) {
+    const openingQuantity = inferOpeningQuantity(
+      records.filter((record) => record.positionKey === position.positionKey),
+    );
+    if (openingQuantity <= 0) continue;
+
+    openingQuantityByPositionKey.set(position.positionKey, openingQuantity);
+    warnings.push(
+      `Inferred an opening balance of ${openingQuantity} unit(s) for "${position.name}" because the export sells units it never buys. Review the position's quantity and cost basis, or delete it and re-import a full-history export.`,
+    );
+  }
+
+  return { openingQuantityByPositionKey, warnings };
+}
+
 function buildBrokerImportWarnings(
   parsedWarnings: string[] | undefined,
   instrumentResolutions: Awaited<
@@ -755,23 +799,6 @@ function prepareBrokerRecords({
     importedTimelineByPosition,
     earliestImportedDateByPosition,
   };
-}
-
-function compareBrokerRecordOrder(
-  left: BrokerTransactionRecordDraft,
-  right: BrokerTransactionRecordDraft,
-) {
-  if (left.date !== right.date) {
-    return left.date.localeCompare(right.date);
-  }
-
-  const leftTime = left.executedAt ?? "";
-  const rightTime = right.executedAt ?? "";
-  if (leftTime !== rightTime) {
-    return leftTime.localeCompare(rightTime);
-  }
-
-  return left.sourceRowNumber - right.sourceRowNumber;
 }
 
 async function validatePreparedBrokerRecords(
@@ -1002,7 +1029,10 @@ export async function previewBrokerImport(
     recordsToImportCount: parsed.records.length - existingTransactionIds.size,
     duplicateRecordsSkippedCount: existingTransactionIds.size,
     ignoredRowCount: parsed.ignoredRowCount,
-    warnings: parsed.warnings ?? [],
+    warnings: [
+      ...(parsed.warnings ?? []),
+      ...buildBrokerOpeningBalances(positionsToCreate, parsed.records).warnings,
+    ],
     resolutions: Array.from(instrumentResolutions.values()),
   };
 }

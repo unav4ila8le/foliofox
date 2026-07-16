@@ -21,6 +21,47 @@ export function createSyntheticTransactionIdFactory() {
   };
 }
 
+export function compareBrokerRecordOrder(
+  left: BrokerTransactionRecordDraft,
+  right: BrokerTransactionRecordDraft,
+) {
+  if (left.date !== right.date) {
+    return left.date.localeCompare(right.date);
+  }
+
+  const leftTime = left.executedAt ?? "";
+  const rightTime = right.executedAt ?? "";
+  if (leftTime !== rightTime) {
+    return leftTime.localeCompare(rightTime);
+  }
+
+  return left.sourceRowNumber - right.sourceRowNumber;
+}
+
+/**
+ * Infer the pre-history holding for a position from its parsed records.
+ *
+ * Date-ranged broker exports can contain sells whose buys happened before the
+ * export window. The largest running shortfall is the minimum quantity the
+ * user must have held before the first record; importing starts the position
+ * from that opening balance instead of zero so the timeline stays valid.
+ */
+export function inferOpeningQuantity(
+  records: BrokerTransactionRecordDraft[],
+): number {
+  let runningQuantity = 0;
+  let largestShortfall = 0;
+
+  for (const record of [...records].sort(compareBrokerRecordOrder)) {
+    runningQuantity +=
+      record.type === "sell" ? -record.quantity : record.quantity;
+    largestShortfall = Math.min(largestShortfall, runningQuantity);
+  }
+
+  // Math.max also normalizes the no-shortfall case away from -0.
+  return Math.max(0, -largestShortfall);
+}
+
 /**
  * Synthesize `executedAt` from file order for exports without execution
  * timestamps. Same-date trades otherwise fall back to ascending row number,
