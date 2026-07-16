@@ -263,7 +263,9 @@ function SymbolList({
         onValueChange={setSearchQuery}
         disabled={isLoadingQuote}
       />
-      <CommandList>
+      {/* Result rows are ~52px; the default max-h-72 clips the 6th row
+          mid-item with no visible scrollbar. 384px fits 7 rows cleanly. */}
+      <CommandList className="max-h-96">
         <CommandEmpty>
           {isLoading ? (
             "Searching..."
