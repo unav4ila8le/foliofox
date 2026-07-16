@@ -100,8 +100,8 @@ export const scalableCapitalAdapter: BrokerTransactionAdapter = {
     // Scalable Capital exports have no per-row transaction ID, so IDs are
     // derived from normalized row content for idempotent re-uploads.
     const buildTransactionId = createSyntheticTransactionIdFactory();
+    // Every ignored row is a non-trade row for this adapter.
     let ignoredRowCount = 0;
-    let ignoredNonTradeRowCount = 0;
     let importedRowsWithFeesOrTaxes = 0;
 
     for (const row of parsedTable.table.rows) {
@@ -110,7 +110,6 @@ export const scalableCapitalAdapter: BrokerTransactionAdapter = {
       // Scalable Capital exports deposits, withdrawals, dividends, interest,
       // and fees in the same file. V1 imports only position-changing trades.
       if (!BUY_TYPES.has(rawType) && !SELL_TYPES.has(rawType)) {
-        ignoredNonTradeRowCount++;
         ignoredRowCount++;
         continue;
       }
@@ -214,9 +213,9 @@ export const scalableCapitalAdapter: BrokerTransactionAdapter = {
 
     assignFileOrderExecutedAt(records);
 
-    if (ignoredNonTradeRowCount > 0) {
+    if (ignoredRowCount > 0) {
       warnings.push(
-        `Ignored ${ignoredNonTradeRowCount} non-trade Scalable Capital row(s). V1 imports only Buy, Sell, and Savings plan rows; deposits, withdrawals, dividends, interest, fees, and taxes are not imported.`,
+        `Ignored ${ignoredRowCount} non-trade Scalable Capital row(s). V1 imports only Buy, Sell, and Savings plan rows; deposits, withdrawals, dividends, interest, fees, and taxes are not imported.`,
       );
     }
 

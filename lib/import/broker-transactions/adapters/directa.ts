@@ -110,9 +110,6 @@ export const directaAdapter: BrokerTransactionAdapter = {
       parsedTable.table.normalizedHeaders.find((header) =>
         header.startsWith("quantit"),
       ) ?? "quantita";
-    // Best-effort mapping of table rows back to original file lines for errors.
-    const rowNumberOffset = headerRecordIndex;
-
     const positionsByKey = new Map<string, BrokerTransactionPositionDraft>();
     const records: BrokerTransactionRecordDraft[] = [];
     const errors: string[] = [];
@@ -121,12 +118,12 @@ export const directaAdapter: BrokerTransactionAdapter = {
     // and is often mangled into scientific notation by Excel round-trips, so
     // IDs are derived from normalized row content instead.
     const buildTransactionId = createSyntheticTransactionIdFactory();
-    let ignoredRowCount = 0;
     let ignoredFeeRowCount = 0;
     let ignoredOtherRowCount = 0;
 
     for (const row of parsedTable.table.rows) {
-      const rowNumber = row.rowNumber + rowNumberOffset;
+      // Best-effort mapping of table rows back to original file lines for errors.
+      const rowNumber = row.rowNumber + headerRecordIndex;
       const rawType = row.get("tipo_operazione").trim().toLowerCase();
 
       if (!BUY_TYPES.has(rawType) && !SELL_TYPES.has(rawType)) {
@@ -135,7 +132,6 @@ export const directaAdapter: BrokerTransactionAdapter = {
         } else {
           ignoredOtherRowCount++;
         }
-        ignoredRowCount++;
         continue;
       }
 
@@ -245,7 +241,7 @@ export const directaAdapter: BrokerTransactionAdapter = {
       source: SOURCE,
       positions: Array.from(positionsByKey.values()),
       records,
-      ignoredRowCount,
+      ignoredRowCount: ignoredFeeRowCount + ignoredOtherRowCount,
       duplicateTransactionIdCount: 0,
       warnings: warnings.length > 0 ? warnings : undefined,
       errors: errors.length > 0 ? errors : undefined,
