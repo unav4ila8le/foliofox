@@ -42,7 +42,12 @@ export function BrokerImportCSVForm() {
       if (resolution.state === "needs_review") {
         return Boolean(selectedSymbolTickers[resolution.positionKey]);
       }
-      return manualPositionKeys.includes(resolution.positionKey);
+      // Unresolved positions import either with a user-searched symbol or as
+      // a manual position.
+      return (
+        manualPositionKeys.includes(resolution.positionKey) ||
+        Boolean(selectedSymbolTickers[resolution.positionKey])
+      );
     });
   }, [manualPositionKeys, preview, selectedSymbolTickers]);
 

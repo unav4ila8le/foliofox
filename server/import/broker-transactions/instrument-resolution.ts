@@ -15,6 +15,9 @@ import type { Symbol } from "@/types/global.types";
 
 const ISIN_PATTERN = /^[A-Z]{2}[A-Z0-9]{9}\d$/;
 const SYMBOL_SEARCH_LIMIT = 5;
+// Broker trades are securities, so fuzzy name-search results outside these
+// quote types (futures, FX, indexes) are noise, not candidates.
+const NAME_SEARCH_QUOTE_TYPES = new Set(["equity", "etf", "fund"]);
 
 export interface BrokerInstrumentCandidate {
   ticker: string;
@@ -348,6 +351,7 @@ async function findProviderCandidates(options: {
   const tickers = new Set<string>();
 
   for (const query of queries) {
+    const isNameQuery = query !== options.brokerSymbol;
     const result = await searchYahooFinanceSymbols({
       query,
       limit: SYMBOL_SEARCH_LIMIT,
@@ -355,6 +359,14 @@ async function findProviderCandidates(options: {
     if (!result.success) continue;
 
     for (const match of result.data ?? []) {
+      // Exact broker-symbol/ISIN matches pass through unfiltered; only the
+      // fuzzy name search is restricted to security quote types.
+      if (
+        isNameQuery &&
+        !NAME_SEARCH_QUOTE_TYPES.has((match.typeDisp ?? "").toLowerCase())
+      ) {
+        continue;
+      }
       tickers.add(match.id.trim().toUpperCase());
     }
   }

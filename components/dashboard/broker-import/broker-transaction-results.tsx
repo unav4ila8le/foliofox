@@ -13,6 +13,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import { SymbolSearch } from "@/components/dashboard/symbol-search";
+
 import { getBrokerDisplayName } from "@/lib/import/broker-transactions/registry";
 
 import type {
@@ -100,25 +102,48 @@ export function BrokerTransactionResults({
             const isManual = manualPositionKeys.includes(
               resolution.positionKey,
             );
+            const selectedTicker =
+              selectedSymbolTickers[resolution.positionKey];
             return (
               <div
                 key={resolution.positionKey}
-                className="flex flex-col gap-3 rounded-md border p-3 sm:flex-row sm:items-center sm:justify-between"
+                className="space-y-3 rounded-md border p-3"
               >
                 <div className="space-y-1">
                   <div className="font-medium">{position?.name}</div>
                   <div className="text-muted-foreground text-xs">
-                    {resolution.warning}
+                    {resolution.warning} Search a market symbol to link, or
+                    import as a manual position without market prices.
                   </div>
                 </div>
-                <Button
-                  type="button"
-                  variant={isManual ? "secondary" : "outline"}
-                  size="sm"
-                  onClick={() => onToggleManual(resolution.positionKey)}
-                >
-                  {isManual ? "Manual selected" : "Import manually"}
-                </Button>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <SymbolSearch
+                    field={{
+                      value: selectedTicker,
+                      // Linking a symbol and manual import are exclusive.
+                      onChange: (ticker) => {
+                        if (ticker && isManual) {
+                          onToggleManual(resolution.positionKey);
+                        }
+                        onSelectSymbol(resolution.positionKey, ticker);
+                      },
+                    }}
+                    className="w-full sm:flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant={isManual ? "secondary" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      if (!isManual && selectedTicker) {
+                        onSelectSymbol(resolution.positionKey, "");
+                      }
+                      onToggleManual(resolution.positionKey);
+                    }}
+                  >
+                    {isManual ? "Manual selected" : "Import manually"}
+                  </Button>
+                </div>
               </div>
             );
           })}
@@ -199,6 +224,20 @@ function SymbolReviewRow({
           </SelectContent>
         </Select>
       )}
+
+      <div className="space-y-1">
+        <div className="text-muted-foreground text-xs">
+          Not the listing you trade? Search any market symbol instead.
+        </div>
+        <SymbolSearch
+          field={{
+            value: selectedTicker,
+            onChange: (ticker) =>
+              onSelectSymbol(resolution.positionKey, ticker),
+          }}
+          className="w-full"
+        />
+      </div>
     </div>
   );
 }
