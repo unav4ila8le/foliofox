@@ -53,7 +53,8 @@ export function BrokerImportDialogProvider({
     <BrokerImportDialogContext.Provider value={{ open, setOpen }}>
       {children}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
+        {/* Review selections are easy to lose; close only via the buttons. */}
+        <DialogContent onInteractOutside={(event) => event.preventDefault()}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Upload className="size-5" />

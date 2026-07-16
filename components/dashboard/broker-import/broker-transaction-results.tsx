@@ -18,16 +18,20 @@ interface BrokerTransactionResultsProps {
   preview: Extract<BrokerTransactionImportPreview, { success: true }>;
   selectedSymbolTickers: Record<string, string>;
   manualPositionKeys: string[];
+  excludedPositionKeys: string[];
   onSelectSymbol: (positionKey: string, ticker: string) => void;
   onToggleManual: (positionKey: string) => void;
+  onToggleExcluded: (positionKey: string) => void;
 }
 
 export function BrokerTransactionResults({
   preview,
   selectedSymbolTickers,
   manualPositionKeys,
+  excludedPositionKeys,
   onSelectSymbol,
   onToggleManual,
+  onToggleExcluded,
 }: BrokerTransactionResultsProps) {
   const positionByKey = new Map(
     preview.positionsToCreate.map((position) => [
@@ -80,7 +84,9 @@ export function BrokerTransactionResults({
                 positionByKey.get(resolution.positionKey)?.currency ?? ""
               }
               selectedTicker={selectedSymbolTickers[resolution.positionKey]}
+              isExcluded={excludedPositionKeys.includes(resolution.positionKey)}
               onSelectSymbol={onSelectSymbol}
+              onToggleExcluded={onToggleExcluded}
             />
           ))}
         </div>
@@ -94,6 +100,9 @@ export function BrokerTransactionResults({
             const isManual = manualPositionKeys.includes(
               resolution.positionKey,
             );
+            const isExcluded = excludedPositionKeys.includes(
+              resolution.positionKey,
+            );
             const selectedTicker =
               selectedSymbolTickers[resolution.positionKey];
             return (
@@ -101,41 +110,54 @@ export function BrokerTransactionResults({
                 key={resolution.positionKey}
                 className="space-y-3 rounded-md border p-3"
               >
-                <div className="space-y-1">
-                  <div className="font-medium">{position?.name}</div>
-                  <div className="text-muted-foreground text-xs">
-                    {resolution.warning} Search a market symbol to link, or
-                    import as a manual position without market prices.
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="font-medium">{position?.name}</div>
+                    <div className="text-muted-foreground text-xs">
+                      {isExcluded
+                        ? "This position and its transactions will not be imported. You can create it manually later."
+                        : `${resolution.warning} Search a market symbol to link, or import as a manual position without market prices.`}
+                    </div>
                   </div>
-                </div>
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                  <SymbolSearch
-                    field={{
-                      value: selectedTicker,
-                      // Linking a symbol and manual import are exclusive.
-                      onChange: (ticker) => {
-                        if (ticker && isManual) {
-                          onToggleManual(resolution.positionKey);
-                        }
-                        onSelectSymbol(resolution.positionKey, ticker);
-                      },
-                    }}
-                    className="w-full sm:flex-1"
-                  />
                   <Button
                     type="button"
-                    variant={isManual ? "secondary" : "outline"}
+                    variant={isExcluded ? "secondary" : "ghost"}
                     size="sm"
-                    onClick={() => {
-                      if (!isManual && selectedTicker) {
-                        onSelectSymbol(resolution.positionKey, "");
-                      }
-                      onToggleManual(resolution.positionKey);
-                    }}
+                    onClick={() => onToggleExcluded(resolution.positionKey)}
                   >
-                    {isManual ? "Manual selected" : "Import manually"}
+                    {isExcluded ? "Skipped" : "Skip"}
                   </Button>
                 </div>
+                {!isExcluded && (
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <SymbolSearch
+                      field={{
+                        value: selectedTicker,
+                        // Linking a symbol and manual import are exclusive.
+                        onChange: (ticker) => {
+                          if (ticker && isManual) {
+                            onToggleManual(resolution.positionKey);
+                          }
+                          onSelectSymbol(resolution.positionKey, ticker);
+                        },
+                      }}
+                      className="w-full sm:flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant={isManual ? "secondary" : "outline"}
+                      size="sm"
+                      onClick={() => {
+                        if (!isManual && selectedTicker) {
+                          onSelectSymbol(resolution.positionKey, "");
+                        }
+                        onToggleManual(resolution.positionKey);
+                      }}
+                    >
+                      {isManual ? "Manual selected" : "Import manually"}
+                    </Button>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -165,14 +187,18 @@ function SymbolReviewRow({
   brokerSymbol,
   transactionCurrency,
   selectedTicker,
+  isExcluded,
   onSelectSymbol,
+  onToggleExcluded,
 }: {
   resolution: Extract<BrokerInstrumentResolution, { state: "needs_review" }>;
   positionName?: string;
   brokerSymbol?: string | null;
   transactionCurrency: string;
   selectedTicker?: string;
+  isExcluded: boolean;
   onSelectSymbol: (positionKey: string, ticker: string) => void;
+  onToggleExcluded: (positionKey: string) => void;
 }) {
   const brokerIdentifier = brokerSymbol
     ? `${isIsinLike(brokerSymbol) ? "ISIN" : "Broker symbol"} ${brokerSymbol}`
@@ -180,35 +206,49 @@ function SymbolReviewRow({
 
   return (
     <div className="space-y-3 rounded-md border p-3">
-      <div className="space-y-1">
-        <div className="font-medium">
-          {positionName ?? "Unknown position"}
-          {brokerIdentifier ? <span> - {brokerIdentifier}</span> : null}
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-1">
+          <div className="font-medium">
+            {positionName ?? "Unknown position"}
+            {brokerIdentifier ? <span> - {brokerIdentifier}</span> : null}
+          </div>
+          <div className="text-muted-foreground text-xs">
+            {isExcluded
+              ? "This position and its transactions will not be imported. You can create it manually later."
+              : "Choose the market symbol to link. All transactions will be converted to that symbol currency before import."}
+          </div>
         </div>
-        <div className="text-muted-foreground text-xs">
-          Choose the market symbol to link. All transactions will be converted
-          to that symbol currency before import.
-        </div>
+        <Button
+          type="button"
+          variant={isExcluded ? "secondary" : "ghost"}
+          size="sm"
+          onClick={() => onToggleExcluded(resolution.positionKey)}
+        >
+          {isExcluded ? "Skipped" : "Skip"}
+        </Button>
       </div>
 
-      <SymbolSearch
-        field={{
-          value: selectedTicker,
-          onChange: (ticker) => onSelectSymbol(resolution.positionKey, ticker),
-        }}
-        className="w-full"
-        // Provider candidates seed the pre-search list; the currency slot
-        // flags listings that would trigger historical FX conversion.
-        defaultResults={resolution.candidates.map((candidate) => ({
-          id: candidate.ticker,
-          nameDisp: candidate.name,
-          exchange: candidate.exchange,
-          typeDisp:
-            candidate.currency === transactionCurrency
-              ? candidate.currency
-              : `${candidate.currency} · FX conversion`,
-        }))}
-      />
+      {!isExcluded && (
+        <SymbolSearch
+          field={{
+            value: selectedTicker,
+            onChange: (ticker) =>
+              onSelectSymbol(resolution.positionKey, ticker),
+          }}
+          className="w-full"
+          // Provider candidates seed the pre-search list; the currency slot
+          // flags listings that would trigger historical FX conversion.
+          defaultResults={resolution.candidates.map((candidate) => ({
+            id: candidate.ticker,
+            nameDisp: candidate.name,
+            exchange: candidate.exchange,
+            typeDisp:
+              candidate.currency === transactionCurrency
+                ? candidate.currency
+                : `${candidate.currency} · FX conversion`,
+          }))}
+        />
+      )}
     </div>
   );
 }

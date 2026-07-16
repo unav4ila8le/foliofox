@@ -75,6 +75,18 @@ export async function importBrokerTransactionsFromCSV(
     };
   }
 
+  // Positions skipped during review are dropped entirely; users can create
+  // them manually later (e.g. instruments the market data provider lacks).
+  const excludedPositionKeys = new Set(options.excludedPositionKeys ?? []);
+  if (excludedPositionKeys.size > 0) {
+    parsed.positions = parsed.positions.filter(
+      (position) => !excludedPositionKeys.has(position.positionKey),
+    );
+    parsed.records = parsed.records.filter(
+      (record) => !excludedPositionKeys.has(record.positionKey),
+    );
+  }
+
   if (parsed.records.length === 0) {
     return {
       success: false,

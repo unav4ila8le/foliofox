@@ -307,18 +307,18 @@ function SymbolList({
               disabled={isLoadingQuote}
               className="flex flex-row justify-between gap-4 [&>svg:last-child]:hidden"
             >
-              <div className="flex flex-col">
-                <span>{symbol.id}</span>
-                <span className="text-muted-foreground text-xs">
+              <div className="flex min-w-0 flex-col">
+                <span className="truncate">{symbol.id}</span>
+                <span className="text-muted-foreground truncate text-xs">
                   {symbol.nameDisp}
                 </span>
               </div>
-              <div className="flex flex-row gap-2">
+              <div className="flex shrink-0 flex-row gap-2">
                 <div className="flex flex-col items-end">
-                  <span className="text-muted-foreground text-xs">
+                  <span className="text-muted-foreground text-xs whitespace-nowrap">
                     {symbol.exchange}
                   </span>
-                  <span className="text-muted-foreground text-xs">
+                  <span className="text-muted-foreground text-xs whitespace-nowrap">
                     {symbol.typeDisp}
                   </span>
                 </div>

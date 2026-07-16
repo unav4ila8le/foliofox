@@ -52,6 +52,8 @@ export type BrokerInstrumentResolution =
 export interface BrokerTransactionImportRequestOptions {
   selectedSymbolTickers?: Record<string, string>;
   manualPositionKeys?: string[];
+  // Positions skipped during review; they and their records are not imported.
+  excludedPositionKeys?: string[];
 }
 
 export type BrokerTransactionImportPreview =
