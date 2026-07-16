@@ -63,12 +63,13 @@ function findHeaderRecordIndex(csvContent: string): number {
   return splitCSVRecords(csvContent).findIndex(isDirectaHeaderRecord);
 }
 
-// Directa dates are dd/mm/yyyy.
+// Directa dates are day-first: direct downloads use dd-mm-yyyy, while
+// Excel round-trips of the same export produce dd/mm/yyyy.
 function parseDirectaDateKey(raw: string): string | null {
-  const match = raw.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  const match = raw.trim().match(/^(\d{1,2})([/-])(\d{1,2})\2(\d{4})$/);
   if (!match) return null;
 
-  const dateKey = `${match[3]}-${match[2].padStart(2, "0")}-${match[1].padStart(2, "0")}`;
+  const dateKey = `${match[4]}-${match[3].padStart(2, "0")}-${match[1].padStart(2, "0")}`;
   return Number.isNaN(parseUTCDateKey(dateKey).getTime()) ? null : dateKey;
 }
 

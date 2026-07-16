@@ -127,6 +127,40 @@ describe("Directa broker transaction adapter", () => {
     ).toEqual(idsA);
   });
 
+  it("parses dash-separated dates from direct Directa downloads", async () => {
+    // Files downloaded straight from Directa use dd-mm-yyyy; only Excel
+    // round-trips convert them to dd/mm/yyyy.
+    const csv = buildDirectaCSV([
+      "15-07-2026;17-07-2026;Acquisto;VWCE;IE0000000001;;World ETF;9;-1492,11;0;EUR;19617283132458",
+      "13-07-2026;13-07-2026;Conferimento con bonifico;;;19197957;;0;1500;0;EUR;",
+    ]);
+
+    const result = await parseBrokerTransactionsCSV(csv);
+
+    expect(result.success).toBe(true);
+    expect(result.records).toEqual([
+      expect.objectContaining({
+        type: "buy",
+        date: "2026-07-15",
+        quantity: 9,
+      }),
+    ]);
+    expect(result.ignoredRowCount).toBe(1);
+  });
+
+  it("rejects mixed date separators within one date", async () => {
+    const csv = buildDirectaCSV([
+      "15-07/2026;17-07-2026;Acquisto;VWCE;IE0000000001;;World ETF;9;-1492,11;0;EUR;X1",
+    ]);
+
+    const result = await parseBrokerTransactionsCSV(csv);
+
+    expect(result.success).toBe(false);
+    expect(result.errors?.some((error) => error.includes("Invalid date"))).toBe(
+      true,
+    );
+  });
+
   it("rejects rows that mix trade currencies for one instrument", async () => {
     const csv = buildDirectaCSV([
       "16/01/2026;20/01/2026;Vendita;.ACME;US0000000001;;ACME INC;1;50,00;60,00;USD;X2",
