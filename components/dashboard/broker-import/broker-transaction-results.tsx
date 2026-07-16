@@ -1,19 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { AlertCircle, CheckCircle } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectSeparator,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 import { SymbolSearch } from "@/components/dashboard/symbol-search";
 
@@ -23,10 +13,6 @@ import type {
   BrokerInstrumentResolution,
   BrokerTransactionImportPreview,
 } from "@/server/import/broker-transactions/instrument-resolution";
-
-// Sentinel select value; never a real ticker because tickers cannot contain
-// spaces.
-const SEARCH_INSTEAD_VALUE = "__search instead__";
 
 interface BrokerTransactionResultsProps {
   preview: Extract<BrokerTransactionImportPreview, { success: true }>;
@@ -188,11 +174,6 @@ function SymbolReviewRow({
   selectedTicker?: string;
   onSelectSymbol: (positionKey: string, ticker: string) => void;
 }) {
-  // Free symbol search hides behind a "Can't find your symbol?" select entry
-  // so the default flow stays a single dropdown of provider candidates.
-  const [isSearchMode, setIsSearchMode] = useState(
-    resolution.candidates.length === 0,
-  );
   const brokerIdentifier = brokerSymbol
     ? `${isIsinLike(brokerSymbol) ? "ISIN" : "Broker symbol"} ${brokerSymbol}`
     : null;
@@ -205,68 +186,30 @@ function SymbolReviewRow({
           {brokerIdentifier ? <span> - {brokerIdentifier}</span> : null}
         </div>
         <div className="text-muted-foreground text-xs">
-          Choose the market symbol to link. All transactions will be converted
-          to that symbol currency before import.
+          Choose the market symbol to link. Suggested listings are shown first;
+          type to search any other symbol. All transactions will be converted to
+          that symbol currency before import.
         </div>
       </div>
 
-      {!isSearchMode ? (
-        <Select
-          value={selectedTicker ?? ""}
-          onValueChange={(ticker) => {
-            if (ticker === SEARCH_INSTEAD_VALUE) {
-              onSelectSymbol(resolution.positionKey, "");
-              setIsSearchMode(true);
-              return;
-            }
-            onSelectSymbol(resolution.positionKey, ticker);
-          }}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Choose symbol" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              {resolution.candidates.map((candidate) => (
-                <SelectItem key={candidate.ticker} value={candidate.ticker}>
-                  {candidate.ticker} ({candidate.currency})
-                  {candidate.exchange ? ` - ${candidate.exchange}` : ""}
-                  {candidate.currency === transactionCurrency
-                    ? ""
-                    : " (FX conversion)"}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-            <SelectSeparator />
-            <SelectItem value={SEARCH_INSTEAD_VALUE}>
-              Can&apos;t find your symbol? Search instead
-            </SelectItem>
-          </SelectContent>
-        </Select>
-      ) : (
-        <div className="space-y-1">
-          <SymbolSearch
-            field={{
-              value: selectedTicker,
-              onChange: (ticker) =>
-                onSelectSymbol(resolution.positionKey, ticker),
-            }}
-            className="w-full"
-          />
-          {resolution.candidates.length > 0 && (
-            <button
-              type="button"
-              className="text-muted-foreground hover:text-foreground text-xs underline underline-offset-4"
-              onClick={() => {
-                onSelectSymbol(resolution.positionKey, "");
-                setIsSearchMode(false);
-              }}
-            >
-              Back to suggested symbols
-            </button>
-          )}
-        </div>
-      )}
+      <SymbolSearch
+        field={{
+          value: selectedTicker,
+          onChange: (ticker) => onSelectSymbol(resolution.positionKey, ticker),
+        }}
+        className="w-full"
+        // Provider candidates seed the pre-search list; the currency slot
+        // flags listings that would trigger historical FX conversion.
+        defaultResults={resolution.candidates.map((candidate) => ({
+          id: candidate.ticker,
+          nameDisp: candidate.name,
+          exchange: candidate.exchange,
+          typeDisp:
+            candidate.currency === transactionCurrency
+              ? candidate.currency
+              : `${candidate.currency} · FX conversion`,
+        }))}
+      />
     </div>
   );
 }

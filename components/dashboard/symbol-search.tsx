@@ -73,6 +73,10 @@ interface SymbolSearchProps {
   onSymbolSelect?: (symbolId: string) => void;
   className?: string;
   popoverWidth?: string;
+  // Shown before the user types, instead of the generic popular symbols.
+  // Used by flows that have context-specific suggestions (e.g. broker import
+  // ISIN candidates).
+  defaultResults?: SymbolSearchResult[];
 }
 
 export function SymbolSearch({
@@ -84,6 +88,7 @@ export function SymbolSearch({
   onSymbolSelect,
   className,
   popoverWidth = "w-(--radix-popover-trigger-width)",
+  defaultResults,
 }: SymbolSearchProps) {
   const [open, setOpen] = useState(false);
   const [results, setResults] = useState<SymbolSearchResult[]>([]);
@@ -91,7 +96,9 @@ export function SymbolSearch({
   const [isLoadingQuote, setIsLoadingQuote] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery] = useDebounce(searchQuery, 300);
-  const displayedResults = debouncedQuery ? results : POPULAR_SYMBOL_RESULTS;
+  const displayedResults = debouncedQuery
+    ? results
+    : (defaultResults ?? POPULAR_SYMBOL_RESULTS);
 
   // Find the selected equity
   const selectedSymbol = displayedResults.find(
