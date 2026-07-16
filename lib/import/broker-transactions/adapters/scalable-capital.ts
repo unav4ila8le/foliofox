@@ -1,7 +1,10 @@
 import { formatUTCDateKey, parseUTCDateKey } from "@/lib/date/date-utils";
-import { mapCategory } from "@/lib/import/positions/category-mapper";
 import { parseNumberStrict } from "@/lib/import/shared/number-parser";
 
+import {
+  assignFileOrderExecutedAt,
+  createSyntheticTransactionIdFactory,
+} from "../adapter-utils";
 import { normalizeBrokerHeader, parseBrokerTransactionCSVTable } from "../csv";
 
 import type {
@@ -11,30 +14,31 @@ import type {
   BrokerTransactionRecordDraft,
 } from "../types";
 
-const SOURCE = "trade_republic";
-const DISPLAY_NAME = "Trade Republic";
+const SOURCE = "scalable_capital";
+const DISPLAY_NAME = "Scalable Capital";
 const REQUIRED_HEADERS = [
-  "datetime",
   "date",
-  "category",
+  "description",
   "type",
-  "asset_class",
-  "name",
-  "symbol",
+  "isin",
   "shares",
   "price",
+  "amount",
+  "fee",
+  "tax",
   "currency",
-  "transaction_id",
 ];
+// Savings plan executions are scheduled buys of the same instrument.
+const BUY_TYPES = new Set(["buy", "savings plan"]);
+const SELL_TYPES = new Set(["sell"]);
 const ZERO_EPSILON = 1e-9;
 
 function normalizeKeyPart(value: string): string {
   return value.trim().replace(/\s+/g, " ").toLowerCase();
 }
 
-function buildPositionKey(name: string, brokerSymbol: string): string {
-  const symbolPart = brokerSymbol.trim() || normalizeKeyPart(name);
-  return `${SOURCE}:${normalizeKeyPart(symbolPart)}:${normalizeKeyPart(name)}`;
+function buildPositionKey(name: string, isin: string): string {
+  return `${SOURCE}:${normalizeKeyPart(isin)}:${normalizeKeyPart(name)}`;
 }
 
 function normalizeEndingQuantity(quantity: number): number {
@@ -46,23 +50,23 @@ function hasNonZeroAmount(rawValue: string): boolean {
   return Number.isFinite(parsed) && parsed !== 0;
 }
 
-function hasRequiredTradeRepublicHeaders(headers: string[]): boolean {
+function hasRequiredScalableCapitalHeaders(headers: string[]): boolean {
   const normalizedHeaders = new Set(headers.map(normalizeBrokerHeader));
   return REQUIRED_HEADERS.every((header) => normalizedHeaders.has(header));
 }
 
-function detectTradeRepublicCSV(csvContent: string): boolean {
+function detectScalableCapitalCSV(csvContent: string): boolean {
   const parsedTable = parseBrokerTransactionCSVTable(csvContent);
   return (
     parsedTable.success &&
-    hasRequiredTradeRepublicHeaders(parsedTable.table.headers)
+    hasRequiredScalableCapitalHeaders(parsedTable.table.headers)
   );
 }
 
-export const tradeRepublicAdapter: BrokerTransactionAdapter = {
+export const scalableCapitalAdapter: BrokerTransactionAdapter = {
   source: SOURCE,
   displayName: DISPLAY_NAME,
-  detect: detectTradeRepublicCSV,
+  detect: detectScalableCapitalCSV,
   async parse(csvContent: string): Promise<BrokerTransactionImportResult> {
     const parsedTable = parseBrokerTransactionCSVTable(csvContent);
     if (!parsedTable.success) {
@@ -77,7 +81,7 @@ export const tradeRepublicAdapter: BrokerTransactionAdapter = {
       };
     }
 
-    if (!hasRequiredTradeRepublicHeaders(parsedTable.table.headers)) {
+    if (!hasRequiredScalableCapitalHeaders(parsedTable.table.headers)) {
       return {
         success: false,
         source: SOURCE,
@@ -85,7 +89,7 @@ export const tradeRepublicAdapter: BrokerTransactionAdapter = {
         records: [],
         ignoredRowCount: 0,
         duplicateTransactionIdCount: 0,
-        errors: ["CSV file does not match the Trade Republic export format"],
+        errors: ["CSV file does not match the Scalable Capital export format"],
       };
     }
 
@@ -93,59 +97,44 @@ export const tradeRepublicAdapter: BrokerTransactionAdapter = {
     const records: BrokerTransactionRecordDraft[] = [];
     const errors: string[] = [];
     const warnings: string[] = [];
-    const seenTransactionIds = new Set<string>();
+    // Scalable Capital exports have no per-row transaction ID, so IDs are
+    // derived from normalized row content for idempotent re-uploads.
+    const buildTransactionId = createSyntheticTransactionIdFactory();
     let ignoredRowCount = 0;
-    let ignoredNonTradingRowCount = 0;
-    let duplicateTransactionIdCount = 0;
+    let ignoredNonTradeRowCount = 0;
     let importedRowsWithFeesOrTaxes = 0;
 
     for (const row of parsedTable.table.rows) {
-      const category = row.get("category").trim().toUpperCase();
-      const rawType = row.get("type").trim().toUpperCase();
+      const rawType = row.get("type").trim().toLowerCase();
 
-      // Trade Republic exports cash, dividends, interest, transfers, and card
-      // activity in the same file. V1 imports only position-changing trades.
-      if (category !== "TRADING" || !["BUY", "SELL"].includes(rawType)) {
-        ignoredNonTradingRowCount++;
+      // Scalable Capital exports deposits, withdrawals, dividends, interest,
+      // and fees in the same file. V1 imports only position-changing trades.
+      if (!BUY_TYPES.has(rawType) && !SELL_TYPES.has(rawType)) {
+        ignoredNonTradeRowCount++;
         ignoredRowCount++;
         continue;
       }
 
-      const externalTransactionId = row.get("transaction_id").trim();
-      if (!externalTransactionId) {
-        errors.push(`Row ${row.rowNumber}: Missing transaction_id`);
-        continue;
-      }
-
-      if (seenTransactionIds.has(externalTransactionId)) {
-        duplicateTransactionIdCount++;
-        ignoredRowCount++;
-        continue;
-      }
-      seenTransactionIds.add(externalTransactionId);
-
-      const name = row.get("name").trim();
-      const brokerSymbol = row.get("symbol").trim();
-      const datetimeRaw = row.get("datetime").trim();
+      const name = row.get("description").trim();
+      const isin = row.get("isin").trim().toUpperCase();
       const dateRaw = row.get("date").trim();
-      const parsedDatetime = new Date(datetimeRaw);
       const parsedDate = parseUTCDateKey(dateRaw);
       const quantity = Math.abs(parseNumberStrict(row.get("shares")));
       const unitValue = parseNumberStrict(row.get("price"));
       const currency = row.get("currency").trim().toUpperCase();
 
       if (!name) {
-        errors.push(`Row ${row.rowNumber}: Missing name`);
+        errors.push(`Row ${row.rowNumber}: Missing description`);
+        continue;
+      }
+
+      if (!isin) {
+        errors.push(`Row ${row.rowNumber}: Missing isin`);
         continue;
       }
 
       if (Number.isNaN(parsedDate.getTime())) {
         errors.push(`Row ${row.rowNumber}: Invalid date "${dateRaw}"`);
-        continue;
-      }
-
-      if (Number.isNaN(parsedDatetime.getTime())) {
-        errors.push(`Row ${row.rowNumber}: Invalid datetime "${datetimeRaw}"`);
         continue;
       }
 
@@ -175,10 +164,11 @@ export const tradeRepublicAdapter: BrokerTransactionAdapter = {
         importedRowsWithFeesOrTaxes++;
       }
 
+      const type = SELL_TYPES.has(rawType) ? "sell" : "buy";
       const normalizedDate = formatUTCDateKey(parsedDate);
-      const positionKey = buildPositionKey(name, brokerSymbol);
+      const positionKey = buildPositionKey(name, isin);
       const existingPosition = positionsByKey.get(positionKey);
-      const signedQuantity = rawType === "SELL" ? -quantity : quantity;
+      const signedQuantity = type === "sell" ? -quantity : quantity;
 
       if (existingPosition) {
         existingPosition.endingQuantity = normalizeEndingQuantity(
@@ -192,9 +182,10 @@ export const tradeRepublicAdapter: BrokerTransactionAdapter = {
         positionsByKey.set(positionKey, {
           positionKey,
           name,
-          category_id: mapCategory(row.get("asset_class")),
+          // The export carries no asset-class column; users can recategorize.
+          category_id: "other",
           currency,
-          brokerSymbol: brokerSymbol || null,
+          brokerSymbol: isin,
           earliestTradeDate: normalizedDate,
           firstUnitValue: unitValue,
           endingQuantity: normalizeEndingQuantity(signedQuantity),
@@ -205,26 +196,27 @@ export const tradeRepublicAdapter: BrokerTransactionAdapter = {
         source: SOURCE,
         positionKey,
         positionName: name,
-        type: rawType === "SELL" ? "sell" : "buy",
+        type,
         date: normalizedDate,
         quantity,
         unit_value: unitValue,
-        description: row.get("description").trim() || null,
-        external_transaction_id: externalTransactionId,
+        description: null,
+        external_transaction_id: buildTransactionId([
+          normalizedDate,
+          isin,
+          type,
+          quantity,
+          unitValue,
+        ]),
         sourceRowNumber: row.rowNumber,
-        executedAt: parsedDatetime.toISOString(),
       });
     }
 
-    if (ignoredNonTradingRowCount > 0) {
-      warnings.push(
-        `Ignored ${ignoredNonTradingRowCount} non-trading Trade Republic row(s). V1 imports only BUY and SELL trading rows; cash movements, dividends, interest, fees, and taxes are not imported.`,
-      );
-    }
+    assignFileOrderExecutedAt(records);
 
-    if (duplicateTransactionIdCount > 0) {
+    if (ignoredNonTradeRowCount > 0) {
       warnings.push(
-        `Skipped ${duplicateTransactionIdCount} duplicate transaction_id row(s) in this file.`,
+        `Ignored ${ignoredNonTradeRowCount} non-trade Scalable Capital row(s). V1 imports only Buy, Sell, and Savings plan rows; deposits, withdrawals, dividends, interest, fees, and taxes are not imported.`,
       );
     }
 
@@ -240,7 +232,7 @@ export const tradeRepublicAdapter: BrokerTransactionAdapter = {
       positions: Array.from(positionsByKey.values()),
       records,
       ignoredRowCount,
-      duplicateTransactionIdCount,
+      duplicateTransactionIdCount: 0,
       warnings: warnings.length > 0 ? warnings : undefined,
       errors: errors.length > 0 ? errors : undefined,
     };

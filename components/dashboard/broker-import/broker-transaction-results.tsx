@@ -13,6 +13,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import { getBrokerDisplayName } from "@/lib/import/broker-transactions/registry";
+
 import type {
   BrokerInstrumentResolution,
   BrokerTransactionImportPreview,
@@ -206,10 +208,12 @@ function isIsinLike(value: string) {
 }
 
 function formatBrokerSource(source: string) {
-  if (source === "trade_republic") return "Trade Republic";
-  return source
-    .split("_")
-    .filter(Boolean)
-    .map((part) => part[0]?.toUpperCase() + part.slice(1))
-    .join(" ");
+  return (
+    getBrokerDisplayName(source) ??
+    source
+      .split("_")
+      .filter(Boolean)
+      .map((part) => part[0]?.toUpperCase() + part.slice(1))
+      .join(" ")
+  );
 }

@@ -16,6 +16,7 @@ import {
   importBrokerTransactionsFromCSV,
   previewBrokerImport,
 } from "@/server/import/broker-transactions/import";
+import { listSupportedBrokerDisplayNames } from "@/lib/import/broker-transactions/registry";
 
 import type { BrokerTransactionImportPreview } from "@/server/import/broker-transactions/instrument-resolution";
 
@@ -109,9 +110,12 @@ export function BrokerImportCSVForm() {
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <DialogBody className="space-y-4">
         <div className="text-muted-foreground text-sm">
-          Only{" "}
-          <span className="text-foreground font-medium">Trade Republic</span> is
-          currently supported. Upload its transaction CSV, review the matched
+          <span className="text-foreground font-medium">
+            {new Intl.ListFormat("en").format(
+              listSupportedBrokerDisplayNames(),
+            )}
+          </span>{" "}
+          are currently supported. Upload a transaction CSV, review the matched
           symbols, and Foliofox will create positions, import transactions, and
           skip records already imported.
         </div>
@@ -129,7 +133,7 @@ export function BrokerImportCSVForm() {
           isProcessing={isProcessing}
           onReset={handleReset}
           disabled={isImporting}
-          title="Drop your Trade Republic CSV file here"
+          title="Drop your broker CSV file here"
         />
 
         {preview?.success ? (

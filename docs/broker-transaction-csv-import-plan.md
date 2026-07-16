@@ -127,9 +127,16 @@ Keep Foliofox’s model unchanged: positions are holdings, records are transacti
 - Unit test broker FX conversion for different-currency symbol selections and existing matched positions.
 - Verify with targeted `vitest`, type check, and lint only. No Supabase CLI, Next CLI, database commands, or production-system commands.
 
+## Supported Adapters
+
+- `trade_republic`: English transaction export; broker-provided `transaction_id`.
+- `scalable_capital`: semicolon CSV (`date;description;type;isin;shares;price;amount;fee;tax;currency`), EU decimals; `Buy`/`Sell`/`Savings plan` rows import, cash rows ignored. No per-row ID, so external transaction IDs are synthesized from normalized row content plus an occurrence suffix for identical rows.
+- `directa`: Italian "Movimenti" export with metadata preamble before the header row; `Acquisto`/`Vendita` import, `Commissioni` ignored. Unit price is derived from amount ÷ quantity (`Importo Divisa` for non-EUR trades). `Riferimento ordine` is per-order and Excel-mangled in the wild, so IDs are synthesized the same way as Scalable Capital.
+- Adapters own their detection (`detect(csvContent)`) and stay self-contained by design: a broker changing its export format is patched in that adapter file and its test only.
+
 ## Assumptions
 
-- V1 supports Trade Republic only; new brokers are added as new adapters.
+- New brokers are added as new adapters in `lib/import/broker-transactions/adapters/`.
 - Fees, dividends, interest, taxes, and cash movements are ignored in v1 with warnings.
 - Trade Republic trading rows may use broker venue currency rather than the instrument home-listing currency; auto-linking must be currency-safe.
 - Users expect broker-imported positions to become symbol-backed when safe, but correctness is more important than silently linking the wrong quote currency.
