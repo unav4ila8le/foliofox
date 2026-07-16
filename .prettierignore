@@ -7,3 +7,4 @@ supabase/migrations
 types/database.types.ts
 components/ui/**
 components/ai-elements/**
+.claude/skills/**

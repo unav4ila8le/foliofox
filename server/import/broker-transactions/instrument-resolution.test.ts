@@ -352,6 +352,134 @@ describe("broker instrument resolution", () => {
     });
   });
 
+  it("filters non-security quote types out of fuzzy name-search results", async () => {
+    resolveSymbolInputMock.mockResolvedValue(null);
+    searchYahooFinanceSymbolsMock.mockImplementation(
+      async ({ query }: { query: string }) =>
+        query === "US0000000001"
+          ? { success: true, data: [{ id: "ACME.DE", typeDisp: "ETF" }] }
+          : {
+              success: true,
+              data: [
+                { id: "ALI=F", typeDisp: "Futures" },
+                { id: "EURUSD=X", typeDisp: "Currency" },
+              ],
+            },
+    );
+    fetchYahooFinanceSymbolMock.mockResolvedValue({
+      success: true,
+      data: {
+        ticker: "ACME.DE",
+        long_name: "Acme",
+        short_name: "Acme",
+        exchange: "GER",
+        quote_type: "ETF",
+        currency: "EUR",
+      },
+    });
+    createSymbolMock.mockResolvedValue({
+      success: true,
+      data: { id: "symbol-1" },
+    });
+
+    const { resolveBrokerTransactionInstruments } =
+      await import("./instrument-resolution");
+    const result = await resolveBrokerTransactionInstruments({
+      positions: [basePosition],
+      importSource: "trade_republic",
+    });
+
+    // Name-search junk never becomes a candidate, so the single ISIN match
+    // auto-links and the junk tickers are never fetched.
+    expect(result.get(basePosition.positionKey)).toMatchObject({
+      state: "auto_linked",
+      selectedTicker: "ACME.DE",
+    });
+    expect(fetchYahooFinanceSymbolMock).toHaveBeenCalledTimes(1);
+    expect(fetchYahooFinanceSymbolMock).toHaveBeenCalledWith("ACME.DE");
+  });
+
+  it("honors a user-selected ticker when the broker row has no symbol", async () => {
+    const noSymbolPosition: BrokerTransactionPositionDraft = {
+      ...basePosition,
+      positionKey: "trade_republic::acme",
+      brokerSymbol: null,
+    };
+    fetchYahooFinanceSymbolMock.mockResolvedValue({
+      success: true,
+      data: {
+        ticker: "ACME.DE",
+        long_name: "Acme",
+        short_name: "Acme",
+        exchange: "GER",
+        quote_type: "EQUITY",
+        currency: "EUR",
+      },
+    });
+    createSymbolMock.mockResolvedValue({
+      success: true,
+      data: { id: "symbol-1" },
+    });
+
+    const { resolveBrokerTransactionInstruments } =
+      await import("./instrument-resolution");
+    const result = await resolveBrokerTransactionInstruments({
+      positions: [noSymbolPosition],
+      importSource: "trade_republic",
+      selectedSymbolTickers: {
+        [noSymbolPosition.positionKey]: "ACME.DE",
+      },
+    });
+
+    expect(result.get(noSymbolPosition.positionKey)).toMatchObject({
+      state: "auto_linked",
+      symbolId: "symbol-1",
+      selectedTicker: "ACME.DE",
+    });
+    // No broker symbol means there is no ISIN alias to persist.
+    expect(upsertSymbolAliasMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps mutual fund name-search results as candidates", async () => {
+    resolveSymbolInputMock.mockResolvedValue(null);
+    searchYahooFinanceSymbolsMock.mockImplementation(
+      async ({ query }: { query: string }) =>
+        query === "US0000000001"
+          ? { success: true, data: [] }
+          : {
+              success: true,
+              data: [{ id: "FUNDX", typeDisp: "Mutual Fund" }],
+            },
+    );
+    fetchYahooFinanceSymbolMock.mockResolvedValue({
+      success: true,
+      data: {
+        ticker: "FUNDX",
+        long_name: "Fund X",
+        short_name: "Fund X",
+        exchange: "NAS",
+        quote_type: "MUTUALFUND",
+        currency: "EUR",
+      },
+    });
+    createSymbolMock.mockResolvedValue({
+      success: true,
+      data: { id: "symbol-1" },
+    });
+
+    const { resolveBrokerTransactionInstruments } =
+      await import("./instrument-resolution");
+    const result = await resolveBrokerTransactionInstruments({
+      positions: [basePosition],
+      importSource: "trade_republic",
+    });
+
+    expect(result.get(basePosition.positionKey)).toMatchObject({
+      state: "auto_linked",
+      selectedTicker: "FUNDX",
+    });
+  });
+
   it("returns unresolved when no usable candidates are found", async () => {
     resolveSymbolInputMock.mockResolvedValue(null);
     searchYahooFinanceSymbolsMock.mockResolvedValue({

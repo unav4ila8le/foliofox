@@ -1,4 +1,5 @@
-import { parseBrokerTransactionCSVTable } from "./csv";
+import { directaAdapter } from "./adapters/directa";
+import { scalableCapitalAdapter } from "./adapters/scalable-capital";
 import { tradeRepublicAdapter } from "./adapters/trade-republic";
 
 import type {
@@ -8,18 +9,27 @@ import type {
 
 const BROKER_TRANSACTION_ADAPTERS: BrokerTransactionAdapter[] = [
   tradeRepublicAdapter,
+  scalableCapitalAdapter,
+  directaAdapter,
 ];
 
 export function detectBrokerTransactionAdapter(
   csvContent: string,
 ): BrokerTransactionAdapter | null {
-  const parsedTable = parseBrokerTransactionCSVTable(csvContent);
-  if (!parsedTable.success) return null;
-
   return (
-    BROKER_TRANSACTION_ADAPTERS.find((adapter) =>
-      adapter.detect(parsedTable.table.headers),
-    ) ?? null
+    BROKER_TRANSACTION_ADAPTERS.find((adapter) => adapter.detect(csvContent)) ??
+    null
+  );
+}
+
+export function listSupportedBrokerDisplayNames(): string[] {
+  return BROKER_TRANSACTION_ADAPTERS.map((adapter) => adapter.displayName);
+}
+
+export function getBrokerDisplayName(source: string): string | null {
+  return (
+    BROKER_TRANSACTION_ADAPTERS.find((adapter) => adapter.source === source)
+      ?.displayName ?? null
   );
 }
 

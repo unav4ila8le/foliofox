@@ -56,6 +56,8 @@ export interface BrokerTransactionAdapter {
   // Persisted to portfolio_records.import_source for idempotency.
   source: string;
   displayName: string;
-  detect: (headers: string[]) => boolean;
+  // Receives raw file content so each adapter fully owns its detection,
+  // including exports with metadata preamble lines before the header row.
+  detect: (csvContent: string) => boolean;
   parse: (csvContent: string) => Promise<BrokerTransactionImportResult>;
 }

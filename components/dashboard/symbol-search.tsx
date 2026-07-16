@@ -73,6 +73,10 @@ interface SymbolSearchProps {
   onSymbolSelect?: (symbolId: string) => void;
   className?: string;
   popoverWidth?: string;
+  // Shown before the user types, instead of the generic popular symbols.
+  // Used by flows that have context-specific suggestions (e.g. broker import
+  // ISIN candidates).
+  defaultResults?: SymbolSearchResult[];
 }
 
 export function SymbolSearch({
@@ -84,6 +88,7 @@ export function SymbolSearch({
   onSymbolSelect,
   className,
   popoverWidth = "w-(--radix-popover-trigger-width)",
+  defaultResults,
 }: SymbolSearchProps) {
   const [open, setOpen] = useState(false);
   const [results, setResults] = useState<SymbolSearchResult[]>([]);
@@ -91,7 +96,9 @@ export function SymbolSearch({
   const [isLoadingQuote, setIsLoadingQuote] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery] = useDebounce(searchQuery, 300);
-  const displayedResults = debouncedQuery ? results : POPULAR_SYMBOL_RESULTS;
+  const displayedResults = debouncedQuery
+    ? results
+    : (defaultResults ?? POPULAR_SYMBOL_RESULTS);
 
   // Find the selected equity
   const selectedSymbol = displayedResults.find(
@@ -256,7 +263,9 @@ function SymbolList({
         onValueChange={setSearchQuery}
         disabled={isLoadingQuote}
       />
-      <CommandList>
+      {/* Result rows are ~52px; the default max-h-72 clips the 6th row
+          mid-item with no visible scrollbar. 384px fits 7 rows cleanly. */}
+      <CommandList className="max-h-96">
         <CommandEmpty>
           {isLoading ? (
             "Searching..."
@@ -298,18 +307,18 @@ function SymbolList({
               disabled={isLoadingQuote}
               className="flex flex-row justify-between gap-4 [&>svg:last-child]:hidden"
             >
-              <div className="flex flex-col">
-                <span>{symbol.id}</span>
-                <span className="text-muted-foreground text-xs">
+              <div className="flex min-w-0 flex-col">
+                <span className="truncate">{symbol.id}</span>
+                <span className="text-muted-foreground truncate text-xs">
                   {symbol.nameDisp}
                 </span>
               </div>
-              <div className="flex flex-row gap-2">
-                <div className="flex flex-col items-end">
-                  <span className="text-muted-foreground text-xs">
+              <div className="flex shrink-0 flex-row gap-2">
+                <div className="flex flex-col items-end gap-1">
+                  <span className="text-muted-foreground text-xs whitespace-nowrap">
                     {symbol.exchange}
                   </span>
-                  <span className="text-muted-foreground text-xs">
+                  <span className="text-muted-foreground text-xs whitespace-nowrap">
                     {symbol.typeDisp}
                   </span>
                 </div>

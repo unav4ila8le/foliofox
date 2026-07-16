@@ -16,6 +16,7 @@ import {
   importBrokerTransactionsFromCSV,
   previewBrokerImport,
 } from "@/server/import/broker-transactions/import";
+import { listSupportedBrokerDisplayNames } from "@/lib/import/broker-transactions/registry";
 
 import type { BrokerTransactionImportPreview } from "@/server/import/broker-transactions/instrument-resolution";
 
@@ -32,18 +33,32 @@ export function BrokerImportCSVForm() {
     Record<string, string>
   >({});
   const [manualPositionKeys, setManualPositionKeys] = useState<string[]>([]);
+  const [excludedPositionKeys, setExcludedPositionKeys] = useState<string[]>(
+    [],
+  );
 
   const canImport = useMemo(() => {
     if (!preview?.success) return false;
 
     return preview.resolutions.every((resolution) => {
+      if (excludedPositionKeys.includes(resolution.positionKey)) return true;
       if (resolution.state === "auto_linked") return true;
       if (resolution.state === "needs_review") {
         return Boolean(selectedSymbolTickers[resolution.positionKey]);
       }
-      return manualPositionKeys.includes(resolution.positionKey);
+      // Unresolved positions import either with a user-searched symbol or as
+      // a manual position.
+      return (
+        manualPositionKeys.includes(resolution.positionKey) ||
+        Boolean(selectedSymbolTickers[resolution.positionKey])
+      );
     });
-  }, [manualPositionKeys, preview, selectedSymbolTickers]);
+  }, [
+    excludedPositionKeys,
+    manualPositionKeys,
+    preview,
+    selectedSymbolTickers,
+  ]);
 
   const handleFileSelect = useCallback(async (file: File, content: string) => {
     setSelectedFile(file);
@@ -51,6 +66,7 @@ export function BrokerImportCSVForm() {
     setPreview(null);
     setSelectedSymbolTickers({});
     setManualPositionKeys([]);
+    setExcludedPositionKeys([]);
     setIsProcessing(true);
 
     try {
@@ -77,6 +93,7 @@ export function BrokerImportCSVForm() {
       const result = await importBrokerTransactionsFromCSV(csvContent, {
         selectedSymbolTickers,
         manualPositionKeys,
+        excludedPositionKeys,
       });
 
       if (!result.success) {
@@ -103,15 +120,19 @@ export function BrokerImportCSVForm() {
     setPreview(null);
     setSelectedSymbolTickers({});
     setManualPositionKeys([]);
+    setExcludedPositionKeys([]);
   };
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <DialogBody className="space-y-4">
         <div className="text-muted-foreground text-sm">
-          Only{" "}
-          <span className="text-foreground font-medium">Trade Republic</span> is
-          currently supported. Upload its transaction CSV, review the matched
+          <span className="text-foreground font-medium">
+            {new Intl.ListFormat("en").format(
+              listSupportedBrokerDisplayNames(),
+            )}
+          </span>{" "}
+          are currently supported. Upload a transaction CSV, review the matched
           symbols, and Foliofox will create positions, import transactions, and
           skip records already imported.
         </div>
@@ -129,7 +150,7 @@ export function BrokerImportCSVForm() {
           isProcessing={isProcessing}
           onReset={handleReset}
           disabled={isImporting}
-          title="Drop your Trade Republic CSV file here"
+          title="Drop your broker CSV file here"
         />
 
         {preview?.success ? (
@@ -137,6 +158,14 @@ export function BrokerImportCSVForm() {
             preview={preview}
             selectedSymbolTickers={selectedSymbolTickers}
             manualPositionKeys={manualPositionKeys}
+            excludedPositionKeys={excludedPositionKeys}
+            onToggleExcluded={(positionKey) =>
+              setExcludedPositionKeys((current) =>
+                current.includes(positionKey)
+                  ? current.filter((key) => key !== positionKey)
+                  : [...current, positionKey],
+              )
+            }
             onSelectSymbol={(positionKey, ticker) =>
               setSelectedSymbolTickers((current) => ({
                 ...current,

@@ -44,8 +44,9 @@ next-env.d.ts
 # cursor
 .cursor/mcp.json
 
-# claude
-.claude/**
+# claude (local settings stay ignored; project skills are versioned)
+.claude/*
+!.claude/skills
 
 # supabase
 supabase/.temp/
