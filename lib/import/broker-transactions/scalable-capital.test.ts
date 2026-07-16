@@ -97,6 +97,19 @@ describe("Scalable Capital broker transaction adapter", () => {
     ).toEqual(firstIds);
   });
 
+  it("rejects rows that mix trade currencies for one instrument", async () => {
+    const csv = `${SCALABLE_HEADER}
+2026-05-05;World ETF;Buy;LU0000000001;2;11,00;-22,00;0,00;0,00;EUR
+2026-05-04;World ETF;Buy;LU0000000001;1;12,00;-12,00;0,00;0,00;USD`;
+
+    const result = await parseBrokerTransactionsCSV(csv);
+
+    expect(result.success).toBe(false);
+    expect(
+      result.errors?.some((error) => error.includes("mixes trade currencies")),
+    ).toBe(true);
+  });
+
   it("orders same-day trades chronologically in newest-first exports", async () => {
     const csv = `${SCALABLE_HEADER}
 2026-05-05;World ETF;Sell;LU0000000001;2;12,00;24,00;0,00;0,00;EUR

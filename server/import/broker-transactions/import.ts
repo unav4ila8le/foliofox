@@ -155,6 +155,7 @@ export async function importBrokerTransactionsFromCSV(
     importSource: parsed.source,
     matchedPositions,
     positionByNormalizedName,
+    records: parsed.records,
   });
   if (!matchedSourceValidation.success) return matchedSourceValidation;
 
@@ -329,6 +330,7 @@ async function validateMatchedBrokerPositionSources({
   importSource,
   matchedPositions,
   positionByNormalizedName,
+  records,
 }: {
   importSource: string;
   matchedPositions: BrokerTransactionPositionDraft[];
@@ -336,6 +338,7 @@ async function validateMatchedBrokerPositionSources({
     string,
     { id: string; name: string; currency: string }
   >;
+  records: BrokerTransactionRecordDraft[];
 }): Promise<ImportActionResult> {
   const matchedPositionIds = matchedPositions
     .map((position) =>
@@ -389,7 +392,7 @@ async function validateMatchedBrokerPositionSources({
   if (positionsWithoutBrokerRecords.length > 0) {
     const { data: snapshots, error: snapshotsError } = await supabase
       .from("position_snapshots")
-      .select("position_id, quantity, portfolio_record_id")
+      .select("position_id, date, quantity, portfolio_record_id")
       .eq("user_id", user.id)
       .in(
         "position_id",
@@ -403,14 +406,38 @@ async function validateMatchedBrokerPositionSources({
       };
     }
 
-    // A broker-created retry position has only a zero bootstrap snapshot. A
-    // non-zero snapshot with no broker records means manual history already
-    // exists and importing transactions would double-count from that base.
+    const draftByPositionId = new Map<string, BrokerTransactionPositionDraft>();
+    for (const draft of matchedPositions) {
+      const existing = positionByNormalizedName.get(
+        normalizePositionName(draft.name),
+      );
+      if (existing) draftByPositionId.set(existing.id, draft);
+    }
+
+    // A broker-created retry position has only its bootstrap snapshot: zero
+    // for full histories, or the inferred opening balance at the earliest
+    // trade date for date-ranged exports. Any other recordless non-zero
+    // snapshot means manual history already exists and importing transactions
+    // would double-count from that base.
     for (const snapshot of snapshots ?? []) {
-      if (
-        snapshot.portfolio_record_id === null &&
-        Math.abs(snapshot.quantity) > 1e-9
-      ) {
+      if (snapshot.portfolio_record_id !== null) continue;
+      if (Math.abs(snapshot.quantity) < 1e-9) continue;
+
+      const draft = draftByPositionId.get(snapshot.position_id);
+      const inferredOpening = draft
+        ? inferOpeningQuantity(
+            records.filter(
+              (record) => record.positionKey === draft.positionKey,
+            ),
+          )
+        : 0;
+      const isInferredBootstrap =
+        draft &&
+        inferredOpening > 0 &&
+        snapshot.date === draft.earliestTradeDate &&
+        Math.abs(snapshot.quantity - inferredOpening) < 1e-9;
+
+      if (!isInferredBootstrap) {
         unsafePositionIds.add(snapshot.position_id);
       }
     }
@@ -1015,6 +1042,7 @@ export async function previewBrokerImport(
     importSource: parsed.source,
     matchedPositions,
     positionByNormalizedName,
+    records: parsed.records,
   });
   if (!matchedSourceValidation.success) {
     return {

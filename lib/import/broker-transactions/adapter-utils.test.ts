@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { inferOpeningQuantity } from "./adapter-utils";
+import {
+  assignFileOrderExecutedAt,
+  inferOpeningQuantity,
+} from "./adapter-utils";
 
 import type { BrokerTransactionRecordDraft } from "./types";
 
@@ -21,6 +24,21 @@ function record(
     ...overrides,
   };
 }
+
+describe("assignFileOrderExecutedAt", () => {
+  it("treats single-date files as newest-first", () => {
+    // A same-day sell listed above its buy in a newest-first export happened
+    // after the buy; keeping file order would fabricate an opening shortfall.
+    const records = [
+      record({ type: "sell", sourceRowNumber: 2 }),
+      record({ type: "buy", sourceRowNumber: 3 }),
+    ];
+
+    assignFileOrderExecutedAt(records);
+
+    expect(records[0].executedAt! > records[1].executedAt!).toBe(true);
+  });
+});
 
 describe("inferOpeningQuantity", () => {
   it("returns zero for a self-contained buy/sell history", () => {

@@ -73,7 +73,10 @@ export function assignFileOrderExecutedAt(
 ) {
   if (records.length === 0) return;
 
-  const isChronological = records[0].date <= records[records.length - 1].date;
+  // Strictly less: a single-date file cannot reveal its direction, and the
+  // supported brokers export newest-first, so date ties are treated as
+  // newest-first instead of keeping file order.
+  const isChronological = records[0].date < records[records.length - 1].date;
   records.forEach((record, index) => {
     const offsetMs = isChronological ? index : records.length - 1 - index;
     record.executedAt = new Date(

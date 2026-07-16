@@ -17,7 +17,13 @@ const ISIN_PATTERN = /^[A-Z]{2}[A-Z0-9]{9}\d$/;
 const SYMBOL_SEARCH_LIMIT = 5;
 // Broker trades are securities, so fuzzy name-search results outside these
 // quote types (futures, FX, indexes) are noise, not candidates.
-const NAME_SEARCH_QUOTE_TYPES = new Set(["equity", "etf", "fund"]);
+const NAME_SEARCH_QUOTE_TYPES = new Set([
+  "equity",
+  "etf",
+  "fund",
+  "mutual fund",
+  "mutualfund",
+]);
 
 export interface BrokerInstrumentCandidate {
   ticker: string;
@@ -102,15 +108,13 @@ async function resolveBrokerTransactionInstrument(options: {
   persistMatches: boolean;
 }): Promise<BrokerInstrumentResolution> {
   const { position, importSource, selectedTicker, persistMatches } = options;
-  const brokerSymbol = position.brokerSymbol?.trim().toUpperCase();
-  if (!brokerSymbol) {
-    return unresolved(position, "No broker symbol was provided.");
-  }
-
+  const brokerSymbol = position.brokerSymbol?.trim().toUpperCase() ?? "";
   const isIsin = isIsinLike(brokerSymbol);
-  // 1. User review choices win. 2. Broker-scoped ISIN aliases seed candidates.
-  // 3. A single ISIN candidate can auto-link; multiple ISIN listings need
-  // review because Trade Republic transaction currency is settlement currency.
+
+  // 1. User review choices win, including for rows without a broker symbol.
+  // 2. Broker-scoped ISIN aliases seed candidates. 3. A single ISIN candidate
+  // can auto-link; multiple ISIN listings need review because Trade Republic
+  // transaction currency is settlement currency.
   if (selectedTicker?.trim()) {
     return resolveSelectedTicker({
       position,
@@ -120,6 +124,10 @@ async function resolveBrokerTransactionInstrument(options: {
       selectedTicker,
       persistMatches,
     });
+  }
+
+  if (!brokerSymbol) {
+    return unresolved(position, "No broker symbol was provided.");
   }
 
   const aliasType = isIsin ? "isin" : "ticker";

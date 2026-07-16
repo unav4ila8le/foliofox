@@ -181,6 +181,14 @@ export const directaAdapter: BrokerTransactionAdapter = {
       const signedQuantity = type === "sell" ? -quantity : quantity;
 
       if (existingPosition) {
+        // Records carry no per-row currency, so one instrument trading in two
+        // currencies within a file cannot be priced safely.
+        if (existingPosition.currency !== currency) {
+          errors.push(
+            `Row ${rowNumber}: "${name}" mixes trade currencies (${existingPosition.currency} and ${currency}), which is not supported yet`,
+          );
+          continue;
+        }
         existingPosition.endingQuantity = normalizeEndingQuantity(
           existingPosition.endingQuantity + signedQuantity,
         );

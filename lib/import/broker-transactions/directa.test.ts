@@ -127,6 +127,20 @@ describe("Directa broker transaction adapter", () => {
     ).toEqual(idsA);
   });
 
+  it("rejects rows that mix trade currencies for one instrument", async () => {
+    const csv = buildDirectaCSV([
+      "16/01/2026;20/01/2026;Vendita;.ACME;US0000000001;;ACME INC;1;50,00;60,00;USD;X2",
+      "15/01/2026;19/01/2026;Acquisto;ACME;US0000000001;;ACME INC;2;-100,00;0;EUR;X1",
+    ]);
+
+    const result = await parseBrokerTransactionsCSV(csv);
+
+    expect(result.success).toBe(false);
+    expect(
+      result.errors?.some((error) => error.includes("mixes trade currencies")),
+    ).toBe(true);
+  });
+
   it("orders same-day trades chronologically in newest-first exports", async () => {
     const csv = buildDirectaCSV([
       "15/01/2026;19/01/2026;Vendita;VWCE;IE0000000001;;World ETF;2;220,00;0;EUR;X125",
