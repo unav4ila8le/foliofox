@@ -51,7 +51,8 @@ export function BrokerTransactionResults({
       <Alert className="text-green-600">
         <CheckCircle className="size-4" />
         <AlertTitle>
-          {formatBrokerSource(preview.source)} transaction CSV detected
+          {getBrokerDisplayName(preview.source) ?? preview.source} transaction
+          CSV detected
         </AlertTitle>
         <AlertDescription className="text-green-600">
           {preview.positionsToCreate.length} positions,{" "}
@@ -255,15 +256,4 @@ function SymbolReviewRow({
 
 function isIsinLike(value: string) {
   return /^[A-Z]{2}[A-Z0-9]{9}\d$/.test(value.trim().toUpperCase());
-}
-
-function formatBrokerSource(source: string) {
-  return (
-    getBrokerDisplayName(source) ??
-    source
-      .split("_")
-      .filter(Boolean)
-      .map((part) => part[0]?.toUpperCase() + part.slice(1))
-      .join(" ")
-  );
 }
