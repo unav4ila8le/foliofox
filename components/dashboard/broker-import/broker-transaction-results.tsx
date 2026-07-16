@@ -186,9 +186,8 @@ function SymbolReviewRow({
           {brokerIdentifier ? <span> - {brokerIdentifier}</span> : null}
         </div>
         <div className="text-muted-foreground text-xs">
-          Choose the market symbol to link. Suggested listings are shown first;
-          type to search any other symbol. All transactions will be converted to
-          that symbol currency before import.
+          Choose the market symbol to link. All transactions will be converted
+          to that symbol currency before import.
         </div>
       </div>
 
