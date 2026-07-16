@@ -71,8 +71,10 @@ describe("BrokerTransactionResults", () => {
         preview={preview}
         selectedSymbolTickers={{}}
         manualPositionKeys={[]}
+        excludedPositionKeys={[]}
         onSelectSymbol={vi.fn()}
         onToggleManual={vi.fn()}
+        onToggleExcluded={vi.fn()}
       />,
     );
 

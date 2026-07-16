@@ -221,7 +221,7 @@ function SymbolReviewRow({
         <Button
           type="button"
           variant={isExcluded ? "secondary" : "ghost"}
-          size="sm"
+          size="xs"
           onClick={() => onToggleExcluded(resolution.positionKey)}
         >
           {isExcluded ? "Skipped" : "Skip"}

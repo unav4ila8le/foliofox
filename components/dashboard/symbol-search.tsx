@@ -314,7 +314,7 @@ function SymbolList({
                 </span>
               </div>
               <div className="flex shrink-0 flex-row gap-2">
-                <div className="flex flex-col items-end">
+                <div className="flex flex-col items-end gap-1">
                   <span className="text-muted-foreground text-xs whitespace-nowrap">
                     {symbol.exchange}
                   </span>
