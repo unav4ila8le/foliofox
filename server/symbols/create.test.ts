@@ -6,12 +6,14 @@ const {
   fetchCurrenciesMock,
   setPrimarySymbolAliasMock,
   createServiceClientMock,
+  fetchQuotesMock,
 } = vi.hoisted(() => ({
   getCurrentUserMock: vi.fn(),
   fetchYahooFinanceSymbolMock: vi.fn(),
   fetchCurrenciesMock: vi.fn(),
   setPrimarySymbolAliasMock: vi.fn(),
   createServiceClientMock: vi.fn(),
+  fetchQuotesMock: vi.fn(),
 }));
 
 vi.mock("@/server/auth/actions", () => ({
@@ -32,6 +34,10 @@ vi.mock("@/server/symbols/resolve", () => ({
 
 vi.mock("@/supabase/service", () => ({
   createServiceClient: createServiceClientMock,
+}));
+
+vi.mock("@/server/quotes/fetch", () => ({
+  fetchQuotes: fetchQuotesMock,
 }));
 
 function createSupabaseStub() {
@@ -82,8 +88,10 @@ describe("createSymbol", () => {
     fetchCurrenciesMock.mockReset();
     setPrimarySymbolAliasMock.mockReset();
     createServiceClientMock.mockReset();
+    fetchQuotesMock.mockReset();
 
     getCurrentUserMock.mockResolvedValue({ user: { id: "user-1" } });
+    fetchQuotesMock.mockResolvedValue(new Map());
     fetchCurrenciesMock.mockResolvedValue([
       { alphabetic_code: "GBP", name: "Pound Sterling" },
       { alphabetic_code: "KWD", name: "Kuwaiti Dinar" },
@@ -114,6 +122,10 @@ describe("createSymbol", () => {
     const result = await createSymbol("BP.L");
 
     expect(result.success).toBe(true);
+    expect(fetchQuotesMock).toHaveBeenCalledWith(
+      [{ symbolLookup: "symbol-1", date: expect.any(Date) }],
+      { upsert: true },
+    );
     expect(state.upsertRows).toEqual([
       {
         ticker: "BP.L",
@@ -159,5 +171,31 @@ describe("createSymbol", () => {
       quote_currency: "KWF",
       quote_to_currency_rate: 0.001,
     });
+  });
+
+  it("still succeeds when the quote cache warm-up fails", async () => {
+    const { client } = createSupabaseStub();
+    createServiceClientMock.mockReturnValue(client);
+    fetchQuotesMock.mockRejectedValue(new Error("provider down"));
+    fetchYahooFinanceSymbolMock.mockResolvedValue({
+      success: true,
+      data: {
+        ticker: "BP.L",
+        quote_type: "EQUITY",
+        short_name: "BP p.l.c.",
+        long_name: "BP p.l.c.",
+        currency: "GBP",
+        quote_currency: "GBp",
+        quote_to_currency_rate: 0.01,
+        exchange: "LSE",
+        sector: "Energy",
+        industry: "Oil & Gas Integrated",
+      },
+    });
+
+    const { createSymbol } = await import("./create");
+    const result = await createSymbol("BP.L");
+
+    expect(result.success).toBe(true);
   });
 });

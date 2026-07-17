@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/server/auth/actions";
 import { fetchYahooFinanceSymbol } from "@/server/symbols/search";
 import { fetchCurrencies } from "@/server/currencies/fetch";
 import { setPrimarySymbolAlias } from "@/server/symbols/resolve";
+import { fetchQuotes } from "@/server/quotes/fetch";
 import { createServiceClient } from "@/supabase/service";
 
 // Create symbol using Yahoo Finance data
@@ -77,6 +78,21 @@ export async function createSymbol(symbolTicker: string) {
           ? aliasError.message
           : "Failed to sync symbol alias",
     };
+  }
+
+  // 5) Warm the quote cache so the symbol has last_quote_at set immediately.
+  // Without this, the dashboard staleness check (last_quote_at IS NULL) races
+  // the first page-render quote fetch and flags fresh imports as stale.
+  // Best-effort: quote availability must not block symbol creation.
+  try {
+    await fetchQuotes([{ symbolLookup: upsertedSymbol.id, date: new Date() }], {
+      upsert: true,
+    });
+  } catch (quoteError) {
+    console.error(
+      `Failed to warm quote cache for new symbol ${symbolData.ticker}:`,
+      quoteError,
+    );
   }
 
   return { success: true, data: upsertedSymbol };
