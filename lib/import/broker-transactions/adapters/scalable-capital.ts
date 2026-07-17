@@ -1,10 +1,7 @@
 import { formatUTCDateKey, parseUTCDateKey } from "@/lib/date/date-utils";
 import { parseNumberStrict } from "@/lib/import/shared/number-parser";
 
-import {
-  assignFileOrderExecutedAt,
-  createSyntheticTransactionIdFactory,
-} from "../adapter-utils";
+import { assignFileOrderExecutedAt } from "../adapter-utils";
 import { normalizeBrokerHeader, parseBrokerTransactionCSVTable } from "../csv";
 
 import type {
@@ -16,9 +13,16 @@ import type {
 
 const SOURCE = "scalable_capital";
 const DISPLAY_NAME = "Scalable Capital";
+// The genuine Scalable Capital export ships all of these columns; files with
+// columns stripped (e.g. edited in a spreadsheet) are rejected rather than
+// imported with degraded data.
 const REQUIRED_HEADERS = [
   "date",
+  "time",
+  "status",
+  "reference",
   "description",
+  "assettype",
   "type",
   "isin",
   "shares",
@@ -31,6 +35,7 @@ const REQUIRED_HEADERS = [
 // Savings plan executions are scheduled buys of the same instrument.
 const BUY_TYPES = new Set(["buy", "savings plan"]);
 const SELL_TYPES = new Set(["sell"]);
+const TIME_PATTERN = /^\d{2}:\d{2}:\d{2}$/;
 const ZERO_EPSILON = 1e-9;
 
 function normalizeKeyPart(value: string): string {
@@ -97,26 +102,44 @@ export const scalableCapitalAdapter: BrokerTransactionAdapter = {
     const records: BrokerTransactionRecordDraft[] = [];
     const errors: string[] = [];
     const warnings: string[] = [];
-    // Scalable Capital exports have no per-row transaction ID, so IDs are
-    // derived from normalized row content for idempotent re-uploads.
-    const buildTransactionId = createSyntheticTransactionIdFactory();
-    // Every ignored row is a non-trade row for this adapter.
-    let ignoredRowCount = 0;
+    const seenTransactionIds = new Set<string>();
+    let ignoredNonExecutedRowCount = 0;
+    let ignoredNonTradeRowCount = 0;
+    let duplicateTransactionIdCount = 0;
     let importedRowsWithFeesOrTaxes = 0;
 
     for (const row of parsedTable.table.rows) {
-      const rawType = row.get("type").trim().toLowerCase();
+      // Cancelled and pending orders share the trade types but never settled.
+      const status = row.get("status").trim().toLowerCase();
+      if (status !== "executed") {
+        ignoredNonExecutedRowCount++;
+        continue;
+      }
 
       // Scalable Capital exports deposits, withdrawals, dividends, interest,
       // and fees in the same file. V1 imports only position-changing trades.
+      const rawType = row.get("type").trim().toLowerCase();
       if (!BUY_TYPES.has(rawType) && !SELL_TYPES.has(rawType)) {
-        ignoredRowCount++;
+        ignoredNonTradeRowCount++;
         continue;
       }
+
+      const externalTransactionId = row.get("reference").trim();
+      if (!externalTransactionId) {
+        errors.push(`Row ${row.rowNumber}: Missing reference`);
+        continue;
+      }
+
+      if (seenTransactionIds.has(externalTransactionId)) {
+        duplicateTransactionIdCount++;
+        continue;
+      }
+      seenTransactionIds.add(externalTransactionId);
 
       const name = row.get("description").trim();
       const isin = row.get("isin").trim().toUpperCase();
       const dateRaw = row.get("date").trim();
+      const timeRaw = row.get("time").trim();
       const parsedDate = parseUTCDateKey(dateRaw);
       const quantity = Math.abs(parseNumberStrict(row.get("shares")));
       const unitValue = parseNumberStrict(row.get("price"));
@@ -208,22 +231,40 @@ export const scalableCapitalAdapter: BrokerTransactionAdapter = {
         quantity,
         unit_value: unitValue,
         description: null,
-        external_transaction_id: buildTransactionId([
-          normalizedDate,
-          isin,
-          type,
-          quantity,
-          unitValue,
-        ]),
+        external_transaction_id: externalTransactionId,
         sourceRowNumber: row.rowNumber,
+        // Execution time orders same-day trades; the timezone is irrelevant
+        // because it is only compared within one export.
+        executedAt: TIME_PATTERN.test(timeRaw)
+          ? new Date(`${normalizedDate}T${timeRaw}.000Z`).toISOString()
+          : undefined,
       });
     }
 
-    assignFileOrderExecutedAt(records);
+    // Fall back to file-order synthesis when any execution time was missing
+    // or malformed, so same-day ordering stays consistent across all records.
+    if (records.some((record) => !record.executedAt)) {
+      assignFileOrderExecutedAt(records);
+    }
 
-    if (ignoredRowCount > 0) {
+    const ignoredRowCount =
+      ignoredNonExecutedRowCount + ignoredNonTradeRowCount;
+
+    if (ignoredNonExecutedRowCount > 0) {
       warnings.push(
-        `Ignored ${ignoredRowCount} non-trade Scalable Capital row(s). V1 imports only Buy, Sell, and Savings plan rows; deposits, withdrawals, dividends, interest, fees, and taxes are not imported.`,
+        `Ignored ${ignoredNonExecutedRowCount} Scalable Capital row(s) that were not executed (cancelled or pending orders).`,
+      );
+    }
+
+    if (ignoredNonTradeRowCount > 0) {
+      warnings.push(
+        `Ignored ${ignoredNonTradeRowCount} non-trade Scalable Capital row(s). V1 imports only Buy, Sell, and Savings plan rows; deposits, withdrawals, dividends, interest, fees, and taxes are not imported.`,
+      );
+    }
+
+    if (duplicateTransactionIdCount > 0) {
+      warnings.push(
+        `Skipped ${duplicateTransactionIdCount} duplicate reference row(s) in this file.`,
       );
     }
 
@@ -239,7 +280,7 @@ export const scalableCapitalAdapter: BrokerTransactionAdapter = {
       positions: Array.from(positionsByKey.values()),
       records,
       ignoredRowCount,
-      duplicateTransactionIdCount: 0,
+      duplicateTransactionIdCount,
       warnings: warnings.length > 0 ? warnings : undefined,
       errors: errors.length > 0 ? errors : undefined,
     };

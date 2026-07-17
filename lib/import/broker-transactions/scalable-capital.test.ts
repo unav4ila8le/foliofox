@@ -6,21 +6,29 @@ import {
 } from "./registry";
 
 const SCALABLE_HEADER =
-  "date;description;type;isin;shares;price;amount;fee;tax;currency";
+  "date;time;status;reference;description;assetType;type;isin;shares;price;amount;fee;tax;currency";
 
 describe("Scalable Capital broker transaction adapter", () => {
   it("detects Scalable Capital transaction exports by header shape", () => {
     const adapter = detectBrokerTransactionAdapter(`${SCALABLE_HEADER}
-2026-05-05;World ETF;Buy;LU0000000001;2;11,198;-22,396;0,99;0,00;EUR`);
+2026-05-05;08:52:49;Executed;"SCAL1";"World ETF";Security;Buy;LU0000000001;2;11,198;-22,396;0,99;0,00;EUR`);
 
     expect(adapter?.source).toBe("scalable_capital");
   });
 
-  it("normalizes buy, sell, and savings plan rows with EU number formats", async () => {
+  it("rejects exports with stripped columns instead of importing degraded data", () => {
+    const adapter =
+      detectBrokerTransactionAdapter(`date;description;type;isin;shares;price;amount;fee;tax;currency
+2026-05-05;World ETF;Buy;LU0000000001;2;11,198;-22,396;0,99;0,00;EUR`);
+
+    expect(adapter).toBeNull();
+  });
+
+  it("normalizes buy, sell, and savings plan rows with broker references", async () => {
     const csv = `${SCALABLE_HEADER}
-2026-05-13;World ETF;Savings plan;LU0000000001;3,140309;159,22;-499,99999898;0,00;0,00;EUR
-2026-05-05;World ETF;Buy;LU0000000001;2;11,198;-22,396;0,99;0,00;EUR
-2026-05-04;Oil ETC;Sell;JE0000000001;1;77,995;77,995;0,99;0,00;EUR`;
+2026-05-13;12:56:05;Executed;"SCAL1";"World ETF";Security;Savings plan;LU0000000001;3,140309;159,22;-499,99999898;0,00;0,00;EUR
+2026-05-05;08:52:49;Executed;"SCAL2";"World ETF";Security;Buy;LU0000000001;2;11,198;-22,396;0,99;0,00;EUR
+2026-05-04;08:17:14;Executed;"SCAL3";"Oil ETC";Security;Sell;JE0000000001;1;77,995;77,995;0,99;0,00;EUR`;
 
     const result = await parseBrokerTransactionsCSV(csv);
 
@@ -42,18 +50,22 @@ describe("Scalable Capital broker transaction adapter", () => {
         date: "2026-05-13",
         quantity: 3.140309,
         unit_value: 159.22,
+        external_transaction_id: "SCAL1",
+        executedAt: "2026-05-13T12:56:05.000Z",
       }),
       expect.objectContaining({
         type: "buy",
         date: "2026-05-05",
         quantity: 2,
         unit_value: 11.198,
+        external_transaction_id: "SCAL2",
       }),
       expect.objectContaining({
         type: "sell",
         date: "2026-05-04",
         quantity: 1,
         unit_value: 77.995,
+        external_transaction_id: "SCAL3",
       }),
     ]);
     expect(
@@ -63,8 +75,8 @@ describe("Scalable Capital broker transaction adapter", () => {
 
   it("ignores deposits and other non-trade rows with a warning", async () => {
     const csv = `${SCALABLE_HEADER}
-2026-05-11;Savings plan deposit;Deposit;;;;500,00;0,00;;EUR
-2026-05-05;World ETF;Buy;LU0000000001;2;11,198;-22,396;0,00;0,00;EUR`;
+2026-05-11;02:00:00;Executed;"CASH1";"Piano di accumulo";Cash;Deposit;;;;500,00;0,00;;EUR
+2026-05-05;08:52:49;Executed;"SCAL1";"World ETF";Security;Buy;LU0000000001;2;11,198;-22,396;0,00;0,00;EUR`;
 
     const result = await parseBrokerTransactionsCSV(csv);
 
@@ -76,31 +88,42 @@ describe("Scalable Capital broker transaction adapter", () => {
     ).toBe(true);
   });
 
-  it("builds deterministic synthetic transaction IDs across re-uploads", async () => {
+  it("ignores cancelled and pending orders with a warning", async () => {
     const csv = `${SCALABLE_HEADER}
-2026-05-05;World ETF;Buy;LU0000000001;2;11,198;-22,396;0,00;0,00;EUR
-2026-05-05;World ETF;Buy;LU0000000001;2;11,198;-22,396;0,00;0,00;EUR`;
+2026-04-30;08:25:32;Executed;"SCAL1";"Oil ETC";Security;Buy;JE0000000001;1;83,80;-83,80;0,99;0,00;EUR
+2026-04-30;08:24:25;Cancelled;"SCAL2";"Oil ETC";Security;Buy;JE0000000001;0;0,00;0,00;0,00;0,00;EUR
+2026-04-30;08:20:00;Open;"SCAL3";"Oil ETC";Security;Buy;JE0000000001;1;83,00;-83,00;0,99;0,00;EUR`;
 
-    const first = await parseBrokerTransactionsCSV(csv);
-    const second = await parseBrokerTransactionsCSV(csv);
+    const result = await parseBrokerTransactionsCSV(csv);
 
-    const firstIds = first.records.map(
-      (record) => record.external_transaction_id,
-    );
-    // Identical fills stay distinct via the occurrence suffix, while the same
-    // file parsed again produces the same IDs so re-uploads skip them.
-    expect(new Set(firstIds).size).toBe(2);
-    expect(firstIds[0]).toBe("2026-05-05|LU0000000001|buy|2|11.198#1");
-    expect(firstIds[1]).toBe("2026-05-05|LU0000000001|buy|2|11.198#2");
+    expect(result.success).toBe(true);
+    expect(result.records).toHaveLength(1);
+    expect(result.ignoredRowCount).toBe(2);
     expect(
-      second.records.map((record) => record.external_transaction_id),
-    ).toEqual(firstIds);
+      result.warnings?.some((warning) => warning.includes("not executed")),
+    ).toBe(true);
+  });
+
+  it("skips duplicate references and errors on missing ones", async () => {
+    const csv = `${SCALABLE_HEADER}
+2026-05-05;08:52:49;Executed;"SCAL1";"World ETF";Security;Buy;LU0000000001;2;11,198;-22,396;0,00;0,00;EUR
+2026-05-05;08:52:49;Executed;"SCAL1";"World ETF";Security;Buy;LU0000000001;2;11,198;-22,396;0,00;0,00;EUR
+2026-05-04;08:00:00;Executed;;"World ETF";Security;Buy;LU0000000001;1;11,00;-11,00;0,00;0,00;EUR`;
+
+    const result = await parseBrokerTransactionsCSV(csv);
+
+    expect(result.success).toBe(false);
+    expect(result.records).toHaveLength(1);
+    expect(result.duplicateTransactionIdCount).toBe(1);
+    expect(
+      result.errors?.some((error) => error.includes("Missing reference")),
+    ).toBe(true);
   });
 
   it("rejects rows that mix trade currencies for one instrument", async () => {
     const csv = `${SCALABLE_HEADER}
-2026-05-05;World ETF;Buy;LU0000000001;2;11,00;-22,00;0,00;0,00;EUR
-2026-05-04;World ETF;Buy;LU0000000001;1;12,00;-12,00;0,00;0,00;USD`;
+2026-05-05;08:52:49;Executed;"SCAL1";"World ETF";Security;Buy;LU0000000001;2;11,00;-22,00;0,00;0,00;EUR
+2026-05-04;08:00:00;Executed;"SCAL2";"World ETF";Security;Buy;LU0000000001;1;12,00;-12,00;0,00;0,00;USD`;
 
     const result = await parseBrokerTransactionsCSV(csv);
 
@@ -110,18 +133,17 @@ describe("Scalable Capital broker transaction adapter", () => {
     ).toBe(true);
   });
 
-  it("orders same-day trades chronologically in newest-first exports", async () => {
+  it("orders same-day trades by execution time", async () => {
+    // File is newest-first, but the buy at 08:51 happened before the sell at
+    // 09:10 on the same day.
     const csv = `${SCALABLE_HEADER}
-2026-05-05;World ETF;Sell;LU0000000001;2;12,00;24,00;0,00;0,00;EUR
-2026-05-05;World ETF;Buy;LU0000000001;2;11,198;-22,396;0,00;0,00;EUR
-2026-05-04;World ETF;Buy;LU0000000001;1;11,00;-11,00;0,00;0,00;EUR`;
+2026-05-05;09:10:00;Executed;"SCAL1";"World ETF";Security;Sell;LU0000000001;2;12,00;24,00;0,00;0,00;EUR
+2026-05-05;08:51:31;Executed;"SCAL2";"World ETF";Security;Buy;LU0000000001;2;11,198;-22,396;0,00;0,00;EUR`;
 
     const result = await parseBrokerTransactionsCSV(csv);
-    const [sell, buy] = result.records.filter(
-      (record) => record.date === "2026-05-05",
-    );
 
-    // The sell appears first in the file but happened after the buy.
+    expect(result.success).toBe(true);
+    const [sell, buy] = result.records;
     expect(sell.executedAt! > buy.executedAt!).toBe(true);
   });
 });
