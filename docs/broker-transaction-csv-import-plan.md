@@ -130,7 +130,7 @@ Keep Foliofox’s model unchanged: positions are holdings, records are transacti
 ## Supported Adapters
 
 - `trade_republic`: English transaction export; broker-provided `transaction_id`.
-- `scalable_capital`: semicolon CSV (`date;description;type;isin;shares;price;amount;fee;tax;currency`), EU decimals; `Buy`/`Sell`/`Savings plan` rows import, cash rows ignored. No per-row ID, so external transaction IDs are synthesized from normalized row content plus an occurrence suffix for identical rows.
+- `scalable_capital`: semicolon CSV with the full genuine column set (`date;time;status;reference;description;assetType;type;isin;shares;price;amount;fee;tax;currency`), EU decimals; files with stripped columns are rejected. `Buy`/`Sell`/`Savings plan` rows with status `Executed` import; cash rows and cancelled/pending orders are ignored. The broker `reference` is the external transaction ID, and `time` orders same-day trades.
 - `directa`: Italian "Movimenti" export with metadata preamble before the header row; `Acquisto`/`Vendita` import, `Commissioni` ignored. Unit price is derived from amount ÷ quantity (`Importo Divisa` for non-EUR trades). `Riferimento ordine` is per-order and Excel-mangled in the wild, so IDs are synthesized the same way as Scalable Capital.
 - Adapters own their detection (`detect(csvContent)`) and stay self-contained by design: a broker changing its export format is patched in that adapter file and its test only.
 
