@@ -16,12 +16,37 @@ describe("Scalable Capital broker transaction adapter", () => {
     expect(adapter?.source).toBe("scalable_capital");
   });
 
-  it("rejects exports with stripped columns instead of importing degraded data", () => {
-    const adapter =
-      detectBrokerTransactionAdapter(`date;description;type;isin;shares;price;amount;fee;tax;currency
-2026-05-05;World ETF;Buy;LU0000000001;2;11,198;-22,396;0,99;0,00;EUR`);
+  it("detects stripped exports but rejects them with an actionable error", async () => {
+    // Detection must still match column-stripped files so other import flows
+    // can route them away from the positions importer; parsing rejects them.
+    const csv = `date;description;type;isin;shares;price;amount;fee;tax;currency
+2026-05-05;World ETF;Buy;LU0000000001;2;11,198;-22,396;0,99;0,00;EUR`;
 
-    expect(adapter).toBeNull();
+    expect(detectBrokerTransactionAdapter(csv)?.source).toBe(
+      "scalable_capital",
+    );
+
+    const result = await parseBrokerTransactionsCSV(csv);
+    expect(result.success).toBe(false);
+    expect(
+      result.errors?.some((error) => error.includes("edited after export")),
+    ).toBe(true);
+  });
+
+  it("falls back to file-order ordering when a time is out of range", async () => {
+    // "99:99:99" matches the shape regex but builds an Invalid Date; it must
+    // not crash the parse.
+    const csv = `${SCALABLE_HEADER}
+2026-05-05;99:99:99;Executed;"SCAL1";"World ETF";Security;Sell;LU0000000001;1;12,00;12,00;0,00;0,00;EUR
+2026-05-05;08:51:31;Executed;"SCAL2";"World ETF";Security;Buy;LU0000000001;2;11,198;-22,396;0,00;0,00;EUR`;
+
+    const result = await parseBrokerTransactionsCSV(csv);
+
+    expect(result.success).toBe(true);
+    expect(result.records).toHaveLength(2);
+    const [sell, buy] = result.records;
+    // Newest-first file-order synthesis still orders the sell after the buy.
+    expect(sell.executedAt! > buy.executedAt!).toBe(true);
   });
 
   it("normalizes buy, sell, and savings plan rows with broker references", async () => {

@@ -13,16 +13,15 @@ import type {
 
 const SOURCE = "scalable_capital";
 const DISPLAY_NAME = "Scalable Capital";
-// The genuine Scalable Capital export ships all of these columns; files with
-// columns stripped (e.g. edited in a spreadsheet) are rejected rather than
-// imported with degraded data.
-const REQUIRED_HEADERS = [
+// Detection matches the core columns so that even column-stripped files
+// (e.g. edited in a spreadsheet) are still recognized as Scalable exports —
+// other import flows rely on detection to route broker CSVs away from the
+// positions importer. Parsing then requires the genuine full column set and
+// rejects stripped files with an actionable error instead of importing
+// degraded data.
+const CORE_HEADERS = [
   "date",
-  "time",
-  "status",
-  "reference",
   "description",
-  "assettype",
   "type",
   "isin",
   "shares",
@@ -31,6 +30,13 @@ const REQUIRED_HEADERS = [
   "fee",
   "tax",
   "currency",
+];
+const FULL_EXPORT_HEADERS = [
+  ...CORE_HEADERS,
+  "time",
+  "status",
+  "reference",
+  "assettype",
 ];
 // Savings plan executions are scheduled buys of the same instrument.
 const BUY_TYPES = new Set(["buy", "savings plan"]);
@@ -55,16 +61,26 @@ function hasNonZeroAmount(rawValue: string): boolean {
   return Number.isFinite(parsed) && parsed !== 0;
 }
 
-function hasRequiredScalableCapitalHeaders(headers: string[]): boolean {
+// Execution time orders same-day trades; the timezone is irrelevant because
+// it is only compared within one export. The shape regex alone is not enough:
+// out-of-range values like "99:99:99" build an Invalid Date whose
+// toISOString() throws, so those fall back to file-order synthesis instead.
+function parseExecutedAt(dateKey: string, timeRaw: string): string | undefined {
+  if (!TIME_PATTERN.test(timeRaw)) return undefined;
+
+  const executed = new Date(`${dateKey}T${timeRaw}.000Z`);
+  return Number.isNaN(executed.getTime()) ? undefined : executed.toISOString();
+}
+
+function hasHeaders(headers: string[], requiredHeaders: string[]): boolean {
   const normalizedHeaders = new Set(headers.map(normalizeBrokerHeader));
-  return REQUIRED_HEADERS.every((header) => normalizedHeaders.has(header));
+  return requiredHeaders.every((header) => normalizedHeaders.has(header));
 }
 
 function detectScalableCapitalCSV(csvContent: string): boolean {
   const parsedTable = parseBrokerTransactionCSVTable(csvContent);
   return (
-    parsedTable.success &&
-    hasRequiredScalableCapitalHeaders(parsedTable.table.headers)
+    parsedTable.success && hasHeaders(parsedTable.table.headers, CORE_HEADERS)
   );
 }
 
@@ -86,7 +102,7 @@ export const scalableCapitalAdapter: BrokerTransactionAdapter = {
       };
     }
 
-    if (!hasRequiredScalableCapitalHeaders(parsedTable.table.headers)) {
+    if (!hasHeaders(parsedTable.table.headers, CORE_HEADERS)) {
       return {
         success: false,
         source: SOURCE,
@@ -95,6 +111,20 @@ export const scalableCapitalAdapter: BrokerTransactionAdapter = {
         ignoredRowCount: 0,
         duplicateTransactionIdCount: 0,
         errors: ["CSV file does not match the Scalable Capital export format"],
+      };
+    }
+
+    if (!hasHeaders(parsedTable.table.headers, FULL_EXPORT_HEADERS)) {
+      return {
+        success: false,
+        source: SOURCE,
+        positions: [],
+        records: [],
+        ignoredRowCount: 0,
+        duplicateTransactionIdCount: 0,
+        errors: [
+          "This Scalable Capital CSV is missing the time, status, reference, or assetType columns, so it looks like it was edited after export. Download a fresh transaction CSV from Scalable Capital and upload it unmodified.",
+        ],
       };
     }
 
@@ -233,11 +263,7 @@ export const scalableCapitalAdapter: BrokerTransactionAdapter = {
         description: null,
         external_transaction_id: externalTransactionId,
         sourceRowNumber: row.rowNumber,
-        // Execution time orders same-day trades; the timezone is irrelevant
-        // because it is only compared within one export.
-        executedAt: TIME_PATTERN.test(timeRaw)
-          ? new Date(`${normalizedDate}T${timeRaw}.000Z`).toISOString()
-          : undefined,
+        executedAt: parseExecutedAt(normalizedDate, timeRaw),
       });
     }
 
