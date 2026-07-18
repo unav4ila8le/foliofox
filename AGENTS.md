@@ -15,6 +15,7 @@
 - Keep data access in `server/` with `"use server"` and the correct Supabase client.
 - Favor explicit, typed, functional code over clever abstractions.
 - Optimize for cache/batching; avoid N+1 database calls.
+- When changing user-facing behavior (import formats/adapters, position or record forms and semantics, categories, enums, major features), update `content/product-reference.md` in the same PR — the AI advisor answers product questions from it. The source-file list lives in its header comment.
 
 ## Planning & Execution Guardrails
 

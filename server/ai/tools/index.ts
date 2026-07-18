@@ -21,6 +21,7 @@ import {
 } from "./historical-quotes";
 import { searchSymbols } from "./search-symbols";
 import { getNews } from "./news";
+import { getProductReference } from "./product-reference";
 
 // Financial scenarios
 import { getFinancialScenarios } from "./financial-scenarios";
@@ -420,5 +421,13 @@ export const aiTools = {
         ),
     }),
     execute: async (args) => getFinancialScenarios(args),
+  }),
+
+  getProductReference: routedTool({
+    telemetryRoutes: ["general"],
+    description:
+      "Get the Foliofox product reference explaining how the app itself works: CSV import formats and columns, supported broker files (Trade Republic, Scalable Capital, Directa), adding assets, field meanings (quantity, unit value, cost basis per unit, capital gains tax rate), buy/sell/update records, categories, currencies, and sharing. Call this before answering any question about using Foliofox.",
+    inputSchema: z.object({}),
+    execute: async () => getProductReference(),
   }),
 };
