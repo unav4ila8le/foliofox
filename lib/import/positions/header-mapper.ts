@@ -43,7 +43,6 @@ const POSITION_HEADER_ALIASES: Record<PositionCanonicalHeader, string[]> = {
     "instrument",
     "instrument name",
     "holding",
-    "description",
     "position",
     "position name",
   ],

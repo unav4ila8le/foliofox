@@ -89,7 +89,7 @@ Canonical columns:
 | `capital_gains_tax_rate` | no                  | Decimal `0–1` (e.g. `0.26`) or whole percentage `>1–100` (e.g. `26`). Values `≤ 1` are read as decimals, so a 1% rate must be entered as `0.01` (not `1`, which means 100%) |
 | `symbol_lookup`          | no                  | Ticker or ISIN; enables automatic pricing                                                                                                                                   |
 | `category_id`            | no                  | Defaults to `other` if missing or unrecognized                                                                                                                              |
-| `description`            | no                  | Optional note. Title this column `notes` — a column literally named `description` is currently read as the position name                                                    |
+| `description`            | no                  | Free-form note (also accepts a `notes` column)                                                                                                                              |
 
 Categories: `cash`, `equity`, `fixed_income`, `real_estate`, `cryptocurrency`, `commodities`, `domain`, `other`. Everyday terms are mapped automatically ("stocks"/"ETF" → equity, "bonds" → fixed_income, "REIT" → real_estate, "bitcoin" → cryptocurrency, "gold" → commodities); anything unrecognized falls back to `other`.
 
@@ -102,7 +102,7 @@ Import behaviors worth knowing:
 Example rows:
 
 ```csv
-name,category_id,currency,quantity,unit_value,cost_basis_per_unit,capital_gains_tax_rate,symbol_lookup,notes
+name,category_id,currency,quantity,unit_value,cost_basis_per_unit,capital_gains_tax_rate,symbol_lookup,description
 Emergency Fund,cash,USD,5000.0,1,,,,High-yield savings account
 Apple Inc,equity,USD,10.0,,98.50,26,AAPL,
 Hong Kong Apartment,real_estate,HKD,1.0,8200000,7800000,,,Residential property
