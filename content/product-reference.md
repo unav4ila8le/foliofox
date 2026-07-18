@@ -31,7 +31,7 @@ The AI advisor has three modes: **Educational** (explains concepts), **Advisory*
 
 ## Core data model
 
-- **Positions** — everything you own (assets) or owe (future liabilities). Each position has a name, category, currency, and either a linked market symbol (auto-priced) or manual values. Assets live under Dashboard → Assets; liabilities under Dashboard → Liabilities.
+- **Positions** — the things you hold. Each position has a name, category, currency, and either a linked market symbol (auto-priced) or manual values. Positions are managed under Dashboard → Assets.
 - **Portfolio records** — dated events on a position, one of three types: `buy`, `sell`, or `update`. Records are the position's history.
 - **Position snapshots** — daily valuations derived from records and market prices. When you add or edit a record, snapshots recalculate from that date forward until the next `update` record.
 
@@ -79,30 +79,30 @@ Import positions from Dashboard → Assets. Accepts CSV/TSV (and spreadsheet exp
 
 Canonical columns:
 
-| Column                   | Required            | Notes                                                                    |
-| ------------------------ | ------------------- | ------------------------------------------------------------------------ |
-| `name`                   | **yes**             | Position name                                                            |
-| `currency`               | **yes**             | 3-letter ISO 4217 code                                                   |
-| `quantity`               | **yes**             | ≥ 0                                                                      |
-| `unit_value`             | only when no symbol | Required if `symbol_lookup` is empty; fetched from market data otherwise |
-| `cost_basis_per_unit`    | no                  | Purchase price per unit                                                  |
-| `capital_gains_tax_rate` | no                  | Accepts decimal (0–1, e.g. `0.26`) or percentage (1–100, e.g. `26`)      |
-| `symbol_lookup`          | no                  | Ticker or ISIN; enables automatic pricing                                |
-| `category_id`            | no                  | Defaults to `other` if missing or unrecognized                           |
-| `description`            | no                  | Free-form note                                                           |
+| Column                   | Required            | Notes                                                                                                                                                                       |
+| ------------------------ | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`                   | **yes**             | Position name                                                                                                                                                               |
+| `currency`               | **yes**             | 3-letter ISO 4217 code                                                                                                                                                      |
+| `quantity`               | **yes**             | ≥ 0                                                                                                                                                                         |
+| `unit_value`             | only when no symbol | Required if `symbol_lookup` is empty; fetched from market data otherwise                                                                                                    |
+| `cost_basis_per_unit`    | no                  | Purchase price per unit                                                                                                                                                     |
+| `capital_gains_tax_rate` | no                  | Decimal `0–1` (e.g. `0.26`) or whole percentage `>1–100` (e.g. `26`). Values `≤ 1` are read as decimals, so a 1% rate must be entered as `0.01` (not `1`, which means 100%) |
+| `symbol_lookup`          | no                  | Ticker or ISIN; enables automatic pricing                                                                                                                                   |
+| `category_id`            | no                  | Defaults to `other` if missing or unrecognized                                                                                                                              |
+| `description`            | no                  | Optional note. Title this column `notes` — a column literally named `description` is currently read as the position name                                                    |
 
 Categories: `cash`, `equity`, `fixed_income`, `real_estate`, `cryptocurrency`, `commodities`, `domain`, `other`. Everyday terms are mapped automatically ("stocks"/"ETF" → equity, "bonds" → fixed_income, "REIT" → real_estate, "bitcoin" → cryptocurrency, "gold" → commodities); anything unrecognized falls back to `other`.
 
 Import behaviors worth knowing:
 
-- Plain crypto codes are normalized to Yahoo format with USD ("BTC" → "BTC-USD") and the currency is set to USD.
+- For rows in the `cryptocurrency` category, a plain coin code is normalized to Yahoo format with USD ("BTC" → "BTC-USD") and the currency is set to USD. Outside that category this does not happen — for a bare coin symbol without a crypto category, use the full pair (e.g. `BTC-USD`) yourself, since a symbol with no category is otherwise treated as equity.
 - If a symbol's listing currency differs from the CSV's currency, the import adjusts to the symbol's currency (or reports an error asking you to fix the row).
 - Prices quoted in pence/fils (GBX/GBp) are converted to the ISO currency (GBP) automatically.
 
 Example rows:
 
 ```csv
-name,category_id,currency,quantity,unit_value,cost_basis_per_unit,capital_gains_tax_rate,symbol_lookup,description
+name,category_id,currency,quantity,unit_value,cost_basis_per_unit,capital_gains_tax_rate,symbol_lookup,notes
 Emergency Fund,cash,USD,5000.0,1,,,,High-yield savings account
 Apple Inc,equity,USD,10.0,,98.50,26,AAPL,
 Hong Kong Apartment,real_estate,HKD,1.0,8200000,7800000,,,Residential property
