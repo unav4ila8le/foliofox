@@ -140,6 +140,18 @@ Line 2"`;
     expect(result.positions[0].description).toBe("Line 1\nLine 2");
   });
 
+  it("maps a column literally named description to description, not name", async () => {
+    const csv = `name,quantity,currency,unit_value,description
+Apple Inc,10,USD,120,High-yield note`;
+
+    const result = await parsePositionsCSV(csv);
+
+    expect(result.success).toBe(true);
+    expect(result.positions).toHaveLength(1);
+    expect(result.positions[0].name).toBe("Apple Inc");
+    expect(result.positions[0].description).toBe("High-yield note");
+  });
+
   it("should return supported currencies in result", async () => {
     const csv = `name,quantity,currency
 Apple Inc,10,USD
