@@ -191,9 +191,15 @@ Objective: transform frequent goal/probability/rebalance questions into actionab
 
 ---
 
-## Phase 4: Controlled Portfolio Writes (Approval-Gated Tools)
+## Phase 4: Controlled Portfolio Writes (Approval-Gated Tools) — SHIPPED
 
 Objective: let users update portfolio data directly from chat with explicit approval and strong safety checks.
+
+> **Design note (v2):** the original draft/commit 4-tool protocol below was designed
+> against AI SDK 5, before native tool approvals existed. The shipped implementation
+> uses AI SDK v7 `toolApproval: 'user-approval'` on `streamText`: the SDK approval
+> round-trip **is** the draft → summary → approve → execute flow, so each write needs
+> exactly one tool.
 
 ### Why This Phase
 
@@ -201,53 +207,55 @@ Objective: let users update portfolio data directly from chat with explicit appr
 - Current advisor is mostly read/analyze oriented; this phase closes the loop from advice to execution inside Foliofox.
 - UI already includes tool states for approval/denial, so we can build on an aligned interaction model.
 
-### Workstream A: Write Tool Surface (Records First)
+### Workstream A: Write Tool Surface — DONE
 
-- Add approval-gated tools for portfolio records:
-  - `draftCreatePortfolioRecord`
-  - `commitCreatePortfolioRecord`
-  - `draftUpdatePortfolioRecord`
-  - `commitUpdatePortfolioRecord`
-- Start with records (`buy`, `sell`, `update`) before direct position mutations to reduce blast radius.
-- Keep inputs explicit and typed: `position_id`, `type`, `date`, `quantity`, `unit_value`, optional `description`.
+- `createPortfolioRecord` (buy/sell/update on existing positions) and `createPosition`
+  (new asset/liability), thin wrappers over the shared form/import mutations
+  (`server/portfolio-records/create.ts`, `server/positions/create.ts`).
+- Companion read tool `getPositionCategories` so the model picks valid category ids.
+- Explicit typed inputs including a mandatory `summary` string rendered on the approval card.
+- Deletes/archives, record edits, and imports stay out of scope (dashboard only).
 
-### Workstream B: Draft -> Confirm -> Commit Protocol
+### Workstream B: Approval Flow — DONE (SDK-native)
 
-- Enforce a two-step flow:
-  1. Draft tool resolves symbol/position and validates missing fields.
-  2. Assistant asks only for unresolved required values (price/date/fees/description).
-  3. Commit tool executes only after explicit user approval.
-- Assistant must present a clear "execution summary" before commit:
-  - target position
-  - action type
-  - quantity and unit value
-  - effective date
-  - resulting quantity delta preview (if applicable)
+- `toolApproval: { createPortfolioRecord: 'user-approval', createPosition: 'user-approval' }`
+  in the chat route; the model's tool call pauses the turn with an approval request.
+- AI Elements `Confirmation` card shows the summary with Approve/Deny;
+  `addToolApprovalResponse` + `sendAutomaticallyWhen` resume the turn, which continues
+  into the same assistant message (persistence upserts, telemetry dedupes).
+- Composer is blocked while an approval is pending (an unanswered request would leave a
+  dangling tool call).
 
-### Workstream C: Safety, Permissions, and Auditability
+### Workstream C: Safety, Permissions, and Auditability — DONE (lean)
 
-- Approval is mandatory for all mutating tools (deny by default).
-- Add idempotency protection to prevent duplicate writes on retries/regenerations.
-- Persist audit metadata for each write:
-  - `approved_by_user` boolean
-  - `approved_at`
-  - `tool_call_id` / `conversation_id`
-  - `before_snapshot` and `after_snapshot` summary
-- Add strict server-side ownership checks (`user_id`) and schema validation.
-- Return user-friendly conflict errors (archived position, invalid date, currency mismatch, etc.).
+- Approval mandatory for all mutating tools; denial produces an `execution-denied` tool
+  result and the system prompt forbids retrying denied writes.
+- `TOOL_APPROVAL_SECRET` HMAC-signs approval requests (binds tool name + call id +
+  input); forged/tampered approvals are rejected fail-closed.
+- Server-side re-validation on the approval round-trip: signature, input schema, and
+  approval policy are all re-checked before execution.
+- Ownership via user-scoped Supabase client + RLS; all form validations (timeline,
+  oversell, duplicate name, currency FK) apply unchanged and return friendly errors.
+- Audit trail: conversation persistence stores every tool call with inputs, approval
+  state, and outputs; telemetry logs `write` route and `committed` outcome per turn.
+  (Dedicated audit table skipped — revisit if compliance needs arise.)
+- Known caveat: regenerating a turn whose write already committed can make the model
+  propose the same write again as a fresh approval. The user gate protects against
+  silent duplicates; DB-level idempotency would need a migration if this bites.
 
-### Workstream D: UX Details
+### Workstream D: UX Details — DONE
 
-- Approval card should show concise diff-style preview ("what will change").
-- After commit, assistant responds with a short confirmation and next best action.
-- Add "undo guidance" message when reversible via a counter-record.
+- Approval card shows a one-line plain-language summary of exactly what will change.
+- After commit, the advisor confirms briefly; the dashboard auto-refreshes
+  (`router.refresh()`) after a successful write.
+- Undo guidance: not implemented; counter-record advice is left to the model.
 
 ### Exit Criteria
 
 - > =90% of approved write intents complete without manual fallback.
 - <1% duplicate-write incidents.
 - Median write flow completion <=2 assistant turns after user intent.
-- Clear audit trail available for 100% of AI-triggered mutations.
+- AI-triggered mutations traceable via persisted tool calls + `committed` telemetry.
 
 ---
 

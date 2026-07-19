@@ -10,6 +10,7 @@ export function ChatThread({
   copiedMessages,
   onCopy,
   onRegenerate,
+  onApprovalResponse,
 }: ChatThreadProps) {
   return (
     <>
@@ -23,6 +24,7 @@ export function ChatThread({
           isCopied={copiedMessages.has(message.id)}
           onCopy={onCopy}
           onRegenerate={onRegenerate}
+          onApprovalResponse={onApprovalResponse}
         />
       ))}
       {status === "submitted" && <MessageLoading />}

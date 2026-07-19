@@ -26,6 +26,11 @@ import { getProductReference } from "./product-reference";
 // Financial scenarios
 import { getFinancialScenarios } from "./financial-scenarios";
 
+// Portfolio writes (approval-gated)
+import { createPortfolioRecord } from "./create-portfolio-record";
+import { createPosition } from "./create-position";
+import { getPositionCategories } from "./position-categories";
+
 export const aiTools = {
   getPortfolioOverview: routedTool({
     telemetryRoutes: ["general"],
@@ -429,5 +434,133 @@ export const aiTools = {
       "Get the Foliofox product reference explaining how the app itself works: CSV import formats and columns, supported broker files (Trade Republic, Scalable Capital, Directa), adding assets, field meanings (quantity, unit value, cost basis per unit, capital gains tax rate), buy/sell/update records, categories, currencies, and sharing. Call this before answering any question about using Foliofox.",
     inputSchema: z.object({}),
     execute: async () => getProductReference(),
+  }),
+
+  getPositionCategories: routedTool({
+    telemetryRoutes: ["general"],
+    description:
+      "List valid position categories: Foliofox system categories plus the user's custom categories. Call this before createPosition to pick a real category id, unless the category is clearly 'other'. Returns: id, name, source (system|custom), category_id, user_category_id, position_type.",
+    inputSchema: z.object({
+      positionType: z
+        .enum(["asset", "liability"])
+        .nullable()
+        .describe("Filter by position type. Leave empty for 'asset'."),
+    }),
+    execute: async (args) => getPositionCategories(args),
+  }),
+
+  createPortfolioRecord: routedTool({
+    telemetryRoutes: ["write"],
+    description:
+      "Create a portfolio record (buy, sell, or update) for an EXISTING position. This modifies the user's portfolio and always requires the user's explicit approval in the chat UI before executing. Use real data gathered from read tools; never invent quantities, prices, or dates. Returns { success } or { success: false, code, message }.",
+    inputSchema: z.object({
+      summary: z
+        .string()
+        .describe(
+          "One-line human-readable description of the action, shown on the user's approval card. Example: 'Buy 20 × AAPL @ 211.50 USD on 2026-07-18'.",
+        ),
+      positionId: z
+        .string()
+        .describe(
+          "Position UUID from getPortfolioOverview or getPositions (positions[].id).",
+        ),
+      type: z
+        .enum(["buy", "sell", "update"])
+        .describe(
+          "'buy' adds quantity, 'sell' removes quantity, 'update' resets quantity and unit value at a date.",
+        ),
+      date: z.string().describe("Record date in YYYY-MM-DD format."),
+      quantity: z
+        .number()
+        .describe(
+          "Units bought/sold, or the new total quantity for 'update' records.",
+        ),
+      unitValue: z
+        .number()
+        .describe("Price per unit in the position's own currency."),
+      description: z
+        .string()
+        .nullable()
+        .describe("Optional note stored on the record."),
+      costBasisPerUnit: z
+        .number()
+        .nullable()
+        .describe(
+          "Only for 'update' records: custom cost basis per unit. Leave empty otherwise.",
+        ),
+    }),
+    execute: async (args) => createPortfolioRecord(args),
+  }),
+
+  createPosition: routedTool({
+    telemetryRoutes: ["write"],
+    description:
+      "Create a NEW position (asset or future liability) with an initial snapshot. Only for holdings not yet tracked; for existing positions use createPortfolioRecord. This modifies the user's portfolio and always requires the user's explicit approval in the chat UI before executing. For market-traded assets provide symbolLookup (confirm the ticker with searchSymbols first); the current market price is used automatically when unitValue is empty. Returns { success } or { success: false, code, message }.",
+    inputSchema: z.object({
+      summary: z
+        .string()
+        .describe(
+          "One-line human-readable description of the action, shown on the user's approval card. Example: 'Add position VWCE.DE: 15 units @ 130.20 EUR (ETFs)'.",
+        ),
+      name: z.string().describe("Position display name, unique per user."),
+      currency: z
+        .string()
+        .describe(
+          "ISO currency code of the position (e.g., USD, EUR). For symbol-linked positions, always use the symbol's trading currency (check searchSymbols/exchange if unsure).",
+        ),
+      type: z
+        .enum(["asset", "liability"])
+        .nullable()
+        .describe("Leave empty for 'asset'."),
+      categoryId: z
+        .string()
+        .nullable()
+        .describe(
+          "System category id from getPositionCategories. Leave empty to use 'other' or when userCategoryId is set.",
+        ),
+      userCategoryId: z
+        .string()
+        .nullable()
+        .describe(
+          "Custom category UUID from getPositionCategories (source 'custom').",
+        ),
+      symbolLookup: z
+        .string()
+        .nullable()
+        .describe(
+          "Yahoo Finance ticker for market-traded assets (e.g., 'AAPL', 'VWCE.DE'). Use searchSymbols first if unsure. Leave empty for custom/manual positions.",
+        ),
+      quantity: z
+        .number()
+        .nullable()
+        .describe("Initial quantity. Leave empty for 0."),
+      unitValue: z
+        .number()
+        .nullable()
+        .describe(
+          "Price per unit in the position currency. Leave empty to use the current market price when symbolLookup is set.",
+        ),
+      costBasisPerUnit: z
+        .number()
+        .nullable()
+        .describe(
+          "Purchase cost per unit. Leave empty to default to the unit value.",
+        ),
+      capitalGainsTaxRate: z
+        .number()
+        .nullable()
+        .describe("Capital gains tax rate percentage (e.g., 26)."),
+      date: z
+        .string()
+        .nullable()
+        .describe(
+          "Initial snapshot date in YYYY-MM-DD format. Leave empty for today.",
+        ),
+      description: z
+        .string()
+        .nullable()
+        .describe("Optional note stored on the position."),
+    }),
+    execute: async (args) => createPosition(args),
   }),
 };

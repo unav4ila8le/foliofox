@@ -12,6 +12,8 @@
   - components/dashboard/new-asset/forms/ (add-asset paths + field rules)
   - components/dashboard/new-portfolio-record/forms/ (buy/sell/update rules)
   - server/portfolio-records/create.ts (record semantics + snapshot recalculation)
+  - server/ai/tools/create-portfolio-record.ts, server/ai/tools/create-position.ts (AI advisor write tools)
+  - app/api/ai/chat/route.ts (AI write-tool approval gating)
   - lib/capital-gains-tax-rate.ts (tax rate input semantics)
   - types/database.types.ts Constants.public.Enums
   - VISION.md, README.md, AGENTS.md
@@ -69,6 +71,17 @@ Three ways to add an asset:
 | `update` | A revaluation checkpoint: sets the position's quantity and unit value as of a date | Quantity and unit value must be ≥ 0; optionally resets cost basis per unit |
 
 Buys and sells adjust quantity incrementally and feed cost basis. An `update` overrides the running state — useful for interest accrual on cash, revaluing property, or correcting drift. Record dates use `YYYY-MM-DD` format. After any record change, snapshots recalculate from the record's date until the next `update` record.
+
+## AI advisor portfolio updates
+
+The AI advisor can update the portfolio on your behalf, in any of its three modes:
+
+- **Record a buy, sell, or update** on an existing position (e.g. "I bought 20 AAPL at 211.50 today, sync my portfolio").
+- **Add a new position** (asset or future liability), including symbol-linked assets priced automatically.
+
+Every proposed change shows an approval card in the chat with a plain-language summary of exactly what will happen. **Nothing is written until you press Approve** — denying the change discards it, and the advisor will ask what to adjust instead of retrying. While an approval is pending, the message box is blocked until you approve or deny.
+
+Approved changes go through the same validation as the regular forms (record timeline checks, oversell protection, duplicate names, snapshot recalculation), and the dashboard refreshes right after a successful change. The advisor cannot delete or archive positions, edit or delete existing records, or run imports — use the dashboard for those.
 
 ## CSV import — positions
 

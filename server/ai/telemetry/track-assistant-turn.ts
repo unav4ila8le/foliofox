@@ -2,7 +2,10 @@ import type { FinishReason, UIMessage } from "ai";
 import { z } from "zod";
 
 import { createClient } from "@/supabase/server";
-import { resolveRoutesFromMessageParts } from "@/server/ai/tooling/tool-route-registry";
+import {
+  resolveRoutesFromMessageParts,
+  resolveRoutesFromToolPartType,
+} from "@/server/ai/tooling/tool-route-registry";
 import type {
   AIAssistantOutcome,
   AIAssistantPromptSource,
@@ -58,6 +61,25 @@ export function resolveAssistantRoutes(
   return resolveRoutesFromMessageParts(parts);
 }
 
+function hasCommittedWrite(parts: UIMessage["parts"]): boolean {
+  if (!Array.isArray(parts)) return false;
+
+  return parts.some((part) => {
+    if (!("state" in part) || part.state !== "output-available") return false;
+
+    const routes = resolveRoutesFromToolPartType(part.type);
+    if (!routes?.includes("write")) return false;
+
+    const output = "output" in part ? part.output : null;
+    return (
+      typeof output === "object" &&
+      output !== null &&
+      "success" in output &&
+      output.success === true
+    );
+  });
+}
+
 /**
  * Resolve the assistant turn outcome for telemetry.
  */
@@ -71,6 +93,10 @@ export function resolveAssistantOutcome({
 
   if (hasToolErrorOrDeniedState(parts)) {
     return "error";
+  }
+
+  if (hasCommittedWrite(parts)) {
+    return "committed";
   }
 
   return "ok";
@@ -107,16 +133,23 @@ export async function trackAssistantTurn(
   });
   const assistantChars = getAssistantTextCharCount(params.message.parts);
 
-  const { error } = await supabase.from("ai_assistant_turn_events").insert({
-    conversation_id: conversationIdParse.data,
-    assistant_message_id: assistantMessageIdParse.data,
-    user_id: userId,
-    model: params.model,
-    prompt_source: params.promptSource,
-    routes,
-    outcome,
-    assistant_chars: assistantChars,
-  });
+  // One row per assistant message (DB unique constraint): tool-approval
+  // continuations re-report the same message id and update the row in place.
+  // The continuation resend carries no promptSource, so a suggestion-initiated
+  // turn may normalize to "typed" on continuation — accepted drift.
+  const { error } = await supabase.from("ai_assistant_turn_events").upsert(
+    {
+      conversation_id: conversationIdParse.data,
+      assistant_message_id: assistantMessageIdParse.data,
+      user_id: userId,
+      model: params.model,
+      prompt_source: params.promptSource,
+      routes,
+      outcome,
+      assistant_chars: assistantChars,
+    },
+    { onConflict: "assistant_message_id" },
+  );
 
   if (error) {
     throw new Error(

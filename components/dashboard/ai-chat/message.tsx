@@ -26,6 +26,15 @@ import {
   SourcesTrigger,
 } from "@/components/ai-elements/sources";
 import {
+  Confirmation,
+  ConfirmationAccepted,
+  ConfirmationAction,
+  ConfirmationActions,
+  ConfirmationRejected,
+  ConfirmationRequest,
+  ConfirmationTitle,
+} from "@/components/ai-elements/confirmation";
+import {
   Tool,
   ToolContent,
   ToolHeader,
@@ -39,6 +48,7 @@ import {
   getSourceLabel,
   isMessageFilePart,
   isMessageSourcePart,
+  isWriteToolPartType,
 } from "./utils";
 import { getToolOutputPreview } from "./tool-output-preview";
 
@@ -50,6 +60,7 @@ export function ChatMessage({
   isCopied,
   onCopy,
   onRegenerate,
+  onApprovalResponse,
 }: ChatMessageProps) {
   const isAssistant = message.role === "assistant";
   const isStreaming = status === "streaming";
@@ -179,25 +190,73 @@ export function ChatMessage({
             return null;
           default:
             if (isStaticToolUIPart(part)) {
+              const approval = "approval" in part ? part.approval : undefined;
+              const toolInput = part.input as
+                { summary?: unknown } | null | undefined;
+              const approvalSummary =
+                typeof toolInput?.summary === "string" &&
+                toolInput.summary.trim()
+                  ? toolInput.summary
+                  : "The advisor proposes a portfolio change.";
+
               return (
-                <Tool
-                  key={`${message.id}-part-${index}`}
-                  className="notranslate mb-0"
-                  translate="no"
-                >
-                  <ToolHeader
-                    type={part.type}
-                    state={part.state}
-                    className="truncate"
-                  />
-                  <ToolContent>
-                    <ToolInput input={part.input} />
-                    <ToolOutput
-                      output={getToolOutputPreview(part)}
-                      errorText={part.errorText}
+                <Fragment key={`${message.id}-part-${index}`}>
+                  <Tool className="notranslate mb-0" translate="no">
+                    <ToolHeader
+                      type={part.type}
+                      state={part.state}
+                      className="truncate"
                     />
-                  </ToolContent>
-                </Tool>
+                    <ToolContent>
+                      <ToolInput input={part.input} />
+                      <ToolOutput
+                        output={getToolOutputPreview(part)}
+                        errorText={part.errorText}
+                      />
+                    </ToolContent>
+                  </Tool>
+                  {isWriteToolPartType(part.type) && approval && (
+                    <Confirmation
+                      className="notranslate"
+                      translate="no"
+                      state={part.state}
+                      approval={approval}
+                    >
+                      <ConfirmationTitle className="text-foreground">
+                        {approvalSummary}
+                      </ConfirmationTitle>
+                      <ConfirmationRequest>
+                        <ConfirmationActions>
+                          <ConfirmationAction
+                            variant="outline"
+                            onClick={() =>
+                              onApprovalResponse(approval.id, false)
+                            }
+                          >
+                            Deny
+                          </ConfirmationAction>
+                          <ConfirmationAction
+                            onClick={() =>
+                              onApprovalResponse(approval.id, true)
+                            }
+                          >
+                            Approve
+                          </ConfirmationAction>
+                        </ConfirmationActions>
+                      </ConfirmationRequest>
+                      <ConfirmationAccepted>
+                        <p className="text-muted-foreground text-xs">
+                          You approved this action.
+                        </p>
+                      </ConfirmationAccepted>
+                      <ConfirmationRejected>
+                        <p className="text-muted-foreground text-xs">
+                          You denied this action.
+                        </p>
+                      </ConfirmationRejected>
+                    </Confirmation>
+                  )}
+                </Fragment>
               );
             }
 

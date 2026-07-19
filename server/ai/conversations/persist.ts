@@ -295,9 +295,12 @@ async function insertConversationMessage(params: {
     insertPayload.id = messageId;
   }
 
+  // Upsert instead of insert: a tool-approval continuation streams into the
+  // same assistant message id, so the second pass must update the stored row.
+  // User turns carry no id, so upsert keeps plain insert semantics for them.
   const { error } = await supabase
     .from("conversation_messages")
-    .insert(insertPayload);
+    .upsert(insertPayload);
 
   if (error) {
     throw new Error(`Failed to persist conversation message: ${error.message}`);

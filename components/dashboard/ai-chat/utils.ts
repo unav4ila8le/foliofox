@@ -1,6 +1,52 @@
-import type { UIMessage } from "ai";
+import { isStaticToolUIPart, type UIMessage } from "ai";
 
 import type { MessageFilePart, MessageSourcePart } from "./types";
+
+// Approval-gated write tools rendered with a Confirmation card.
+const WRITE_TOOL_PART_TYPES = new Set([
+  "tool-createPortfolioRecord",
+  "tool-createPosition",
+]);
+
+export function isWriteToolPartType(partType: string): boolean {
+  return WRITE_TOOL_PART_TYPES.has(partType);
+}
+
+/**
+ * A pending approval blocks new sends: an unanswered approval request would
+ * leave a dangling tool call and break the next model request.
+ */
+export function hasPendingApprovalRequest(messages: UIMessage[]): boolean {
+  const lastMessage = messages.at(-1);
+  if (lastMessage?.role !== "assistant") {
+    return false;
+  }
+
+  return lastMessage.parts.some(
+    (part) => isStaticToolUIPart(part) && part.state === "approval-requested",
+  );
+}
+
+/**
+ * True when the message contains a write tool that executed successfully,
+ * meaning dashboard data (RSC) is stale and should be refreshed.
+ */
+export function messageHasSuccessfulWrite(message: UIMessage): boolean {
+  return message.parts.some((part) => {
+    if (!isStaticToolUIPart(part)) {
+      return false;
+    }
+    if (!isWriteToolPartType(part.type)) {
+      return false;
+    }
+    if (part.state !== "output-available") {
+      return false;
+    }
+
+    const output = part.output as { success?: unknown } | null | undefined;
+    return output != null && output.success === true;
+  });
+}
 
 /**
  * Generate a v4 UUID in the browser.

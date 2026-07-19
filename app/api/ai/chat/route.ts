@@ -236,6 +236,13 @@ export async function POST(req: Request) {
     instructions,
     maxOutputTokens: 8000,
     stopWhen: [isStepCount(24)],
+    // Portfolio writes require an explicit user approval round-trip.
+    toolApproval: {
+      createPortfolioRecord: "user-approval",
+      createPosition: "user-approval",
+    },
+    experimental_toolApprovalSecret:
+      process.env.TOOL_APPROVAL_SECRET?.trim() || undefined,
     ...chatGenerationOptions,
 
     // Force portfolio overview on very first assistant step

@@ -63,6 +63,7 @@ export function ChatComposer({
   mode,
   isAIEnabled,
   showProactiveCapAlert,
+  hasPendingApproval,
   controller,
   textareaRef,
   onSubmit,
@@ -95,7 +96,11 @@ export function ChatComposer({
 
         <PromptInputBody>
           <PromptInputTextarea
-            placeholder="Ask Foliofox..."
+            placeholder={
+              hasPendingApproval
+                ? "Approve or deny the proposed action to continue"
+                : "Ask Foliofox..."
+            }
             ref={textareaRef}
           />
         </PromptInputBody>
@@ -143,7 +148,7 @@ export function ChatComposer({
           <PromptInputSubmit
             status={status}
             disabled={
-              isChatInputDisabled
+              isChatInputDisabled || hasPendingApproval
                 ? true
                 : status === "streaming"
                   ? false

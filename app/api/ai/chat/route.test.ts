@@ -492,6 +492,45 @@ describe("POST /api/ai/chat", () => {
     });
   });
 
+  it("gates write tools behind user approval and passes the signing secret", async () => {
+    vi.stubEnv("TOOL_APPROVAL_SECRET", "test-approval-secret");
+
+    try {
+      const { POST } = await import("@/app/api/ai/chat/route");
+      fetchProfileMock.mockResolvedValue({
+        profile: { data_sharing_consent: true },
+      });
+
+      const request = new Request("http://localhost/api/ai/chat", {
+        method: "POST",
+        body: JSON.stringify({
+          messages: [
+            {
+              id: "m-1",
+              role: "user",
+              parts: [{ type: "text", text: "I bought 20 AAPL today" }],
+            },
+          ],
+        }),
+        headers: { "Content-Type": "application/json" },
+      });
+
+      await POST(request);
+
+      expect(streamTextMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          toolApproval: {
+            createPortfolioRecord: "user-approval",
+            createPosition: "user-approval",
+          },
+          experimental_toolApprovalSecret: "test-approval-secret",
+        }),
+      );
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it("passes regenerate replacement metadata to assistant persistence", async () => {
     const { POST } = await import("@/app/api/ai/chat/route");
     fetchProfileMock.mockResolvedValue({
