@@ -454,6 +454,7 @@ export function Chat({
               messages={messages}
               status={status}
               isAIEnabled={isAIEnabled}
+              hasPendingApproval={hasPendingApproval}
               copiedMessages={copiedMessages}
               onCopy={handleCopy}
               onRegenerate={regenerate}

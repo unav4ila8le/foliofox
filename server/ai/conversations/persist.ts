@@ -269,7 +269,23 @@ async function insertConversationMessage(params: {
     model,
     usageTokens,
   } = params;
-  const messageOrder = await getNextMessageOrder(supabase, conversationId);
+
+  // A tool-approval continuation upserts into an existing assistant message:
+  // keep its original order instead of bumping it to the end again.
+  let existingOrder: number | null = null;
+  if (messageId) {
+    const { data: existingMessage } = await supabase
+      .from("conversation_messages")
+      .select("order")
+      .eq("id", messageId)
+      .eq("conversation_id", conversationId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    existingOrder = existingMessage?.order ?? null;
+  }
+
+  const messageOrder =
+    existingOrder ?? (await getNextMessageOrder(supabase, conversationId));
 
   const insertPayload: {
     conversation_id: string;

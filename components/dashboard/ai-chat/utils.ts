@@ -15,6 +15,9 @@ export function isWriteToolPartType(partType: string): boolean {
 /**
  * A pending approval blocks new sends: an unanswered approval request would
  * leave a dangling tool call and break the next model request.
+ * "approval-responded" is still pending — the SDK flips the part state
+ * synchronously but schedules the auto-resend async, so until the request
+ * actually starts the turn is not resolved yet.
  */
 export function hasPendingApprovalRequest(messages: UIMessage[]): boolean {
   const lastMessage = messages.at(-1);
@@ -23,7 +26,10 @@ export function hasPendingApprovalRequest(messages: UIMessage[]): boolean {
   }
 
   return lastMessage.parts.some(
-    (part) => isStaticToolUIPart(part) && part.state === "approval-requested",
+    (part) =>
+      isStaticToolUIPart(part) &&
+      (part.state === "approval-requested" ||
+        part.state === "approval-responded"),
   );
 }
 

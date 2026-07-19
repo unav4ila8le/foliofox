@@ -28,6 +28,7 @@ export interface ChatThreadProps {
   messages: UIMessage[];
   status: ChatStatus;
   isAIEnabled?: boolean;
+  hasPendingApproval: boolean;
   copiedMessages: Set<string>;
   onCopy: (text: string, messageId: string) => void;
   onRegenerate: () => void;
@@ -39,6 +40,7 @@ export interface ChatMessageProps {
   isLastMessage: boolean;
   status: ChatStatus;
   isAIEnabled?: boolean;
+  hasPendingApproval: boolean;
   isCopied: boolean;
   onCopy: (text: string, messageId: string) => void;
   onRegenerate: () => void;

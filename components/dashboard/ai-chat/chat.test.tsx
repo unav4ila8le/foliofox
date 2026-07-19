@@ -673,7 +673,14 @@ describe("Chat guardrail UI", () => {
           {
             type: "tool-createPortfolioRecord",
             state: "approval-requested",
-            input: { summary: "Buy 20 × AAPL @ 211.50 USD on 2026-07-18" },
+            input: {
+              summary: "Buy 20 × AAPL @ 211.50 USD on 2026-07-18",
+              type: "buy",
+              quantity: 20,
+              unitValue: 211.5,
+              date: "2026-07-18",
+              description: null,
+            },
             approval: { id: "approval-1" },
           },
         ],
@@ -685,6 +692,13 @@ describe("Chat guardrail UI", () => {
     expect(
       screen.getByText("Buy 20 × AAPL @ 211.50 USD on 2026-07-18"),
     ).not.toBeNull();
+    // The executable args are shown alongside the model-written summary.
+    expect(screen.getByText("quantity")).not.toBeNull();
+    expect(screen.getByText("20")).not.toBeNull();
+    expect(screen.getByText("211.5")).not.toBeNull();
+    // Null optionals and the summary itself are not listed as detail rows.
+    expect(screen.queryByText("description")).toBeNull();
+    expect(screen.queryByText("summary")).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Approve" }));
     expect(hoistedMocks.addToolApprovalResponseMock).toHaveBeenCalledWith({
@@ -750,6 +764,32 @@ describe("Chat guardrail UI", () => {
 
     fireEvent.submit(submitButton.closest("form") as HTMLFormElement);
     expect(hoistedMocks.sendMessageMock).not.toHaveBeenCalled();
+  });
+
+  it("disables regenerate while an approval is pending", () => {
+    hoistedMocks.messages = [
+      {
+        id: "message-approval",
+        role: "assistant",
+        parts: [
+          { type: "text", text: "I can record that buy for you." },
+          {
+            type: "tool-createPortfolioRecord",
+            state: "approval-requested",
+            input: { summary: "Buy 20 × AAPL @ 211.50 USD on 2026-07-18" },
+            approval: { id: "approval-1" },
+          },
+        ],
+      },
+    ];
+
+    const { container } = renderChat();
+
+    const regenerateButton = container.querySelector(
+      'button[tooltip="Regenerate response"]',
+    ) as HTMLButtonElement | null;
+    expect(regenerateButton).not.toBeNull();
+    expect(regenerateButton?.disabled).toBe(true);
   });
 
   it("refreshes the dashboard only after a successful write", async () => {

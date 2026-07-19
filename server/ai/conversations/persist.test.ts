@@ -493,6 +493,8 @@ describe("conversation persistence guardrails", () => {
     expect(assistantRows[0]?.id).toBe(assistantMessageId);
     expect(assistantRows[0]?.content).toBe("Done, the record was created");
     expect(assistantRows[0]?.usage_tokens).toBe(150);
+    // The continuation must keep the message's original position.
+    expect(assistantRows[0]?.order).toBe(0);
   });
 
   it("persists assistant message and trims when over message cap", async () => {

@@ -59,6 +59,26 @@ const chatRequestSchema = z.looseObject({
 const validModes = new Set<Mode>(["educational", "advisory", "unhinged"]);
 type ChatUIMessage = UIMessage<unknown, never, InferUITools<typeof aiTools>>;
 
+// Unsigned approvals let a tampered client alter write-tool inputs between
+// propose and approve, so flag a missing secret loudly in production.
+let warnedMissingToolApprovalSecret = false;
+function resolveToolApprovalSecret(): string | undefined {
+  const secret = process.env.TOOL_APPROVAL_SECRET?.trim() || undefined;
+
+  if (
+    !secret &&
+    process.env.NODE_ENV === "production" &&
+    !warnedMissingToolApprovalSecret
+  ) {
+    warnedMissingToolApprovalSecret = true;
+    console.warn(
+      "TOOL_APPROVAL_SECRET is not set: AI write-tool approvals are unsigned.",
+    );
+  }
+
+  return secret;
+}
+
 // Resolve the prompt source from the request payload
 function resolvePromptSource(
   promptSource: string | undefined,
@@ -241,8 +261,7 @@ export async function POST(req: Request) {
       createPortfolioRecord: "user-approval",
       createPosition: "user-approval",
     },
-    experimental_toolApprovalSecret:
-      process.env.TOOL_APPROVAL_SECRET?.trim() || undefined,
+    experimental_toolApprovalSecret: resolveToolApprovalSecret(),
     ...chatGenerationOptions,
 
     // Force portfolio overview on very first assistant step

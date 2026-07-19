@@ -70,7 +70,24 @@ describe("write tool helpers", () => {
     expect(hasPendingApprovalRequest(messages)).toBe(true);
   });
 
-  it("reports no pending approval once responded or on non-assistant last message", () => {
+  it("still counts approval-responded as pending until the turn resumes", () => {
+    // addToolApprovalResponse flips the part synchronously, but the auto
+    // resend is async — sends must stay blocked in that gap.
+    expect(
+      hasPendingApprovalRequest([
+        assistantMessage([
+          {
+            type: "tool-createPortfolioRecord",
+            state: "approval-responded",
+            input: { summary: "Buy" },
+            approval: { id: "approval-1", approved: true },
+          },
+        ]),
+      ]),
+    ).toBe(true);
+  });
+
+  it("reports no pending approval once resolved or on non-assistant last message", () => {
     expect(
       hasPendingApprovalRequest([
         assistantMessage([
@@ -80,6 +97,19 @@ describe("write tool helpers", () => {
             input: { summary: "Buy" },
             output: { success: true },
             approval: { id: "approval-1", approved: true },
+          },
+        ]),
+      ]),
+    ).toBe(false);
+
+    expect(
+      hasPendingApprovalRequest([
+        assistantMessage([
+          {
+            type: "tool-createPortfolioRecord",
+            state: "output-denied",
+            input: { summary: "Buy" },
+            approval: { id: "approval-1", approved: false },
           },
         ]),
       ]),

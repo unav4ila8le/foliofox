@@ -57,6 +57,7 @@ export function ChatMessage({
   isLastMessage,
   status,
   isAIEnabled,
+  hasPendingApproval,
   isCopied,
   onCopy,
   onRegenerate,
@@ -165,7 +166,7 @@ export function ChatMessage({
                       <MessageAction
                         onClick={() => onRegenerate()}
                         tooltip="Regenerate response"
-                        disabled={!isAIEnabled}
+                        disabled={!isAIEnabled || hasPendingApproval}
                       >
                         <RefreshCcw className="size-3.5" />
                       </MessageAction>
@@ -198,6 +199,11 @@ export function ChatMessage({
                 toolInput.summary.trim()
                   ? toolInput.summary
                   : "The advisor proposes a portfolio change.";
+              // The summary is model-written prose; show the executable args
+              // too so the user approves what will actually run.
+              const approvalDetails = Object.entries(
+                (toolInput ?? {}) as Record<string, unknown>,
+              ).filter(([key, value]) => key !== "summary" && value != null);
 
               return (
                 <Fragment key={`${message.id}-part-${index}`}>
@@ -226,6 +232,18 @@ export function ChatMessage({
                         {approvalSummary}
                       </ConfirmationTitle>
                       <ConfirmationRequest>
+                        {approvalDetails.length > 0 && (
+                          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-xs">
+                            {approvalDetails.map(([key, value]) => (
+                              <Fragment key={key}>
+                                <dt className="text-muted-foreground">{key}</dt>
+                                <dd className="font-medium break-all">
+                                  {String(value)}
+                                </dd>
+                              </Fragment>
+                            ))}
+                          </dl>
+                        )}
                         <ConfirmationActions>
                           <ConfirmationAction
                             variant="outline"
