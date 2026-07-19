@@ -2,6 +2,8 @@
 
 import { createPosition as createPositionMutation } from "@/server/positions/create";
 
+import { normalizeCapitalGainsTaxRateToDecimal } from "@/lib/capital-gains-tax-rate";
+
 interface CreatePositionParams {
   summary: string;
   name: string;
@@ -50,8 +52,12 @@ export async function createPosition(params: CreatePositionParams) {
   if (params.costBasisPerUnit != null) {
     formData.set("cost_basis_per_unit", String(params.costBasisPerUnit));
   }
-  if (params.capitalGainsTaxRate != null) {
-    formData.set("capital_gains_tax_rate", String(params.capitalGainsTaxRate));
+  // The model provides a percentage (e.g., 26); the DB stores a decimal (0.26).
+  const capitalGainsTaxRateDecimal = normalizeCapitalGainsTaxRateToDecimal(
+    params.capitalGainsTaxRate,
+  );
+  if (capitalGainsTaxRateDecimal != null) {
+    formData.set("capital_gains_tax_rate", String(capitalGainsTaxRateDecimal));
   }
   if (params.date != null) {
     formData.set("date", params.date);

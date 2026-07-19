@@ -469,14 +469,19 @@ export const aiTools = {
         .describe(
           "'buy' adds quantity, 'sell' removes quantity, 'update' resets quantity and unit value at a date.",
         ),
-      date: z.string().describe("Record date in YYYY-MM-DD format."),
+      date: z
+        .string()
+        .regex(/^\d{4}-\d{2}-\d{2}$/)
+        .describe("Record date in YYYY-MM-DD format."),
       quantity: z
         .number()
+        .min(0)
         .describe(
           "Units bought/sold, or the new total quantity for 'update' records.",
         ),
       unitValue: z
         .number()
+        .min(0)
         .describe("Price per unit in the position's own currency."),
       description: z
         .string()
@@ -484,6 +489,7 @@ export const aiTools = {
         .describe("Optional note stored on the record."),
       costBasisPerUnit: z
         .number()
+        .min(0)
         .nullable()
         .describe(
           "Only for 'update' records: custom cost basis per unit. Leave empty otherwise.",
@@ -532,26 +538,32 @@ export const aiTools = {
         ),
       quantity: z
         .number()
+        .min(0)
         .nullable()
         .describe("Initial quantity. Leave empty for 0."),
       unitValue: z
         .number()
+        .min(0)
         .nullable()
         .describe(
           "Price per unit in the position currency. Leave empty to use the current market price when symbolLookup is set.",
         ),
       costBasisPerUnit: z
         .number()
+        .min(0)
         .nullable()
         .describe(
           "Purchase cost per unit. Leave empty to default to the unit value.",
         ),
       capitalGainsTaxRate: z
         .number()
+        .min(0)
+        .max(100)
         .nullable()
-        .describe("Capital gains tax rate percentage (e.g., 26)."),
+        .describe("Capital gains tax rate percentage, 0-100 (e.g., 26)."),
       date: z
         .string()
+        .regex(/^\d{4}-\d{2}-\d{2}$/)
         .nullable()
         .describe(
           "Initial snapshot date in YYYY-MM-DD format. Leave empty for today.",

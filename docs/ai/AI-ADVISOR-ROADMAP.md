@@ -242,6 +242,11 @@ Objective: let users update portfolio data directly from chat with explicit appr
 - Known caveat: regenerating a turn whose write already committed can make the model
   propose the same write again as a fresh approval. The user gate protects against
   silent duplicates; DB-level idempotency would need a migration if this bites.
+- Known caveat: an approved write is not idempotent — if the network response for the
+  approval continuation is lost and the client retries the same request, the tool can
+  execute twice (duplicate record). Requires a rare double failure. Proper fix is a
+  migration adding a unique idempotency key (e.g. the tool-call id) to the write path;
+  do together with the regenerate caveat above if either bites.
 
 ### Workstream D: UX Details — DONE
 

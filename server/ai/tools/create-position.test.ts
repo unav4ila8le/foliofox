@@ -53,9 +53,17 @@ describe("createPosition AI tool", () => {
     expect(formData.get("quantity")).toBe("15");
     expect(formData.get("unit_value")).toBe("130.2");
     expect(formData.get("cost_basis_per_unit")).toBe("120");
-    expect(formData.get("capital_gains_tax_rate")).toBe("26");
+    // Model provides a percentage; the DB CHECK requires a 0..1 decimal.
+    expect(formData.get("capital_gains_tax_rate")).toBe("0.26");
     expect(formData.get("date")).toBe("2026-07-18");
     expect(formData.get("description")).toBe("Broker sync");
+  });
+
+  it("keeps an already-decimal tax rate unchanged", async () => {
+    await createPosition({ ...baseParams, capitalGainsTaxRate: 0.26 });
+
+    const formData = createPositionMutationMock.mock.calls[0]?.[0] as FormData;
+    expect(formData.get("capital_gains_tax_rate")).toBe("0.26");
   });
 
   it("omits null optionals so the mutation keeps its defaults", async () => {
