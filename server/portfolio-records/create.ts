@@ -47,6 +47,15 @@ export async function createPortfolioRecord(formData: FormData) {
     description: (formData.get("description") as string) || null,
   };
 
+  // Optional idempotency key (AI-approved writes): a retried approval
+  // continuation re-sends the same key; the partial unique index turns the
+  // duplicate insert into a no-op success instead of a second record.
+  const idempotencyKeyRaw = formData.get("idempotency_key");
+  const idempotencyKey =
+    idempotencyKeyRaw != null && String(idempotencyKeyRaw).trim() !== ""
+      ? String(idempotencyKeyRaw)
+      : null;
+
   // Extract custom cost basis if provided (for UPDATE records)
   const customCostBasis = formData.get("cost_basis_per_unit");
   const costBasisPerUnit =
@@ -101,11 +110,21 @@ export async function createPortfolioRecord(formData: FormData) {
   // Insert portfolio record
   const { data: inserted, error: insertError } = await supabase
     .from("portfolio_records")
-    .insert({ user_id: user.id, ...portfolioRecordData })
+    .insert({
+      user_id: user.id,
+      ...portfolioRecordData,
+      idempotency_key: idempotencyKey,
+    })
     .select("id, position_id, date")
     .single();
 
   if (!inserted || insertError) {
+    // Unique violation on the idempotency key means this exact write already
+    // committed (retried approval) — report success without re-inserting.
+    if (idempotencyKey !== null && insertError?.code === "23505") {
+      return { success: true } as const;
+    }
+
     return {
       success: false,
       code: insertError?.code || "UNKNOWN",

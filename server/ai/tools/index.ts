@@ -495,7 +495,10 @@ export const aiTools = {
           "Only for 'update' records: custom cost basis per unit. Leave empty otherwise.",
         ),
     }),
-    execute: async (args) => createPortfolioRecord(args),
+    // The stable tool-call id makes a retried approval continuation a no-op
+    // instead of a duplicate record (unique index on idempotency_key).
+    execute: async (args, { toolCallId }) =>
+      createPortfolioRecord({ ...args, idempotencyKey: toolCallId }),
   }),
 
   createPosition: routedTool({

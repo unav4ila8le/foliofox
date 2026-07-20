@@ -24,6 +24,7 @@ describe("createPortfolioRecord AI tool", () => {
       unitValue: 211.5,
       description: "Broker sync",
       costBasisPerUnit: null,
+      idempotencyKey: null,
     });
 
     const formData = createPortfolioRecordMutationMock.mock
@@ -48,6 +49,7 @@ describe("createPortfolioRecord AI tool", () => {
       unitValue: 100,
       description: null,
       costBasisPerUnit: null,
+      idempotencyKey: null,
     });
 
     const formData = createPortfolioRecordMutationMock.mock
@@ -55,6 +57,25 @@ describe("createPortfolioRecord AI tool", () => {
     expect(formData.has("description")).toBe(false);
     expect(formData.has("cost_basis_per_unit")).toBe(false);
     expect(formData.has("summary")).toBe(false);
+    expect(formData.has("idempotency_key")).toBe(false);
+  });
+
+  it("forwards the idempotency key for replay-safe writes", async () => {
+    await createPortfolioRecord({
+      summary: "Buy 20 × AAPL",
+      positionId: "0b0e4f9a-95ea-4c22-9c37-d44229f1e7ea",
+      type: "buy",
+      date: "2026-07-18",
+      quantity: 20,
+      unitValue: 211.5,
+      description: null,
+      costBasisPerUnit: null,
+      idempotencyKey: "call_abc123",
+    });
+
+    const formData = createPortfolioRecordMutationMock.mock
+      .calls[0]?.[0] as FormData;
+    expect(formData.get("idempotency_key")).toBe("call_abc123");
   });
 
   it("passes custom cost basis for update records", async () => {
@@ -67,6 +88,7 @@ describe("createPortfolioRecord AI tool", () => {
       unitValue: 80,
       description: null,
       costBasisPerUnit: 75.25,
+      idempotencyKey: null,
     });
 
     const formData = createPortfolioRecordMutationMock.mock
@@ -91,6 +113,7 @@ describe("createPortfolioRecord AI tool", () => {
       unitValue: 211.5,
       description: null,
       costBasisPerUnit: null,
+      idempotencyKey: null,
     });
 
     expect(result).toBe(failure);

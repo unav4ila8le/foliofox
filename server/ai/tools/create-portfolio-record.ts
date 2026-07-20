@@ -11,6 +11,7 @@ interface CreatePortfolioRecordParams {
   unitValue: number;
   description: string | null;
   costBasisPerUnit: number | null;
+  idempotencyKey: string | null;
 }
 
 /**
@@ -32,6 +33,9 @@ export async function createPortfolioRecord(
   }
   if (params.costBasisPerUnit != null) {
     formData.set("cost_basis_per_unit", String(params.costBasisPerUnit));
+  }
+  if (params.idempotencyKey != null) {
+    formData.set("idempotency_key", params.idempotencyKey);
   }
 
   return createPortfolioRecordMutation(formData);
