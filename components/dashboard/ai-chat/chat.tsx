@@ -1,7 +1,12 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport, type FileUIPart } from "ai";
+import {
+  DefaultChatTransport,
+  lastAssistantMessageIsCompleteWithApprovalResponses,
+  type FileUIPart,
+} from "ai";
+import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState, useEffect } from "react";
 
 import {
@@ -35,6 +40,9 @@ import { DisabledState } from "./disabled-state";
 import { ChatSuggestions } from "./suggestions";
 import { ChatThread } from "./thread";
 import type { ChatProps } from "./types";
+import { hasSuccessfulWriteToolPart } from "@/lib/ai/write-tools";
+
+import { hasPendingApprovalRequest } from "./utils";
 
 function buildClientFileValidationError(
   fileParts: FileUIPart[],
@@ -143,6 +151,7 @@ export function Chat({
   const hasSyncedDraftInputRef = useRef(false);
   const hasSyncedDraftFilesRef = useRef(false);
 
+  const router = useRouter();
   const { copyToClipboard } = useCopyToClipboard({ timeout: 4000 });
   const controller = usePromptInputController();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -285,31 +294,45 @@ export function Chat({
     });
   }, [mode, conversationId]);
 
-  const { messages, setMessages, sendMessage, status, stop, regenerate } =
-    useChat({
-      id: conversationId,
-      messages: initialMessages,
-      transport,
-      onError: (error) => {
-        // Normalize backend cap error into a stable, user-friendly message.
-        const message = isConversationCapErrorMessage(error.message)
-          ? AI_CHAT_CONVERSATION_CAP_FRIENDLY_MESSAGE
-          : error.message;
+  const {
+    messages,
+    setMessages,
+    sendMessage,
+    status,
+    stop,
+    regenerate,
+    addToolApprovalResponse,
+  } = useChat({
+    id: conversationId,
+    messages: initialMessages,
+    transport,
+    // Resume the turn automatically once every approval request is answered.
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
+    onError: (error) => {
+      // Normalize backend cap error into a stable, user-friendly message.
+      const message = isConversationCapErrorMessage(error.message)
+        ? AI_CHAT_CONVERSATION_CAP_FRIENDLY_MESSAGE
+        : error.message;
 
-        setChatErrorMessage(message);
-      },
-      onFinish: async ({ isAbort, isError }) => {
-        if (isAbort || isError) return;
+      setChatErrorMessage(message);
+    },
+    onFinish: async ({ message, isAbort, isError }) => {
+      if (isAbort || isError) return;
 
-        setChatErrorMessage(null);
-        await onConversationPersisted?.();
-      },
-    });
+      setChatErrorMessage(null);
+      // Approved writes changed portfolio data: re-pull the RSC dashboard.
+      if (hasSuccessfulWriteToolPart(message.parts)) {
+        router.refresh();
+      }
+      await onConversationPersisted?.();
+    },
+  });
 
   useEffect(() => {
     setMessages(initialMessages);
   }, [initialMessages, setMessages]);
 
+  const hasPendingApproval = hasPendingApprovalRequest(messages, status);
   const showProactiveCapAlert =
     Boolean(isAIEnabled) &&
     Boolean(isAtConversationCap) &&
@@ -321,10 +344,20 @@ export function Chat({
 
   // Quick-send a suggested prompt
   const handleSuggestionClick = (suggestion: string) => {
-    if (showProactiveCapAlert) return;
+    if (showProactiveCapAlert || hasPendingApproval) return;
 
     setChatErrorMessage(null);
     sendMessage({ text: suggestion }, { body: { promptSource: "suggestion" } });
+  };
+
+  // Answer a write-tool approval request; auto-resend continues the turn.
+  const handleApprovalResponse = (approvalId: string, isApproved: boolean) => {
+    setChatErrorMessage(null);
+    addToolApprovalResponse({
+      id: approvalId,
+      approved: isApproved,
+      reason: isApproved ? undefined : "User denied this action.",
+    });
   };
 
   // Copy message text with a temporary visual state
@@ -342,7 +375,7 @@ export function Chat({
 
   // Submit user input to the chat
   const handleSubmit = (message: PromptInputMessage) => {
-    if (showProactiveCapAlert) {
+    if (showProactiveCapAlert || hasPendingApproval) {
       return;
     }
 
@@ -423,9 +456,11 @@ export function Chat({
               messages={messages}
               status={status}
               isAIEnabled={isAIEnabled}
+              hasPendingApproval={hasPendingApproval}
               copiedMessages={copiedMessages}
               onCopy={handleCopy}
               onRegenerate={regenerate}
+              onApprovalResponse={handleApprovalResponse}
             />
           )}
         </ConversationContent>
@@ -451,6 +486,7 @@ export function Chat({
         mode={mode}
         isAIEnabled={isAIEnabled}
         showProactiveCapAlert={showProactiveCapAlert}
+        hasPendingApproval={hasPendingApproval}
         controller={controller}
         textareaRef={textareaRef}
         onSubmit={handleSubmit}

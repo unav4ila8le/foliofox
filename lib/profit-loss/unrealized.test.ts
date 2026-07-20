@@ -30,6 +30,7 @@ function createPosition(
     category_id: "cat-1",
     user_category_id: null,
     capital_gains_tax_rate: null,
+    idempotency_key: null,
     is_archived: false,
     category_name: "Category",
     user_category_name: null,

@@ -2,6 +2,7 @@ import type { FinishReason, UIMessage } from "ai";
 import { z } from "zod";
 
 import { createClient } from "@/supabase/server";
+import { hasSuccessfulWriteToolPart } from "@/lib/ai/write-tools";
 import { resolveRoutesFromMessageParts } from "@/server/ai/tooling/tool-route-registry";
 import type {
   AIAssistantOutcome,
@@ -73,6 +74,10 @@ export function resolveAssistantOutcome({
     return "error";
   }
 
+  if (hasSuccessfulWriteToolPart(parts)) {
+    return "committed";
+  }
+
   return "ok";
 }
 
@@ -107,16 +112,23 @@ export async function trackAssistantTurn(
   });
   const assistantChars = getAssistantTextCharCount(params.message.parts);
 
-  const { error } = await supabase.from("ai_assistant_turn_events").insert({
-    conversation_id: conversationIdParse.data,
-    assistant_message_id: assistantMessageIdParse.data,
-    user_id: userId,
-    model: params.model,
-    prompt_source: params.promptSource,
-    routes,
-    outcome,
-    assistant_chars: assistantChars,
-  });
+  // One row per assistant message (DB unique constraint): tool-approval
+  // continuations re-report the same message id and update the row in place.
+  // The continuation resend carries no promptSource, so a suggestion-initiated
+  // turn may normalize to "typed" on continuation — accepted drift.
+  const { error } = await supabase.from("ai_assistant_turn_events").upsert(
+    {
+      conversation_id: conversationIdParse.data,
+      assistant_message_id: assistantMessageIdParse.data,
+      user_id: userId,
+      model: params.model,
+      prompt_source: params.promptSource,
+      routes,
+      outcome,
+      assistant_chars: assistantChars,
+    },
+    { onConflict: "assistant_message_id" },
+  );
 
   if (error) {
     throw new Error(

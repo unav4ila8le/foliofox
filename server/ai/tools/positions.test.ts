@@ -50,6 +50,7 @@ const createPosition = (
   total_value: 5000,
   has_market_data: false,
   capital_gains_tax_rate: null,
+  idempotency_key: null,
   ...overrides,
 });
 

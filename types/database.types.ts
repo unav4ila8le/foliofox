@@ -587,6 +587,7 @@ export type Database = {
           description: string | null
           external_transaction_id: string | null
           id: string
+          idempotency_key: string | null
           import_source: string | null
           position_id: string
           quantity: number
@@ -601,6 +602,7 @@ export type Database = {
           description?: string | null
           external_transaction_id?: string | null
           id?: string
+          idempotency_key?: string | null
           import_source?: string | null
           position_id: string
           quantity: number
@@ -615,6 +617,7 @@ export type Database = {
           description?: string | null
           external_transaction_id?: string | null
           id?: string
+          idempotency_key?: string | null
           import_source?: string | null
           position_id?: string
           quantity?: number
@@ -721,6 +724,7 @@ export type Database = {
           description: string | null
           domain_id: string | null
           id: string
+          idempotency_key: string | null
           name: string
           symbol_id: string | null
           type: Database["public"]["Enums"]["position_type"]
@@ -737,6 +741,7 @@ export type Database = {
           description?: string | null
           domain_id?: string | null
           id?: string
+          idempotency_key?: string | null
           name: string
           symbol_id?: string | null
           type: Database["public"]["Enums"]["position_type"]
@@ -753,6 +758,7 @@ export type Database = {
           description?: string | null
           domain_id?: string | null
           id?: string
+          idempotency_key?: string | null
           name?: string
           symbol_id?: string | null
           type?: Database["public"]["Enums"]["position_type"]

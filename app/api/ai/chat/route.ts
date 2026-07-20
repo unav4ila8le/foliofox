@@ -16,6 +16,7 @@ import {
 } from "ai";
 import { z } from "zod";
 
+import { AI_WRITE_TOOL_NAMES } from "@/lib/ai/write-tools";
 import { fetchProfile } from "@/server/profile/actions";
 import { createSystemPrompt, type Mode } from "@/server/ai/system-prompt";
 import { aiTools } from "@/server/ai/tools";
@@ -58,6 +59,27 @@ const chatRequestSchema = z.looseObject({
 
 const validModes = new Set<Mode>(["educational", "advisory", "unhinged"]);
 type ChatUIMessage = UIMessage<unknown, never, InferUITools<typeof aiTools>>;
+
+// Unsigned approvals let a tampered client alter write-tool inputs between
+// propose and approve, so in production a missing secret disables the write
+// tools entirely (fail closed) and warns loudly.
+let warnedMissingToolApprovalSecret = false;
+function resolveToolApprovalSecret(): string | undefined {
+  const secret = process.env.TOOL_APPROVAL_SECRET?.trim() || undefined;
+
+  if (
+    !secret &&
+    process.env.NODE_ENV === "production" &&
+    !warnedMissingToolApprovalSecret
+  ) {
+    warnedMissingToolApprovalSecret = true;
+    console.warn(
+      "TOOL_APPROVAL_SECRET is not set: AI write tools are disabled (fail closed).",
+    );
+  }
+
+  return secret;
+}
 
 // Resolve the prompt source from the request payload
 function resolvePromptSource(
@@ -217,13 +239,31 @@ export async function POST(req: Request) {
 
   // 4. Bound model context size to keep latency/cost predictable.
   const guardrailedContextMessages = buildGuardrailedModelContext(messages);
+
+  // Fail closed: without a signing secret in production the SDK cannot bind
+  // the user's Approve click to the original tool inputs, so drop the write
+  // tools from the request entirely (message validation above still uses the
+  // full set so historical write parts keep parsing).
+  const toolApprovalSecret = resolveToolApprovalSecret();
+  const includeWriteTools =
+    toolApprovalSecret !== undefined || process.env.NODE_ENV !== "production";
+  const enabledAiTools = includeWriteTools
+    ? aiTools
+    : // Cast keeps the full toolset type to avoid generic churn below; the
+      // absent write tools are simply never callable.
+      (Object.fromEntries(
+        Object.entries(aiTools).filter(
+          ([toolName]) => !AI_WRITE_TOOL_NAMES.has(toolName),
+        ),
+      ) as typeof aiTools);
+
   const instructions = createSystemPrompt({
     mode,
-    aiTools,
+    aiTools: enabledAiTools,
     currentDateKey,
   });
   const firstAssistantTurn = !messages.some((m) => m.role === "assistant");
-  const { guardedTools, guardState } = createToolCallGuard(aiTools, {
+  const { guardedTools, guardState } = createToolCallGuard(enabledAiTools, {
     maxTotalCallsPerTurn: MAX_TOOL_CALLS_PER_TURN,
     maxCallsPerToolPerTurn: MAX_CALLS_PER_TOOL_PER_TURN,
     enableExactInputDeduplication: true,
@@ -236,12 +276,18 @@ export async function POST(req: Request) {
     instructions,
     maxOutputTokens: 8000,
     stopWhen: [isStepCount(24)],
+    // Portfolio writes require an explicit user approval round-trip.
+    toolApproval: {
+      createPortfolioRecord: "user-approval",
+      createPosition: "user-approval",
+    },
+    experimental_toolApprovalSecret: toolApprovalSecret,
     ...chatGenerationOptions,
 
     // Force portfolio overview on very first assistant step
     prepareStep: async ({ stepNumber }) => {
       const availableTools = (
-        Object.keys(aiTools) as Array<keyof typeof aiTools>
+        Object.keys(enabledAiTools) as Array<keyof typeof aiTools>
       ).filter(
         (toolName) =>
           guardState.getCallsForTool(String(toolName)) <

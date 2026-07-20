@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { generateUuid } from "./utils";
+import type { UIMessage } from "ai";
+
+import { generateUuid, hasPendingApprovalRequest } from "./utils";
 
 const UUID_V4_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
@@ -29,5 +31,132 @@ describe("generateUuid", () => {
 
     expect(generateUuid()).toMatch(UUID_V4_PATTERN);
     expect(generateUuid()).not.toBe(generateUuid());
+  });
+});
+
+function assistantMessage(parts: unknown[]): UIMessage {
+  return {
+    id: "assistant-1",
+    role: "assistant",
+    parts,
+  } as UIMessage;
+}
+
+describe("pending approval detection", () => {
+  it("detects a pending approval on the last assistant message", () => {
+    const messages = [
+      assistantMessage([
+        {
+          type: "tool-createPortfolioRecord",
+          state: "approval-requested",
+          input: { summary: "Buy" },
+          approval: { id: "approval-1" },
+        },
+      ]),
+    ];
+
+    expect(hasPendingApprovalRequest(messages, "ready")).toBe(true);
+  });
+
+  it("still counts approval-responded as pending until the turn resumes", () => {
+    // addToolApprovalResponse flips the part synchronously, but the auto
+    // resend is async — sends must stay blocked in that gap.
+    expect(
+      hasPendingApprovalRequest(
+        [
+          assistantMessage([
+            {
+              type: "tool-createPortfolioRecord",
+              state: "approval-responded",
+              input: { summary: "Buy" },
+              approval: { id: "approval-1", approved: true },
+            },
+          ]),
+        ],
+        "ready",
+      ),
+    ).toBe(true);
+  });
+
+  it("unblocks a stranded approval-responded part when the chat errored", () => {
+    // A failed continuation request would otherwise leave the session stuck
+    // (no buttons, sends blocked) until a full page reload.
+    expect(
+      hasPendingApprovalRequest(
+        [
+          assistantMessage([
+            {
+              type: "tool-createPortfolioRecord",
+              state: "approval-responded",
+              input: { summary: "Buy" },
+              approval: { id: "approval-1", approved: true },
+            },
+          ]),
+        ],
+        "error",
+      ),
+    ).toBe(false);
+
+    // An unanswered request keeps blocking even on error: the card still
+    // shows Approve/Deny, so answering it remains the way forward.
+    expect(
+      hasPendingApprovalRequest(
+        [
+          assistantMessage([
+            {
+              type: "tool-createPortfolioRecord",
+              state: "approval-requested",
+              input: { summary: "Buy" },
+              approval: { id: "approval-1" },
+            },
+          ]),
+        ],
+        "error",
+      ),
+    ).toBe(true);
+  });
+
+  it("reports no pending approval once resolved or on non-assistant last message", () => {
+    expect(
+      hasPendingApprovalRequest(
+        [
+          assistantMessage([
+            {
+              type: "tool-createPortfolioRecord",
+              state: "output-available",
+              input: { summary: "Buy" },
+              output: { success: true },
+              approval: { id: "approval-1", approved: true },
+            },
+          ]),
+        ],
+        "ready",
+      ),
+    ).toBe(false);
+
+    expect(
+      hasPendingApprovalRequest(
+        [
+          assistantMessage([
+            {
+              type: "tool-createPortfolioRecord",
+              state: "output-denied",
+              input: { summary: "Buy" },
+              approval: { id: "approval-1", approved: false },
+            },
+          ]),
+        ],
+        "ready",
+      ),
+    ).toBe(false);
+
+    expect(
+      hasPendingApprovalRequest(
+        [{ id: "user-1", role: "user", parts: [] } as unknown as UIMessage],
+        "ready",
+      ),
+    ).toBe(false);
+
+    expect(hasPendingApprovalRequest([], "ready")).toBe(false);
   });
 });

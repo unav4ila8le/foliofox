@@ -28,9 +28,11 @@ export interface ChatThreadProps {
   messages: UIMessage[];
   status: ChatStatus;
   isAIEnabled?: boolean;
+  hasPendingApproval: boolean;
   copiedMessages: Set<string>;
   onCopy: (text: string, messageId: string) => void;
   onRegenerate: () => void;
+  onApprovalResponse: (approvalId: string, isApproved: boolean) => void;
 }
 
 export interface ChatMessageProps {
@@ -38,9 +40,11 @@ export interface ChatMessageProps {
   isLastMessage: boolean;
   status: ChatStatus;
   isAIEnabled?: boolean;
+  hasPendingApproval: boolean;
   isCopied: boolean;
   onCopy: (text: string, messageId: string) => void;
   onRegenerate: () => void;
+  onApprovalResponse: (approvalId: string, isApproved: boolean) => void;
 }
 
 export interface ChatComposerProps {
@@ -48,6 +52,7 @@ export interface ChatComposerProps {
   mode: Mode;
   isAIEnabled?: boolean;
   showProactiveCapAlert: boolean;
+  hasPendingApproval: boolean;
   controller: PromptInputControllerProps;
   textareaRef: RefObject<HTMLTextAreaElement | null>;
   onSubmit: (message: PromptInputMessage) => void;

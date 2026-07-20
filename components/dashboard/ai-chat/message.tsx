@@ -26,6 +26,15 @@ import {
   SourcesTrigger,
 } from "@/components/ai-elements/sources";
 import {
+  Confirmation,
+  ConfirmationAccepted,
+  ConfirmationAction,
+  ConfirmationActions,
+  ConfirmationRejected,
+  ConfirmationRequest,
+  ConfirmationTitle,
+} from "@/components/ai-elements/confirmation";
+import {
   Tool,
   ToolContent,
   ToolHeader,
@@ -33,6 +42,8 @@ import {
   ToolOutput,
 } from "@/components/ai-elements/tool";
 import { cn } from "@/lib/utils";
+
+import { isWriteToolPartType } from "@/lib/ai/write-tools";
 
 import type { ChatMessageProps } from "./types";
 import {
@@ -47,9 +58,11 @@ export function ChatMessage({
   isLastMessage,
   status,
   isAIEnabled,
+  hasPendingApproval,
   isCopied,
   onCopy,
   onRegenerate,
+  onApprovalResponse,
 }: ChatMessageProps) {
   const isAssistant = message.role === "assistant";
   const isStreaming = status === "streaming";
@@ -154,7 +167,7 @@ export function ChatMessage({
                       <MessageAction
                         onClick={() => onRegenerate()}
                         tooltip="Regenerate response"
-                        disabled={!isAIEnabled}
+                        disabled={!isAIEnabled || hasPendingApproval}
                       >
                         <RefreshCcw className="size-3.5" />
                       </MessageAction>
@@ -179,25 +192,90 @@ export function ChatMessage({
             return null;
           default:
             if (isStaticToolUIPart(part)) {
+              const approval = "approval" in part ? part.approval : undefined;
+              const toolInput = part.input as
+                { summary?: unknown } | null | undefined;
+              const approvalSummary =
+                typeof toolInput?.summary === "string" &&
+                toolInput.summary.trim()
+                  ? toolInput.summary
+                  : "The advisor proposes a portfolio change.";
+              // The summary is model-written prose; show the executable args
+              // too so the user approves what will actually run.
+              const approvalDetails = Object.entries(
+                (toolInput ?? {}) as Record<string, unknown>,
+              ).filter(([key, value]) => key !== "summary" && value != null);
+
               return (
-                <Tool
-                  key={`${message.id}-part-${index}`}
-                  className="notranslate mb-0"
-                  translate="no"
-                >
-                  <ToolHeader
-                    type={part.type}
-                    state={part.state}
-                    className="truncate"
-                  />
-                  <ToolContent>
-                    <ToolInput input={part.input} />
-                    <ToolOutput
-                      output={getToolOutputPreview(part)}
-                      errorText={part.errorText}
+                <Fragment key={`${message.id}-part-${index}`}>
+                  <Tool className="notranslate mb-0" translate="no">
+                    <ToolHeader
+                      type={part.type}
+                      state={part.state}
+                      className="truncate"
                     />
-                  </ToolContent>
-                </Tool>
+                    <ToolContent>
+                      <ToolInput input={part.input} />
+                      <ToolOutput
+                        output={getToolOutputPreview(part)}
+                        errorText={part.errorText}
+                      />
+                    </ToolContent>
+                  </Tool>
+                  {isWriteToolPartType(part.type) && approval && (
+                    <Confirmation
+                      className="notranslate"
+                      translate="no"
+                      state={part.state}
+                      approval={approval}
+                    >
+                      <ConfirmationTitle className="text-foreground font-medium">
+                        {approvalSummary}
+                      </ConfirmationTitle>
+                      <ConfirmationRequest>
+                        {approvalDetails.length > 0 && (
+                          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-xs">
+                            {approvalDetails.map(([key, value]) => (
+                              <Fragment key={key}>
+                                <dt className="text-muted-foreground">{key}</dt>
+                                <dd className="font-medium break-all">
+                                  {String(value)}
+                                </dd>
+                              </Fragment>
+                            ))}
+                          </dl>
+                        )}
+                        <ConfirmationActions>
+                          <ConfirmationAction
+                            variant="outline"
+                            onClick={() =>
+                              onApprovalResponse(approval.id, false)
+                            }
+                          >
+                            Deny
+                          </ConfirmationAction>
+                          <ConfirmationAction
+                            onClick={() =>
+                              onApprovalResponse(approval.id, true)
+                            }
+                          >
+                            Approve
+                          </ConfirmationAction>
+                        </ConfirmationActions>
+                      </ConfirmationRequest>
+                      <ConfirmationAccepted>
+                        <p className="text-muted-foreground text-xs">
+                          You approved this action.
+                        </p>
+                      </ConfirmationAccepted>
+                      <ConfirmationRejected>
+                        <p className="text-muted-foreground text-xs">
+                          You denied this action.
+                        </p>
+                      </ConfirmationRejected>
+                    </Confirmation>
+                  )}
+                </Fragment>
               );
             }
 

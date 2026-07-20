@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { UIMessage } from "ai";
 
-const insertMock = vi.fn();
+const upsertMock = vi.fn();
 const fromMock = vi.fn();
 const getUserMock = vi.fn();
 
@@ -13,18 +13,18 @@ vi.mock("@/supabase/server", () => ({
   }),
 }));
 
-describe("trackAssistantTurn insert behavior", () => {
+describe("trackAssistantTurn upsert behavior", () => {
   beforeEach(() => {
-    insertMock.mockReset();
+    upsertMock.mockReset();
     fromMock.mockReset();
     getUserMock.mockReset();
 
-    insertMock.mockResolvedValue({ error: null });
-    fromMock.mockReturnValue({ insert: insertMock });
+    upsertMock.mockResolvedValue({ error: null });
+    fromMock.mockReturnValue({ upsert: upsertMock });
     getUserMock.mockResolvedValue({ data: { user: { id: "user-1" } } });
   });
 
-  it("skips insert when assistant_message_id is not a UUID", async () => {
+  it("skips upsert when assistant_message_id is not a UUID", async () => {
     const { trackAssistantTurn } =
       await import("@/server/ai/telemetry/track-assistant-turn");
 
@@ -41,10 +41,10 @@ describe("trackAssistantTurn insert behavior", () => {
       finishReason: "stop",
     });
 
-    expect(insertMock).not.toHaveBeenCalled();
+    expect(upsertMock).not.toHaveBeenCalled();
   });
 
-  it("skips insert when conversation_id is not a UUID", async () => {
+  it("skips upsert when conversation_id is not a UUID", async () => {
     const { trackAssistantTurn } =
       await import("@/server/ai/telemetry/track-assistant-turn");
 
@@ -61,10 +61,10 @@ describe("trackAssistantTurn insert behavior", () => {
       finishReason: "stop",
     });
 
-    expect(insertMock).not.toHaveBeenCalled();
+    expect(upsertMock).not.toHaveBeenCalled();
   });
 
-  it("inserts telemetry when IDs are valid UUIDs", async () => {
+  it("upserts telemetry keyed on assistant_message_id when IDs are valid UUIDs", async () => {
     const { trackAssistantTurn } =
       await import("@/server/ai/telemetry/track-assistant-turn");
 
@@ -81,13 +81,15 @@ describe("trackAssistantTurn insert behavior", () => {
       finishReason: "stop",
     });
 
-    expect(insertMock).toHaveBeenCalledTimes(1);
-    expect(insertMock).toHaveBeenCalledWith(
+    expect(upsertMock).toHaveBeenCalledTimes(1);
+    expect(upsertMock).toHaveBeenCalledWith(
       expect.objectContaining({
         conversation_id: "d9ef7f5c-9077-4703-8164-802e44f278a1",
         assistant_message_id: "c18d1bdf-32ef-4f5a-9c37-d44229f1e7ea",
         routes: ["general"],
       }),
+      // Tool-approval continuations re-report the same assistant message.
+      { onConflict: "assistant_message_id" },
     );
   });
 });

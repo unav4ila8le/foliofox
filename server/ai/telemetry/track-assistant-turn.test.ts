@@ -95,4 +95,73 @@ describe("track-assistant-turn helpers", () => {
 
     expect(outcome).toBe("ok");
   });
+
+  it("classifies write route for write tools", () => {
+    const routes = resolveAssistantRoutes([
+      { type: "tool-createPortfolioRecord", state: "output-available" },
+    ] as unknown as AssistantParts);
+
+    expect(routes).toEqual(["write"]);
+  });
+
+  it("returns committed outcome for a successful write tool output", () => {
+    const outcome = resolveAssistantOutcome({
+      parts: [
+        {
+          type: "tool-createPortfolioRecord",
+          state: "output-available",
+          output: { success: true },
+        },
+      ] as unknown as AssistantParts,
+      finishReason: "stop",
+    });
+
+    expect(outcome).toBe("committed");
+  });
+
+  it("does not return committed when the write tool output failed", () => {
+    const outcome = resolveAssistantOutcome({
+      parts: [
+        {
+          type: "tool-createPosition",
+          state: "output-available",
+          output: { success: false, code: "DUPLICATE_NAME" },
+        },
+      ] as unknown as AssistantParts,
+      finishReason: "stop",
+    });
+
+    expect(outcome).toBe("ok");
+  });
+
+  it("returns error when a write tool was denied even alongside a committed one", () => {
+    const outcome = resolveAssistantOutcome({
+      parts: [
+        {
+          type: "tool-createPortfolioRecord",
+          state: "output-available",
+          output: { success: true },
+        },
+        { type: "tool-createPosition", state: "output-denied" },
+      ] as unknown as AssistantParts,
+      finishReason: "stop",
+    });
+
+    expect(outcome).toBe("error");
+  });
+
+  it("does not return committed for successful read tool outputs", () => {
+    const outcome = resolveAssistantOutcome({
+      parts: [
+        {
+          type: "tool-getPortfolioOverview",
+          state: "output-available",
+          output: { success: true },
+        },
+      ] as unknown as AssistantParts,
+      finishReason: "stop",
+    });
+
+    expect(outcome).toBe("ok");
+  });
 });

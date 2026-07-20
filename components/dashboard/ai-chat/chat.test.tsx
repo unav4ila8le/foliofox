@@ -9,10 +9,23 @@ const hoistedMocks = vi.hoisted(() => ({
   sendMessageMock: vi.fn(),
   regenerateMock: vi.fn(),
   setMessagesMock: vi.fn(),
+  addToolApprovalResponseMock: vi.fn(),
+  routerRefreshMock: vi.fn(),
+  capturedOnFinish: null as
+    | ((args: {
+        message: unknown;
+        isAbort: boolean;
+        isError: boolean;
+      }) => Promise<void> | void)
+    | null,
   chatError: null as Error | null,
   promptSubmitPayload: { text: "hello", files: [] as unknown[] },
   messages: [] as unknown[],
   status: "ready" as "ready" | "streaming" | "submitted",
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: hoistedMocks.routerRefreshMock }),
 }));
 
 vi.mock("@/hooks/use-copy-to-clipboard", () => ({
@@ -238,12 +251,24 @@ vi.mock("@/components/ui/logos/logomark", () => ({
 }));
 
 vi.mock("@ai-sdk/react", () => ({
-  useChat: ({ onError }: { onError?: (error: Error) => void }) => {
+  useChat: ({
+    onError,
+    onFinish,
+  }: {
+    onError?: (error: Error) => void;
+    onFinish?: (args: {
+      message: unknown;
+      isAbort: boolean;
+      isError: boolean;
+    }) => Promise<void> | void;
+  }) => {
     if (hoistedMocks.chatError) {
       const error = hoistedMocks.chatError;
       hoistedMocks.chatError = null;
       onError?.(error);
     }
+
+    hoistedMocks.capturedOnFinish = onFinish ?? null;
 
     return {
       messages: hoistedMocks.messages,
@@ -252,6 +277,7 @@ vi.mock("@ai-sdk/react", () => ({
       status: hoistedMocks.status,
       stop: vi.fn(),
       regenerate: hoistedMocks.regenerateMock,
+      addToolApprovalResponse: hoistedMocks.addToolApprovalResponseMock,
     };
   },
 }));
@@ -283,6 +309,9 @@ describe("Chat guardrail UI", () => {
     hoistedMocks.setMessagesMock.mockReset();
     hoistedMocks.sendMessageMock.mockReset();
     hoistedMocks.regenerateMock.mockReset();
+    hoistedMocks.addToolApprovalResponseMock.mockReset();
+    hoistedMocks.routerRefreshMock.mockReset();
+    hoistedMocks.capturedOnFinish = null;
   });
 
   it("shows proactive conversation-cap alert for unsaved thread", () => {
@@ -633,5 +662,167 @@ describe("Chat guardrail UI", () => {
     ).not.toBeNull();
     expect(screen.getByText('tool-input:{"ticker":"AAPL"}')).not.toBeNull();
     expect(screen.getByText('tool-output:{"price":123.45}')).not.toBeNull();
+  });
+
+  it("renders the approval card and forwards approve/deny responses", () => {
+    hoistedMocks.messages = [
+      {
+        id: "message-approval",
+        role: "assistant",
+        parts: [
+          {
+            type: "tool-createPortfolioRecord",
+            state: "approval-requested",
+            input: {
+              summary: "Buy 20 × AAPL @ 211.50 USD on 2026-07-18",
+              type: "buy",
+              quantity: 20,
+              unitValue: 211.5,
+              date: "2026-07-18",
+              description: null,
+            },
+            approval: { id: "approval-1" },
+          },
+        ],
+      },
+    ];
+
+    renderChat();
+
+    expect(
+      screen.getByText("Buy 20 × AAPL @ 211.50 USD on 2026-07-18"),
+    ).not.toBeNull();
+    // The executable args are shown alongside the model-written summary.
+    expect(screen.getByText("quantity")).not.toBeNull();
+    expect(screen.getByText("20")).not.toBeNull();
+    expect(screen.getByText("211.5")).not.toBeNull();
+    // Null optionals and the summary itself are not listed as detail rows.
+    expect(screen.queryByText("description")).toBeNull();
+    expect(screen.queryByText("summary")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Approve" }));
+    expect(hoistedMocks.addToolApprovalResponseMock).toHaveBeenCalledWith({
+      id: "approval-1",
+      approved: true,
+      reason: undefined,
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Deny" }));
+    expect(hoistedMocks.addToolApprovalResponseMock).toHaveBeenCalledWith({
+      id: "approval-1",
+      approved: false,
+      reason: "User denied this action.",
+    });
+  });
+
+  it("shows the resolved approval state without action buttons", () => {
+    hoistedMocks.messages = [
+      {
+        id: "message-approved",
+        role: "assistant",
+        parts: [
+          {
+            type: "tool-createPortfolioRecord",
+            state: "output-available",
+            input: { summary: "Buy 20 × AAPL @ 211.50 USD on 2026-07-18" },
+            output: { success: true },
+            approval: { id: "approval-1", approved: true },
+          },
+        ],
+      },
+    ];
+
+    renderChat();
+
+    expect(screen.getByText("You approved this action.")).not.toBeNull();
+    expect(screen.queryByRole("button", { name: "Approve" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Deny" })).toBeNull();
+  });
+
+  it("blocks new submissions while an approval is pending", () => {
+    hoistedMocks.messages = [
+      {
+        id: "message-approval",
+        role: "assistant",
+        parts: [
+          {
+            type: "tool-createPortfolioRecord",
+            state: "approval-requested",
+            input: { summary: "Buy 20 × AAPL @ 211.50 USD on 2026-07-18" },
+            approval: { id: "approval-1" },
+          },
+        ],
+      },
+    ];
+
+    renderChat();
+
+    const submitButton = screen.getAllByRole("button", {
+      name: "Send",
+    })[0] as HTMLButtonElement;
+    expect(submitButton.disabled).toBe(true);
+
+    fireEvent.submit(submitButton.closest("form") as HTMLFormElement);
+    expect(hoistedMocks.sendMessageMock).not.toHaveBeenCalled();
+  });
+
+  it("disables regenerate while an approval is pending", () => {
+    hoistedMocks.messages = [
+      {
+        id: "message-approval",
+        role: "assistant",
+        parts: [
+          { type: "text", text: "I can record that buy for you." },
+          {
+            type: "tool-createPortfolioRecord",
+            state: "approval-requested",
+            input: { summary: "Buy 20 × AAPL @ 211.50 USD on 2026-07-18" },
+            approval: { id: "approval-1" },
+          },
+        ],
+      },
+    ];
+
+    const { container } = renderChat();
+
+    const regenerateButton = container.querySelector(
+      'button[tooltip="Regenerate response"]',
+    ) as HTMLButtonElement | null;
+    expect(regenerateButton).not.toBeNull();
+    expect(regenerateButton?.disabled).toBe(true);
+  });
+
+  it("refreshes the dashboard only after a successful write", async () => {
+    renderChat();
+
+    await hoistedMocks.capturedOnFinish?.({
+      message: {
+        id: "assistant-plain",
+        role: "assistant",
+        parts: [{ type: "text", text: "no writes here" }],
+      },
+      isAbort: false,
+      isError: false,
+    });
+    expect(hoistedMocks.routerRefreshMock).not.toHaveBeenCalled();
+
+    await hoistedMocks.capturedOnFinish?.({
+      message: {
+        id: "assistant-write",
+        role: "assistant",
+        parts: [
+          {
+            type: "tool-createPosition",
+            state: "output-available",
+            input: { summary: "Add position VWCE.DE" },
+            output: { success: true },
+            approval: { id: "approval-2", approved: true },
+          },
+        ],
+      },
+      isAbort: false,
+      isError: false,
+    });
+    expect(hoistedMocks.routerRefreshMock).toHaveBeenCalledTimes(1);
   });
 });

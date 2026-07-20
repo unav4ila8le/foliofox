@@ -269,7 +269,23 @@ async function insertConversationMessage(params: {
     model,
     usageTokens,
   } = params;
-  const messageOrder = await getNextMessageOrder(supabase, conversationId);
+
+  // A tool-approval continuation upserts into an existing assistant message:
+  // keep its original order instead of bumping it to the end again.
+  let existingOrder: number | null = null;
+  if (messageId) {
+    const { data: existingMessage } = await supabase
+      .from("conversation_messages")
+      .select("order")
+      .eq("id", messageId)
+      .eq("conversation_id", conversationId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    existingOrder = existingMessage?.order ?? null;
+  }
+
+  const messageOrder =
+    existingOrder ?? (await getNextMessageOrder(supabase, conversationId));
 
   const insertPayload: {
     conversation_id: string;
@@ -295,9 +311,12 @@ async function insertConversationMessage(params: {
     insertPayload.id = messageId;
   }
 
+  // Upsert instead of insert: a tool-approval continuation streams into the
+  // same assistant message id, so the second pass must update the stored row.
+  // User turns carry no id, so upsert keeps plain insert semantics for them.
   const { error } = await supabase
     .from("conversation_messages")
-    .insert(insertPayload);
+    .upsert(insertPayload);
 
   if (error) {
     throw new Error(`Failed to persist conversation message: ${error.message}`);

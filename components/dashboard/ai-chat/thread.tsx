@@ -7,9 +7,11 @@ export function ChatThread({
   messages,
   status,
   isAIEnabled,
+  hasPendingApproval,
   copiedMessages,
   onCopy,
   onRegenerate,
+  onApprovalResponse,
 }: ChatThreadProps) {
   return (
     <>
@@ -20,9 +22,11 @@ export function ChatThread({
           isLastMessage={messageIndex === messages.length - 1}
           status={status}
           isAIEnabled={isAIEnabled}
+          hasPendingApproval={hasPendingApproval}
           isCopied={copiedMessages.has(message.id)}
           onCopy={onCopy}
           onRegenerate={onRegenerate}
+          onApprovalResponse={onApprovalResponse}
         />
       ))}
       {status === "submitted" && <MessageLoading />}

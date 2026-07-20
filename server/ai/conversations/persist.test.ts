@@ -104,6 +104,22 @@ class FakeQueryBuilder<T extends Record<string, unknown>> {
     return Promise.resolve({ data: null, error: null });
   }
 
+  upsert(value: Partial<T> | Partial<T>[]) {
+    const rows = Array.isArray(value) ? value : [value];
+    rows.forEach((row) => {
+      const existingIndex =
+        row.id == null
+          ? -1
+          : this.rowsRef.findIndex((existing) => existing.id === row.id);
+      if (existingIndex >= 0) {
+        this.rowsRef[existingIndex] = this.normalizeInsertRow(row);
+      } else {
+        this.rowsRef.push(this.normalizeInsertRow(row));
+      }
+    });
+    return Promise.resolve({ data: null, error: null });
+  }
+
   update(value: Partial<T>) {
     this.operation = "update";
     this.updatePayload = value;
@@ -433,6 +449,52 @@ describe("conversation persistence guardrails", () => {
     );
 
     expect(persistedAssistant?.id).toBe(assistantMessageId);
+  });
+
+  it("updates the stored assistant message on tool-approval continuation", async () => {
+    const { persistAssistantMessage } =
+      await import("@/server/ai/conversations/persist");
+
+    const assistantMessageId = "4c59a1ef-faa0-4f64-9050-c9ad0f0f3b52";
+    fakeSupabase.conversations = [
+      {
+        id: "continuation-conversation",
+        user_id: "user-1",
+        title: "Continuation Test",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    ];
+
+    await persistAssistantMessage({
+      conversationId: "continuation-conversation",
+      message: createAssistantMessage(
+        assistantMessageId,
+        "Awaiting your approval",
+      ),
+      usageTokens: 100,
+    });
+
+    // Approval continuation streams into the same assistant message id.
+    await persistAssistantMessage({
+      conversationId: "continuation-conversation",
+      message: createAssistantMessage(
+        assistantMessageId,
+        "Done, the record was created",
+      ),
+      usageTokens: 150,
+    });
+
+    const assistantRows = fakeSupabase.conversationMessages.filter(
+      (message) => message.role === "assistant",
+    );
+
+    expect(assistantRows).toHaveLength(1);
+    expect(assistantRows[0]?.id).toBe(assistantMessageId);
+    expect(assistantRows[0]?.content).toBe("Done, the record was created");
+    expect(assistantRows[0]?.usage_tokens).toBe(150);
+    // The continuation must keep the message's original position.
+    expect(assistantRows[0]?.order).toBe(0);
   });
 
   it("persists assistant message and trims when over message cap", async () => {
