@@ -40,7 +40,9 @@ import { DisabledState } from "./disabled-state";
 import { ChatSuggestions } from "./suggestions";
 import { ChatThread } from "./thread";
 import type { ChatProps } from "./types";
-import { hasPendingApprovalRequest, messageHasSuccessfulWrite } from "./utils";
+import { hasSuccessfulWriteToolPart } from "@/lib/ai/write-tools";
+
+import { hasPendingApprovalRequest } from "./utils";
 
 function buildClientFileValidationError(
   fileParts: FileUIPart[],
@@ -319,7 +321,7 @@ export function Chat({
 
       setChatErrorMessage(null);
       // Approved writes changed portfolio data: re-pull the RSC dashboard.
-      if (messageHasSuccessfulWrite(message)) {
+      if (hasSuccessfulWriteToolPart(message.parts)) {
         router.refresh();
       }
       await onConversationPersisted?.();

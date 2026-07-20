@@ -42,16 +42,6 @@ function parseToolNameFromPartType(partType: string): AIToolName | null {
 }
 
 /**
- * Resolve telemetry routes for a single UI message part type (e.g. "tool-getNews").
- */
-export function resolveRoutesFromToolPartType(
-  partType: string,
-): TelemetryRoutes | null {
-  const toolName = parseToolNameFromPartType(partType);
-  return toolName ? AI_TOOL_ROUTE_REGISTRY[toolName] : null;
-}
-
-/**
  * Resolve telemetry routes from tool parts used in a single assistant turn.
  */
 export function resolveRoutesFromMessageParts(

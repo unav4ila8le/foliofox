@@ -16,6 +16,7 @@ import {
 } from "ai";
 import { z } from "zod";
 
+import { AI_WRITE_TOOL_NAMES } from "@/lib/ai/write-tools";
 import { fetchProfile } from "@/server/profile/actions";
 import { createSystemPrompt, type Mode } from "@/server/ai/system-prompt";
 import { aiTools } from "@/server/ai/tools";
@@ -62,11 +63,6 @@ type ChatUIMessage = UIMessage<unknown, never, InferUITools<typeof aiTools>>;
 // Unsigned approvals let a tampered client alter write-tool inputs between
 // propose and approve, so in production a missing secret disables the write
 // tools entirely (fail closed) and warns loudly.
-const AI_WRITE_TOOL_NAMES: ReadonlySet<string> = new Set([
-  "createPortfolioRecord",
-  "createPosition",
-]);
-
 let warnedMissingToolApprovalSecret = false;
 function resolveToolApprovalSecret(): string | undefined {
   const secret = process.env.TOOL_APPROVAL_SECRET?.trim() || undefined;

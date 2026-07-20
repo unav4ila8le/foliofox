@@ -2,12 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { UIMessage } from "ai";
 
-import {
-  generateUuid,
-  hasPendingApprovalRequest,
-  isWriteToolPartType,
-  messageHasSuccessfulWrite,
-} from "./utils";
+import { generateUuid, hasPendingApprovalRequest } from "./utils";
 
 const UUID_V4_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
@@ -47,14 +42,7 @@ function assistantMessage(parts: unknown[]): UIMessage {
   } as UIMessage;
 }
 
-describe("write tool helpers", () => {
-  it("identifies only the write tool part types", () => {
-    expect(isWriteToolPartType("tool-createPortfolioRecord")).toBe(true);
-    expect(isWriteToolPartType("tool-createPosition")).toBe(true);
-    expect(isWriteToolPartType("tool-getPortfolioOverview")).toBe(false);
-    expect(isWriteToolPartType("text")).toBe(false);
-  });
-
+describe("pending approval detection", () => {
   it("detects a pending approval on the last assistant message", () => {
     const messages = [
       assistantMessage([
@@ -170,59 +158,5 @@ describe("write tool helpers", () => {
     ).toBe(false);
 
     expect(hasPendingApprovalRequest([], "ready")).toBe(false);
-  });
-
-  it("detects successful writes and ignores failed or read tool outputs", () => {
-    expect(
-      messageHasSuccessfulWrite(
-        assistantMessage([
-          {
-            type: "tool-createPosition",
-            state: "output-available",
-            input: { summary: "Add" },
-            output: { success: true },
-          },
-        ]),
-      ),
-    ).toBe(true);
-
-    expect(
-      messageHasSuccessfulWrite(
-        assistantMessage([
-          {
-            type: "tool-createPosition",
-            state: "output-available",
-            input: { summary: "Add" },
-            output: { success: false, code: "DUPLICATE_NAME" },
-          },
-        ]),
-      ),
-    ).toBe(false);
-
-    expect(
-      messageHasSuccessfulWrite(
-        assistantMessage([
-          {
-            type: "tool-getPortfolioOverview",
-            state: "output-available",
-            input: {},
-            output: { success: true },
-          },
-        ]),
-      ),
-    ).toBe(false);
-
-    expect(
-      messageHasSuccessfulWrite(
-        assistantMessage([
-          {
-            type: "tool-createPortfolioRecord",
-            state: "output-denied",
-            input: { summary: "Buy" },
-            approval: { id: "approval-1", approved: false },
-          },
-        ]),
-      ),
-    ).toBe(false);
   });
 });

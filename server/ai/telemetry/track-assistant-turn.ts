@@ -2,10 +2,8 @@ import type { FinishReason, UIMessage } from "ai";
 import { z } from "zod";
 
 import { createClient } from "@/supabase/server";
-import {
-  resolveRoutesFromMessageParts,
-  resolveRoutesFromToolPartType,
-} from "@/server/ai/tooling/tool-route-registry";
+import { hasSuccessfulWriteToolPart } from "@/lib/ai/write-tools";
+import { resolveRoutesFromMessageParts } from "@/server/ai/tooling/tool-route-registry";
 import type {
   AIAssistantOutcome,
   AIAssistantPromptSource,
@@ -61,25 +59,6 @@ export function resolveAssistantRoutes(
   return resolveRoutesFromMessageParts(parts);
 }
 
-function hasCommittedWrite(parts: UIMessage["parts"]): boolean {
-  if (!Array.isArray(parts)) return false;
-
-  return parts.some((part) => {
-    if (!("state" in part) || part.state !== "output-available") return false;
-
-    const routes = resolveRoutesFromToolPartType(part.type);
-    if (!routes?.includes("write")) return false;
-
-    const output = "output" in part ? part.output : null;
-    return (
-      typeof output === "object" &&
-      output !== null &&
-      "success" in output &&
-      output.success === true
-    );
-  });
-}
-
 /**
  * Resolve the assistant turn outcome for telemetry.
  */
@@ -95,7 +74,7 @@ export function resolveAssistantOutcome({
     return "error";
   }
 
-  if (hasCommittedWrite(parts)) {
+  if (hasSuccessfulWriteToolPart(parts)) {
     return "committed";
   }
 

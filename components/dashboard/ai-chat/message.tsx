@@ -43,12 +43,13 @@ import {
 } from "@/components/ai-elements/tool";
 import { cn } from "@/lib/utils";
 
+import { isWriteToolPartType } from "@/lib/ai/write-tools";
+
 import type { ChatMessageProps } from "./types";
 import {
   getSourceLabel,
   isMessageFilePart,
   isMessageSourcePart,
-  isWriteToolPartType,
 } from "./utils";
 import { getToolOutputPreview } from "./tool-output-preview";
 
