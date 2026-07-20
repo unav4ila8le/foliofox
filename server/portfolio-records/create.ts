@@ -75,19 +75,58 @@ export async function createPortfolioRecord(formData: FormData) {
     } as const;
   }
 
+  // Recalculation + cache-revalidation tail shared by the fresh-insert path
+  // and the replay paths: the first attempt may have died between insert and
+  // recalculation, so a replay must re-run it (it is idempotent) instead of
+  // reporting success over stale snapshots.
+  async function finalizeRecord(record: {
+    id: string;
+    position_id: string;
+    date: string;
+  }) {
+    const customCostBasisMap =
+      portfolioRecordData.type === "update" && costBasisPerUnit !== null
+        ? { [record.id]: costBasisPerUnit }
+        : undefined;
+
+    const recalculationResult = await recalculateSnapshotsUntilNextUpdate({
+      positionId: record.position_id,
+      fromDate: new Date(record.date),
+      customCostBasisByRecordId: customCostBasisMap,
+    });
+
+    if (!recalculationResult.success) {
+      return {
+        success: false,
+        code: "RECALCULATION_FAILED",
+        message: "Failed to recalculate snapshots after record creation",
+      } as const;
+    }
+
+    revalidatePath("/dashboard", "layout");
+    return { success: true } as const;
+  }
+
+  async function fetchCommittedRecordByIdempotencyKey(key: string) {
+    const { data: existingByKey } = await supabase
+      .from("portfolio_records")
+      .select("id, position_id, date")
+      .eq("user_id", user.id)
+      .eq("idempotency_key", key)
+      .maybeSingle();
+
+    return existingByKey ?? null;
+  }
+
   // Replay check before timeline validation: the committed record from the
   // first attempt is part of the timeline now, so re-validating the candidate
   // would wrongly fail (e.g. INSUFFICIENT_QUANTITY on a replayed full sell).
   if (idempotencyKey !== null) {
-    const { data: existingByKey } = await supabase
-      .from("portfolio_records")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("idempotency_key", idempotencyKey)
-      .maybeSingle();
+    const committedRecord =
+      await fetchCommittedRecordByIdempotencyKey(idempotencyKey);
 
-    if (existingByKey) {
-      return { success: true } as const;
+    if (committedRecord) {
+      return finalizeRecord(committedRecord);
     }
   }
 
@@ -136,9 +175,15 @@ export async function createPortfolioRecord(formData: FormData) {
 
   if (!inserted || insertError) {
     // Unique violation on the idempotency key means this exact write already
-    // committed (retried approval) — report success without re-inserting.
+    // committed (race with a retry) — finalize the committed record instead
+    // of inserting a duplicate.
     if (idempotencyKey !== null && insertError?.code === "23505") {
-      return { success: true } as const;
+      const committedRecord =
+        await fetchCommittedRecordByIdempotencyKey(idempotencyKey);
+
+      if (committedRecord) {
+        return finalizeRecord(committedRecord);
+      }
     }
 
     return {
@@ -148,26 +193,6 @@ export async function createPortfolioRecord(formData: FormData) {
     } as const;
   }
 
-  const customCostBasisMap =
-    portfolioRecordData.type === "update" && costBasisPerUnit !== null
-      ? { [inserted.id]: costBasisPerUnit }
-      : undefined;
-
   // Recalculate snapshots from this date forward
-  const recalculationResult = await recalculateSnapshotsUntilNextUpdate({
-    positionId: inserted.position_id,
-    fromDate: new Date(inserted.date),
-    customCostBasisByRecordId: customCostBasisMap,
-  });
-
-  if (!recalculationResult.success) {
-    return {
-      success: false,
-      code: "RECALCULATION_FAILED",
-      message: "Failed to recalculate snapshots after record creation",
-    } as const;
-  }
-
-  revalidatePath("/dashboard", "layout");
-  return { success: true } as const;
+  return finalizeRecord(inserted);
 }
