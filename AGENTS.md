@@ -10,7 +10,7 @@
 
 ## Development Principles
 
-- Always apply the `ponytail` skill (`.claude/skills/ponytail`) on coding tasks: laziest working solution, YAGNI ladder, shortest diff that works. The full suite (`ponytail-review`, `ponytail-audit`, `ponytail-debt`, `ponytail-gain`, `ponytail-help`) is available as project skills.
+- Always apply the `ponytail` skill on coding tasks: laziest working solution, YAGNI ladder, shortest diff that works. The full suite (`ponytail-review`, `ponytail-audit`, `ponytail-debt`, `ponytail-gain`, `ponytail-help`) comes from the `ponytail` plugin enabled in `.claude/settings.json`.
 - Prefer server-first architecture (RSC, minimal client-only code).
 - Keep data access in `server/` with `"use server"` and the correct Supabase client.
 - Favor explicit, typed, functional code over clever abstractions.
