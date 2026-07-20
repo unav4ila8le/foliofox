@@ -75,6 +75,22 @@ export async function createPortfolioRecord(formData: FormData) {
     } as const;
   }
 
+  // Replay check before timeline validation: the committed record from the
+  // first attempt is part of the timeline now, so re-validating the candidate
+  // would wrongly fail (e.g. INSUFFICIENT_QUANTITY on a replayed full sell).
+  if (idempotencyKey !== null) {
+    const { data: existingByKey } = await supabase
+      .from("portfolio_records")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("idempotency_key", idempotencyKey)
+      .maybeSingle();
+
+    if (existingByKey) {
+      return { success: true } as const;
+    }
+  }
+
   const { data: affectedRecords, error: affectedRecordsError } = await supabase
     .from("portfolio_records")
     .select("id, position_id, type, date, quantity, created_at")

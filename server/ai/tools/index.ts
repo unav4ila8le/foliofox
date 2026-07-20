@@ -31,6 +31,16 @@ import { createPortfolioRecord } from "./create-portfolio-record";
 import { createPosition } from "./create-position";
 import { getPositionCategories } from "./position-categories";
 
+import { toCivilDateKey } from "@/lib/date/date-utils";
+
+// Write-tool dates must be real calendar dates (rejects e.g. 2026-02-30);
+// validation errors surface to the model for a retry before the approval card.
+const writeDateKeySchema = z
+  .string()
+  .refine((value) => toCivilDateKey(value) !== null, {
+    error: "Must be a real date in YYYY-MM-DD format.",
+  });
+
 export const aiTools = {
   getPortfolioOverview: routedTool({
     telemetryRoutes: ["general"],
@@ -469,10 +479,7 @@ export const aiTools = {
         .describe(
           "'buy' adds quantity, 'sell' removes quantity, 'update' resets quantity and unit value at a date.",
         ),
-      date: z
-        .string()
-        .regex(/^\d{4}-\d{2}-\d{2}$/)
-        .describe("Record date in YYYY-MM-DD format."),
+      date: writeDateKeySchema.describe("Record date in YYYY-MM-DD format."),
       quantity: z
         .number()
         .min(0)
@@ -564,13 +571,9 @@ export const aiTools = {
         .max(100)
         .nullable()
         .describe("Capital gains tax rate percentage, 0-100 (e.g., 26)."),
-      date: z
-        .string()
-        .regex(/^\d{4}-\d{2}-\d{2}$/)
-        .nullable()
-        .describe(
-          "Initial snapshot date in YYYY-MM-DD format. Leave empty for today.",
-        ),
+      date: writeDateKeySchema.describe(
+        "Initial snapshot date in YYYY-MM-DD format. Use the current date unless the user specifies another.",
+      ),
       description: z
         .string()
         .nullable()

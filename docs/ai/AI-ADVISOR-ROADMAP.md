@@ -230,8 +230,9 @@ Objective: let users update portfolio data directly from chat with explicit appr
 
 - Approval mandatory for all mutating tools; denial produces an `execution-denied` tool
   result and the system prompt forbids retrying denied writes.
-- `TOOL_APPROVAL_SECRET` HMAC-signs approval requests (binds tool name + call id +
-  input); forged/tampered approvals are rejected fail-closed.
+- When `TOOL_APPROVAL_SECRET` is configured, it HMAC-signs approval requests (binds
+  tool name + call id + input) and forged/tampered approvals are rejected fail-closed.
+  Without it approvals are unsigned (a production warning is logged) — set it in prod.
 - Server-side re-validation on the approval round-trip: signature, input schema, and
   approval policy are all re-checked before execution.
 - Ownership via user-scoped Supabase client + RLS; all form validations (timeline,

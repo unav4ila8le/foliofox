@@ -20,7 +20,7 @@ const baseParams = {
   unitValue: null,
   costBasisPerUnit: null,
   capitalGainsTaxRate: null,
-  date: null,
+  date: "2026-07-18",
   description: null,
 };
 
@@ -59,11 +59,11 @@ describe("createPosition AI tool", () => {
     expect(formData.get("description")).toBe("Broker sync");
   });
 
-  it("keeps an already-decimal tax rate unchanged", async () => {
-    await createPosition({ ...baseParams, capitalGainsTaxRate: 0.26 });
+  it("treats small rates as percentages too (1 means 1%, not 100%)", async () => {
+    await createPosition({ ...baseParams, capitalGainsTaxRate: 1 });
 
     const formData = createPositionMutationMock.mock.calls[0]?.[0] as FormData;
-    expect(formData.get("capital_gains_tax_rate")).toBe("0.26");
+    expect(formData.get("capital_gains_tax_rate")).toBe("0.01");
   });
 
   it("omits null optionals so the mutation keeps its defaults", async () => {
@@ -72,6 +72,7 @@ describe("createPosition AI tool", () => {
     const formData = createPositionMutationMock.mock.calls[0]?.[0] as FormData;
     expect(formData.get("name")).toBe("Vanguard FTSE All-World");
     expect(formData.get("currency")).toBe("EUR");
+    expect(formData.get("date")).toBe("2026-07-18");
     for (const key of [
       "type",
       "category_id",
@@ -81,7 +82,6 @@ describe("createPosition AI tool", () => {
       "unit_value",
       "cost_basis_per_unit",
       "capital_gains_tax_rate",
-      "date",
       "description",
       "summary",
     ]) {

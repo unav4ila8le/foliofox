@@ -2,8 +2,6 @@
 
 import { createPosition as createPositionMutation } from "@/server/positions/create";
 
-import { normalizeCapitalGainsTaxRateToDecimal } from "@/lib/capital-gains-tax-rate";
-
 interface CreatePositionParams {
   summary: string;
   name: string;
@@ -16,7 +14,7 @@ interface CreatePositionParams {
   unitValue: number | null;
   costBasisPerUnit: number | null;
   capitalGainsTaxRate: number | null;
-  date: string | null; // YYYY-MM-DD
+  date: string; // YYYY-MM-DD
   description: string | null;
 }
 
@@ -52,16 +50,15 @@ export async function createPosition(params: CreatePositionParams) {
   if (params.costBasisPerUnit != null) {
     formData.set("cost_basis_per_unit", String(params.costBasisPerUnit));
   }
-  // The model provides a percentage (e.g., 26); the DB stores a decimal (0.26).
-  const capitalGainsTaxRateDecimal = normalizeCapitalGainsTaxRateToDecimal(
-    params.capitalGainsTaxRate,
-  );
-  if (capitalGainsTaxRateDecimal != null) {
-    formData.set("capital_gains_tax_rate", String(capitalGainsTaxRateDecimal));
+  // The schema guarantees a 0-100 percentage; the DB stores a 0..1 decimal.
+  // Always divide (no mixed-unit heuristic) so 1 means 1%, not 100%.
+  if (params.capitalGainsTaxRate != null) {
+    formData.set(
+      "capital_gains_tax_rate",
+      String(params.capitalGainsTaxRate / 100),
+    );
   }
-  if (params.date != null) {
-    formData.set("date", params.date);
-  }
+  formData.set("date", params.date);
   if (params.description != null) {
     formData.set("description", params.description);
   }
