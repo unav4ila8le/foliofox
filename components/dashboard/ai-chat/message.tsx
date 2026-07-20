@@ -228,7 +228,7 @@ export function ChatMessage({
                       state={part.state}
                       approval={approval}
                     >
-                      <ConfirmationTitle className="text-foreground">
+                      <ConfirmationTitle className="text-foreground font-medium">
                         {approvalSummary}
                       </ConfirmationTitle>
                       <ConfirmationRequest>
