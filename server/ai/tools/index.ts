@@ -579,6 +579,9 @@ export const aiTools = {
         .nullable()
         .describe("Optional note stored on the position."),
     }),
-    execute: async (args) => createPosition(args),
+    // The stable tool-call id makes a retried approval continuation a no-op
+    // instead of a duplicate position (unique index on idempotency_key).
+    execute: async (args, { toolCallId }) =>
+      createPosition({ ...args, idempotencyKey: toolCallId }),
   }),
 };

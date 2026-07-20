@@ -330,7 +330,7 @@ export function Chat({
     setMessages(initialMessages);
   }, [initialMessages, setMessages]);
 
-  const hasPendingApproval = hasPendingApprovalRequest(messages);
+  const hasPendingApproval = hasPendingApprovalRequest(messages, status);
   const showProactiveCapAlert =
     Boolean(isAIEnabled) &&
     Boolean(isAtConversationCap) &&

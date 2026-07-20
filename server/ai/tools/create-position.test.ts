@@ -22,6 +22,7 @@ const baseParams = {
   capitalGainsTaxRate: null,
   date: "2026-07-18",
   description: null,
+  idempotencyKey: "call_abc123",
 };
 
 describe("createPosition AI tool", () => {
@@ -57,6 +58,7 @@ describe("createPosition AI tool", () => {
     expect(formData.get("capital_gains_tax_rate")).toBe("0.26");
     expect(formData.get("date")).toBe("2026-07-18");
     expect(formData.get("description")).toBe("Broker sync");
+    expect(formData.get("idempotency_key")).toBe("call_abc123");
   });
 
   it("treats small rates as percentages too (1 means 1%, not 100%)", async () => {

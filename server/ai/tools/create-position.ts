@@ -16,6 +16,7 @@ interface CreatePositionParams {
   capitalGainsTaxRate: number | null;
   date: string; // YYYY-MM-DD
   description: string | null;
+  idempotencyKey: string;
 }
 
 /**
@@ -62,6 +63,7 @@ export async function createPosition(params: CreatePositionParams) {
   if (params.description != null) {
     formData.set("description", params.description);
   }
+  formData.set("idempotency_key", params.idempotencyKey);
 
   return createPositionMutation(formData);
 }

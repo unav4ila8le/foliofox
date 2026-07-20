@@ -87,6 +87,7 @@ const createPosition = (
   has_market_data: true,
   ...overrides,
   capital_gains_tax_rate: overrides.capital_gains_tax_rate ?? null,
+  idempotency_key: null,
 });
 
 describe("projected income", () => {

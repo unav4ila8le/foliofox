@@ -1,4 +1,4 @@
-import { isStaticToolUIPart, type UIMessage } from "ai";
+import { isStaticToolUIPart, type ChatStatus, type UIMessage } from "ai";
 
 import type { MessageFilePart, MessageSourcePart } from "./types";
 
@@ -17,9 +17,15 @@ export function isWriteToolPartType(partType: string): boolean {
  * leave a dangling tool call and break the next model request.
  * "approval-responded" is still pending — the SDK flips the part state
  * synchronously but schedules the auto-resend async, so until the request
- * actually starts the turn is not resolved yet.
+ * actually starts the turn is not resolved yet. If that continuation request
+ * errors the part stays "approval-responded" forever, so stop blocking on
+ * chat error to keep regenerate/submit available as recovery (a resend still
+ * carries the approval response, so the approved write is not lost).
  */
-export function hasPendingApprovalRequest(messages: UIMessage[]): boolean {
+export function hasPendingApprovalRequest(
+  messages: UIMessage[],
+  status: ChatStatus,
+): boolean {
   const lastMessage = messages.at(-1);
   if (lastMessage?.role !== "assistant") {
     return false;
@@ -29,7 +35,7 @@ export function hasPendingApprovalRequest(messages: UIMessage[]): boolean {
     (part) =>
       isStaticToolUIPart(part) &&
       (part.state === "approval-requested" ||
-        part.state === "approval-responded"),
+        (part.state === "approval-responded" && status !== "error")),
   );
 }
 

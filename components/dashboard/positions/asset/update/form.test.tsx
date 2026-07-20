@@ -32,6 +32,7 @@ function createPosition(): Position {
     category_id: "equity",
     user_category_id: null,
     capital_gains_tax_rate: null,
+    idempotency_key: null,
     description: null,
     symbol_id: null,
     currency: "EUR",

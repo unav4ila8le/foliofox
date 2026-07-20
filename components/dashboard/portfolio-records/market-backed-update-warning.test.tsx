@@ -137,6 +137,7 @@ function createPositionFixture(
     description: null,
     archived_at: null,
     capital_gains_tax_rate: null,
+    idempotency_key: null,
     created_at: "2026-01-01T00:00:00.000Z",
     updated_at: "2026-01-01T00:00:00.000Z",
     is_archived: false,
