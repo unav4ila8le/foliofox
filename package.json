@@ -50,7 +50,7 @@
     "react": "^19.2.4",
     "react-day-picker": "^10.0.1",
     "react-dom": "^19.2.4",
-    "react-dropzone": "^17.0.0",
+    "react-dropzone": "^19.1.1",
     "react-email": "^6.8.1",
     "react-hook-form": "^7.79.0",
     "react-number-format": "^5.4.4",
