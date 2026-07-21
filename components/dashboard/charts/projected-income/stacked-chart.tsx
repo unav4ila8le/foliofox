@@ -78,7 +78,7 @@ export function ProjectedIncomeStackedBarChart({
           axisLine={false}
           tickLine={false}
           tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
-          width={28}
+          width="auto"
         />
         <CartesianGrid stroke="var(--border)" vertical={false} />
         <Tooltip

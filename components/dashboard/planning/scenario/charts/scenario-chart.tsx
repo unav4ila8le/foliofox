@@ -571,7 +571,7 @@ export function ScenarioChart({
                     fill: "var(--muted-foreground)",
                   }}
                   domain={projectedSeriesDomain}
-                  width={40}
+                  width="auto"
                 />
                 <XAxis
                   dataKey="timestamp"

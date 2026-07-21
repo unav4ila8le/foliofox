@@ -63,7 +63,7 @@ export function NetWorthValueAreaChart({
             opacity: isPrivacyMode ? 0 : 1,
           }}
           domain={["auto", "auto"]}
-          width={40}
+          width="auto"
         />
         <XAxis
           dataKey="date"

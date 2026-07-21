@@ -212,7 +212,7 @@ export function DemoProjectedSeriesChart({
             fill: "var(--muted-foreground)",
           }}
           domain={yAxisDomain}
-          width={40}
+          width="auto"
         />
         <XAxis
           dataKey="timestamp"
