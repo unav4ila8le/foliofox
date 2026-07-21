@@ -16,7 +16,10 @@ export default function AIChatPage() {
     sanitizeDashboardReturnPath(requestedReturnPath) ?? "/dashboard";
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col justify-center">
+    // contain-size: without it the chat's content height propagates up as the
+    // layout wrapper's min-content, making the whole shell scroll instead of
+    // capping the card at the available height.
+    <div className="flex min-h-0 flex-1 flex-col justify-center contain-size">
       {/* Single-cell grid: the panel stretches to the card, while the card
           stays content-sized between the min-height floor and available space. */}
       <div className="bg-primary-foreground mx-auto grid min-h-[min(70dvh,100%)] w-full max-w-3xl overflow-hidden rounded-lg border">

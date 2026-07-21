@@ -97,11 +97,11 @@ export function ChatHistory({
                       "hover:bg-destructive/10 hover:text-destructive hover:[&_svg]:text-destructive! flex-none transition-none",
                       deletingId === conversation.id
                         ? "opacity-100"
-                        : "opacity-0 group-hover:opacity-100",
+                        : "opacity-100 md:opacity-0 md:group-hover:opacity-100",
                     )}
                     size="icon-xs"
                     aria-label={`Delete ${conversation.title}`}
-                    variant="ghost"
+                    variant="secondary"
                   >
                     {deletingId === conversation.id ? <Spinner /> : <Trash2 />}
                   </Button>
