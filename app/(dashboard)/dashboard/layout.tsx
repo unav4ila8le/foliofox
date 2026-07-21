@@ -101,7 +101,7 @@ export default async function Layout({
                 {/* Main content */}
                 <SidebarInset className="min-w-0">
                   <Header />
-                  <div className="@container/dashboard mx-auto w-full max-w-7xl p-4 pt-2">
+                  <div className="@container/dashboard mx-auto flex w-full max-w-7xl flex-1 flex-col p-4 pt-2">
                     <DashboardActivityTracker
                       userId={profile.user_id}
                       lastAppActivityAt={profile.last_app_activity_at}
