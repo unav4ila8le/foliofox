@@ -80,7 +80,9 @@ Deliberate deviations from the template: no `updated_at`/trigger (`emailed_at` i
 export const openaiWebSearchTool = () => openAIProvider.tools.webSearch();
 ```
 
-Verified present in installed `@ai-sdk/openai@4.0.17` (`provider.tools.webSearch`). Reuse `extractionModelId` + `extractionGenerationOptions`; no new model config.
+Verified present in installed `@ai-sdk/openai@4.0.17` (`provider.tools.webSearch`) and in the AI SDK provider docs: it is a provider-executed tool on the Responses API (the provider's default API) — the model decides when to search, OpenAI's servers run the search, and consulted URLs come back on `result.sources` (`{ type: 'url', url }[]`). Supported on gpt-5-class Responses models; no documented restriction against combining it with structured outputs. Optional knobs (`searchContextSize`, `userLocation`, `filters.allowedDomains`) — defaults are fine, don't set any. Reuse `extractionModelId` + `extractionGenerationOptions`; no new model config.
+
+Note: this export is inert for the AI chat advisor. The advisor's toolset is the explicit `aiTools` registry in `server/ai/tools/index.ts` (wired through the tool-call guard and system prompt in `app/api/ai/chat/route.ts`); nothing outside that registry is callable. Giving the advisor web search is a separate feature — see "Cut on purpose".
 
 ## Step 3 — `server/symbol-review/worker.ts` (new; all logic in one module)
 
@@ -131,7 +133,7 @@ const result = await generateText({
 });
 ```
 
-Insert `{ symbol_id, ...result.output, model: extractionModelId }` (`emailed_at` stays null until a digest includes it).
+Insert `{ symbol_id, ...result.output, model: extractionModelId }` (`emailed_at` stays null until a digest includes it). If the model returns an empty `evidence_urls`, fall back to `result.sources` URLs (provider-reported list of consulted pages) so the digest always carries evidence links when a search actually ran.
 
 **Prompt** (co-located `buildReviewPrompt`): symbol context (ticker, exchange, name, currency, quote_type, last quote date, days stale) + instructions: research CURRENT listing status via web search; classify per the five verdicts (successor_ticker only for "renamed", pointing at the new Yahoo ticker); cite actually-used URLs (exchange notices/issuer releases/regulator filings over aggregators); "high" confidence only with multiple independent sources; inconclusive → "unknown"/"low"; summary 2–3 sentences with what/when.
 
@@ -186,7 +188,7 @@ Post-deploy: trigger the cron manually once with the bearer header, confirm verd
 
 ## Open risks
 
-1. **web_search + `Output.object` in one `generateText`**: tool factory confirmed in installed SDK; the combination is unverified in this repo. If they conflict, fall back to two-step (research call with tools → cheap structuring call with `Output.object`). Only the per-symbol function changes.
+1. **web_search + `Output.object` in one `generateText`**: docs show no restriction on the combination for gpt-5-class Responses models, but there are community reports of broken/truncated JSON when the older `web_search_preview` tool mixed with structured outputs — so treat it as unproven until the post-deploy smoke test. If it misbehaves, fall back to two-step (research call with tools → cheap structuring call with `Output.object`). Only the per-symbol function changes.
 2. **Model** `gpt-5.6-luna` must accept the web_search tool; if not, fix is a single model-id const in the worker.
 3. **PostgREST double `!inner` embed filter** on `positions` + `symbol_aliases`; if the alias filter misbehaves, fetch alias rows and filter in JS like `server/positions/stale.ts` does.
 4. **Runtime**: 10 × slow research calls can still brush 800s worst-case; insert-as-you-go plus the `emailed_at IS NULL` digest sweep means an overrun truncates the tail without losing anything — remaining symbols retried next week, inserted verdicts emailed next week.
@@ -195,3 +197,5 @@ Post-deploy: trigger the cron manually once with the bearer header, confirm verd
 ## Cut on purpose
 
 No admin UI, no feature-flag env var, no verdict status/ack workflow (`emailed_at` is delivery bookkeeping, not acknowledgement), no `updated_at` trigger, no react-email template, no retry queue (weekly rerun retries free), no concurrency, no keyset pagination, no dedicated review model config, no raw-transcript storage, no product-reference update.
+
+**No web search for the AI chat advisor** (deliberate, possible follow-up). The advisor stays grounded in the portfolio tools it already has; giving it `webSearch` would let it answer from arbitrary online data instead of the user's own positions, which needs its own design pass: system-prompt guidelines on when web data is allowed (e.g. current-events context only, never as a substitute for portfolio tools), a call budget in the tool-call guard, source attribution in the chat UI, and a `content/product-reference.md` update. None of that belongs in this operator-only feature; the worker calls the tool factory directly and the advisor's registry is untouched.
