@@ -23,6 +23,17 @@ begin
   end if;
 end $$;
 
+drop index public.symbol_aliases_symbol_type_value_effective_to_idx;
+
+create unique index symbol_aliases_symbol_source_type_value_effective_to_idx
+  on public.symbol_aliases (
+    symbol_id,
+    source,
+    type,
+    value,
+    coalesce(effective_to, 'infinity'::timestamptz)
+  );
+
 alter table public.symbols
   drop constraint symbols_ticker_key;
 
