@@ -394,6 +394,47 @@ describe("resolveSymbolsBatch", () => {
     });
   });
 
+  it("retains canonical display metadata without an active provider alias", async () => {
+    const symbolId = "34343434-3434-3434-3434-343434343434";
+    const { client } = createSupabaseStub({
+      symbols: [{ id: symbolId, ticker: "OLD" }],
+      symbolAliases: [
+        {
+          symbol_id: symbolId,
+          value: "OLD",
+          type: "ticker",
+          source: "yahoo",
+          is_primary: true,
+          effective_from: "2025-01-01T00:00:00.000Z",
+          effective_to: "2026-07-22T00:00:00.000Z",
+        },
+      ],
+    });
+
+    createServiceClientMock.mockResolvedValue(client);
+    const { resolveSymbolsBatch } = await import("./resolve");
+
+    const displayResult = await resolveSymbolsBatch([symbolId]);
+    const activeOnlyResult = await resolveSymbolsBatch([symbolId], {
+      providerAliasMode: "active-only",
+    });
+
+    expect(displayResult.byInput.get(symbolId)).toMatchObject({
+      canonicalId: symbolId,
+      providerAlias: "OLD",
+      displayTicker: "OLD",
+    });
+    expect(activeOnlyResult.byInput.get(symbolId)).toMatchObject({
+      canonicalId: symbolId,
+      providerAlias: null,
+      displayTicker: "OLD",
+    });
+    expect(activeOnlyResult.byCanonicalId.get(symbolId)).toMatchObject({
+      providerAlias: null,
+      displayTicker: "OLD",
+    });
+  });
+
   it("includes normalized currency and quote-to-currency rate from symbol metadata", async () => {
     const symbolId = "99999999-9999-9999-9999-999999999999";
     const { client } = createSupabaseStub({

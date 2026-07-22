@@ -48,6 +48,7 @@ export async function getPositions(params: GetPositionsParams) {
     const { byInput } = await resolveSymbolsBatch(Array.from(symbolIdSet), {
       provider: "yahoo",
       providerType: "ticker",
+      providerAliasMode: "display-fallback",
       onError: "warn",
     });
 

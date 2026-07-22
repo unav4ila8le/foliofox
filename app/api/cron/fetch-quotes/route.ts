@@ -6,9 +6,24 @@ import { buildDateWindow, type CronDateStats } from "@/server/cron/shared";
 import { fetchSymbols } from "@/server/symbols/fetch";
 import { fetchQuotes } from "@/server/quotes/fetch";
 import { chunkArray } from "@/server/shared/chunk-array";
-import { isTransientError, retryWithBackoff } from "@/server/shared/retry";
+import {
+  isTransientError,
+  retryWithBackoff,
+  stringifyError,
+} from "@/server/shared/retry";
+
+export const maxDuration = 800;
 
 interface QuoteCronDateStats extends CronDateStats {
+  exactDateMatches: number;
+  fallbackResolutions: number;
+}
+
+interface QuoteBatchStats {
+  successfulFetches: number;
+  failedFetches: number;
+  retryCount: number;
+  failedBatchCount: number;
   exactDateMatches: number;
   fallbackResolutions: number;
 }
@@ -18,6 +33,7 @@ const CRON_BACKFILL_CUTOFF_HOUR_UTC = 0;
 const BACKFILL_WINDOW_DAYS = 3;
 const RETRY_MAX_ATTEMPTS = 3;
 const QUOTE_FETCH_BATCH_SIZE = 150;
+const QUOTE_FETCH_CONCURRENCY = 4;
 
 export async function GET(request: NextRequest) {
   // Wait for incoming request before continuing (prevents prerendering)
@@ -61,9 +77,9 @@ export async function GET(request: NextRequest) {
 
     const dateWindow = buildDateWindow(parsedDate, BACKFILL_WINDOW_DAYS);
 
-    // 4. Fetch all symbol IDs from database
-    const symbolIds = await fetchSymbols();
-    if (symbolIds.length === 0) {
+    // 4. Fetch all symbols from database
+    const symbols = await fetchSymbols();
+    if (symbols.length === 0) {
       console.warn("No symbols found in database");
 
       const perDateStats: QuoteCronDateStats[] = dateWindow.map(
@@ -98,13 +114,16 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    const tickerBySymbolId = new Map(
+      symbols.map((symbol) => [symbol.id, symbol.ticker]),
+    );
     const perDateStats: QuoteCronDateStats[] = [];
 
     // 5. Fetch quotes for D, D-1, and D-2 with per-batch retries.
     for (const targetDate of dateWindow) {
       const dateKey = formatUTCDateKey(targetDate);
-      const quoteRequests = symbolIds.map((symbolId) => ({
-        symbolLookup: symbolId,
+      const quoteRequests = symbols.map((symbol) => ({
+        symbolLookup: symbol.id,
         date: targetDate,
       }));
       const requestBatches = chunkArray(quoteRequests, QUOTE_FETCH_BATCH_SIZE);
@@ -120,48 +139,102 @@ export async function GET(request: NextRequest) {
         fallbackResolutions: 0,
       };
 
-      for (const [batchIndex, requestBatch] of requestBatches.entries()) {
-        let batchRetryCount = 0;
-        const batchResolutionStats = {
-          exactDateMatches: 0,
-          fallbackResolutions: 0,
-        };
-        try {
-          const quotesMap = await retryWithBackoff(
-            () =>
-              fetchQuotes(requestBatch, {
-                upsert: true,
-                staleGuardDays: 0,
-                // Preserve rolling-window distinctness in cron backfills.
-                cronCutoffHourUtc: CRON_BACKFILL_CUTOFF_HOUR_UTC,
-                liveMissCooldownMinutes: 0,
-                resolutionStats: batchResolutionStats,
-              }),
-            {
-              maxAttempts: RETRY_MAX_ATTEMPTS,
-              shouldRetry: isTransientError,
-              onRetry: () => {
-                batchRetryCount += 1;
-              },
-            },
-          );
+      const batchStats: QuoteBatchStats[] = new Array(requestBatches.length);
+      let nextBatchIndex = 0;
 
-          dateStats.successfulFetches += quotesMap.size;
-          dateStats.exactDateMatches += batchResolutionStats.exactDateMatches;
-          dateStats.fallbackResolutions +=
-            batchResolutionStats.fallbackResolutions;
-          dateStats.failedFetches += requestBatch.length - quotesMap.size;
-        } catch (error) {
-          dateStats.failedFetches += requestBatch.length;
-          dateStats.failedBatchCount += 1;
-          console.warn(
-            `Quote fetch failed for ${dateKey} batch ${batchIndex + 1}/${requestBatches.length}:`,
-            error,
-          );
-        } finally {
-          dateStats.retryCount += batchRetryCount;
+      const processNextBatch = async () => {
+        while (nextBatchIndex < requestBatches.length) {
+          const batchIndex = nextBatchIndex;
+          nextBatchIndex += 1;
+          const requestBatch = requestBatches[batchIndex];
+          let batchRetryCount = 0;
+          const batchResolutionStats = {
+            exactDateMatches: 0,
+            fallbackResolutions: 0,
+          };
+
+          try {
+            const quotesMap = await retryWithBackoff(
+              () =>
+                fetchQuotes(requestBatch, {
+                  upsert: true,
+                  staleGuardDays: 0,
+                  // Preserve rolling-window distinctness in cron backfills.
+                  cronCutoffHourUtc: CRON_BACKFILL_CUTOFF_HOUR_UTC,
+                  liveMissCooldownMinutes: 0,
+                  resolutionStats: batchResolutionStats,
+                }),
+              {
+                maxAttempts: RETRY_MAX_ATTEMPTS,
+                shouldRetry: isTransientError,
+                onRetry: () => {
+                  batchRetryCount += 1;
+                },
+              },
+            );
+
+            const failedTickers = requestBatch.flatMap((request) =>
+              quotesMap.has(`${request.symbolLookup}|${dateKey}`)
+                ? []
+                : [
+                    tickerBySymbolId.get(request.symbolLookup) ??
+                      request.symbolLookup,
+                  ],
+            );
+
+            if (failedTickers.length > 0) {
+              console.warn(
+                `[quote-cron] unresolved date=${dateKey} batch=${batchIndex + 1}/${requestBatches.length} count=${failedTickers.length} symbols=${failedTickers.join(",")}`,
+              );
+            }
+
+            batchStats[batchIndex] = {
+              successfulFetches: quotesMap.size,
+              failedFetches: failedTickers.length,
+              retryCount: batchRetryCount,
+              failedBatchCount: 0,
+              exactDateMatches: batchResolutionStats.exactDateMatches,
+              fallbackResolutions: batchResolutionStats.fallbackResolutions,
+            };
+          } catch (error) {
+            const failedTickers = requestBatch.map(
+              (request) =>
+                tickerBySymbolId.get(request.symbolLookup) ??
+                request.symbolLookup,
+            );
+            console.warn(
+              `[quote-cron] unresolved date=${dateKey} batch=${batchIndex + 1}/${requestBatches.length} count=${failedTickers.length} symbols=${failedTickers.join(",")} error=${stringifyError(error)}`,
+            );
+
+            batchStats[batchIndex] = {
+              successfulFetches: 0,
+              failedFetches: requestBatch.length,
+              retryCount: batchRetryCount,
+              failedBatchCount: 1,
+              exactDateMatches: 0,
+              fallbackResolutions: 0,
+            };
+          }
         }
-      }
+      };
+
+      await Promise.all(
+        Array.from(
+          {
+            length: Math.min(QUOTE_FETCH_CONCURRENCY, requestBatches.length),
+          },
+          () => processNextBatch(),
+        ),
+      );
+
+      batchStats.forEach((stats) => {
+        dateStats.successfulFetches += stats.successfulFetches;
+        dateStats.failedFetches += stats.failedFetches;
+        dateStats.retryCount += stats.retryCount;
+        dateStats.failedBatchCount += stats.failedBatchCount;
+        dateStats.exactDateMatches += stats.exactDateMatches;
+        dateStats.fallbackResolutions += stats.fallbackResolutions;
+      });
 
       perDateStats.push(dateStats);
     }
@@ -203,7 +276,7 @@ export async function GET(request: NextRequest) {
         ? "Daily quote fetch completed with partial failures"
         : "Daily quote fetch completed",
       stats: {
-        totalSymbols: symbolIds.length,
+        totalSymbols: symbols.length,
         resolvedRequests: successfulFetches,
         successfulFetches,
         exactDateMatches,

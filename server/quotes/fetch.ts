@@ -280,6 +280,7 @@ export async function fetchQuotes(
   const { byInput, byCanonicalId } = await resolveSymbolsBatch(uniqueLookups, {
     provider: "yahoo",
     providerType: "ticker",
+    providerAliasMode: "active-only",
     onError: "throw",
   });
 

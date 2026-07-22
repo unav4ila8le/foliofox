@@ -14,6 +14,7 @@
   - server/portfolio-records/create.ts (record semantics + snapshot recalculation)
   - server/ai/tools/create-portfolio-record.ts, server/ai/tools/create-position.ts (AI advisor write tools)
   - app/api/ai/chat/route.ts (AI write-tool approval gating)
+  - server/positions/stale.ts, components/dashboard/positions/asset/stale-badge.tsx (market-data status guidance)
   - lib/capital-gains-tax-rate.ts (tax rate input semantics)
   - types/database.types.ts Constants.public.Enums
   - VISION.md, README.md, AGENTS.md
@@ -61,6 +62,11 @@ Three ways to add an asset:
 **Cash and single items:** either set quantity to the balance with unit value 1 (e.g. quantity 5000, unit value 1), or quantity 1 with unit value equal to the total (e.g. a house: quantity 1, unit value 8,200,000). Both work; total value = quantity × unit value.
 
 **Position value** = quantity × unit value. **Profit/loss** = (unit value − cost basis per unit) × quantity, computed from the latest relevant snapshot.
+
+### Market data status
+
+- **Stale** means Foliofox has not received fresh market data for more than seven days. The last available value remains in use while daily refreshes continue.
+- **Market data unavailable** means Foliofox no longer has an active Yahoo Finance ticker for the linked symbol. Historical data and the last available value remain intact. Update the ticker if the security moved or was renamed; archive the position if it is no longer held.
 
 ## Portfolio records (buy / sell / update)
 

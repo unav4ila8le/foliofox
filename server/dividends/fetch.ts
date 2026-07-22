@@ -185,6 +185,7 @@ export async function fetchDividends(
   const { byInput, byCanonicalId } = await resolveSymbolsBatch(uniqueInputs, {
     provider: "yahoo",
     providerType: "ticker",
+    providerAliasMode: "active-only",
     onError: "throw",
   });
 

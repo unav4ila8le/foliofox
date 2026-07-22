@@ -16,7 +16,7 @@ import type {
   FinancialProfile,
   Profile,
 } from "@/types/global.types";
-import type { StalePosition } from "@/server/positions/stale";
+import type { MarketDataStatus } from "@/server/positions/stale";
 
 type DashboardDataValue = {
   profile: Profile;
@@ -26,8 +26,8 @@ type DashboardDataValue = {
   netWorth: number;
   /** Whether the user has at least one non-archived position. */
   hasActivePositions: boolean;
-  /** Positions with stale symbols (last_quote_at NULL or > 7 days old) */
-  stalePositions: StalePosition[];
+  /** Positions whose linked market data is stale or intentionally unavailable. */
+  marketDataStatuses: MarketDataStatus[];
 };
 
 type DashboardData = DashboardDataValue & {

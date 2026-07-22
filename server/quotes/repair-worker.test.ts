@@ -499,6 +499,17 @@ describe("runQuoteRepairQueue", () => {
         },
       ],
     });
+    resolveSymbolsBatchMock.mockResolvedValue({
+      byCanonicalId: new Map([
+        [
+          "sym-1",
+          {
+            providerAlias: null,
+            quoteToCurrencyRate: 1,
+          },
+        ],
+      ]),
+    });
 
     const { runQuoteRepairQueue } = await import("./repair-worker");
     const result = await runQuoteRepairQueue({
@@ -510,6 +521,43 @@ describe("runQuoteRepairQueue", () => {
     expect(state.queue[0]).toMatchObject({
       status: "resolved_exact",
       attempt_count: 1,
+    });
+    expect(yahooChartMock).not.toHaveBeenCalled();
+    expect(resolveSymbolsBatchMock).toHaveBeenCalledWith(["sym-1"], {
+      provider: "yahoo",
+      providerType: "ticker",
+      providerAliasMode: "active-only",
+      onError: "warn",
+    });
+  });
+
+  it("does not call Yahoo when the active provider alias is missing", async () => {
+    const { client, state } = createSupabaseStub({
+      queue: [createQueueRow()],
+    });
+    resolveSymbolsBatchMock.mockResolvedValue({
+      byCanonicalId: new Map([
+        [
+          "sym-1",
+          {
+            providerAlias: null,
+            quoteToCurrencyRate: 1,
+          },
+        ],
+      ]),
+    });
+
+    const { runQuoteRepairQueue } = await import("./repair-worker");
+    const result = await runQuoteRepairQueue({
+      supabase: client as never,
+      now: new Date("2026-02-20T12:00:00.000Z"),
+    });
+
+    expect(result.stats.skippedMissingSymbol).toBe(1);
+    expect(state.queue[0]).toMatchObject({
+      status: "terminal_error",
+      attempt_count: 1,
+      last_error: "Missing active Yahoo ticker alias for sym-1",
     });
     expect(yahooChartMock).not.toHaveBeenCalled();
   });

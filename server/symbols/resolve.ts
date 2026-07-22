@@ -13,6 +13,8 @@ const DEFAULT_ALIAS_TYPE = "ticker";
 const DEFAULT_ALIAS_SOURCE = "yahoo";
 const BATCH_QUERY_CHUNK_SIZE = 200;
 
+export type ProviderAliasMode = "active-only" | "display-fallback";
+
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -36,14 +38,14 @@ export interface ProviderAliasOptions {
 
 interface ResolvedSymbolInputMetadata {
   canonicalId: string;
-  providerAlias: string;
+  providerAlias: string | null;
   displayTicker: string | null;
   currency: string;
   quoteToCurrencyRate: number;
 }
 
 interface ResolvedSymbolCanonicalMetadata {
-  providerAlias: string;
+  providerAlias: string | null;
   displayTicker: string | null;
   currency: string;
   quoteToCurrencyRate: number;
@@ -410,6 +412,7 @@ export async function resolveSymbolsBatch(
   options: {
     provider?: string;
     providerType?: string;
+    providerAliasMode?: ProviderAliasMode;
     onError?: "throw" | "warn" | "skip";
   } = {},
 ): Promise<{
@@ -418,6 +421,7 @@ export async function resolveSymbolsBatch(
 }> {
   const provider = options.provider ?? DEFAULT_ALIAS_SOURCE;
   const providerType = options.providerType ?? DEFAULT_ALIAS_TYPE;
+  const providerAliasMode = options.providerAliasMode ?? "display-fallback";
   const onError = options.onError ?? "throw";
 
   const byInput = new Map<string, ResolvedSymbolInputMetadata>();
@@ -546,13 +550,18 @@ export async function resolveSymbolsBatch(
         continue;
       }
 
-      // 2) Resolve provider alias with fallback order.
+      // 2) Resolve an active provider alias for live callers. Display callers
+      // retain the historical primary/canonical ticker fallback.
+      const activeProviderAlias =
+        providerAliasBySymbolId.get(canonicalId) ?? null;
       const providerAlias =
-        providerAliasBySymbolId.get(canonicalId) ??
-        primaryAliasBySymbolId.get(canonicalId) ??
-        symbolMetadata.ticker;
+        providerAliasMode === "active-only"
+          ? activeProviderAlias
+          : (activeProviderAlias ??
+            primaryAliasBySymbolId.get(canonicalId) ??
+            symbolMetadata.ticker);
 
-      if (!providerAlias) {
+      if (providerAliasMode === "display-fallback" && !providerAlias) {
         const errorMsg = `Symbol "${inputKey}" is missing a ${provider} ${providerType} alias.`;
         if (onError === "throw") {
           throw new Error(errorMsg);

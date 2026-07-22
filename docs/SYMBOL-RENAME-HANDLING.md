@@ -26,20 +26,37 @@ Changing a position symbol affects future quote lookups only. Historical records
 
 ### 2) Stale position detection
 
-- `server/positions/stale.ts` marks non-archived positions as stale when:
+- `server/positions/stale.ts` keyset-paginates non-archived positions and marks them stale when:
   - `symbols.last_quote_at IS NULL`, or
   - `symbols.last_quote_at < now() - 7 days`
+- A symbol with retired Yahoo ticker history and no active Yahoo ticker alias is
+  instead marked `unavailable`, so it does not remain an indefinite stale warning.
 
 ### 3) User-facing warnings
 
-- Dashboard data includes stale positions via `DashboardDataProvider`.
-- Assets table and asset page surface stale badges/messages.
+- Dashboard data includes stale and unavailable market-data states via
+  `DashboardDataProvider`.
+- Assets table and asset page surface stale or neutral unavailable badges/messages.
 - Users can manually switch symbols through the update-symbol flow (`server/positions/update-symbol.ts`).
+- Unavailable positions also offer the existing archive flow while preserving history.
 
-### 4) Orphan symbol cleanup
+### 4) Provider alias retirement
 
-- Unlinked symbols are removed by monthly cleanup (see Supabase cron migration).
-- This keeps stale checks focused on symbols that still matter.
+- Live Yahoo quote, dividend, news, and quote-repair requests require an active
+  Yahoo ticker alias (`effective_to IS NULL`).
+- Retiring an alias stops future Yahoo requests without deleting the canonical
+  symbol, positions, quotes, dividends, or primary/display metadata.
+- UUID-based canonical resolution and inactive display fallback keep cached
+  historical data readable after retirement.
+
+### 5) Final lifecycle stage: orphan symbol cleanup
+
+- The `symbols_cleanup` pg_cron job from migration
+  `20251115073138_news_and_symbols_cleanup_pg_cron_jobs.sql` runs at 03:00 UTC
+  on the first of each month.
+- It deletes canonical symbols with no linked position. Foreign-key cascades then
+  remove their quotes, dividends, dividend events, and aliases.
+- Symbols retained by any position—including retired provider symbols—are not deleted.
 
 ## What is not automated today
 

@@ -138,7 +138,7 @@ function createFakeServiceClient(state: FakeDividendState) {
   };
 }
 
-function mockResolvedSymbol() {
+function mockResolvedSymbol(providerAlias: string | null = "TEST") {
   resolveSymbolsBatchMock.mockResolvedValue({
     byInput: new Map([
       [
@@ -147,10 +147,7 @@ function mockResolvedSymbol() {
       ],
     ]),
     byCanonicalId: new Map([
-      [
-        "sym-1",
-        { providerAlias: "TEST", currency: "USD", quoteToCurrencyRate: 1 },
-      ],
+      ["sym-1", { providerAlias, currency: "USD", quoteToCurrencyRate: 1 }],
     ]),
   });
 }
@@ -206,6 +203,7 @@ describe("fetchDividends", () => {
   });
 
   it("returns stale cached data without live Yahoo calls when refreshMissing is false", async () => {
+    mockResolvedSymbol(null);
     const state: FakeDividendState = {
       events: [
         createDividendEvent({
@@ -243,6 +241,12 @@ describe("fetchDividends", () => {
         event_date: "2025-01-15",
       }),
     ]);
+    expect(resolveSymbolsBatchMock).toHaveBeenCalledWith(["sym-1"], {
+      provider: "yahoo",
+      providerType: "ticker",
+      providerAliasMode: "active-only",
+      onError: "throw",
+    });
   });
 
   it("synthesizes a stale-cache summary from recent events when the summary row is missing", async () => {

@@ -79,6 +79,7 @@ export async function getPortfolioOverview(params: {
       const { byInput } = await resolveSymbolsBatch(Array.from(symbolIdSet), {
         provider: "yahoo",
         providerType: "ticker",
+        providerAliasMode: "display-fallback",
         onError: "warn",
       });
 

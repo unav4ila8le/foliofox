@@ -30,6 +30,7 @@ import { getFinancialScenarios } from "./financial-scenarios";
 import { createPortfolioRecord } from "./create-portfolio-record";
 import { createPosition } from "./create-position";
 import { getPositionCategories } from "./position-categories";
+import { normalizeAIBaseCurrency } from "./helpers/base-currency";
 
 import { toCivilDateKey } from "@/lib/date/date-utils";
 
@@ -41,18 +42,29 @@ const writeDateKeySchema = z
     error: "Must be a real date in YYYY-MM-DD format.",
   });
 
+const baseCurrencySchema = z
+  .string()
+  .nullable()
+  .describe(
+    "Currency code for analysis (e.g., USD, EUR, GBP). Set to null to use the user's preferred currency.",
+  );
+
+async function normalizeBaseCurrencyArgs<
+  T extends { baseCurrency: string | null },
+>(args: T) {
+  return {
+    ...args,
+    baseCurrency: await normalizeAIBaseCurrency(args.baseCurrency),
+  };
+}
+
 export const aiTools = {
   getPortfolioOverview: routedTool({
     telemetryRoutes: ["general"],
     description:
       "Get a comprehensive portfolio overview including the user's financial profile, gross net worth, asset allocation, and all positions at any given date. Optionally include net worth after estimated capital gains taxes. Returns: summary, financial profile, net worth values, positions count, asset categories with percentages, and detailed position information with values converted to base currency.",
     inputSchema: z.object({
-      baseCurrency: z
-        .string()
-        .nullable()
-        .describe(
-          "Currency code for analysis (e.g., USD, EUR, GBP, etc.). Leave empty to use the user's preferred currency.",
-        ),
+      baseCurrency: baseCurrencySchema,
       date: z
         .string()
         .nullable()
@@ -67,7 +79,7 @@ export const aiTools = {
         ),
     }),
     execute: async (args) => {
-      return getPortfolioOverview(args);
+      return getPortfolioOverview(await normalizeBaseCurrencyArgs(args));
     },
   }),
 
@@ -136,12 +148,7 @@ export const aiTools = {
     description:
       "Get net worth history over time to analyze financial trends. Supports gross mode or after-capital-gains-tax mode. Returns chronological values with dates, period information, and historyQuality metadata (including whether history is suitable for return-drift estimation). Leading zero-only history is trimmed from returned items to keep the series representative.",
     inputSchema: z.object({
-      baseCurrency: z
-        .string()
-        .nullable()
-        .describe(
-          "Currency code for analysis (e.g., USD, EUR, GBP, etc.). Leave empty to use the user's preferred currency.",
-        ),
+      baseCurrency: baseCurrencySchema,
       daysBack: z
         .number()
         .nullable()
@@ -156,7 +163,7 @@ export const aiTools = {
         ),
     }),
     execute: async (args) => {
-      return getNetWorthHistory(args);
+      return getNetWorthHistory(await normalizeBaseCurrencyArgs(args));
     },
   }),
 
@@ -165,12 +172,7 @@ export const aiTools = {
     description:
       "Get net worth change over a specified period to analyze portfolio performance. Supports gross mode or after-capital-gains-tax mode. Returns current vs previous values, absolute change amount, percentage change, and direction. Shows portfolio growth rate and momentum.",
     inputSchema: z.object({
-      baseCurrency: z
-        .string()
-        .nullable()
-        .describe(
-          "Currency code for analysis (e.g., USD, EUR, GBP, etc.). Leave empty to use the user's preferred currency.",
-        ),
+      baseCurrency: baseCurrencySchema,
       daysBack: z
         .number()
         .nullable()
@@ -185,7 +187,7 @@ export const aiTools = {
         ),
     }),
     execute: async (args) => {
-      return getNetWorthChange(args);
+      return getNetWorthChange(await normalizeBaseCurrencyArgs(args));
     },
   }),
 
@@ -194,12 +196,7 @@ export const aiTools = {
     description:
       "Get projected dividend income over future months to analyze passive income potential. Returns: monthly income projections with dates, total projected income, dividend-paying positions count, and success status. Useful for income planning and dividend strategy analysis.",
     inputSchema: z.object({
-      baseCurrency: z
-        .string()
-        .nullable()
-        .describe(
-          "Currency code for analysis (e.g., USD, EUR, GBP, etc.). Leave empty to use the user's preferred currency.",
-        ),
+      baseCurrency: baseCurrencySchema,
       monthsAhead: z
         .number()
         .nullable()
@@ -208,7 +205,7 @@ export const aiTools = {
         ),
     }),
     execute: async (args) => {
-      return getProjectedIncome(args);
+      return getProjectedIncome(await normalizeBaseCurrencyArgs(args));
     },
   }),
 
@@ -217,12 +214,7 @@ export const aiTools = {
     description:
       "Analyze asset(s) performance over a period. Returns price return (market move), value change (includes flows), and current unrealized P/L vs cost basis. Can analyze single asset, multiple assets, or entire portfolio.",
     inputSchema: z.object({
-      baseCurrency: z
-        .string()
-        .nullable()
-        .describe(
-          "Currency code for analysis (e.g., USD, EUR, GBP, etc.). Leave empty to use the user's preferred currency.",
-        ),
+      baseCurrency: baseCurrencySchema,
       positionIds: z
         .array(z.string())
         .nullable()
@@ -238,7 +230,8 @@ export const aiTools = {
         .nullable()
         .describe("YYYY-MM-DD format (optional, defaults to today)"),
     }),
-    execute: async (args) => getAssetsPerformance(args),
+    execute: async (args) =>
+      getAssetsPerformance(await normalizeBaseCurrencyArgs(args)),
   }),
 
   getTopMovers: routedTool({
@@ -246,17 +239,13 @@ export const aiTools = {
     description:
       "Find top gainers and losers over a period. Returns ranked lists by percentage (market move) and absolute change (includes flows).",
     inputSchema: z.object({
-      baseCurrency: z
-        .string()
-        .nullable()
-        .describe(
-          "Currency code for analysis (e.g., USD, EUR, GBP, etc.). Leave empty to use the user's preferred currency.",
-        ),
+      baseCurrency: baseCurrencySchema,
       startDate: z.string().nullable().describe("YYYY-MM-DD format (optional)"),
       endDate: z.string().nullable().describe("YYYY-MM-DD format (optional)"),
       limit: z.number().nullable().describe("Optional, defaults to 5"),
     }),
-    execute: async (args) => getTopMovers(args),
+    execute: async (args) =>
+      getTopMovers(await normalizeBaseCurrencyArgs(args)),
   }),
 
   getAllocationDrift: routedTool({
@@ -264,17 +253,13 @@ export const aiTools = {
     description:
       "Compare current asset allocation vs a past date, showing percentage drift by category (rebalance insights).",
     inputSchema: z.object({
-      baseCurrency: z
-        .string()
-        .nullable()
-        .describe(
-          "Currency code for analysis (e.g., USD, EUR, GBP, etc.). Leave empty to use the user's preferred currency.",
-        ),
+      baseCurrency: baseCurrencySchema,
       compareToDate: z
         .string()
         .describe("Historical date to compare against (YYYY-MM-DD format)"),
     }),
-    execute: async (args) => getAllocationDrift(args),
+    execute: async (args) =>
+      getAllocationDrift(await normalizeBaseCurrencyArgs(args)),
   }),
 
   getCurrencyExposure: routedTool({
@@ -282,18 +267,14 @@ export const aiTools = {
     description:
       "Calculate portfolio currency exposure by original currency as-of a date. Returns per-currency local value, base-currency value, percentage weight, FX rate used, and positions count.",
     inputSchema: z.object({
-      baseCurrency: z
-        .string()
-        .nullable()
-        .describe(
-          "Currency code for analysis (e.g., USD, EUR, GBP). Leave empty to use the user's preferred currency.",
-        ),
+      baseCurrency: baseCurrencySchema,
       date: z
         .string()
         .nullable()
         .describe("YYYY-MM-DD format (optional, defaults to today)"),
     }),
-    execute: async (args) => getCurrencyExposure(args),
+    execute: async (args) =>
+      getCurrencyExposure(await normalizeBaseCurrencyArgs(args)),
   }),
 
   getDividendYield: routedTool({

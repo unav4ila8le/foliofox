@@ -366,12 +366,13 @@ function createSupabaseStub(
 function mockSymbolResolution(options?: {
   lookup?: string;
   canonicalId?: string;
-  providerAlias?: string;
+  providerAlias?: string | null;
   quoteToCurrencyRate?: number;
 }) {
   const lookup = options?.lookup ?? "sym-1";
   const canonicalId = options?.canonicalId ?? "sym-1";
-  const providerAlias = options?.providerAlias ?? "AAPL";
+  const providerAlias =
+    options?.providerAlias === undefined ? "AAPL" : options.providerAlias;
   const quoteToCurrencyRate = options?.quoteToCurrencyRate ?? 1;
 
   resolveSymbolsBatchMock.mockResolvedValue({
@@ -401,6 +402,7 @@ describe("fetchQuotes", () => {
   });
 
   it("uses exact-date cache hit without live fetch", async () => {
+    mockSymbolResolution({ providerAlias: null });
     const { client } = createSupabaseStub([
       {
         symbol_id: "sym-1",
@@ -423,6 +425,12 @@ describe("fetchQuotes", () => {
 
     expect(result.get("sym-1|2026-02-10")).toBe(150);
     expect(yahooChartMock).not.toHaveBeenCalled();
+    expect(resolveSymbolsBatchMock).toHaveBeenCalledWith(["sym-1"], {
+      provider: "yahoo",
+      providerType: "ticker",
+      providerAliasMode: "active-only",
+      onError: "throw",
+    });
   });
 
   it("uses latest prior cache row within stale window before live fetch", async () => {

@@ -22,7 +22,7 @@ type EnrichedNewsArticle = NewsArticle & {
 };
 
 type NewsSymbolMetadata = {
-  providerAlias: string;
+  providerAlias: string | null;
   displayTicker: string | null;
 };
 
@@ -55,6 +55,7 @@ export async function fetchNewsForSymbols(
     const { byInput, byCanonicalId } = await resolveSymbolsBatch(uniqueInputs, {
       provider: "yahoo",
       providerType: "ticker",
+      providerAliasMode: "active-only",
       onError: "warn",
     });
 

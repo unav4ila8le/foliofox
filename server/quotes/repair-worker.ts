@@ -26,7 +26,7 @@ interface QuoteRepairJob {
 
 interface RepairSymbolMetadata {
   id: string;
-  providerAlias: string;
+  providerAlias: string | null;
   quoteToCurrencyRate: number;
 }
 
@@ -216,6 +216,7 @@ async function resolveRepairSymbols(symbolIds: string[]) {
   const { byCanonicalId } = await resolveSymbolsBatch(symbolIds, {
     provider: "yahoo",
     providerType: "ticker",
+    providerAliasMode: "active-only",
     onError: "warn",
   });
 
@@ -436,6 +437,20 @@ async function processSymbolJobs(params: {
 
   if (!jobsNeedingProvider.length) return;
 
+  const providerAlias = symbol.providerAlias;
+  if (!providerAlias) {
+    stats.skippedMissingSymbol += jobsNeedingProvider.length;
+    for (const job of jobsNeedingProvider) {
+      await updateJob(supabase, job, {
+        status: "terminal_error",
+        attempt_count: job.attempt_count + 1,
+        claimed_at: null,
+        last_error: `Missing active Yahoo ticker alias for ${symbol.id}`,
+      });
+    }
+    return;
+  }
+
   const targetDates = jobsNeedingProvider
     .map((job) => job.target_date)
     .sort((left, right) => left.localeCompare(right));
@@ -443,7 +458,7 @@ async function processSymbolJobs(params: {
   const latestTarget = parseUTCDateKey(targetDates[targetDates.length - 1]);
 
   try {
-    const chartData = await yahooFinance.chart(symbol.providerAlias, {
+    const chartData = await yahooFinance.chart(providerAlias, {
       period1: addUTCDays(earliestTarget, -7),
       period2: addUTCDays(latestTarget, 1),
       interval: "1d",
@@ -476,7 +491,7 @@ async function processSymbolJobs(params: {
     }
   } catch (error) {
     console.warn(
-      `[quoteRepairWorker] Failed to repair quotes for ${symbol.id} (${symbol.providerAlias}):`,
+      `[quoteRepairWorker] Failed to repair quotes for ${symbol.id} (${providerAlias}):`,
       error,
     );
     await markProviderFailure(supabase, jobsNeedingProvider, stats, now, error);

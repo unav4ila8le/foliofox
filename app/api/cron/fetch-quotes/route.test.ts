@@ -28,6 +28,10 @@ vi.mock("@/server/quotes/fetch", () => ({
   fetchQuotes: fetchQuotesMock,
 }));
 
+function createCronSymbols(...ids: string[]) {
+  return ids.map((id) => ({ id, ticker: id.toUpperCase() }));
+}
+
 describe("GET /api/cron/fetch-quotes", () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -51,7 +55,7 @@ describe("GET /api/cron/fetch-quotes", () => {
     headersMock.mockResolvedValue(
       new Headers({ authorization: "Bearer test-cron-secret" }),
     );
-    fetchSymbolsMock.mockResolvedValue(["sym-1", "sym-2"]);
+    fetchSymbolsMock.mockResolvedValue(createCronSymbols("sym-1", "sym-2"));
     fetchQuotesMock.mockImplementation(
       (
         requests: Array<{ symbolLookup: string; date: Date }>,
@@ -78,7 +82,8 @@ describe("GET /api/cron/fetch-quotes", () => {
       },
     );
 
-    const { GET } = await import("@/app/api/cron/fetch-quotes/route");
+    const { GET, maxDuration } =
+      await import("@/app/api/cron/fetch-quotes/route");
     const response = await GET(
       new Request("http://localhost/api/cron/fetch-quotes") as never,
     );
@@ -95,6 +100,7 @@ describe("GET /api/cron/fetch-quotes", () => {
     expect(body.stats.failedFetches).toBe(0);
     expect(body.stats.retryCount).toBe(0);
     expect(body.stats.failedBatchCount).toBe(0);
+    expect(maxDuration).toBe(800);
     expect(body.stats.perDate).toHaveLength(3);
     expect(
       body.stats.perDate.map((entry: { date: string }) => entry.date),
@@ -154,7 +160,7 @@ describe("GET /api/cron/fetch-quotes", () => {
     headersMock.mockResolvedValue(
       new Headers({ authorization: "Bearer test-cron-secret" }),
     );
-    fetchSymbolsMock.mockResolvedValue(["sym-1"]);
+    fetchSymbolsMock.mockResolvedValue(createCronSymbols("sym-1"));
     fetchQuotesMock.mockImplementation(
       (requests: Array<{ symbolLookup: string; date: Date }>) =>
         Promise.resolve(
@@ -197,7 +203,7 @@ describe("GET /api/cron/fetch-quotes", () => {
     headersMock.mockResolvedValue(
       new Headers({ authorization: "Bearer test-cron-secret" }),
     );
-    fetchSymbolsMock.mockResolvedValue(["sym-1", "sym-2"]);
+    fetchSymbolsMock.mockResolvedValue(createCronSymbols("sym-1", "sym-2"));
 
     let callCount = 0;
     fetchQuotesMock.mockImplementation(
@@ -238,7 +244,10 @@ describe("GET /api/cron/fetch-quotes", () => {
     headersMock.mockResolvedValue(
       new Headers({ authorization: "Bearer test-cron-secret" }),
     );
-    fetchSymbolsMock.mockResolvedValue(["sym-1", "sym-2"]);
+    fetchSymbolsMock.mockResolvedValue(createCronSymbols("sym-1", "sym-2"));
+    const consoleWarnSpy = vi
+      .spyOn(console, "warn")
+      .mockImplementation(() => {});
 
     let callCount = 0;
     fetchQuotesMock.mockImplementation(
@@ -271,6 +280,111 @@ describe("GET /api/cron/fetch-quotes", () => {
     expect(body.stats.failedFetches).toBe(2);
     expect(body.stats.failedBatchCount).toBe(1);
     expect(body.stats.retryCount).toBe(0);
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      "[quote-cron] unresolved date=2026-02-15 batch=1/1 count=2 symbols=SYM-1,SYM-2 error=Permanent parse error",
+    );
+    consoleWarnSpy.mockRestore();
+  });
+
+  it("logs unresolved tickers from successful partial batches", async () => {
+    headersMock.mockResolvedValue(
+      new Headers({ authorization: "Bearer test-cron-secret" }),
+    );
+    fetchSymbolsMock.mockResolvedValue(createCronSymbols("sym-1", "sym-2"));
+    fetchQuotesMock.mockImplementation(
+      (requests: Array<{ symbolLookup: string; date: Date }>) => {
+        const firstRequest = requests[0];
+        return Promise.resolve(
+          new Map([
+            [
+              `${firstRequest.symbolLookup}|${firstRequest.date.toISOString().slice(0, 10)}`,
+              123,
+            ],
+          ]),
+        );
+      },
+    );
+    const consoleWarnSpy = vi
+      .spyOn(console, "warn")
+      .mockImplementation(() => {});
+
+    const { GET } = await import("@/app/api/cron/fetch-quotes/route");
+    const response = await GET(
+      new Request("http://localhost/api/cron/fetch-quotes") as never,
+    );
+
+    const body = await response.json();
+    expect(body.stats.failedFetches).toBe(3);
+    expect(consoleWarnSpy).toHaveBeenNthCalledWith(
+      1,
+      "[quote-cron] unresolved date=2026-02-15 batch=1/1 count=1 symbols=SYM-2",
+    );
+    consoleWarnSpy.mockRestore();
+  });
+
+  it("keeps four batches in flight and reuses a freed worker slot", async () => {
+    vi.useRealTimers();
+    headersMock.mockResolvedValue(
+      new Headers({ authorization: "Bearer test-cron-secret" }),
+    );
+    fetchSymbolsMock.mockResolvedValue(
+      Array.from({ length: 751 }, (_, index) => ({
+        id: `sym-${index}`,
+        ticker: `T${index}`,
+      })),
+    );
+
+    const gates = Array.from({ length: 4 }, () => {
+      let resolve = () => {};
+      const promise = new Promise<void>((resolvePromise) => {
+        resolve = resolvePromise;
+      });
+      return { promise, resolve };
+    });
+    let callIndex = 0;
+    let activeCalls = 0;
+    let maxActiveCalls = 0;
+
+    fetchQuotesMock.mockImplementation(
+      async (requests: Array<{ symbolLookup: string; date: Date }>) => {
+        const currentCallIndex = callIndex;
+        callIndex += 1;
+        activeCalls += 1;
+        maxActiveCalls = Math.max(maxActiveCalls, activeCalls);
+
+        await (gates[currentCallIndex]?.promise ?? Promise.resolve());
+        activeCalls -= 1;
+
+        return new Map(
+          requests.map((request) => [
+            `${request.symbolLookup}|${request.date.toISOString().slice(0, 10)}`,
+            123,
+          ]),
+        );
+      },
+    );
+
+    const { GET } = await import("@/app/api/cron/fetch-quotes/route");
+    const responsePromise = GET(
+      new Request("http://localhost/api/cron/fetch-quotes") as never,
+    );
+
+    await vi.waitFor(() => expect(fetchQuotesMock).toHaveBeenCalledTimes(4));
+    expect(maxActiveCalls).toBe(4);
+
+    gates[1].resolve();
+    await vi.waitFor(() =>
+      expect(fetchQuotesMock.mock.calls.length).toBeGreaterThanOrEqual(5),
+    );
+    expect(maxActiveCalls).toBe(4);
+
+    gates[0].resolve();
+    gates[2].resolve();
+    gates[3].resolve();
+
+    const response = await responsePromise;
+    expect(response.status).toBe(200);
+    expect(maxActiveCalls).toBe(4);
   });
 
   it("returns 400 for invalid date format", async () => {

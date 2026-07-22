@@ -92,7 +92,9 @@ describe("getPortfolioOverview", () => {
   });
 
   it("uses display categories in AI portfolio overview output", async () => {
-    fetchPositionsMock.mockResolvedValue([createPosition()]);
+    fetchPositionsMock.mockResolvedValue([
+      createPosition({ symbol_id: "sym-1" }),
+    ]);
     calculateAssetAllocationMock.mockResolvedValue([
       {
         category_id: "custom-1",
@@ -126,5 +128,11 @@ describe("getPortfolioOverview", () => {
         value: 500,
       },
     ]);
+    expect(resolveSymbolsBatchMock).toHaveBeenCalledWith(["sym-1"], {
+      provider: "yahoo",
+      providerType: "ticker",
+      providerAliasMode: "display-fallback",
+      onError: "warn",
+    });
   });
 });

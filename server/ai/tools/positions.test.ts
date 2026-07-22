@@ -69,7 +69,9 @@ describe("getPositions", () => {
   });
 
   it("returns canonical category_id and separate display category fields", async () => {
-    fetchPositionsMock.mockResolvedValue([createPosition()]);
+    fetchPositionsMock.mockResolvedValue([
+      createPosition({ symbol_id: "sym-1" }),
+    ]);
 
     const { getPositions } = await import("@/server/ai/tools/positions");
 
@@ -85,5 +87,11 @@ describe("getPositions", () => {
         display_category_id: "custom-1",
       }),
     ]);
+    expect(resolveSymbolsBatchMock).toHaveBeenCalledWith(["sym-1"], {
+      provider: "yahoo",
+      providerType: "ticker",
+      providerAliasMode: "display-fallback",
+      onError: "warn",
+    });
   });
 });

@@ -3,22 +3,70 @@
 import { createServiceClient } from "@/supabase/service";
 import { createClient } from "@/supabase/server";
 
+const SYMBOL_PAGE_SIZE = 1_000;
+
+export interface CronSymbol {
+  id: string;
+  ticker: string;
+}
+
 /**
- * Fetch all unique symbol IDs from the database.
- * Used by cron jobs to get all symbols that need quote updates.
+ * Fetch canonical symbols with active Yahoo ticker aliases using keyset pagination.
+ * Used by cron jobs to get symbols eligible for live quote updates.
  *
- * @returns Array of unique symbol IDs
+ * @returns Array of canonical symbol IDs and active Yahoo tickers
  */
-export async function fetchSymbols() {
+export async function fetchSymbols(): Promise<CronSymbol[]> {
   const supabase = await createServiceClient();
+  const symbolsById = new Map<
+    string,
+    { symbol: CronSymbol; effectiveFrom: string; aliasId: string }
+  >();
+  let cursor: string | null = null;
 
-  const { data, error } = await supabase.from("symbols").select("id");
+  while (true) {
+    let query = supabase
+      .from("symbol_aliases")
+      .select("id, symbol_id, value, effective_from")
+      .eq("source", "yahoo")
+      .eq("type", "ticker")
+      .is("effective_to", null)
+      .order("id", { ascending: true })
+      .limit(SYMBOL_PAGE_SIZE);
 
-  if (error) {
-    throw new Error(`Failed to fetch symbols: ${error.message}`);
+    if (cursor) {
+      query = query.gt("id", cursor);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw new Error(`Failed to fetch symbols: ${error.message}`);
+    }
+
+    if (!data?.length) break;
+
+    data.forEach((alias) => {
+      const existing = symbolsById.get(alias.symbol_id);
+      if (
+        !existing ||
+        alias.effective_from > existing.effectiveFrom ||
+        (alias.effective_from === existing.effectiveFrom &&
+          alias.id > existing.aliasId)
+      ) {
+        symbolsById.set(alias.symbol_id, {
+          symbol: { id: alias.symbol_id, ticker: alias.value },
+          effectiveFrom: alias.effective_from,
+          aliasId: alias.id,
+        });
+      }
+    });
+
+    if (data.length < SYMBOL_PAGE_SIZE) break;
+    cursor = data[data.length - 1].id;
   }
 
-  return data?.map((symbol) => symbol.id) || [];
+  return Array.from(symbolsById.values(), ({ symbol }) => symbol);
 }
 
 /**

@@ -18,7 +18,7 @@ import { fetchProfile } from "@/server/profile/actions";
 import { fetchEmailPreferences } from "@/server/email-preferences/actions";
 import { fetchFinancialProfile } from "@/server/financial-profiles/actions";
 import { calculateNetWorth } from "@/server/analysis/net-worth/net-worth";
-import { fetchStalePositions } from "@/server/positions/stale";
+import { fetchMarketDataStatuses } from "@/server/positions/stale";
 import { hasActivePositions } from "@/server/positions/has-active";
 import { TIME_ZONE_MODES } from "@/lib/date/time-zone";
 import { resolveTodayDateKey } from "@/lib/date/date-utils";
@@ -60,13 +60,13 @@ export default async function Layout({
     emailPreferences,
     financialProfile,
     netWorth,
-    stalePositions,
+    marketDataStatuses,
     hasPositions,
   ] = await Promise.all([
     fetchEmailPreferences(),
     fetchFinancialProfile(),
     calculateNetWorth(profile.display_currency, todayDateKey),
-    fetchStalePositions(),
+    fetchMarketDataStatuses(),
     hasActivePositions(),
   ]);
 
@@ -79,7 +79,7 @@ export default async function Layout({
         financialProfile,
         netWorth,
         hasActivePositions: hasPositions,
-        stalePositions,
+        marketDataStatuses,
       }}
     >
       <SidebarProvider
