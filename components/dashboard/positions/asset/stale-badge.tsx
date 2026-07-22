@@ -48,7 +48,12 @@ export function StaleBadge({ positionId, label }: StaleBadgeProps) {
   if (!marketDataStatus) return null;
 
   const isUnavailable = marketDataStatus.status === "unavailable";
-  const badgeLabel = isUnavailable ? "Market data unavailable" : label;
+  // Icon-only when no label is passed (table rows); short label elsewhere.
+  const badgeLabel = label
+    ? isUnavailable
+      ? "No market data"
+      : label
+    : undefined;
 
   const handleUpdateSymbolSuccess = () => {
     setStatusDialogOpen(false);
@@ -83,17 +88,14 @@ export function StaleBadge({ positionId, label }: StaleBadgeProps) {
 
   return (
     <>
-      {isUnavailable ? (
-        <Tooltip>
-          <TooltipTrigger asChild>{badge}</TooltipTrigger>
-          <TooltipContent>
-            Automatic market data is unavailable. Change the ticker if it moved,
-            or archive the position if you no longer hold it.
-          </TooltipContent>
-        </Tooltip>
-      ) : (
-        badge
-      )}
+      <Tooltip>
+        <TooltipTrigger asChild>{badge}</TooltipTrigger>
+        <TooltipContent>
+          {isUnavailable
+            ? "No live price - showing the last saved value. Click for options."
+            : "Price data hasn't updated in over 7 days. Click for details."}
+        </TooltipContent>
+      </Tooltip>
 
       <Dialog open={statusDialogOpen} onOpenChange={setStatusDialogOpen}>
         <DialogContent>
