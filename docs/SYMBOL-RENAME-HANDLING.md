@@ -53,8 +53,9 @@ Changing a position symbol affects future quote lookups only. Historical records
 
 - `symbols.id` is the durable identity. `symbols.ticker` is display metadata and
   is not used to decide which canonical symbol owns a current ticker.
-- Active aliases are unique by `(source, type, value)`. Alias values written by
-  the application are trimmed and uppercased.
+- Active ticker aliases are unique by `(source, value)`. ISIN aliases may map
+  one security to multiple listings. Alias values written by the application
+  are trimmed and uppercased.
 - Non-UUID ticker resolution chooses an active alias first, then the requested
   source (or Yahoo for source-unspecified ticker lookups), primary status, the
   most recent effective/retired timestamp, and alias UUID.

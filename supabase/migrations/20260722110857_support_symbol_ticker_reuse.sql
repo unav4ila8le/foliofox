@@ -13,13 +13,14 @@ begin
   from (
     select source, type, value, count(*) as row_count
     from public.symbol_aliases
-    where effective_to is null
+    where type = 'ticker'
+      and effective_to is null
     group by source, type, value
     having count(*) > 1
   ) duplicates;
 
   if active_duplicates is not null then
-    raise exception 'Active symbol alias duplicates must be retired before migration: %', active_duplicates;
+    raise exception 'Active ticker alias duplicates must be retired before migration: %', active_duplicates;
   end if;
 end $$;
 
@@ -37,8 +38,9 @@ create unique index symbol_aliases_symbol_source_type_value_effective_to_idx
 alter table public.symbols
   drop constraint symbols_ticker_key;
 
-create unique index symbol_aliases_active_source_type_value_key
-  on public.symbol_aliases (source, type, value)
-  where effective_to is null;
+create unique index symbol_aliases_active_ticker_source_value_key
+  on public.symbol_aliases (source, value)
+  where type = 'ticker'
+    and effective_to is null;
 
 commit;
