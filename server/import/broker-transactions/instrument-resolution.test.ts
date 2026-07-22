@@ -84,6 +84,7 @@ describe("broker instrument resolution", () => {
     expect(resolveSymbolInputMock).toHaveBeenCalledWith("US0000000001", {
       type: "isin",
       source: "trade_republic",
+      activeOnly: true,
     });
     expect(upsertSymbolAliasMock).toHaveBeenCalledWith(
       "symbol-1",
@@ -314,6 +315,44 @@ describe("broker instrument resolution", () => {
       warning: expect.stringContaining("none are quoted in EUR"),
     });
     expect(createSymbolMock).not.toHaveBeenCalled();
+  });
+
+  it("links broker tickers only through active Yahoo aliases", async () => {
+    const tickerPosition: BrokerTransactionPositionDraft = {
+      ...basePosition,
+      positionKey: "trade_republic:acme:acme",
+      brokerSymbol: "ACME",
+      currency: "USD",
+    };
+    resolveSymbolInputMock.mockResolvedValue({
+      symbol: {
+        id: "symbol-active",
+        ticker: "ACME",
+        currency: "USD",
+        long_name: "Acme",
+        short_name: "Acme",
+        exchange: "NYQ",
+      },
+    });
+
+    const { resolveBrokerTransactionInstruments } =
+      await import("./instrument-resolution");
+    const result = await resolveBrokerTransactionInstruments({
+      positions: [tickerPosition],
+      importSource: "trade_republic",
+    });
+
+    expect(result.get(tickerPosition.positionKey)).toMatchObject({
+      state: "auto_linked",
+      symbolId: "symbol-active",
+      selectedTicker: "ACME",
+    });
+    expect(resolveSymbolInputMock).toHaveBeenCalledWith("ACME", {
+      type: "ticker",
+      source: "yahoo",
+      activeOnly: true,
+    });
+    expect(searchYahooFinanceSymbolsMock).not.toHaveBeenCalled();
   });
 
   it("accepts a user-selected different-currency symbol for FX conversion", async () => {

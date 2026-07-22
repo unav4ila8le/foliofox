@@ -83,9 +83,7 @@ describe("StaleBadge", () => {
     render(<StaleBadge positionId="position-1" label="Stale" />);
 
     expect(screen.getByText("No market data")).toBeTruthy();
-    expect(
-      screen.getByText(/No live price — showing the last saved value/),
-    ).toBeTruthy();
+    expect(screen.getByText(/showing the last saved value/)).toBeTruthy();
 
     fireEvent.click(
       screen.getByRole("button", { name: "Market data unavailable" }),

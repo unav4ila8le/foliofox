@@ -69,7 +69,11 @@ export async function importPositionsFromCSV(
       const rawSymbolInput = row.symbolLookup?.trim() ?? "";
 
       if (rawSymbolInput !== "") {
-        const resolved = await resolveSymbolInput(rawSymbolInput);
+        const resolved = await resolveSymbolInput(rawSymbolInput, {
+          source: "yahoo",
+          type: "ticker",
+          activeOnly: true,
+        });
 
         if (resolved?.symbol?.id) {
           canonicalSymbolId = resolved.symbol.id;
@@ -82,7 +86,11 @@ export async function importPositionsFromCSV(
             };
           }
 
-          const postCreateResolved = await resolveSymbolInput(rawSymbolInput);
+          const postCreateResolved = await resolveSymbolInput(rawSymbolInput, {
+            source: "yahoo",
+            type: "ticker",
+            activeOnly: true,
+          });
           if (!postCreateResolved?.symbol?.id) {
             return {
               success: false,

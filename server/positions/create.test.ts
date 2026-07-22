@@ -99,6 +99,11 @@ describe("createPosition", () => {
     );
 
     expect(result).toEqual({ success: true });
+    expect(resolveSymbolInputMock).toHaveBeenCalledWith("VOD.L", {
+      source: "yahoo",
+      type: "ticker",
+      activeOnly: true,
+    });
     expect(insertMock).toHaveBeenCalledWith(
       expect.objectContaining({ currency: "GBP", symbol_id: "symbol-1" }),
     );

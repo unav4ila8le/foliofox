@@ -29,6 +29,7 @@ export interface ResolveSymbolOptions {
   source?: string;
   type?: string;
   includeAliases?: boolean;
+  activeOnly?: boolean;
 }
 
 export interface ProviderAliasOptions {
@@ -57,6 +58,11 @@ interface SymbolResolutionMetadata {
   quoteToCurrencyRate: number;
 }
 
+type AliasPriorityRow = Pick<
+  SymbolAlias,
+  "id" | "source" | "type" | "is_primary" | "effective_from" | "effective_to"
+>;
+
 /**
  * Resolve a user or provider supplied identifier to the canonical symbol UUID.
  * Accepts UUIDs directly; otherwise looks up an alias of the requested type/source.
@@ -78,12 +84,7 @@ export async function resolveSymbolInput(
     });
   }
 
-  let query = supabase
-    .from("symbol_aliases")
-    .select("*, symbol:symbols (*)")
-    .order("is_primary", { ascending: false })
-    .order("effective_to", { ascending: true, nullsFirst: true })
-    .limit(1);
+  let query = supabase.from("symbol_aliases").select("*, symbol:symbols (*)");
 
   if (type) {
     query = query.eq("type", type);
@@ -91,6 +92,10 @@ export async function resolveSymbolInput(
 
   if (options.source) {
     query = query.eq("source", options.source);
+  }
+
+  if (options.activeOnly) {
+    query = query.is("effective_to", null);
   }
 
   const { data: aliasRows, error } = await query.ilike("value", normalized);
@@ -101,8 +106,10 @@ export async function resolveSymbolInput(
     );
   }
 
-  const aliasWithSymbol = aliasRows?.[0] as
-    (SymbolAlias & { symbol: Symbol }) | undefined;
+  const aliasWithSymbol = selectPreferredAlias(
+    (aliasRows ?? []) as Array<SymbolAlias & { symbol: Symbol }>,
+    { requestedSource: options.source, type },
+  );
   if (!aliasWithSymbol) return null;
 
   const { symbol, ...alias } = aliasWithSymbol;
@@ -179,6 +186,7 @@ export async function getProviderSymbolAlias(
     .eq("symbol_id", symbolId)
     .eq("source", source)
     .order("effective_from", { ascending: false })
+    .order("id", { ascending: false })
     .limit(1);
 
   if (options.type) {
@@ -231,7 +239,10 @@ export async function setPrimarySymbolAlias(
     .select("*")
     .eq("symbol_id", symbolId)
     .eq("type", type)
+    .eq("source", source)
     .eq("value", normalizedValue)
+    .is("effective_to", null)
+    .limit(1)
     .maybeSingle();
 
   if (fetchError) {
@@ -304,6 +315,7 @@ export async function upsertSymbolAlias(
     .select("*")
     .eq("symbol_id", symbolId)
     .eq("type", type)
+    .eq("source", source)
     .eq("value", normalizedValue)
     .is("effective_to", null)
     .limit(1);
@@ -471,6 +483,7 @@ export async function resolveSymbolsBatch(
     const canonicalByAliasLookup = await fetchCanonicalIdsByAliasLookups(
       supabase,
       aliasLookups,
+      provider,
     );
     const unresolvedAliasLookups = aliasLookups.filter(
       (aliasLookup) => !canonicalByAliasLookup.has(aliasLookup),
@@ -482,6 +495,7 @@ export async function resolveSymbolsBatch(
         await fetchCanonicalIdsByAliasLookupsCaseInsensitive(
           supabase,
           unresolvedAliasLookups,
+          provider,
         );
       caseInsensitiveMatches.forEach((canonicalId, aliasLookup) => {
         if (!canonicalByAliasLookup.has(aliasLookup)) {
@@ -614,6 +628,7 @@ export async function resolveSymbolsBatch(
 async function fetchCanonicalIdsByAliasLookups(
   supabase: SupabaseClient<Database>,
   aliasLookups: string[],
+  requestedSource: string,
 ) {
   const canonicalByAliasLookup = new Map<string, string>();
   if (!aliasLookups.length) return canonicalByAliasLookup;
@@ -621,12 +636,11 @@ async function fetchCanonicalIdsByAliasLookups(
   for (const aliasChunk of chunkArray(aliasLookups, BATCH_QUERY_CHUNK_SIZE)) {
     const { data, error } = await supabase
       .from("symbol_aliases")
-      .select("value, symbol_id, is_primary, effective_to")
+      .select(
+        "id, value, symbol_id, source, type, is_primary, effective_from, effective_to",
+      )
       .eq("type", DEFAULT_ALIAS_TYPE)
-      .in("value", aliasChunk)
-      .order("value", { ascending: true })
-      .order("is_primary", { ascending: false })
-      .order("effective_to", { ascending: true, nullsFirst: true });
+      .in("value", aliasChunk);
 
     if (error) {
       throw new Error(
@@ -634,10 +648,24 @@ async function fetchCanonicalIdsByAliasLookups(
       );
     }
 
+    const preferredByValue = new Map<
+      string,
+      NonNullable<typeof data>[number]
+    >();
     data?.forEach((row) => {
-      if (!canonicalByAliasLookup.has(row.value)) {
-        canonicalByAliasLookup.set(row.value, row.symbol_id);
+      const preferred = preferredByValue.get(row.value);
+      if (
+        !preferred ||
+        compareAliasPriority(row, preferred, {
+          requestedSource,
+          type: DEFAULT_ALIAS_TYPE,
+        }) < 0
+      ) {
+        preferredByValue.set(row.value, row);
       }
+    });
+    preferredByValue.forEach((row, value) => {
+      canonicalByAliasLookup.set(value, row.symbol_id);
     });
   }
 
@@ -647,6 +675,7 @@ async function fetchCanonicalIdsByAliasLookups(
 async function fetchCanonicalIdsByAliasLookupsCaseInsensitive(
   supabase: SupabaseClient<Database>,
   aliasLookups: string[],
+  requestedSource: string,
 ) {
   const canonicalByAliasLookup = new Map<string, string>();
   if (!aliasLookups.length) return canonicalByAliasLookup;
@@ -654,11 +683,10 @@ async function fetchCanonicalIdsByAliasLookupsCaseInsensitive(
   for (const aliasLookup of aliasLookups) {
     const { data, error } = await supabase
       .from("symbol_aliases")
-      .select("value, symbol_id, is_primary, effective_to")
+      .select(
+        "id, value, symbol_id, source, type, is_primary, effective_from, effective_to",
+      )
       .eq("type", DEFAULT_ALIAS_TYPE)
-      .order("is_primary", { ascending: false })
-      .order("effective_to", { ascending: true, nullsFirst: true })
-      .limit(1)
       .ilike("value", aliasLookup);
 
     if (error) {
@@ -667,8 +695,12 @@ async function fetchCanonicalIdsByAliasLookupsCaseInsensitive(
       );
     }
 
-    if (data?.[0]) {
-      canonicalByAliasLookup.set(aliasLookup, data[0].symbol_id);
+    const preferred = selectPreferredAlias(data ?? [], {
+      requestedSource,
+      type: DEFAULT_ALIAS_TYPE,
+    });
+    if (preferred) {
+      canonicalByAliasLookup.set(aliasLookup, preferred.symbol_id);
     }
   }
 
@@ -748,13 +780,14 @@ async function fetchProviderAliasesBySymbolId(
   for (const symbolIdChunk of chunkArray(symbolIds, BATCH_QUERY_CHUNK_SIZE)) {
     const { data, error } = await supabase
       .from("symbol_aliases")
-      .select("symbol_id, value, effective_from")
+      .select("id, symbol_id, value, effective_from")
       .eq("source", provider)
       .eq("type", providerType)
       .is("effective_to", null)
       .in("symbol_id", symbolIdChunk)
       .order("symbol_id", { ascending: true })
-      .order("effective_from", { ascending: false });
+      .order("effective_from", { ascending: false })
+      .order("id", { ascending: false });
 
     if (error) {
       throw new Error(
@@ -770,6 +803,53 @@ async function fetchProviderAliasesBySymbolId(
   }
 
   return providerAliasBySymbolId;
+}
+
+function selectPreferredAlias<T extends AliasPriorityRow>(
+  aliases: T[],
+  options: { requestedSource?: string; type: string },
+): T | undefined {
+  return aliases.reduce<T | undefined>((preferred, alias) => {
+    if (!preferred) return alias;
+    return compareAliasPriority(alias, preferred, options) < 0
+      ? alias
+      : preferred;
+  }, undefined);
+}
+
+function compareAliasPriority(
+  left: AliasPriorityRow,
+  right: AliasPriorityRow,
+  options: { requestedSource?: string; type: string },
+) {
+  const booleanPriorities: Array<[boolean, boolean]> = [
+    [left.effective_to === null, right.effective_to === null],
+    [
+      left.source === options.requestedSource,
+      right.source === options.requestedSource,
+    ],
+    [
+      !options.requestedSource &&
+        options.type === DEFAULT_ALIAS_TYPE &&
+        left.source === DEFAULT_ALIAS_SOURCE,
+      !options.requestedSource &&
+        options.type === DEFAULT_ALIAS_TYPE &&
+        right.source === DEFAULT_ALIAS_SOURCE,
+    ],
+    [left.is_primary, right.is_primary],
+  ];
+
+  for (const [leftWins, rightWins] of booleanPriorities) {
+    if (leftWins !== rightWins) return leftWins ? -1 : 1;
+  }
+
+  const leftEffectiveAt = left.effective_to ?? left.effective_from;
+  const rightEffectiveAt = right.effective_to ?? right.effective_from;
+  if (leftEffectiveAt !== rightEffectiveAt) {
+    return rightEffectiveAt.localeCompare(leftEffectiveAt);
+  }
+
+  return right.id.localeCompare(left.id);
 }
 
 // Both alias types normalize identically: symbols and provider aliases are

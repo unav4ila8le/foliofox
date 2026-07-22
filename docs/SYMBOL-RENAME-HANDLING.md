@@ -49,7 +49,23 @@ Changing a position symbol affects future quote lookups only. Historical records
 - UUID-based canonical resolution and inactive display fallback keep cached
   historical data readable after retirement.
 
-### 5) Final lifecycle stage: orphan symbol cleanup
+### 5) Ticker reuse and canonical identity
+
+- `symbols.id` is the durable identity. `symbols.ticker` is display metadata and
+  is not used to decide which canonical symbol owns a current ticker.
+- Active aliases are unique by `(source, type, value)`. Alias values written by
+  the application are trimmed and uppercased.
+- Non-UUID ticker resolution chooses an active alias first, then the requested
+  source (or Yahoo for source-unspecified ticker lookups), primary status, the
+  most recent effective/retired timestamp, and alias UUID.
+- Creating or refreshing a position, importing a current position, updating a
+  position symbol, and resolving broker tickers require an active Yahoo ticker
+  alias. A ticker that exists only in retired history therefore creates a new
+  canonical UUID when Yahoo reuses it.
+- Explicit symbol UUIDs continue to resolve the original canonical symbol, so
+  cached quotes and position history remain attached to the old security.
+
+### 6) Final lifecycle stage: orphan symbol cleanup
 
 - The `symbols_cleanup` pg_cron job from migration
   `20251115073138_news_and_symbols_cleanup_pg_cron_jobs.sql` runs at 03:00 UTC

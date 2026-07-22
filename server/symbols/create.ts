@@ -3,7 +3,10 @@
 import { getCurrentUser } from "@/server/auth/actions";
 import { fetchYahooFinanceSymbol } from "@/server/symbols/search";
 import { fetchCurrencies } from "@/server/currencies/fetch";
-import { setPrimarySymbolAlias } from "@/server/symbols/resolve";
+import {
+  resolveSymbolInput,
+  setPrimarySymbolAlias,
+} from "@/server/symbols/resolve";
 import { fetchQuotes } from "@/server/quotes/fetch";
 import { createServiceClient } from "@/supabase/service";
 
@@ -46,26 +49,34 @@ export async function createSymbol(symbolTicker: string) {
     };
   }
 
-  // 3) Insert/update symbol metadata and fetch canonical row. The Yahoo fetcher
-  // already returns a DB insert payload with normalized ISO currency plus the
-  // original provider quote unit and multiplier.
-  const { data: upsertedSymbol, error: upsertError } = await supabase
-    .from("symbols")
-    .upsert(symbolData, { onConflict: "ticker" })
-    .select("*")
-    .single();
+  // 3) Refresh only the canonical symbol behind the active Yahoo alias. A
+  // retired alias with the same ticker belongs to historical identity, so a
+  // reused ticker creates a fresh UUID instead of overwriting that row.
+  const existing = await resolveSymbolInput(symbolData.ticker, {
+    source: "yahoo",
+    type: "ticker",
+    activeOnly: true,
+  });
+  const { data: savedSymbol, error: saveError } = existing?.symbol.id
+    ? await supabase
+        .from("symbols")
+        .update(symbolData)
+        .eq("id", existing.symbol.id)
+        .select("*")
+        .single()
+    : await supabase.from("symbols").insert(symbolData).select("*").single();
 
-  if (upsertError || !upsertedSymbol) {
+  if (saveError || !savedSymbol) {
     return {
       success: false,
-      code: upsertError?.code || "SYMBOL_UPSERT_FAILED",
-      message: upsertError?.message || "Failed to create symbol",
+      code: saveError?.code || "SYMBOL_UPSERT_FAILED",
+      message: saveError?.message || "Failed to create or refresh symbol",
     };
   }
 
   // 4) Ensure a primary ticker alias exists and points to the latest value
   try {
-    await setPrimarySymbolAlias(upsertedSymbol.id, symbolData.ticker, {
+    await setPrimarySymbolAlias(savedSymbol.id, symbolData.ticker, {
       source: "yahoo",
       type: "ticker",
     });
@@ -85,7 +96,7 @@ export async function createSymbol(symbolTicker: string) {
   // the first page-render quote fetch and flags fresh imports as stale.
   // Best-effort: quote availability must not block symbol creation.
   try {
-    await fetchQuotes([{ symbolLookup: upsertedSymbol.id, date: new Date() }], {
+    await fetchQuotes([{ symbolLookup: savedSymbol.id, date: new Date() }], {
       upsert: true,
     });
   } catch (quoteError) {
@@ -95,5 +106,5 @@ export async function createSymbol(symbolTicker: string) {
     );
   }
 
-  return { success: true, data: upsertedSymbol };
+  return { success: true, data: savedSymbol };
 }

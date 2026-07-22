@@ -71,7 +71,11 @@ export async function updatePositionSymbol(
 
   // 4) Resolve symbol input (create if missing)
   let symbol: Symbol | null = null;
-  const resolved = await resolveSymbolInput(trimmedLookup);
+  const resolved = await resolveSymbolInput(trimmedLookup, {
+    source: "yahoo",
+    type: "ticker",
+    activeOnly: true,
+  });
 
   if (resolved?.symbol?.id) {
     symbol = resolved.symbol;
