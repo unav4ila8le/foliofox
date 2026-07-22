@@ -61,7 +61,7 @@ Deployment order:
 - Use one deterministic alias rule: active first, requested source next, Yahoo preferred for source-unspecified tickers, then primary, most recently effective/retired, and alias ID.
 - Migration:
   - drop `symbols_ticker_key`;
-  - add a unique partial index on `(source, type, value) WHERE effective_to IS NULL`;
+  - add a unique partial index on `(source, value) WHERE type = 'ticker' AND effective_to IS NULL`;
   - use plain normalized `value`, without `lower()`;
   - roll back and report active duplicates instead of auto-merging them.
 - Replace ticker upsert in `createSymbol()`:

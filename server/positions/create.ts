@@ -195,7 +195,11 @@ export async function createPosition(formData: FormData) {
 
   // Ensure symbol exists if provided
   if (rawSymbolInput) {
-    let resolved = await resolveSymbolInput(rawSymbolInput);
+    let resolved = await resolveSymbolInput(rawSymbolInput, {
+      source: "yahoo",
+      type: "ticker",
+      activeOnly: true,
+    });
 
     if (!resolved?.symbol?.id) {
       const creationResult = await createSymbol(rawSymbolInput);
@@ -209,7 +213,11 @@ export async function createPosition(formData: FormData) {
         } as const;
       }
 
-      resolved = await resolveSymbolInput(rawSymbolInput);
+      resolved = await resolveSymbolInput(rawSymbolInput, {
+        source: "yahoo",
+        type: "ticker",
+        activeOnly: true,
+      });
       if (!resolved?.symbol?.id) {
         return {
           success: false,

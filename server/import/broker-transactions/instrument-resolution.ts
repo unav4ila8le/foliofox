@@ -135,7 +135,8 @@ async function resolveBrokerTransactionInstrument(options: {
     type: aliasType,
     // ISIN aliases are broker-scoped because an ISIN identifies the security,
     // not the venue/currency-specific market listing we attach to positions.
-    source: isIsin ? importSource : undefined,
+    source: isIsin ? importSource : "yahoo",
+    activeOnly: true,
   });
 
   if (existing?.symbol && !isIsin) {

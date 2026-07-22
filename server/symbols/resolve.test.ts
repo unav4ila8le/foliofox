@@ -8,6 +8,7 @@ type SymbolRow = {
 };
 
 type SymbolAliasRow = {
+  id?: string;
   symbol_id: string;
   value: string;
   type: string;
@@ -347,6 +348,90 @@ describe("resolveSymbolsBatch", () => {
     expect(state.symbolAliasesQueryCount).toBe(3);
   });
 
+  it("uses the active alias for a reused ticker while UUIDs keep old history", async () => {
+    const oldSymbolId = "11111111-1111-1111-1111-111111111111";
+    const newSymbolId = "22222222-2222-2222-2222-222222222222";
+    const { client } = createSupabaseStub({
+      symbols: [
+        { id: oldSymbolId, ticker: "REUSE" },
+        { id: newSymbolId, ticker: "REUSE" },
+      ],
+      symbolAliases: [
+        {
+          id: "alias-old",
+          symbol_id: oldSymbolId,
+          value: "REUSE",
+          type: "ticker",
+          source: "yahoo",
+          is_primary: true,
+          effective_from: "2025-01-01T00:00:00.000Z",
+          effective_to: "2026-01-01T00:00:00.000Z",
+        },
+        {
+          id: "alias-new",
+          symbol_id: newSymbolId,
+          value: "REUSE",
+          type: "ticker",
+          source: "yahoo",
+          is_primary: true,
+          effective_from: "2026-02-01T00:00:00.000Z",
+          effective_to: null,
+        },
+      ],
+    });
+
+    createServiceClientMock.mockResolvedValue(client);
+    const { resolveSymbolsBatch } = await import("./resolve");
+
+    const result = await resolveSymbolsBatch(["reuse", oldSymbolId]);
+
+    expect(result.byInput.get("reuse")?.canonicalId).toBe(newSymbolId);
+    expect(result.byInput.get(oldSymbolId)).toMatchObject({
+      canonicalId: oldSymbolId,
+      providerAlias: "REUSE",
+      displayTicker: "REUSE",
+    });
+  });
+
+  it("uses alias ID as the final provider tie-break", async () => {
+    const symbolId = "33333333-3333-3333-3333-333333333333";
+    const { client } = createSupabaseStub({
+      symbols: [{ id: symbolId, ticker: "PRIMARY" }],
+      symbolAliases: [
+        {
+          id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          symbol_id: symbolId,
+          value: "FIRST",
+          type: "ticker",
+          source: "yahoo",
+          is_primary: true,
+          effective_from: "2026-01-01T00:00:00.000Z",
+          effective_to: null,
+        },
+        {
+          id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+          symbol_id: symbolId,
+          value: "SECOND",
+          type: "ticker",
+          source: "yahoo",
+          is_primary: false,
+          effective_from: "2026-01-01T00:00:00.000Z",
+          effective_to: null,
+        },
+      ],
+    });
+
+    createServiceClientMock.mockResolvedValue(client);
+    const { resolveSymbolsBatch } = await import("./resolve");
+
+    const result = await resolveSymbolsBatch([symbolId]);
+
+    expect(result.byInput.get(symbolId)).toMatchObject({
+      providerAlias: "SECOND",
+      displayTicker: "FIRST",
+    });
+  });
+
   it("falls back to primary alias and ticker when provider alias is missing", async () => {
     const symbolIdPrimaryFallback = "33333333-3333-3333-3333-333333333333";
     const symbolIdTickerFallback = "44444444-4444-4444-4444-444444444444";
@@ -667,7 +752,7 @@ describe("upsertSymbolAlias", () => {
     );
   });
 
-  it("refreshes an active alias even when it was saved from another source", async () => {
+  it("keeps broker aliases scoped to their source", async () => {
     const insertMock = vi.fn();
     const existingAlias = {
       id: "alias-1",
@@ -689,16 +774,17 @@ describe("upsertSymbolAlias", () => {
           select() {
             return {
               eq(column: string, value: unknown) {
-                expect(column).not.toBe("source");
-                expect(["symbol_id", "type", "value"].includes(column)).toBe(
-                  true,
-                );
+                expect(
+                  ["symbol_id", "type", "source", "value"].includes(column),
+                ).toBe(true);
                 expect(value).toBe(
                   column === "symbol_id"
                     ? "symbol-1"
                     : column === "type"
                       ? "isin"
-                      : "US0000000001",
+                      : column === "source"
+                        ? "trade_republic"
+                        : "US0000000001",
                 );
                 return this;
               },
@@ -710,7 +796,7 @@ describe("upsertSymbolAlias", () => {
               limit(value: number) {
                 expect(value).toBe(1);
                 return Promise.resolve({
-                  data: [existingAlias],
+                  data: [],
                   error: null,
                 });
               },
@@ -734,7 +820,20 @@ describe("upsertSymbolAlias", () => {
               },
             };
           },
-          insert: insertMock,
+          insert(payload: Record<string, unknown>) {
+            insertMock(payload);
+            return {
+              select() {
+                return this;
+              },
+              single() {
+                return Promise.resolve({
+                  data: { id: "alias-2", ...payload },
+                  error: null,
+                });
+              },
+            };
+          },
         };
       },
     });
@@ -746,10 +845,17 @@ describe("upsertSymbolAlias", () => {
     });
 
     expect(result).toMatchObject({
-      id: "alias-1",
-      source: "other_broker",
-      effective_to: null,
+      id: "alias-2",
+      source: "trade_republic",
     });
-    expect(insertMock).not.toHaveBeenCalled();
+    expect(insertMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        symbol_id: "symbol-1",
+        value: "US0000000001",
+        type: "isin",
+        source: "trade_republic",
+        is_primary: false,
+      }),
+    );
   });
 });

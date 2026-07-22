@@ -10,6 +10,8 @@
   - public/sample-positions-template.csv, public/sample-records-template.csv
   - lib/import/broker-transactions/registry.ts + adapters/ (supported brokers)
   - components/dashboard/new-asset/forms/ (add-asset paths + field rules)
+  - server/symbols/create.ts, server/symbols/resolve.ts (active listing resolution + ticker reuse)
+  - server/positions/create.ts, server/positions/import.ts, server/positions/update-symbol.ts (symbol association)
   - components/dashboard/new-portfolio-record/forms/ (buy/sell/update rules)
   - server/portfolio-records/create.ts (record semantics + snapshot recalculation)
   - server/ai/tools/create-portfolio-record.ts, server/ai/tools/create-position.ts (AI advisor write tools)
@@ -62,6 +64,8 @@ Three ways to add an asset:
 **Cash and single items:** either set quantity to the balance with unit value 1 (e.g. quantity 5000, unit value 1), or quantity 1 with unit value equal to the total (e.g. a house: quantity 1, unit value 8,200,000). Both work; total value = quantity × unit value.
 
 **Position value** = quantity × unit value. **Profit/loss** = (unit value − cost basis per unit) × quantity, computed from the latest relevant snapshot.
+
+Symbol-linked additions, imports, and ticker updates resolve only active Yahoo Finance listings. A retired or delisted ticker is never silently attached to its historical security: Foliofox attempts to create the current Yahoo listing and, if Yahoo no longer provides it, returns an error so the ticker can be corrected or the asset entered manually.
 
 ### Market data status
 
@@ -116,6 +120,7 @@ Import behaviors worth knowing:
 
 - For rows in the `cryptocurrency` category, a plain coin code is normalized to Yahoo format with USD ("BTC" → "BTC-USD") and the currency is set to USD. Outside that category this does not happen — for a bare coin symbol without a crypto category, use the full pair (e.g. `BTC-USD`) yourself, since a symbol with no category is otherwise treated as equity.
 - If a symbol's listing currency differs from the CSV's currency, the import adjusts to the symbol's currency (or reports an error asking you to fix the row).
+- `symbol_lookup` must resolve to an active Yahoo Finance listing. Retired or delisted tickers fail the import instead of linking the row to a historical security that once used that ticker.
 - Prices quoted in pence/fils (GBX/GBp) are converted to the ISO currency (GBP) automatically.
 
 Example rows:
