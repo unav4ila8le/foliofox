@@ -13,7 +13,7 @@ Decisions already made:
 - Digest recipient defaults to the mailbox inside `EMAILS_FROM_ADDRESS`; optional `SYMBOL_REVIEW_ALERT_EMAIL` overrides it for operators whose from-address isn't a real inbox.
 - Weekly cadence, 30-day re-review cooldown for still-stale symbols.
 - Verdicts are operator-scoped, not per-user — users keep the existing stale/unavailable badge and their own change-ticker/archive actions.
-- Digest is built from verdict rows where `emailed_at IS NULL`, not from the in-memory run — so verdicts inserted by a truncated or email-failed run are picked up by the next successful digest instead of silently vanishing behind the cooldown.
+- Digest is built from verdict rows where `emailed_at IS NULL`, not from the in-memory run, and is flushed both before and after the LLM loop — so verdicts inserted by a truncated or email-failed run are picked up by the next run's opening flush instead of silently vanishing behind the cooldown.
 
 ## Sequencing
 
@@ -86,7 +86,7 @@ Note: this export is inert for the AI chat advisor. The advisor's toolset is the
 
 ## Step 3 — `server/symbol-review/worker.ts` (new; all logic in one module)
 
-Mirror `server/quotes/repair-worker.ts` style: `"use server"`, `createServiceClient()`, injectable options for tests, stats result `{ candidates, reviewed, failed, digestVerdicts, emailSent }` (plus a `skipped: reason` short-circuit result when the feature is not configured).
+Mirror `server/quotes/repair-worker.ts` style: `"use server"`, `createServiceClient()`, injectable options for tests, stats result `{ candidates, reviewed, failed, digestsSent }` — `failed` includes ungrounded results (see grounding guard below) — plus a `skipped: reason` short-circuit result when the feature is not configured.
 
 **Enablement gate** (first thing in the run): require `AI_PROVIDER_API_KEY`, `RESEND_API_KEY`, and `EMAILS_FROM_ADDRESS` to be non-empty; if any is missing, log the reason and return `{ skipped }` — no queries, no LLM calls, no rows. This is the whole opt-in story for self-hosters: configure AI + email and the feature is on; don't and it's inert.
 
@@ -116,10 +116,10 @@ export const symbolVerdictSchema = z.object({
 });
 ```
 
-**Selection** (two queries; ~1,200 symbols total, expect <20 stale — no keyset pagination):
+**Selection** (two queries; ~1,200 symbols total, expect <20 stale — no keyset pagination). The cooldown is excluded DB-side, *before* the row cap: filtering a capped page in JS would keep returning the same already-reviewed rows (still stale, still first by `last_quote_at`) and starve everything past the first page until their cooldown expired.
 
-1. From `symbols`: select `id, ticker, exchange, long_name, short_name, currency, quote_type, last_quote_at` with `positions!inner(id)` filtered `.is("positions.archived_at", null)` (≥1 live position) and `symbol_aliases!inner(id)` filtered `.eq(source,'yahoo').eq(type,'ticker').is(effective_to,null)` (ACTIVE alias — retired-only symbols are already "unavailable", nothing left to retire); `.or("last_quote_at.is.null,last_quote_at.lt.<now-7d>")`; `.lt("created_at", <now-7d>)` (a just-created symbol whose warm quote fetch failed still has `last_quote_at: null` — don't research it as "stale"); order by `last_quote_at` asc nulls-first; `limit(MAX_SYMBOLS_PER_RUN * 2)` headroom, warn if hit.
-2. Cooldown: fetch `symbol_review_verdicts.symbol_id` where `symbol_id IN candidates AND created_at >= now()-30d` → Set. Pure exported helper `filterDueCandidates(candidates, recentlyReviewedIds)` filters, then `.slice(0, MAX_SYMBOLS_PER_RUN)`.
+1. Cooldown set: fetch `symbol_review_verdicts.symbol_id` where `created_at >= now()-30d` → Set. Bounded by review throughput (≤ ~45 ids at 10/week), so no pagination.
+2. From `symbols`: select `id, ticker, exchange, long_name, short_name, currency, quote_type, last_quote_at` with `positions!inner(id)` filtered `.is("positions.archived_at", null)` (≥1 live position) and `symbol_aliases!inner(id)` filtered `.eq(source,'yahoo').eq(type,'ticker').is(effective_to,null)` (ACTIVE alias — retired-only symbols are already "unavailable", nothing left to retire); `.or("last_quote_at.is.null,last_quote_at.lt.<now-7d>")`; `.lt("created_at", <now-7d>)` (a just-created symbol whose warm quote fetch failed still has `last_quote_at: null` — don't research it as "stale"); `.not("id", "in", <cooldown set>)` only when the set is non-empty (PostgREST rejects an empty in-list); order by `last_quote_at` asc nulls-first; `{ count: "exact" }` + `limit(MAX_SYMBOLS_PER_RUN)`, and log a backlog warning when `count` exceeds the cap.
 
 **LLM loop** — sequential `for...of`, per-symbol try/catch, insert each verdict immediately after its call (a timeout only truncates the tail; no verdict row → picked up next week; inserted-but-unemailed rows ride along in the next successful digest via `emailed_at IS NULL`):
 
@@ -133,11 +133,13 @@ const result = await generateText({
 });
 ```
 
-Insert `{ symbol_id, ...result.output, model: extractionModelId }` (`emailed_at` stays null until a digest includes it). If the model returns an empty `evidence_urls`, fall back to `result.sources` URLs (provider-reported list of consulted pages) so the digest always carries evidence links when a search actually ran.
+Grounding guard: if `result.sources` is empty, the model answered from prior knowledge without actually searching — skip the insert, count the symbol as `failed`, and log it (no verdict row → retried next week). Every verdict here hinges on *current* listing status, so an unsearched answer with plausible-looking evidence URLs must never reach the digest. If the smoke test shows this happening chronically, escalate to forcing the tool via `toolChoice` or the two-step fallback from risk 1.
+
+Insert `{ symbol_id, ...result.output, model: extractionModelId }` (`emailed_at` stays null until a digest includes it). If the model returns an empty `evidence_urls`, fall back to `result.sources` URLs (provider-reported list of consulted pages) so the digest always carries evidence links.
 
 **Prompt** (co-located `buildReviewPrompt`): symbol context (ticker, exchange, name, currency, quote_type, last quote date, days stale) + instructions: research CURRENT listing status via web search; classify per the five verdicts (successor_ticker only for "renamed", pointing at the new Yahoo ticker); ticker reuse — the ticker now trades as a DIFFERENT security — is "retired" for the old security, with the reuse noted in the summary (retiring the alias is the same action, and the new security gets its own canonical symbol when a user adds it); cite actually-used URLs (exchange notices/issuer releases/regulator filings over aggregators); "high" confidence only with multiple independent sources; inconclusive → "unknown"/"low"; summary 2–3 sentences with what/when.
 
-**Email digest** — after the loop, query `symbol_review_verdicts` where `emailed_at IS NULL` with embedded `symbols(ticker, exchange, long_name, short_name)` (the digest set is not the in-memory run: it also sweeps up verdicts a previous truncated/email-failed run left behind). Pure helper `buildDigestEmail(rows)` producing raw `html`/`text` strings (no react-email; `AutomatedEmailSender.sendEmail` accepts raw html/text):
+**Email digest** — helper `sendPendingDigest(supabase)`: query `symbol_review_verdicts` where `emailed_at IS NULL` with embedded `symbols(ticker, exchange, long_name, short_name)`, build, send, mark. Called **twice** per run: once at the start — before the LLM loop burns the time budget, so verdicts left behind by a previous truncated/email-failed run reach the operator even if this run is also killed at `maxDuration` — and once after the loop for this run's verdicts. Pure helper `buildDigestEmail(rows)` producing raw `html`/`text` strings (no react-email; `AutomatedEmailSender.sendEmail` accepts raw html/text):
 
 - Send only if ≥1 pending verdict, via `createAutomatedEmailSender().sendEmail(...)` in try/catch (email failure must not fail the run; the factory itself throws on missing `RESEND_API_KEY`, but the gate already guarantees it).
 - On successful send, update the included rows to `emailed_at = now()`. If that update fails the worst case is duplicate digest entries next week — acceptable.
@@ -171,9 +173,10 @@ WHERE source = 'yahoo' AND type = 'ticker' AND value = '{TICKER}' AND effective_
 ## Step 6 — Tests (`server/symbol-review/worker.test.ts`, pure functions only)
 
 1. `symbolVerdictSchema`: valid parse; rejects out-of-enum verdict; rejects missing `successor_ticker` key.
-2. `filterDueCandidates`: drops symbols with a verdict inside 30 days, keeps rest, tolerates `last_quote_at: null`.
-3. `resolveDigestRecipient`: override wins; `"Name <a@b.c>"` → `a@b.c`; bare address passes through.
-4. `buildDigestEmail`: retired verdict yields sanity SELECT + guarded UPDATE scoped `source='yahoo' AND type='ticker' AND effective_to IS NULL`; ticker with `'` escaped; renamed verdict references `SYMBOL-RENAME-HANDLING.md` and gets no SQL; other non-retired verdicts get no SQL; `<script>` in summary is HTML-escaped.
+2. `resolveDigestRecipient`: override wins; `"Name <a@b.c>"` → `a@b.c`; bare address passes through.
+3. `buildDigestEmail`: retired verdict yields sanity SELECT + guarded UPDATE scoped `source='yahoo' AND type='ticker' AND effective_to IS NULL`; ticker with `'` escaped; renamed verdict references `SYMBOL-RENAME-HANDLING.md` and gets no SQL; other non-retired verdicts get no SQL; `<script>` in summary is HTML-escaped.
+
+(No `filterDueCandidates` test — the cooldown moved into the selection query, there is no pure filtering helper left.)
 
 ## Verification
 
@@ -191,7 +194,7 @@ Post-deploy: trigger the cron manually once with the bearer header, confirm verd
 1. **web_search + `Output.object` in one `generateText`**: docs show no restriction on the combination for gpt-5-class Responses models, but there are community reports of broken/truncated JSON when the older `web_search_preview` tool mixed with structured outputs — so treat it as unproven until the post-deploy smoke test. If it misbehaves, fall back to two-step (research call with tools → cheap structuring call with `Output.object`). Only the per-symbol function changes.
 2. **Model** `gpt-5.6-luna` must accept the web_search tool; if not, fix is a single model-id const in the worker.
 3. **PostgREST double `!inner` embed filter** on `positions` + `symbol_aliases`; if the alias filter misbehaves, fetch alias rows and filter in JS like `server/positions/stale.ts` does.
-4. **Runtime**: 10 × slow research calls can still brush 800s worst-case; insert-as-you-go plus the `emailed_at IS NULL` digest sweep means an overrun truncates the tail without losing anything — remaining symbols retried next week, inserted verdicts emailed next week.
+4. **Runtime**: 10 × slow research calls can still brush 800s worst-case; insert-as-you-go plus the `emailed_at IS NULL` digest sweep means an overrun truncates the tail without losing anything — remaining symbols retried next week, and the pre-loop digest flush emails leftover verdicts even if consecutive runs keep getting killed.
 5. **From-address fallback recipient**: if `EMAILS_FROM_ADDRESS` isn't a real inbox and no override is set, digests silently go nowhere. Accepted: the feature is advisory, and the `.env.example` comment documents the override.
 
 ## Cut on purpose
