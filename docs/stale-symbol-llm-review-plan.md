@@ -116,7 +116,7 @@ export const symbolVerdictSchema = z.object({
 });
 ```
 
-**Selection** (two queries; ~1,200 symbols total, expect <20 stale — no keyset pagination). The cooldown is excluded DB-side, *before* the row cap: filtering a capped page in JS would keep returning the same already-reviewed rows (still stale, still first by `last_quote_at`) and starve everything past the first page until their cooldown expired.
+**Selection** (two queries; ~1,200 symbols total, expect <20 stale — no keyset pagination). The cooldown is excluded DB-side, _before_ the row cap: filtering a capped page in JS would keep returning the same already-reviewed rows (still stale, still first by `last_quote_at`) and starve everything past the first page until their cooldown expired.
 
 1. Cooldown set: fetch `symbol_review_verdicts.symbol_id` where `created_at >= now()-30d` → Set. Bounded by review throughput (≤ ~45 ids at 10/week), so no pagination.
 2. From `symbols`: select `id, ticker, exchange, long_name, short_name, currency, quote_type, last_quote_at` with `positions!inner(id)` filtered `.is("positions.archived_at", null)` (≥1 live position) and `symbol_aliases!inner(id)` filtered `.eq(source,'yahoo').eq(type,'ticker').is(effective_to,null)` (ACTIVE alias — retired-only symbols are already "unavailable", nothing left to retire); `.or("last_quote_at.is.null,last_quote_at.lt.<now-7d>")`; `.lt("created_at", <now-7d>)` (a just-created symbol whose warm quote fetch failed still has `last_quote_at: null` — don't research it as "stale"); `.not("id", "in", <cooldown set>)` only when the set is non-empty (PostgREST rejects an empty in-list); order by `last_quote_at` asc nulls-first; `{ count: "exact" }` + `limit(MAX_SYMBOLS_PER_RUN)`, and log a backlog warning when `count` exceeds the cap.
@@ -133,7 +133,7 @@ const result = await generateText({
 });
 ```
 
-Grounding guard: if `result.sources` is empty, the model answered from prior knowledge without actually searching — skip the insert, count the symbol as `failed`, and log it (no verdict row → retried next week). Every verdict here hinges on *current* listing status, so an unsearched answer with plausible-looking evidence URLs must never reach the digest. If the smoke test shows this happening chronically, escalate to forcing the tool via `toolChoice` or the two-step fallback from risk 1.
+Grounding guard: if `result.sources` is empty, the model answered from prior knowledge without actually searching — skip the insert, count the symbol as `failed`, and log it (no verdict row → retried next week). Every verdict here hinges on _current_ listing status, so an unsearched answer with plausible-looking evidence URLs must never reach the digest. If the smoke test shows this happening chronically, escalate to forcing the tool via `toolChoice` or the two-step fallback from risk 1.
 
 Insert `{ symbol_id, ...result.output, model: extractionModelId }` (`emailed_at` stays null until a digest includes it). If the model returns an empty `evidence_urls`, fall back to `result.sources` URLs (provider-reported list of consulted pages) so the digest always carries evidence links.
 
