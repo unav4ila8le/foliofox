@@ -142,8 +142,7 @@ function PositionCategoryList({
   refreshCategories,
 }: CategoryListProps) {
   const [search, setSearch] = useState("");
-  // Holds the name the create dialog opens with; null keeps the dialog closed.
-  const [createDialogName, setCreateDialogName] = useState<string | null>(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [manageDialogOpen, setManageDialogOpen] = useState(false);
 
   const searchTerm = search.trim();
@@ -217,7 +216,7 @@ function PositionCategoryList({
               <CommandGroup forceMount>
                 <CommandItem
                   value="create-searched-category"
-                  onSelect={() => setCreateDialogName(searchTerm)}
+                  onSelect={() => setCreateDialogOpen(true)}
                 >
                   <PlusIcon />
                   {searchTerm ? `Create "${searchTerm}"` : "Add new"}
@@ -265,15 +264,19 @@ function PositionCategoryList({
                     {category.name}
                   </CommandItem>
                 ))}
-                <CommandItem
-                  onSelect={() => {
-                    setCreateDialogName("");
-                  }}
-                  value="add-new-custom-category"
-                >
-                  <PlusIcon />
-                  Add new
-                </CommandItem>
+                {/* Hidden while searching: this row's value would otherwise
+                    match searches like "new" or "custom" and keep the empty
+                    state (which offers to create the searched term) from
+                    rendering. */}
+                {!searchTerm && (
+                  <CommandItem
+                    onSelect={() => setCreateDialogOpen(true)}
+                    value="add-new-custom-category"
+                  >
+                    <PlusIcon />
+                    Add new
+                  </CommandItem>
+                )}
               </CommandGroup>
             </>
           )}
@@ -281,17 +284,17 @@ function PositionCategoryList({
       </Command>
 
       {/* Mounted on open so the dialog seeds its name input from the search. */}
-      {createDialogName !== null && (
+      {createDialogOpen && (
         <CreateCategoryDialog
           open
           onOpenChange={(nextOpen) => {
             if (!nextOpen) {
-              setCreateDialogName(null);
+              setCreateDialogOpen(false);
               setOpen(false);
             }
           }}
           positionType={positionType}
-          defaultName={createDialogName}
+          defaultName={searchTerm}
           onCreated={handleCategoryCreated}
         />
       )}

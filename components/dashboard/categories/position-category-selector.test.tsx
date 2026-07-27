@@ -213,6 +213,25 @@ describe("PositionCategorySelector", () => {
     expect(onUserCategoryChange).toHaveBeenCalledWith("custom-2");
   });
 
+  it("offers the searched term even when the search matches the add new row", () => {
+    render(
+      <PositionCategorySelector
+        field={{ value: "equity", onChange: vi.fn() }}
+        allowCustomCategories
+      />,
+    );
+
+    openSelector();
+    // "new" would match the add new row's own value, which used to keep the
+    // empty state from rendering.
+    fireEvent.change(screen.getByPlaceholderText("Search category..."), {
+      target: { value: "new" },
+    });
+
+    expect(screen.getByText('Create "new"')).toBeTruthy();
+    expect(screen.queryByText("Add new")).toBeNull();
+  });
+
   it("does not submit a parent form when creating a custom category", async () => {
     const onParentSubmit = vi.fn((event: SyntheticEvent<HTMLFormElement>) => {
       event.preventDefault();

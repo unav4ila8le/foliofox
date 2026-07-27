@@ -50,16 +50,16 @@ Three ways to add an asset:
 
 ### Field meanings
 
-| Field                  | Meaning                                              | Rules                                                                                          |
-| ---------------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Name                   | Position name                                        | 3–64 characters                                                                                |
-| Category               | Asset class used for allocation charts               | Pick one; custom categories supported                                                          |
-| Currency               | The position's accounting currency                   | 3-letter ISO 4217 code (USD, EUR, GBP, …), must be supported                                   |
-| Quantity               | Number of units/shares held                          | ≥ 0                                                                                            |
-| Unit value             | Current value of one unit                            | ≥ 0; auto-fetched for symbol-backed positions                                                  |
-| Cost basis per unit    | What you paid per unit (your average purchase price) | Optional; must be > 0 if provided. Used to compute profit/loss and estimated capital gains tax |
-| Capital gains tax rate | Your tax rate on gains for this position             | Optional; entered as a percentage 0–100 in forms                                               |
-| Description            | Free-form note                                       | Max 256 characters                                                                             |
+| Field                  | Meaning                                              | Rules                                                                                                                |
+| ---------------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Name                   | Position name                                        | 3–64 characters                                                                                                      |
+| Category               | Asset class used for allocation charts               | Pick one; custom categories supported — create one from the selector, or straight from a search that matches nothing |
+| Currency               | The position's accounting currency                   | 3-letter ISO 4217 code (USD, EUR, GBP, …), must be supported                                                         |
+| Quantity               | Number of units/shares held                          | ≥ 0                                                                                                                  |
+| Unit value             | Current value of one unit                            | ≥ 0; auto-fetched for symbol-backed positions                                                                        |
+| Cost basis per unit    | What you paid per unit (your average purchase price) | Optional; must be > 0 if provided. Used to compute profit/loss and estimated capital gains tax                       |
+| Capital gains tax rate | Your tax rate on gains for this position             | Optional; entered as a percentage 0–100 in forms                                                                     |
+| Description            | Free-form note                                       | Max 256 characters                                                                                                   |
 
 **Cash and single items:** either set quantity to the balance with unit value 1 (e.g. quantity 5000, unit value 1), or quantity 1 with unit value equal to the total (e.g. a house: quantity 1, unit value 8,200,000). Both work; total value = quantity × unit value.
 
