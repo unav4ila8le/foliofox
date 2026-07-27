@@ -32,6 +32,12 @@ const REVIEW_COOLDOWN_DAYS = 30;
 // A backlog beyond the cap drains across subsequent weekly runs.
 const MAX_SYMBOLS_PER_RUN = 10;
 
+// Failures write no verdict row, so they never enter the cooldown set and
+// re-select first every run. Fetching past the cap gives the loop slack to
+// step over a run of them instead of letting them consume the weekly quota
+// forever; the quota is enforced on stored verdicts, not on rows fetched.
+const CANDIDATE_OVERFETCH = 2;
+
 // Bound the loop from both ends so the run always reaches the digest send
 // instead of being killed mid-loop: per-call for a single hung research call,
 // per-loop for the accumulated worst case.
@@ -145,7 +151,7 @@ async function fetchCandidates(
     // null last_quote_at; it is new, not stale.
     .lt("created_at", staleCutoff)
     .order("last_quote_at", { ascending: true, nullsFirst: true })
-    .limit(maxSymbols);
+    .limit(maxSymbols * CANDIDATE_OVERFETCH);
 
   if (cooldownSymbolIds.length) {
     // PostgREST rejects an empty in-list, hence the guard.
@@ -413,6 +419,9 @@ export async function runSymbolReview(
 
   const startedAt = Date.now();
   for (const [index, candidate] of candidates.entries()) {
+    // The overfetched tail is slack for failures, not extra work.
+    if (stats.reviewed >= maxSymbols) break;
+
     if (Date.now() - startedAt > LOOP_BUDGET_MS) {
       console.warn(
         `[symbolReview] Loop budget exhausted; deferring ${candidates.length - index} symbols to next run`,

@@ -258,6 +258,40 @@ describe("runSymbolReview verdict guards", () => {
     expect(insert?.payload).toMatchObject({ successor_ticker: null });
   });
 
+  it("steps over failures instead of spending the quota on them", async () => {
+    // Failures never enter the cooldown set, so without the overfetch slack
+    // the same head-of-queue rows would consume every slot week after week.
+    const rows = [1, 2, 3, 4].map((index) => ({
+      ...CANDIDATE_ROW,
+      id: `1111111${index}-1111-1111-1111-111111111111`,
+      symbol_aliases: [
+        {
+          id: `2222222${index}-2222-2222-2222-222222222222`,
+          value: `T${index}`,
+        },
+      ],
+    }));
+    const { client, calls } = createSupabaseStub({
+      "symbols:select": [{ data: rows, count: 4 }],
+      "symbol_review_verdicts:select": [{ data: [] }, { data: [] }],
+    });
+    generateTextMock
+      .mockResolvedValueOnce({ ...groundedResult(), toolResults: [] })
+      .mockResolvedValue(groundedResult());
+
+    const result = await runSymbolReview({ supabase: client, maxSymbols: 2 });
+
+    expect(result.stats).toMatchObject({ reviewed: 2, failed: 1 });
+    // Third and fourth rows: one reviewed to fill the quota, one left for
+    // next week rather than reviewed for free.
+    expect(generateTextMock).toHaveBeenCalledTimes(3);
+    expect(
+      calls
+        .filter((call) => call.operation === "insert")
+        .map((call) => (call.payload as { alias_value: string }).alias_value),
+    ).toEqual(["T2", "T3"]);
+  });
+
   it("skips a symbol without exactly one active Yahoo alias", async () => {
     const { client } = createSupabaseStub({
       "symbols:select": [
