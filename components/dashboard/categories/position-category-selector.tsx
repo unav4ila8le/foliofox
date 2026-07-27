@@ -141,8 +141,12 @@ function PositionCategoryList({
   allowCustomCategories,
   refreshCategories,
 }: CategoryListProps) {
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  // Holds the name the create dialog opens with; null keeps the dialog closed.
+  const [createDialogName, setCreateDialogName] = useState<string | null>(null);
   const [manageDialogOpen, setManageDialogOpen] = useState(false);
+
+  const searchTerm = search.trim();
 
   const systemCategories = categories.filter(
     (category) => category.source === "system",
@@ -191,11 +195,36 @@ function PositionCategoryList({
   return (
     <>
       <Command>
-        <CommandInput placeholder="Search category..." className="h-9" />
+        <CommandInput
+          placeholder="Search category..."
+          className="h-9"
+          value={search}
+          onValueChange={setSearch}
+        />
         <CommandList>
-          <CommandEmpty>
-            {isLoading ? "Loading categories..." : "No categories found."}
-          </CommandEmpty>
+          {isLoading || !allowCustomCategories ? (
+            <CommandEmpty>
+              {isLoading ? "Loading categories..." : "No categories found."}
+            </CommandEmpty>
+          ) : (
+            // A search that matches nothing offers to create that category
+            // instead of dead-ending on "No categories found.". forceMount
+            // keeps the row out of cmdk's filter, so the empty state (which
+            // only renders while no item matches) stays visible around it. The
+            // group wrapper is required: cmdk reorders items by score and only
+            // handles items that sit inside a group or at the list root.
+            <CommandEmpty className="p-0 text-left">
+              <CommandGroup forceMount>
+                <CommandItem
+                  value="create-searched-category"
+                  onSelect={() => setCreateDialogName(searchTerm)}
+                >
+                  <PlusIcon />
+                  {searchTerm ? `Create "${searchTerm}"` : "Add new"}
+                </CommandItem>
+              </CommandGroup>
+            </CommandEmpty>
+          )}
           <CommandGroup heading="System Categories">
             {systemCategories.map((category) => (
               <CommandItem
@@ -238,7 +267,7 @@ function PositionCategoryList({
                 ))}
                 <CommandItem
                   onSelect={() => {
-                    setCreateDialogOpen(true);
+                    setCreateDialogName("");
                   }}
                   value="add-new-custom-category"
                 >
@@ -251,17 +280,21 @@ function PositionCategoryList({
         </CommandList>
       </Command>
 
-      <CreateCategoryDialog
-        open={createDialogOpen}
-        onOpenChange={(nextOpen) => {
-          setCreateDialogOpen(nextOpen);
-          if (!nextOpen) {
-            setOpen(false);
-          }
-        }}
-        positionType={positionType}
-        onCreated={handleCategoryCreated}
-      />
+      {/* Mounted on open so the dialog seeds its name input from the search. */}
+      {createDialogName !== null && (
+        <CreateCategoryDialog
+          open
+          onOpenChange={(nextOpen) => {
+            if (!nextOpen) {
+              setCreateDialogName(null);
+              setOpen(false);
+            }
+          }}
+          positionType={positionType}
+          defaultName={createDialogName}
+          onCreated={handleCategoryCreated}
+        />
+      )}
 
       <ManageCategoriesDialog
         open={manageDialogOpen}
