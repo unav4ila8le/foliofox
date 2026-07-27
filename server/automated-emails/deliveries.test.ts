@@ -274,6 +274,7 @@ describe("sendAutomatedEmail", () => {
         to: "to@test",
         subject: "subject",
         html: "<p>html</p>",
+        text: "html",
       },
     });
 
@@ -308,6 +309,7 @@ describe("sendAutomatedEmail", () => {
         to: "to@test",
         subject: "Hello",
         html: "<p>Hi</p>",
+        text: "Hi",
       },
     });
 
@@ -347,6 +349,7 @@ describe("sendAutomatedEmail", () => {
         to: "to@test",
         subject: "Hi",
         html: "<p>Hi</p>",
+        text: "Hi",
       },
     });
 
@@ -401,6 +404,7 @@ describe("sendAutomatedEmail", () => {
         to: "to@test",
         subject: "Hi",
         html: "<p>Hi</p>",
+        text: "Hi",
       },
     });
 
@@ -456,6 +460,7 @@ describe("sendAutomatedEmail", () => {
         to: "to@test",
         subject: "Hi",
         html: "<p>Hi</p>",
+        text: "Hi",
       },
     });
 
@@ -496,6 +501,7 @@ describe("sendAutomatedEmail", () => {
             to: "one@test",
             subject: "One",
             html: "<p>One</p>",
+            text: "One",
           },
         },
         {
@@ -507,6 +513,7 @@ describe("sendAutomatedEmail", () => {
             to: "two@test",
             subject: "Two",
             html: "<p>Two</p>",
+            text: "Two",
           },
         },
       ],

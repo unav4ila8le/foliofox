@@ -19,13 +19,16 @@ interface EmailLayoutProps {
   previewText: string;
   title: string;
   subtitle: string;
-  dashboardUrl: string;
-  dashboardLabel: string;
-  reasonText: string;
-  settingsUrl: string;
-  unsubscribeUrl: string;
   logoUrl: string;
   children: ReactNode;
+  // Chrome that only user-facing mail has. Operator mail (the symbol review
+  // digest) has no dashboard CTA, no preference centre, and no unsubscribe
+  // flow — sending one an unsubscribe link would be a lie.
+  dashboardUrl?: string;
+  dashboardLabel?: string;
+  reasonText?: string;
+  settingsUrl?: string;
+  unsubscribeUrl?: string;
 }
 
 // NOTE: These values mirror the Foliofox design tokens in app/globals.css.
@@ -132,6 +135,8 @@ export function EmailLayout({
   logoUrl,
   children,
 }: EmailLayoutProps) {
+  const hasFooter = Boolean(reasonText || (settingsUrl && unsubscribeUrl));
+
   return (
     <Html lang="en">
       <Head />
@@ -194,65 +199,78 @@ export function EmailLayout({
             {children}
 
             {/* Dashboard Button */}
-            <Section style={{ marginTop: "24px" }}>
-              <Button
-                href={dashboardUrl}
-                style={{
-                  borderRadius: emailRadius.card,
-                  backgroundColor: emailColors.brand,
-                  color: "#ffffff",
-                  fontSize: "14px",
-                  padding: "12px 24px",
-                }}
-              >
-                {dashboardLabel}
-              </Button>
-            </Section>
+            {dashboardUrl ? (
+              <Section style={{ marginTop: "24px" }}>
+                <Button
+                  href={dashboardUrl}
+                  style={{
+                    borderRadius: emailRadius.card,
+                    backgroundColor: emailColors.brand,
+                    color: "#ffffff",
+                    fontSize: "14px",
+                    padding: "12px 24px",
+                    // react-email's box-border equivalent: keeps padding inside
+                    // the button box if a width is ever set on it.
+                    boxSizing: "border-box",
+                  }}
+                >
+                  {dashboardLabel}
+                </Button>
+              </Section>
+            ) : null}
 
-            <EmailSectionDivider />
+            {/* Only rule off the footer when there is a footer; operator mail
+                would otherwise end on a dangling horizontal line. */}
+            {hasFooter ? <EmailSectionDivider /> : null}
 
             {/* Footer */}
-            <EmailMutedText
-              style={{
-                fontSize: "12px",
-                margin: 0,
-              }}
-            >
-              {reasonText}
-            </EmailMutedText>
-            <EmailMutedText
-              style={{
-                fontSize: "12px",
-                margin: 0,
-              }}
-            >
-              Foliofox, Room 402-J14, 10, Pangyo-ro 71-beon-gil, Bundang-gu,
-              Seongnam-si, Gyeonggi-do, Republic of Korea
-            </EmailMutedText>
-            <EmailMutedText
-              style={{
-                fontSize: "12px",
-                margin: 0,
-              }}
-            >
-              <Link
-                href={settingsUrl}
+            {reasonText ? (
+              <>
+                <EmailMutedText
+                  style={{
+                    fontSize: "12px",
+                    margin: 0,
+                  }}
+                >
+                  {reasonText}
+                </EmailMutedText>
+                <EmailMutedText
+                  style={{
+                    fontSize: "12px",
+                    margin: 0,
+                  }}
+                >
+                  Foliofox, Room 402-J14, 10, Pangyo-ro 71-beon-gil, Bundang-gu,
+                  Seongnam-si, Gyeonggi-do, Republic of Korea
+                </EmailMutedText>
+              </>
+            ) : null}
+            {settingsUrl && unsubscribeUrl ? (
+              <EmailMutedText
                 style={{
-                  color: emailColors.brand,
+                  fontSize: "12px",
+                  margin: 0,
                 }}
               >
-                Manage email settings
-              </Link>
-              {" · "}
-              <Link
-                href={unsubscribeUrl}
-                style={{
-                  color: emailColors.brand,
-                }}
-              >
-                Unsubscribe from this email type
-              </Link>
-            </EmailMutedText>
+                <Link
+                  href={settingsUrl}
+                  style={{
+                    color: emailColors.brand,
+                  }}
+                >
+                  Manage email settings
+                </Link>
+                {" · "}
+                <Link
+                  href={unsubscribeUrl}
+                  style={{
+                    color: emailColors.brand,
+                  }}
+                >
+                  Unsubscribe from this email type
+                </Link>
+              </EmailMutedText>
+            ) : null}
           </Section>
         </Container>
       </Body>

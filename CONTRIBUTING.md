@@ -188,25 +188,7 @@ supabase gen types typescript --project-id <your-project-ref> > types/database.t
 
 - Import the repo into Vercel.
 - Set the same environment variables listed in [.env.example](./.env.example) (Project Settings → Environment Variables).
-- `vercel.json` includes daily cron jobs at 22:00 UTC for quotes and FX updates, plus hourly crons for quote-gap repair and automated emails.
-- Cron endpoints expect `Authorization: Bearer <CRON_SECRET>`.
-- The automated-email cron stays inactive unless `AUTOMATED_EMAILS_ENABLED=true` and the email env vars are configured.
-
-If headers can’t be configured in your environment, trigger manually:
-
-```bash
-# Exchange rates
-curl "http://localhost:3000/api/cron/fetch-exchange-rates" \
-  -H "authorization: Bearer $CRON_SECRET"
-
-# Quotes
-curl "http://localhost:3000/api/cron/fetch-quotes" \
-  -H "authorization: Bearer $CRON_SECRET"
-
-# Automated emails
-curl "http://localhost:3000/api/cron/send-automated-emails" \
-  -H "authorization: Bearer $CRON_SECRET"
-```
+- Scheduled jobs are configured in `vercel.json`. Their schedules, env-var gating, and manual-trigger command are documented in [docs/CRONS.md](./docs/CRONS.md).
 
 ## Types
 

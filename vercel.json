@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/send-automated-emails",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/review-stale-symbols",
+      "schedule": "0 6 * * 1"
     }
   ]
 }

@@ -1,13 +1,16 @@
-import type { ReactElement } from "react";
 import { Resend } from "resend";
 
+// Templates render to html + text themselves (see templates.tsx), so there is
+// no `react` passthrough: handing Resend a component would make it synthesize
+// the plain-text part instead of using ours. Both bodies are required —
+// Resend's own options type is a union that demands at least one, and every
+// caller already renders both.
 export interface AutomatedEmailMessage {
   from: string;
   to: string | string[];
   subject: string;
-  html?: string;
-  text?: string;
-  react?: ReactElement;
+  html: string;
+  text: string;
 }
 
 export interface AutomatedEmailSendResult {
@@ -56,7 +59,6 @@ function createResendAutomatedEmailSender(
         subject: message.subject,
         html: message.html,
         text: message.text,
-        react: message.react,
       });
 
       if (error) {
@@ -83,7 +85,6 @@ function createResendAutomatedEmailSender(
           subject: message.subject,
           html: message.html,
           text: message.text,
-          react: message.react,
         })),
       );
 
