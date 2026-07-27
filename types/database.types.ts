@@ -7,36 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       ai_assistant_turn_events: {
@@ -1011,6 +981,66 @@ export type Database = {
           },
         ]
       }
+      symbol_review_verdicts: {
+        Row: {
+          alias_id: string
+          alias_value: string
+          confidence: string
+          created_at: string
+          emailed_at: string | null
+          evidence_urls: string[]
+          id: string
+          model: string
+          successor_ticker: string | null
+          summary: string
+          symbol_id: string
+          verdict: string
+        }
+        Insert: {
+          alias_id: string
+          alias_value: string
+          confidence: string
+          created_at?: string
+          emailed_at?: string | null
+          evidence_urls: string[]
+          id?: string
+          model: string
+          successor_ticker?: string | null
+          summary: string
+          symbol_id: string
+          verdict: string
+        }
+        Update: {
+          alias_id?: string
+          alias_value?: string
+          confidence?: string
+          created_at?: string
+          emailed_at?: string | null
+          evidence_urls?: string[]
+          id?: string
+          model?: string
+          successor_ticker?: string | null
+          summary?: string
+          symbol_id?: string
+          verdict?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "symbol_review_verdicts_alias_id_fkey"
+            columns: ["alias_id"]
+            isOneToOne: false
+            referencedRelation: "symbol_aliases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "symbol_review_verdicts_symbol_id_fkey"
+            columns: ["symbol_id"]
+            isOneToOne: false
+            referencedRelation: "symbols"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       symbols: {
         Row: {
           created_at: string
@@ -1247,9 +1277,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       age_band: ["18-24", "25-34", "35-44", "45-54", "55-64", "65+"],
@@ -1270,3 +1297,4 @@ export const Constants = {
     },
   },
 } as const
+

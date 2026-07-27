@@ -45,6 +45,22 @@ export const aiModel = (id: string): LanguageModel => {
   return openAIProvider(normalizeOpenAIModelId(id));
 };
 
+/**
+ * Provider-executed web search (OpenAI Responses API `web_search`).
+ *
+ * OpenAI runs the search server-side inside the same request, so this costs no
+ * extra tool round-trip.
+ *
+ * Read consulted pages from the `web_search` tool result
+ * (`toolResults[].output.sources`), NOT from `result.sources`: the latter is
+ * built only from `url_citation` annotations on generated prose, so it is
+ * empty whenever the call uses a structured `Output.object` response.
+ *
+ * Not reachable from the AI advisor: its toolset is the explicit `aiTools`
+ * registry in `server/ai/tools/index.ts`.
+ */
+export const openaiWebSearchTool = () => openAIProvider.tools.webSearch();
+
 // Centralize AI model ids and generation knobs.
 export const chatModelId = "gpt-5.6-luna";
 export const extractionModelId = "gpt-5.6-luna";
