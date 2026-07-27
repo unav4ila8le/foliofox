@@ -188,9 +188,10 @@ supabase gen types typescript --project-id <your-project-ref> > types/database.t
 
 - Import the repo into Vercel.
 - Set the same environment variables listed in [.env.example](./.env.example) (Project Settings → Environment Variables).
-- `vercel.json` includes daily cron jobs at 22:00 UTC for quotes and FX updates, plus hourly crons for quote-gap repair and automated emails.
+- `vercel.json` includes daily cron jobs at 22:00 UTC for quotes and FX updates, hourly crons for quote-gap repair and automated emails, and a weekly stale-symbol review on Mondays at 06:00 UTC.
 - Cron endpoints expect `Authorization: Bearer <CRON_SECRET>`.
 - The automated-email cron stays inactive unless `AUTOMATED_EMAILS_ENABLED=true` and the email env vars are configured.
+- The stale-symbol review runs whenever `AI_PROVIDER_API_KEY`, `RESEND_API_KEY` and `EMAILS_FROM_ADDRESS` are all set — it is operator mail, so `AUTOMATED_EMAILS_ENABLED` does **not** gate it. It emails a digest of LLM-researched verdicts (with ready-to-run retirement SQL) and applies nothing automatically. Set `SYMBOL_REVIEW_ALERT_EMAIL` unless your from-address is a real inbox: the digest otherwise goes to that send-only mailbox and is silently dropped.
 
 If headers can’t be configured in your environment, trigger manually:
 
@@ -205,6 +206,10 @@ curl "http://localhost:3000/api/cron/fetch-quotes" \
 
 # Automated emails
 curl "http://localhost:3000/api/cron/send-automated-emails" \
+  -H "authorization: Bearer $CRON_SECRET"
+
+# Stale-symbol review (weekly; spends LLM web-search calls and sends a digest)
+curl "http://localhost:3000/api/cron/review-stale-symbols" \
   -H "authorization: Bearer $CRON_SECRET"
 ```
 
