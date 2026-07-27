@@ -158,6 +158,80 @@ describe("PositionCategorySelector", () => {
     expect(onUserCategoryChange).toHaveBeenCalledWith("custom-2");
   });
 
+  it("offers to create the searched term when no category matches", async () => {
+    const onChange = vi.fn();
+    const onUserCategoryChange = vi.fn();
+    mocks.createUserPositionCategory.mockResolvedValue({
+      success: true,
+      created: true,
+      category: {
+        id: "custom-2",
+        name: "Wine",
+      },
+    });
+
+    render(
+      <PositionCategorySelector
+        field={{ value: "equity", onChange }}
+        userCategoryId={null}
+        onUserCategoryChange={onUserCategoryChange}
+        allowCustomCategories
+      />,
+    );
+
+    openSelector();
+    fireEvent.change(screen.getByPlaceholderText("Search category..."), {
+      target: { value: "Wine" },
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText("Retirement")).toBeNull();
+    });
+    expect(screen.queryByText("No categories found.")).toBeNull();
+
+    // Keeping the row inside the command list keeps it keyboard reachable.
+    const createOption = screen
+      .getByText('Create "Wine"')
+      .closest('[role="option"]');
+    expect(createOption?.getAttribute("aria-selected")).toBe("true");
+
+    fireEvent.click(screen.getByText('Create "Wine"'));
+
+    // The dialog opens prefilled with the search term.
+    const nameInput = screen.getByLabelText("Name") as HTMLInputElement;
+    expect(nameInput.value).toBe("Wine");
+
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => {
+      expect(mocks.createUserPositionCategory).toHaveBeenCalledWith({
+        name: "Wine",
+        positionType: "asset",
+      });
+    });
+    expect(onChange).toHaveBeenCalledWith("other");
+    expect(onUserCategoryChange).toHaveBeenCalledWith("custom-2");
+  });
+
+  it("offers the searched term even when the search matches the add new row", () => {
+    render(
+      <PositionCategorySelector
+        field={{ value: "equity", onChange: vi.fn() }}
+        allowCustomCategories
+      />,
+    );
+
+    openSelector();
+    // "new" would match the add new row's own value, which used to keep the
+    // empty state from rendering.
+    fireEvent.change(screen.getByPlaceholderText("Search category..."), {
+      target: { value: "new" },
+    });
+
+    expect(screen.getByText('Create "new"')).toBeTruthy();
+    expect(screen.queryByText("Add new")).toBeNull();
+  });
+
   it("does not submit a parent form when creating a custom category", async () => {
     const onParentSubmit = vi.fn((event: SyntheticEvent<HTMLFormElement>) => {
       event.preventDefault();

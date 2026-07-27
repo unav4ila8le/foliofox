@@ -141,8 +141,11 @@ function PositionCategoryList({
   allowCustomCategories,
   refreshCategories,
 }: CategoryListProps) {
+  const [search, setSearch] = useState("");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [manageDialogOpen, setManageDialogOpen] = useState(false);
+
+  const searchTerm = search.trim();
 
   const systemCategories = categories.filter(
     (category) => category.source === "system",
@@ -191,11 +194,36 @@ function PositionCategoryList({
   return (
     <>
       <Command>
-        <CommandInput placeholder="Search category..." className="h-9" />
+        <CommandInput
+          placeholder="Search category..."
+          className="h-9"
+          value={search}
+          onValueChange={setSearch}
+        />
         <CommandList>
-          <CommandEmpty>
-            {isLoading ? "Loading categories..." : "No categories found."}
-          </CommandEmpty>
+          {isLoading || !allowCustomCategories ? (
+            <CommandEmpty>
+              {isLoading ? "Loading categories..." : "No categories found."}
+            </CommandEmpty>
+          ) : (
+            // A search that matches nothing offers to create that category
+            // instead of dead-ending on "No categories found.". forceMount
+            // keeps the row out of cmdk's filter, so the empty state (which
+            // only renders while no item matches) stays visible around it. The
+            // group wrapper is required: cmdk reorders items by score and only
+            // handles items that sit inside a group or at the list root.
+            <CommandEmpty className="p-0 text-left">
+              <CommandGroup forceMount>
+                <CommandItem
+                  value="create-searched-category"
+                  onSelect={() => setCreateDialogOpen(true)}
+                >
+                  <PlusIcon />
+                  {searchTerm ? `Create "${searchTerm}"` : "Add new"}
+                </CommandItem>
+              </CommandGroup>
+            </CommandEmpty>
+          )}
           <CommandGroup heading="System Categories">
             {systemCategories.map((category) => (
               <CommandItem
@@ -236,32 +264,40 @@ function PositionCategoryList({
                     {category.name}
                   </CommandItem>
                 ))}
-                <CommandItem
-                  onSelect={() => {
-                    setCreateDialogOpen(true);
-                  }}
-                  value="add-new-custom-category"
-                >
-                  <PlusIcon />
-                  Add new
-                </CommandItem>
+                {/* Hidden while searching: this row's value would otherwise
+                    match searches like "new" or "custom" and keep the empty
+                    state (which offers to create the searched term) from
+                    rendering. */}
+                {!searchTerm && (
+                  <CommandItem
+                    onSelect={() => setCreateDialogOpen(true)}
+                    value="add-new-custom-category"
+                  >
+                    <PlusIcon />
+                    Add new
+                  </CommandItem>
+                )}
               </CommandGroup>
             </>
           )}
         </CommandList>
       </Command>
 
-      <CreateCategoryDialog
-        open={createDialogOpen}
-        onOpenChange={(nextOpen) => {
-          setCreateDialogOpen(nextOpen);
-          if (!nextOpen) {
-            setOpen(false);
-          }
-        }}
-        positionType={positionType}
-        onCreated={handleCategoryCreated}
-      />
+      {/* Mounted on open so the dialog seeds its name input from the search. */}
+      {createDialogOpen && (
+        <CreateCategoryDialog
+          open
+          onOpenChange={(nextOpen) => {
+            if (!nextOpen) {
+              setCreateDialogOpen(false);
+              setOpen(false);
+            }
+          }}
+          positionType={positionType}
+          defaultName={searchTerm}
+          onCreated={handleCategoryCreated}
+        />
+      )}
 
       <ManageCategoriesDialog
         open={manageDialogOpen}

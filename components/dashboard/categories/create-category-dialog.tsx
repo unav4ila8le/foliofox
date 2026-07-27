@@ -22,6 +22,9 @@ interface CreateCategoryDialogProps {
   onOpenChange: (open: boolean) => void;
   positionType: "asset" | "liability";
   onCreated: (category: { id: string; name: string }) => void | Promise<void>;
+  // Only read on mount, so callers that need to seed it must mount the dialog
+  // when they open it.
+  defaultName?: string;
 }
 
 export function CreateCategoryDialog({
@@ -29,8 +32,9 @@ export function CreateCategoryDialog({
   onOpenChange,
   positionType,
   onCreated,
+  defaultName = "",
 }: CreateCategoryDialogProps) {
-  const [newCategoryName, setNewCategoryName] = useState("");
+  const [newCategoryName, setNewCategoryName] = useState(defaultName);
   const [isCreating, setIsCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
