@@ -209,10 +209,13 @@ export function ChatMessage({
               return (
                 <Fragment key={`${message.id}-part-${index}`}>
                   <Tool className="notranslate mb-0" translate="no">
+                    {/* Child selectors reach into the vendored ToolHeader
+                        (icon + name + badge row) so the tool name truncates
+                        instead of overflowing on narrow screens. */}
                     <ToolHeader
                       type={part.type}
                       state={part.state}
-                      className="truncate"
+                      className="[&>div]:min-w-0 [&>div>span]:truncate [&>div>svg]:shrink-0 [&>svg]:shrink-0"
                     />
                     <ToolContent>
                       <ToolInput input={part.input} />

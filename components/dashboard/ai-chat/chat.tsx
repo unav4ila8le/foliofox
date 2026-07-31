@@ -427,7 +427,13 @@ export function Chat({
     <>
       <Conversation
         className={cn(
-          "min-h-0 flex-1 overflow-hidden",
+          // flex-auto, not flex-1: a content-based flex basis lets the
+          // thread's height propagate to the page card, which is
+          // content-sized on desktop and grows with the conversation.
+          // Safari treats a 0% basis as zero intrinsic height, which
+          // collapses the card to its min-height floor. Inside a
+          // definite-height container the final layout is identical.
+          "min-h-0 flex-auto overflow-hidden",
           isLoadingConversation && "pointer-events-none opacity-50",
         )}
       >
