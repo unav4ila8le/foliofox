@@ -30,7 +30,7 @@ export function Hero() {
         </Button>
       </div>
       <div className="mt-12 mask-b-from-60%">
-        <HeroImage priority={true} />
+        <HeroImage />
       </div>
     </section>
   );
