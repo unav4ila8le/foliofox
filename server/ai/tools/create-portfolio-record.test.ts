@@ -1,9 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const createPortfolioRecordMutationMock = vi.fn();
+const resolvePositionLookupMock = vi.fn();
 
 vi.mock("@/server/portfolio-records/create", () => ({
   createPortfolioRecord: createPortfolioRecordMutationMock,
+}));
+
+vi.mock("@/server/positions/resolve-position-lookup", () => ({
+  resolvePositionLookup: resolvePositionLookupMock,
 }));
 
 const { createPortfolioRecord } = await import("./create-portfolio-record");
@@ -12,6 +17,15 @@ describe("createPortfolioRecord AI tool", () => {
   beforeEach(() => {
     createPortfolioRecordMutationMock.mockReset();
     createPortfolioRecordMutationMock.mockResolvedValue({ success: true });
+    resolvePositionLookupMock.mockReset();
+    resolvePositionLookupMock.mockImplementation(
+      async ({ lookup }: { lookup: string }) => ({
+        positionId: lookup,
+        positionName: "Test position",
+        symbolId: null,
+        matchedBy: "position_id",
+      }),
+    );
   });
 
   it("marshals args into the mutation FormData shape", async () => {
@@ -94,6 +108,90 @@ describe("createPortfolioRecord AI tool", () => {
     const formData = createPortfolioRecordMutationMock.mock
       .calls[0]?.[0] as FormData;
     expect(formData.get("cost_basis_per_unit")).toBe("75.25");
+  });
+
+  it("validates the position UUID against active positions before inserting", async () => {
+    await createPortfolioRecord({
+      summary: "Buy 10 × MSFT @ 465.00 USD on 2026-07-31",
+      positionId: "0b0e4f9a-95ea-4c22-9c37-d44229f1e7ea",
+      type: "buy",
+      date: "2026-07-31",
+      quantity: 10,
+      unitValue: 465,
+      description: null,
+      costBasisPerUnit: null,
+      idempotencyKey: null,
+    });
+
+    expect(resolvePositionLookupMock).toHaveBeenCalledWith({
+      lookup: "0b0e4f9a-95ea-4c22-9c37-d44229f1e7ea",
+      includeArchived: false,
+    });
+    const formData = createPortfolioRecordMutationMock.mock
+      .calls[0]?.[0] as FormData;
+    expect(formData.get("position_id")).toBe(
+      "0b0e4f9a-95ea-4c22-9c37-d44229f1e7ea",
+    );
+  });
+
+  it("rejects ticker lookups instead of writing to the resolved position", async () => {
+    resolvePositionLookupMock.mockResolvedValue({
+      positionId: "0b0e4f9a-95ea-4c22-9c37-d44229f1e7ea",
+      positionName: "Microsoft Corp",
+      symbolId: "sym-1",
+      matchedBy: "symbol_alias",
+    });
+
+    const result = await createPortfolioRecord({
+      summary: "Buy 10 × MSFT @ 465.00 USD on 2026-07-31",
+      positionId: "MSFT",
+      type: "buy",
+      date: "2026-07-31",
+      quantity: 10,
+      unitValue: 465,
+      description: null,
+      costBasisPerUnit: null,
+      idempotencyKey: null,
+    });
+
+    expect(result).toMatchObject({
+      success: false,
+      code: "POSITION_UUID_REQUIRED",
+    });
+    expect((result as { message: string }).message).toContain(
+      '"Microsoft Corp" (0b0e4f9a-95ea-4c22-9c37-d44229f1e7ea)',
+    );
+    expect(createPortfolioRecordMutationMock).not.toHaveBeenCalled();
+  });
+
+  it("returns POSITION_NOT_FOUND with re-fetch guidance when the lookup fails", async () => {
+    resolvePositionLookupMock.mockRejectedValue(
+      new Error('Unable to resolve "stale-id" to a known symbol.'),
+    );
+
+    const result = await createPortfolioRecord({
+      summary: "Buy 10 × MSFT",
+      positionId: "stale-id",
+      type: "buy",
+      date: "2026-07-31",
+      quantity: 10,
+      unitValue: 465,
+      description: null,
+      costBasisPerUnit: null,
+      idempotencyKey: null,
+    });
+
+    expect(result).toMatchObject({
+      success: false,
+      code: "POSITION_NOT_FOUND",
+    });
+    expect((result as { message: string }).message).toContain(
+      'Unable to resolve "stale-id" to a known symbol.',
+    );
+    expect((result as { message: string }).message).toContain(
+      "getPortfolioOverview",
+    );
+    expect(createPortfolioRecordMutationMock).not.toHaveBeenCalled();
   });
 
   it("returns the mutation result verbatim", async () => {

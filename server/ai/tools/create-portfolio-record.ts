@@ -1,6 +1,7 @@
 "use server";
 
 import { createPortfolioRecord as createPortfolioRecordMutation } from "@/server/portfolio-records/create";
+import { resolvePositionLookup } from "@/server/positions/resolve-position-lookup";
 
 interface CreatePortfolioRecordParams {
   summary: string;
@@ -22,8 +23,46 @@ interface CreatePortfolioRecordParams {
 export async function createPortfolioRecord(
   params: CreatePortfolioRecordParams,
 ) {
+  // Model-supplied position ids are untrusted: a stale or invented UUID passes
+  // timeline validation (no prior records) and surfaces as a raw FK violation.
+  // Validate before inserting, but accept only canonical UUIDs for writes:
+  // ticker aliases are reusable across securities (a retired ticker can be
+  // re-registered), and approval happens before execution, so a ticker match
+  // could silently commit the record against the wrong position.
+  let resolvedPositionId: string;
+  try {
+    const resolved = await resolvePositionLookup({
+      lookup: params.positionId,
+      includeArchived: false,
+    });
+
+    if (resolved.matchedBy !== "position_id") {
+      return {
+        success: false,
+        code: "POSITION_UUID_REQUIRED",
+        message:
+          `Writes require the position UUID, not a ticker. "${params.positionId}" ` +
+          `currently resolves to "${resolved.positionName}" (${resolved.positionId}). ` +
+          `Verify this is the intended position, then retry with its UUID from ` +
+          `getPortfolioOverview or getPositions (positions[].id).`,
+      } as const;
+    }
+
+    resolvedPositionId = resolved.positionId;
+  } catch (error) {
+    const reason =
+      error instanceof Error
+        ? error.message
+        : "Unable to resolve the position.";
+    return {
+      success: false,
+      code: "POSITION_NOT_FOUND",
+      message: `${reason} Fetch the position UUID via getPortfolioOverview or getPositions (positions[].id) and retry with that exact id.`,
+    } as const;
+  }
+
   const formData = new FormData();
-  formData.set("position_id", params.positionId);
+  formData.set("position_id", resolvedPositionId);
   formData.set("type", params.type);
   formData.set("date", params.date);
   formData.set("quantity", String(params.quantity));

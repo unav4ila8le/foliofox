@@ -453,7 +453,7 @@ export const aiTools = {
       positionId: z
         .string()
         .describe(
-          "Position UUID from getPortfolioOverview or getPositions (positions[].id).",
+          "Position UUID from getPortfolioOverview or getPositions (positions[].id). Must be the exact UUID from a read tool in this conversation — never invent one, and never pass a ticker symbol.",
         ),
       type: z
         .enum(["buy", "sell", "update"])

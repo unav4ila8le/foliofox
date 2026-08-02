@@ -94,10 +94,12 @@ export async function resolvePositionLookup(
   if (positions.length > 1) {
     const ticker =
       resolved.primaryAlias?.value ?? resolved.symbol.ticker ?? trimmed;
-    const names = positions.map((p) => `"${p.name}"`).join(", ");
+    // List UUIDs, not just names: lookups accept only UUIDs or symbol
+    // aliases, so a name-only hint would send the caller into a dead end.
+    const candidates = positions.map((p) => `"${p.name}" (${p.id})`).join(", ");
     throw new Error(
       `Multiple positions found for "${ticker}". ` +
-        `Please specify which position by name: ${names}.`,
+        `Retry with the UUID of the intended position: ${candidates}.`,
     );
   }
 
