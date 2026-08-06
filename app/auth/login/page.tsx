@@ -1,27 +1,22 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import { Suspense } from "react";
 
+import { AuthRedirect } from "@/components/features/auth/auth-redirect";
 import { AuthToastHandler } from "@/components/features/auth/auth-toast-handler";
 import { LoginForm } from "@/components/features/auth/login-form";
-
-import { createClient } from "@/supabase/server";
 
 export const metadata: Metadata = {
   title: "Login",
   description: "Sign in to your Foliofox account.",
 };
 
-export default async function LoginPage() {
-  // Check if user is already logged in and redirect to dashboard
-  const supabase = await createClient();
-
-  const { data } = await supabase.auth.getClaims();
-  if (data?.claims) {
-    redirect("/dashboard");
-  }
-
+export default function LoginPage() {
   return (
     <>
+      {/* Redirect already-logged-in users without blocking the shell */}
+      <Suspense>
+        <AuthRedirect when="authenticated" to="/dashboard" />
+      </Suspense>
       <AuthToastHandler />
       <LoginForm />
     </>

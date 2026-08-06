@@ -78,8 +78,14 @@ async function RecordsTableWrapper({
   );
 }
 
-export default async function RecordsPage(props: RecordsPageProps) {
-  const searchParams = await props.searchParams;
+// Awaits URL data inside the Suspense boundary so the page header stays in
+// the instant navigation shell.
+async function RecordsTableFromSearchParams({
+  searchParamsPromise,
+}: {
+  searchParamsPromise: RecordsPageProps["searchParams"];
+}) {
+  const searchParams = await searchParamsPromise;
 
   const pageParam = getSearchParam(searchParams, "page");
   const queryParam = getSearchParam(searchParams, "q");
@@ -108,6 +114,20 @@ export default async function RecordsPage(props: RecordsPageProps) {
       : undefined;
 
   return (
+    <RecordsTableWrapper
+      page={page}
+      q={q}
+      recordTypes={recordTypes.length > 0 ? recordTypes : undefined}
+      startDateKey={startDateKey}
+      endDateKey={endDateKey}
+      sortBy={sortBy}
+      sortDirection={sortDirection}
+    />
+  );
+}
+
+export default function RecordsPage(props: RecordsPageProps) {
+  return (
     <div className="flex flex-col gap-4">
       <div>
         <h1 className="text-2xl font-semibold">Portfolio Records</h1>
@@ -116,14 +136,8 @@ export default async function RecordsPage(props: RecordsPageProps) {
         </p>
       </div>
       <Suspense fallback={<Skeleton className="h-96" />}>
-        <RecordsTableWrapper
-          page={page}
-          q={q}
-          recordTypes={recordTypes.length > 0 ? recordTypes : undefined}
-          startDateKey={startDateKey}
-          endDateKey={endDateKey}
-          sortBy={sortBy}
-          sortDirection={sortDirection}
+        <RecordsTableFromSearchParams
+          searchParamsPromise={props.searchParams}
         />
       </Suspense>
     </div>

@@ -156,6 +156,10 @@ async function PositionsWrapper({
 
 // --- Main Page Component ---
 
+// Entered via shared external links (full page load), and the whole page is
+// gated on slug resolution (notFound/expired states) — no useful instant shell.
+export const instant = false;
+
 export default async function PublicPortfolioPage(props: {
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ currency?: string | string[] }>;

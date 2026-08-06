@@ -1,27 +1,22 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import Link from "next/link";
 
+import { AuthRedirect } from "@/components/features/auth/auth-redirect";
 import { SignupForm } from "@/components/features/auth/signup-form";
-
-import { createClient } from "@/supabase/server";
 
 export const metadata: Metadata = {
   title: "Signup",
   description: "Create a new free account on Foliofox.",
 };
 
-export default async function SignupPage() {
-  // Check if user is already logged in and redirect to dashboard
-  const supabase = await createClient();
-
-  const { data } = await supabase.auth.getClaims();
-  if (data?.claims) {
-    redirect("/dashboard");
-  }
-
+export default function SignupPage() {
   return (
     <>
+      {/* Redirect already-logged-in users without blocking the shell */}
+      <Suspense>
+        <AuthRedirect when="authenticated" to="/dashboard" />
+      </Suspense>
       <SignupForm />
       <p className="text-muted-foreground text-center text-xs">
         By signing up you acknowledge that you have read, understood and agree

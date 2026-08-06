@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
+import { connection } from "next/server";
 import { Suspense } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
 
 import { LocaleProvider } from "@/components/features/locale/locale-provider";
-import { PostHogProvider } from "@/components/features/posthog/posthog-provider";
+import { PostHogAnalytics } from "@/components/features/posthog/posthog-analytics";
 import { ThemeProvider } from "@/components/features/theme/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
@@ -33,20 +34,15 @@ export const metadata: Metadata = {
     "Comprehensive portfolio tracking and AI-powered financial planning. Monitor your holdings, analyze performance, and discover growth opportunities with predictive insights tailored to your wealth-building strategy.",
 };
 
-async function PostHogUserProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  // Get optional user for PostHog identification
+// Streams as a sibling of the app tree so the analytics auth lookup never
+// gates the UI. Request-time only: supabase auth calls Date.now(), which
+// prerendering rejects.
+async function PostHogIdentify() {
+  await connection();
   const { user } = await getOptionalUser();
-  const userData = user
-    ? {
-        id: user.id,
-        email: user.email,
-      }
-    : null;
-  return <PostHogProvider user={userData}>{children}</PostHogProvider>;
+  return (
+    <PostHogAnalytics user={user ? { id: user.id, email: user.email } : null} />
+  );
 }
 
 // Async wrapper that resolves locale and wraps children
@@ -72,19 +68,20 @@ export default async function RootLayout({
     >
       <body>
         <Suspense>
-          <PostHogUserProvider>
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="system"
-              enableSystem
-              disableTransitionOnChange
-            >
-              <LocaleProviderWrapper>
-                <Toaster />
-                <TooltipProvider>{children}</TooltipProvider>
-              </LocaleProviderWrapper>
-            </ThemeProvider>
-          </PostHogUserProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <LocaleProviderWrapper>
+              <Toaster />
+              <TooltipProvider>{children}</TooltipProvider>
+            </LocaleProviderWrapper>
+          </ThemeProvider>
+        </Suspense>
+        <Suspense>
+          <PostHogIdentify />
         </Suspense>
       </body>
     </html>

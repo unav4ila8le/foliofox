@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import { Suspense } from "react";
 
+import { AuthRedirect } from "@/components/features/auth/auth-redirect";
 import { ResetPasswordForm } from "@/components/features/auth/forgot-password-form";
-
-import { createClient } from "@/supabase/server";
 
 export const metadata: Metadata = {
   title: "Forgot Password",
@@ -11,14 +10,14 @@ export const metadata: Metadata = {
     "Recover your account if you've lost or forgotten your password.",
 };
 
-export default async function ForgotPasswordPage() {
-  // Check if user is already logged in and redirect to dashboard
-  const supabase = await createClient();
-
-  const { data } = await supabase.auth.getClaims();
-  if (data?.claims) {
-    redirect("/dashboard");
-  }
-
-  return <ResetPasswordForm />;
+export default function ForgotPasswordPage() {
+  return (
+    <>
+      {/* Redirect already-logged-in users without blocking the shell */}
+      <Suspense>
+        <AuthRedirect when="authenticated" to="/dashboard" />
+      </Suspense>
+      <ResetPasswordForm />
+    </>
+  );
 }

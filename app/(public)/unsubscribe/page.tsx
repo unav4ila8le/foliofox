@@ -45,6 +45,10 @@ function UnsubscribeCard({
   );
 }
 
+// Entered via email links (full page load), so instant navigation shells
+// don't apply — the whole page depends on the token.
+export const instant = false;
+
 export default async function UnsubscribePage(props: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
