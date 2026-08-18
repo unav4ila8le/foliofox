@@ -162,7 +162,11 @@ async function fetchPositionsImpl(
     .eq("user_id", userId)
     .order("position_id")
     .order("date", { ascending: false })
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    // Deterministic tie-breaker: bulk inserts share a transaction-stable
+    // created_at, and unstable row order here flips current_quantity/value
+    // between renders (breaks "use cache" key determinism on asset pages).
+    .order("id", { ascending: false });
 
   if (asOfDateKey) {
     snapshotsQuery = snapshotsQuery.lte("date", asOfDateKey);

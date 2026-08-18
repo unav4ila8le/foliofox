@@ -43,7 +43,10 @@ export const fetchPositionSnapshots = cache(
 
     const { data: snapshots, error } = await query
       .order("date", { ascending: false })
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      // Deterministic tie-breaker for rows sharing date + created_at
+      // (bulk inserts get a transaction-stable created_at).
+      .order("id", { ascending: false });
 
     if (error) {
       throw new Error(`Failed to fetch position snapshots: ${error.message}`);

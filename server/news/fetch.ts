@@ -128,7 +128,8 @@ export async function fetchNewsForSymbols(
         const tickerInfo = canonicalMeta.get(canonicalId);
         const yahooTicker = tickerInfo?.providerAlias;
         if (!yahooTicker) {
-          console.warn(
+          // Expected for custom symbols without a provider alias — info, not warn.
+          console.info(
             `Skipping news fetch for canonical symbol ${canonicalId}: missing Yahoo ticker alias.`,
           );
           return { canonicalId, searchResult: null };

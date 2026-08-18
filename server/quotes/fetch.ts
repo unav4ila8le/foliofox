@@ -441,7 +441,8 @@ export async function fetchQuotes(
         resolution?.quoteToCurrencyRate,
       );
       if (!ticker) {
-        console.warn(
+        // Expected for custom symbols without a provider alias — info, not warn.
+        console.info(
           `Skipping quote fetch for symbol ${symbolId}: missing Yahoo ticker alias.`,
         );
         continue;

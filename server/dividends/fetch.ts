@@ -289,8 +289,9 @@ export async function fetchDividends(
       async (symbolId): Promise<FetchedDividendResult> => {
         const resolution = byCanonicalId.get(symbolId);
         if (!resolution?.providerAlias) {
-          console.error(
-            `Failed to fetch dividends for ${symbolId}: missing Yahoo ticker alias.`,
+          // Expected for custom symbols without a provider alias — info, not error.
+          console.info(
+            `Skipping dividend fetch for ${symbolId}: missing Yahoo ticker alias.`,
           );
           return { symbolId, events: [], summary: null as Dividend | null };
         }

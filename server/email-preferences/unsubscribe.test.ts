@@ -157,6 +157,37 @@ describe("unsubscribeFromEmailPreference", () => {
     expect(updateState.updateUserIdFilters).toEqual(["user-2"]);
   });
 
+  it("returns invalid_token when the token's user was deleted (FK violation)", async () => {
+    verifyUnsubscribeTokenMock.mockReturnValue({
+      valid: true,
+      payload: {
+        userId: "deleted-user",
+        preferenceKey: AUTOMATED_EMAIL_PREFERENCE_KEYS.WEEKLY_RECAP,
+        expiresAt: "2026-12-31T00:00:00.000Z",
+        version: 1,
+      },
+    });
+
+    const updateState = createUpdateState();
+    createServiceClientMock.mockReturnValue(
+      createFakeServiceClient(updateState),
+    );
+    ensureEmailPreferencesRowMock.mockRejectedValue(
+      new Error(
+        'insert or update on table "email_preferences" violates foreign key constraint "email_preferences_user_id_fkey"',
+      ),
+    );
+
+    const { unsubscribeFromEmailPreference } = await import("./unsubscribe");
+    const result = await unsubscribeFromEmailPreference("good-token");
+
+    expect(result).toEqual({
+      success: false,
+      status: "invalid_token",
+    });
+    expect(updateState.updatePayloads).toEqual([]);
+  });
+
   it("propagates Supabase update errors as thrown exceptions", async () => {
     verifyUnsubscribeTokenMock.mockReturnValue({
       valid: true,

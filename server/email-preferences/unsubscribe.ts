@@ -42,10 +42,27 @@ export async function unsubscribeFromEmailPreference(
   }
 
   const supabase = createServiceClient();
-  const emailPreferences = await ensureEmailPreferencesRow({
-    userId: verifiedToken.payload.userId,
-    supabase,
-  });
+  let emailPreferences;
+  try {
+    emailPreferences = await ensureEmailPreferencesRow({
+      userId: verifiedToken.payload.userId,
+      supabase,
+    });
+  } catch (error) {
+    // Tokens outlive accounts: if the user was deleted after the email was
+    // sent, the self-heal insert hits the user_id foreign key. Treat that as
+    // an expired link instead of crashing the public unsubscribe page.
+    if (
+      error instanceof Error &&
+      error.message.includes("foreign key constraint")
+    ) {
+      return {
+        success: false,
+        status: "invalid_token",
+      };
+    }
+    throw error;
+  }
   const preferenceKey = verifiedToken.payload.preferenceKey;
   const preferenceLabel =
     AUTOMATED_EMAIL_PREFERENCE_DETAILS[preferenceKey].label;
