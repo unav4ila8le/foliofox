@@ -44,6 +44,7 @@ import {
 import { formatNumber } from "@/lib/number-format";
 import { cn } from "@/lib/utils";
 import { requiredNumberWithConstraints } from "@/lib/zod-helpers";
+import { parseLocalDateKey } from "@/lib/date/date-utils";
 import { useLocale } from "@/hooks/use-locale";
 
 import { updatePortfolioRecord } from "@/server/portfolio-records/update";
@@ -127,7 +128,7 @@ export function UpdatePortfolioRecordForm({
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      date: new Date(portfolioRecord.date),
+      date: parseLocalDateKey(portfolioRecord.date),
       type: portfolioRecord.type,
       quantity: portfolioRecord.quantity,
       unit_value: portfolioRecord.unit_value,

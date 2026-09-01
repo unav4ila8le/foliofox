@@ -15,6 +15,7 @@ import { ActionsCell } from "./row-actions/actions-cell";
 
 import { formatNumber } from "@/lib/number-format";
 import { formatDate } from "@/lib/date/date-format";
+import { parseLocalDateKey } from "@/lib/date/date-utils";
 
 import type { ColumnDef } from "@tanstack/react-table";
 import type { PortfolioRecordWithPosition } from "@/types/global.types";
@@ -81,7 +82,9 @@ export function getPortfolioRecordColumns({
     },
     cell: ({ row, table }) => {
       const locale = table.options.meta?.locale;
-      const date = new Date(row.getValue<string>("date"));
+      // Parse the date-only key at local midnight; new Date("yyyy-MM-dd")
+      // parses as UTC midnight and shows the previous day west of UTC.
+      const date = parseLocalDateKey(row.getValue<string>("date"));
       return formatDate(date, { locale });
     },
     enableSorting: isDateSortable && !onDateSort,
