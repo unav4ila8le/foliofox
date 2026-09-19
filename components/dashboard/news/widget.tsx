@@ -51,7 +51,7 @@ export function NewsWidget({ newsData }: NewsWidgetProps) {
       <CardHeader className="flex-none">
         <CardTitle>Portfolio News</CardTitle>
       </CardHeader>
-      <CardContent className="flex-1 divide-y overflow-y-auto pb-6">
+      <CardContent className="flex-1 gap-0 divide-y overflow-y-auto pb-6">
         {newsData.data.map((article) => {
           const primarySymbol =
             article.related_symbols?.find((sym) => sym.ticker) ??
