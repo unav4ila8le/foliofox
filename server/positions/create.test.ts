@@ -36,6 +36,13 @@ vi.mock("@/server/auth/actions", () => ({
   })),
 }));
 
+vi.mock("@/server/profile/actions", () => ({
+  fetchProfile: vi.fn(async () => ({
+    profile: { time_zone: "America/Toronto" },
+    email: "user@example.com",
+  })),
+}));
+
 vi.mock("@/server/symbols/resolve", () => ({
   resolveSymbolInput: resolveSymbolInputMock,
 }));
@@ -181,5 +188,29 @@ describe("createPosition", () => {
         unit_value: 5000,
       }),
     );
+  });
+
+  it("stamps the initial snapshot with the user's civil today, not the UTC date", async () => {
+    // 03:35 UTC on Sep 6 is still Sep 5 in Toronto.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-06T03:35:00Z"));
+
+    try {
+      const result = await createPosition(
+        buildFormData({
+          name: "Vintage watch",
+          currency: "CHF",
+          quantity: "1",
+          unit_value: "5000",
+        }),
+      );
+
+      expect(result).toEqual({ success: true });
+      expect(createPositionSnapshotMock).toHaveBeenCalledWith(
+        expect.objectContaining({ date: "2026-09-05" }),
+      );
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

@@ -7,7 +7,8 @@ import { resolveSymbolInput } from "@/server/symbols/resolve";
 import { createPositionSnapshot } from "@/server/position-snapshots/create";
 import { fetchSingleQuote } from "@/server/quotes/fetch";
 import { resolvePositionCategorySelection } from "@/server/positions/category-selection";
-import { formatUTCDateKey } from "@/lib/date/date-utils";
+import { fetchProfile } from "@/server/profile/actions";
+import { formatUTCDateKey, resolveTodayDateKey } from "@/lib/date/date-utils";
 
 import type { Position } from "@/types/global.types";
 
@@ -93,7 +94,12 @@ export async function createPosition(formData: FormData) {
     capitalGainsTaxRaw != null && String(capitalGainsTaxRaw).trim() !== ""
       ? Number(capitalGainsTaxRaw)
       : null;
-  const snapshotDate = dateRaw ? new Date(dateRaw) : new Date();
+  // Default to the user's civil "today". The UTC clock is already on the next
+  // day for evening users west of UTC, and a next-day snapshot is invisible to
+  // as-of-today valuation (positions show quantity 0 until tomorrow).
+  const snapshotDate = dateRaw
+    ? new Date(dateRaw)
+    : resolveTodayDateKey((await fetchProfile()).profile.time_zone);
 
   async function fetchCommittedPositionByIdempotencyKey(key: string) {
     const { data: existingByKey } = await supabase
