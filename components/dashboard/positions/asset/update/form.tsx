@@ -255,7 +255,6 @@ export function UpdateAssetForm({
                     form.setValue("tag_ids", ids, { shouldDirty: true })
                   }
                   label="Choose tags"
-                  description="Applied when you save. New tags are created right away."
                   disabled={isLoading}
                 />
               </Field>

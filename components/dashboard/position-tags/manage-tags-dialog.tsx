@@ -89,7 +89,7 @@ export function ManageTagsDialog({ onClose }: { onClose: () => void }) {
                 {state.data.tags.map((tag) => (
                   <li
                     key={tag.id}
-                    className="flex items-center justify-between gap-3 p-3"
+                    className="flex items-center justify-between gap-3 p-2 ps-3"
                   >
                     <TagBadge tag={tag} className="max-w-full min-w-0 shrink" />
                     <div className="flex shrink-0 gap-1">

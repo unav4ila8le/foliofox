@@ -2,8 +2,7 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Archive, Package, TagPlus, Tags, TagX, Trash2, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Archive, Package, TagPlus, TagX, Trash2 } from "lucide-react";
 import { SearchInput } from "@/components/ui/custom/search-input";
 import { NewAssetButton } from "@/components/dashboard/new-asset";
 import { DeletePositionDialog } from "@/components/dashboard/positions/shared/delete-dialog";
@@ -15,8 +14,6 @@ import {
   TagDataStatus,
   usePositionTags,
 } from "@/components/dashboard/position-tags/provider";
-import { TagPicker } from "@/components/dashboard/position-tags/tag-picker";
-import { TagBadge } from "@/components/dashboard/position-tags/tag-badge";
 import { ManageTagsDialog } from "@/components/dashboard/position-tags/manage-tags-dialog";
 import { BulkTagsDialog } from "@/components/dashboard/position-tags/bulk-tags-dialog";
 import type { PositionTag } from "@/server/position-tags/types";
@@ -111,12 +108,6 @@ function AssetsTableContent({ data }: { data: AssetTableRow[] }) {
     setSelectedRows([]);
     setResetKey((key) => key + 1);
   }
-  function clearFilters() {
-    setFilterValue("");
-    setTagFilter([]);
-    clearSelection();
-  }
-  const isFiltered = Boolean(filterValue.trim() || activeFilters.length);
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -135,66 +126,12 @@ function AssetsTableContent({ data }: { data: AssetTableRow[] }) {
         />
         <div className="flex items-center gap-2">
           <NewAssetButton variant="outline" />
-          <TableActionsDropdown positionsCount={data.length} />
+          <TableActionsDropdown
+            positionsCount={data.length}
+            onManageTags={() => setManage(true)}
+          />
         </div>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <TagPicker
-          selectedIds={activeFilters}
-          onChange={setTagFilter}
-          label={
-            activeFilters.length ? `Tags (${activeFilters.length})` : "Tags"
-          }
-          description="Match all selected tags"
-          allowCreate={false}
-          hideSelection
-        />
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => setManage(true)}
-        >
-          <Tags data-icon="inline-start" />
-          Manage tags
-        </Button>
-        {isFiltered && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={clearFilters}
-          >
-            <X data-icon="inline-start" />
-            Clear filters
-          </Button>
-        )}
-      </div>
-      {activeFilters.length > 0 && (
-        <div
-          className="flex flex-wrap items-center gap-2"
-          aria-label="Active tag filters"
-        >
-          <span className="text-muted-foreground text-sm">Match all:</span>
-          {tagData.tags
-            .filter((tag) => activeFilters.includes(tag.id))
-            .map((tag) => (
-              <Button
-                key={tag.id}
-                type="button"
-                variant="ghost"
-                size="sm"
-                aria-label={`Remove ${tag.name} filter`}
-                onClick={() =>
-                  setTagFilter(activeFilters.filter((id) => id !== tag.id))
-                }
-              >
-                <TagBadge tag={tag} />
-                <X data-icon="inline-end" />
-              </Button>
-            ))}
-        </div>
-      )}
       <TagDataStatus />
       {data.length === 0 ? (
         <div className="flex flex-col items-center gap-2 py-12 text-center">
@@ -212,6 +149,7 @@ function AssetsTableContent({ data }: { data: AssetTableRow[] }) {
             onRowClick={handleRowClick}
             onSelectedRowsChange={setSelectedRows}
             selectionResetKey={resetKey}
+            meta={{ tagFilter: activeFilters, onTagFilterChange: setTagFilter }}
             enableGrouping
             groupBy={["display_category_id"]}
             defaultSorting={[{ id: "name", desc: false }]}

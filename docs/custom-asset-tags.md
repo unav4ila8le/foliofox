@@ -12,9 +12,9 @@ This adds private organizational metadata. Categories, allocation charts, valuat
 
 - **Tags column:** Add a dedicated column immediately after Name, preserving Select and Name as the first two visible columns used by group rows. Show at most two truncated chips plus `+N`; the picker exposes all labels. Clicking the cell opens a searchable multi-select picker; an empty cell shows “Add tags.” Adding or removing a tag saves immediately, with pending/error feedback and no optimistic updates. Clicking the picker must not navigate to the asset or select the row.
 - **Asset details:** Reuse the same picker in the existing “Edit details” dialog, accessible from both the table and asset page. Selection changes remain drafts until “Save changes”; tags participate in form dirty state. Cancel before submission discards assignment edits. Creating a reusable tag saves the tag definition immediately but does not assign it until the form is saved.
-- **Tag management:** Provide a visible “Manage tags” action beside the table’s tag filter. Support create, rename, recolor, and delete. Also allow creation from the assignment picker. Deleting a tag requires confirmation and removes its assignments, never assets.
+- **Tag management:** Reach “Manage tags” from the assets table’s actions menu and from a link at the bottom of every picker. Support create, rename, recolor, and delete. When a picker search matches no existing tag, offer `Create “name”`, which opens the create dialog with that name prefilled. Deleting a tag requires confirmation and removes its assignments, never assets.
 - **Colors:** Offer ten named presets: neutral, red, orange, amber, green, teal, blue, indigo, violet, and pink, using the [Shadcn/Tailwind palette](https://ui.shadcn.com/colors). Default new tags to blue; users can change it. Labels remain readable in light/dark themes and understandable without color.
-- **Filtering:** A searchable Tags filter explicitly says “Match all selected tags,” combined with case-insensitive name search. With no tags selected, show all assets matching the name search. Show active filters, a clear action, matching/total asset counts, and an appropriate no-results message. Preserve category grouping and sorting.
+- **Filtering:** The Tags column header opens a searchable filter. Assets must carry every selected tag (AND), combined with case-insensitive name search. The picker popover has no descriptive text. With no tags selected, show all assets matching the name search. The header shows the active filter count; show matching/total asset counts and an appropriate no-results message. Preserve category grouping and sorting.
 - **Bulk assignment:** Add “Add tags” and “Remove tags” to the existing selection toolbar. These operations preserve unrelated assignments. Clear selection when filters change and after successful bulk actions so hidden assets cannot be changed accidentally.
 
 ## Implementation and impact
@@ -70,8 +70,8 @@ Run focused tests, lint, format checks, and direct TypeScript checking. Database
 
 ## Review decisions
 
-- Adopt parent-level filtering, one picker with two save modes, private table-only data, explicit AND labeling, concrete schema names, pagination, and the migration/type-generation checkpoint.
-- Keep the agreed Tags column instead of moving chips into Name. A column after Name does not disturb the current group-row indexing; compact chips and `+N` address density.
+- Adopt parent-level filtering, one picker with two save modes, private table-only data, AND semantics, concrete schema names, pagination, and the migration/type-generation checkpoint.
+- Keep the agreed Tags column instead of moving chips into Name. A column after Name does not disturb the current group-row indexing; compact chips and `+N` address density. Revisit chips under the name if users report the column as distracting. The tag filter lives in the column header, passed through the table’s `meta`, rather than in a separate toolbar row.
 - Decline RPCs for bulk tagging: one insert/delete statement already provides the necessary write boundary. Decline a new RPC solely to make reversible details/tag edits atomic; the explicit partial-save contract replaces the original all-or-nothing promise. Calling separate Supabase requests from one server action would not make them transactional.
 - Allow only the small selection-reset addition to `DataTable`. Resetting the parent's array alone leaves internal checkbox state behind; remounting would reset sorting. No general filter or table-state framework is needed.
 

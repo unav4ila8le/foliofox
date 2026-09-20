@@ -85,7 +85,6 @@ export function BulkTagsDialog({
             selectedIds={tagIds}
             onChange={setSelected}
             label="Choose tags"
-            description="Choose the tags to apply to this selection."
             disabled={pending}
             allowCreate={operation === "add"}
           />

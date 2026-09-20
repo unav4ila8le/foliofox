@@ -55,6 +55,7 @@ export function TagEditorDialog({
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<PositionTag | null>(null);
   const [unknown, setUnknown] = useState(false);
+  const isDirty = !tag || name.trim() !== tag.name || color !== tag.color;
   async function submit(event: SyntheticEvent) {
     event.preventDefault();
     event.stopPropagation();
@@ -179,9 +180,12 @@ export function TagEditorDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={pending || !name.trim()}>
+            <Button
+              type="submit"
+              disabled={pending || !name.trim() || !isDirty}
+            >
               {pending && <Spinner />}
-              {saved
+              {saved && error
                 ? "Refresh tags"
                 : unknown
                   ? "Refresh and retry"

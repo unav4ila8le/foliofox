@@ -65,8 +65,17 @@ vi.mock("@/components/dashboard/new-asset", () => ({
   NewAssetButton: () => <button>Add asset</button>,
 }));
 vi.mock("@/components/dashboard/positions/asset/table/table-actions", () => ({
-  TableActionsDropdown: ({ positionsCount }: { positionsCount: number }) => (
-    <button>Export {positionsCount} assets</button>
+  TableActionsDropdown: ({
+    positionsCount,
+    onManageTags,
+  }: {
+    positionsCount: number;
+    onManageTags: () => void;
+  }) => (
+    <div aria-label="Table actions">
+      <button>Export {positionsCount} assets</button>
+      <button onClick={onManageTags}>Manage tags</button>
+    </div>
   ),
 }));
 vi.mock(
@@ -259,11 +268,19 @@ describe("draft tag editing", () => {
     });
     editor();
     fireEvent.click(screen.getByRole("button", { name: "Choose tags" }));
-    fireEvent.click(screen.getByRole("button", { name: "Create tag" }));
-    const dialog = await screen.findByRole("dialog", { name: "Create tag" });
-    fireEvent.change(within(dialog).getByRole("textbox", { name: "Name" }), {
+    expect(screen.queryByRole("button", { name: /^Create/ })).toBeNull();
+    fireEvent.change(screen.getByRole("textbox", { name: "Search tags" }), {
       target: { value: "Holiday" },
     });
+    fireEvent.click(screen.getByRole("button", { name: "Create “Holiday”" }));
+    const dialog = await screen.findByRole("dialog", { name: "Create tag" });
+    expect(
+      (
+        within(dialog).getByRole("textbox", {
+          name: "Name",
+        }) as HTMLInputElement
+      ).value,
+    ).toBe("Holiday");
     fireEvent.click(within(dialog).getByRole("button", { name: "Create tag" }));
     await waitFor(() =>
       expect(screen.queryByRole("dialog", { name: "Create tag" })).toBeNull(),
@@ -344,6 +361,32 @@ describe("immediate tagging", () => {
         .getByRole("checkbox", { name: "Dad" })
         .getAttribute("aria-checked"),
     ).toBe("true");
+  });
+
+  it("keeps refreshed data when the server re-renders with a stale payload", async () => {
+    function Probe() {
+      const state = usePositionTags()!;
+      return (
+        <button onClick={() => void state.refresh()}>
+          {state.data!.assignments.map((a) => a.tag_id).join(",") || "none"}
+        </button>
+      );
+    }
+    const { rerender } = render(
+      <PositionTagsProvider initialData={initial}>
+        <Probe />
+      </PositionTagsProvider>,
+    );
+    saved.assignments = [{ position_id: "asset", tag_id: "dad" }];
+    fireEvent.click(screen.getByRole("button", { name: "none" }));
+    await screen.findByRole("button", { name: "dad" });
+    // A revalidated route can deliver a private-cache payload older than the write.
+    rerender(
+      <PositionTagsProvider initialData={{ ...initial, assignments: [] }}>
+        <Probe />
+      </PositionTagsProvider>,
+    );
+    expect(screen.getByRole("button").textContent).toBe("dad");
   });
 
   it("confirms deletion and refreshes the shared definitions", async () => {
@@ -580,7 +623,12 @@ describe("private asset filtering", () => {
     fireEvent.keyDown(screen.getByRole("checkbox", { name: "Dad" }), {
       key: "Escape",
     });
-    fireEvent.click(screen.getByRole("button", { name: "Manage tags" }));
+    expect(screen.getByText("2 of 3 assets")).toBeDefined();
+    fireEvent.click(
+      within(screen.getByLabelText("Table actions")).getByRole("button", {
+        name: "Manage tags",
+      }),
+    );
     fireEvent.click(screen.getByRole("button", { name: "Delete Dad" }));
     fireEvent.click(
       within(screen.getByRole("alertdialog")).getByRole("button", {
@@ -591,9 +639,6 @@ describe("private asset filtering", () => {
       expect(screen.queryByRole("button", { name: "Delete Dad" })).toBeNull(),
     );
     fireEvent.click(screen.getAllByRole("button", { name: "Close" })[0]);
-    expect(
-      screen.queryByRole("button", { name: "Remove Dad filter" }),
-    ).toBeNull();
     expect(screen.getByText("3 of 3 assets")).toBeDefined();
   });
 
@@ -628,7 +673,12 @@ describe("private asset filtering", () => {
       target: { value: "beta" },
     });
     expect(screen.getByText("0 of 3 assets")).toBeDefined();
-    fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Search assets" }), {
+      target: { value: "" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Tags" }));
+    fireEvent.click(await screen.findByRole("checkbox", { name: "Dad" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Retirement" }));
     expect(screen.getByText("3 of 3 assets")).toBeDefined();
   });
 });

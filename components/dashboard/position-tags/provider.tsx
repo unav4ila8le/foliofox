@@ -42,17 +42,12 @@ export function PositionTagsProvider({
   positionId?: string;
   children: React.ReactNode;
 }) {
-  const [source, setSource] = useState(initialData);
+  // initialData only seeds state. After mount, refresh() is the sole writer:
+  // server re-renders can hand down a stale private-cache payload after a write.
   const [data, setData] = useState(initialData);
   const [isRefreshing, setIsRefreshing] = useState(!initialData);
   const [error, setError] = useState<string | null>(null);
   const requestId = useRef(0);
-  if (initialData !== source) {
-    setSource(initialData);
-    setData(initialData);
-    setError(null);
-    setIsRefreshing(false);
-  }
   const read = useCallback(async () => {
     const [tags, assignments] = await Promise.all([
       fetchPositionTags(),

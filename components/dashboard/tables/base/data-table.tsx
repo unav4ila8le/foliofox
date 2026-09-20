@@ -38,6 +38,8 @@ declare module "@tanstack/react-table" {
     initialValueBasis?: ScenarioInitialValueBasis;
     onEdit?: (row: TData, index: number) => void;
     onDelete?: (index: number) => void;
+    tagFilter?: string[];
+    onTagFilterChange?: (ids: string[]) => void;
   }
 }
 

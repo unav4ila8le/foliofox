@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, ListFilter } from "lucide-react";
 
 import type { ColumnDef } from "@tanstack/react-table";
 
@@ -14,6 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ActionsCell } from "@/components/dashboard/positions/asset/table/row-actions/actions-cell";
 import { StaleBadge } from "@/components/dashboard/positions/asset/stale-badge";
 import { TagCell } from "@/components/dashboard/position-tags/tag-cell";
+import { TagPicker } from "@/components/dashboard/position-tags/tag-picker";
 import type { AssetTableRow } from "./types";
 
 import { cn } from "@/lib/utils";
@@ -107,7 +108,21 @@ const columns: ColumnDef<AssetTableRow>[] = [
   },
   {
     id: "tags",
-    header: "Tags",
+    // The header is the tag filter; AssetsTable owns the state and passes it via meta.
+    header: ({ table }) => {
+      const { tagFilter = [], onTagFilterChange } = table.options.meta ?? {};
+      return (
+        <TagPicker
+          selectedIds={tagFilter}
+          onChange={(ids) => onTagFilterChange?.(ids)}
+          label="Tags"
+          icon={<ListFilter data-icon="inline-start" />}
+          allowCreate={false}
+          compact
+          hideSelection
+        />
+      );
+    },
     enableSorting: false,
     cell: ({ row }) => (
       <TagCell

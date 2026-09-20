@@ -56,9 +56,9 @@ export function TagCell({
         selectedIds={tagIds}
         onChange={change}
         label={tagIds.length ? `Edit tags for ${name}` : "Add tags"}
-        description="Changes save immediately."
         pending={pending}
         compact
+        quietWhenEmpty
       />
       {error && (
         <p
