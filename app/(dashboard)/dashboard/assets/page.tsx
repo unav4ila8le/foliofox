@@ -5,6 +5,10 @@ import { AssetsTable } from "@/components/dashboard/positions/asset/table/assets
 
 import { fetchPositions } from "@/server/positions/fetch";
 import { fetchProfile } from "@/server/profile/actions";
+import {
+  fetchPositionTags,
+  fetchPositionTagAssignments,
+} from "@/server/position-tags/fetch";
 import { resolveTodayDateKey } from "@/lib/date/date-utils";
 import { calculateUnrealizedProfitLoss } from "@/lib/profit-loss/unrealized";
 
@@ -14,17 +18,35 @@ async function AssetsTableWrapper() {
 
   // Resolve holdings day in the viewer's civil timezone (not UTC day).
   const asOfDateKey = resolveTodayDateKey(profile.time_zone);
-  const { positions, snapshots } = await fetchPositions({
-    positionType: "asset",
-    includeSnapshots: true,
-    asOfDateKey,
-  });
+  const [{ positions, snapshots }, tags, assignments] = await Promise.all([
+    fetchPositions({
+      positionType: "asset",
+      includeSnapshots: true,
+      asOfDateKey,
+    }),
+    fetchPositionTags(),
+    fetchPositionTagAssignments(),
+  ]);
   const positionsWithProfitLoss = calculateUnrealizedProfitLoss(
     positions,
     snapshots,
   );
 
-  return <AssetsTable data={positionsWithProfitLoss} />;
+  const tagsByPosition = new Map<string, string[]>();
+  for (const assignment of assignments) {
+    const ids = tagsByPosition.get(assignment.position_id) ?? [];
+    ids.push(assignment.tag_id);
+    tagsByPosition.set(assignment.position_id, ids);
+  }
+  return (
+    <AssetsTable
+      tags={tags}
+      data={positionsWithProfitLoss.map((position) => ({
+        ...position,
+        tagIds: tagsByPosition.get(position.id) ?? [],
+      }))}
+    />
+  );
 }
 
 export default function AssetsPage() {

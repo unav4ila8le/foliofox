@@ -32,7 +32,13 @@ import { useRestorePosition } from "@/hooks/use-restore-positions";
 import type { TransformedPosition } from "@/types/global.types";
 import { PORTFOLIO_RECORD_TYPES } from "@/types/enums";
 
-export function ActionsCell({ position }: { position: TransformedPosition }) {
+export function ActionsCell({
+  position,
+  onEdit,
+}: {
+  position: TransformedPosition;
+  onEdit?: () => void;
+}) {
   const { setOpen, setPreselectedPosition, setInitialTab } =
     useNewPortfolioRecordDialog();
   const { restorePosition, isRestoring } = useRestorePosition();
@@ -83,7 +89,9 @@ export function ActionsCell({ position }: { position: TransformedPosition }) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-auto">
           {/* Edit position details (metadata) */}
-          <DropdownMenuItem onSelect={() => setShowEditDialog(true)}>
+          <DropdownMenuItem
+            onSelect={() => (onEdit ? onEdit() : setShowEditDialog(true))}
+          >
             <Settings className="size-4" /> Edit details
           </DropdownMenuItem>
           <DropdownMenuSeparator />
