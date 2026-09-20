@@ -82,7 +82,7 @@ export function ManageTagsDialog({ onClose }: { onClose: () => void }) {
             )}
             {!state.data?.tags.length ? (
               <p className="text-muted-foreground py-4 text-sm">
-                Create your first tag, such as Dad or Retirement.
+                Create your first tag.
               </p>
             ) : (
               <ul className="divide-y rounded-lg border">
