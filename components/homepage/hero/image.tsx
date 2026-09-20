@@ -9,12 +9,14 @@ export function HeroImage() {
       <Image
         src={heroLight}
         alt="Foliofox preview"
+        loading="eager"
         fetchPriority="high"
         className="mx-auto h-auto w-full max-w-5xl rounded-sm border lg:rounded-lg dark:hidden"
       />
       <Image
         src={heroDark}
         alt="Foliofox preview"
+        loading="eager"
         fetchPriority="high"
         className="mx-auto hidden h-auto w-full max-w-5xl rounded-sm border lg:rounded-lg dark:block"
       />
