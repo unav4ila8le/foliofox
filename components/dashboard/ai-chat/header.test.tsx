@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
 
 import { ChatHeader } from "@/components/dashboard/ai-chat/header";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,7 +9,18 @@ vi.mock("@/server/ai/conversations/delete", () => ({
   deleteConversation: vi.fn(),
 }));
 
+vi.mock("@/components/ui/custom/sidebar", () => ({
+  useSidebar: () => ({
+    toggleRight: vi.fn(),
+    setOpenRight: vi.fn(),
+    setOpenMobileRight: vi.fn(),
+  }),
+}));
+
 describe("ChatHeader", () => {
+  beforeEach(() => {
+    cleanup();
+  });
   it("disables new conversation button when user is at cap", () => {
     render(
       <TooltipProvider>
@@ -51,5 +62,41 @@ describe("ChatHeader", () => {
     expect(expandLink.getAttribute("href")).toBe(
       "/dashboard/ai-chat?conversationId=conversation-1&from=%2Fdashboard%2Fassets",
     );
+  });
+
+  it("renders a close control next to the title in sidebar layout", () => {
+    render(
+      <TooltipProvider>
+        <ChatHeader
+          layoutMode="sidebar"
+          conversations={[]}
+          onSelectConversation={() => {}}
+          onNewConversation={() => {}}
+          isAIEnabled
+        />
+      </TooltipProvider>,
+    );
+
+    expect(
+      screen.getAllByRole("button", { name: "Close AI Advisor" }).length,
+    ).toBeGreaterThan(0);
+  });
+
+  it("hides the close control on the full-page AI chat layout", () => {
+    render(
+      <TooltipProvider>
+        <ChatHeader
+          layoutMode="page"
+          conversations={[]}
+          onSelectConversation={() => {}}
+          onNewConversation={() => {}}
+          isAIEnabled
+        />
+      </TooltipProvider>,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: "Close AI Advisor" }),
+    ).toBeNull();
   });
 });

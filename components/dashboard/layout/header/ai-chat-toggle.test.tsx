@@ -7,6 +7,9 @@ import { AIChatToggle } from "@/components/dashboard/layout/header/ai-chat-toggl
 
 const hoistedMocks = vi.hoisted(() => ({
   pathname: "/dashboard",
+  toggleRight: vi.fn(),
+  openRight: false,
+  openMobileRight: false,
 }));
 
 vi.mock("next/navigation", () => ({
@@ -14,17 +17,11 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/components/ui/custom/sidebar", () => ({
-  SidebarTrigger: ({
-    side,
-    ...props
-  }: React.ButtonHTMLAttributes<HTMLButtonElement> & {
-    side?: "left" | "right";
-  }) => (
-    <button
-      aria-label={side === "right" ? "Toggle AI Chat" : "Toggle Sidebar"}
-      {...props}
-    />
-  ),
+  useSidebar: () => ({
+    toggleRight: hoistedMocks.toggleRight,
+    openRight: hoistedMocks.openRight,
+    openMobileRight: hoistedMocks.openMobileRight,
+  }),
 }));
 
 vi.mock("@/components/ui/tooltip", () => ({
@@ -47,23 +44,34 @@ vi.mock("@/components/ui/kbd", () => ({
 describe("AIChatToggle", () => {
   beforeEach(() => {
     cleanup();
+    hoistedMocks.pathname = "/dashboard";
+    hoistedMocks.openRight = false;
+    hoistedMocks.openMobileRight = false;
+    hoistedMocks.toggleRight.mockClear();
   });
 
-  it("renders the right toggle outside the full-page AI chat route", () => {
+  it("renders the AI Advisor toggle outside the full-page AI chat route", () => {
     hoistedMocks.pathname = "/dashboard/assets";
 
     render(<AIChatToggle />);
 
-    expect(
-      screen.getByRole("button", { name: "Toggle AI Chat" }),
-    ).not.toBeNull();
+    expect(screen.getByRole("button", { name: "AI Advisor" })).not.toBeNull();
   });
 
-  it("hides the right toggle on /dashboard/ai-chat", () => {
+  it("hides the AI Advisor toggle on /dashboard/ai-chat", () => {
     hoistedMocks.pathname = "/dashboard/ai-chat";
 
     render(<AIChatToggle />);
 
-    expect(screen.queryByRole("button", { name: "Toggle AI Chat" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "AI Advisor" })).toBeNull();
+  });
+
+  it("hides the AI Advisor toggle when the advisor sidebar is open", () => {
+    hoistedMocks.pathname = "/dashboard/assets";
+    hoistedMocks.openRight = true;
+
+    render(<AIChatToggle />);
+
+    expect(screen.queryByRole("button", { name: "AI Advisor" })).toBeNull();
   });
 });

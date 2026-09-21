@@ -10,12 +10,12 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+import { SharePortfolioButton } from "@/components/dashboard/share-portfolio";
+
 import { fetchCurrentPublicPortfolio } from "@/server/public-portfolios/fetch";
 import { AIChatToggle } from "./ai-chat-toggle";
 import { Breadcrumb } from "./breadcrumb";
 import { NewActionButton } from "./new-action-button";
-import { FeedbackButton } from "@/components/dashboard/layout/header/feedback";
-import { SharePortfolioButton } from "@/components/dashboard/share-portfolio";
 
 async function SharePortfolioButtonWrapper() {
   const shareMetadata = await fetchCurrentPublicPortfolio();
@@ -50,7 +50,6 @@ export function Header() {
         >
           <SharePortfolioButtonWrapper />
         </Suspense>
-        <FeedbackButton />
         <div className="hidden md:block">
           <AIChatToggle />
         </div>

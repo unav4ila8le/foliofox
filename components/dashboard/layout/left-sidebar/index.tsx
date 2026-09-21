@@ -6,9 +6,10 @@ import {
   SidebarFooter,
   SidebarHeader,
 } from "@/components/ui/custom/sidebar";
-import { User } from "./user";
 import { Branding } from "./branding";
+import { HelpButton } from "./help";
 import { Menu } from "./menu";
+import { User } from "./user";
 
 export function LeftSidebar() {
   return (
@@ -27,7 +28,8 @@ export function LeftSidebar() {
       </SidebarContent>
 
       {/* Footer */}
-      <SidebarFooter>
+      <SidebarFooter className="gap-8">
+        <HelpButton />
         <Branding />
       </SidebarFooter>
     </Sidebar>

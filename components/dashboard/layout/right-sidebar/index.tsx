@@ -126,7 +126,6 @@ export function RightSidebar() {
   return (
     <Sidebar
       side="right"
-      showCloseButton
       mobileBreakpoint="(max-width: 1279px)"
       style={{ "--sidebar-width-mobile": "100vw" } as CSSProperties}
     >

@@ -188,8 +188,8 @@ export function BrokerImportCSVForm() {
         ) : null}
 
         <p className="text-muted-foreground text-sm">
-          Need another broker? Use Feedback in the top-right dashboard header
-          and include the broker name.
+          Need another broker? Use Help at the bottom of the dashboard sidebar,
+          then Feedback, and include the broker name.
         </p>
       </DialogBody>
 
