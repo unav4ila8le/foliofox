@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { chunkArray } from "@/server/shared/chunk-array";
 import type { Database } from "@/types/database.types";
 import { updatePosition } from "@/server/positions/update";
 import {
@@ -249,23 +250,45 @@ describe("cell and bulk assignments", () => {
     expect(writes()[0].url.searchParams.get("tag_id")).toBe(`in.(${oldTag})`);
   });
 
-  it("paginates ownership lookups too", async () => {
+  it("chunks ownership lookups so filter URLs stay short", async () => {
     const ids = Array.from(
       { length: 1001 },
       (_, index) =>
         `20000000-0000-4000-8000-${String(index).padStart(12, "0")}`,
     );
     queue(
-      ids.slice(0, 1000).map((id) => ({ id })),
+      ...chunkArray(ids, 200).map((chunk) => chunk.map((id) => ({ id }))),
       [{ id: oldTag }],
-      [{ id: ids[1000] }],
       null,
     );
     expect(
       await addPositionTags({ positionIds: ids, tagIds: [oldTag] }),
     ).toEqual({ success: true });
     expect(writes()[0].body).toHaveLength(1001);
-    expect(requests[2].url.searchParams.get("offset")).toBe("1000");
+    const lookups = requests.filter(({ url }) =>
+      url.pathname.endsWith("/positions"),
+    );
+    expect(lookups).toHaveLength(6);
+    expect(lookups.every(({ url }) => url.href.length < 8192)).toBe(true);
+  });
+
+  it("chunks bulk removals and reports a partial failure as unknown", async () => {
+    const ids = Array.from(
+      { length: 201 },
+      (_, index) =>
+        `20000000-0000-4000-8000-${String(index).padStart(12, "0")}`,
+    );
+    queue(
+      ...chunkArray(ids, 200).map((chunk) => chunk.map((id) => ({ id }))),
+      [{ id: oldTag }],
+      null,
+    );
+    failNext();
+    expect(
+      await removePositionTags({ positionIds: ids, tagIds: [oldTag] }),
+    ).toMatchObject({ success: false, outcomeUnknown: true });
+    expect(writes()).toHaveLength(2);
+    expect(writes().every(({ method }) => method === "DELETE")).toBe(true);
   });
 
   it("skips empty writes while still validating the requested assets", async () => {

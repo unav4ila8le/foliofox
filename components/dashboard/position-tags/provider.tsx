@@ -76,8 +76,9 @@ export function PositionTagsProvider({
     }
   }, [read]);
   useEffect(() => {
-    const request = ++requestId.current;
+    // A re-seeded initialData must not invalidate an in-flight refresh().
     if (initialData) return;
+    const request = ++requestId.current;
     let cancelled = false;
     void read()
       .then((next) => {

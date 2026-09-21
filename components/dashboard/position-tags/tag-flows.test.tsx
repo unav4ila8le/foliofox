@@ -260,6 +260,36 @@ describe("draft tag editing", () => {
     );
   });
 
+  it("adopts a tag whose create response was lost instead of inserting it twice", async () => {
+    const created = tag("new", "Holiday");
+    mocks.create.mockImplementationOnce(async () => {
+      saved = { ...saved, tags: [...saved.tags, created] };
+      throw new Error("lost response");
+    });
+    editor();
+    fireEvent.click(screen.getByRole("button", { name: "Choose tags" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Search tags" }), {
+      target: { value: " holiday " },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create “holiday”" }));
+    const dialog = await screen.findByRole("dialog", { name: "Create tag" });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Create tag" }));
+    const retry = await within(dialog).findByRole("button", {
+      name: "Refresh and retry",
+    });
+    await waitFor(() => expect(retry.hasAttribute("disabled")).toBe(false));
+    fireEvent.click(retry);
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "Create tag" })).toBeNull(),
+    );
+    expect(mocks.create).toHaveBeenCalledTimes(1);
+    expect(
+      screen
+        .getByRole("button", { name: "Save changes" })
+        .hasAttribute("disabled"),
+    ).toBe(false);
+  });
+
   it("creates a reusable definition immediately but keeps its assignment as a draft", async () => {
     const created = tag("new", "Holiday");
     mocks.create.mockImplementation(async () => {
@@ -387,6 +417,44 @@ describe("immediate tagging", () => {
       </PositionTagsProvider>,
     );
     expect(screen.getByRole("button").textContent).toBe("dad");
+  });
+
+  it("settles an in-flight refresh when the server re-seeds initialData", async () => {
+    let finish!: (tags: typeof initial.tags) => void;
+    mocks.fetchTags.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+    );
+    function Probe() {
+      const state = usePositionTags()!;
+      return (
+        <button
+          disabled={state.isRefreshing}
+          onClick={() => void state.refresh()}
+        >
+          {state.data!.tags.length}
+        </button>
+      );
+    }
+    const { rerender } = render(
+      <PositionTagsProvider initialData={initial}>
+        <Probe />
+      </PositionTagsProvider>,
+    );
+    fireEvent.click(screen.getByRole("button"));
+    expect(screen.getByRole("button").hasAttribute("disabled")).toBe(true);
+    // revalidatePath re-renders the RSC parent with a fresh initialData object.
+    rerender(
+      <PositionTagsProvider initialData={{ ...initial }}>
+        <Probe />
+      </PositionTagsProvider>,
+    );
+    await act(async () => {
+      finish([...initial.tags, tag("new", "Holiday")]);
+    });
+    expect(screen.getByRole("button").hasAttribute("disabled")).toBe(false);
+    expect(screen.getByRole("button").textContent).toBe("4");
   });
 
   it("confirms deletion and refreshes the shared definitions", async () => {

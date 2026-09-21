@@ -62,12 +62,18 @@ export function TagEditorDialog({
     setPending(true);
     setError(null);
     try {
+      let savedTag = saved;
       // Lost responses must be reconciled before another mutation is attempted.
       if (unknown) {
-        await state.refresh();
+        const { tags } = await state.refresh();
         setUnknown(false);
+        // A lost create may have committed; adopt it instead of inserting a duplicate.
+        const trimmedName = name.trim().toLowerCase();
+        if (!tag && !savedTag)
+          savedTag =
+            tags.find((value) => value.name.toLowerCase() === trimmedName) ??
+            null;
       }
-      let savedTag = saved;
       if (!savedTag) {
         const selectedColor =
           POSITION_TAG_COLORS.find((value) => value === color) ?? "blue";

@@ -3,7 +3,9 @@
 import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { type CSSProperties, useEffect, useRef } from "react";
+import { X } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/custom/skeleton";
 
 import { AI_CHAT_ROUTE } from "@/components/dashboard/ai-chat/navigation";
@@ -25,10 +27,23 @@ const AIChatPanel = dynamic(
 );
 
 function RightSidebarChatSkeleton() {
+  const { setOpenRight, setOpenMobileRight } = useSidebar();
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="border-b p-4">
-        <Skeleton className="h-10 w-full" />
+      {/* The full-width mobile sheet has no other close control until the panel chunk loads. */}
+      <div className="flex items-center gap-2 border-b p-2 ps-4 xl:ps-2">
+        <Skeleton className="h-9 flex-1" />
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Close AI Advisor"
+          onClick={() => {
+            setOpenRight(false);
+            setOpenMobileRight(false);
+          }}
+        >
+          <X />
+        </Button>
       </div>
       <div className="flex-1 space-y-3 p-4">
         <Skeleton className="h-16 w-4/5" />

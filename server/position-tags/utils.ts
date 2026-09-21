@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { chunkArray } from "@/server/shared/chunk-array";
 import type { createClient } from "@/supabase/server";
 import { POSITION_TAG_COLORS } from "@/types/enums";
 
@@ -85,35 +86,46 @@ export async function readTagPages<T>(
   }
 }
 
+// PostgREST sends `in.(...)` filters in the URL; 200 UUIDs stays under common 8 KB limits
+// and under the 1000-row response cap, so chunked lookups need no range pagination.
+const ID_CHUNK_SIZE = 200;
+
+async function readOwnedIds(
+  ids: string[],
+  fetchIds: (
+    chunk: string[],
+  ) => PromiseLike<{ data: { id: string }[] | null; error: QueryError | null }>,
+) {
+  const results = await Promise.all(
+    chunkArray(ids, ID_CHUNK_SIZE).map(fetchIds),
+  );
+  return results.flatMap(({ data, error }) => {
+    if (error) throw error;
+    return data ?? [];
+  });
+}
+
 export async function validateTagTargets(
   supabase: Client,
   userId: string,
   { positionIds, tagIds }: PositionTagTargets,
 ) {
   const [positions, tags] = await Promise.all([
-    positionIds.length
-      ? readTagPages((from, to) =>
-          supabase
-            .from("positions")
-            .select("id")
-            .eq("user_id", userId)
-            .eq("type", "asset")
-            .in("id", positionIds)
-            .order("id")
-            .range(from, to),
-        )
-      : [],
-    tagIds.length
-      ? readTagPages((from, to) =>
-          supabase
-            .from("user_position_tags")
-            .select("id")
-            .eq("user_id", userId)
-            .in("id", tagIds)
-            .order("id")
-            .range(from, to),
-        )
-      : [],
+    readOwnedIds(positionIds, (chunk) =>
+      supabase
+        .from("positions")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("type", "asset")
+        .in("id", chunk),
+    ),
+    readOwnedIds(tagIds, (chunk) =>
+      supabase
+        .from("user_position_tags")
+        .select("id")
+        .eq("user_id", userId)
+        .in("id", chunk),
+    ),
   ]);
   if (
     positions.length !== positionIds.length ||
@@ -142,25 +154,34 @@ export async function readTagAssignments(
   });
 }
 
-// Call only after validating the complete target set. Each operation is one write.
+// Call only after validating the complete target set. Adds are one insert; removes
+// filter through the URL, so they run one DELETE per position chunk.
 export async function writeTagAssignments(
   supabase: Client,
   { positionIds, tagIds }: PositionTagTargets,
   operation: "add" | "remove",
 ) {
   if (!positionIds.length || !tagIds.length) return;
-  const { error } =
-    operation === "add"
-      ? await supabase.from("position_tag_assignments").upsert(
-          positionIds.flatMap((position_id) =>
-            tagIds.map((tag_id) => ({ position_id, tag_id })),
-          ),
-          { onConflict: "position_id,tag_id", ignoreDuplicates: true },
-        )
-      : await supabase
-          .from("position_tag_assignments")
-          .delete()
-          .in("position_id", positionIds)
-          .in("tag_id", tagIds);
-  if (error) throw error;
+  if (operation === "add") {
+    const { error } = await supabase.from("position_tag_assignments").upsert(
+      positionIds.flatMap((position_id) =>
+        tagIds.map((tag_id) => ({ position_id, tag_id })),
+      ),
+      { onConflict: "position_id,tag_id", ignoreDuplicates: true },
+    );
+    if (error) throw error;
+    return;
+  }
+  const chunks = chunkArray(positionIds, ID_CHUNK_SIZE);
+  for (const [index, chunk] of chunks.entries()) {
+    const { error } = await supabase
+      .from("position_tag_assignments")
+      .delete()
+      .in("position_id", chunk)
+      .in("tag_id", tagIds);
+    // A rejected later chunk leaves earlier deletes committed: report the outcome as
+    // unknown (non-SQLSTATE code) so clients refresh instead of assuming a rollback.
+    if (error)
+      throw index ? { code: "PARTIAL_WRITE", message: error.message } : error;
+  }
 }
