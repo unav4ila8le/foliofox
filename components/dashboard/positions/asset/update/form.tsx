@@ -6,7 +6,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
-import { Field, FieldError, FieldLabel } from "@/components/ui/field";
+import {
+  Field,
+  FieldError,
+  FieldLabel,
+  FieldGroup,
+} from "@/components/ui/field";
 import {
   Accordion,
   AccordionContent,
@@ -20,6 +25,12 @@ import { DialogBody, DialogFooter } from "@/components/ui/custom/dialog";
 import { PositionCategorySelector } from "@/components/dashboard/categories/position-category-selector";
 import { CapitalGainsTaxRateField } from "@/components/dashboard/positions/shared/capital-gains-tax-rate-field";
 import { UpdateSymbolDialog } from "@/components/dashboard/positions/shared/update-symbol-dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { TagPicker } from "@/components/dashboard/position-tags/tag-picker";
+import {
+  TagDataStatus,
+  usePositionTags,
+} from "@/components/dashboard/position-tags/provider";
 
 import { updatePosition } from "@/server/positions/update";
 
@@ -34,9 +45,11 @@ interface UpdateAssetFormProps {
   position: Position;
   currentSymbolTicker?: string | null;
   onSuccess?: () => void;
+  onSavingChange?: (saving: boolean) => void;
 }
 
 const formSchema = z.object({
+  tag_ids: z.array(z.string()),
   name: z
     .string()
     .min(3, { error: "Name must be at least 3 characters." })
@@ -56,13 +69,25 @@ export function UpdateAssetForm({
   position,
   currentSymbolTicker,
   onSuccess,
+  onSavingChange,
 }: UpdateAssetFormProps) {
+  const tags = usePositionTags();
+  const [initialTagIds] = useState(
+    () =>
+      tags?.data?.assignments
+        .filter((assignment) => assignment.position_id === position.id)
+        .map((assignment) => assignment.tag_id) ?? [],
+  );
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [requiresRefresh, setRequiresRefresh] = useState(false);
+  const [submittedTags, setSubmittedTags] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [updateSymbolDialogOpen, setUpdateSymbolDialogOpen] = useState(false);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      tag_ids: initialTagIds,
       name: position.name,
       category_id: position.category_id,
       user_category_id: position.user_category_id,
@@ -79,11 +104,22 @@ export function UpdateAssetForm({
     control: form.control,
     name: "user_category_id",
   });
+  const draftTagIds = useWatch({ control: form.control, name: "tag_ids" });
+  const availableTagIds = new Set(tags?.data?.tags.map((tag) => tag.id));
+  const selectedTagIds = draftTagIds.filter((id) => availableTagIds.has(id));
 
   // Submit handler
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
+    onSavingChange?.(true);
+    setSaveError(null);
     try {
+      // Keep the requested draft while re-reading saved assignments after a lost response.
+      let tagData = tags?.data;
+      if (requiresRefresh && tags) {
+        tagData = await tags.refresh();
+        setRequiresRefresh(false);
+      }
       const formData = new FormData();
       formData.append("name", values.name);
       formData.append("category_id", values.category_id);
@@ -99,23 +135,52 @@ export function UpdateAssetForm({
         capitalGainsTaxRate != null ? capitalGainsTaxRate.toString() : "",
       );
 
-      const result = await updatePosition(formData, position.id);
+      const existing = new Set(tagData?.tags.map((tag) => tag.id));
+      const requested = values.tag_ids.filter((id) => existing.has(id));
+      const baseline = initialTagIds.filter((id) => existing.has(id));
+      if (
+        submittedTags ||
+        requested.length !== baseline.length ||
+        requested.some((id) => !baseline.includes(id))
+      ) {
+        formData.set("tag_ids", JSON.stringify(requested));
+        setSubmittedTags(true);
+      }
+
+      let result;
+      try {
+        result = await updatePosition(formData, position.id);
+      } catch {
+        setRequiresRefresh(true);
+        setSaveError(
+          "The save outcome is unknown. Your edits are kept. Refresh and retry.",
+        );
+        await tags?.refresh().catch(() => {});
+        return;
+      }
 
       // Handle error response from server action
       if (!result.success) {
-        throw new Error(result.message);
+        setSaveError(result.message);
+        setRequiresRefresh(result.outcomeUnknown);
+        if (result.savedSteps.length || result.outcomeUnknown)
+          await tags?.refresh().catch(() => {});
+        return;
       }
+
+      await tags?.refresh().catch(() => {});
 
       toast.success("Asset updated successfully");
 
       // Close the dialog
       onSuccess?.();
     } catch (error) {
-      toast.error(
+      setSaveError(
         error instanceof Error ? error.message : "Failed to update asset",
       );
     } finally {
       setIsLoading(false);
+      onSavingChange?.(false);
     }
   }
 
@@ -126,7 +191,12 @@ export function UpdateAssetForm({
         className="flex min-h-0 flex-1 flex-col overflow-hidden"
       >
         <DialogBody>
-          <div className="grid gap-4">
+          <FieldGroup>
+            {saveError && (
+              <Alert variant="destructive">
+                <AlertDescription>{saveError}</AlertDescription>
+              </Alert>
+            )}
             {/* Name */}
             <Controller
               control={form.control}
@@ -138,6 +208,7 @@ export function UpdateAssetForm({
                     id={field.name}
                     placeholder="E.g., Chase Savings, Rental Property, Bitcoin Holdings"
                     aria-invalid={fieldState.invalid}
+                    disabled={isLoading}
                     {...field}
                   />
                   {fieldState.invalid && (
@@ -163,6 +234,7 @@ export function UpdateAssetForm({
                         shouldValidate: true,
                       })
                     }
+                    disabled={isLoading}
                     isInvalid={fieldState.invalid}
                     allowCustomCategories
                   />
@@ -172,6 +244,21 @@ export function UpdateAssetForm({
                 </Field>
               )}
             />
+
+            {tags && (
+              <Field>
+                <FieldLabel>Tags</FieldLabel>
+                <TagDataStatus />
+                <TagPicker
+                  selectedIds={selectedTagIds}
+                  onChange={(ids) =>
+                    form.setValue("tag_ids", ids, { shouldDirty: true })
+                  }
+                  label="Choose tags"
+                  disabled={isLoading}
+                />
+              </Field>
+            )}
 
             {/* Capital gains tax rate */}
             <CapitalGainsTaxRateField
@@ -194,6 +281,7 @@ export function UpdateAssetForm({
                     id={field.name}
                     placeholder="Add a description of this asset"
                     aria-invalid={fieldState.invalid}
+                    disabled={isLoading}
                     {...field}
                   />
                   {fieldState.invalid && (
@@ -235,7 +323,7 @@ export function UpdateAssetForm({
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
-          </div>
+          </FieldGroup>
         </DialogBody>
 
         <DialogFooter>
@@ -247,12 +335,26 @@ export function UpdateAssetForm({
           >
             Cancel
           </Button>
-          <Button disabled={isLoading || !isDirty} type="submit">
+          <Button
+            disabled={
+              isLoading ||
+              (!isDirty && !saveError) ||
+              Boolean(tags?.error) ||
+              tags?.isRefreshing
+            }
+            type="submit"
+          >
             {isLoading ? (
               <>
                 <Spinner />
                 Updating...
               </>
+            ) : saveError ? (
+              requiresRefresh ? (
+                "Refresh and retry"
+              ) : (
+                "Retry"
+              )
             ) : (
               "Save changes"
             )}

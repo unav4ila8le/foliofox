@@ -38,6 +38,8 @@ declare module "@tanstack/react-table" {
     initialValueBasis?: ScenarioInitialValueBasis;
     onEdit?: (row: TData, index: number) => void;
     onDelete?: (index: number) => void;
+    tagFilter?: string[];
+    onTagFilterChange?: (ids: string[]) => void;
   }
 }
 
@@ -51,6 +53,7 @@ interface DataTableProps<TData extends DataWithId, TValue> {
   filterColumnId?: string;
   onRowClick?: (row: TData) => void;
   onSelectedRowsChange?: (rows: TData[]) => void;
+  selectionResetKey?: string | number;
   enableGrouping?: boolean;
   groupBy?: string[];
   meta?: TableMeta<TData>;
@@ -66,6 +69,7 @@ export function DataTable<TData extends DataWithId, TValue>({
   filterColumnId = "name",
   onRowClick,
   onSelectedRowsChange,
+  selectionResetKey,
   enableGrouping = false,
   groupBy = [],
   meta,
@@ -75,6 +79,11 @@ export function DataTable<TData extends DataWithId, TValue>({
   const locale = useLocale();
   const [sorting, setSorting] = useState<SortingState>(defaultSorting);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [previousResetKey, setPreviousResetKey] = useState(selectionResetKey);
+  if (previousResetKey !== selectionResetKey) {
+    setPreviousResetKey(selectionResetKey);
+    setRowSelection({});
+  }
   const [expanded, setExpanded] = useState<ExpandedState>(true);
   // Keep keyboard/selection anchors in refs so we can manage shift-range
   // selection without forcing extra renders.
@@ -82,6 +91,14 @@ export function DataTable<TData extends DataWithId, TValue>({
   const lastToggledRowIdRef = useRef<string | null>(null);
   const previousSelectionRef = useRef<RowSelectionState>({});
   const isApplyingShiftRangeRef = useRef(false);
+
+  useEffect(() => {
+    if (selectionResetKey === undefined) return;
+    lastToggledRowIdRef.current = null;
+    previousSelectionRef.current = {};
+    isApplyingShiftRangeRef.current = false;
+    isShiftPressedRef.current = false;
+  }, [selectionResetKey]);
 
   // Memoize column filters to prevent unnecessary re-renders
   const columnFilters = useMemo<ColumnFiltersState>(() => {
@@ -238,14 +255,14 @@ export function DataTable<TData extends DataWithId, TValue>({
     lastToggledRowIdRef.current = currentRowId;
   }, [rowSelection, table]);
 
-  // Emit selected rows to parent - only when selection actually changes
+  // Refresh selected objects when the parent supplies updated rows, too.
   useEffect(() => {
     if (!onSelectedRowsChange) return;
     const selectedRows = table
       .getSelectedRowModel()
       .rows.map((row) => row.original);
     onSelectedRowsChange(selectedRows);
-  }, [rowSelection, onSelectedRowsChange, table]);
+  }, [rowSelection, data, onSelectedRowsChange, table]);
 
   // Memoize row click handler to prevent unnecessary re-renders
   const handleRowClick = useCallback(

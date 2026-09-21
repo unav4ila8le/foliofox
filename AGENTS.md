@@ -10,6 +10,7 @@
 
 ## Development Principles
 
+- Never rely on memory or assumptions for technical decisions. Search and read the latest relevant official documentation online, verify it against the installed versions and current code, and use any relevant skills.
 - Always apply the `ponytail` skill on coding tasks: laziest working solution, YAGNI ladder, shortest diff that works. The full suite (`ponytail-review`, `ponytail-audit`, `ponytail-debt`, `ponytail-gain`, `ponytail-help`) comes from the `ponytail` plugin enabled in `.claude/settings.json`.
 - Prefer server-first architecture (RSC, minimal client-only code).
 - Keep data access in `server/` with `"use server"` and the correct Supabase client.
@@ -33,6 +34,11 @@
 - Split complex features into modular components
 - Keep server actions/functions in `server/` with `"use server"`
 - Supabase: use user-scoped client from `supabase/server.ts`; reserve service-role client from `supabase/service.ts` for cron/admin only (bypasses RLS)
+
+### Database Boundary
+
+- Server-first extends to the database. Business rules, validation, and product decisions live in `server/`; Postgres holds storage, constraints on its own invariants, and RLS for ownership and access. RPCs must not replace server actions/functions. Reserve small service-only RPCs for demonstrated guarantees server code cannot provide alone, such as an atomic money-plus-state transition or a security-critical quota. Pass business values and limits as arguments rather than embedding policy in SQL. A single-statement write needs no RPC, including bulk inserts, updates, and deletes.
+- Harden to Foliofox's current stage: private portfolio dashboards, without billing or paywalls. Preserve financial data integrity, authentication, and tenant isolation, but do not add database functions or serialization for hypothetical scale or millisecond self-races. Prefer a conditional single-statement write over a new RPC, and extend an existing RPC before adding one when an RPC is truly necessary. Every database function adds migration, validation, and generated-type maintenance. When a review proposes a database-side guard, default to the server-first equivalent or document why the guard is unnecessary; justify any exception with a concrete failure that simpler writes cannot safely handle.
 
 ## TypeScript & Code Style
 

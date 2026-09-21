@@ -1,129 +1,235 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Archive, Package, Trash2 } from "lucide-react";
-
+import { Archive, Package, TagPlus, TagX, Trash2 } from "lucide-react";
 import { SearchInput } from "@/components/ui/custom/search-input";
 import { NewAssetButton } from "@/components/dashboard/new-asset";
-import { TableActionsDropdown } from "./table-actions";
 import { DeletePositionDialog } from "@/components/dashboard/positions/shared/delete-dialog";
 import { ArchivePositionDialog } from "@/components/dashboard/positions/shared/archive-dialog";
 import { DataTable } from "@/components/dashboard/tables/base/data-table";
 import { BulkActionBar } from "@/components/dashboard/tables/base/bulk-action-bar";
-import { columns } from "./columns";
+import {
+  PositionTagsProvider,
+  TagDataStatus,
+  usePositionTags,
+} from "@/components/dashboard/position-tags/provider";
+import { ManageTagsDialog } from "@/components/dashboard/position-tags/manage-tags-dialog";
+import { BulkTagsDialog } from "@/components/dashboard/position-tags/bulk-tags-dialog";
+import type { PositionTag } from "@/server/position-tags/types";
+import { TableActionsDropdown } from "./table-actions";
+import { createAssetColumns } from "./columns";
+import { UpdateAssetDialog } from "@/components/dashboard/positions/asset/update";
+import type { AssetTableRow } from "./types";
 
-import type { PositionWithProfitLoss } from "@/types/global.types";
-
-interface AssetsTableProps {
-  data: PositionWithProfitLoss[];
+export function AssetsTable({
+  data,
+  tags,
+}: {
+  data: AssetTableRow[];
+  tags: PositionTag[];
+}) {
+  const initialData = useMemo(
+    () => ({
+      tags,
+      assignments: data.flatMap((position) =>
+        position.tagIds.map((tag_id) => ({ position_id: position.id, tag_id })),
+      ),
+    }),
+    [data, tags],
+  );
+  return (
+    <PositionTagsProvider initialData={initialData}>
+      <AssetsTableContent data={data} />
+    </PositionTagsProvider>
+  );
 }
 
-export function AssetsTable({ data }: AssetsTableProps) {
+function AssetsTableContent({ data }: { data: AssetTableRow[] }) {
   const router = useRouter();
+  const state = usePositionTags()!;
   const [filterValue, setFilterValue] = useState("");
-  const [selectedRows, setSelectedRows] = useState<PositionWithProfitLoss[]>(
-    [],
-  );
+  const [tagFilter, setTagFilter] = useState<string[]>([]);
+  const [selectedRows, setSelectedRows] = useState<AssetTableRow[]>([]);
+  const [resetKey, setResetKey] = useState(0);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [openArchiveDialog, setOpenArchiveDialog] = useState(false);
-
-  // Handle row click to navigate to asset page
+  const [manage, setManage] = useState(false);
+  const [bulk, setBulk] = useState<"add" | "remove" | null>(null);
+  const [editing, setEditing] = useState<AssetTableRow | null>(null);
+  const columns = useMemo(() => createAssetColumns(setEditing), []);
+  const tagData = state.data!;
+  // Deleted definitions cannot remain active filters or hidden selections.
+  const activeFilters = useMemo(
+    () => tagFilter.filter((id) => tagData.tags.some((tag) => tag.id === id)),
+    [tagFilter, tagData.tags],
+  );
+  const [previousFilters, setPreviousFilters] = useState(activeFilters);
+  if (previousFilters !== activeFilters) {
+    setPreviousFilters(activeFilters);
+    if (previousFilters.join() !== activeFilters.join()) {
+      setSelectedRows([]);
+      setResetKey(resetKey + 1);
+    }
+  }
+  const rows = useMemo(() => {
+    const byPosition = new Map<string, string[]>();
+    for (const { position_id, tag_id } of tagData.assignments) {
+      const ids = byPosition.get(position_id) ?? [];
+      ids.push(tag_id);
+      byPosition.set(position_id, ids);
+    }
+    return data.map((position) => ({
+      ...position,
+      tagIds: byPosition.get(position.id) ?? [],
+    }));
+  }, [data, tagData.assignments]);
+  const visibleRows = useMemo(
+    () =>
+      rows.filter(
+        (row) =>
+          row.name
+            .toLocaleLowerCase()
+            .includes(filterValue.trim().toLocaleLowerCase()) &&
+          activeFilters.every((id) => row.tagIds.includes(id)),
+      ),
+    [rows, filterValue, activeFilters],
+  );
+  const visibleSelection = useMemo(() => {
+    const selected = new Set(selectedRows.map((row) => row.id));
+    return visibleRows.filter((row) => selected.has(row.id));
+  }, [visibleRows, selectedRows]);
   const handleRowClick = useCallback(
-    (position: PositionWithProfitLoss) => {
-      router.push(`/dashboard/assets/${position.id}`);
-    },
+    (position: AssetTableRow) =>
+      router.push(`/dashboard/assets/${position.id}`),
     [router],
   );
-
+  function clearSelection() {
+    setSelectedRows([]);
+    setResetKey((key) => key + 1);
+  }
   return (
     <div className="flex flex-col gap-4">
-      {/* Toolbar */}
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <SearchInput
-          className="max-w-sm"
+          className="w-full sm:max-w-sm"
           id="assets-search"
           name="assets-search"
+          aria-label="Search assets"
           autoComplete="off"
-          placeholder="Search assets..."
+          placeholder="Search assets…"
           value={filterValue}
-          onChange={(e) => setFilterValue(e.target.value)}
+          onChange={(event) => {
+            setFilterValue(event.target.value);
+            clearSelection();
+          }}
         />
         <div className="flex items-center gap-2">
           <NewAssetButton variant="outline" />
-          <TableActionsDropdown positionsCount={data.length} />
+          <TableActionsDropdown
+            positionsCount={data.length}
+            onManageTags={() => setManage(true)}
+          />
         </div>
       </div>
-
-      {/* Table */}
+      <TagDataStatus />
       {data.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="bg-accent rounded-lg p-2">
-            <Package className="text-muted-foreground size-4" />
-          </div>
-          <p className="mt-3">No assets found</p>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Start building your portfolio by adding your first asset
+        <div className="flex flex-col items-center gap-2 py-12 text-center">
+          <Package className="text-muted-foreground size-5" />
+          <p>No assets yet</p>
+          <p className="text-muted-foreground text-sm">
+            Add your first asset, then use tags to organize it.
           </p>
         </div>
       ) : (
-        <DataTable
-          columns={columns}
-          data={data}
-          filterValue={filterValue}
-          onRowClick={handleRowClick}
-          onSelectedRowsChange={setSelectedRows}
-          enableGrouping={true}
-          groupBy={["display_category_id"]}
-          defaultSorting={[{ id: "name", desc: false }]}
-        />
+        <>
+          <DataTable
+            columns={columns}
+            data={visibleRows}
+            onRowClick={handleRowClick}
+            onSelectedRowsChange={setSelectedRows}
+            selectionResetKey={resetKey}
+            meta={{ tagFilter: activeFilters, onTagFilterChange: setTagFilter }}
+            enableGrouping
+            groupBy={["display_category_id"]}
+            defaultSorting={[{ id: "name", desc: false }]}
+          />
+          {visibleRows.length === 0 && (
+            <p className="text-muted-foreground text-center text-sm">
+              No assets match these filters. Try fewer tags or clear the search.
+            </p>
+          )}
+        </>
       )}
-
-      {/* Rows count */}
-      <p className="text-muted-foreground text-end text-sm">
-        {data.length} asset(s)
+      <p role="status" className="text-muted-foreground text-end text-sm">
+        {visibleRows.length} of {data.length} assets
       </p>
-
-      {/* Floating bulk action bar */}
-      {selectedRows.length > 0 && (
+      {visibleSelection.length > 0 && (
         <BulkActionBar
-          selectedCount={selectedRows.length}
+          selectedCount={visibleSelection.length}
+          className="max-w-[calc(100vw-2rem)] flex-wrap justify-end"
           actions={[
+            {
+              label: "Add tags",
+              onClick: () => setBulk("add"),
+              icon: <TagPlus />,
+              disabled: state.isRefreshing || Boolean(state.error),
+            },
+            {
+              label: "Remove tags",
+              onClick: () => setBulk("remove"),
+              icon: <TagX />,
+              disabled: state.isRefreshing || Boolean(state.error),
+            },
             {
               label: "Archive selected",
               onClick: () => setOpenArchiveDialog(true),
-              icon: <Archive className="size-4" />,
+              icon: <Archive />,
               variant: "outline",
             },
             {
               label: "Delete selected",
               onClick: () => setOpenDeleteDialog(true),
-              icon: <Trash2 className="size-4" />,
+              icon: <Trash2 />,
               variant: "destructive",
             },
           ]}
         />
       )}
-
-      {/* Delete dialog */}
       <DeletePositionDialog
-        open={openDeleteDialog}
+        open={openDeleteDialog && visibleSelection.length > 0}
         onOpenChangeAction={setOpenDeleteDialog}
-        positions={selectedRows.map(({ id, name }) => ({ id, name }))} // Minimal DTO
-        onCompleted={() => {
-          setSelectedRows([]);
-        }}
+        positions={visibleSelection.map(({ id, name }) => ({ id, name }))}
+        onCompleted={clearSelection}
       />
-
-      {/* Archive dialog */}
       <ArchivePositionDialog
-        open={openArchiveDialog}
+        open={openArchiveDialog && visibleSelection.length > 0}
         onOpenChangeAction={setOpenArchiveDialog}
-        positions={selectedRows.map(({ id, name }) => ({ id, name }))} // Minimal DTO
-        onCompleted={() => {
-          setSelectedRows([]);
-        }}
+        positions={visibleSelection.map(({ id, name }) => ({ id, name }))}
+        onCompleted={clearSelection}
       />
+      {manage && <ManageTagsDialog onClose={() => setManage(false)} />}
+      {editing && (
+        <UpdateAssetDialog
+          position={rows.find((row) => row.id === editing.id) ?? editing}
+          currentSymbolTicker={editing.symbol_ticker}
+          open
+          onOpenChangeAction={(open) => {
+            if (!open) setEditing(null);
+          }}
+        />
+      )}
+      {bulk && visibleSelection.length > 0 && (
+        <BulkTagsDialog
+          operation={bulk}
+          positionIds={visibleSelection.map((row) => row.id)}
+          onClose={() => setBulk(null)}
+          onCompleted={() => {
+            setBulk(null);
+            clearSelection();
+          }}
+        />
+      )}
     </div>
   );
 }

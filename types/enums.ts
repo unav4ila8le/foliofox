@@ -3,6 +3,20 @@
 
 import { Constants } from "@/types/database.types";
 
+// Text CHECK values are not included in generated database enums.
+export const POSITION_TAG_COLORS = [
+  "neutral",
+  "red",
+  "orange",
+  "amber",
+  "green",
+  "teal",
+  "blue",
+  "indigo",
+  "violet",
+  "pink",
+] as const;
+
 // Portfolio record types
 export const PORTFOLIO_RECORD_TYPES =
   Constants.public.Enums.portfolio_record_type;

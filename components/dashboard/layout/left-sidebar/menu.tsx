@@ -6,7 +6,7 @@ import {
   ArrowLeftRight,
   GitBranch,
   Home,
-  Sparkles,
+  MessageCircle,
   TrendingUp,
   type LucideIcon,
 } from "lucide-react";
@@ -50,7 +50,7 @@ const menuGroups: MenuGroup[] = [
   {
     label: "Tools",
     items: [
-      { title: "AI Advisor", url: "/dashboard/ai-chat", icon: Sparkles },
+      { title: "AI Advisor", url: "/dashboard/ai-chat", icon: MessageCircle },
       {
         title: "Scenario Planning",
         url: "/dashboard/planning/scenario",

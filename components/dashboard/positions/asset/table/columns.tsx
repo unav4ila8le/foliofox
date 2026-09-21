@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, ListFilter } from "lucide-react";
 
 import type { ColumnDef } from "@tanstack/react-table";
 
@@ -13,6 +13,9 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ActionsCell } from "@/components/dashboard/positions/asset/table/row-actions/actions-cell";
 import { StaleBadge } from "@/components/dashboard/positions/asset/stale-badge";
+import { TagCell } from "@/components/dashboard/position-tags/tag-cell";
+import { TagPicker } from "@/components/dashboard/position-tags/tag-picker";
+import type { AssetTableRow } from "./types";
 
 import { cn } from "@/lib/utils";
 import { formatNumber, formatPercentage } from "@/lib/number-format";
@@ -23,7 +26,7 @@ import type { PositionWithProfitLoss } from "@/types/global.types";
 const positionHasMarketData = (position: PositionWithProfitLoss): boolean =>
   position.has_market_data === true;
 
-export const columns: ColumnDef<PositionWithProfitLoss>[] = [
+const columns: ColumnDef<AssetTableRow>[] = [
   {
     id: "select",
     header: ({ table }) => (
@@ -104,6 +107,32 @@ export const columns: ColumnDef<PositionWithProfitLoss>[] = [
     },
   },
   {
+    id: "tags",
+    // The header is the tag filter; AssetsTable owns the state and passes it via meta.
+    header: ({ table }) => {
+      const { tagFilter = [], onTagFilterChange } = table.options.meta ?? {};
+      return (
+        <TagPicker
+          selectedIds={tagFilter}
+          onChange={(ids) => onTagFilterChange?.(ids)}
+          label="Tags"
+          icon={<ListFilter data-icon="inline-start" />}
+          allowCreate={false}
+          compact
+          hideSelection
+        />
+      );
+    },
+    enableSorting: false,
+    cell: ({ row }) => (
+      <TagCell
+        positionId={row.original.id}
+        name={row.original.name}
+        tagIds={row.original.tagIds}
+      />
+    ),
+  },
+  {
     accessorKey: "currency",
     header: "Currency",
     cell: ({ row }) => {
@@ -123,7 +152,10 @@ export const columns: ColumnDef<PositionWithProfitLoss>[] = [
       const current_quantity = row.getValue<number>("current_quantity");
       return (
         <div className="tabular-nums">
-          {formatNumber(current_quantity, { locale, maximumFractionDigits: 6 })}
+          {formatNumber(current_quantity, {
+            locale,
+            maximumFractionDigits: 6,
+          })}
         </div>
       );
     },
@@ -285,15 +317,25 @@ export const columns: ColumnDef<PositionWithProfitLoss>[] = [
       );
     },
   },
-  {
-    id: "actions",
-    meta: {
-      headerClassName: "text-right",
-      cellClassName: "text-right",
-    },
-    cell: ({ row }) => {
-      const position = row.original;
-      return <ActionsCell position={position} />;
-    },
-  },
 ];
+
+export function createAssetColumns(
+  onEdit: (position: AssetTableRow) => void,
+): ColumnDef<AssetTableRow>[] {
+  return [
+    ...columns,
+    {
+      id: "actions",
+      meta: {
+        headerClassName: "text-right",
+        cellClassName: "text-right",
+      },
+      cell: ({ row }) => {
+        const position = row.original;
+        return (
+          <ActionsCell position={position} onEdit={() => onEdit(position)} />
+        );
+      },
+    },
+  ];
+}

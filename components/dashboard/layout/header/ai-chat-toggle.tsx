@@ -1,9 +1,10 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { MessageCircle } from "lucide-react";
 
-import { AI_CHAT_ROUTE } from "@/components/dashboard/ai-chat/navigation";
-import { SidebarTrigger } from "@/components/ui/custom/sidebar";
+import { Button } from "@/components/ui/button";
+import { useSidebar } from "@/components/ui/custom/sidebar";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import {
   Tooltip,
@@ -11,21 +12,27 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+import { AI_CHAT_ROUTE } from "@/components/dashboard/ai-chat/navigation";
+
 export function AIChatToggle() {
   const pathname = usePathname();
+  const { toggleRight, openRight, openMobileRight } = useSidebar();
 
-  if (pathname === AI_CHAT_ROUTE) {
+  if (pathname === AI_CHAT_ROUTE || openRight || openMobileRight) {
     return null;
   }
 
   return (
     <Tooltip delayDuration={500}>
       <TooltipTrigger asChild>
-        <SidebarTrigger side="right" className="-mr-2" />
+        <Button variant="outline" onClick={() => toggleRight()}>
+          <MessageCircle />
+          AI Advisor
+        </Button>
       </TooltipTrigger>
       <TooltipContent>
         <div className="flex items-center gap-2">
-          Toggle AI Chat
+          Open AI Advisor
           <KbdGroup>
             <Kbd>Ctrl</Kbd>
             <Kbd>I</Kbd>

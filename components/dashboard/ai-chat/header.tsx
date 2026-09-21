@@ -3,10 +3,19 @@
 import type { MouseEvent } from "react";
 import { useState } from "react";
 import Link from "next/link";
-import { Expand, PanelRightClose, Plus, Settings } from "lucide-react";
+import {
+  ChevronsRight,
+  Expand,
+  PanelRightClose,
+  Plus,
+  Settings,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { useSidebar } from "@/components/ui/custom/sidebar";
+import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { Spinner } from "@/components/ui/spinner";
 import {
   Tooltip,
@@ -35,6 +44,44 @@ interface ChatHeaderProps {
   maxConversations?: number;
   totalConversations?: number;
   modeActionHref?: string | null;
+}
+
+function CloseAIAdvisorButton({
+  className,
+  icon: Icon,
+}: {
+  className?: string;
+  icon: typeof ChevronsRight;
+}) {
+  const { setOpenRight, setOpenMobileRight } = useSidebar();
+
+  return (
+    <Tooltip delayDuration={500}>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => {
+            setOpenRight(false);
+            setOpenMobileRight(false);
+          }}
+          aria-label="Close AI Advisor"
+          className={className}
+        >
+          <Icon />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>
+        <div className="flex items-center gap-2">
+          Close AI Advisor
+          <KbdGroup>
+            <Kbd>Ctrl</Kbd>
+            <Kbd>I</Kbd>
+          </KbdGroup>
+        </div>
+      </TooltipContent>
+    </Tooltip>
+  );
 }
 
 export function ChatHeader({
@@ -76,13 +123,14 @@ export function ChatHeader({
   };
 
   return (
-    <div
-      className={cn(
-        "relative flex items-center gap-4 px-4 py-2",
-        layoutMode === "page" ? "justify-between" : "xl:justify-between",
-      )}
-    >
+    <div className="relative flex items-center justify-between gap-4 p-2 ps-4 xl:ps-2">
       <div className="flex items-center gap-2" aria-label="AI chat heading">
+        {layoutMode === "sidebar" ? (
+          <CloseAIAdvisorButton
+            icon={ChevronsRight}
+            className="text-muted-foreground -mx-1 hidden xl:inline-flex"
+          />
+        ) : null}
         <h2
           className={cn(
             "leading-none",
@@ -165,6 +213,9 @@ export function ChatHeader({
               : "New conversation"}
           </TooltipContent>
         </Tooltip>
+        {layoutMode === "sidebar" ? (
+          <CloseAIAdvisorButton icon={X} className="xl:hidden" />
+        ) : null}
       </div>
       <AISettingsDialog
         open={openAISettings}

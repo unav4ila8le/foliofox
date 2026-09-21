@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { MoreHorizontal, Upload, Download, Archive } from "lucide-react";
+import { MoreHorizontal, Upload, Download, Archive, Tags } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -17,8 +17,10 @@ import { useImportPositionsDialog } from "@/components/dashboard/positions/impor
 
 export function TableActionsDropdown({
   positionsCount,
+  onManageTags,
 }: {
   positionsCount?: number;
+  onManageTags?: () => void;
 }) {
   const [showExportDialog, setShowExportDialog] = useState(false);
 
@@ -43,6 +45,11 @@ export function TableActionsDropdown({
           >
             <Download className="size-4" /> Export assets
           </DropdownMenuItem>
+          {onManageTags && (
+            <DropdownMenuItem onSelect={onManageTags}>
+              <Tags className="size-4" /> Manage tags
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem asChild>
             <Link href="/dashboard/assets/archived">
               <Archive className="size-4" /> View archived

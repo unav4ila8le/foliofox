@@ -18,6 +18,10 @@
   - app/api/ai/chat/route.ts (AI write-tool approval gating)
   - server/positions/stale.ts, components/dashboard/positions/asset/stale-badge.tsx (market-data status guidance)
   - lib/capital-gains-tax-rate.ts (tax rate input semantics)
+  - server/position-tags/, server/positions/update.ts (private tag actions and partial saves)
+  - components/dashboard/position-tags/, components/dashboard/positions/asset/table/ (tag controls and filtering)
+  - components/dashboard/positions/asset/update/ (draft tag edits)
+  - types/enums.ts (tag color presets)
   - types/database.types.ts Constants.public.Enums
   - VISION.md, README.md, AGENTS.md
 -->
@@ -71,6 +75,19 @@ Symbol-linked additions, imports, and ticker updates resolve only active Yahoo F
 
 - **Stale** means Foliofox has not received fresh market data for more than seven days. The last available value remains in use while daily refreshes continue.
 - **Market data unavailable** means Foliofox no longer has an active Yahoo Finance ticker for the linked symbol. Historical data and the last available value remain intact. Update the ticker if the security moved or was renamed; archive the position if it is no longer held.
+
+## Custom asset tags
+
+Tags are private labels for organizing assets, such as Dad, Retirement, or Technology. An asset can have multiple tags. Tags do not change categories, allocation charts, valuations, financial records, or snapshots.
+
+- The active-assets table has a Tags column after Name. It shows up to two labels and a `+N` count; open the searchable picker to see all tags. Adding or removing a tag here saves immediately. Controls wait for the saved result before showing the change.
+- The Tags column header opens the tag filter. An asset must carry **every** selected tag (AND); this combines with case-insensitive asset-name search. With no tags selected, only the name search applies. The header shows how many tags are active; counts show matching and total assets. Filtering preserves category grouping and sorting.
+- **Manage tags**, in the assets table’s actions menu and at the bottom of every tag picker, supports create, rename, recolor, and confirmed deletion. Typing a name that does not exist in a picker offers **Create “name”**, which opens the create dialog prefilled. Names are trimmed, required, unique per user ignoring case, and limited to 64 characters. The ten colors are neutral, red, orange, amber, green, teal, blue, indigo, violet, and pink; new tags default to blue. Deleting a tag removes its assignments, including on archived assets, but never deletes assets.
+- Select visible assets to **Add tags** or **Remove tags** in bulk. Other assignments are preserved. Changing filters or completing a bulk action clears selection.
+- **Edit details**, from the table or asset page, keeps tag assignments as drafts until **Save changes**. Tag-only edits enable saving. Cancel before submitting discards assignment edits. Creating a tag in the picker immediately saves its reusable name and color; its assignment still waits for Save changes.
+- Details and tags are saved in separate steps: details, tag additions, then removals. A later failure can leave earlier steps saved. The editor stays open, retains requested edits, explains the partial save, and offers **Retry**. If the response is lost, saved state must refresh before retrying. Cancel after a failed save does not undo changes already saved.
+- Archiving and restoring preserves tags. Filters are local page state. Tag filtering is available only on the active-assets table. Creation forms, imports, exports, public portfolios, and analytics do not include tags. Exports still include all active assets even when the table is filtered.
+- The AI advisor **cannot read or set tags** in this version. It can explain how to manage them in the UI.
 
 ## Portfolio records (buy / sell / update)
 
