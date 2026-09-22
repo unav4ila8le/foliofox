@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { cacheLife } from "next/cache";
+import { redirect } from "next/navigation";
 
 import { SidebarInset, SidebarProvider } from "@/components/ui/custom/sidebar";
 import { AIChatProvider } from "@/components/dashboard/ai-chat/provider";
@@ -15,6 +16,7 @@ import { PrivacyModeProvider } from "@/components/dashboard/providers/privacy-mo
 import { NetWorthModeProvider } from "@/components/dashboard/net-worth-mode/net-worth-mode-provider";
 
 import { fetchDashboardData } from "@/server/dashboard/fetch-dashboard-data";
+import { fetchProfile } from "@/server/profile/actions";
 import { TIME_ZONE_MODES } from "@/lib/date/time-zone";
 import {
   NET_WORTH_MODE_COOKIE_NAME,
@@ -43,6 +45,19 @@ export default async function Layout({
   const netWorthMode = parseNetWorthMode(
     cookieStore.get(NET_WORTH_MODE_COOKIE_NAME)?.value,
   );
+
+  // Gate before the heavy fetch. fetchProfile() is cache()-wrapped and
+  // fetchDashboardData() calls it internally, so this costs no extra query; it
+  // just avoids computing net worth and market-data statuses for someone about
+  // to be redirected. Safe inside "use cache: private": redirect() throws to
+  // interrupt rendering, and only a successful render is ever cached, so no
+  // stale "still onboarding" payload can exist. This layout already throws
+  // redirects this way, from getCurrentUser() when the session is missing.
+  // ponytail: if this ever bounces users back and forth, the fix is a
+  // short-lived cookie set by completeOnboarding() and read here, which works
+  // because cookies are part of the private cache key.
+  const { profile: gateProfile } = await fetchProfile();
+  if (!gateProfile.onboarding_completed_at) redirect("/onboarding");
 
   const dashboardData = await fetchDashboardData();
   const { profile } = dashboardData;

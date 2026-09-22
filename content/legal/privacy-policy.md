@@ -1,8 +1,8 @@
 ---
 title: "Privacy Policy"
 description: "How Foliofox collects, uses, stores, and shares personal information."
-effectiveDate: "2026-04-21"
-lastUpdated: "2026-04-21"
+effectiveDate: "2026-09-22"
+lastUpdated: "2026-09-22"
 ---
 
 Foliofox is operated by 주식회사 파운더스레어. This Privacy Policy explains what information we collect, how we use it, when we share it, and what choices you have.
@@ -13,7 +13,8 @@ We collect information you provide directly to us, including:
 
 - account information such as your email address, authentication data, and profile details like username, display currency, avatar, and time zone;
 - portfolio data such as positions, transactions, snapshots, financial planning inputs, and imported files or spreadsheets;
-- AI feature inputs, including prompts, messages, and files you submit when you use AI features after enabling AI-related consent;
+- financial profile details you choose to provide, such as age range, yearly income, risk preference, and any goals or context you write for the AI advisor;
+- AI feature inputs, including prompts, messages, and files you submit when you use AI features. AI data sharing is on by default for new accounts and can be turned off at any time in AI chat settings;
 - communication data such as feedback, support messages, and email preferences; and
 - usage data such as device, browser, log, cookie, and analytics information.
 
@@ -50,7 +51,7 @@ Foliofox uses cookies and similar technologies for authentication, security, lan
 
 ## AI Features
 
-If you enable AI-related consent and use AI features, the prompts, messages, and files you submit may be sent to OpenAI to generate responses. We may also store related conversation history and service metadata to operate, secure, and improve the feature experience inside Foliofox.
+AI data sharing is on by default for new accounts and can be turned off at any time in AI chat settings. When it is on and you use AI features, the prompts, messages, and files you submit may be sent to OpenAI to generate responses. Nothing is sent to OpenAI unless you use an AI feature. We may also store related conversation history and service metadata to operate, secure, and improve the feature experience inside Foliofox.
 
 ## Public Portfolio Sharing
 

@@ -60,7 +60,11 @@ export function AISettingsForm({ onSuccess }: AISettingsFormProps) {
         throw new Error(result.message);
       }
 
-      toast.success("AI data sharing consent updated successfully");
+      toast.success(
+        values.data_sharing_consent
+          ? "AI Advisor can now use your portfolio data"
+          : "AI Advisor will no longer use your portfolio data",
+      );
 
       // Close the dialog
       onSuccess?.();
@@ -68,7 +72,7 @@ export function AISettingsForm({ onSuccess }: AISettingsFormProps) {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Failed to update AI data sharing consent",
+          : "Failed to update AI Advisor data sharing",
       );
     } finally {
       setIsLoading(false);
@@ -100,13 +104,15 @@ export function AISettingsForm({ onSuccess }: AISettingsFormProps) {
                     className="data-[state=checked]:bg-green-500"
                   />
                   <FieldLabel htmlFor="data-sharing-consent">
-                    AI data sharing consent
+                    Share portfolio data with the AI Advisor
                   </FieldLabel>
                 </div>
                 <FieldDescription className="text-muted-foreground">
-                  Foliofox AI Advisor can provide more relevant answers if you
-                  choose to share different levels of data. This feature is
-                  powered by third-party AI providers.
+                  The advisor needs your portfolio data to answer questions
+                  about it. Nothing is sent until you use an AI feature, and it
+                  goes to our third-party AI provider to generate the response.
+                  New accounts start with this on. You can turn it off at any
+                  time.
                 </FieldDescription>
                 {fieldState.invalid && (
                   <FieldError errors={[fieldState.error]} />
