@@ -18,7 +18,7 @@ import type {
 } from "@/types/global.types";
 import type { MarketDataStatus } from "@/server/positions/stale";
 
-type DashboardDataValue = {
+export type DashboardDataValue = {
   profile: Profile;
   emailPreferences: EmailPreferences;
   email: string;

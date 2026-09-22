@@ -272,3 +272,25 @@ export async function touchLastAppActivity() {
     lastAppActivityAt: nextActivityTimestamp,
   };
 }
+
+/**
+ * Mark post-signup onboarding as done, whether the user finished or skipped.
+ * Null on this column is what routes the dashboard to /onboarding.
+ */
+export async function completeOnboarding() {
+  const { supabase, user } = await getCurrentUser();
+
+  // Keep the first completion timestamp; re-running is a no-op.
+  const { error } = await supabase
+    .from("profiles")
+    .update({ onboarding_completed_at: new Date().toISOString() })
+    .eq("user_id", user.id)
+    .is("onboarding_completed_at", null);
+
+  if (error) {
+    return { success: false as const, message: error.message };
+  }
+
+  revalidatePath("/dashboard", "layout");
+  return { success: true as const };
+}

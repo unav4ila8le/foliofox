@@ -12,7 +12,7 @@ import { useImportPositionsDialog } from "@/components/dashboard/positions/impor
 import type { ComponentType } from "react";
 import type { SelectionType } from "./index";
 
-function SelectionCard({
+export function SelectionCard({
   title,
   description,
   icon,
@@ -26,8 +26,9 @@ function SelectionCard({
   const Icon = icon;
 
   return (
-    <div
-      className="bg-card hover:bg-muted cursor-default space-y-3 rounded-md border p-4"
+    <button
+      type="button"
+      className="bg-card hover:bg-muted focus-visible:border-ring focus-visible:ring-ring/50 w-full space-y-3 rounded-md border p-4 text-left outline-none focus-visible:ring-3"
       onClick={onClick}
     >
       <div className="flex items-center justify-between gap-2">
@@ -35,7 +36,7 @@ function SelectionCard({
         <Icon className="size-4.5" />
       </div>
       <p className="text-muted-foreground text-sm">{description}</p>
-    </div>
+    </button>
   );
 }
 

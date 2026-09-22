@@ -804,6 +804,7 @@ export type Database = {
           data_sharing_consent: boolean
           display_currency: string
           last_app_activity_at: string | null
+          onboarding_completed_at: string | null
           time_zone: string
           time_zone_mode: string
           updated_at: string
@@ -816,6 +817,7 @@ export type Database = {
           data_sharing_consent?: boolean
           display_currency?: string
           last_app_activity_at?: string | null
+          onboarding_completed_at?: string | null
           time_zone?: string
           time_zone_mode?: string
           updated_at?: string
@@ -828,6 +830,7 @@ export type Database = {
           data_sharing_consent?: boolean
           display_currency?: string
           last_app_activity_at?: string | null
+          onboarding_completed_at?: string | null
           time_zone?: string
           time_zone_mode?: string
           updated_at?: string

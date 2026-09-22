@@ -10,6 +10,8 @@
   - public/sample-positions-template.csv, public/sample-records-template.csv
   - lib/import/broker-transactions/registry.ts + adapters/ (supported brokers)
   - components/dashboard/new-asset/forms/ (add-asset paths + field rules)
+  - app/onboarding/page.tsx, components/features/onboarding/ (post-signup onboarding)
+  - server/profile/actions.ts (onboarding completion, AI data sharing)
   - server/symbols/create.ts, server/symbols/resolve.ts (active listing resolution + ticker reuse)
   - server/positions/create.ts, server/positions/import.ts, server/positions/update-symbol.ts (symbol association)
   - components/dashboard/new-portfolio-record/forms/ (buy/sell/update rules)
@@ -38,6 +40,18 @@ Market prices and FX rates refresh once daily (plus manual updates). There are n
 
 The AI advisor has three modes: **Educational** (explains concepts), **Advisory** (suggests plans and trade-offs), and **Unhinged** (challenges assumptions).
 
+Sharing portfolio data with the advisor is **on by default for new accounts** and can be turned off at any time in AI chat settings. Nothing is sent to the AI provider unless you actually use an AI feature. Accounts created before this default changed keep whatever they had set.
+
+## Onboarding
+
+New accounts start in a four-step setup at `/onboarding`: base currency and age, income and risk preference, an open question about goals and context, and adding a first position.
+
+- The whole flow is skippable, and every question inside it is optional. "Continue" doubles as skip, and "Skip setup" leaves at any point.
+- Base currency is the only field that materially matters. It is prefilled with `USD` and can be changed later in Settings → Account.
+- The financial profile answers feed the AI advisor and stay editable from the user menu under Financial profile.
+- Onboarding is shown once. Skipping it does not re-prompt, and accounts that existed before onboarding shipped never see it.
+- The first-position step offers the same paths as the rest of the app, and adding one position finishes setup and moves you to the dashboard.
+
 ## Core data model
 
 - **Positions** — the things you hold. Each position has a name, category, currency, and either a linked market symbol (auto-priced) or manual values. Positions are managed under Dashboard → Assets.
@@ -50,6 +64,8 @@ Two ways to add an asset:
 
 1. **Symbol search** — search a ticker or ISIN (Yahoo Finance data). The current price is fetched automatically, so you only enter quantity and, optionally, cost basis per unit. Currency is set by the symbol's listing.
 2. **Manual entry** — for anything without a market symbol (cash, real estate, collectibles, private equity). You enter quantity and unit value yourself.
+
+New accounts see these same paths, plus CSV/AI import and broker import, in the last step of onboarding.
 
 **Domains (sunset 2026-09-22).** New domain positions with automatic valuation can no longer be added. Positions already tracked as domains keep that automatic valuation and otherwise work as before. To track a new domain, add it as a custom asset and enter the value yourself. The Domains category is still available for that.
 
