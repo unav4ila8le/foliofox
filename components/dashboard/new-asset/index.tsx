@@ -32,13 +32,17 @@ const SelectionDialog = dynamic(
 function NewAssetSelectionSkeleton() {
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-      {Array.from({ length: 4 }, (_, index) => (
+      {/* Sunset 2026-09-22: was 4 while the Domains card was offered. */}
+      {Array.from({ length: 3 }, (_, index) => (
         <Skeleton key={index} className="h-21 sm:h-31" />
       ))}
     </div>
   );
 }
 
+// "domain" stays in the union so the commented Domains card can be restored
+// without a type change. Nothing sets it while that card is commented out.
+// Sunset 2026-09-22.
 export type SelectionType = "symbol" | "domain" | "custom";
 
 type NewAssetDialogContextType = {

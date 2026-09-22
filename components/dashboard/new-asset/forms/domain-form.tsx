@@ -1,5 +1,10 @@
 "use client";
 
+// Sunset 2026-09-22: not mounted. New domain positions are closed; positions
+// that already have domain_id keep HumbleWorth valuation. Restore by
+// uncommenting the Domains card in selection-dialog.tsx, the DomainForm
+// branch in form-dialog.tsx, and the domain_id guard in server/positions/create.ts.
+
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";

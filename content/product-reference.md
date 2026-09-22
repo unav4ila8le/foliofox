@@ -46,11 +46,18 @@ The AI advisor has three modes: **Educational** (explains concepts), **Advisory*
 
 ## Adding an asset
 
-Three ways to add an asset:
+Two ways to add an asset:
 
 1. **Symbol search** — search a ticker or ISIN (Yahoo Finance data). The current price is fetched automatically, so you only enter quantity and, optionally, cost basis per unit. Currency is set by the symbol's listing.
 2. **Manual entry** — for anything without a market symbol (cash, real estate, collectibles, private equity). You enter quantity and unit value yourself.
+
+**Domains (sunset 2026-09-22).** New domain positions with automatic valuation can no longer be added. Positions already tracked as domains keep that automatic valuation and otherwise work as before. To track a new domain, add it as a custom asset and enter the value yourself. The Domains category is still available for that.
+
+<!--
+Sunset 2026-09-22. Historical copy only — do not offer this. Restore with the
+Domains card in components/dashboard/new-asset/selection-dialog.tsx:
 3. **Domain** — track a web domain as an asset, with an optional automatic valuation estimate.
+-->
 
 ### Field meanings
 
@@ -131,7 +138,7 @@ Canonical columns:
 | `category_id`            | no                  | Defaults to `other` if missing or unrecognized                                                                                                                              |
 | `description`            | no                  | Free-form note (also accepts a `notes` column)                                                                                                                              |
 
-Categories: `cash`, `equity`, `fixed_income`, `real_estate`, `cryptocurrency`, `commodities`, `domain`, `other`. Everyday terms are mapped automatically ("stocks"/"ETF" → equity, "bonds" → fixed_income, "REIT" → real_estate, "bitcoin" → cryptocurrency, "gold" → commodities); anything unrecognized falls back to `other`.
+Categories: `cash`, `equity`, `fixed_income`, `real_estate`, `cryptocurrency`, `commodities`, `domain`, `other`. Everyday terms are mapped automatically ("stocks"/"ETF" → equity, "bonds" → fixed_income, "REIT" → real_estate, "bitcoin" → cryptocurrency, "gold" → commodities); anything unrecognized falls back to `other`. `domain` is a category label only. Import does not attach automatic domain valuation; that create path was sunset on 2026-09-22.
 
 Import behaviors worth knowing:
 

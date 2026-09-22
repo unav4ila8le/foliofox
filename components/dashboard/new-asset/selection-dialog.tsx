@@ -1,4 +1,9 @@
-import { ChartLine, Globe, PencilLine, Sparkles } from "lucide-react";
+import {
+  ChartLine,
+  // Globe, // Sunset 2026-09-22: Domains card below is commented out.
+  PencilLine,
+  Sparkles,
+} from "lucide-react";
 
 import { FormDialog } from "./form-dialog";
 import { useNewAssetDialog } from "./index";
@@ -52,12 +57,18 @@ export function SelectionDialog() {
           icon={ChartLine}
           onClick={() => handleSelect("symbol")}
         />
+        {/*
+          Sunset 2026-09-22: new domain positions are closed. Positions that
+          already have domain_id keep HumbleWorth valuation. To restore,
+          uncomment this card, the DomainForm branch in form-dialog.tsx, and
+          the domain_id guard in server/positions/create.ts.
         <SelectionCard
           title="Domains"
           description="Check for your domains valuation and track them in your portfolio"
           icon={Globe}
           onClick={() => handleSelect("domain")}
         />
+        */}
         <SelectionCard
           title="Custom"
           description="Enter quantity and value to add a custom asset to your portfolio"

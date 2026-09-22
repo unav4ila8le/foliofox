@@ -65,6 +65,20 @@ export async function createPosition(formData: FormData) {
   let symbolUuid: string | null = null;
   const domainId = (formData.get("domain_id") as string) || null;
 
+  // Sunset 2026-09-22: new domain positions are closed. Existing rows with
+  // domain_id keep HumbleWorth valuation through the domain market-data
+  // handler. The insert below still writes domainId, which is null once this
+  // guard passes. To restore, delete this guard and uncomment the Domains
+  // card plus the DomainForm branch.
+  if (domainId) {
+    return {
+      success: false,
+      code: "INVALID_INPUT",
+      message:
+        "Domain positions can no longer be added. Existing domain positions are unchanged.",
+    } as const;
+  }
+
   // Optional idempotency key (AI-approved writes): a retried approval
   // continuation re-sends the same key; the replay paths below turn the
   // duplicate create into a success for the already-committed position.
