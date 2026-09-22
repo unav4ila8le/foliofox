@@ -14,14 +14,8 @@ import { DashboardDialogsProvider } from "@/components/dashboard/providers/dashb
 import { PrivacyModeProvider } from "@/components/dashboard/providers/privacy-mode-provider";
 import { NetWorthModeProvider } from "@/components/dashboard/net-worth-mode/net-worth-mode-provider";
 
-import { fetchProfile } from "@/server/profile/actions";
-import { fetchEmailPreferences } from "@/server/email-preferences/actions";
-import { fetchFinancialProfile } from "@/server/financial-profiles/actions";
-import { calculateNetWorth } from "@/server/analysis/net-worth/net-worth";
-import { fetchMarketDataStatuses } from "@/server/positions/stale";
-import { hasActivePositions } from "@/server/positions/has-active";
+import { fetchDashboardData } from "@/server/dashboard/fetch-dashboard-data";
 import { TIME_ZONE_MODES } from "@/lib/date/time-zone";
-import { resolveTodayDateKey } from "@/lib/date/date-utils";
 import {
   NET_WORTH_MODE_COOKIE_NAME,
   parseNetWorthMode,
@@ -50,38 +44,11 @@ export default async function Layout({
     cookieStore.get(NET_WORTH_MODE_COOKIE_NAME)?.value,
   );
 
-  // 1) Resolve profile first because downstream analytics/valuation use profile context.
-  const { profile, email } = await fetchProfile();
-  const todayDateKey = resolveTodayDateKey(profile.time_zone);
-
-  // 2) Keep the dashboard path fully data-driven; timezone auto-sync happens in
-  // the background for auto-mode users without introducing a visible gate.
-  const [
-    emailPreferences,
-    financialProfile,
-    netWorth,
-    marketDataStatuses,
-    hasPositions,
-  ] = await Promise.all([
-    fetchEmailPreferences(),
-    fetchFinancialProfile(),
-    calculateNetWorth(profile.display_currency, todayDateKey),
-    fetchMarketDataStatuses(),
-    hasActivePositions(),
-  ]);
+  const dashboardData = await fetchDashboardData();
+  const { profile } = dashboardData;
 
   return (
-    <DashboardDataProvider
-      value={{
-        profile,
-        emailPreferences,
-        email,
-        financialProfile,
-        netWorth,
-        hasActivePositions: hasPositions,
-        marketDataStatuses,
-      }}
-    >
+    <DashboardDataProvider value={dashboardData}>
       <SidebarProvider
         defaultOpen={defaultOpenLeft}
         defaultOpenRight={defaultOpenRight}
