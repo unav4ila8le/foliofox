@@ -180,9 +180,12 @@ export function AboutField({
   control,
   label = "What should the AI know about you?",
   description = "Describe any personal preferences, constraints, or context the AI should consider when running financial analysis, generating insights, or explaining decisions.",
+  rows,
 }: FinancialProfileFieldProps & {
   label?: ReactNode;
   description?: ReactNode;
+  /** Minimum visible lines. The textarea still grows past this as you type. */
+  rows?: number;
 }) {
   return (
     <Controller
@@ -194,6 +197,12 @@ export function AboutField({
           <Textarea
             id={field.name}
             placeholder="E.g., saving for a home, avoiding crypto, big purchase soon, etc."
+            // Textarea sets field-sizing:content, which sizes to the text and
+            // ignores `rows`. Raise the floor instead, in the element's own line
+            // heights plus its py-2 and border, so it holds at any font size.
+            style={
+              rows ? { minHeight: `calc(${rows}lh + 1rem + 2px)` } : undefined
+            }
             aria-invalid={fieldState.invalid}
             {...field}
             value={field.value ?? ""}
