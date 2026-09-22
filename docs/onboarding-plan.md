@@ -229,7 +229,17 @@ Note that the unit test in Phase 4 mocks this step away, so manual check 6 is wh
 
 Footer: **Go to dashboard** (primary) calling `exitOnboarding()`.
 
-Deliberately not built: `createPosition` and the import actions call `revalidatePath("/dashboard", "layout")`, which does not revalidate `/onboarding`, and none of those forms call `router.refresh()`. So step 4 shows no live "1 position added" counter — the existing sonner toast is the confirmation. Plumbing revalidation through four server actions for a cosmetic counter is not worth it; that is also why the exit is an explicit button rather than auto-advance.
+**Leave as soon as the first position exists.** Revised during Phase 3, reversing the plan's original "explicit button, no auto-advance" call. Helping with the first position is the whole job of this step, so once one lands the step calls `exitOnboarding()` itself and the user goes to a dashboard that is no longer empty. "Go to dashboard" stays for anyone who adds nothing.
+
+None of the four forms expose a success callback, and on success they set both `openFormDialog` and `openSelectionDialog` to false — but cancel sets the first too, and in onboarding the second is already false, so dialog state cannot tell success from cancel. Instead `FirstPositionStep` refetches on close and watches `hasActivePositions`:
+
+- `createPosition` and the import actions only `revalidatePath("/dashboard", "layout")`, so closing any of the four dialogs calls `refreshDashboardData()`. `/onboarding` is uncached, so the refetch sees the new row. A cancelled dialog costs one refetch and nothing else.
+- Two refs guard it. `hadPositionsOnMount` means only a false-to-true transition counts, so a returning user who already has positions is not thrown out before seeing the cards. `hasLeft` stops the effect re-firing, since `exitOnboarding` is not memoized.
+- The watched set includes the import dialog's `reviewOpen`: the CSV path creates positions from the review dialog, so watching only `open` would miss it.
+
+The accepted cost: someone adding holdings by hand is taken to the dashboard after the first one rather than being able to add three in a row. The dashboard offers the same paths, and the step is named "first position".
+
+Still not built: a live "1 position added" counter. The existing sonner toast is the confirmation.
 
 Also not built, flagged rather than bundled: CSV+AI and broker import get one card each rather than separate cards per tab, since the import dialog's own tabs disambiguate one level down. No `defaultTab` prop on `import-dialog-body.tsx`, no exported `BrokerImportButton`.
 
@@ -325,7 +335,7 @@ Manual pass, run by the user:
 4. Reload `/onboarding` directly — redirects to `/dashboard`.
 5. Fresh signup, answer step 1, close the tab. Log back in — returns to `/onboarding` with the age band prefilled.
 6. **Income-currency ordering.** In one run: on step 1 pick an age band _and_ change the base currency to EUR, Continue, then check the stored row shows `income_currency = 'EUR'` (not the old `USD`). In a second run: set income currency to GBP on step 2, go back to step 1 and change the base currency again — GBP must survive.
-7. Fresh signup, reach step 4, exercise each of the four cards; confirm the symbol form, custom form, import dialog and broker dialog all open and create positions. This is the only coverage of the `FormDialog` mount — the unit test mocks the step away.
+7. Fresh signup, reach step 4, exercise each of the four cards; confirm the symbol form, custom form, import dialog and broker dialog all open and create positions, and that creating one completes onboarding and lands you on `/dashboard` with the position visible. This is the only coverage of the `FormDialog` mount — the unit test mocks the step away.
 8. An existing account logs in — straight to `/dashboard`, never onboarding (Phase 0 backfill).
 9. New signup — AI Advisor works without visiting settings; an existing account with consent off still sees `DisabledState`.
 

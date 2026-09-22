@@ -19,6 +19,7 @@ import {
   IncomeFields,
   RiskPreferenceField,
 } from "@/components/features/financial-profile/fields";
+import { FirstPositionStep } from "@/components/features/onboarding/first-position-step";
 import {
   financialProfileFormSchema,
   toFinancialProfileFormData,
@@ -241,11 +242,8 @@ export function OnboardingFlow() {
               />
             )}
 
-            {/* ponytail: Phase 3 replaces this with the four entry-point cards. */}
             {step === LAST_STEP && (
-              <p className="text-muted-foreground text-sm">
-                The add-position cards land in the next phase.
-              </p>
+              <FirstPositionStep onPositionAdded={exitOnboarding} />
             )}
           </div>
         </DialogBody>
