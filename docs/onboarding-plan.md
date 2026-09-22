@@ -1,12 +1,17 @@
 # Post-Signup Onboarding Plan
 
+> **Shipped 2026-09-22.** All five phases are implemented and the nine manual
+> checks below passed. Kept as the record of what was built and why; the phase
+> gates and stop criteria are history, not instructions. User-facing behavior
+> lives in `content/product-reference.md`.
+
 ## Summary
 
 Add a skippable, four-step onboarding at `/onboarding` that runs once after signup. It fills the account's base currency and the existing `financial_profiles` record, then hands the user into the existing add-position paths.
 
 Alongside it, `profiles.data_sharing_consent` flips to default `true` for **new accounts only**, so the AI Advisor works out of the box.
 
-Every phase below must stop after completion and wait for explicit user approval before continuing.
+Each phase stopped for explicit approval before the next one started.
 
 ## Context
 
