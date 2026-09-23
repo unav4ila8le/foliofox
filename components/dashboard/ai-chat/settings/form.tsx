@@ -108,11 +108,9 @@ export function AISettingsForm({ onSuccess }: AISettingsFormProps) {
                   </FieldLabel>
                 </div>
                 <FieldDescription className="text-muted-foreground">
-                  The advisor needs your portfolio data to answer questions
-                  about it. Nothing is sent until you use an AI feature, and it
-                  goes to our third-party AI provider to generate the response.
-                  New accounts start with this on. You can turn it off at any
-                  time.
+                  Foliofox AI Advisor can provide more relevant answers if you
+                  choose to share different levels of data. This feature is
+                  powered by third-party AI providers.
                 </FieldDescription>
                 {fieldState.invalid && (
                   <FieldError errors={[fieldState.error]} />

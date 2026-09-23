@@ -275,8 +275,6 @@ The fallback, if it happens: a short-lived `ff_onboarding_done` cookie set by `c
 
 `components/dashboard/ai-chat/settings/form.tsx`: the label "AI data sharing consent" is what users called scary. Rename the label and toast copy to describe the feature ("Share portfolio data with the AI Advisor"). The column name `data_sharing_consent` does not change.
 
-The description **cannot** say "this is on" — for an existing user reading that dialog it is off. Word it for both audiences: _"New accounts start with this on. You can turn it off at any time."_
-
 Two related decisions to make deliberately rather than by omission:
 
 - An existing user who opens the advisor with the flag off already gets `components/dashboard/ai-chat/disabled-state.tsx`, whose "Enable AI Advisor" button opens this same dialog. That is a reasonable path, and it is the point of not backfilling — those portfolios stay out of OpenAI until someone opts them in.
