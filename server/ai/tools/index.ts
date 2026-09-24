@@ -31,8 +31,17 @@ import { createPortfolioRecord } from "./create-portfolio-record";
 import { createPosition } from "./create-position";
 import { getPositionCategories } from "./position-categories";
 import { normalizeAIBaseCurrency } from "./helpers/base-currency";
+import { fetchPositionTags } from "@/server/position-tags/fetch";
+import {
+  addPositionTags,
+  createPositionTag,
+  deletePositionTag,
+  removePositionTags,
+  updatePositionTag,
+} from "@/server/position-tags/actions";
 
 import { toCivilDateKey } from "@/lib/date/date-utils";
+import { POSITION_TAG_COLORS } from "@/types/enums";
 
 // Write-tool dates must be real calendar dates (rejects e.g. 2026-02-30);
 // validation errors surface to the model for a retry before the approval card.
@@ -41,6 +50,17 @@ const writeDateKeySchema = z
   .refine((value) => toCivilDateKey(value) !== null, {
     error: "Must be a real date in YYYY-MM-DD format.",
   });
+
+// Non-empty UUID lists keep tickers, tag names, and no-op writes from
+// reaching the approval card.
+const uuidListSchema = z.array(z.uuid()).min(1);
+
+const TAG_ID = "Tag UUID from getPositionTags (id). Never pass a tag name.";
+const TAG_IDS = "Tag UUIDs from getPositionTags (id). Never pass tag names.";
+const POSITION_IDS =
+  "Asset UUIDs from getPositions (positions[].id). Never pass tickers or names.";
+const TAG_TARGETS_NOTE =
+  "Assets only: liabilities cannot be tagged. An 'unavailable or do not belong to you' failure means a target is a liability or an id is stale; re-check ids with getPositions/getPositionTags and never substitute a different position.";
 
 const baseCurrencySchema = z
   .string()
@@ -564,5 +584,105 @@ export const aiTools = {
     // instead of a duplicate position (unique index on idempotency_key).
     execute: async (args, { toolCallId }) =>
       createPosition({ ...args, idempotencyKey: toolCallId }),
+  }),
+
+  getPositionTags: routedTool({
+    telemetryRoutes: ["general"],
+    description:
+      "List the user's private asset tags (e.g., account types like TFSA or RRSP). Call this before any tag write to get tag ids and current names/colors. Returns: id, name, color.",
+    inputSchema: z.object({}),
+    execute: async () =>
+      (await fetchPositionTags()).map(({ id, name, color }) => ({
+        id,
+        name,
+        color,
+      })),
+  }),
+
+  createPositionTag: routedTool({
+    telemetryRoutes: ["write"],
+    description:
+      "Create a new private asset tag. Check getPositionTags first and reuse an existing tag instead of creating a near-duplicate. This modifies the user's portfolio and always requires the user's explicit approval in the chat UI before executing. Returns { success, tag } or { success: false, code, message }.",
+    inputSchema: z.object({
+      summary: z
+        .string()
+        .describe(
+          "One-line human-readable description of the action, shown on the user's approval card. Example: 'Create tag TFSA (blue)'.",
+        ),
+      name: z
+        .string()
+        .describe("Tag name, unique per user ignoring case, max 64 chars."),
+      color: z
+        .enum(POSITION_TAG_COLORS)
+        .nullable()
+        .describe("Tag color. Leave empty for 'blue'."),
+    }),
+    execute: async ({ name, color }) =>
+      createPositionTag({ name, color: color ?? undefined }),
+  }),
+
+  updatePositionTag: routedTool({
+    telemetryRoutes: ["write"],
+    description:
+      "Rename and/or recolor an existing tag. Both name and color are always saved: copy the unchanged field exactly from getPositionTags. This modifies the user's portfolio and always requires the user's explicit approval in the chat UI before executing. Returns { success, tag } or { success: false, code, message }.",
+    inputSchema: z.object({
+      summary: z
+        .string()
+        .describe(
+          "One-line human-readable description of the action, shown on the user's approval card. Example: 'Rename tag Non Reg → Taxable'.",
+        ),
+      tagId: z.uuid().describe(TAG_ID),
+      name: z.string().describe("New (or unchanged) tag name."),
+      color: z.enum(POSITION_TAG_COLORS).describe("New (or unchanged) color."),
+    }),
+    execute: async ({ tagId, name, color }) =>
+      updatePositionTag({ id: tagId, name, color }),
+  }),
+
+  deletePositionTag: routedTool({
+    telemetryRoutes: ["write"],
+    description:
+      "Delete a tag and remove it from every asset (assets themselves are kept). This modifies the user's portfolio and always requires the user's explicit approval in the chat UI before executing. Returns { success } or { success: false, code, message }.",
+    inputSchema: z.object({
+      summary: z
+        .string()
+        .describe(
+          "One-line human-readable description of the action, shown on the user's approval card. Example: 'Delete tag Old (removes it from 4 assets)'.",
+        ),
+      tagId: z.uuid().describe(TAG_ID),
+    }),
+    execute: async ({ tagId }) => deletePositionTag(tagId),
+  }),
+
+  addPositionTags: routedTool({
+    telemetryRoutes: ["write"],
+    description: `Add tags to assets; other tags on those assets are kept. ${TAG_TARGETS_NOTE} This modifies the user's portfolio and always requires the user's explicit approval in the chat UI before executing. Returns { success } or { success: false, code, message }.`,
+    inputSchema: z.object({
+      summary: z
+        .string()
+        .describe(
+          "One-line human-readable description of the action, shown on the user's approval card. Example: 'Tag Enbridge Inc., AMZN.TO as TFSA'.",
+        ),
+      positionIds: uuidListSchema.describe(POSITION_IDS),
+      tagIds: uuidListSchema.describe(TAG_IDS),
+    }),
+    execute: async ({ positionIds, tagIds }) =>
+      addPositionTags({ positionIds, tagIds }),
+  }),
+
+  removePositionTags: routedTool({
+    telemetryRoutes: ["write"],
+    description: `Remove tags from assets; the tags themselves are kept. ${TAG_TARGETS_NOTE} This modifies the user's portfolio and always requires the user's explicit approval in the chat UI before executing. Returns { success } or { success: false, code, message }.`,
+    inputSchema: z.object({
+      summary: z
+        .string()
+        .describe(
+          "One-line human-readable description of the action, shown on the user's approval card. Example: 'Remove tag RRSP from Enbridge'.",
+        ),
+      positionIds: uuidListSchema.describe(POSITION_IDS),
+      tagIds: uuidListSchema.describe(TAG_IDS),
+    }),
+    execute: async ({ positionIds, tagIds }) =>
+      removePositionTags({ positionIds, tagIds }),
   }),
 };

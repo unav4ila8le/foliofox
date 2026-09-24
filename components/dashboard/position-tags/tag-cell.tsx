@@ -57,7 +57,8 @@ export function TagCell({
         onChange={change}
         label={tagIds.length ? `Edit tags for ${name}` : "Add tags"}
         pending={pending}
-        compact
+        variant="ghost"
+        size="sm"
         quietWhenEmpty
       />
       {error && (

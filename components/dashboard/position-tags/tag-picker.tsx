@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { type ComponentProps, useId, useState } from "react";
 import { Plus, Tags } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,17 +20,17 @@ import { TagEditorDialog } from "./tag-editor-dialog";
 import { usePositionTags } from "./provider";
 import type { PositionTag } from "@/server/position-tags/types";
 
-interface TagPickerProps {
+interface TagPickerProps extends Omit<
+  ComponentProps<typeof Button>,
+  "children" | "type" | "asChild" | "onChange"
+> {
   selectedIds: string[];
   onChange: (ids: string[]) => void | Promise<void>;
   label?: string;
   icon?: React.ReactNode;
-  className?: string;
-  disabled?: boolean;
   pending?: boolean;
   // Offer `Create "name"` when the search matches no existing tag.
   allowCreate?: boolean;
-  compact?: boolean;
   // Fade the trigger until its table row is hovered or focused.
   quietWhenEmpty?: boolean;
   // Show the label and a count instead of the selected badges.
@@ -46,9 +46,9 @@ export function TagPicker({
   disabled,
   pending,
   allowCreate = true,
-  compact,
   quietWhenEmpty,
   hideSelection,
+  ...buttonProps
 }: TagPickerProps) {
   const state = usePositionTags();
   const id = useId();
@@ -88,8 +88,8 @@ export function TagPicker({
         <PopoverTrigger asChild>
           <Button
             type="button"
-            variant={compact ? "ghost" : "outline"}
-            size="sm"
+            variant="outline"
+            {...buttonProps}
             disabled={isDisabled}
             aria-label={label}
             className={cn(

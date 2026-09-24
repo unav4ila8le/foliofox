@@ -6,7 +6,16 @@ import { isStaticToolUIPart, type UIMessage } from "ai";
 export const AI_WRITE_TOOL_NAMES: ReadonlySet<string> = new Set([
   "createPortfolioRecord",
   "createPosition",
+  "createPositionTag",
+  "updatePositionTag",
+  "deletePositionTag",
+  "addPositionTags",
+  "removePositionTags",
 ]);
+
+// Window event fired by the chat after an approved write succeeds, for client
+// state that router.refresh() cannot reach (e.g. the tag provider).
+export const AI_WRITE_COMMITTED_EVENT = "foliofox:ai-write-committed";
 
 const WRITE_TOOL_PART_TYPES: ReadonlySet<string> = new Set(
   [...AI_WRITE_TOOL_NAMES].map((toolName) => `tool-${toolName}`),

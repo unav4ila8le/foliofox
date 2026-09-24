@@ -40,7 +40,10 @@ import { DisabledState } from "./disabled-state";
 import { ChatSuggestions } from "./suggestions";
 import { ChatThread } from "./thread";
 import type { ChatProps } from "./types";
-import { hasSuccessfulWriteToolPart } from "@/lib/ai/write-tools";
+import {
+  AI_WRITE_COMMITTED_EVENT,
+  hasSuccessfulWriteToolPart,
+} from "@/lib/ai/write-tools";
 
 import { hasPendingApprovalRequest } from "./utils";
 
@@ -323,6 +326,7 @@ export function Chat({
       // Approved writes changed portfolio data: re-pull the RSC dashboard.
       if (hasSuccessfulWriteToolPart(message.parts)) {
         router.refresh();
+        window.dispatchEvent(new Event(AI_WRITE_COMMITTED_EVENT));
       }
       await onConversationPersisted?.();
     },

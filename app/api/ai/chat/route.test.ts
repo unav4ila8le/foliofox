@@ -522,6 +522,11 @@ describe("POST /api/ai/chat", () => {
           toolApproval: {
             createPortfolioRecord: "user-approval",
             createPosition: "user-approval",
+            createPositionTag: "user-approval",
+            updatePositionTag: "user-approval",
+            deletePositionTag: "user-approval",
+            addPositionTags: "user-approval",
+            removePositionTags: "user-approval",
           },
           experimental_toolApprovalSecret: "test-approval-secret",
         }),

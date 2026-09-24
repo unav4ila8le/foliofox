@@ -110,7 +110,7 @@ Tags are private labels for organizing assets, such as Dad, Retirement, or Techn
 - **Edit details**, from the table or asset page, keeps tag assignments as drafts until **Save changes**. Tag-only edits enable saving. Cancel before submitting discards assignment edits. Creating a tag in the picker immediately saves its reusable name and color; its assignment still waits for Save changes.
 - Details and tags are saved in separate steps: details, tag additions, then removals. A later failure can leave earlier steps saved. The editor stays open, retains requested edits, explains the partial save, and offers **Retry**. If the response is lost, saved state must refresh before retrying. Cancel after a failed save does not undo changes already saved.
 - Archiving and restoring preserves tags. Filters are local page state. Tag filtering is available only on the active-assets table. Creation forms, imports, exports, public portfolios, and analytics do not include tags. Exports still include all active assets even when the table is filtered.
-- The AI advisor can **read** each asset's tags (via its positions data) but **cannot set** them in this version. It can explain how to manage them in the UI.
+- The AI advisor can read each asset's tags, and can create, rename, recolor, and delete tags and add or remove them on assets. Every tag change requires your approval in the chat, like other advisor writes.
 
 ## Portfolio records (buy / sell / update)
 

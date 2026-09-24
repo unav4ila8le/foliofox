@@ -117,8 +117,7 @@ const columns: ColumnDef<AssetTableRow>[] = [
           onChange={(ids) => onTagFilterChange?.(ids)}
           label="Tags"
           icon={<ListFilter data-icon="inline-start" />}
-          allowCreate={false}
-          compact
+          variant="ghost"
           hideSelection
         />
       );

@@ -280,6 +280,11 @@ export async function POST(req: Request) {
     toolApproval: {
       createPortfolioRecord: "user-approval",
       createPosition: "user-approval",
+      createPositionTag: "user-approval",
+      updatePositionTag: "user-approval",
+      deletePositionTag: "user-approval",
+      addPositionTags: "user-approval",
+      removePositionTags: "user-approval",
     },
     experimental_toolApprovalSecret: toolApprovalSecret,
     ...chatGenerationOptions,

@@ -11,6 +11,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { AI_WRITE_COMMITTED_EVENT } from "@/lib/ai/write-tools";
 import {
   fetchPositionTags,
   fetchPositionTagAssignments,
@@ -98,6 +99,13 @@ export function PositionTagsProvider({
       cancelled = true;
     };
   }, [initialData, read]);
+  useEffect(() => {
+    // Advisor tag writes happen outside this provider; re-read after each one.
+    const onAIWrite = () => void refresh().catch(() => {});
+    window.addEventListener(AI_WRITE_COMMITTED_EVENT, onAIWrite);
+    return () =>
+      window.removeEventListener(AI_WRITE_COMMITTED_EVENT, onAIWrite);
+  }, [refresh]);
   return (
     <TagContext.Provider value={{ data, isRefreshing, error, refresh }}>
       {children}

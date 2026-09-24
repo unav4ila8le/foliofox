@@ -213,13 +213,16 @@ Objective: let users update portfolio data directly from chat with explicit appr
   (new asset/liability), thin wrappers over the shared form/import mutations
   (`server/portfolio-records/create.ts`, `server/positions/create.ts`).
 - Companion read tool `getPositionCategories` so the model picks valid category ids.
+- Tag tools `createPositionTag`, `updatePositionTag`, `deletePositionTag`, `addPositionTags`,
+  `removePositionTags`, calling the shared `server/position-tags/actions.ts` directly,
+  with companion read tool `getPositionTags` for tag ids.
 - Explicit typed inputs including a mandatory `summary` string rendered on the approval card.
-- Deletes/archives, record edits, and imports stay out of scope (dashboard only).
+- Position/record deletes, archives, record edits, and imports stay out of scope (dashboard only).
 
 ### Workstream B: Approval Flow — DONE (SDK-native)
 
-- `toolApproval: { createPortfolioRecord: 'user-approval', createPosition: 'user-approval' }`
-  in the chat route; the model's tool call pauses the turn with an approval request.
+- `toolApproval: { createPortfolioRecord: 'user-approval', createPosition: 'user-approval', ... }`
+  (every tool in `AI_WRITE_TOOL_NAMES`) in the chat route; the model's tool call pauses the turn with an approval request.
 - AI Elements `Confirmation` card shows the summary with Approve/Deny;
   `addToolApprovalResponse` + `sendAutomaticallyWhen` resume the turn, which continues
   into the same assistant message (persistence upserts, telemetry dedupes).
