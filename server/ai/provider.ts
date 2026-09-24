@@ -62,8 +62,9 @@ export const aiModel = (id: string): LanguageModel => {
 export const openaiWebSearchTool = () => openAIProvider.tools.webSearch();
 
 // Centralize AI model ids and generation knobs.
-export const chatModelId = "gpt-5.6-luna";
-export const extractionModelId = "gpt-5.6-luna";
+const DEFAULT_MODEL_ID = "gpt-6-luna";
+export const chatModelId = DEFAULT_MODEL_ID;
+export const extractionModelId = DEFAULT_MODEL_ID;
 
 export const chatGenerationOptions = {
   reasoning: "high",

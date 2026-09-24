@@ -16,6 +16,8 @@ Turn Foliofox AI Advisor into a faster, more conversational, portfolio-native de
 Source: `Last 300 Conversation Messages as of 2026-02-27 02:20 UTC`  
 Columns: `id, conversation_id, role, content, model`
 
+Model names below identify historical samples, not the current configuration. Current model selection is centralized in `server/ai/provider.ts`.
+
 ### Snapshot
 
 - Messages: 300

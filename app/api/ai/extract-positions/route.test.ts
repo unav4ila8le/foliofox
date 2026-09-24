@@ -17,7 +17,7 @@ vi.mock("@/server/ai/provider", () => ({
   extractionGenerationOptions: {
     reasoning: "high",
   },
-  extractionModelId: "gpt-5.6-luna",
+  extractionModelId: "test-extraction-model",
 }));
 
 vi.mock("@/lib/import/positions/ai-extraction", () => ({

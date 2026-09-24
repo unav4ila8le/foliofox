@@ -254,7 +254,7 @@ Post-deploy: trigger the cron manually once with the bearer header, confirm verd
 ## Open risks
 
 1. **web_search + forced `toolChoice` + `Output.object` in one `generateText`**: the installed provider docs show the tool and the forced tool choice, and `Output.object` is already the house pattern, but nothing documents the three combined — and there are community reports of broken/truncated JSON when the older `web_search_preview` tool mixed with structured outputs. Unproven until the post-deploy smoke test. If it misbehaves, fall back to two-step (research call with tools → cheap structuring call with `Output.object`). Only the per-symbol function changes.
-2. **Model** `gpt-5.6-luna` must accept the web_search tool; if not, fix is a single model-id const in the worker.
+2. **Model**: the configured extraction model must support the web_search tool. Model selection is centralized in `server/ai/provider.ts` (`extractionModelId`), shared with position imports.
 3. **PostgREST double `!inner` embed filter** on `positions` + `symbol_aliases`; if the alias filter misbehaves, fetch alias rows and filter in JS like `server/positions/stale.ts` does.
 4. **Runtime**: bounded on both sides now (`PER_CALL_TIMEOUT_MS` per call, `LOOP_BUDGET_MS` between iterations), so the run reaches the digest send rather than being killed at `maxDuration`. Insert-as-you-go plus the `emailed_at IS NULL` sweep still covers the residual cases — a hard kill loses at most the in-flight symbol, retried next week.
 5. **From-address fallback recipient**: if `EMAILS_FROM_ADDRESS` isn't a real inbox and no override is set, digests silently go nowhere. Accepted: the feature is advisory, and the `.env.example` comment documents the override.
