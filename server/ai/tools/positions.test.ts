@@ -18,6 +18,13 @@ vi.mock("@/server/positions/resolve-position-lookup", () => ({
   resolvePositionLookup: vi.fn(),
 }));
 
+vi.mock("@/server/position-tags/fetch", () => ({
+  fetchPositionTags: vi.fn(async () => [{ id: "tag-1", name: "TFSA" }]),
+  fetchPositionTagAssignments: vi.fn(async () => [
+    { position_id: "pos-1", tag_id: "tag-1" },
+  ]),
+}));
+
 vi.mock("@/server/symbols/resolve", () => ({
   resolveSymbolsBatch: resolveSymbolsBatchMock,
 }));
@@ -85,6 +92,7 @@ describe("getPositions", () => {
         category_id: "other",
         category: "Wine Collection",
         display_category_id: "custom-1",
+        tags: ["TFSA"],
       }),
     ]);
     expect(resolveSymbolsBatchMock).toHaveBeenCalledWith(["sym-1"], {

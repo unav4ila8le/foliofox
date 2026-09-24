@@ -3,6 +3,10 @@
 import { fetchProfile } from "@/server/profile/actions";
 import { fetchPositions } from "@/server/positions/fetch";
 import { resolvePositionLookup } from "@/server/positions/resolve-position-lookup";
+import {
+  fetchPositionTagAssignments,
+  fetchPositionTags,
+} from "@/server/position-tags/fetch";
 
 import { resolveSymbolsBatch } from "@/server/symbols/resolve";
 import { resolveTodayDateKey, toCivilDateKey } from "@/lib/date/date-utils";
@@ -32,10 +36,21 @@ export async function getPositions(params: GetPositionsParams) {
     resolvedIds = new Set(resolved.map((r) => r.positionId));
   }
 
-  const all = await fetchPositions({
-    includeArchived: true,
-    asOfDateKey,
-  });
+  const [all, tags, tagAssignments] = await Promise.all([
+    fetchPositions({ includeArchived: true, asOfDateKey }),
+    fetchPositionTags(),
+    fetchPositionTagAssignments(),
+  ]);
+
+  const tagNameById = new Map(tags.map((tag) => [tag.id, tag.name]));
+  const tagNamesByPositionId = new Map<string, string[]>();
+  for (const { position_id, tag_id } of tagAssignments) {
+    const tagName = tagNameById.get(tag_id);
+    if (!tagName) continue;
+    const positionTagNames = tagNamesByPositionId.get(position_id) ?? [];
+    positionTagNames.push(tagName);
+    tagNamesByPositionId.set(position_id, positionTagNames);
+  }
 
   const filtered = resolvedIds ? all.filter((p) => resolvedIds.has(p.id)) : all;
 
@@ -71,6 +86,7 @@ export async function getPositions(params: GetPositionsParams) {
     currency: p.currency as string,
     capital_gains_tax_rate: p.capital_gains_tax_rate as number | null,
     description: p.description as string | null,
+    tags: tagNamesByPositionId.get(p.id) ?? [],
     is_archived: Boolean(p.is_archived),
     archived_at: p.archived_at as string | null,
     created_at: p.created_at as string,
