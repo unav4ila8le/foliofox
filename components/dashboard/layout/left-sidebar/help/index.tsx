@@ -52,7 +52,7 @@ export function HelpButton() {
               onCloseAutoFocus={(event) => event.preventDefault()}
               className="min-w-56"
               side={isMobile ? "top" : "right"}
-              align="start"
+              align="end"
               sideOffset={4}
             >
               <DropdownMenuGroup>
