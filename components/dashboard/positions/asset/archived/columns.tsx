@@ -10,6 +10,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ActionsCell } from "@/components/dashboard/positions/asset/table/row-actions/actions-cell";
+import { TagCell } from "@/components/dashboard/position-tags/tag-cell";
 
 import { formatDate } from "@/lib/date/date-format";
 import { formatNumber } from "@/lib/number-format";
@@ -17,7 +18,9 @@ import { formatNumber } from "@/lib/number-format";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { TransformedPosition } from "@/types/global.types";
 
-export const columns: ColumnDef<TransformedPosition>[] = [
+export type ArchivedAssetRow = TransformedPosition & { tagIds: string[] };
+
+export const columns: ColumnDef<ArchivedAssetRow>[] = [
   {
     id: "select",
     header: ({ table }) => (
@@ -59,7 +62,7 @@ export const columns: ColumnDef<TransformedPosition>[] = [
     cell: ({ row }) => {
       const name = row.getValue<string>("name");
       return (
-        <div className="flex w-40 sm:w-64 lg:w-80">
+        <div className="flex w-40 lg:w-64">
           <Tooltip delayDuration={500}>
             <TooltipTrigger asChild>
               <div className="truncate underline-offset-4 hover:underline">
@@ -71,6 +74,18 @@ export const columns: ColumnDef<TransformedPosition>[] = [
         </div>
       );
     },
+  },
+  {
+    id: "tags",
+    header: "Tags",
+    enableSorting: false,
+    cell: ({ row }) => (
+      <TagCell
+        positionId={row.original.id}
+        name={row.original.name}
+        tagIds={row.original.tagIds}
+      />
+    ),
   },
   {
     accessorKey: "currency",

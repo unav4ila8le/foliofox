@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2, ArchiveRestore } from "lucide-react";
 
@@ -8,27 +8,64 @@ import { SearchInput } from "@/components/ui/custom/search-input";
 import { BulkActionBar } from "@/components/dashboard/tables/base/bulk-action-bar";
 import { DeletePositionDialog } from "@/components/dashboard/positions/shared/delete-dialog";
 import { DataTable } from "@/components/dashboard/tables/base/data-table";
-import { columns } from "./columns";
+import {
+  PositionTagsProvider,
+  TagDataStatus,
+  usePositionTags,
+} from "@/components/dashboard/position-tags/provider";
+import { columns, type ArchivedAssetRow } from "./columns";
 
 import { useRestorePosition } from "@/hooks/use-restore-positions";
 
-import type { TransformedPosition } from "@/types/global.types";
+import type { PositionTag } from "@/server/position-tags/types";
 
 interface ArchivedTableProps {
-  data: TransformedPosition[];
+  data: ArchivedAssetRow[];
+  tags: PositionTag[];
 }
 
-export function ArchivedAssetsTable({ data }: ArchivedTableProps) {
+export function ArchivedAssetsTable({ data, tags }: ArchivedTableProps) {
+  const initialData = useMemo(
+    () => ({
+      tags,
+      assignments: data.flatMap((position) =>
+        position.tagIds.map((tag_id) => ({ position_id: position.id, tag_id })),
+      ),
+    }),
+    [data, tags],
+  );
+  return (
+    <PositionTagsProvider initialData={initialData}>
+      <ArchivedAssetsTableContent data={data} />
+    </PositionTagsProvider>
+  );
+}
+
+function ArchivedAssetsTableContent({ data }: { data: ArchivedAssetRow[] }) {
   const [filterValue, setFilterValue] = useState("");
-  const [selectedRows, setSelectedRows] = useState<TransformedPosition[]>([]);
+  const state = usePositionTags()!;
+  const [selectedRows, setSelectedRows] = useState<ArchivedAssetRow[]>([]);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
 
   const router = useRouter();
   const { restorePositions, isRestoring } = useRestorePosition();
 
   // Handle row click to navigate to asset page
+  const rows = useMemo(() => {
+    const byPosition = new Map<string, string[]>();
+    for (const { position_id, tag_id } of state.data?.assignments ?? []) {
+      const ids = byPosition.get(position_id) ?? [];
+      ids.push(tag_id);
+      byPosition.set(position_id, ids);
+    }
+    return data.map((position) => ({
+      ...position,
+      tagIds: byPosition.get(position.id) ?? [],
+    }));
+  }, [data, state.data?.assignments]);
+
   const handleRowClick = useCallback(
-    (position: TransformedPosition) => {
+    (position: ArchivedAssetRow) => {
       router.push(`/dashboard/assets/${position.id}`);
     },
     [router],
@@ -50,10 +87,12 @@ export function ArchivedAssetsTable({ data }: ArchivedTableProps) {
         onChange={(e) => setFilterValue(e.target.value)}
       />
 
+      <TagDataStatus />
+
       {/* Table */}
       <DataTable
         columns={columns}
-        data={data}
+        data={rows}
         filterValue={filterValue}
         onRowClick={handleRowClick}
         onSelectedRowsChange={setSelectedRows}

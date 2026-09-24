@@ -153,7 +153,7 @@ export const columns: ColumnDef<ScenarioEventWithId>[] = [
     cell: ({ row }) => {
       const name = row.getValue<string>("name");
       return (
-        <div className="flex w-40 sm:w-64 lg:w-80">
+        <div className="flex w-40 lg:w-64">
           <Tooltip delayDuration={500}>
             <TooltipTrigger asChild>
               <div className="truncate">{name}</div>
