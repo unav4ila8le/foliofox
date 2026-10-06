@@ -26,10 +26,10 @@ export default function HomePage() {
           </h2>
           <p className="text-muted-foreground mt-6 text-lg leading-8">
             Everyone has the same quiet question: am I going to be okay?
-            FolioFox answers it with your real numbers. See where you stand
-            today, where you&apos;re headed, and whether it adds up to the
-            retirement you want. Check once, or check every morning. The answer
-            is always current.
+            Foliofox answers it with your real numbers. See where you stand
+            today, where you&apos;re headed, and whether it adds up to the goals
+            you&apos;ve set. Check once, or check every morning. The answer is
+            always current.
           </p>
         </div>
       </section>
@@ -44,10 +44,10 @@ export default function HomePage() {
           <Accordion type="single" collapsible className="mt-10">
             <AccordionItem value="what-is-foliofox">
               <AccordionTrigger className="py-5 text-base hover:no-underline">
-                What is FolioFox?
+                What is Foliofox?
               </AccordionTrigger>
               <AccordionContent className="text-muted-foreground leading-7">
-                FolioFox is a portfolio tracker with AI powered financial
+                Foliofox is a portfolio tracker with AI powered financial
                 planning built in. Import your investments, see your full net
                 worth, and get analysis specific to your holdings, risks and
                 goals.
@@ -55,7 +55,7 @@ export default function HomePage() {
             </AccordionItem>
             <AccordionItem value="is-foliofox-free">
               <AccordionTrigger className="py-5 text-base hover:no-underline">
-                Is FolioFox free?
+                Is Foliofox free?
               </AccordionTrigger>
               <AccordionContent className="text-muted-foreground leading-7">
                 Yes. The core tracker is free, no card required. You can import
@@ -67,7 +67,7 @@ export default function HomePage() {
                 Is my financial data safe?
               </AccordionTrigger>
               <AccordionContent className="text-muted-foreground leading-7">
-                FolioFox uses your financial data to provide tracking, analysis
+                Foliofox uses your financial data to provide tracking, analysis
                 and insights, never to sell it. It never has access to move your
                 money or make transactions. Our code is open source, so how we
                 handle your information can be inspected rather than taken on
@@ -76,10 +76,10 @@ export default function HomePage() {
             </AccordionItem>
             <AccordionItem value="investment-advice">
               <AccordionTrigger className="py-5 text-base hover:no-underline">
-                Does FolioFox give investment advice?
+                Does Foliofox give investment advice?
               </AccordionTrigger>
               <AccordionContent className="text-muted-foreground leading-7">
-                FolioFox provides AI-powered analysis and educational planning
+                Foliofox provides AI-powered analysis and educational planning
                 insights. It is not a formally registered financial advisor and
                 its output isn&apos;t licensed financial advice. It informs your
                 decisions; it doesn&apos;t make them.
@@ -103,7 +103,7 @@ export default function HomePage() {
             size="lg"
             className="bg-brand hover:bg-brand/90 dark:text-primary mt-8 rounded-lg px-6 text-base"
           >
-            <Link href="/dashboard">Get started free →</Link>
+            <Link href="/dashboard">Get started free</Link>
           </Button>
         </div>
       </section>

@@ -9,7 +9,7 @@ const testimonials = [
     name: "Sandy",
     image: sandyAvatar,
     quote:
-      "FolioFox helped my husband and I feel much more confident about our plans for retirement. Having everything laid out gives us real peace of mind.",
+      "Foliofox helped my husband and I feel much more confident about our plans for retirement. Having everything laid out gives us real peace of mind.",
   },
   {
     name: "Fwasz",
@@ -21,7 +21,7 @@ const testimonials = [
     name: "Nathan, CPA",
     image: nathanAvatar,
     quote:
-      "FolioFox has made it extremely easy to monitor investments, understand where I stand towards my financial goals…",
+      "Foliofox has made it extremely easy to monitor investments, understand where I stand towards my financial goals…",
   },
 ];
 
@@ -29,23 +29,15 @@ export function HomepageTestimonials() {
   return (
     <section className="border-t py-20 md:py-28">
       <h2 className="text-3xl tracking-tight text-balance md:text-4xl">
-        What investors say about FolioFox
+        What investors say about Foliofox
       </h2>
       <div className="mt-12 grid gap-10 md:grid-cols-3">
-        {testimonials.map((testimonial, index) => (
+        {testimonials.map((testimonial) => (
           <blockquote
             key={testimonial.name}
             className="flex flex-col border-l pl-5"
           >
-            <p
-              className={
-                index === 1
-                  ? "flex flex-1 items-center text-lg leading-8 italic"
-                  : "text-lg leading-8 italic"
-              }
-            >
-              {testimonial.quote}
-            </p>
+            <p className="text-lg leading-8 italic">{testimonial.quote}</p>
             <footer className="text-muted-foreground mt-auto flex items-center gap-2 pt-4 text-sm font-medium">
               <Image
                 src={testimonial.image}

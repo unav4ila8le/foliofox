@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -11,24 +10,49 @@ import {
 } from "@/components/ui/accordion";
 
 import { HeroImage } from "@/components/homepage/hero/image";
+import { FeatureRows } from "@/components/homepage/feature-rows";
+import { HomepageTestimonials } from "@/components/homepage/testimonials";
 
 import advisorImage from "@/public/images/homepage/advisor-takes-action-sharp.png";
 import performanceImage from "@/public/images/changelog/2026-03/portfolio-performance.jpg";
 import brokerImportImage from "@/public/images/homepage/portfolio-tracker-import-v3.png";
-import fwaszAvatar from "@/public/images/testimonials/fwasz-avatar.png";
-import nathanAvatar from "@/public/images/testimonials/nathan-avatar.png";
-import sandyAvatar from "@/public/images/testimonials/sandy-avatar.jpg";
 
 export const metadata: Metadata = {
-  title: {
-    absolute: "Free Portfolio Tracker with AI Insights | FolioFox",
-  },
+  title: "Free Portfolio Tracker with AI Insights",
   description:
-    "Track stocks, ETFs, crypto and your full net worth in one place. FolioFox is a free portfolio tracker with AI powered analysis and planning built in.",
+    "Track stocks, ETFs, crypto and your full net worth in one place. Foliofox is a free portfolio tracker with AI powered analysis and planning built in.",
   alternates: {
     canonical: "/portfolio-tracker",
   },
 };
+
+const steps = [
+  {
+    eyebrow: "Step 1",
+    title: "Import your investments",
+    description:
+      "Add holdings through CSV upload, supported broker imports or manual entry. Bank connection is coming soon. Your portfolio lands in one place.",
+    image: brokerImportImage,
+    alt: "Importing investments into the Foliofox portfolio tracker",
+    imageClassName: "scale-[1.14] object-cover",
+  },
+  {
+    eyebrow: "Step 2",
+    title: "See your real performance",
+    description:
+      "Returns, allocation, history and net worth over time. Understand what's actually driving your portfolio instead of guessing from account balances.",
+    image: performanceImage,
+    alt: "Foliofox investment performance and allocation view",
+  },
+  {
+    eyebrow: "Step 3",
+    title: "Ask the AI what's next",
+    description:
+      "Get personalized insights on your allocation, risk and goals. It's like having a financial planner who has already read every line of your portfolio.",
+    image: advisorImage,
+    alt: "Foliofox AI insights analyzing a portfolio",
+  },
+];
 
 export default function PortfolioTrackerPage() {
   return (
@@ -43,24 +67,21 @@ export default function PortfolioTrackerPage() {
           </h1>
           <p className="text-foreground/80 mx-auto mt-6 max-w-3xl text-lg leading-8">
             Import your holdings and see everything in one clean dashboard.
-            FolioFox is a free portfolio tracking app that goes beyond charts:
+            Foliofox is a free portfolio tracking app that goes beyond charts:
             our built in AI analyzes your investments, flags risks, and helps
-            you plan your next move. Stock tracker, ETF tracker, net worth
-            tracker and financial planner, all in one.
+            you plan your next move.
           </p>
           <Button
             asChild
             size="lg"
             className="bg-brand hover:bg-brand/90 dark:text-primary mt-8 rounded-lg px-6 text-base"
           >
-            <Link href="/dashboard">
-              Import your investments, it&apos;s free
-            </Link>
+            <Link href="/dashboard">Start tracking for free</Link>
           </Button>
         </div>
 
         <div className="mt-12 mask-b-from-60%">
-          <HeroImage alt="FolioFox portfolio tracker dashboard showing holdings and performance" />
+          <HeroImage alt="Foliofox portfolio tracker dashboard showing holdings and performance" />
         </div>
       </section>
 
@@ -71,7 +92,7 @@ export default function PortfolioTrackerPage() {
           </h2>
           <p className="text-muted-foreground mt-4 text-lg leading-8">
             Plenty of apps show you a line going up or down. Here&apos;s why
-            FolioFox stands apart from every other investment tracker out there.
+            Foliofox stands apart from every other investment tracker out there.
           </p>
         </div>
 
@@ -90,7 +111,7 @@ export default function PortfolioTrackerPage() {
             <h3 className="text-xl font-semibold">AI analysis built in</h3>
             <p className="text-muted-foreground mt-3 leading-7">
               This is where portfolio tracking ends and portfolio intelligence
-              begins. FolioFox reads your actual allocation and surfaces
+              begins. Foliofox reads your actual allocation and surfaces
               concentration risks, performance drivers and opportunities
               specific to your holdings, not generic market commentary.
             </p>
@@ -107,75 +128,8 @@ export default function PortfolioTrackerPage() {
       </section>
 
       <section className="bg-muted/40 relative left-1/2 w-screen -translate-x-1/2 py-20 md:py-28">
-        <div className="mx-auto max-w-7xl space-y-20 px-3 md:space-y-28">
-          <div className="grid items-center gap-8 md:grid-cols-2 md:gap-14">
-            <div className="max-w-lg">
-              <p className="text-brand text-sm font-semibold">Step 1</p>
-              <h3 className="mt-3 text-2xl font-semibold">
-                Import your investments
-              </h3>
-              <p className="text-muted-foreground mt-4 leading-7">
-                Add holdings through CSV upload, supported broker imports or
-                manual entry. Bank connection is coming soon. Your portfolio
-                lands in one place.
-              </p>
-            </div>
-            <div className="relative aspect-[1080/666] overflow-hidden rounded-lg">
-              <Image
-                fill
-                src={brokerImportImage}
-                alt="Importing investments into the FolioFox portfolio tracker"
-                className="scale-[1.14] object-cover"
-                sizes="(min-width: 768px) 50vw, 100vw"
-              />
-            </div>
-          </div>
-
-          <div className="grid items-center gap-8 md:grid-cols-2 md:gap-14">
-            <div className="max-w-lg md:order-2">
-              <p className="text-brand text-sm font-semibold">Step 2</p>
-              <h3 className="mt-3 text-2xl font-semibold">
-                See your real performance
-              </h3>
-              <p className="text-muted-foreground mt-4 leading-7">
-                Returns, allocation, history and net worth over time. Understand
-                what&apos;s actually driving your portfolio instead of guessing
-                from account balances.
-              </p>
-            </div>
-            <div className="relative aspect-[1080/666] overflow-hidden rounded-lg md:order-1">
-              <Image
-                fill
-                src={performanceImage}
-                alt="FolioFox investment performance and allocation view"
-                className="object-cover"
-                sizes="(min-width: 768px) 50vw, 100vw"
-              />
-            </div>
-          </div>
-
-          <div className="grid items-center gap-8 md:grid-cols-2 md:gap-14">
-            <div className="max-w-lg">
-              <p className="text-brand text-sm font-semibold">Step 3</p>
-              <h3 className="mt-3 text-2xl font-semibold">
-                Ask the AI what&apos;s next
-              </h3>
-              <p className="text-muted-foreground mt-4 leading-7">
-                Get personalized insights on your allocation, risk and goals.
-                It&apos;s like having a financial planner who has already read
-                every line of your portfolio.
-              </p>
-            </div>
-            <div className="relative aspect-[1080/666] overflow-hidden rounded-lg">
-              <Image
-                fill
-                src={advisorImage}
-                alt="FolioFox AI insights analyzing a portfolio"
-                className="object-cover"
-                sizes="(min-width: 768px) 50vw, 100vw"
-              />
-            </div>
-          </div>
+        <div className="mx-auto max-w-7xl px-3">
+          <FeatureRows rows={steps} />
         </div>
       </section>
 
@@ -191,7 +145,7 @@ export default function PortfolioTrackerPage() {
               an exchange, and a rough number in their head.
             </p>
             <p>
-              FolioFox pulls it together. Our net worth tracker consolidates
+              Foliofox pulls it together. Our net worth tracker consolidates
               every account so you can monitor your complete financial position
               in one place, spot overexposure across accounts, and measure
               progress against your actual goals.
@@ -229,64 +183,14 @@ export default function PortfolioTrackerPage() {
               move your money or make transactions. Your portfolio stays yours.
             </p>
             <p>
-              FolioFox provides analysis and educational insights, not licensed
+              Foliofox provides analysis and educational insights, not licensed
               investment advice. You stay in control of every decision.
             </p>
           </div>
         </div>
       </section>
 
-      <section className="py-20 md:py-28">
-        <h2 className="text-3xl tracking-tight text-balance md:text-4xl">
-          What investors say about Foliofox
-        </h2>
-        <div className="mt-12 grid gap-10 md:grid-cols-3">
-          <blockquote className="flex flex-col border-l pl-5">
-            <p className="text-lg leading-8 italic">
-              FolioFox helped my husband and I feel much more confident about
-              our plans for retirement. Having everything laid out gives us real
-              peace of mind.
-            </p>
-            <footer className="text-muted-foreground mt-auto flex items-center gap-2 pt-4 text-sm font-medium">
-              <Image
-                src={sandyAvatar}
-                alt=""
-                className="ring-border size-8 rounded-full object-cover ring-1"
-              />
-              <span>Sandy</span>
-            </footer>
-          </blockquote>
-          <blockquote className="flex flex-col border-l pl-5">
-            <p className="flex flex-1 items-center text-lg leading-8 italic">
-              Foliofox has been a lifesaver in helping me reach my investment
-              goals.
-            </p>
-            <footer className="text-muted-foreground mt-auto flex items-center gap-2 pt-4 text-sm font-medium">
-              <Image
-                src={fwaszAvatar}
-                alt=""
-                className="ring-border size-8 rounded-full object-cover ring-1"
-              />
-              <span>Fwasz</span>
-            </footer>
-          </blockquote>
-          <blockquote className="flex flex-col border-l pl-5">
-            <p className="text-lg leading-8 italic">
-              FolioFox has made it extremely easy to monitor investments,
-              understand where I stand towards my financial goals, and get
-              advice in one place.
-            </p>
-            <footer className="text-muted-foreground mt-auto flex items-center gap-2 pt-4 text-sm font-medium">
-              <Image
-                src={nathanAvatar}
-                alt=""
-                className="ring-border size-8 rounded-full object-cover ring-1"
-              />
-              <span>Nathan, CPA</span>
-            </footer>
-          </blockquote>
-        </div>
-      </section>
+      <HomepageTestimonials />
 
       <section className="border-t py-20 md:py-28">
         <div className="mx-auto max-w-3xl">
@@ -296,10 +200,10 @@ export default function PortfolioTrackerPage() {
           <Accordion type="single" collapsible className="mt-10">
             <AccordionItem value="what-is-foliofox">
               <AccordionTrigger className="py-5 text-base hover:no-underline">
-                What is FolioFox?
+                What is Foliofox?
               </AccordionTrigger>
               <AccordionContent className="text-muted-foreground leading-7">
-                FolioFox is a free portfolio tracker with AI-powered financial
+                Foliofox is a free portfolio tracker with AI-powered financial
                 planning built in. Import your stocks, ETFs, crypto and other
                 assets, track performance with daily market updates, and get
                 personalized analysis of your allocation, risk and goals.
@@ -308,7 +212,7 @@ export default function PortfolioTrackerPage() {
 
             <AccordionItem value="is-foliofox-free">
               <AccordionTrigger className="py-5 text-base hover:no-underline">
-                Is FolioFox really free?
+                Is Foliofox really free?
               </AccordionTrigger>
               <AccordionContent className="text-muted-foreground leading-7">
                 Yes. The core portfolio tracker is free to use, with no trial
@@ -318,7 +222,7 @@ export default function PortfolioTrackerPage() {
 
             <AccordionItem value="supported-assets">
               <AccordionTrigger className="py-5 text-base hover:no-underline">
-                What assets can I track with FolioFox?
+                What assets can I track with Foliofox?
               </AccordionTrigger>
               <AccordionContent className="text-muted-foreground leading-7">
                 You can track stocks, ETFs, crypto, cash, real estate and more.
@@ -360,10 +264,10 @@ export default function PortfolioTrackerPage() {
 
             <AccordionItem value="foliofox-difference">
               <AccordionTrigger className="py-5 text-base hover:no-underline">
-                What makes FolioFox different from other portfolio trackers?
+                What makes Foliofox different from other portfolio trackers?
               </AccordionTrigger>
               <AccordionContent className="text-muted-foreground leading-7">
-                Most trackers stop at showing you numbers. FolioFox adds an AI
+                Most trackers stop at showing you numbers. Foliofox adds an AI
                 layer that interprets them: it analyzes your specific holdings,
                 flags concentration and risk, and helps you plan next steps.
                 It&apos;s a portfolio tracker and an AI financial planner in one
@@ -373,10 +277,10 @@ export default function PortfolioTrackerPage() {
 
             <AccordionItem value="net-worth">
               <AccordionTrigger className="py-5 text-base hover:no-underline">
-                Can FolioFox track my net worth?
+                Can Foliofox track my net worth?
               </AccordionTrigger>
               <AccordionContent className="text-muted-foreground leading-7">
-                Yes. Because FolioFox consolidates your accounts and asset
+                Yes. Because Foliofox consolidates your accounts and asset
                 types, your dashboard doubles as a net worth tracker with daily
                 market and exchange-rate updates.
               </AccordionContent>
@@ -399,10 +303,10 @@ export default function PortfolioTrackerPage() {
 
             <AccordionItem value="investment-advice">
               <AccordionTrigger className="py-5 text-base hover:no-underline">
-                Does FolioFox give investment advice?
+                Does Foliofox give investment advice?
               </AccordionTrigger>
               <AccordionContent className="text-muted-foreground leading-7">
-                FolioFox provides AI-powered analysis and educational planning
+                Foliofox provides AI-powered analysis and educational planning
                 insights. It is not a formally registered financial advisor and
                 its output isn&apos;t licensed financial advice. It informs your
                 decisions; it doesn&apos;t make them.
@@ -414,29 +318,18 @@ export default function PortfolioTrackerPage() {
                 Can I see my portfolio&apos;s performance history?
               </AccordionTrigger>
               <AccordionContent className="text-muted-foreground leading-7">
-                Yes. FolioFox charts your returns and net worth over time, so
+                Yes. Foliofox charts your returns and net worth over time, so
                 you can see how your investments have performed rather than
                 relying on gut feel.
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="beginner-investors">
-              <AccordionTrigger className="py-5 text-base hover:no-underline">
-                Does FolioFox work for beginner investors?
-              </AccordionTrigger>
-              <AccordionContent className="text-muted-foreground leading-7">
-                Absolutely. The AI explains what&apos;s happening in your
-                portfolio in plain language. Experienced investors get the
-                depth; beginners get the clarity.
-              </AccordionContent>
-            </AccordionItem>
-
             <AccordionItem value="mobile">
               <AccordionTrigger className="py-5 text-base hover:no-underline">
-                Can I use FolioFox on mobile?
+                Can I use Foliofox on mobile?
               </AccordionTrigger>
               <AccordionContent className="text-muted-foreground leading-7">
-                Yes. FolioFox works in any modern mobile browser, with no app
+                Yes. Foliofox works in any modern mobile browser, with no app
                 download required.
               </AccordionContent>
             </AccordionItem>
@@ -450,7 +343,7 @@ export default function PortfolioTrackerPage() {
             Track your portfolio anywhere
           </h2>
           <p className="text-muted-foreground mt-5 text-lg leading-8">
-            FolioFox runs in any browser, on desktop or mobile. Your portfolio,
+            Foliofox runs in any browser, on desktop or mobile. Your portfolio,
             your insights and your plan, wherever you are.
           </p>
           <Button
@@ -458,7 +351,7 @@ export default function PortfolioTrackerPage() {
             size="lg"
             className="bg-brand hover:bg-brand/90 dark:text-primary mt-8 rounded-lg px-6 text-base"
           >
-            <Link href="/dashboard">Get started free</Link>
+            <Link href="/dashboard">Start tracking for free</Link>
           </Button>
         </div>
       </section>
