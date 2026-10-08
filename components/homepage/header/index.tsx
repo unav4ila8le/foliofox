@@ -8,35 +8,54 @@ import { CTAWrapper } from "@/components/homepage/cta-wrapper";
 
 export async function Header() {
   return (
-    <header className="container mx-auto flex max-w-7xl items-center justify-between p-3">
-      <Link href="/" aria-label="Foliofox - Go to homepage">
-        <FoliofoxLogo />
-      </Link>
-
-      <nav className="flex items-center gap-2">
-        <Link
-          href="/changelog"
-          className="text-sm font-medium transition-opacity hover:opacity-70"
-        >
-          Changelog
+    <header className="bg-primary-foreground/90 sticky top-0 z-50 w-full backdrop-blur-md">
+      <div className="container mx-auto flex max-w-7xl items-center justify-between p-3">
+        <Link href="/" aria-label="Foliofox - Go to homepage">
+          <FoliofoxLogo />
         </Link>
-        <Button asChild size="icon-sm" variant="ghost">
+
+        <nav className="flex items-center gap-4">
           <Link
-            href="https://github.com/unav4ila8le/foliofox"
-            target="_blank"
-            aria-label="Go to GitHub repository"
+            href="/portfolio-tracker"
+            className="hidden text-sm font-medium transition-opacity hover:opacity-70 md:block"
           >
-            <GithubIcon />
+            Portfolio Tracker
           </Link>
-        </Button>
-        <Button asChild size="sm">
-          <Link href="/dashboard">
-            <Suspense fallback="Get started">
-              <CTAWrapper />
-            </Suspense>
+          <Link
+            href="/ai-financial-planning"
+            className="hidden text-sm font-medium transition-opacity hover:opacity-70 md:block"
+          >
+            AI Financial Planning
           </Link>
-        </Button>
-      </nav>
+          <Link
+            href="/changelog"
+            className="hidden text-sm font-medium transition-opacity hover:opacity-70 sm:block"
+          >
+            Changelog
+          </Link>
+          <Button
+            asChild
+            className="hidden sm:inline-flex"
+            size="icon-sm"
+            variant="ghost"
+          >
+            <Link
+              href="https://github.com/unav4ila8le/foliofox"
+              target="_blank"
+              aria-label="Go to GitHub repository"
+            >
+              <GithubIcon />
+            </Link>
+          </Button>
+          <Button asChild size="sm">
+            <Link href="/dashboard">
+              <Suspense fallback="Get started">
+                <CTAWrapper />
+              </Suspense>
+            </Link>
+          </Button>
+        </nav>
+      </div>
     </header>
   );
 }

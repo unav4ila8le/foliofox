@@ -7,7 +7,9 @@ export default function PublicLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-primary-foreground min-h-screen">
+    // Clip (not hide) so full-bleed w-screen sections can't add a horizontal
+    // scrollbar without breaking the sticky header.
+    <div className="bg-primary-foreground min-h-screen overflow-x-clip">
       <Header />
       <main>{children}</main>
       <Footer />

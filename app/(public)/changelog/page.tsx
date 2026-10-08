@@ -26,7 +26,8 @@ export default async function ChangelogPage() {
         >
           {/* Left sidebar */}
           <div className="col-span-12 md:col-span-3">
-            <div className="sticky top-8">
+            {/* 56px sticky public header + 32px gap */}
+            <div className="sticky top-22">
               <h1 className="text-lg font-semibold">{entry.title}</h1>
               <time className="text-muted-foreground text-sm">
                 {formatDate(entry.date, { locale })}

@@ -25,6 +25,8 @@
   - components/dashboard/positions/asset/update/ (draft tag edits)
   - types/enums.ts (tag color presets)
   - types/database.types.ts Constants.public.Enums
+  - app/(public)/portfolio-tracker/page.tsx (public portfolio tracker use case and FAQ)
+  - app/(public)/ai-financial-planning/page.tsx (public AI financial planning use case)
   - VISION.md, README.md, AGENTS.md
 -->
 
@@ -33,6 +35,8 @@
 ## What Foliofox is
 
 Foliofox is a portfolio tracker and net worth tool with an AI advisor. It is built for financially literate users (FIRE, Bogleheads, self-managed investors) who want a clean tracker plus an AI thinking partner with full context on their portfolio history. The tracker is free and open source.
+
+The public AI financial planning use case is available at `/ai-financial-planning` and explains how Foliofox uses portfolio context, financial-profile goals, and scenario planning to provide personalized analysis. It clearly states that Foliofox is not a formally licensed financial planner and positions the tool as a complement to professional advice when the stakes call for one.
 
 Foliofox is **not** a budgeting app or expense tracker. It does not track daily spending, and it is not aimed at day traders.
 
