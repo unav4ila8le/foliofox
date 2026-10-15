@@ -121,6 +121,7 @@ export function NetWorthAreaChart({
   const [isLoading, setIsLoading] = useState(false);
   const netWorthRangesRef = useRef(netWorthRanges);
   const performanceRangesRef = useRef(performanceRanges);
+  const pendingRangeLoadsRef = useRef(new Map<string, Promise<void>>());
 
   const { isPrivacyMode } = usePrivacyMode();
   const { dashboardDataVersion } = useDashboardData();
@@ -242,12 +243,24 @@ export function NetWorthAreaChart({
       timeRange: ChartTimeRange,
       options?: { force?: boolean },
     ) => {
-      if (chartMode === "performance") {
-        await loadPerformanceRange(timeRange, options);
-        return;
+      // Radix Tabs can fire onValueChange twice for one press (focus and
+      // mousedown) before re-rendering, so reuse an in-flight load instead of
+      // fetching the same range again. Forced refreshes always fetch.
+      const loadKey = `${chartMode}:${timeRange}`;
+      const pendingLoad = pendingRangeLoadsRef.current.get(loadKey);
+      if (pendingLoad && !options?.force) {
+        return pendingLoad;
       }
 
-      await loadNetWorthRange(timeRange, options);
+      const load = (
+        chartMode === "performance" ? loadPerformanceRange : loadNetWorthRange
+      )(timeRange, options).finally(() => {
+        if (pendingRangeLoadsRef.current.get(loadKey) === load) {
+          pendingRangeLoadsRef.current.delete(loadKey);
+        }
+      });
+      pendingRangeLoadsRef.current.set(loadKey, load);
+      return load;
     },
     [loadNetWorthRange, loadPerformanceRange],
   );
