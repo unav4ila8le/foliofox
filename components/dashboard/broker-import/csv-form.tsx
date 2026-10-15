@@ -43,11 +43,8 @@ export function BrokerImportCSVForm() {
     return preview.resolutions.every((resolution) => {
       if (excludedPositionKeys.includes(resolution.positionKey)) return true;
       if (resolution.state === "auto_linked") return true;
-      if (resolution.state === "needs_review") {
-        return Boolean(selectedSymbolTickers[resolution.positionKey]);
-      }
-      // Unresolved positions import either with a user-searched symbol or as
-      // a manual position.
+      // Other positions import either with a chosen symbol or as a manual
+      // position (e.g. bonds the market data provider does not list).
       return (
         manualPositionKeys.includes(resolution.positionKey) ||
         Boolean(selectedSymbolTickers[resolution.positionKey])

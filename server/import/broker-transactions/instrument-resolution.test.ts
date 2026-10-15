@@ -539,4 +539,42 @@ describe("broker instrument resolution", () => {
     });
     expect(createSymbolMock).not.toHaveBeenCalled();
   });
+
+  it("drops fuzzy name-search hits that share no word with the broker name", async () => {
+    const bondPosition: BrokerTransactionPositionDraft = {
+      ...basePosition,
+      positionKey: "directa:IT0005696320:btp valore sc mar32 eur cum",
+      name: "BTP VALORE SC MAR32 EUR CUM",
+      brokerSymbol: "IT0005696320",
+    };
+    resolveSymbolInputMock.mockResolvedValue(null);
+    searchYahooFinanceSymbolsMock.mockImplementation(
+      async ({ query }: { query: string }) =>
+        query === "IT0005696320"
+          ? { success: true, data: [] }
+          : {
+              success: true,
+              data: [
+                {
+                  id: "SCHD",
+                  nameDisp: "Schwab US Dividend Equity ETF",
+                  typeDisp: "ETF",
+                },
+                { id: "VLO", nameDisp: "Valero Energy", typeDisp: "Equity" },
+              ],
+            },
+    );
+
+    const { resolveBrokerTransactionInstruments } =
+      await import("./instrument-resolution");
+    const result = await resolveBrokerTransactionInstruments({
+      positions: [bondPosition],
+      importSource: "directa",
+    });
+
+    expect(result.get(bondPosition.positionKey)).toMatchObject({
+      state: "unresolved",
+    });
+    expect(fetchYahooFinanceSymbolMock).not.toHaveBeenCalled();
+  });
 });

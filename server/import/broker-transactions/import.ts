@@ -146,7 +146,21 @@ export async function importBrokerTransactionsFromCSV(
     };
   }
 
-  const matchedPositions = parsed.positions.filter((position) =>
+  // Idempotency is enforced twice: this pre-filter avoids noisy retries, while
+  // the DB partial unique index protects against concurrent duplicate inserts.
+  const existingTransactionIds = await fetchExistingExternalTransactionIds({
+    importSource: parsed.source,
+    records: parsed.records,
+  });
+  const recordsToImport = parsed.records.filter(
+    (record) => !existingTransactionIds.has(record.external_transaction_id),
+  );
+  const positionsToImport = filterPositionsWithRecords(
+    parsed.positions,
+    recordsToImport,
+  );
+
+  const matchedPositions = positionsToImport.filter((position) =>
     positionByNormalizedName.has(normalizePositionName(position.name)),
   );
   // Name matching is only safe when the existing position history already came
@@ -159,7 +173,7 @@ export async function importBrokerTransactionsFromCSV(
   });
   if (!matchedSourceValidation.success) return matchedSourceValidation;
 
-  const missingPositions = parsed.positions.filter(
+  const missingPositions = positionsToImport.filter(
     (position) =>
       !positionByNormalizedName.has(normalizePositionName(position.name)),
   );
@@ -168,23 +182,13 @@ export async function importBrokerTransactionsFromCSV(
     parsed.records,
   );
 
-  // Idempotency is enforced twice: this pre-filter avoids noisy retries, while
-  // the DB partial unique index protects against concurrent duplicate inserts.
-  const existingTransactionIds = await fetchExistingExternalTransactionIds({
-    importSource: parsed.source,
-    records: parsed.records,
-  });
-  const recordsToImport = parsed.records.filter(
-    (record) => !existingTransactionIds.has(record.external_transaction_id),
-  );
-
   if (recordsToImport.length === 0) {
     revalidatePath("/dashboard", "layout");
     return {
       success: true,
       importedCount: 0,
       createdPositionCount: 0,
-      matchedPositionCount: parsed.positions.length - missingPositions.length,
+      matchedPositionCount: 0,
       skippedCount: parsed.records.length,
       warnings: parsed.warnings,
     };
@@ -214,13 +218,13 @@ export async function importBrokerTransactionsFromCSV(
   }
 
   const targetCurrencyByPositionKey = buildBrokerTargetCurrencyMap({
-    positions: parsed.positions,
+    positions: positionsToImport,
     positionByNormalizedName,
     instrumentResolutions,
     manualPositionKeys,
   });
   const conversion = await convertBrokerImportCurrencies({
-    positions: parsed.positions,
+    positions: positionsToImport,
     records: recordsToImport,
     targetCurrencyByPositionKey,
   });
@@ -262,7 +266,7 @@ export async function importBrokerTransactionsFromCSV(
   // already present; the matched-source guard above keeps that retry safe.
   const nameToPosition = await fetchActivePositionIdsByName();
   const positionIdByPositionKey = new Map<string, string>();
-  for (const position of parsed.positions) {
+  for (const position of positionsToImport) {
     const entry = nameToPosition.get(normalizePositionName(position.name));
     if (!entry) {
       return {
@@ -313,7 +317,7 @@ export async function importBrokerTransactionsFromCSV(
     success: true,
     importedCount: inserted.length,
     createdPositionCount: missingPositions.length,
-    matchedPositionCount: parsed.positions.length - missingPositions.length,
+    matchedPositionCount: matchedPositions.length,
     skippedCount: parsed.records.length - recordsToImport.length,
     warnings: buildBrokerImportWarnings(
       [
@@ -638,6 +642,16 @@ async function convertBrokerImportCurrencies({
 // Date-ranged exports can sell units bought before the export window. Infer
 // the pre-window holding per new position so those sells import against an
 // opening balance instead of failing timeline validation.
+// Re-uploading a broker export must not recreate (or re-review) positions
+// whose records were all imported already, e.g. ones archived after closing.
+function filterPositionsWithRecords(
+  positions: BrokerTransactionPositionDraft[],
+  records: BrokerTransactionRecordDraft[],
+) {
+  const positionKeys = new Set(records.map((record) => record.positionKey));
+  return positions.filter((position) => positionKeys.has(position.positionKey));
+}
+
 function buildBrokerOpeningBalances(
   positions: BrokerTransactionPositionDraft[],
   records: BrokerTransactionRecordDraft[],
@@ -1031,11 +1045,21 @@ export async function previewBrokerImport(
     );
   }
 
-  const positionsToCreate = parsed.positions.filter(
+  const existingTransactionIds = await fetchExistingExternalTransactionIds({
+    importSource: parsed.source,
+    records: parsed.records,
+  });
+  const positionsToImport = filterPositionsWithRecords(
+    parsed.positions,
+    parsed.records.filter(
+      (record) => !existingTransactionIds.has(record.external_transaction_id),
+    ),
+  );
+  const positionsToCreate = positionsToImport.filter(
     (position) =>
       !positionByNormalizedName.has(normalizePositionName(position.name)),
   );
-  const matchedPositions = parsed.positions.filter((position) =>
+  const matchedPositions = positionsToImport.filter((position) =>
     positionByNormalizedName.has(normalizePositionName(position.name)),
   );
   const matchedSourceValidation = await validateMatchedBrokerPositionSources({
@@ -1055,10 +1079,6 @@ export async function previewBrokerImport(
     positions: positionsToCreate,
     importSource: parsed.source,
     persistMatches: false,
-  });
-  const existingTransactionIds = await fetchExistingExternalTransactionIds({
-    importSource: parsed.source,
-    records: parsed.records,
   });
 
   return {

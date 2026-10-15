@@ -207,6 +207,10 @@ Foliofox can also import a broker's own transaction export directly — the form
 - **Scalable Capital** — the genuine export with `date, time, status, reference, description, assetType, type, isin, shares, price, amount, fee, tax, currency`. "Savings plan" executions are imported as buys.
 - **Directa** (Italian) — "Movimenti" export with `data_operazione, tipo_operazione, isin, descrizione, quantità, importo_euro, divisa`; day-first dates (dd-mm-yyyy or dd/mm/yyyy) are handled. The "Ordini Eseguiti" (orders) report is not supported; the import tells the user to export "Movimenti" instead.
 
+Each instrument is linked to a market symbol automatically when there is a single clear match; otherwise the review step suggests candidates, offers a symbol search, and lets the user **Import manually** (a position without market prices, e.g. Italian BTPs that Yahoo Finance does not list) or **Skip** it.
+
+Re-uploading a newer export from the same broker is safe: transactions already imported are skipped, and instruments with no new transactions are not created or reviewed again — so positions archived after being sold do not come back.
+
 If a file doesn't match a supported broker format, the generic positions/records CSV import (above) is the fallback — export or reshape the data to those columns.
 
 For other brokers, the flexible header aliases of the generic import usually accept the broker's positions export as-is; otherwise rename the headers to the canonical ones.

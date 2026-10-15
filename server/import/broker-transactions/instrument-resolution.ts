@@ -24,6 +24,24 @@ const NAME_SEARCH_QUOTE_TYPES = new Set([
   "mutual fund",
   "mutualfund",
 ]);
+// Words too generic to show a fuzzy name-search hit is the same instrument.
+const GENERIC_NAME_WORDS = new Set([
+  "acc",
+  "and",
+  "class",
+  "corp",
+  "dist",
+  "etf",
+  "eur",
+  "fund",
+  "inc",
+  "ltd",
+  "plc",
+  "shares",
+  "the",
+  "ucits",
+  "usd",
+]);
 
 export interface BrokerInstrumentCandidate {
   ticker: string;
@@ -374,7 +392,8 @@ async function findProviderCandidates(options: {
       // fuzzy name search is restricted to security quote types.
       if (
         isNameQuery &&
-        !NAME_SEARCH_QUOTE_TYPES.has((match.typeDisp ?? "").toLowerCase())
+        (!NAME_SEARCH_QUOTE_TYPES.has((match.typeDisp ?? "").toLowerCase()) ||
+          !sharesNameWord(options.positionName, match.nameDisp))
       ) {
         continue;
       }
@@ -396,6 +415,25 @@ async function findProviderCandidates(options: {
   }
 
   return candidates;
+}
+
+// ponytail: word-overlap heuristic; instruments the provider lacks (e.g. Italian
+// BTPs) otherwise get unrelated fuzzy hits like SLV. Upgrade to a similarity
+// score if real listings start getting dropped.
+function sharesNameWord(positionName: string, candidateName?: string) {
+  if (!candidateName) return true;
+
+  const candidateWords = new Set(toNameWords(candidateName));
+  return toNameWords(positionName).some((word) => candidateWords.has(word));
+}
+
+function toNameWords(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .split(/[^a-z0-9]+/)
+    .filter((word) => word.length >= 3 && !GENERIC_NAME_WORDS.has(word));
 }
 
 function unresolved(

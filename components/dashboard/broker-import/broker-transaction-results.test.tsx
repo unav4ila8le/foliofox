@@ -93,7 +93,8 @@ describe("BrokerTransactionResults", () => {
     expect(
       screen.getByText(/All transactions will be converted/),
     ).toBeDefined();
-    expect(screen.getByText("Import manually")).toBeDefined();
+    // Both review and fallback rows offer manual import.
+    expect(screen.getAllByText("Import manually")).toHaveLength(2);
     expect(screen.getByText("Ignored cash rows.")).toBeDefined();
   });
 });

@@ -85,8 +85,10 @@ export function BrokerTransactionResults({
                 positionByKey.get(resolution.positionKey)?.currency ?? ""
               }
               selectedTicker={selectedSymbolTickers[resolution.positionKey]}
+              isManual={manualPositionKeys.includes(resolution.positionKey)}
               isExcluded={excludedPositionKeys.includes(resolution.positionKey)}
               onSelectSymbol={onSelectSymbol}
+              onToggleManual={onToggleManual}
               onToggleExcluded={onToggleExcluded}
             />
           ))}
@@ -188,8 +190,10 @@ function SymbolReviewRow({
   brokerSymbol,
   transactionCurrency,
   selectedTicker,
+  isManual,
   isExcluded,
   onSelectSymbol,
+  onToggleManual,
   onToggleExcluded,
 }: {
   resolution: Extract<BrokerInstrumentResolution, { state: "needs_review" }>;
@@ -197,8 +201,10 @@ function SymbolReviewRow({
   brokerSymbol?: string | null;
   transactionCurrency: string;
   selectedTicker?: string;
+  isManual: boolean;
   isExcluded: boolean;
   onSelectSymbol: (positionKey: string, ticker: string) => void;
+  onToggleManual: (positionKey: string) => void;
   onToggleExcluded: (positionKey: string) => void;
 }) {
   const brokerIdentifier = brokerSymbol
@@ -216,7 +222,9 @@ function SymbolReviewRow({
           <div className="text-muted-foreground text-xs">
             {isExcluded
               ? "This position and its transactions will not be imported. You can create it manually later."
-              : "Choose the market symbol to link. All transactions will be converted to that symbol currency before import."}
+              : isManual
+                ? "Imports as a manual position without market prices."
+                : "Choose the market symbol to link. All transactions will be converted to that symbol currency before import."}
           </div>
         </div>
         <Button
@@ -230,25 +238,45 @@ function SymbolReviewRow({
       </div>
 
       {!isExcluded && (
-        <SymbolSearch
-          field={{
-            value: selectedTicker,
-            onChange: (ticker) =>
-              onSelectSymbol(resolution.positionKey, ticker),
-          }}
-          className="w-full"
-          // Provider candidates seed the pre-search list; the currency slot
-          // flags listings that would trigger historical FX conversion.
-          defaultResults={resolution.candidates.map((candidate) => ({
-            id: candidate.ticker,
-            nameDisp: candidate.name,
-            exchange: candidate.exchange,
-            typeDisp:
-              candidate.currency === transactionCurrency
-                ? candidate.currency
-                : `${candidate.currency} · FX conversion`,
-          }))}
-        />
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <SymbolSearch
+            field={{
+              value: selectedTicker,
+              // Linking a symbol and manual import are exclusive.
+              onChange: (ticker) => {
+                if (ticker && isManual) {
+                  onToggleManual(resolution.positionKey);
+                }
+                onSelectSymbol(resolution.positionKey, ticker);
+              },
+            }}
+            className="w-full sm:flex-1"
+            // Provider candidates seed the pre-search list; the currency slot
+            // flags listings that would trigger historical FX conversion.
+            defaultResults={resolution.candidates.map((candidate) => ({
+              id: candidate.ticker,
+              nameDisp: candidate.name,
+              exchange: candidate.exchange,
+              typeDisp:
+                candidate.currency === transactionCurrency
+                  ? candidate.currency
+                  : `${candidate.currency} · FX conversion`,
+            }))}
+          />
+          <Button
+            type="button"
+            variant={isManual ? "secondary" : "outline"}
+            size="sm"
+            onClick={() => {
+              if (!isManual && selectedTicker) {
+                onSelectSymbol(resolution.positionKey, "");
+              }
+              onToggleManual(resolution.positionKey);
+            }}
+          >
+            {isManual ? "Manual selected" : "Import manually"}
+          </Button>
+        </div>
       )}
     </div>
   );
