@@ -205,7 +205,7 @@ Foliofox can also import a broker's own transaction export directly — the form
 
 - **Trade Republic** — transaction export with `date, type, name, symbol, shares, price, currency, …` columns.
 - **Scalable Capital** — the genuine export with `date, time, status, reference, description, assetType, type, isin, shares, price, amount, fee, tax, currency`. "Savings plan" executions are imported as buys.
-- **Directa** (Italian) — "Movimenti" export with `data_operazione, tipo_operazione, isin, descrizione, quantità, importo_euro, divisa`; day-first dates (dd-mm-yyyy or dd/mm/yyyy) are handled.
+- **Directa** (Italian) — "Movimenti" export with `data_operazione, tipo_operazione, isin, descrizione, quantità, importo_euro, divisa`; day-first dates (dd-mm-yyyy or dd/mm/yyyy) are handled. The "Ordini Eseguiti" (orders) report is not supported; the import tells the user to export "Movimenti" instead.
 
 If a file doesn't match a supported broker format, the generic positions/records CSV import (above) is the fallback — export or reshape the data to those columns.
 

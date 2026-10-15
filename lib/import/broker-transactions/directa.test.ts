@@ -189,4 +189,20 @@ describe("Directa broker transaction adapter", () => {
 
     expect(sell.executedAt! > buy.executedAt!).toBe(true);
   });
+
+  it("points users to Movimenti when they upload the Ordini Eseguiti report", async () => {
+    const csv = [
+      "Conto : 12345 MARIO ROSSI;;;;;;;;;;;;;",
+      "Ordini Eseguiti;;;;;;;;;;;;;",
+      ";;;;;;;;;;;;;",
+      "Strumento;Ticker;Isin;Quantità ordinata;Acquisto/Vendita;Stato;Quantità eseguita;Prezzo limite;Prezzo medio;Tipo ordine;Prezzo segnale;Scadenza;Data/Ora immissione;Numero ordine",
+      "World ETF;WWRD  ;XS0000000001;58;Buy;Eseguito;58;0;26,125;Mercato;0;Intraday;14/10/2026 16:46:38;28716463833871",
+    ].join("\n");
+
+    const result = await parseBrokerTransactionsCSV(csv);
+
+    expect(result.success).toBe(false);
+    expect(result.source).toBe("directa");
+    expect(result.errors?.[0]).toContain("Movimenti");
+  });
 });

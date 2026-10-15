@@ -30,6 +30,15 @@ const REQUIRED_HEADERS = [
   "importo_euro",
   "divisa",
 ];
+// "Ordini Eseguiti" is a separate Directa report users export by mistake. It
+// lacks a currency column and quotes bonds as % of par, so it is detected only
+// to point users to the Movimenti export.
+const ORDERS_REPORT_HEADERS = [
+  "strumento",
+  "isin",
+  "prezzo_medio",
+  "numero_ordine",
+];
 const BUY_TYPES = new Set(["acquisto"]);
 const SELL_TYPES = new Set(["vendita"]);
 const FEE_TYPES = new Set(["commissioni"]);
@@ -56,6 +65,11 @@ function isDirectaHeaderRecord(record: string): boolean {
   );
 }
 
+function isDirectaOrdersReportRecord(record: string): boolean {
+  const headers = parseCSVRowValues(record, ";").map(normalizeBrokerHeader);
+  return ORDERS_REPORT_HEADERS.every((header) => headers.includes(header));
+}
+
 // Directa "Movimenti" exports start with account metadata lines before the
 // real header row, so the adapter locates the header instead of assuming
 // it is the first line.
@@ -76,10 +90,15 @@ function parseDirectaDateKey(raw: string): string | null {
 export const directaAdapter: BrokerTransactionAdapter = {
   source: SOURCE,
   displayName: DISPLAY_NAME,
-  detect: (csvContent) => findHeaderRecordIndex(csvContent) >= 0,
+  detect: (csvContent) =>
+    findHeaderRecordIndex(csvContent) >= 0 ||
+    splitCSVRecords(csvContent).some(isDirectaOrdersReportRecord),
   async parse(csvContent: string): Promise<BrokerTransactionImportResult> {
     const headerRecordIndex = findHeaderRecordIndex(csvContent);
     if (headerRecordIndex < 0) {
+      const isOrdersReport = splitCSVRecords(csvContent).some(
+        isDirectaOrdersReportRecord,
+      );
       return {
         success: false,
         source: SOURCE,
@@ -87,7 +106,11 @@ export const directaAdapter: BrokerTransactionAdapter = {
         records: [],
         ignoredRowCount: 0,
         duplicateTransactionIdCount: 0,
-        errors: ["CSV file does not match the Directa export format"],
+        errors: [
+          isOrdersReport
+            ? 'This is Directa\'s "Ordini Eseguiti" (orders) report. Please export "Movimenti" from Directa instead and upload that file.'
+            : "CSV file does not match the Directa export format",
+        ],
       };
     }
 

@@ -47,7 +47,7 @@
     "posthog-js": "^1.434.14",
     "radix-ui": "^1.6.0",
     "react": "^19.2.4",
-    "react-day-picker": "^10.0.1",
+    "react-day-picker": "^10.0.2",
     "react-dom": "^19.2.4",
     "react-dropzone": "^20.1.1",
     "react-email": "^6.11.0",
