@@ -129,6 +129,7 @@ export interface AutomatedEmailCronStats {
   sent: number;
   failed: number;
   batchCount: number;
+  quotaExceeded: boolean;
   missingEnvVars: string[];
   timingsMs: AutomatedEmailCronTimingsMs;
 }
@@ -216,6 +217,7 @@ function createBaseStats(
     sent: 0,
     failed: 0,
     batchCount: 0,
+    quotaExceeded: false,
     missingEnvVars,
     timingsMs: createEmptyTimings(),
   };
@@ -333,6 +335,7 @@ function buildDueAutomatedEmailJobs(params: {
 
   candidates.forEach((candidate) => {
     const scheduleDecision = evaluateAutomatedEmailSchedule({
+      userId: candidate.userId,
       timeZone: candidate.timeZone,
       weeklyRecapEnabled: candidate.weeklyRecapEnabled,
       marketingEmailsEnabled: candidate.marketingEmailsEnabled,
@@ -622,12 +625,25 @@ export async function runAutomatedEmailCron(
 
       stats.failed += 1;
     });
+
+    // Every later batch would hit the same exhausted quota, so stop the run.
+    // shortcut: users past the quota miss this week's recap; add a carry-over
+    // if Vercel logs show quotaExceeded more than rarely.
+    if (
+      sendResults.some(
+        (sendResult) => !sendResult.success && sendResult.quotaExceeded,
+      )
+    ) {
+      stats.quotaExceeded = true;
+      break;
+    }
   }
 
   return {
     success: true,
-    message:
-      stats.failed > 0
+    message: stats.quotaExceeded
+      ? "Automated email cron stopped: provider quota exceeded"
+      : stats.failed > 0
         ? "Automated email cron completed with partial failures"
         : "Automated email cron completed",
     stats: finalizeCronStats(stats, cronStartedAtMs),

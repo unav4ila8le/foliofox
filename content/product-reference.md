@@ -27,6 +27,7 @@
   - types/database.types.ts Constants.public.Enums
   - app/(public)/portfolio-tracker/page.tsx (public portfolio tracker use case and FAQ)
   - app/(public)/ai-financial-planning/page.tsx (public AI financial planning use case)
+  - server/automated-emails/schedule.ts (weekly recap and re-engagement email timing)
   - VISION.md, README.md, AGENTS.md
 -->
 
@@ -221,6 +222,11 @@ For other brokers, the flexible header aliases of the generic import usually acc
 - Market-backed positions are valued with the market price at the given date; custom positions use their latest snapshot value.
 - Prices and FX refresh once daily via scheduled jobs — figures are end-of-day, not real-time.
 - Capital gains tax rate is stored per position and used to estimate after-tax net worth and capital gains taxes.
+
+## Email notifications
+
+- The weekly recap (portfolio change, top movers, projected income) arrives once a week around 9:00 AM in your time zone. Each user has a fixed recap weekday, which can be any day including weekends; it is assigned automatically and cannot be changed.
+- Turn the weekly recap or marketing emails on or off in Settings → Email Notifications, or with the unsubscribe link in any email.
 
 ## Sharing
 

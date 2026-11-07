@@ -136,6 +136,67 @@ function expectCronTimings(stats: {
   });
 }
 
+function createDueCandidateRows(count: number): FakeCandidateRow[] {
+  return Array.from({ length: count }, (_, index) => ({
+    user_id: `user-${index}`,
+    weekly_recap_enabled: true,
+    marketing_emails_enabled: false,
+    profiles: {
+      user_id: `user-${index}`,
+      username: `User ${index}`,
+      display_currency: "USD",
+      time_zone: "America/New_York",
+      last_app_activity_at: null,
+    },
+  }));
+}
+
+/**
+ * Wire every mock so all `count` candidates are due for a weekly recap and
+ * reach the provider send step, split into batches of 100.
+ */
+function setUpDueWeeklyRecaps(count: number) {
+  setRequiredAutomatedEmailEnvVars();
+
+  const candidateRows = createDueCandidateRows(count);
+  createServiceClientMock.mockReturnValue(
+    createFakeServiceClient({ candidateRows, recentReengagementRows: [] }),
+  );
+  evaluateAutomatedEmailScheduleMock.mockReturnValue({
+    weeklyRecapDue: true,
+    reengagementDue: false,
+    selectedEmailType: "weekly_recap" as const,
+    deliveryKey: "weekly:2026-04-20",
+    localDateKey: "2026-04-20",
+    localHour: 9,
+  });
+  fetchRecipientEmailsByUserIdMock.mockImplementation((userIds: string[]) =>
+    Promise.resolve(
+      new Map(userIds.map((userId) => [userId, `${userId}@test.foliofox.com`])),
+    ),
+  );
+  buildAutomatedEmailDigestMock.mockResolvedValue({
+    eligible: true,
+    digest: {},
+  });
+  buildWeeklyRecapEmailTemplateMock.mockResolvedValue({
+    subject: "Your Foliofox weekly recap",
+    html: "<html>recap</html>",
+    text: "recap",
+  });
+}
+
+function createFailedBatchResults(
+  items: Array<{ userId: string }>,
+  failure: { errorMessage: string; quotaExceeded?: true },
+) {
+  return items.map((item) => ({
+    success: false as const,
+    deliveryRecordId: `delivery-${item.userId}`,
+    ...failure,
+  }));
+}
+
 describe("runAutomatedEmailCron", () => {
   beforeEach(() => {
     clearAutomatedEmailEnvVars();
@@ -299,33 +360,29 @@ describe("runAutomatedEmailCron", () => {
       }),
     );
 
-    // Walk through candidateRows in order so the schedule decision matches
-    // each user; this avoids leaking userIds into the schedule mock signature.
-    let candidateIndex = 0;
-    evaluateAutomatedEmailScheduleMock.mockImplementation(() => {
-      const userId = candidateRows[candidateIndex]?.user_id;
-      candidateIndex += 1;
+    evaluateAutomatedEmailScheduleMock.mockImplementation(
+      ({ userId }: { userId: string }) => {
+        if (userId === "user-not-due") {
+          return {
+            weeklyRecapDue: false,
+            reengagementDue: false,
+            selectedEmailType: null,
+            deliveryKey: null,
+            localDateKey: "2026-04-20",
+            localHour: 13,
+          };
+        }
 
-      if (userId === "user-not-due") {
         return {
-          weeklyRecapDue: false,
+          weeklyRecapDue: true,
           reengagementDue: false,
-          selectedEmailType: null,
-          deliveryKey: null,
+          selectedEmailType: "weekly_recap" as const,
+          deliveryKey: "weekly:2026-04-20",
           localDateKey: "2026-04-20",
-          localHour: 13,
+          localHour: 9,
         };
-      }
-
-      return {
-        weeklyRecapDue: true,
-        reengagementDue: false,
-        selectedEmailType: "weekly_recap" as const,
-        deliveryKey: "weekly:2026-04-20",
-        localDateKey: "2026-04-20",
-        localHour: 9,
-      };
-    });
+      },
+    );
 
     isAutomatedEmailDeliveryAlreadySentMock.mockImplementation(
       ({ userId }: { userId: string }) => {
@@ -520,5 +577,60 @@ describe("runAutomatedEmailCron", () => {
     expect(sendAutomatedEmailBatchMock).toHaveBeenCalledWith(
       expect.objectContaining({ items: [] }),
     );
+  });
+
+  it("stops sending further batches once the provider quota is exhausted", async () => {
+    setUpDueWeeklyRecaps(101);
+    sendAutomatedEmailBatchMock.mockImplementation(
+      ({ items }: { items: Array<{ userId: string }> }) =>
+        Promise.resolve(
+          createFailedBatchResults(items, {
+            errorMessage: "You have exceeded your daily email sending quota.",
+            quotaExceeded: true,
+          }),
+        ),
+    );
+
+    const { runAutomatedEmailCron } = await import("./run");
+    const result = await runAutomatedEmailCron(
+      new Date("2026-04-20T13:00:00.000Z"),
+    );
+
+    expect(result.message).toBe(
+      "Automated email cron stopped: provider quota exceeded",
+    );
+    expect(result.stats.dueUsers).toBe(101);
+    expect(result.stats.quotaExceeded).toBe(true);
+    expect(result.stats.batchCount).toBe(1);
+    expect(result.stats.failed).toBe(100);
+    expect(sendAutomatedEmailBatchMock).toHaveBeenCalledTimes(1);
+    expect(evaluateAutomatedEmailScheduleMock).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: "user-0" }),
+    );
+  });
+
+  it("keeps sending later batches after an ordinary provider failure", async () => {
+    setUpDueWeeklyRecaps(101);
+    sendAutomatedEmailBatchMock.mockImplementation(
+      ({ items }: { items: Array<{ userId: string }> }) =>
+        Promise.resolve(
+          createFailedBatchResults(items, {
+            errorMessage: "Permanent provider rejection",
+          }),
+        ),
+    );
+
+    const { runAutomatedEmailCron } = await import("./run");
+    const result = await runAutomatedEmailCron(
+      new Date("2026-04-20T13:00:00.000Z"),
+    );
+
+    expect(result.message).toBe(
+      "Automated email cron completed with partial failures",
+    );
+    expect(result.stats.quotaExceeded).toBe(false);
+    expect(result.stats.batchCount).toBe(2);
+    expect(result.stats.failed).toBe(101);
+    expect(sendAutomatedEmailBatchMock).toHaveBeenCalledTimes(2);
   });
 });

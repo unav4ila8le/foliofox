@@ -74,12 +74,12 @@
 - Add one hourly cron route: `GET /api/cron/send-automated-emails`.
 - Reuse the current cron security pattern with `CRON_SECRET`, `connection()`, structured JSON stats, retry logging, and chunking.
 - Apply these due rules:
-  - weekly recap sends Monday `9:00 AM` in the user’s local timezone
+  - weekly recap sends `9:00 AM` in the user’s local timezone on the user’s assigned weekday (derived from the user ID, so sends spread across all seven days)
   - re-engagement sends after `14` full days since `last_app_activity_at`
   - re-engagement sends at most once every `21` days
   - if both emails are eligible on the same local day, weekly recap wins and re-engagement is skipped for that run
 - Use these `delivery_key` rules:
-  - weekly recap: `weekly:<local-monday-date>`
+  - weekly recap: `weekly:<local-send-date>`
   - re-engagement: `reengagement:<local-send-date>`
 - Keep delivery logging specific even when preferences are category-based:
   - `automated_email_type.weekly_recap`
@@ -133,7 +133,7 @@
   - unsubscribe token verification accepts valid tokens and rejects tampered or expired ones
   - preference gating maps `reengagement -> marketing_emails_enabled` correctly
 - Selector/orchestration tests:
-  - Monday `9:00 AM` local matching works across different timezones
+  - assigned-weekday `9:00 AM` local matching works across different timezones
   - weekly recap dedupe prevents duplicate sends for the same local week
   - re-engagement respects `14 day` inactivity and `21 day` cooldown
   - weekly recap suppresses re-engagement when both are due
@@ -151,7 +151,7 @@
 
 - MVP includes only `weekly recap` and `re-engagement`. `52-week-high` is deferred.
 - Both preferences default to enabled for existing and new users, per your decision.
-- Weekly recap default timing is Monday `9:00 AM` local time.
+- Weekly recap timing is `9:00 AM` local time on the user’s assigned weekday (originally Monday; spread across the week to stay within the email provider’s daily quota).
 - Re-engagement starts after `14` inactive days and is capped at once every `21` days.
 - `Marketing emails` is the user-facing category. `reengagement` remains the internal delivery type.
 - Recipient email addresses remain sourced from Supabase Auth, not duplicated into public tables.

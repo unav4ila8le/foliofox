@@ -168,6 +168,20 @@ function createFakeServiceClient(state: FakeDeliveriesState) {
   };
 }
 
+// Mirrors createResendProviderError in sender.ts: Resend's error code lands on
+// `name`, alongside the HTTP status and the provider message.
+function createResendError(name: string, message: string) {
+  return Object.assign(new Error(message), { name, statusCode: 429 });
+}
+
+const TEST_MESSAGE = {
+  from: "from@test",
+  to: "to@test",
+  subject: "Hi",
+  html: "<p>Hi</p>",
+  text: "Hi",
+};
+
 describe("isAutomatedEmailDeliveryAlreadySent", () => {
   beforeEach(() => {
     createServiceClientMock.mockReset();
@@ -551,5 +565,108 @@ describe("sendAutomatedEmail", () => {
         providerMessageId: "provider-batch-2",
       },
     ]);
+  });
+
+  it.each(["daily_quota_exceeded", "monthly_quota_exceeded"])(
+    "does not retry a %s error and flags the result as quota exceeded",
+    async (errorName) => {
+      const state = createState();
+      createServiceClientMock.mockReturnValue(createFakeServiceClient(state));
+
+      const sendEmail = vi
+        .fn()
+        .mockRejectedValue(createResendError(errorName, "Quota exceeded"));
+
+      const { sendAutomatedEmail } = await import("./deliveries");
+      const result = await sendAutomatedEmail({
+        userId: "user-1",
+        emailType: "weekly_recap",
+        deliveryKey: "weekly:2026-04-20",
+        sender: { sendEmail },
+        message: TEST_MESSAGE,
+      });
+
+      expect(sendEmail).toHaveBeenCalledTimes(1);
+      expect(result).toEqual({
+        success: false,
+        deliveryRecordId: state.rows[0].id,
+        errorMessage: "Quota exceeded",
+        quotaExceeded: true,
+      });
+      expect(state.rows[0]).toMatchObject({
+        status: "failed",
+        error_message: "Quota exceeded",
+      });
+    },
+  );
+
+  it.each(["daily_quota_exceeded", "monthly_quota_exceeded"])(
+    "does not retry a %s batch error and flags every item",
+    async (errorName) => {
+      const state = createState();
+      createServiceClientMock.mockReturnValue(createFakeServiceClient(state));
+
+      const sendEmailBatch = vi
+        .fn()
+        .mockRejectedValue(createResendError(errorName, "Quota exceeded"));
+
+      const { sendAutomatedEmailBatch } = await import("./deliveries");
+      const results = await sendAutomatedEmailBatch({
+        sender: { sendEmail: vi.fn(), sendEmailBatch },
+        items: ["user-1", "user-2"].map((userId) => ({
+          userId,
+          emailType: "weekly_recap" as const,
+          deliveryKey: "weekly:2026-04-20",
+          message: TEST_MESSAGE,
+        })),
+      });
+
+      expect(sendEmailBatch).toHaveBeenCalledTimes(1);
+      expect(results).toHaveLength(2);
+      results.forEach((result) => {
+        expect(result).toMatchObject({
+          success: false,
+          errorMessage: "Quota exceeded",
+          quotaExceeded: true,
+        });
+      });
+      expect(state.rows.map((row) => row.status)).toEqual(["failed", "failed"]);
+    },
+  );
+
+  it("still retries a per-second rate limit and does not flag it as quota", async () => {
+    vi.useFakeTimers();
+
+    try {
+      const state = createState();
+      createServiceClientMock.mockReturnValue(createFakeServiceClient(state));
+
+      const sendEmail = vi
+        .fn()
+        .mockRejectedValueOnce(
+          createResendError("rate_limit_exceeded", "Too many requests"),
+        )
+        .mockResolvedValueOnce({ provider: "resend", messageId: "provider-1" });
+
+      const { sendAutomatedEmail } = await import("./deliveries");
+      const resultPromise = sendAutomatedEmail({
+        userId: "user-1",
+        emailType: "weekly_recap",
+        deliveryKey: "weekly:2026-04-20",
+        sender: { sendEmail },
+        message: TEST_MESSAGE,
+      });
+      await vi.runAllTimersAsync();
+      const result = await resultPromise;
+
+      expect(sendEmail).toHaveBeenCalledTimes(2);
+      expect(result).toMatchObject({
+        success: true,
+        skipped: false,
+        providerMessageId: "provider-1",
+      });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

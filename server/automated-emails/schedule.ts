@@ -16,6 +16,7 @@ type AutomatedEmailType = Database["public"]["Enums"]["automated_email_type"];
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 interface AutomatedEmailScheduleInput {
+  userId: string;
   timeZone: string;
   weeklyRecapEnabled: boolean;
   marketingEmailsEnabled: boolean;
@@ -57,8 +58,20 @@ function resolveLocalHour(date: Date, timeZone: string) {
   return parsedHour;
 }
 
-function isMonday(dateKey: CivilDateKey) {
-  return parseUTCDateKey(dateKey).getUTCDay() === 1;
+/**
+ * Fixed weekday (0 = Sunday … 6 = Saturday) a user receives the weekly recap.
+ * Supabase user IDs are random UUIDs, so their trailing hex spreads users
+ * roughly evenly across the week and keeps each user's day stable, which keeps
+ * daily send volume flat instead of spiking on one weekday.
+ */
+export function resolveWeeklyRecapWeekday(userId: string) {
+  return Number.parseInt(userId.slice(-8), 16) % 7;
+}
+
+function isWeeklyRecapDay(dateKey: CivilDateKey, userId: string) {
+  return (
+    parseUTCDateKey(dateKey).getUTCDay() === resolveWeeklyRecapWeekday(userId)
+  );
 }
 
 function resolveLocalDateKey(timestamp: string, timeZone: string) {
@@ -86,8 +99,9 @@ function differenceInCivilDays(
 
 /**
  * Evaluate which automated email, if any, should send for a user right now.
- * The hourly cron uses a local 9 AM send window and civil-day comparisons so
- * email cadence stays predictable in the user's timezone.
+ * The hourly cron uses a local 9 AM send window (on the user's assigned
+ * weekday for the weekly recap) and civil-day comparisons so email cadence
+ * stays predictable in the user's timezone.
  */
 export function evaluateAutomatedEmailSchedule(
   input: AutomatedEmailScheduleInput,
@@ -98,7 +112,9 @@ export function evaluateAutomatedEmailSchedule(
   const isSendHour = localHour === AUTOMATED_EMAIL_SEND_HOUR_LOCAL;
 
   const weeklyRecapDue =
-    input.weeklyRecapEnabled && isSendHour && isMonday(localDateKey);
+    input.weeklyRecapEnabled &&
+    isSendHour &&
+    isWeeklyRecapDay(localDateKey, input.userId);
 
   let reengagementDue = false;
 

@@ -61,7 +61,21 @@ function isProviderRateLimitError(error: unknown) {
   return /rate limit|too many requests/i.test(errorMessage);
 }
 
+// Resend reports an exhausted plan quota as a 429 too, but unlike a per-second
+// rate limit it cannot clear within a retry window (daily resets 00:00 UTC).
+function isProviderQuotaError(error: unknown) {
+  return (
+    isObjectLike(error) &&
+    (error.name === "daily_quota_exceeded" ||
+      error.name === "monthly_quota_exceeded")
+  );
+}
+
 function isRetryableProviderError(error: unknown) {
+  if (isProviderQuotaError(error)) {
+    return false;
+  }
+
   return isProviderRateLimitError(error) || isTransientError(error);
 }
 
@@ -246,6 +260,7 @@ export type SendAutomatedEmailResult =
       success: false;
       deliveryRecordId: string;
       errorMessage: string;
+      quotaExceeded?: true;
     };
 
 type DeliveryRecordClaimResult =
@@ -451,6 +466,7 @@ export async function sendAutomatedEmail(
       success: false,
       deliveryRecordId: deliveryRecord.id,
       errorMessage,
+      ...(isProviderQuotaError(error) && { quotaExceeded: true as const }),
     };
   }
 }
@@ -554,11 +570,14 @@ export async function sendAutomatedEmailBatch(
       ),
     );
 
+    const quotaExceeded = isProviderQuotaError(error);
+
     claimedItems.forEach((claimedItem) => {
       results[claimedItem.index] = {
         success: false,
         deliveryRecordId: claimedItem.deliveryRecord.id,
         errorMessage,
+        ...(quotaExceeded && { quotaExceeded: true as const }),
       };
     });
   }
